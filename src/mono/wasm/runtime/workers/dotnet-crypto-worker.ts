@@ -30,7 +30,7 @@ class ChannelWorker {
     get STATE_RESET() { return 7; } // Reset to a known state
     // END ChannelOwner contract - shared constants.
 
-    private comm: Int32Array;
+    comm: Int32Array;
     private msg: Uint16Array;
     private msg_char_len: number;
 
@@ -41,74 +41,78 @@ class ChannelWorker {
     }
 
     async run_message_loop(async_op: (jsonRequest: string) => Promise<number[]>) {
-        for (; ;) {
-            try {
-                // Wait for signal to perform operation
-                let state;
-                do {
-                    this._wait_for_state_to_change_from(this.STATE_IDLE);
-                    state = Atomics.load(this.comm, this.STATE_IDX);
-                } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
-
-                this._throw_if_reset_or_shutdown();
-
-                // Read in request
-                const request_json = this._read_request();
-                const response: any = {};
+        try {
+            console.warn("MONO_WASM:  run_message_loop ");
+            for (; ;) {
                 try {
-                    // Perform async action based on request
-                    response.result = await async_op(request_json);
-                }
-                catch (err) {
-                    response.error_type = typeof err;
-                    response.error = _stringify_err(err);
-                    console.error(`MONO_WASM: Request error: ${response.error}. req was: ${request_json}`);
-                }
+                    // Wait for signal to perform operation
+                    let state;
+                    do {
+                        this._wait_for_state_to_change_from(this.STATE_IDLE);
+                        state = Atomics.load(this.comm, this.STATE_IDX);
+                    } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
-                // Send response
-                this._send_response(JSON.stringify(response));
-            } catch (err) {
-                if (err instanceof FailedOrStoppedLoopError) {
-                    const state = Atomics.load(this.comm, this.STATE_IDX);
-                    if (state === this.STATE_SHUTDOWN)
-                        break;
-                    if (state === this.STATE_RESET)
-                        console.debug("MONO_WASM: caller failed, resetting worker");
-                } else {
-                    console.error(`MONO_WASM: Worker failed to handle the request: ${_stringify_err(err)}`);
-                    this.using_lock(() => {
-                        this._change_state_locked(this.STATE_REQ_FAILED);
-                    });
+                    this._throw_if_reset_or_shutdown();
 
-                    console.debug("MONO_WASM: set state to failed, now waiting to get RESET");
-                    Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
-                    const state = Atomics.load(this.comm, this.STATE_IDX);
-                    if (state !== this.STATE_RESET) {
-                        throw new WorkerFailedError(`expected to RESET, but got ${state}`);
+                    // Read in request
+                    const request_json = this._read_request();
+                    const response: any = {};
+                    try {
+                        // Perform async action based on request
+                        response.result = await async_op(request_json);
                     }
+                    catch (err) {
+                        response.error_type = typeof err;
+                        response.error = _stringify_err(err);
+                        console.error(`MONO_WASM: Request error: ${response.error}. req was: ${request_json}`);
+                    }
+
+                    // Send response
+                    this._send_response(JSON.stringify(response));
+                } catch (err) {
+                    if (err instanceof FailedOrStoppedLoopError) {
+                        const state = Atomics.load(this.comm, this.STATE_IDX);
+                        if (state === this.STATE_SHUTDOWN)
+                            break;
+                        if (state === this.STATE_RESET)
+                            console.debug("MONO_WASM: caller failed, resetting worker");
+                    } else {
+                        console.error(`MONO_WASM: Worker failed to handle the request: ${_stringify_err(err)}`);
+                        this.using_lock(() => {
+                            this._change_state_locked(this.STATE_REQ_FAILED);
+                        });
+
+                        console.warn("MONO_WASM: set state to failed, now waiting to get RESET");
+                        Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
+                        const state = Atomics.load(this.comm, this.STATE_IDX);
+                        if (state !== this.STATE_RESET) {
+                            throw new WorkerFailedError(`expected to RESET, but got ${state}`);
+                        }
+                    }
+
+                    this.using_lock(() => {
+                        Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                        Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
+                        this._change_state_locked(this.STATE_IDLE);
+                    });
                 }
 
-                this.using_lock(() => {
-                    Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-                    Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
-                    this._change_state_locked(this.STATE_IDLE);
-                });
+                const state = Atomics.load(this.comm, this.STATE_IDX);
+                const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
+
+                if (state !== this.STATE_IDLE && state !== this.STATE_REQ && state !== this.STATE_REQ_P)
+                    console.error(`MONO_WASM: -- state is not idle at the top of the loop: ${state}, and lock_state: ${lock_state}`);
+                if (lock_state !== this.LOCK_UNLOCKED && state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_IDLE)
+                    console.error(`MONO_WASM: -- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
             }
 
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
-
-            if (state !== this.STATE_IDLE && state !== this.STATE_REQ && state !== this.STATE_REQ_P)
-                console.error(`MONO_WASM: -- state is not idle at the top of the loop: ${state}, and lock_state: ${lock_state}`);
-            if (lock_state !== this.LOCK_UNLOCKED && state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_IDLE)
-                console.error(`MONO_WASM: -- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
+            this.using_lock(() => {
+                Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                this._change_state_locked(this.STATE_SHUTDOWN);
+            });
+        } finally {
+            console.warn("MONO_WASM: *********************************************************** run_message_loop ending");
         }
-
-        this.using_lock(() => {
-            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-            this._change_state_locked(this.STATE_SHUTDOWN);
-        });
-        console.debug("MONO_WASM: ******* run_message_loop ending");
     }
 
     private _read_request(): string {
@@ -201,12 +205,21 @@ class ChannelWorker {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
+    private report(start: number) {
+        if ((new Date().valueOf()) - start > 1000 * 30) {
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            console.warn(`WORKER: Too long in state ${state}\n ${new Error().stack}`);
+        }
+    }
+
     private using_lock(cb: Function) {
+        const start = (new Date().valueOf());
         try {
             this._acquire_lock();
             return cb();
         } finally {
             this._release_lock();
+            this.report(start);
         }
     }
 
@@ -228,7 +241,15 @@ class ChannelWorker {
     }
 
     private _wait_for_state_to_change_from(expected_state: number) {
-        Atomics.wait(this.comm, this.STATE_IDX, expected_state);
+        const start = (new Date().valueOf());
+        for (; ;) {
+            const res = Atomics.wait(this.comm, this.STATE_IDX, expected_state, 1000);
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            if (res === "not-equal") break;
+            if (res === "ok" && state != expected_state) break;
+            this.report(start);
+            console.log(`WORKER _wait_for_state_to_change_from ${res} actual: ${state} not-expected:${expected_state} ping ${new Date().valueOf()}`);
+        }
         this._throw_if_reset_or_shutdown();
     }
 
@@ -386,12 +407,17 @@ function _stringify_err(err: any) {
     return (err instanceof Error && err.stack !== undefined) ? err.stack : err;
 }
 
-let s_channel;
+let s_channel: ChannelWorker;
 
 // Initialize WebWorker
 self.addEventListener("message", (event: MessageEvent) => {
     const data = event.data as InitCryptoMessageData;
     setup_proxy_console("crypto-worker", console, self.location.origin);
     s_channel = new ChannelWorker(data.comm_buf, data.msg_buf, data.msg_char_len);
+    self.postMessage("crypto-ready");
+    setInterval(() => {
+        const state = Atomics.load(s_channel.comm, 0);
+        console.log(`WORKER setInterval state ${state} ping ${new Date().valueOf()}`);
+    }, 1000);
     s_channel.run_message_loop(handle_req_async);
 });

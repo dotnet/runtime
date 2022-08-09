@@ -243,7 +243,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
-    init_crypto();
+    await init_crypto();
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }

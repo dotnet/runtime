@@ -99,12 +99,12 @@ function _send_simple_msg(msg: any, prefix: string, output_buffer: number, outpu
     return 0;
 }
 
-export function init_crypto(): void {
+export function init_crypto(): Promise<void> {
     if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.subtle !== "undefined"
         && typeof SharedArrayBuffer !== "undefined"
         && typeof Worker !== "undefined"
     ) {
-        console.debug("MONO_WASM: Initializing Crypto WebWorker");
+        console.warn("MONO_WASM: Initializing Crypto WebWorker");
 
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
         const worker = new Worker("dotnet-crypto-worker.js");
@@ -118,12 +118,22 @@ export function init_crypto(): void {
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
         };
-        worker.postMessage(messageData);
+        const ready = new Promise<void>((resolve) => {
+            worker.onmessage = event => {
+                if (event.data === "crypto-ready") {
+                    console.warn("MONO_WASM: Initializing Crypto WebWorker - ready");
+                    resolve();
+                }
+            };
+        });
         worker.onerror = event => {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
         };
+        worker.postMessage(messageData);
+        return ready;
     }
+    return Promise.resolve();
 }
 
 function _send_msg_worker(msg: any): number | any {
@@ -339,6 +349,7 @@ class LibraryChannel {
     private wait_for_state_change_to(is_ready: (state: number) => boolean, msg: string): void {
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
+        const start = (new Date().valueOf());
         for (; ;) {
             const done = this.using_lock(() => {
                 const state = Atomics.load(this.comm, this.STATE_IDX);
@@ -349,6 +360,7 @@ class LibraryChannel {
                     return true;
             });
             if (done) return;
+            this.report(start);
         }
     }
 
@@ -359,11 +371,21 @@ class LibraryChannel {
     }
 
     private using_lock(cb: Function) {
+        const start = (new Date().valueOf());
         try {
             this._acquire_lock();
             return cb();
         } finally {
             this._release_lock();
+            this.report(start);
+        }
+    }
+
+    private report(start: number) {
+        if ((new Date().valueOf()) - start > 1000 * 60) {
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            console.warn(`MAIN: Too long in state ${state}\n ${new Error().stack}`);
+            throw new Error();
         }
     }
 
@@ -405,3 +427,4 @@ export type InitCryptoMessageData = {
     msg_buf: SharedArrayBuffer,
     msg_char_len: number
 }
+
