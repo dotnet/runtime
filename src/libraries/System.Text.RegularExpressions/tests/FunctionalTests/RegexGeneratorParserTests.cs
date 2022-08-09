@@ -122,7 +122,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [InlineData("null")]
-        [InlineData("\"notACulture\"")]
+        [InlineData("\"xxxxxxxxxxxxxxxxxxxx-ThisIsNotAValidCultureName-xxxxxxxxxxxxxxxxxxxx\"")]
         public async Task Diagnostic_InvalidCultureName(string cultureName)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@$"
