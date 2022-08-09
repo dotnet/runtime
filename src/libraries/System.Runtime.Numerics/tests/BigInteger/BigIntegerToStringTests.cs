@@ -458,6 +458,19 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedResult, actualResult);
         }
 
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerThrowsExceptionData()
+        {
+            yield return new object[] { "1E+2147483647" };
+            yield return new object[] { "1E+21474836492" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerThrowsExceptionData))]
+        public static void RunFormatScientificNotationToBigIntegerThrowsException(string testingValue)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
+        }
+
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
         {
             string test;

@@ -523,11 +523,11 @@ namespace System.Globalization
                             {
                                 // We still had remaining characters but bailed early because
                                 // the exponent was going to overflow. If exp is exactly 214748364
-                                // then we can technically handle one more character being 0-9
+                                // then we can technically handle one more character being 0-7
                                 // but the additional complexity might not be worthwhile.
 
                                 Debug.Assert(exp >= 214748364);
-                                return false;
+                                throw new PlatformNotSupportedException();
                             }
 
                             if (negExp)
