@@ -4,7 +4,7 @@ name: Build OSX ARM64
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-10.15-bokken:v0.1.1-1022244
+  image: platform-foundation/mac-12-bokken:v0.1.1-1022244
   flavor: m1.mac
 
 variables:
