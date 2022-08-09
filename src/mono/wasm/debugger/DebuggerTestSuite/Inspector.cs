@@ -203,8 +203,15 @@ namespace DebuggerTests
                     NotifyOf(PAUSE, args);
                     break;
                 case "Mono.runtimeReady":
+                {
                     _gotRuntimeReady = true;
+                    if (_gotAppReady)
+                    {
+                        // got both the events
+                        NotifyOf(APP_READY, args);
+                    }
                     break;
+                }
                 case "Runtime.consoleAPICalled":
                 {
                     (string line, string type) = FormatConsoleAPICalled(args);
@@ -220,11 +227,13 @@ namespace DebuggerTests
 
                     if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
                     {
-                        if (!_gotRuntimeReady)
-                            throw new Exception("BUG: Got debugger-app-ready but not Mono.runtimeReady");
-
                         _gotAppReady = true;
-                        NotifyOf(APP_READY, args);
+
+                        if (_gotRuntimeReady)
+                        {
+                            // got both the events
+                            NotifyOf(APP_READY, args);
+                        }
                     }
 
                     if (DetectAndFailOnAssertions &&
