@@ -28,7 +28,6 @@
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
 
-
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>

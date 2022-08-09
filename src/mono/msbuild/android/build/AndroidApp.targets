@@ -120,7 +120,6 @@
   </Target>
 
 
-
   <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
     <PropertyGroup>
