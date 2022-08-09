@@ -119,7 +119,7 @@ steps:
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
-      curl -o maui-version.json 'https://aka.ms/dotnet/sdk/maui/net7.0.json'
+      curl -Lo maui-version.json 'https://aka.ms/dotnet/sdk/maui/net7.0.json'
       version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-version.json)
       chmod -R a+rx .
       ./dotnet-install.sh --version $version --install-dir .
