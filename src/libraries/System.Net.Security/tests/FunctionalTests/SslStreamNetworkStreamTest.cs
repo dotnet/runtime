@@ -917,6 +917,11 @@ namespace System.Net.Security.Tests
                             _output.WriteLine($"  Status:  {status.Status}: {status.StatusInformation}");
                         }
                     }
+
+                    foreach (X509ChainStatus status in chain.ChainStatus)
+                    {
+                        _output.WriteLine($"   ChainStatus: {status.Status} {status.StatusInformation}.");
+                    }
                 }
 
                 using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
