@@ -1927,6 +1927,8 @@ public:
     unsigned int emitCounts_INS_OPTS_J;
 #endif // TARGET_LOONGARCH64
 
+    instrDesc* emitFirstInstrDesc(BYTE* idData);
+    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 

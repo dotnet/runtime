@@ -2839,12 +2839,12 @@ void emitter::emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt)
     assert(!(ig->igFlags & IGF_PLACEHOLDER));
     if (ig == emitCurIG)
     {
-        *id     = (instrDesc*)(emitCurIGfreeBase + m_debugInfoSize);
+        *id     = emitFirstInstrDesc(emitCurIGfreeBase);
         *insCnt = emitCurIGinsCnt;
     }
     else
     {
-        *id     = (instrDesc*)(ig->igData + m_debugInfoSize);
+        *id     = emitFirstInstrDesc(ig->igData);
         *insCnt = ig->igInsCnt;
     }
 
@@ -2933,7 +2933,7 @@ bool emitter::emitGetLocationInfo(emitLocation* emitLoc,
     int i;
     for (i = 0; i != insNum; ++i)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
+        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
     }
 
     // Return the info we found
@@ -2961,7 +2961,7 @@ bool emitter::emitNextID(insGroup*& ig, instrDesc*& id, int& insRemaining)
 {
     if (insRemaining > 0)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
+        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
         --insRemaining;
         return true;
     }
@@ -3803,7 +3803,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         if (verbose)
         {
-            BYTE*          ins = ig->igData + m_debugInfoSize;
+            instrDesc*     id  = emitFirstInstrDesc(ig->igData);
             UNATIVE_OFFSET ofs = ig->igOffs;
             unsigned       cnt = ig->igInsCnt;
 
@@ -3813,8 +3813,6 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
                 do
                 {
-                    instrDesc* id = (instrDesc*)ins;
-
 #ifdef TARGET_XARCH
                     if (emitJmpInstHasNoCode(id))
                     {
@@ -3827,8 +3825,8 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 #endif
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
-                    ins += emitSizeOfInsDsc(id) + m_debugInfoSize;
                     ofs += id->idCodeSize();
+                    emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
 
                 } while (--cnt);
 
@@ -3921,6 +3919,40 @@ void emitter::emitDispJumpList()
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// emitSizeOfInsDscAndDebugInfo:
+//   Get the size of the instrDesc plus the size of optional debug info that
+//   may come before it (or before the next instrDesc).
+//
+// Parameters:
+//   id - the instrDesc
+//
+// Returns:
+//   The (variable) size of the instrDesc plus the debug info size.
+//
+void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
+{
+    assert(idSize == emitSizeOfInsDsc(id));
+    char* idReinterp = reinterpret_cast<char*>(*id);
+    *id              = reinterpret_cast<instrDesc*>(idReinterp + idSize + m_debugInfoSize);
+}
+
+//------------------------------------------------------------------------
+// emitFirstInstrDesc:
+//   Given a pointer to an instruction desc buffer, return a pointer to the
+//   first instrDesc taking optional debug info into account.
+//
+// Parameters:
+//   idData - the data
+//
+// Returns:
+//   A pointer to the first instrDesc.
+//
+instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+{
+    return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
+}
 
 /*****************************************************************************
  *
@@ -4245,11 +4277,10 @@ void emitter::emitRemoveJumpToNextInst()
                 assert(instructionCount > 0);
                 instrDesc* id = nullptr;
                 {
-                    BYTE* dataPtr = jmpGroup->igData + m_debugInfoSize;
+                    id = emitFirstInstrDesc(jmpGroup->igData);
                     while (instructionCount > 0)
                     {
-                        id = (instrDesc*)dataPtr;
-                        dataPtr += emitSizeOfInsDsc(id) + m_debugInfoSize;
+                        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
                         instructionCount -= 1;
                     }
                 }
@@ -6649,7 +6680,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         // if it were the instruction following a call.
         emitGenGCInfoIfFuncletRetTarget(ig, cp);
 
-        instrDesc* id = (instrDesc*)(ig->igData + m_debugInfoSize);
+        instrDesc* id = emitFirstInstrDesc(ig->igData);
 
 #ifdef DEBUG
         /* Print the IG label, but only if it is a branch label */
@@ -6825,7 +6856,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #endif
 
-            castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp) + m_debugInfoSize;
+            size_t insSize = emitIssue1Instr(ig, id, &cp);
+            emitAdvanceInstrDesc(&id, insSize);
 
 #ifdef DEBUG
             // Print the alignment boundary
@@ -7191,7 +7223,7 @@ void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
 
 unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 {
-    instrDesc* id = (instrDesc*)(ig->igData + m_debugInfoSize);
+    instrDesc* id = emitFirstInstrDesc(ig->igData);
 
     // Check if we are the first instruction in the group
     if (id == idMatch)
@@ -7205,7 +7237,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 
     while (insRemaining > 0)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
+        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
         insNum++;
         insRemaining--;
 
@@ -7227,7 +7259,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 
 UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
 {
-    instrDesc*     id = (instrDesc*)(ig->igData + m_debugInfoSize);
+    instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;
 
 #ifdef DEBUG
@@ -7242,7 +7274,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
     {
         of += id->idCodeSize();
 
-        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
+        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
 
         insNum--;
     }
