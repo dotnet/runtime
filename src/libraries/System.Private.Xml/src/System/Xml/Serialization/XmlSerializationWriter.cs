@@ -1971,6 +1971,15 @@ namespace System.Xml.Serialization
         {
             if (!useReflection && !ctorInaccessible)
                 return $"new {escapedTypeName}({arg})";
+
+            // Special case XElement
+            // codegen the same as 'internal XElement : this("default") { }'
+            if (escapedTypeName == "System.Xml.Linq.XElement")
+            {
+                string xelemArg = string.IsNullOrEmpty(arg) ? "default" : arg;
+                return $"new {escapedTypeName}({xelemArg})";
+            }
+
             return GetStringForCreateInstance(GetStringForTypeof(escapedTypeName, useReflection), cast && !useReflection ? escapedTypeName : null, ctorInaccessible, arg);
         }
 
