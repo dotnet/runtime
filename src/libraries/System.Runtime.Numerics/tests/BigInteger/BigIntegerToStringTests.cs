@@ -443,6 +443,9 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { "1E+1000", "1E+1000" };
             yield return new object[] { "1E+1001", "1E+1001" };
+            yield return new object[] { "1E+10001", "1E+10001" };
+            yield return new object[] { "1E+100001", "1E+100001" };
+            yield return new object[] { "1E+99999", "1E+99999" };
         }
 
         [Theory]
