@@ -5,6 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+struct StructWithInt128
+{
+    public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x101010; }
+    public long messUpPadding;
+    public Int128 value;
+};
+
 unsafe partial class Int128Native
 {
     [DllImport(nameof(Int128Native))]
@@ -24,6 +31,43 @@ unsafe partial class Int128Native
 
     [DllImport(nameof(Int128Native))]
     public static extern Int128 AddInt128(Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern StructWithInt128 AddStructWithInt128(StructWithInt128 lhs, StructWithInt128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern StructWithInt128 AddStructWithInt128_1(long dummy1, StructWithInt128 lhs, StructWithInt128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern StructWithInt128 AddStructWithInt128_9(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, long dummy6, long dummy7, long dummy8, long dummy9, StructWithInt128 lhs, StructWithInt128 rhs);
+
+    // Test alignment and proper register usage for Int128 with various amounts of other registers in use. These tests are designed to stress the calling convention of Arm64 and Unix X64.
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_1(long dummy1, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_2(long dummy1, long dummy2, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_3(long dummy1, long dummy2, long dummy3, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_4(long dummy1, long dummy2, long dummy3, long dummy4, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_5(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_6(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, long dummy6, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_7(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, long dummy6, long dummy7, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_8(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, long dummy6, long dummy7, long dummy8, Int128 lhs, Int128 rhs);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern Int128 AddInt128_9(long dummy1, long dummy2, long dummy3, long dummy4, long dummy5, long dummy6, long dummy7, long dummy8, long dummy9, Int128 lhs, Int128 rhs);
 
     [DllImport(nameof(Int128Native))]
     public static extern Int128 AddInt128s(Int128* pValues, int count);
@@ -77,5 +121,45 @@ unsafe partial class Int128Native
 
         Int128 value9 = Int128Native.AddInt128s(in values[0], values.Length);
         Assert.Equal(new Int128(95, 100), value9);
+
+        // Test ABI alignment issues on Arm64 and Unix X64, both enregistered and while spilled to the stack
+        Int128 value10 = Int128Native.AddInt128_1(1, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value10);
+
+        Int128 value11 = Int128Native.AddInt128_2(1, 2, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value11);
+
+        Int128 value12 = Int128Native.AddInt128_3(1, 2, 3, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value12);
+
+        Int128 value13 = Int128Native.AddInt128_4(1, 2, 3, 4, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value13);
+
+        Int128 value14 = Int128Native.AddInt128_5(1, 2, 3, 4, 5, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value14);
+
+        Int128 value15 = Int128Native.AddInt128_6(1, 2, 3, 4, 5, 6, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value15);
+
+        Int128 value16 = Int128Native.AddInt128_7(1, 2, 3, 4, 5, 6, 7, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value16);
+
+        Int128 value17 = Int128Native.AddInt128_8(1, 2, 3, 4, 5, 6, 7, 8, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value17);
+
+        Int128 value18 = Int128Native.AddInt128_9(1, 2, 3, 4, 5, 6, 7, 8, 9, new Int128(25, 26), new Int128(27, 28));
+        Assert.Equal(new Int128(52, 54), value18);
+
+        // Test alignment within a structure
+        StructWithInt128 value19 = Int128Native.AddStructWithInt128(new StructWithInt128(new Int128(29, 30)), new StructWithInt128(new Int128(31, 32)));
+        Assert.Equal(new StructWithInt128(new Int128(60, 62)), value19);
+
+        // Test abi register alignment within a structure
+        StructWithInt128 value20 = Int128Native.AddStructWithInt128_1(1, new StructWithInt128(new Int128(29, 30)), new StructWithInt128(new Int128(31, 32)));
+        Assert.Equal(new StructWithInt128(new Int128(60, 62)), value20);
+
+        // Test abi alignment when spilled to the stack
+        StructWithInt128 value21 = Int128Native.AddStructWithInt128_9(1, 2, 3, 4, 5, 6, 7, 8, 9, new StructWithInt128(new Int128(29, 30)), new StructWithInt128(new Int128(31, 32)));
+        Assert.Equal(new StructWithInt128(new Int128(60, 62)), value21);
     }
 }
