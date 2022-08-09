@@ -47,7 +47,7 @@ namespace System.IO
             {
                 if (Interop.Sys.MkdTemp(pPath) is null)
                 {
-                    Interop.CheckIo(-1);
+                    Interop.ThrowExceptionForLastError();
                 }
             }
 

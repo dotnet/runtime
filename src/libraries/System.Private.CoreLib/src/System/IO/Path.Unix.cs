@@ -96,21 +96,18 @@ namespace System.IO
         public static unsafe string GetTempFileName()
         {
             const int SuffixByteLength = 4; // ".tmp"
+            ReadOnlySpan<byte> fileTemplate = "tmpXXXXXX.tmp"u8;
 
             // mkstemps takes a char* and overwrites the XXXXXX with six characters
-            // that'll result in a unique file name. The file template we use is "tmpXXXXXX.tmp".
+            // that'll result in a unique file name.
             string tempPath = Path.GetTempPath();
             int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
-            int totalByteCount = tempPathByteCount + 3 + 6 + SuffixByteLength + 1;
+            int totalByteCount = tempPathByteCount + fileTemplate.Length + 1;
 
             Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
             int pos = Encoding.UTF8.GetBytes(tempPath, path);
-            "tmp"u8.CopyTo(path.Slice(pos));
-            pos += 3;
-            path.Slice(pos, 6).Fill((byte)'X');
-            pos += 6;
-            ".tmp"u8.CopyTo(path.Slice(pos));
-            path[pos + SuffixByteLength] = 0;
+            fileTemplate.CopyTo(path.Slice(pos));
+            path[^1] = 0;
 
             // Create, open, and close the temp file.
             fixed (byte* pPath = path)
@@ -118,6 +115,7 @@ namespace System.IO
                 IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength));
                 Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
             }
+
             // 'path' is now the name of the file
             Debug.Assert(path[^1] == 0);
             return Encoding.UTF8.GetString(path.Slice(0, path.Length - 1)); // trim off the trailing '\0'

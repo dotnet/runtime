@@ -35,6 +35,7 @@ namespace System.IO
             int attempts = 0;
             while (attempts < MaxAttempts)
             {
+                // simulate a call to Path.GetRandomFileName() without allocating an intermediate string
                 Interop.GetRandomBytes(pKey, RandomKeyLength);
                 Path.Populate83FileNameFromRandomBytes(pKey, RandomKeyLength, builder.RawChars.Slice(builder.Length, RandomFileNameLength));
                 builder.Length += RandomFileNameLength;
