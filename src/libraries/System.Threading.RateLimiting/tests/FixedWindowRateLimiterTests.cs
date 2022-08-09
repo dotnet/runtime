@@ -1033,7 +1033,7 @@ namespace System.Threading.RateLimiting.Test
             var stats = limiter.GetStatistics();
             Assert.Equal(1, stats.CurrentAvailablePermits);
 
-            var lease = limiter.Acquire(1);
+            var lease = limiter.AttemptAcquire(1);
 
             var stats2 = limiter.GetStatistics();
             Assert.NotSame(stats, stats2);
@@ -1060,7 +1060,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(0, stats.TotalSuccessfulLeases);
 
             // success from acquire + available
-            var lease1 = limiter.Acquire(60);
+            var lease1 = limiter.AttemptAcquire(60);
             stats = limiter.GetStatistics();
             Assert.Equal(40, stats.CurrentAvailablePermits);
             Assert.Equal(0, stats.CurrentQueuedCount);
@@ -1068,7 +1068,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(1, stats.TotalSuccessfulLeases);
 
             // queue
-            var lease2Task = limiter.WaitAndAcquireAsync(50);
+            var lease2Task = limiter.AcquireAsync(50);
             stats = limiter.GetStatistics();
             Assert.Equal(40, stats.CurrentAvailablePermits);
             Assert.Equal(50, stats.CurrentQueuedCount);
@@ -1076,7 +1076,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(1, stats.TotalSuccessfulLeases);
 
             // failure from wait
-            var lease3 = await limiter.WaitAndAcquireAsync(1);
+            var lease3 = await limiter.AcquireAsync(1);
             Assert.False(lease3.IsAcquired);
             stats = limiter.GetStatistics();
             Assert.Equal(40, stats.CurrentAvailablePermits);
@@ -1085,7 +1085,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(1, stats.TotalSuccessfulLeases);
 
             // failure from acquire
-            var lease4 = limiter.Acquire(100);
+            var lease4 = limiter.AttemptAcquire(100);
             Assert.False(lease4.IsAcquired);
             stats = limiter.GetStatistics();
             Assert.Equal(40, stats.CurrentAvailablePermits);
@@ -1115,22 +1115,22 @@ namespace System.Threading.RateLimiting.Test
                 Window = TimeSpan.Zero,
                 AutoReplenishment = false
             });
-            var lease = limiter.Acquire(0);
+            var lease = limiter.AttemptAcquire(0);
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, limiter.GetStatistics().TotalSuccessfulLeases);
             Assert.Equal(100, limiter.GetStatistics().CurrentAvailablePermits);
 
-            lease = await limiter.WaitAndAcquireAsync(0);
+            lease = await limiter.AcquireAsync(0);
             Assert.True(lease.IsAcquired);
             Assert.Equal(2, limiter.GetStatistics().TotalSuccessfulLeases);
             Assert.Equal(100, limiter.GetStatistics().CurrentAvailablePermits);
 
-            lease = limiter.Acquire(100);
+            lease = limiter.AttemptAcquire(100);
             Assert.True(lease.IsAcquired);
             Assert.Equal(3, limiter.GetStatistics().TotalSuccessfulLeases);
             Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
 
-            var lease2 = limiter.Acquire(0);
+            var lease2 = limiter.AttemptAcquire(0);
             Assert.False(lease2.IsAcquired);
             Assert.Equal(3, limiter.GetStatistics().TotalSuccessfulLeases);
             Assert.Equal(1, limiter.GetStatistics().TotalFailedLeases);

@@ -226,7 +226,7 @@ namespace System.Threading.RateLimiting.Tests
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2, limiter3);
 
-            var lease = chainedLimiter.Acquire("", 10);
+            var lease = chainedLimiter.AttemptAcquire("", 10);
             var stats = chainedLimiter.GetStatistics("");
 
             Assert.Equal(3, stats.CurrentAvailablePermits);
@@ -234,7 +234,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(3, stats.TotalSuccessfulLeases);
             Assert.Equal(0, stats.TotalFailedLeases);
 
-            var lease2 = chainedLimiter.Acquire("", 10);
+            var lease2 = chainedLimiter.AttemptAcquire("", 10);
             Assert.False(lease2.IsAcquired);
             stats = chainedLimiter.GetStatistics("");
 
@@ -243,7 +243,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(5, stats.TotalSuccessfulLeases);
             Assert.Equal(1, stats.TotalFailedLeases);
 
-            var task = chainedLimiter.WaitAndAcquireAsync("", 10);
+            var task = chainedLimiter.AcquireAsync("", 10);
             Assert.False(task.IsCompleted);
             stats = chainedLimiter.GetStatistics("");
 

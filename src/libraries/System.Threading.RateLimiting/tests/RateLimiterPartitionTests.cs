@@ -86,7 +86,7 @@ namespace System.Threading.RateLimiting.Tests
             var leaseCount = 0;
             for (var i = 0; i < 134; i++)
             {
-                var lease = limiter.Acquire(i);
+                var lease = limiter.AttemptAcquire(i);
                 Assert.True(lease.IsAcquired);
                 ++leaseCount;
             }
@@ -99,7 +99,7 @@ namespace System.Threading.RateLimiting.Tests
 
             for (var i = 0; i < 165; i++)
             {
-                var wait = limiter.WaitAndAcquireAsync(int.MaxValue);
+                var wait = limiter.AcquireAsync(int.MaxValue);
                 Assert.True(wait.IsCompletedSuccessfully);
                 var lease = await wait;
                 Assert.True(lease.IsAcquired);
