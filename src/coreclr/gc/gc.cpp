@@ -2247,6 +2247,8 @@ gc_history_global gc_heap::gc_data_global;
 
 uint64_t    gc_heap::gc_last_ephemeral_decommit_time = 0;
 
+size_t      gc_heap::ephemeral_elapsed = 0;
+
 CLRCriticalSection gc_heap::check_commit_cs;
 
 size_t      gc_heap::current_total_committed = 0;
@@ -6760,7 +6762,7 @@ void gc_heap::gc_thread_function ()
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
                 continue;
             }
 
@@ -6853,7 +6855,7 @@ void gc_heap::gc_thread_function ()
             // check if we should do some decommitting
             if (gradual_decommit_in_progress_p)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
         }
         else
@@ -12601,7 +12603,7 @@ void gc_heap::distribute_free_regions()
                 global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
             }
         }
-        while (decommit_step())
+        while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
 #ifdef MULTIPLE_HEAPS
@@ -12855,20 +12857,13 @@ void gc_heap::distribute_free_regions()
 #else //MULTIPLE_HEAPS
     // we want to limit the amount of decommit we do per time to indirectly
     // limit the amount of time spent in recommit and page faults
-    dynamic_data* dd0 = dynamic_data_of (0);
-    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
-    gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
-
-    // we divide the elapsed time since the last GC by the decommit time step
-    // to arrive at the number of decommit steps to do
+    // we use the elapsed time since the last GC to arrive at the desired
+    // decommit size
     // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
-    size_t max_decommit_steps = min (ephemeral_elapsed, (10*1000)) / DECOMMIT_TIME_STEP_MILLISECONDS;
+    size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
 
-    size_t decommit_steps = 0;
-    while (decommit_step() && decommit_steps < max_decommit_steps)
-    {
-        decommit_steps++;
-    }
+    decommit_step (decommit_step_milliseconds);
+
     // transfer any remaining regions on the decommit list back to the free list
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
@@ -40635,7 +40630,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifndef MULTIPLE_HEAPS
     // we want to limit the amount of decommit we do per time to indirectly
     // limit the amount of time spent in recommit and page faults
-    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
+    ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
     gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
 
     // this is the amount we were planning to decommit
@@ -40656,12 +40651,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
 }
 
 // return true if we actually decommitted anything
-bool gc_heap::decommit_step ()
+bool gc_heap::decommit_step (uint64_t step_milliseconds)
 {
     size_t decommit_size = 0;
 
 #ifdef USE_REGIONS
-    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS;
+    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * step_milliseconds;
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
         dprintf (REGIONS_LOG, ("decommit_step %d, regions_to_decommit = %Id",
