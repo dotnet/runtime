@@ -3957,10 +3957,10 @@
     <value>Must not be greater than the length of the buffer.</value>
   </data>
   <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
-    <value>'{0}' is missing structure marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published.</value>
+    <value>'{0}' is missing structure marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
-    <value>'{0}' is missing delegate marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published.</value>
+    <value>'{0}' is missing delegate marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
     <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
