@@ -283,33 +283,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void GetStringList()
-        {
-            var input = new Dictionary<string, string>
-            {
-                {"StringList:0", "val0"},
-                {"StringList:1", "val1"},
-                {"StringList:2", "val2"},
-                {"StringList:x", "valx"}
-            };
-
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(input);
-            var config = configurationBuilder.Build();
-            var options = new OptionsWithLists();
-            config.Bind(options);
-
-            var list = options.StringList;
-
-            Assert.Equal(4, list.Count);
-
-            Assert.Equal("val0", list[0]);
-            Assert.Equal("val1", list[1]);
-            Assert.Equal("val2", list[2]);
-            Assert.Equal("valx", list[3]);
-        }
-
-        [Fact]
         public void BindStringList()
         {
             var input = new Dictionary<string, string>
@@ -334,34 +307,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
-        }
-
-        [Fact]
-        public void GetIntList()
-        {
-            var input = new Dictionary<string, string>
-            {
-                {"IntList:0", "42"},
-                {"IntList:1", "43"},
-                {"IntList:2", "44"},
-                {"IntList:x", "45"}
-            };
-
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(input);
-            var config = configurationBuilder.Build();
-
-            var options = new OptionsWithLists();
-            config.Bind(options);
-
-            var list = options.IntList;
-
-            Assert.Equal(4, list.Count);
-
-            Assert.Equal(42, list[0]);
-            Assert.Equal(43, list[1]);
-            Assert.Equal(44, list[2]);
-            Assert.Equal(45, list[3]);
         }
 
         [Fact]
@@ -1259,6 +1204,34 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", array[1]);
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
+        }
+
+        [Fact]
+        public void CanBindUninitializedIList()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IList:0", "val0"},
+                {"IList:1", "val1"},
+                {"IList:2", "val2"},
+                {"IList:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UninitializedCollectionsOptions();
+            config.Bind(options);
+
+            IList<string> list = options.IList;
+
+            Assert.Equal(4, list.Count);
+
+            Assert.Equal("val0", list[0]);
+            Assert.Equal("val1", list[1]);
+            Assert.Equal("val2", list[2]);
+            Assert.Equal("valx", list[3]);
         }
 
         [Fact]

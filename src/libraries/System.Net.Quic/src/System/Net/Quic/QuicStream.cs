@@ -76,10 +76,7 @@ public sealed partial class QuicStream
             }
         }
     };
-// [ActiveIssue("https://github.com/dotnet/roslyn-analyzers/issues/5750")] Structs can have parameterless ctor now and thus the behavior differs from just defaulting the struct to zeros.
-#pragma warning disable CA1805
     private ReceiveBuffers _receiveBuffers = new ReceiveBuffers();
-#pragma warning restore CA1805
     private int _receivedNeedsEnable;
 
     private readonly ResettableValueTaskSource _sendTcs = new ResettableValueTaskSource()
@@ -92,10 +89,7 @@ public sealed partial class QuicStream
             }
         }
     };
-// [ActiveIssue("https://github.com/dotnet/roslyn-analyzers/issues/5750")] Structs can have parameterless ctor now and thus the behavior differs from just defaulting the struct to zeros.
-#pragma warning disable CA1805
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-#pragma warning restore CA1805
 
     private readonly long _defaultErrorCode;
 

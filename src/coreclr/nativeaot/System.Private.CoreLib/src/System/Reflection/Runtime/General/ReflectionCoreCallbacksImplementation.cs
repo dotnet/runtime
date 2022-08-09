@@ -417,25 +417,20 @@ namespace System.Reflection.Runtime.General
             return info;
         }
 
-        public sealed override DelegateDynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
+        public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
 
-            DelegateDynamicInvokeInfo? info = runtimeType.GenericCache as DelegateDynamicInvokeInfo;
+            DynamicInvokeInfo? info = runtimeType.GenericCache as DynamicInvokeInfo;
             if (info != null)
                 return info;
 
             RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
 
             MethodInvoker methodInvoker = invokeMethod.MethodInvoker;
-            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker, out IntPtr genericDictionary);
+            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
 
-            info = new DelegateDynamicInvokeInfo()
-            {
-                InvokeMethod = invokeMethod,
-                InvokeThunk = invokeThunk,
-                GenericDictionary = genericDictionary
-            };
+            info = new DynamicInvokeInfo(invokeMethod, invokeThunk);
             runtimeType.GenericCache = info;
             return info;
         }

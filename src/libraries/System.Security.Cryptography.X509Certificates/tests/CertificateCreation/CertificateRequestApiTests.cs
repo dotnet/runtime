@@ -241,5 +241,332 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 "hashAlgorithm",
                 () => new CertificateRequest(subjectName, publicKey, new HashAlgorithmName("")));
         }
+
+        [Fact]
+        public static void NullAttributeInCollection()
+        {
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.OtherRequestAttributes.Add(null);
+                
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest());
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest(gen));
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+            }
+        }
+
+        [Fact]
+        public static void NullOidInAttributeInCollection()
+        {
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.OtherRequestAttributes.Add(new AsnEncodedData((Oid)null, Array.Empty<byte>()));
+
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest());
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest(gen));
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+            }
+        }
+
+        [Fact]
+        public static void NullOidValueInAttributeInCollection()
+        {
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.OtherRequestAttributes.Add(new AsnEncodedData(new Oid(null, null), Array.Empty<byte>()));
+
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest());
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest(gen));
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+            }
+        }
+
+        [Fact]
+        public static void ExtensionRequestInAttributeInCollection()
+        {
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.OtherRequestAttributes.Add(
+                    new AsnEncodedData(
+                        new Oid("1.2.840.113549.1.9.14", null),
+                        Array.Empty<byte>()));
+
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest());
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+                Assert.Contains(nameof(CertificateRequest.CertificateExtensions), ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest(gen));
+                Assert.Contains(nameof(CertificateRequest.OtherRequestAttributes), ex.Message);
+                Assert.Contains(nameof(CertificateRequest.CertificateExtensions), ex.Message);
+            }
+        }
+
+        [Fact]
+        public static void PublicKeyConstructor_CannotSelfSign()
+        {
+            byte[] spki;
+
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                spki = key.ExportSubjectPublicKeyInfo();
+            }
+
+            PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out _);
+
+            CertificateRequest req = new CertificateRequest(
+                new X500DistinguishedName("CN=Test"),
+                publicKey,
+                HashAlgorithmName.SHA384);
+
+            InvalidOperationException ex;
+
+            ex = Assert.Throws<InvalidOperationException>(() => req.CreateSigningRequest());
+            Assert.Contains(nameof(X509SignatureGenerator), ex.Message);
+
+            DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+            DateTimeOffset notAfter = notBefore.AddMinutes(1);
+
+            ex = Assert.Throws<InvalidOperationException>(() => req.CreateSelfSigned(notBefore, notAfter));
+            Assert.Contains(nameof(X509SignatureGenerator), ex.Message);
+        }
+
+        [Fact]
+        public static void InvalidDerInAttribute()
+        {
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                // This is "legal DER", but contains more than one value, which is invalid in context.
+                ReadOnlySpan<byte> invalidEncoding = new byte[]
+                {
+                    // PrintableString("123")
+                    0x13, 0x03, 0x31, 0x32, 0x33,
+                    // NULL
+                    0x05, 0x00,
+                };
+
+                req.OtherRequestAttributes.Add(
+                    new AsnEncodedData(
+                        new Oid("1.2.840.113549.1.9.7", null),
+                        invalidEncoding));
+
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+
+                Assert.Throws<CryptographicException>(() => req.CreateSigningRequest());
+                Assert.Throws<CryptographicException>(() => req.CreateSigningRequest(gen));
+            }
+        }
+
+        [Fact]
+        public static void LoadNullArray()
+        {
+            Assert.Throws<ArgumentNullException>(
+                "pkcs10",
+                () => CertificateRequest.LoadSigningRequest((byte[])null, HashAlgorithmName.SHA256));
+        }
+
+        [Fact]
+        public static void LoadNullPemString()
+        {
+            Assert.Throws<ArgumentNullException>(
+                "pkcs10Pem",
+                () => CertificateRequest.LoadSigningRequestPem((string)null, HashAlgorithmName.SHA256));
+        }
+
+        [Fact]
+        public static void LoadWithDefaultHashAlgorithm()
+        {
+            Assert.Throws<ArgumentNullException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequest(Array.Empty<byte>(), default(HashAlgorithmName)));
+
+            {
+                int consumed = -1;
+
+                Assert.Throws<ArgumentNullException>(
+                    "signerHashAlgorithm",
+                    () => CertificateRequest.LoadSigningRequest(
+                        ReadOnlySpan<byte>.Empty,
+                        default(HashAlgorithmName),
+                        out consumed));
+
+                Assert.Equal(-1, consumed);
+            }
+
+            Assert.Throws<ArgumentNullException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequestPem(string.Empty, default(HashAlgorithmName)));
+
+            Assert.Throws<ArgumentNullException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequestPem(
+                    ReadOnlySpan<char>.Empty,
+                    default(HashAlgorithmName)));
+        }
+
+        [Fact]
+        public static void LoadWithEmptyHashAlgorithm()
+        {
+            HashAlgorithmName hashAlgorithm = new HashAlgorithmName("");
+
+            Assert.Throws<ArgumentException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequest(Array.Empty<byte>(), hashAlgorithm));
+
+            {
+                int consumed = -1;
+
+                Assert.Throws<ArgumentException>(
+                    "signerHashAlgorithm",
+                    () => CertificateRequest.LoadSigningRequest(
+                        ReadOnlySpan<byte>.Empty,
+                        hashAlgorithm,
+                        out consumed));
+
+                Assert.Equal(-1, consumed);
+            }
+
+            Assert.Throws<ArgumentException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequestPem(string.Empty, hashAlgorithm));
+
+            Assert.Throws<ArgumentException>(
+                "signerHashAlgorithm",
+                () => CertificateRequest.LoadSigningRequestPem(
+                    ReadOnlySpan<char>.Empty,
+                    hashAlgorithm));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        public static void LoadWithUnknownOptions(int optionsValue)
+        {
+            CertificateRequestLoadOptions options = (CertificateRequestLoadOptions)optionsValue;
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+            ArgumentOutOfRangeException ex;
+
+            ex = Assert.Throws<ArgumentOutOfRangeException>(
+                "options",
+                () => CertificateRequest.LoadSigningRequest(Array.Empty<byte>(), hashAlgorithm, options));
+
+            Assert.Equal(options, ex.ActualValue);
+
+            {
+                int consumed = -1;
+
+                ex = Assert.Throws<ArgumentOutOfRangeException>(
+                    "options",
+                    () => CertificateRequest.LoadSigningRequest(
+                        ReadOnlySpan<byte>.Empty,
+                        hashAlgorithm,
+                        out consumed,
+                        options));
+
+                Assert.Equal(-1, consumed);
+                Assert.Equal(options, ex.ActualValue);
+            }
+
+            ex = Assert.Throws<ArgumentOutOfRangeException>(
+                "options",
+                () => CertificateRequest.LoadSigningRequestPem(string.Empty, hashAlgorithm, options));
+
+            Assert.Equal(options, ex.ActualValue);
+
+            ex = Assert.Throws<ArgumentOutOfRangeException>(
+                "options",
+                () => CertificateRequest.LoadSigningRequestPem(
+                    ReadOnlySpan<char>.Empty,
+                    hashAlgorithm,
+                    options));
+
+            Assert.Equal(options, ex.ActualValue);
+        }
+
+        [Theory]
+        [InlineData("SHA256")]
+        [InlineData("SHA384")]
+        [InlineData("SHA512")]
+        [InlineData("SHA1")]
+        public static void VerifySignature_ECDsa(string hashAlgorithm)
+        {
+            HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
+
+            using (ECDsa key = ECDsa.Create())
+            {
+                CertificateRequest first = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    hashAlgorithmName);
+
+                byte[] pkcs10;
+
+                if (hashAlgorithm == "SHA1")
+                {
+                    pkcs10 = first.CreateSigningRequest(new ECDsaSha1SignatureGenerator(key));
+                }
+                else
+                {
+                    pkcs10 = first.CreateSigningRequest();
+                }
+
+                // Assert.NoThrow
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
+
+                pkcs10[^1] ^= 0xFF;
+
+                Assert.Throws<CryptographicException>(
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
+
+                // Assert.NoThrow
+                CertificateRequest.LoadSigningRequest(
+                    pkcs10,
+                    hashAlgorithmName,
+                    out _,
+                    CertificateRequestLoadOptions.SkipSignatureValidation);
+            }
+        }
     }
 }

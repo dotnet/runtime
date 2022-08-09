@@ -669,7 +669,7 @@ UINT_PTR ExceptionTracker::CallCatchHandler(CONTEXT* pContextRecord, bool* pfAbo
     else
     {
         // Since the exception has been intercepted and we could resuming execution at any
-        // user-specified arbitary location, reset the EH clause index and EstablisherFrame
+        // user-specified arbitrary location, reset the EH clause index and EstablisherFrame
         //  we may have saved for addressing any potential ThreadAbort raise.
         //
         // This is done since the saved EH clause index is related to the catch block executed,
@@ -2683,7 +2683,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                 // the unwind phase). If we do not switch to COOP mode for such a frame, we could remain in preemp mode.
                 // Upon returning back from ProcessOSExceptionNotification in ProcessCLRException, when we attempt to
                 // switch to COOP mode to update the LastUnwoundEstablisherFrame, we could get blocked due to an
-                // active GC, prior to peforming the update.
+                // active GC, prior to performing the update.
                 //
                 // In this case, if the GC stackwalk encounters the current frame and attempts to check if it has been
                 // unwound by an exception, then while it has been unwound (especially since it had no termination handlers)
@@ -2889,7 +2889,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
                         EH_LOG((LL_INFO100, "  calling filter\n"));
 
-                        // @todo : If user code throws a StackOveflowException and we have plenty of stack,
+                        // @todo : If user code throws a StackOverflowException and we have plenty of stack,
                         // we probably don't want to be so strict in not calling handlers.
                         if (! IsStackOverflowException())
                         {
@@ -3168,7 +3168,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             EH_LOG((LL_INFO100, "  found finally/fault at 0x%p\n", dwHandlerStartPC));
                             _ASSERTE(fTermHandler);
 
-                            // @todo : If user code throws a StackOveflowException and we have plenty of stack,
+                            // @todo : If user code throws a StackOverflowException and we have plenty of stack,
                             // we probably don't want to be so strict in not calling handlers.
                             if (!IsStackOverflowException())
                             {

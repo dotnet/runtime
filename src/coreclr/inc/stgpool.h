@@ -1381,7 +1381,7 @@ private:
 
 //*****************************************************************************
 // CGrowableStream is a simple IStream implementation that grows as
-// its written to. All the memory is contigious, so read access is
+// its written to. All the memory is contiguous, so read access is
 // fast. A grow does a realloc, so be aware of that if you're going to
 // use this.
 //*****************************************************************************

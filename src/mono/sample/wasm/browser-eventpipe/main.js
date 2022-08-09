@@ -1,25 +1,5 @@
 import createDotnetRuntime from "./dotnet.js";
 
-function downloadData(dataURL, filename) {
-    // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
-    const elt = document.createElement('a');
-    elt.download = filename;
-    elt.href = dataURL;
-
-    document.body.appendChild(elt);
-
-    elt.click();
-
-    document.body.removeChild(elt);
-}
-
-function makeTimestamp() {
-    // ISO date string, but with : and . replaced by -
-    const t = new Date();
-    const s = t.toISOString();
-    return s.replace(/[:.]/g, '-');
-}
-
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function doWork(startWork, stopWork, getIterationsDone) {
@@ -56,36 +36,12 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        let sessions = MONO.diagnostics.getStartupSessions();
-
-        if (typeof (sessions) !== "object" || sessions.length === "undefined")
-            console.error("expected an array of sessions, got ", sessions);
-        let eventSession = null;
-        if (sessions.length !== 0) {
-            if (sessions.length != 1)
-                console.error("expected one startup session, got ", sessions);
-            eventSession = sessions[0];
-            console.debug("eventSession state is ", eventSession._state); // ooh protected member access
-        }
-
-        const ret = await doWork(startWork, stopWork, getIterationsDone);
-
-        if (eventSession !== null) {
-            eventSession.stop();
-
-            const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-
-            const blob = eventSession.getTraceBlob();
-            const uri = URL.createObjectURL(blob);
-            downloadData(uri, filename);
-        }
-
-        console.debug("sample onclick handler done");
+        await doWork(startWork, stopWork, getIterationsDone);
     }
 }
 
 async function main() {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
+    const { MONO, BINDING, Module } = await createDotnetRuntime(() => {
         return {
             disableDotnet6Compatibility: true,
             configSrc: "./mono-config.json",

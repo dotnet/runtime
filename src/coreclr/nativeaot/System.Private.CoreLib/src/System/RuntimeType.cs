@@ -111,6 +111,14 @@ namespace System
             return result;
         }
 
+        public sealed override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
+        }
+
         internal bool IsActualEnum
             => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
     }
