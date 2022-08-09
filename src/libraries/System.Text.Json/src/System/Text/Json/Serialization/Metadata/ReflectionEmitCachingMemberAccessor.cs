@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
             => s_cache.GetOrAdd((nameof(CreateAddMethodDelegate), typeof(TCollection), null),
-        static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
+                static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
 
         public override Func<object>? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
             => s_cache.GetOrAdd((nameof(CreateConstructor), classType, null),

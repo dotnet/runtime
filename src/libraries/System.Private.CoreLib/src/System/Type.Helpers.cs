@@ -382,6 +382,7 @@ namespace System
                 // The GetInterfaces technically requires all interfaces to be preserved
                 // But this method only compares the result against the passed in ifaceType.
                 // So if ifaceType exists, then trimming should have kept it implemented on any type.
+                // The warning is currently analyzer only.
 #pragma warning disable IL2075
                 Type[] interfaces = t.GetInterfaces();
 #pragma warning restore IL2075

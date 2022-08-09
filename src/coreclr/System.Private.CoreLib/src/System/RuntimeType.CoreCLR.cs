@@ -3850,8 +3850,6 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
@@ -3932,7 +3930,7 @@ namespace System
 
                     // fast path??
                     // IL2082
-                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+                    instance = CreateInstanceLocal(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
@@ -3943,6 +3941,13 @@ namespace System
             }
 
             return instance;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+                Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+            object? CreateInstanceLocal(Type type, bool nonPublic, bool wrapExceptions)
+            {
+                return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+            }
         }
 
         /// <summary>

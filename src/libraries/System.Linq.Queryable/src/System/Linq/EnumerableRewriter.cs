@@ -136,11 +136,9 @@ namespace System.Linq
                 return typeof(IEnumerable);
             return t;
 
-            // IL2075
             static bool ImplementsIGrouping(Type type) =>
                 type.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>));
 
-            // IL2070
             static bool TryGetImplementedIEnumerable(Type type, [NotNullWhen(true)] out Type? interfaceType)
             {
                 foreach (Type iType in type.GetInterfaces())
@@ -247,7 +245,6 @@ namespace System.Linq
 
             return matchingMethods[0];
 
-            // IL2070
             static MethodInfo[] GetEnumerableStaticMethods(Type type) =>
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static);
             [RequiresDynamicCodeAttribute("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
