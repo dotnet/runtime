@@ -292,11 +292,6 @@ namespace Internal.Reflection.Core.Execution
             return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
         }
 
-        public Exception CreateMissingMetadataException(TypeInfo? pertainant)
-        {
-            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
-        }
-
         public Exception CreateNonInvokabilityException(MemberInfo pertainant)
         {
             return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);

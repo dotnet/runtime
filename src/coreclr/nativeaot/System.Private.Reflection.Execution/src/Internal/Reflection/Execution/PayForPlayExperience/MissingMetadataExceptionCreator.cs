@@ -15,22 +15,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 {
     public static class MissingMetadataExceptionCreator
     {
-        internal static MissingMetadataException Create(string resourceId, MemberInfo? pertainant)
-        {
-            return CreateFromMetadataObject(resourceId, pertainant);
-        }
-
-        internal static MissingMetadataException Create(TypeInfo? pertainant)
-        {
-            return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
-        }
-
         internal static MissingMetadataException Create(Type? pertainant)
-        {
-            return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
-        }
-
-        internal static MissingMetadataException Create(RuntimeTypeHandle pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
@@ -56,40 +41,25 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, object? pertainant)
+        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, Type? pertainant)
         {
             if (pertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
 
-            string usefulPertainant = ComputeUsefulPertainantIfPossible(pertainant);
+            string usefulPertainant = pertainant.ToDisplayStringIfAvailable(null);
             if (usefulPertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
             else
                 return new MissingMetadataException(SR.Format(resourceId, usefulPertainant));
         }
 
-        public static string ComputeUsefulPertainantIfPossible(object pertainant)
+        public static string ComputeUsefulPertainantIfPossible(MemberInfo memberInfo)
         {
-            {
-                Type type = null;
-
-                if (pertainant is TypeInfo)
-                    type = ((TypeInfo)pertainant).AsType();
-                else if (pertainant is Type)
-                    type = (Type)pertainant;
-                else if (pertainant is RuntimeTypeHandle)
-                    type = Type.GetTypeFromHandle((RuntimeTypeHandle)pertainant);
-
-                if (type != null)
-                    return type.ToDisplayStringIfAvailable(null);
-            }
-
-            if (pertainant is MemberInfo memberInfo)
             {
                 StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable(null));
                 friendlyName.Append('.');
                 friendlyName.Append(memberInfo.Name);
-                if (pertainant is MethodBase method)
+                if (memberInfo is MethodBase method)
                 {
                     bool first;
 
@@ -140,8 +110,6 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
                 return friendlyName.ToString();
             }
-
-            return null;  //Give up
         }
 
         internal static string ToDisplayStringIfAvailable(this Type type, List<int> genericParameterOffsets)

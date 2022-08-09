@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
         // Obtain it lazily to avoid using RuntimeAugments.Callbacks before it is initialized
         public sealed override AssemblyBinder AssemblyBinder => AssemblyBinderImplementation.Instance;
 
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant);
-        }
-
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {
             return MissingMetadataExceptionCreator.Create(pertainant);

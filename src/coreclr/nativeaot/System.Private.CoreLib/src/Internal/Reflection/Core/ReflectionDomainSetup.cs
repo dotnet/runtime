@@ -14,7 +14,6 @@ namespace Internal.Reflection.Core
     {
         protected ReflectionDomainSetup() { }
         public abstract AssemblyBinder AssemblyBinder { get; }
-        public abstract Exception CreateMissingMetadataException(TypeInfo? pertainant);
         public abstract Exception CreateMissingMetadataException(Type? pertainant);
         public abstract Exception CreateNonInvokabilityException(MemberInfo pertainant);
         public abstract Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank);
