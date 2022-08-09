@@ -58,6 +58,10 @@ namespace System.Runtime.InteropServices.Tests.Common
         [ModuleInitializer]
         internal static unsafe void RegisterInProcCOMServer()
         {
+            // Make sure we are initialized for COM before registering
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
+                Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
+
             var clsid = new Guid(ComObjectFactory.CLSID);
             const int CLSCTX_INPROC_SERVER = 1;
             const int REGCLS_MULTIPLEUSE = 1;
