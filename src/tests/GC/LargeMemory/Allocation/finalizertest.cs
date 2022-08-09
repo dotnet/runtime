@@ -90,7 +90,7 @@ public sealed class FinalizerTest {
             DestroyLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception");
             Console.WriteLine(e.ToString());
@@ -119,7 +119,7 @@ public sealed class FinalizerTest {
             new FinalizerObject(size);
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception");
             Console.WriteLine(e.ToString());

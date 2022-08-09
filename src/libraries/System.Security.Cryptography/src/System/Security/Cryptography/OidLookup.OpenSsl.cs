@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
                     Debug.Assert(friendlyNamePtr != IntPtr.Zero, "friendlyNamePtr != IntPtr.Zero");
 
                     // The pointer is to a shared string, so marshalling it out is all that's required.
-                    return Marshal.PtrToStringAnsi(friendlyNamePtr);
+                    return Marshal.PtrToStringUTF8(friendlyNamePtr);
                 case -1: /* OpenSSL internal error */
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:

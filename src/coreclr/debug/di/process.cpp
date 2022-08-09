@@ -5616,7 +5616,7 @@ void CordbProcess::RawDispatchEvent(
             // Neutering will dump it back down to zero.
             this->AddToNeuterOnExitList(pMDA);
 
-            // We bump up and down the external ref so that even if the callback doensn't touch the refs,
+            // We bump up and down the external ref so that even if the callback doesn't touch the refs,
             // our Ext-Release here will still cause a 1->0 ext-ref transition, which will get it
             // swept on the neuter list.
             RSExtSmartPtr<ICorDebugMDA> pExternalMDARef;
@@ -5967,7 +5967,7 @@ void CordbProcess::RawDispatchEvent(
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
 //
-// Arugments:
+// Arguments:
 //    vmThread - thread as part of the eunmeration.
 //    pUserData - data supplied with callback. It's a CordbProcess* object.
 //

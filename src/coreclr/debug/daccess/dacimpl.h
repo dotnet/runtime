@@ -652,7 +652,7 @@ struct DumpMemoryReportStatics
     TSIZE_T    m_cbModuleList;         // number of bytes that we report for module list directly
     TSIZE_T    m_cbClrStatics;         // number of bytes that we report for CLR statics
     TSIZE_T    m_cbClrHeapStatics;     // number of bytes that we report for CLR heap statics
-    TSIZE_T    m_cbImplicity;          // number of bytes that we report implicitly
+    TSIZE_T    m_cbImplicitly;          // number of bytes that we report implicitly
 };
 
 
@@ -1592,7 +1592,7 @@ private:
 };
 
 
-// A stuct representing a thread's allocation context.
+// A struct representing a thread's allocation context.
 struct AllocInfo
 {
     CORDB_ADDRESS Ptr;

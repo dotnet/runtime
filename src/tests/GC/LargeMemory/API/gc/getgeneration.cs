@@ -17,7 +17,7 @@ public sealed class GetGenerationTest {
             gen = GC.GetGeneration(new WeakReference(new LargeObject(size)));
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception:");
             Console.WriteLine(e);
@@ -45,7 +45,7 @@ public sealed class GetGenerationTest {
 
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception:");
             Console.WriteLine(e);

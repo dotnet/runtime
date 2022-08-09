@@ -703,7 +703,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	guint8 *p, *code_buffer;
 	size_data sz;
 
-	DEBUG (printf ("\nPInvoke [start emiting]\n"));
+	DEBUG (printf ("\nPInvoke [start emitting]\n"));
 	calculate_sizes (sig, &sz, string_ctor);
 
 	p = code_buffer = alloc_code_memory (sz.code_size);
@@ -718,9 +718,9 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	}
 #endif
 
-	DEBUG (printf ("emited code size: %d\n", p - code_buffer));
+	DEBUG (printf ("emitted code size: %d\n", p - code_buffer));
 
-	DEBUG (printf ("PInvoke [end emiting]\n"));
+	DEBUG (printf ("PInvoke [end emitting]\n"));
 
 	return (MonoPIFunc) code_buffer;
 }
@@ -803,7 +803,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 	p = code_buffer = g_malloc (sz.code_size);
 
-	DEBUG (printf ("\nDelegate [start emiting] %s at 0x%08x\n",
+	DEBUG (printf ("\nDelegate [start emitting] %s at 0x%08x\n",
 		       method->name,p));
 
 	/*----------------------------------------------------------*/
@@ -1135,9 +1135,9 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	s390_lmg  (p, s390_r6, STK_BASE, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br   (p, s390_r4);
 
-	DEBUG (printf ("emited code size: %d\n", p - code_buffer));
+	DEBUG (printf ("emitted code size: %d\n", p - code_buffer));
 
-	DEBUG (printf ("Delegate [end emiting]\n"));
+	DEBUG (printf ("Delegate [end emitting]\n"));
 
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->method = method;

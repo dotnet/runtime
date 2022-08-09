@@ -12,6 +12,11 @@ function wasm_exit(exit_code, reason) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
+/**
+ * @type {import('../../../wasm/runtime/dotnet').CreateDotnetRuntimeType}
+ */
+const createDotnetRuntimeTyped = createDotnetRuntime;
+
 function add(a, b) {
     return a + b;
 }
@@ -19,36 +24,55 @@ function add(a, b) {
 function sub(a, b) {
     return a - b;
 }
-
 try {
-    const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime callback');
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntimeTyped(() => {
+        // this callback usually needs no statements, the API objects are only empty shells here and are populated later
         return {
             configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+                console.log('user code Module.onConfigLoaded');
+                // config is loaded and could be tweaked before the rest of the runtime startup sequence
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+            },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
-            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized'); },
+            onRuntimeInitialized: () => {
+                console.log('user code Module.onRuntimeInitialized');
+                // here we could use API passed into this callback
+                // Module.FS.chdir("/");
+            },
+            onDotnetReady: () => {
+                // This is called after all assets are loaded.
+                console.log('user code Module.onDotnetReady');
+            },
             postRun: () => { console.log('user code Module.postRun'); },
         }
     });
+    // at this point both emscripten and monoVM are fully initialized.
+    // we could use the APIs returned and resolved from createDotnetRuntime promise
+    // both exports are receiving the same object instances
     console.log('user code after createDotnetRuntime()');
-    IMPORTS.Sample = {
-        Test: {
-            add,
-            sub
+    setModuleImports("main.js", {
+        Sample: {
+            Test: {
+                add,
+                sub
+            }
         }
-    };
+    });
 
-    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Sample.dll");
+    const exports = await getAssemblyExports("Wasm.Browser.Sample.dll");
     const meaning = exports.Sample.Test.TestMeaning();
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
-        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
         console.debug(`ret: ${meaning}`);
     }
 
-    let exit_code = await MONO.mono_run_main("Wasm.Browser.Sample.dll", []);
+    let exit_code = await runMain("Wasm.Browser.Sample.dll", []);
     wasm_exit(exit_code);
-} catch (err) {
+}
+catch (err) {
     wasm_exit(2, err);
 }

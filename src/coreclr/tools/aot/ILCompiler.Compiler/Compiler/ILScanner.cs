@@ -372,10 +372,15 @@ namespace ILCompiler
             {
                 foreach (var node in markedNodes)
                 {
-                    if (node is ConstructedEETypeNode eetypeNode)
+                    TypeDesc type = node switch
                     {
-                        TypeDesc type = eetypeNode.Type;
+                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
+                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
+                        _ => null,
+                    };
 
+                    if (type != null)
+                    {
                         if (!type.IsInterface)
                         {
                             //
@@ -391,7 +396,8 @@ namespace ILCompiler
                             //    didn't scan the virtual methods on them.
                             //
 
-                            _constructedTypes.Add(type);
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                _constructedTypes.Add(type);
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
