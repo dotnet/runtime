@@ -59,14 +59,14 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# WebAssembly legs - library tests, Wasm.Build.Tests, and debugger tests
+# WebAssembly legs - run windows builds. Also, debugger tests which are currently
+# unstable
 #
 - template: /eng/pipelines/common/templates/wasm-library-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+    alwaysRun: true
     scenarios:
       - WasmTestOnBrowser
 
@@ -78,32 +78,29 @@ jobs:
     nameSuffix: _AOT
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+    alwaysRun: true
 
-- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_win
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-      - Browser_wasm_win
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+      #- Browser_wasm_win
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_firefox
-    browser: firefox
-    # ff tests are unstable currently
-    shouldContinueOnError: true
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_firefox
+    #browser: firefox
+    ## ff tests are unstable currently
+    #shouldContinueOnError: true
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
 #
 # Build the whole product using Mono
