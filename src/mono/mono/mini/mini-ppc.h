@@ -33,18 +33,18 @@
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 #ifdef TARGET_POWERPC64
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define MEMORY_SLOT_THUNK_SIZE 8
+#define GET_MEMORY_SLOT_THUNK_ADDRESS(c) \
+						((guint64)(((guint32*)(c)) [0] & 0x0000ffff) << 48) \
+						+ ((guint64)(((guint32*)(c + 4)) [0] & 0x0000ffff) << 32) \
+						+ ((guint64)(((guint32*)(c + 12)) [0] & 0x0000ffff) << 16) \
+						+ (guint64)(((guint32*)(c + 16)) [0] & 0x0000ffff)
+#else
 #define THUNK_SIZE ((2 + 5) * 4)
+#endif
 #else
 #define THUNK_SIZE ((2 + 2) * 4)
-#endif
-
-#ifdef TARGET_POWERPC64
-#define MEMORY_SLOT_THUNK_SIZE 8
-#define MEMORY_SLOT_THUNK 1
-#define CODE_SEQUENCE_THUNK 0
-
-#define GET_MEMORY_SLOT_ADDR_PART(v, o) ((v & 0x0000FFFF) << o)
-
 #endif
 
 void ppc_patch (guchar *code, const guchar *target);

@@ -669,15 +669,17 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
-	} else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
- 
-		guint8 *thunk = GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 32)) [0], 48)
-						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 28)) [0], 32)
-						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 20)) [0], 16)
-						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 16)) [0], 0);
-
+	}
+#if defined(TARGET_POWERPC64) && G_BYTE_ORDER == G_LITTLE_ENDIAN
+	else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((code - 32));
 		return thunk;
-	} else {
+	} else if (((guint32*)(code - 4)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((code - 4));
+		return thunk;
+	}
+#endif
+	else {
 		return NULL;
 	}
 }
