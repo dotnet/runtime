@@ -855,7 +855,8 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
  */
 export async function mono_wasm_load_config(configFilePath?: string): Promise<void> {
     if (configLoaded) {
-        return afterConfigLoaded.promise;
+        await afterConfigLoaded.promise;
+        return;
     }
     configLoaded = true;
     if (!configFilePath) {
