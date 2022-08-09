@@ -1636,6 +1636,8 @@ class SuperPMIReplayAsmDiffs:
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 modified_env = env.copy()
                                 modified_env['COMPlus_JitStdOutFile'] = item_path
+                                logging.debug("%sGenerating %s", print_prefix, item_path)
+                                logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
                                 proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
                                 await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
