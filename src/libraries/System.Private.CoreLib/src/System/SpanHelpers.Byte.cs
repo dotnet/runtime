@@ -774,126 +774,86 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static int IndexOfAny(ref byte searchSpace, byte value0, byte value1, int length)
         {
+            nuint offset = 0;
+
+            if (Vector256.IsHardwareAccelerated && length >= Vector256<byte>.Count)
+            {
+                nuint lastVectorOffset = GetByteVector256SpanLength(offset, length);
+                Vector256<byte> values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), search, match;
+
+                do
+                {
+                    search = Vector256.LoadUnsafe(ref searchSpace, offset);
+                    match = Vector256.Equals(values0, search) | Vector256.Equals(values1, search);
+                    if (match == Vector256<byte>.Zero)
+                    {
+                        offset += (nuint)Vector256<byte>.Count;
+                        continue;
+                    }
+
+                    return GetIndexFromMask(offset, match.ExtractMostSignificantBits());
+                } while (offset < lastVectorOffset);
+            }
             // Vector128 code path is executed for Vector256 when Vector128<byte>.Count <= length < Vector256<byte>.Count
-            if (!Vector.IsHardwareAccelerated || (length < Vector<byte>.Count && !(Vector128.IsHardwareAccelerated && length >= Vector128<byte>.Count)))
+            else if (Vector128.IsHardwareAccelerated && length >= Vector128<byte>.Count)
             {
-                // Use uint for comparisons to avoid unnecessary 8->32 extensions
-                uint uValue0 = value0, uValue1 = value1, lookUp;
-                // Use nuint for offset to avoid unnecessary 64->32->64 truncations
-                for (nuint offset = 0; offset < (uint)length; offset++)
-                {
-                    lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                    if (uValue0 == lookUp || uValue1 == lookUp)
-                    {
-                        return (int)offset;
-                    }
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<byte>.Count)
-            {
-                ref byte current = ref searchSpace;
-                ref byte oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<byte>.Count);
-                Vector256<byte> values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), search, compareResult;
+                nuint lastVectorOffset = GetByteVector128SpanLength(offset, length);
+                Vector128<byte> values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), search, match;
 
                 do
                 {
-                    search = Vector256.LoadUnsafe(ref current);
-                    compareResult = Vector256.Equals(values0, search) | Vector256.Equals(values1, search);
-                    if (compareResult == Vector256<byte>.Zero)
+                    search = Vector128.LoadUnsafe(ref searchSpace, offset);
+                    match = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
+                    if (match == Vector128<byte>.Zero)
                     {
-                        current = ref Unsafe.Add(ref current, Vector256<byte>.Count);
+                        offset += (nuint)Vector128<byte>.Count;
                         continue;
                     }
 
-                    return GetIndexFromMask(ref searchSpace, ref current, compareResult.ExtractMostSignificantBits());
-                } while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
-
-                // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector256<byte>.Count != 0)
-                {
-                    search = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    compareResult = Vector256.Equals(values0, search) | Vector256.Equals(values1, search);
-                    if (compareResult != Vector256<byte>.Zero)
-                    {
-                        return GetIndexFromMask(ref searchSpace, ref oneVectorAwayFromEnd, compareResult.ExtractMostSignificantBits());
-                    }
-                }
+                    return GetIndexFromMask(offset, match.ExtractMostSignificantBits());
+                } while (offset < lastVectorOffset);
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count)
             {
-                ref byte current = ref searchSpace;
-                ref byte oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<byte>.Count);
-                Vector128<byte> values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), search, equals;
+                nuint lastVectorOffset = GetByteVectorSpanLength(offset, length);
+                Vector<byte> values0 = new Vector<byte>(value0), values1 = new Vector<byte>(value1), search, match;
 
                 do
                 {
-                    search = Vector128.LoadUnsafe(ref current);
-                    equals = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
-                    if (equals == Vector128<byte>.Zero)
+                    search = LoadVector(ref searchSpace, offset);
+                    match = Vector.BitwiseOr(Vector.Equals(search, values0), Vector.Equals(search, values1));
+                    if (Vector<byte>.Zero.Equals(match))
                     {
-                        current = ref Unsafe.Add(ref current, Vector128<byte>.Count);
+                        offset += (nuint)Vector<byte>.Count;
                         continue;
                     }
 
-                    return GetIndexFromMask(ref searchSpace, ref current, equals.ExtractMostSignificantBits());
-                } while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
-
-                // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector128<byte>.Count != 0)
-                {
-                    search = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
-                    if (equals != Vector128<byte>.Zero)
-                    {
-                        return GetIndexFromMask(ref searchSpace, ref oneVectorAwayFromEnd, equals.ExtractMostSignificantBits());
-                    }
-                }
+                    return (int)offset + LocateFirstFoundByte(search);
+                } while (offset < lastVectorOffset);
             }
-            else if (Vector.IsHardwareAccelerated)
+
+            // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            uint uValue0 = value0, uValue1 = value1, lookUp;
+            // Use nuint for offset to avoid unnecessary 64->32->64 truncations
+            for (; offset < (uint)length; offset++)
             {
-                ref byte current = ref searchSpace;
-                ref byte oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector<byte>.Count);
-                Vector<byte> values0 = new Vector<byte>(value0), values1 = new Vector<byte>(value1), search, equals;
-
-                do
+                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
+                if (uValue0 == lookUp || uValue1 == lookUp)
                 {
-                    search = LoadVector(ref current);
-                    equals = Vector.BitwiseOr(Vector.Equals(search, values0), Vector.Equals(search, values1));
-                    if (Vector<byte>.Zero.Equals(search))
-                    {
-                        current = ref Unsafe.Add(ref current, Vector<byte>.Count);
-                        continue;
-                    }
-
-                    return GetIndexFromVector(ref searchSpace, ref current, equals);
-                } while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
-
-                // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector<byte>.Count != 0)
-                {
-                    search = LoadVector(ref oneVectorAwayFromEnd);
-                    equals = Vector.BitwiseOr(Vector.Equals(search, values0), Vector.Equals(search, values1));
-                    if (!Vector<byte>.Zero.Equals(search))
-                    {
-                        return GetIndexFromVector(ref searchSpace, ref oneVectorAwayFromEnd, equals);
-                    }
+                    return (int)offset;
                 }
             }
 
             return -1;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int GetIndexFromMask(ref byte searchSpace, ref byte current, uint matches)
+            static int GetIndexFromMask(nuint offset, uint matches)
             {
                 // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
                 // So the bit position in 'matches' corresponds to the element offset.
                 // Find bitflag offset of first difference and add to current offset
-                return (int)Unsafe.ByteOffset(ref searchSpace, ref current) + BitOperations.TrailingZeroCount(matches);
+                return (int)offset + BitOperations.TrailingZeroCount(matches);
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int GetIndexFromVector(ref byte searchSpace, ref byte current, Vector<byte> search)
-                => (int)Unsafe.ByteOffset(ref searchSpace, ref current) + LocateFirstFoundByte(search);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -2038,9 +1998,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint LoadNUInt(ref byte start, nuint offset)
             => Unsafe.ReadUnaligned<nuint>(ref Unsafe.AddByteOffset(ref start, offset));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<byte> LoadVector(ref byte start) => Unsafe.ReadUnaligned<Vector<byte>>(ref start);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector<byte> LoadVector(ref byte start, nuint offset)
