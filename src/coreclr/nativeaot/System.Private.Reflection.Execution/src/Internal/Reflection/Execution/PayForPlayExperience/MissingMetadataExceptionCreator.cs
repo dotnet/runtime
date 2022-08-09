@@ -46,7 +46,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             if (pertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
 
-            string usefulPertainant = pertainant.ToDisplayStringIfAvailable(null);
+            string usefulPertainant = pertainant.ToDisplayStringIfAvailable();
             if (usefulPertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
             else
@@ -56,7 +56,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
         public static string ComputeUsefulPertainantIfPossible(MemberInfo memberInfo)
         {
             {
-                StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable(null));
+                StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable());
                 friendlyName.Append('.');
                 friendlyName.Append(memberInfo.Name);
                 if (memberInfo is MethodBase method)
@@ -67,16 +67,16 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     if (method.IsConstructedGenericMethod)
                     {
                         first = true;
-                        friendlyName.Append('<');
+                        friendlyName.Append('[');
                         foreach (Type genericParameter in method.GetGenericArguments())
                         {
                             if (!first)
                                 friendlyName.Append(',');
 
                             first = false;
-                            friendlyName.Append(genericParameter.ToDisplayStringIfAvailable(null));
+                            friendlyName.Append(genericParameter.ToDisplayStringIfAvailable());
                         }
-                        friendlyName.Append('>');
+                        friendlyName.Append(']');
                     }
 
                     // write out actual parameters
@@ -88,22 +88,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                             friendlyName.Append(',');
 
                         first = false;
-                        if (parameter.IsOut && parameter.IsIn)
-                        {
-                            friendlyName.Append("ref ");
-                        }
-                        else if (parameter.IsOut)
-                        {
-                            friendlyName.Append("out ");
-                        }
-
-                        Type parameterType = parameter.ParameterType;
-                        if (parameterType.IsByRef)
-                        {
-                            parameterType = parameterType.GetElementType();
-                        }
-
-                        friendlyName.Append(parameter.ParameterType.ToDisplayStringIfAvailable(null));
+                        friendlyName.Append(parameter.ParameterType.ToDisplayStringIfAvailable());
                     }
                     friendlyName.Append(')');
                 }
@@ -112,7 +97,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
         }
 
-        internal static string ToDisplayStringIfAvailable(this Type type, List<int> genericParameterOffsets)
+        internal static string ToDisplayStringIfAvailable(this Type type)
         {
             RuntimeTypeHandle runtimeTypeHandle = ReflectionCoreExecution.ExecutionDomain.GetTypeHandleIfAvailable(type);
             bool hasRuntimeTypeHandle = !runtimeTypeHandle.Equals(default(RuntimeTypeHandle));
@@ -131,7 +116,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 }
                 else
                 {
-                    string s = type.GetElementType().ToDisplayStringIfAvailable(null);
+                    string s = type.GetElementType().ToDisplayStringIfAvailable();
                     if (s == null)
                         return null;
                     return s + (type.IsPointer ? "*" : "&");
@@ -167,7 +152,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else if (hasRuntimeTypeHandle)
             {
                 string s;
-                if (!DiagnosticMappingTables.TryGetDiagnosticStringForNamedType(runtimeTypeHandle, out s, genericParameterOffsets))
+                if (!DiagnosticMappingTables.TryGetDiagnosticStringForNamedType(runtimeTypeHandle, out s))
                     return null;
 
                 return s;
@@ -188,29 +173,13 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 {
                 }
 
-                // Insert commas so that CreateConstructedGenericTypeStringIfAvailable can fill the blanks.
-                // This is not strictly correct for types nested under generic types, but at this point we're doing
-                // best effort within reason.
-                if (type.IsGenericTypeDefinition)
-                {
-                    s += "[";
-                    int genericArgCount = type.GetGenericArguments().Length;
-                    while (genericArgCount-- > 0)
-                    {
-                        genericParameterOffsets.Add(s.Length);
-                        if (genericArgCount > 0)
-                            s += ",";
-                    }
-                    s += "]";
-                }
-
                 return s;
             }
         }
 
         private static string CreateArrayTypeStringIfAvailable(Type elementType, int rank)
         {
-            string s = elementType.ToDisplayStringIfAvailable(null);
+            string s = elementType.ToDisplayStringIfAvailable();
             if (s == null)
                 return null;
 
@@ -219,38 +188,22 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         private static string CreateConstructedGenericTypeStringIfAvailable(Type genericTypeDefinition, Type[] genericTypeArguments)
         {
-            List<int> genericParameterOffsets = new List<int>();
-            string genericTypeDefinitionString = genericTypeDefinition.ToDisplayStringIfAvailable(genericParameterOffsets);
+            string genericTypeDefinitionString = genericTypeDefinition.ToDisplayStringIfAvailable();
 
             if (genericTypeDefinitionString == null)
                 return null;
 
-            // If we found too many generic arguments to insert things, strip out the excess. This is wrong, but also, nothing is right.
-            if (genericTypeArguments.Length < genericParameterOffsets.Count)
-            {
-                genericParameterOffsets.RemoveRange(genericTypeArguments.Length, genericParameterOffsets.Count - genericTypeArguments.Length);
-            }
-            // Similarly, if we found too few, add them at the end.
-            while (genericTypeArguments.Length > genericParameterOffsets.Count)
-            {
-                genericTypeDefinitionString += ",";
-                genericParameterOffsets.Add(genericTypeDefinitionString.Length);
-            }
-
-            // Ensure the list is sorted in ascending order
-            genericParameterOffsets.Sort();
-
-            // The s string Now contains a string like "Namespace.MoreNamespace.TypeName.NestedGenericType<,,>.MoreNestedGenericType<>"
-            // where the generic parameters locations are recorded in genericParameterOffsets
-            // Walk backwards through the generic parameter locations, filling in as needed.
             StringBuilder genericTypeName = new StringBuilder(genericTypeDefinitionString);
-            for (int i = genericParameterOffsets.Count - 1; i >= 0; --i)
+            genericTypeName.Append('[');
+            for (int i = 0; i < genericTypeArguments.Length; i++)
             {
-                genericTypeName.Insert(genericParameterOffsets[i], genericTypeArguments[i].ToDisplayStringIfAvailable(null));
+                if (i > 0)
+                    genericTypeName.Append(", ");
+                genericTypeName.Append(genericTypeArguments[i].ToDisplayStringIfAvailable());
             }
+            genericTypeName.Append(']');
 
             return genericTypeName.ToString();
         }
-
     }
 }
