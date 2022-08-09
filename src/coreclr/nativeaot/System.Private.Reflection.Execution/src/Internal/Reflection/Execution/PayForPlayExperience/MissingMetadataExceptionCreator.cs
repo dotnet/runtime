@@ -15,42 +15,42 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 {
     public static class MissingMetadataExceptionCreator
     {
-        internal static MissingMetadataException Create(Type? pertainant)
+        internal static NotSupportedException Create(Type? pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
 
-        private static MissingMetadataException CreateFromString(string? pertainant)
+        private static NotSupportedException CreateFromString(string? pertainant)
         {
             if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
             else
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant));
         }
 
-        internal static MissingMetadataException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
+        internal static NotSupportedException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
         {
             Debug.Assert(rank == 1 || isMultiDim);
             string s = CreateArrayTypeStringIfAvailable(elementType, rank);
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
+        internal static NotSupportedException CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
         {
             string s = CreateConstructedGenericTypeStringIfAvailable(genericTypeDefinition, genericTypeArguments);
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, Type? pertainant)
+        internal static NotSupportedException CreateFromMetadataObject(string resourceId, Type? pertainant)
         {
             if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
 
             string usefulPertainant = pertainant.ToDisplayStringIfAvailable();
             if (usefulPertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
             else
-                return new MissingMetadataException(SR.Format(resourceId, usefulPertainant));
+                return new NotSupportedException(SR.Format(resourceId, usefulPertainant));
         }
 
         public static string ComputeUsefulPertainantIfPossible(MemberInfo memberInfo)
@@ -169,7 +169,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 {
                     s = type.FullName;
                 }
-                catch (MissingMetadataException)
+                catch (NotSupportedException)
                 {
                 }
 

@@ -48,7 +48,7 @@ namespace System
         }
 
         /// <summary>
-        /// Return Type.Name if sufficient metadata is available to do so - otherwise return null and set "rootCauseForFailure" to an object to pass to MissingMetadataException.
+        /// Return Type.Name if sufficient metadata is available to do so - otherwise return null and set "rootCauseForFailure" to an object to pass to missing metadata exception.
         /// </summary>
         internal virtual string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure) => Name;
 
@@ -79,7 +79,7 @@ namespace System
                 {
                     return FullName;
                 }
-                catch (MissingMetadataException)
+                catch (NotSupportedException)
                 {
                     return DefaultTypeNameWhenMissingMetadata;
                 }
@@ -96,7 +96,7 @@ namespace System
         {
             try
             {
-                // Though we wrap this in a try-catch as a failsafe, this code must still strive to avoid triggering MissingMetadata exceptions
+                // Though we wrap this in a try-catch as a failsafe, this code must still strive to avoid triggering missing metadata exceptions
                 // (non-error exceptions are very annoying when debugging.)
 
                 // Legacy: this doesn't make sense, why use only Name for nested types but otherwise

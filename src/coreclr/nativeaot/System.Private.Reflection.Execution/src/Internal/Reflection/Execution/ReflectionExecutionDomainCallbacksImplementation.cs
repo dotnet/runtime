@@ -80,7 +80,7 @@ namespace Internal.Reflection.Execution
         }
 
         //=======================================================================================
-        // MissingMetadataException support.
+        // Missing metadata exception support.
         //=======================================================================================
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {

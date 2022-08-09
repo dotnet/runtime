@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // that can never be reflection-enabled due to the framework Reflection block.
     //
     // These types differ from NoMetadata TypeInfos in that properties that inquire about members,
-    // custom attributes or interfaces return an empty list rather than throwing a MissingMetadataException.
+    // custom attributes or interfaces return an empty list rather than throwing a missing metadata exception.
     //
     // Since these represent "internal framework types", the app cannot prove we are lying.
     //

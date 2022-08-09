@@ -42,7 +42,7 @@ namespace Internal.Reflection.Execution
             }
 
             string pertainantString = MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainant);
-            return new MissingMetadataException(SR.Format(resourceName, pertainantString ?? "?"));
+            return new NotSupportedException(SR.Format(resourceName, pertainantString ?? "?"));
         }
 
         public sealed override Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)

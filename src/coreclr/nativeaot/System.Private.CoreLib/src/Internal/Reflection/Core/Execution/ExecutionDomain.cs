@@ -285,7 +285,7 @@ namespace Internal.Reflection.Core.Execution
         }
 
         //=======================================================================================
-        // MissingMetadataExceptions.
+        // Missing metadata exceptions.
         //=======================================================================================
         public Exception CreateMissingMetadataException(Type? pertainant)
         {

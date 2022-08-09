@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         /// <summary>
-        /// Returns the # of candidates for a non-DeclaredOnly search. Caution: Can throw MissingMetadataException. Use DeclaredOnlyCount if you don't want to search base classes.
+        /// Returns the # of candidates for a non-DeclaredOnly search. Caution: Can throw missing metadata exception. Use DeclaredOnlyCount if you don't want to search base classes.
         /// </summary>
         public int TotalCount
         {
@@ -154,9 +154,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
                 if (type != null && !type.CanBrowseWithoutMissingMetadataExceptions)
                 {
-                    // If we got here, one of the base classes is missing metadata. We don't want to throw a MissingMetadataException now because we may be
+                    // If we got here, one of the base classes is missing metadata. We don't want to throw a missing metadata exception now because we may be
                     // building a cached result for a caller who passed BindingFlags.DeclaredOnly. So we'll mark the results in a way that
-                    // it will throw a MissingMetadataException if a caller attempts to iterate past the declared-only subset.
+                    // it will throw a missing metadata exception if a caller attempts to iterate past the declared-only subset.
                     queriedMembers._typeThatBlockedBrowsing = type;
                     queriedMembers._totalCount = queriedMembers._declaredOnlyCount;
                     break;

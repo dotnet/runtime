@@ -446,7 +446,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             // We intentionally don't validate the number of arguments or their suitability to the generic type's constraints.
-            // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
+            // In a pay-for-play world, this can cause needless missing metadata exceptions. There is no harm in creating
             // the Type object for an inconsistent generic type - no MethodTable will ever match it so any attempt to "invoke" it
             // will throw an exception.
             bool foundSignatureType = false;
@@ -649,7 +649,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
+        // Returns true if it's possible to ask for a list of members and the base type without triggering a missing metadata exception.
         //
         internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
 
