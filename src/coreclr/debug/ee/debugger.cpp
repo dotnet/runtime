@@ -16657,14 +16657,8 @@ void Debugger::StartCanaryThread()
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(context != NULL);
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
 
     if (!m_fOutOfProcessSetContextEnabled)
         return;
@@ -16715,7 +16709,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize);
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
     }
     EX_CATCH
     {

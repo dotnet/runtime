@@ -11187,6 +11187,9 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
+    TADDR expectedRip = (TADDR)context.R8;
+    TADDR expectedRsp = (TADDR)context.R9;
+
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
         _ASSERTE(!"Corrupted HandleSetThreadContextNeeded message received");
@@ -11201,12 +11204,29 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
     if (FAILED(hr))
     {
+        _ASSERTE(!"ReadVirtual failed");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual (error: 0x%X).\n", hr));
+
         ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
     }
 
     if (cbRead != contextSize)
     {
+        _ASSERTE(!"ReadVirtual context size mismatch");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
+
         ThrowHR(ERROR_PARTIAL_COPY);
+    }
+
+    if (pContext->Rip != expectedRip || pContext->Rsp != expectedRsp)
+    {
+        _ASSERTE(!"ReadVirtual unexpectedly returned mismatched Rip and Rsp registers");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual unexpectedly returned mismatched Rip and Rsp registers\n"));
+
+        ThrowHR(E_UNEXPECTED);
     }
 
     // The initialize call should fail but return contextSize
