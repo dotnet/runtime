@@ -360,7 +360,6 @@ jobs:
   parameters:
     platforms:
       - Browser_wasm
-    extraBuildArgs: /p:BuildAndRunWasiSample=true
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
       - normal

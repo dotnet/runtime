@@ -388,19 +388,4 @@
 
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
-
-  <Target Name="_BuildAndRunWasiSample" Condition="'$(OS)' != 'Windows_NT' and '$(BuildAndRunWasiSample)' == 'true'" AfterTargets="BuildWasmRuntimes">
-    <Message Text="
-      *** Building WASI ***
-      "
-      Importance="High" />
-    <Exec Command="make -C $(MonoProjectRoot)/wasi provision-deps all" StandardErrorImportance="High" StandardOutputImportance="High" />
-
-    <Message Text="
-      *** Running WASI sample ***
-      "
-      Importance="High" />
-    <Exec Command="make -C $(MonoProjectRoot)/wasi/sample/console run" StandardErrorImportance="High" StandardOutputImportance="High" />
-  </Target>
-
 </Project>
