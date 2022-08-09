@@ -205,7 +205,7 @@ namespace DebuggerTests
                 case "Mono.runtimeReady":
                 {
                     _gotRuntimeReady = true;
-                    if (_gotAppReady)
+                    if (_gotAppReady || !DebuggerTestBase.RunningOnChrome)
                     {
                         // got both the events
                         NotifyOf(APP_READY, args);

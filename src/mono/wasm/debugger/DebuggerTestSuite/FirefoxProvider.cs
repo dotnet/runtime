@@ -54,7 +54,7 @@ internal class FirefoxProvider : WasmHostProvider
                                     {
                                         // FIXME: instead of this, we can wait for the port to open
                                         //for running debugger tests on firefox
-                                        if (str?.Contains("console.debug: \"#debugger-app-ready#\"") == true)
+                                        if (str?.Contains("console.log: \"ready\"") == true)
                                             return $"http://localhost:{remoteDebuggingPort}";
 
                                         return null;
