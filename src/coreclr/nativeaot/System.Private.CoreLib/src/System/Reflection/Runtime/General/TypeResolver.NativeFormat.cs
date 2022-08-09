@@ -188,7 +188,7 @@ namespace System.Reflection.Runtime.General
                 TypeInfo? resolvedTypeInfo = outerTypeInfo.GetDeclaredNestedType(name);
                 if (resolvedTypeInfo == null)
                 {
-                    exception = ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(outerTypeInfo, name);
+                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
                 return resolvedTypeInfo.CastToRuntimeTypeInfo();

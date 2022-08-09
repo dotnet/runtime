@@ -31,11 +31,6 @@ namespace Internal.Reflection.Execution
             return MissingMetadataExceptionCreator.Create(pertainant);
         }
 
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant, nestedTypeName);
-        }
-
         public sealed override Exception CreateNonInvokabilityException(MemberInfo pertainant)
         {
             string resourceName = SR.Object_NotInvokable;

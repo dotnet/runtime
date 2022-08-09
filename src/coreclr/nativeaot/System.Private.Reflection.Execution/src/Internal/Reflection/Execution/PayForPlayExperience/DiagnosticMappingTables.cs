@@ -156,17 +156,5 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
             return ConvertBackTickNameToNameWithReducerInputFormat(s, genericParameterOffsets);
         }
-
-        public static bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
-        {
-            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
-            return true;
-        }
-
-        public static bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
-        {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
-            return true;
-        }
     }
 }

@@ -25,21 +25,6 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
 
-        internal static MissingMetadataException Create(TypeInfo? pertainant, string nestedTypeName)
-        {
-            if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
-
-            string usefulPertainant = ComputeUsefulPertainantIfPossible(pertainant);
-            if (usefulPertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
-            else
-            {
-                usefulPertainant = usefulPertainant + "." + DiagnosticMappingTables.ConvertBackTickNameToNameWithReducerInputFormat(nestedTypeName, null);
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_EdbNeeded, usefulPertainant));
-            }
-        }
-
         internal static MissingMetadataException Create(Type? pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
