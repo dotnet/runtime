@@ -39,9 +39,9 @@ namespace DebuggerTests
         public async Task CreateJSBreakpoint()
         {
             // Test that js breakpoints get set correctly
-            // 13 24
-            // 14 24
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
+            // 13 4
+            // 14 4
+            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 4);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -50,9 +50,9 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(24, (int)loc["columnNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 24);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 4);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -61,14 +61,14 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(14, (int)loc2["lineNumber"]);
-            Assert.Equal(24, (int)loc2["columnNumber"]);
+            Assert.Equal(4, (int)loc2["columnNumber"]);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateJS0Breakpoint()
         {
-            // 13 24
-            // 14 24
+            // 13 4
+            // 14 4
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -78,7 +78,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(24, (int)loc["columnNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
             var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 0);
 
@@ -89,7 +89,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(14, (int)loc2["lineNumber"]);
-            Assert.Equal(24, (int)loc2["columnNumber"]);
+            Assert.Equal(4, (int)loc2["columnNumber"]);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
