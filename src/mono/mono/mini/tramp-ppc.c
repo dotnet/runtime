@@ -178,7 +178,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 	}
 
 	/* Sanity check */
-	//g_assert (mono_ppc_is_direct_call_sequence (code));
+	g_assert (mono_ppc_is_direct_call_sequence (code));
 
 	ppc_patch ((guint8*)code, addr);
 }

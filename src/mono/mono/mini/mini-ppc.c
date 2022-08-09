@@ -311,7 +311,12 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 		if (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31) /* mr/nop */
 			return is_load_sequence (&code [-8]);
 		else
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+			/* the memory patch thunk sequence for ppc64le is: lis/ori/sldi/oris/ori/ld/mtlr/blrl */
+			return is_load_sequence (&code [-7]);
+#else
 			return is_load_sequence (&code [-6]);
+#endif
 	}
 	return FALSE;
 #else
@@ -2693,18 +2698,18 @@ static void
 emit_thunk (guint8 *code, gconstpointer target)
 {
 #if defined(TARGET_POWERPC64) && G_BYTE_ORDER == G_LITTLE_ENDIAN
-		*(guint64*)code = (guint64)target;
-		code += sizeof (guint64);
+	*(guint64*)code = (guint64)target;
+	code += sizeof (guint64);
 #else
-		guint8 *p = code;
+	guint8 *p = code;
 
-		/* 2 bytes on 32bit, 5 bytes on 64bit */
-		ppc_load_sequence (code, ppc_r0, target);
+	/* 2 bytes on 32bit, 5 bytes on 64bit */
+	ppc_load_sequence (code, ppc_r0, target);
 
-		ppc_mtctr (code, ppc_r0);
-		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+	ppc_mtctr (code, ppc_r0);
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
-		mono_arch_flush_icache (p, code - p);
+	mono_arch_flush_icache (p, code - p);
 #endif
 }
 
