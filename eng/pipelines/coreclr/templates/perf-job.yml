@@ -25,6 +25,7 @@ parameters:
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
+  perfForkToUse: {} # url, branch
 
 ### Perf job
 
@@ -114,11 +115,19 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - name: ${{ variable.name }}
         value: ${{ variable.value }}
-    - name: extraSetupParametersSuffix
+
+    - name: _compareArg
       ${{ if eq(parameters.compare, 'true') }}:
         value: '--compare'
+    - name: _onlySanityCheckArg
       ${{ if eq(parameters.onlySanityCheck, 'true') }}:
         value: '--only-sanity'
+    - name: _perfForkArg
+      ${{ if ne(parameters.perfForkToUse.url, '') }}:
+        value: --perffork ${{ parameters.perfForkToUse.url }} --perfforkbranch ${{ coalesce(parameters.perfForkToUse.branch, 'main') }}
+
+    - name: extraSetupParametersSuffix
+      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
 
     frameworks:
       - ${{ parameters.framework }}
