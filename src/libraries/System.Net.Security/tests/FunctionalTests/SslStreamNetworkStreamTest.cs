@@ -903,6 +903,31 @@ namespace System.Net.Security.Tests
                 retries--;
             }
 
+            if (retries == 0)
+            {
+                using (var chain = new X509Chain())
+                {
+                    chain.Build(clientCertificate);
+                    foreach (X509ChainElement element in chain.ChainElements)
+                    {
+                        _output.WriteLine($"{element.Certificate.Subject} length {element.ChainElementStatus.Length}");
+                        foreach (X509ChainStatus status in element.ChainElementStatus)
+                        {
+                            _output.WriteLine($"  Status:  {status.Status}: {status.StatusInformation}");
+                        }
+                    }
+                }
+
+                using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
+                {
+                    foreach (X509Certificate2 cert in store.Certificates)
+                    {
+                        _output.WriteLine(cert.Subject);
+
+                    }
+                }
+            }
+
             Assert.NotEqual(0, retries);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
