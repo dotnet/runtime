@@ -468,7 +468,7 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 {
     assert(callback != NULL);
     assert(g_terminalInvalidationCallback == NULL);
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
