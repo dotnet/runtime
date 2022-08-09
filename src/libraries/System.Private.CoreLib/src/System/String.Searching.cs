@@ -60,11 +60,28 @@ namespace System
                     return IndexOf(value);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                    return IndexOfCharOrdinalIgnoreCase(value);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
+        }
+
+        private int IndexOfCharOrdinalIgnoreCase(char value)
+        {
+            if (!char.IsAscii(value))
+            {
+                return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+            }
+
+            if (char.IsAsciiLetter(value))
+            {
+                char valueUc = (char)(value | 0x20);
+                char valueLc = (char)(value & ~0x20);
+                return SpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length);
+            }
+
+            return SpanHelpers.IndexOf(ref _firstChar, value, Length);
         }
 
         public unsafe int IndexOf(char value, int startIndex, int count)

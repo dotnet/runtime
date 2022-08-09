@@ -221,6 +221,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     EmitPointerTypeSignature((PointerType)typeDesc, context);
                     return;
 
+                case TypeFlags.FunctionPointer:
+                    EmitFunctionPointerTypeSignature((FunctionPointerType)typeDesc, context);
+                    return;
+
                 case TypeFlags.ByRef:
                     EmitByRefTypeSignature((ByRefType)typeDesc, context);
                     break;
@@ -364,6 +368,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             EmitElementType(CorElementType.ELEMENT_TYPE_PTR);
             EmitTypeSignature(type.ParameterType, context);
+        }
+
+        private void EmitFunctionPointerTypeSignature(FunctionPointerType type, SignatureContext context)
+        {
+            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(type.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+            SignatureAttributes callingConventionAttributes = ((type.Signature.Flags & MethodSignatureFlags.Static) != 0 ? SignatureAttributes.None : SignatureAttributes.Instance);
+
+            EmitElementType(CorElementType.ELEMENT_TYPE_FNPTR);
+            EmitUInt((uint)((byte)callingConvention | (byte)callingConventionAttributes));
+            EmitUInt((uint)type.Signature.Length);
+
+            EmitTypeSignature(type.Signature.ReturnType, context);
+            for (int argIndex = 0; argIndex < type.Signature.Length; argIndex++)
+            {
+                EmitTypeSignature(type.Signature[argIndex], context);
+            }
         }
 
         private void EmitByRefTypeSignature(ByRefType type, SignatureContext context)

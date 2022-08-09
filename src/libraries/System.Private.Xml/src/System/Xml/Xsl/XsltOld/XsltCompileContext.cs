@@ -715,7 +715,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (xt)
                 {
                     case XPathResultType.String:
-                        // Unfortunetely XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
+                        // Unfortunately XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
                         // Fortunetely we have typeCode hare so let's discriminate by typeCode
                         if (type == typeof(string))
                         {

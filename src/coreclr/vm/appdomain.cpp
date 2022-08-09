@@ -1116,7 +1116,7 @@ void SystemDomain::Init()
 
     // The base domain is initialized in SystemDomain::Attach()
     // to allow stub caches to use the memory pool. Do not
-    // initialze it here!
+    // initialize it here!
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
         g_fAllowNativeImages = false;

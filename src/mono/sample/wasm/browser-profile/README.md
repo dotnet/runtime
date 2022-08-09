@@ -14,8 +14,8 @@
 ```
 await createDotnetRuntime(() => ({
     onConfigLoaded: () => {
-        if (config.enable_profiler) {
-            config.aot_profiler_options = {
+        if (config.enableProfiler) {
+            config.aotProfilerOptions = {
                 write_at: "<Namespace.Class::StopProfile>",
                 send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
             }
@@ -28,14 +28,14 @@ await createDotnetRuntime(() => ({
 
 `BINDING.bind_static_method("<[ProjectName] Namespace.Class::StopProfile">)();`
 
-When the `write_at` method is called, the `send_to` method `DumpAotProfileData` stores the profile data into `INTERNAL.aot_profile_data`
+When the `write_at` method is called, the `send_to` method `DumpAotProfileData` stores the profile data into `INTERNAL.aotProfileData`
 
-4. Download `INTERNAL.aot_profile_data` in JS, using something similar to:
+4. Download `INTERNAL.aotProfileData` in JS, using something similar to:
 
 ```
 function saveProfile() {
   var a = document.createElement('a');
-  var blob = new Blob([INTERNAL.aot_profile_data]);
+  var blob = new Blob([INTERNAL.aotProfileData]);
   a.href = URL.createObjectURL(blob);
   a.download = "data.aotprofile";
   // Append anchor to body.
