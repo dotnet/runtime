@@ -19988,6 +19988,8 @@ BOOL gc_heap::should_proceed_with_gc()
             // The no_gc mode was already in progress yet we triggered another GC,
             // this effectively exits the no_gc mode.
             restore_data_for_no_gc();
+            
+            memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
         }
         else
             return should_proceed_for_no_gc();
