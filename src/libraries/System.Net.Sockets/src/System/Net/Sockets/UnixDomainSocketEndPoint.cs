@@ -44,11 +44,6 @@ namespace System.Net.Sockets
                 bufferLength++;
             }
 
-            if (!Socket.OSSupportsUnixDomainSockets)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             if (path.Length == 0 || bufferLength > s_nativePathLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -60,6 +55,11 @@ namespace System.Net.Sockets
             _encodedPath = new byte[bufferLength];
             int bytesEncoded = Encoding.UTF8.GetBytes(path, 0, path.Length, _encodedPath, 0);
             Debug.Assert(bufferLength - (isAbstract ? 0 : 1) == bytesEncoded);
+
+            if (!Socket.OSSupportsUnixDomainSockets)
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         internal static int MaxAddressSize => s_nativeAddressSize;
