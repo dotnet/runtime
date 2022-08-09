@@ -476,7 +476,7 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     // Fill out the struct.
 #ifdef FEATURE_INTEROP_DEBUGGING
     pDebuggerRuntimeOffsets->m_genericHijackFuncAddr = Debugger::GenericHijackFunc;
-    // Set flares - these only exist for interop debugging.
+    // the following 6 flares only exist for interop debugging.
     pDebuggerRuntimeOffsets->m_signalHijackStartedBPAddr = (void*) SignalHijackStartedFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffStartBPAddr = (void*) ExceptionForRuntimeHandoffStartFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffCompleteBPAddr = (void*) ExceptionForRuntimeHandoffCompleteFlare;

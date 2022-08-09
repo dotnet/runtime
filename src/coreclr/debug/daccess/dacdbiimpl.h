@@ -365,8 +365,6 @@ public:
 
     HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
-    HRESULT ReadData(TADDR pRemoteBuf, DWORD size, BYTE *pLocalBuf);
-
     bool MetadataUpdatesApplied();
 
     // retrieves the list of COM interfaces implemented by vmObject, as it is known at

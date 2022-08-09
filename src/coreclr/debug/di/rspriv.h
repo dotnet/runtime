@@ -4119,14 +4119,6 @@ private:
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
-
-private:
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    void GetLiveContext(DWORD dwThreadId, PCONTEXT pContext);
-    void SetLiveContext(DWORD dwThreadId, PCONTEXT pContext);
-#endif
-
 };
 
 // Some IMDArocess APIs are supported as interop-only.
