@@ -3,11 +3,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <!-- Pick a RuntimeFrameworkVersion at least as low as the DefaultRuntimeFrameworkVersion
-         of the SDK used by dotnet/runtime and dotnet/sdk, to ensure that the runtimeconfig.json
-         specifies a version available in those repos. This can be removed once they catch up to
-         the SDK version in our global.json. -->
-    <RuntimeFrameworkVersion>7.0.0-preview.5.22301.12</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <PropertyGroup>
