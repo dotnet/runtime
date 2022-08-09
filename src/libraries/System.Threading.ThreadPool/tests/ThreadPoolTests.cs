@@ -628,7 +628,9 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.QueueUserWorkItem(blockingWorkItem);
             }
 
-            allBlockingWorkItemsStarted.CheckedWait();
+            if (processorCount > 1)
+                allBlockingWorkItemsStarted.CheckedWait();
+
             for (int i = 0; i < processorCount; ++i)
             {
                 ThreadPool.QueueUserWorkItem(testWorkItem);
