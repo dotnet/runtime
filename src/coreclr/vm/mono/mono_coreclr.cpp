@@ -745,9 +745,8 @@ extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_name(MonoClass *klass
         for (int i=0; i<rank-1; i++)
             arrayName += ',';
         arrayName += ']';
-        StackScratchBuffer buffer;
         static char buf[512] = {0};
-        strcpy(buf, arrayName.GetUTF8(buffer));
+        strcpy(buf, arrayName.GetUTF8());
         return buf;
     }
 
@@ -862,8 +861,7 @@ extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_property_from_name(
     // properties, but is sufficient for our needs for now.
     SString propertyName(SString::Utf8, "get_");
     propertyName += SString(SString::Utf8, name);
-    StackScratchBuffer buffer;
-    return (MonoProperty*)mono_class_get_method_from_name(klass, propertyName.GetUTF8(buffer), 0);
+    return (MonoProperty*)mono_class_get_method_from_name(klass, propertyName.GetUTF8(), 0);
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_class_get_rank(MonoClass *klass)
@@ -1161,8 +1159,7 @@ MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustom
     {
         SString sstr;
         GET_EXCEPTION()->GetMessage(sstr);
-        StackScratchBuffer buffer;
-        printf("Exc: %s %d %x\n", sstr.GetUTF8(buffer), GET_EXCEPTION()->IsType(CLRException::GetType()), GET_EXCEPTION()->GetInstanceType());
+        printf("Exc: %s %d %x\n", sstr.GetUTF8(), GET_EXCEPTION()->IsType(CLRException::GetType()), GET_EXCEPTION()->GetInstanceType());
     }
     EX_END_CATCH(SwallowAllExceptions)
     g_isManaged--;
@@ -2225,15 +2222,11 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
             "NATIVE_DLL_SEARCH_DIRECTORIES"
         };
 
-        StackScratchBuffer buf1;
-        StackScratchBuffer buf2;
-        StackScratchBuffer buf3;
-        StackScratchBuffer buf4;
         LPCSTR property_values2[] = {
-                  tpa.GetUTF8(buf1),
-                  appPaths.GetUTF8(buf2),
-                  appNiPaths.GetUTF8(buf3),
-                  nativeDllSearchDirs.GetUTF8(buf4)
+                  tpa.GetUTF8(),
+                  appPaths.GetUTF8(),
+                  appNiPaths.GetUTF8(),
+                  nativeDllSearchDirs.GetUTF8()
         };
 
         hr = coreclr_initialize (entrypointExecutable, file, 4, property_keys2, property_values2, &g_CLRRuntimeHost, &g_RootDomainId);
@@ -2366,8 +2359,7 @@ extern "C" EXPORT_API char* EXPORT_CC mono_method_full_name(MonoMethod* method, 
 
         fullName += ')';
     }
-    StackScratchBuffer buffer;
-    return _strdup(fullName.GetUTF8(buffer));
+    return _strdup(fullName.GetUTF8());
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_method_get_class(MonoMethod *method)
@@ -2737,8 +2729,7 @@ extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_obje
     {
         SString sstr;
         GET_EXCEPTION()->GetMessage(sstr);
-        StackScratchBuffer buffer;
-        printf("Exception calling %s: %s\n", mono_method_get_name(method), sstr.GetUTF8(buffer));
+        printf("Exception calling %s: %s\n", mono_method_get_name(method), sstr.GetUTF8());
         fflush(stdout);
 
         if (exc && GET_EXCEPTION()->IsType(CLRException::GetType()))
@@ -2989,8 +2980,7 @@ extern "C" EXPORT_API char* EXPORT_CC mono_string_to_utf8(MonoString *string_obj
 {
     SString sstr;
     ((StringObject*)string_obj)->GetSString(sstr);
-    StackScratchBuffer buffer;
-    return _strdup(sstr.GetUTF8(buffer));
+    return _strdup(sstr.GetUTF8());
 }
 
 extern "C" EXPORT_API char* EXPORT_CC mono_stringify_assembly_name(MonoAssemblyName *aname)
@@ -3120,8 +3110,7 @@ extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     SString ssBuf;
     handle.GetName(ssBuf);
-    StackScratchBuffer buffer;
-    return _strdup(ssBuf.GetUTF8(buffer));
+    return _strdup(ssBuf.GetUTF8());
 }
 
 extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, MonoTypeNameFormat format)
@@ -3137,8 +3126,7 @@ extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, Mo
     SString ssBuf;
     TypeString::AppendType(ssBuf, handle, TypeString::FormatNamespace | TypeString::FormatAssembly | TypeString::FormatFullInst);
 
-    StackScratchBuffer buffer;
-    return _strdup(ssBuf.GetUTF8(buffer));
+    return _strdup(ssBuf.GetUTF8());
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_type_get_num_generic_args(MonoType *type)
