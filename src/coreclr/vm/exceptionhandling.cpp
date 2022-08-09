@@ -1837,11 +1837,9 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                 // 1) ICF address is higher than the current frame's SP (which we get from DispatcherContext), AND
                 // 2) ICF address is below callerSP.
                 // 3) ICF is active.
-                //      - IL stubs link the frame in for the whole stub, so if an exception is thrown during marshalling,
-                //        the ICF will be on the frame chain and inactive.
+                //      - 
                 if ((GetSP(pDispatcherContext->ContextRecord) < (TADDR)pICF)
-                    && ((UINT_PTR)pICF < uCallerSP)
-                    && InlinedCallFrame::FrameHasActiveCall(pICF))
+                    && ((UINT_PTR)pICF < uCallerSP))
                 {
                     pICFForUnwindTarget = pFrame;
 
@@ -1856,7 +1854,9 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 #ifdef USE_PER_FRAME_PINVOKE_INIT
                     // If we're setting up the frame for each P/Invoke for the given platform,
                     // then we do this for all P/Invokes except ones in IL stubs.
-                    if (!ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+                    // IL stubs link the frame in for the whole stub, so if an exception is thrown during marshalling,
+                    // the ICF will be on the frame chain and inactive.
+                    if (returnAddress != NULL && !ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
 #else
                     // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
                     // then ReadyToRun code is the only code using the per-P/Invoke logic.
