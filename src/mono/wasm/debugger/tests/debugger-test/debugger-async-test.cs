@@ -94,6 +94,28 @@ namespace DebuggerTests.AsyncTests
             Console.WriteLine ($"done with this method");
         }
 
+        public static async Task RunAsyncWithLineHidden()
+        {
+            await NestedContinueWithStaticAsyncWithLineHidden("foobar");
+        }
+        public static async Task NestedContinueWithStaticAsyncWithLineHidden(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+#line hidden                
+                var code = t.Status;
+#line default                
+                var ncs_dt0 = new DateTime(3412, 4, 6, 8, 0, 2);
+                Console.WriteLine ($"First continueWith: {code}, {ncs_dt0}"); // t, code, str, dt0
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine ($"t2: {t2.Status}, str: {str}, {ncs_dt1}, {ncs_dt0}");//t2, dt1, str, dt0
+                });
+            });
+            Console.WriteLine ($"done with this method");
+        }        
+
     }
 
 }

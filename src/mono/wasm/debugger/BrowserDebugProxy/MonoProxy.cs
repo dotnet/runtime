@@ -1560,7 +1560,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             // and will clear the bp if it isn't close enoug
             var bpLocations = store.FindBreakpointLocations(req, ifNoneFoundThenFindNext);
             IEnumerable<IGrouping<SourceId, SourceLocation>> locations = bpLocations.Distinct(comparer)
-                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
                 .OrderBy(l => l.Column)
                 .GroupBy(l => l.Id);
             if (ifNoneFoundThenFindNext && !locations.Any())

@@ -1598,7 +1598,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request, bool ifNoneFoundThenFindNext = false)
         {
-            SourceLocation nextSeqPoint = null;
             List<SourceLocation> locations = new List<SourceLocation>();
             request.TryResolve(this);
 
@@ -1608,36 +1607,54 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (sourceFile == null)
                 yield break;
 
-            foreach (MethodInfo method in sourceFile.Methods)
+            var methodList = FindMethodList();
+
+            if (methodList.Count == 0)
+                yield break;
+            foreach (var method in methodList)
             {
-                if (method.DebugInformation.SequencePointsBlob.IsNil)
-                    continue;
-                if (!(method.StartLocation.Line <= request.Line && request.Line <= method.EndLocation.Line))
-                    continue;
                 foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
                 {
-                    if (sequencePoint.IsHidden)
-                        continue;
-                    if (Match(sequencePoint, request.Line, request.Column))
+                    if (!sequencePoint.IsHidden && Match(sequencePoint, request.Line, request.Column)  && (sequencePoint.StartLine - 1 == request.Line && (request.Column == 0 || sequencePoint.StartColumn - 1 == request.Column)))
                     {
+                        // Found an exact match
                         locations.Add(new SourceLocation(method, sequencePoint));
-                        break;
-                    }
-                    else if (ifNoneFoundThenFindNext && nextSeqPoint == null && sequencePoint.StartLine > request.Line)
-                    {
-                        nextSeqPoint = new SourceLocation(method, sequencePoint);
-                        break;
+                        continue;
                     }
                 }
             }
-            if (locations.Any())
+            if (locations.Count == 0 && ifNoneFoundThenFindNext)
             {
-                foreach (var loc in locations)
-                    yield return loc;
+                foreach (var method in methodList)
+                {
+                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                    {
+                        // Found the line, but the seqpoint is not usable, so find the next available
+                        if (!sequencePoint.IsHidden && sequencePoint.StartLine > request.Line)
+                        {
+                            if (locations.Count > 0 && locations[0].Line > sequencePoint.StartLine)
+                                locations.RemoveAt(0);
+                            locations.Add(new SourceLocation(method, sequencePoint));
+                            break;
+                        }
+                    }
+                }
             }
-            else if (ifNoneFoundThenFindNext && nextSeqPoint != null)
+            foreach (var loc in locations)
+                yield return loc;
+
+            List<MethodInfo> FindMethodList()
             {
-                yield return nextSeqPoint;
+                List<MethodInfo> ret = new ();
+                foreach (MethodInfo method in sourceFile.Methods)
+                {
+                    if (method.DebugInformation.SequencePointsBlob.IsNil)
+                        continue;
+                    if (!(method.StartLocation.Line <= request.Line && request.Line <= method.EndLocation.Line))
+                        continue;
+                    ret.Add(method);
+                }
+                return ret;
             }
         }
 
