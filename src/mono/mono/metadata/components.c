@@ -43,8 +43,8 @@ typedef struct _MonoComponentEntry {
 #define DEBUGGER_LIBRARY_NAME "debugger"
 #define DEBUGGER_COMPONENT_NAME DEBUGGER_LIBRARY_NAME
 
-#define MARSHAL_ILGEN_LIBRARY_NAME "marshal_ilgen"
-#define MARSHAL_ILGEN_COMPONENT_NAME MARSHAL_ILGEN_LIBRARY_NAME
+#define MARSHAL_ILGEN_LIBRARY_NAME "marshal-ilgen"
+#define MARSHAL_ILGEN_COMPONENT_NAME "marshal_ilgen"
 
 MonoComponentHotReload *mono_component_hot_reload_private_ptr = NULL;
 
