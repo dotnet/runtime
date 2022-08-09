@@ -442,7 +442,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 if (length >= Vector128<byte>.Count * 2)
@@ -508,10 +508,10 @@ namespace System
                 offset += 1;
             }
 
-            // We get past SequentialScan only if IsHardwareAccelerated or intrinsic .IsSupported is true; and remain length is greater than Vector length.
+            // We get past SequentialScan only if IsHardwareAccelerated is true; and remain length is greater than Vector length.
             // However, we still have the redundant check to allow the JIT to see that the code is unreachable and eliminate it when the platform does not
             // have hardware accelerated. After processing Vector lengths we return to SequentialScan to finish any remaining.
-            if (Avx2.IsSupported)
+            if (Vector256.IsHardwareAccelerated)
             {
                 if (offset < (nuint)(uint)length)
                 {
@@ -522,10 +522,10 @@ namespace System
                         // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
                         // This ensures we do not fault across memory pages while searching for an end of string.
                         Vector128<byte> values = Vector128.Create(value);
-                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as below
-                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
+                        uint matches = Vector128.Equals(values, search).ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -544,8 +544,8 @@ namespace System
                         Vector256<byte> values = Vector256.Create(value);
                         do
                         {
-                            Vector256<byte> search = LoadVector256(ref searchSpace, offset);
-                            int matches = Avx2.MoveMask(Avx2.CompareEqual(values, search));
+                            Vector256<byte> search = Vector256.LoadUnsafe(ref searchSpace, offset);
+                            uint matches = Vector256.Equals(values, search).ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
@@ -564,10 +564,10 @@ namespace System
                     if (lengthToExamine > offset)
                     {
                         Vector128<byte> values = Vector128.Create(value);
-                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as above
-                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
+                        uint matches = Vector128.Equals(values, search).ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -587,7 +587,7 @@ namespace System
                     }
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
                 if (offset < (nuint)(uint)length)
                 {
@@ -596,11 +596,11 @@ namespace System
                     Vector128<byte> values = Vector128.Create(value);
                     while (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as above
-                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
-                        if (matches == 0)
+                        Vector128<byte> compareResult = Vector128.Equals(values, search);
+                        if (compareResult == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -608,35 +608,8 @@ namespace System
                         }
 
                         // Find bitflag offset of first match and add to current offset
+                        uint matches = compareResult.ExtractMostSignificantBits();
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
-                    }
-
-                    if (offset < (nuint)(uint)length)
-                    {
-                        lengthToExamine = ((nuint)(uint)length - offset);
-                        goto SequentialScan;
-                    }
-                }
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                if (offset < (nuint)(uint)length)
-                {
-                    lengthToExamine = GetByteVector128SpanLength(offset, length);
-
-                    Vector128<byte> values = Vector128.Create(value);
-                    while (lengthToExamine > offset)
-                    {
-                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
-                        Vector128<byte> compareResult = AdvSimd.CompareEqual(values, search);
-
-                        if (compareResult == Vector128<byte>.Zero)
-                        {
-                            offset += (nuint)Vector128<byte>.Count;
-                            continue;
-                        }
-
-                        return (int)(offset + FindFirstMatchedLane(compareResult));
                     }
 
                     if (offset < (nuint)(uint)length)

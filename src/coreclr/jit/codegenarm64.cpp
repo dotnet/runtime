@@ -221,7 +221,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         case 2:
         {
             // Generate:
-            //      ldr fp,lr,[sp,#outsz]
+            //      ldp fp,lr,[sp,#outsz]
             //      add sp,sp,#framesz
 
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,

@@ -1,0 +1,64 @@
+{
+    "Registrations": [
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/google/brotli",
+                    "CommitHash": "e61745a6b7add50d380cfd7d3883dd6c62fc2c71"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/libunwind/libunwind",
+                    "CommitHash": "b3ca1b59a795a617877c01fe5d299ab7a07ff29d"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/llvm/llvm-project",
+                    "CommitHash": "f28c006a5895fc0e329fe15fead81e37457cb1d1"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/Tencent/rapidjson",
+                    "CommitHash": "d87b698d0fcc10a5f632ecbc80a9cb2a8fa094a5"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/madler/zlib",
+                    "CommitHash": "21767c654d31d2dccdde4330529775c6c5fd5389"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "Git": {
+                    "RepositoryUrl": "https://github.com/jtkukunas/zlib",
+                    "CommitHash": "bf55d56b068467329f5a6f29bee31bc80d694023"
+                }
+            },
+            "DevelopmentDependency": false
+        }
+    ]
+}

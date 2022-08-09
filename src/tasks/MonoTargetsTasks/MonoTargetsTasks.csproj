@@ -29,6 +29,8 @@
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />
     <Compile Include="JsonToItemsTaskFactory\JsonToItemsTaskFactory.cs" />
+    <Compile Include="NetTraceToMibcConverterTask\NetTraceToMibcConverter.cs" />
+    <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 

@@ -10,9 +10,11 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+#pragma warning disable CS4014 // async call is not awaited
+
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
-	class CompilerGeneratedTypes
+	public class CompilerGeneratedTypes
 	{
 		public static void Main ()
 		{
@@ -34,6 +36,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Closures
 			GlobalClosures ();
+			LambdaInsideIterator<int> ();
+			LocalFunctionInsideIterator<int> ();
+			CapturingLambdaInsideIterator<int> ();
+			CapturingLocalFunctionInsideIterator<int> ();
+			LambdaInsideAsync<int> ();
+			LocalFunctionInsideAsync<int> ();
 		}
 
 		private static void UseIterator ()
@@ -237,6 +245,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			GlobalClosureClass<int>.M1<int> ();
 			GlobalClosureClass<int>.M2<int> ();
+			GlobalClosureClass<int>.SameClosureForLambda1 ();
+			GlobalClosureClass<int>.SameClosureForLambda2 ();
 		}
 
 		private sealed class GlobalClosureClass<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
@@ -245,8 +255,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
 				Func<string, Action> b = (string s) =>
-					// https://github.com/dotnet/linker/issues/2826
-					[ExpectedWarning ("IL2090", "U", "PublicProperties", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 				() => Console.WriteLine (s + typeof (U).GetProperties ());
 				a ("");
 				b ("");
@@ -255,12 +263,77 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
 				Func<string, Action> b = (string s) =>
-					// https://github.com/dotnet/linker/issues/2826
-					[ExpectedWarning ("IL2090", "U", "PublicProperties", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 				() => Console.WriteLine (s + typeof (U).GetProperties ());
 				a ("");
 				b ("");
 			}
+
+			public static void SameClosureForLambda1 ()
+			{
+				var l =
+				[ExpectedWarning ("IL2090", nameof (GlobalClosureClass<T>), nameof (System.Type.GetProperties))]
+				() => typeof (T).GetProperties ();
+				l ();
+			}
+
+			public static void SameClosureForLambda2 ()
+			{
+				var l =
+				[ExpectedWarning ("IL2090", nameof (GlobalClosureClass<T>), nameof (System.Type.GetProperties))]
+				() => typeof (T).GetProperties ();
+				l ();
+			}
+		}
+
+		static IEnumerable<int> LambdaInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			var l = () => typeof (T).GetMethods ();
+			yield return 1;
+			l ();
+		}
+
+		static IEnumerable<int> LocalFunctionInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			void LocalFunction () => typeof (T).GetMethods ();
+			yield return 1;
+			LocalFunction ();
+		}
+
+		static IEnumerable<int> CapturingLambdaInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			int i = 0;
+			var l = () => {
+				typeof (T).GetMethods ();
+				i++;
+			};
+			yield return i;
+			l ();
+		}
+
+		static IEnumerable<int> CapturingLocalFunctionInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			int i = 0;
+			void LocalFunction ()
+			{
+				typeof (T).GetMethods ();
+				i++;
+			}
+			yield return i;
+			LocalFunction ();
+		}
+
+		static async Task LambdaInsideAsync<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			var l = () => typeof (T).GetMethods ();
+			await Task.Delay (0);
+			l ();
+		}
+
+		static async Task LocalFunctionInsideAsync<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			void LocalFunction () => typeof (T).GetMethods ();
+			await Task.Delay (0);
+			LocalFunction ();
 		}
 	}
 }

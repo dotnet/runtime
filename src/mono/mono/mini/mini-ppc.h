@@ -118,12 +118,11 @@ typedef struct MonoCompileArch {
 #else
 #define MONO_ARCH_CALLEE_FREGS (0xff << ppc_f1)
 #endif
-#define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FREGS | 1))
-
-#define MONO_ARCH_USE_FPSTACK FALSE
+#define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FRE
+GS | 1))
 
 #ifdef TARGET_POWERPC64
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:\
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:	\
 					((desc) == 'g'? ppc_f1:-1))
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
