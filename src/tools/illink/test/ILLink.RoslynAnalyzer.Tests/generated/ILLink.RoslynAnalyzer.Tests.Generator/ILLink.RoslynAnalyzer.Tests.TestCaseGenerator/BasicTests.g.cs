@@ -40,6 +40,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task LinkerHandlesRefFields ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task MultiLevelNestedClassesAllRemovedWhenNonUsed ()
 		{
 			return RunTest (allowMissingWarnings: true);
