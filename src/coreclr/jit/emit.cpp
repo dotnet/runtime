@@ -3921,21 +3921,19 @@ void emitter::emitDispJumpList()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// emitSizeOfInsDscAndDebugInfo:
-//   Get the size of the instrDesc plus the size of optional debug info that
-//   may come before it (or before the next instrDesc).
+// emitAdvanceInstrDesc:
+//   Advance to the next instrDesc in the buffer of instrDescs, taking optional
+//   debug info into account.
 //
 // Parameters:
-//   id - the instrDesc
-//
-// Returns:
-//   The (variable) size of the instrDesc plus the debug info size.
+//   id - the pointer to the current instrDesc
+//   idSize - the size of the current instrDesc
 //
 void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 {
     assert(idSize == emitSizeOfInsDsc(id));
-    char* idReinterp = reinterpret_cast<char*>(*id);
-    *id              = reinterpret_cast<instrDesc*>(idReinterp + idSize + m_debugInfoSize);
+    char* idData = reinterpret_cast<char*>(*id);
+    *id          = reinterpret_cast<instrDesc*>(idData + idSize + m_debugInfoSize);
 }
 
 //------------------------------------------------------------------------
