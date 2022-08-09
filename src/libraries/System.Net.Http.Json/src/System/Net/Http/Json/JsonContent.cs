@@ -105,7 +105,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
