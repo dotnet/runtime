@@ -1696,8 +1696,8 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 EX_TRY
                 {
                     WCHAR outputPath[MAX_PATH];
-                    AppendPid(GENAWARE_DUMP_FILE_NAME, outputPath, MAX_PATH);
-                    GenerateDump (outputPath, 2, GenerateDumpFlagsNone, nullptr, 0);
+                    LPCWSTR outputPathReplaced = ReplacePid(GENAWARE_DUMP_FILE_NAME, outputPath, MAX_PATH);
+                    GenerateDump (outputPathReplaced, 2, GenerateDumpFlagsNone, nullptr, 0);
                 }
                 EX_CATCH {}
                 EX_END_CATCH(SwallowAllExceptions);
