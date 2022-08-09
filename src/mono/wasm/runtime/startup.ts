@@ -330,7 +330,7 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
         }
         // for Blazor, init diagnostics after their "onRuntimeInitalized" sets env variables, but before their postRun callback (which calls mono_wasm_load_runtime)
         if (MonoWasmThreads) {
-            await mono_wasm_init_diagnostics("env");
+            await mono_wasm_init_diagnostics();
         }
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Initializing mono runtime");
@@ -540,7 +540,7 @@ async function _apply_configuration_from_args() {
         mono_wasm_init_coverage_profiler(config.coverageProfilerOptions);
     // for non-Blazor, init diagnostics after environment variables are set
     if (MonoWasmThreads) {
-        await mono_wasm_init_diagnostics("env");
+        await mono_wasm_init_diagnostics();
     }
 }
 
