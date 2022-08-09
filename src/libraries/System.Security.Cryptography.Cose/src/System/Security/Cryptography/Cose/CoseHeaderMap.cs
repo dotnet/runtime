@@ -226,7 +226,7 @@ namespace System.Security.Cryptography.Cose
         /// Removes the first occurrence of a specific object from the header map.
         /// </summary>
         /// <param name="item">The object to remove from the map.</param>
-        /// <returns><see langword="true"/> if <paramref name="item"/> was found in the map; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the key and value represented by <paramref name="item"/> are successfully found in the map; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="InvalidOperationException">The header map is read-only.</exception>
         public bool Remove(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
         {
