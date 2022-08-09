@@ -116,7 +116,9 @@ export type AssetBehaviours =
     | "heap" // store asset into the native heap
     | "icu" // load asset as an ICU data archive
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
-    | "dotnetwasm"; // the binary of the dotnet runtime
+    | "dotnetwasm" // the binary of the dotnet runtime
+    | "js-module-crypto" // the javascript module for subtle crypto
+    | "js-module-threads" // the javascript module for threads
 
 export type RuntimeHelpers = {
     runtime_interop_module: MonoAssembly;
@@ -128,6 +130,7 @@ export type RuntimeHelpers = {
     mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
+    mono_wasm_symbols_are_ready: boolean;
 
     loaded_files: string[];
     maxParallelDownloads: number;
