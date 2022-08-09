@@ -763,6 +763,28 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
         }
 
+        [Theory]
+        [InlineData(nameof(Sample.DefaultString), "Hello", "Hi")]
+        [InlineData(nameof(Sample.DefaultNullableInt), 3, 5)]
+        [InlineData(nameof(Sample.DefaultNullableEnum), YesNo.Yes, YesNo.No)]
+        public static void InvokeCopiesBackMissingParameter(string methodName, object defaultValue, object passingValue)
+        {
+            MethodInfo method = typeof(Sample).GetMethod(methodName);
+            object[] args = new object[] { Missing.Value };
+
+            Assert.Equal(defaultValue, method.Invoke(null, args));
+            Assert.Equal(defaultValue, args[0]);
+
+            args[0] = passingValue;
+
+            Assert.Equal(passingValue, method.Invoke(null, args));
+            Assert.Equal(passingValue, args[0]);
+
+            args[0] = null;
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+        }
+
         [Fact]
         public void ValueTypeMembers_WithOverrides()
         {
@@ -1087,6 +1109,11 @@ namespace System.Reflection.Tests
         {
             return "";
         }
+        public static string DefaultString(string value = "Hello") => value;
+
+        public static YesNo? DefaultNullableEnum(YesNo? value = YesNo.Yes) => value;
+
+        public static int? DefaultNullableInt(int? value = 3) => value;
     }
 
     public class SampleG<T>
