@@ -140,7 +140,7 @@ namespace System.Threading.Tasks.Tests
             int activeWorkers = 0;
             var block = new TaskCompletionSource();
 
-            const int MaxSchedulerLimit = Math.Min(2, Environment.ProcessorCount);
+            int MaxSchedulerLimit = Math.Min(2, Environment.ProcessorCount);
 
             Task t = Parallel.ForEachAsync(IterateUntilSet(box), new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new MaxConcurrencyLevelPassthroughTaskScheduler(MaxSchedulerLimit) }, async (item, cancellationToken) =>
             {
