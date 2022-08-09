@@ -7127,10 +7127,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem;
+			if (len > 0) {
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
-			if (frame->imethod->init_locals)
-				memset (mem, 0, len);
+				if (frame->imethod->init_locals)
+					memset (mem, 0, len);
+			} else {
+				mem = NULL;
+			}
 			LOCAL_VAR (ip [1], gpointer) = mem;
 			ip += 3;
 			MINT_IN_BREAK;

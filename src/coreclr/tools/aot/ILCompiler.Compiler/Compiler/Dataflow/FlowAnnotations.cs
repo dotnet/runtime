@@ -46,6 +46,20 @@ namespace ILLink.Shared.TrimAnalysis
             try
             {
                 method = method.GetTypicalMethodDefinition();
+                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var methodAnnotations)
+                    && (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        public bool RequiresVirtualMethodDataflowAnalysis(MethodDesc method)
+        {
+            try
+            {
+                method = method.GetTypicalMethodDefinition();
                 return GetAnnotations(method.OwningType).TryGetAnnotation(method, out _);
             }
             catch (TypeSystemException)
@@ -60,6 +74,18 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 field = field.GetTypicalFieldDefinition();
                 return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameterDesc genericParameter)
+        {
+            try
+            {
+                return GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
             }
             catch (TypeSystemException)
             {

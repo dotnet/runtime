@@ -822,7 +822,7 @@ namespace DebuggerTests
             );
         }
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1087, 1003, 1001, 1005)]
         [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1088, 1047, 1045, 1049)]
         [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1016, 1014, 1018)]
@@ -844,7 +844,7 @@ namespace DebuggerTests
 
             // check prev frame in DIM
             Assert.Equal(pauseInDim["callFrames"][1]["functionName"].Value<string>(), prevFrameInDim);
-            Assert.Equal(pauseInDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), evaluateAsPrevFrameLine);
+            CheckLocationLine(pauseInDim["callFrames"][1]["location"], evaluateAsPrevFrameLine);
 
             string funCalledFromDim = "MethodForCallingFromDIM";
             var bpFunCalledFromDim = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", funCalledFromDim, 1);
@@ -858,7 +858,7 @@ namespace DebuggerTests
 
             string prevFrameFromDim = dimName;
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), dimClassName + "." + prevFrameFromDim);
-            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);
+            CheckLocationLine(pauseInFunCalledFromDim["callFrames"][1]["location"], dimAsPrevFrameLine);
 
 
             async Task CheckDefaultMethod(JObject pause_location, string methodName)

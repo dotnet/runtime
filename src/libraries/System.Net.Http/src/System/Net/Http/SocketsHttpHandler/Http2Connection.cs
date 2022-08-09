@@ -44,7 +44,7 @@ namespace System.Net.Http
         private RttEstimator _rttEstimator;
 
         private int _nextStream;
-        private bool _expectingSettingsAck;
+        private bool _receivedSettingsAck;
         private int _initialServerStreamWindowSize;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
@@ -222,11 +222,13 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
+                // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
+                // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
+                _ = ProcessIncomingFramesAsync();
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
-                _expectingSettingsAck = true;
             }
             catch (Exception e)
             {
@@ -241,7 +243,6 @@ namespace System.Net.Http
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
-            _ = ProcessIncomingFramesAsync();
             _ = ProcessOutgoingFramesAsync();
         }
 
@@ -792,14 +793,14 @@ namespace System.Net.Http
                     ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
-                if (!_expectingSettingsAck)
+                if (_receivedSettingsAck)
                 {
                     ThrowProtocolError();
                 }
 
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
-                _expectingSettingsAck = false;
+                _receivedSettingsAck = true;
                 _rttEstimator.OnInitialSettingsAckReceived(this);
             }
             else

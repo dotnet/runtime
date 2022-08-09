@@ -33,9 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 FILE* jitstdout = nullptr;
 
-ICorJitHost*   g_jitHost        = nullptr;
-static CILJit* ILJitter         = nullptr; // The one and only JITTER I return
-bool           g_jitInitialized = false;
+ICorJitHost* g_jitHost        = nullptr;
+bool         g_jitInitialized = false;
 
 /*****************************************************************************/
 
@@ -152,6 +151,8 @@ void jitShutdown(bool processIsTerminating)
 
 /*****************************************************************************/
 
+static CILJit g_CILJit;
+
 DLLEXPORT ICorJitCompiler* getJit()
 {
     if (!g_jitInitialized)
@@ -159,12 +160,7 @@ DLLEXPORT ICorJitCompiler* getJit()
         return nullptr;
     }
 
-    if (ILJitter == nullptr)
-    {
-        alignas(alignof(CILJit)) static char CILJitBuff[sizeof(CILJit)];
-        ILJitter = new (CILJitBuff, jitstd::placement_t()) CILJit();
-    }
-    return (ILJitter);
+    return &g_CILJit;
 }
 
 /*****************************************************************************/
