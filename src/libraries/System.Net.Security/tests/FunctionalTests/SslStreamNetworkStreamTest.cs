@@ -907,6 +907,7 @@ namespace System.Net.Security.Tests
             {
                 using (var chain = new X509Chain())
                 {
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.Build(clientCertificate);
                     foreach (X509ChainElement element in chain.ChainElements)
                     {
@@ -920,11 +921,12 @@ namespace System.Net.Security.Tests
 
                 using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
                 {
+                    store.Open(OpenFlags.Read);
                     foreach (X509Certificate2 cert in store.Certificates)
                     {
                         _output.WriteLine(cert.Subject);
-
                     }
+                    store.Close();
                 }
             }
 
