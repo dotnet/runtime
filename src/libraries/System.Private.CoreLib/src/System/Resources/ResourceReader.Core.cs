@@ -65,10 +65,7 @@ namespace System.Resources
                 Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
                 "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
                 "the user to only get one error.")]
-            bool InitializeBinaryFormatterLocal()
-            {
-                return InitializeBinaryFormatter();
-            }
+            bool InitializeBinaryFormatterLocal() => InitializeBinaryFormatter();
 
             if (Volatile.Read(ref _binaryFormatter) is null)
             {
