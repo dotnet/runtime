@@ -80,7 +80,7 @@ namespace System.Formats.Tar
                 // or the directory was created as a missing parent (stored in pendingModes).
                 if (mode.HasValue)
                 {
-                    bool hasExtractPermissions = (mode & ExtractPermissions) == ExtractPermissions;
+                    bool hasExtractPermissions = (mode.Value & ExtractPermissions) == ExtractPermissions;
                     if (hasExtractPermissions)
                     {
                         bool removed = pendingModes.Remove(fullPath);
@@ -101,7 +101,7 @@ namespace System.Formats.Tar
             if (mode.HasValue)
             {
                 // Ensure we have sufficient permissions to extract in the directory.
-                if ((mode & ExtractPermissions) != ExtractPermissions)
+                if ((mode.Value & ExtractPermissions) != ExtractPermissions)
                 {
                     pendingModes[fullPath] = mode.Value;
                     mode = ExtractPermissions;
@@ -132,7 +132,6 @@ namespace System.Formats.Tar
 
         internal static void SetPendingModes(SortedDictionary<string, UnixFileMode>? pendingModes)
         {
-            Debug.Assert(!OperatingSystem.IsWindows());
             Debug.Assert(pendingModes is not null);
 
             if (pendingModes.Count == 0)
