@@ -7471,7 +7471,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmethod = cmethod_override;
 				cmethod_override = NULL;
 				virtual_ = FALSE;
-				il_op = MONO_CEE_CALL;
+				//il_op = MONO_CEE_CALL;
 			} else {
 				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			}
@@ -9576,11 +9576,13 @@ calli_end:
 
 				if (val &&
 					val->flags != MONO_INST_FAULT && // not null
+					!mono_class_is_nullable (klass) &&
+					!mini_is_gsharedvt_klass (klass) &&
 					(iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context)) &&
 					(iface_method_sig = mono_method_signature_internal (iface_method)) && // callee signture is healthy
 					iface_method_sig->hasthis && 
 					iface_method_sig->param_count == 0 && // the callee has no args (other than this)
-					iface_method_sig->has_type_parameters == 0) { // and no type params, apparently virtual generic methods require special handling
+					iface_method_sig->generic_param_count == 0) { // and no type params, apparently virtual generic methods require special handling
 					
 					if (!m_class_is_inited (iface_method->klass)) {
 						if (!mono_class_init_internal (iface_method->klass))
@@ -9589,13 +9591,17 @@ calli_end:
 
 					ERROR_DECL (struct_method_error);
 					MonoMethod* struct_method = mono_class_get_virtual_method (klass, iface_method, struct_method_error);
+
 					if (is_ok (struct_method_error)) {
-						MonoClass* struct_obj = mono_method_get_class (struct_method);
+						MonoMethodSignature* struct_method_sig = mono_method_signature_internal (struct_method);
+
 						if (!struct_method ||
 							!mono_method_can_access_method (method, struct_method) ||
-							mono_class_is_abstract (struct_obj)) {
+							(struct_method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+							!struct_method_sig ||
+							struct_method_sig->has_type_parameters) {
 							// do not optimize, let full callvirt deal with it
-						} else if (val->flags & MONO_INST_INDIRECT) {
+						} else if (val->opcode == OP_TYPED_OBJREF) {
 							*sp++ = val;
 							cmethod_override = struct_method;
 							break;
@@ -9606,6 +9612,7 @@ calli_end:
 							EMIT_NEW_VARLOADA (cfg, ins, srcvar, m_class_get_byval_arg (klass));
 							*sp++= ins;
 							cmethod_override = struct_method;
+
 							break;
 						}
 					} else {
