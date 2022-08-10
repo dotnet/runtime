@@ -150,13 +150,13 @@ namespace System.Diagnostics
         {
             // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,06360b4de5e221c2, https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,37
 
-            TraceSection traceSettings = DiagnosticsConfiguration.SystemDiagnosticsSection?.Trace;
+            TraceSection traceSection = DiagnosticsConfiguration.SystemDiagnosticsSection?.Trace;
 
-            if (traceSettings != null)
+            if (traceSection != null)
             {
-                Trace.UseGlobalLock = traceSettings.UseGlobalLock;
-                Trace.AutoFlush = traceSettings.AutoFlush;
-                Trace.IndentSize = traceSettings.IndentSize;
+                Trace.UseGlobalLock = traceSection.UseGlobalLock;
+                Trace.AutoFlush = traceSection.AutoFlush;
+                Trace.IndentSize = traceSection.IndentSize;
 
                 ListenerElementsCollection listeners = DiagnosticsConfiguration.SystemDiagnosticsSection?.Trace.Listeners;
                 if (listeners != null)
