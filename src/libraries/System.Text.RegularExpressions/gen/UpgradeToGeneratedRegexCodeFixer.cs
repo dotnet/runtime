@@ -100,10 +100,7 @@ namespace System.Text.RegularExpressions.Generator
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
             SyntaxNode? typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
 
-            if (typeDeclarationOrCompilationUnit is null)
-            {
-                typeDeclarationOrCompilationUnit = await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-            }
+            typeDeclarationOrCompilationUnit ??= await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;

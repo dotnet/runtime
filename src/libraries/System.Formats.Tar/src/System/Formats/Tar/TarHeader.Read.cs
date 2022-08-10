@@ -28,10 +28,7 @@ namespace System.Formats.Tar
             archiveStream.ReadExactly(buffer);
 
             TarHeader? header = TryReadAttributes(initialFormat, buffer);
-            if (header != null)
-            {
-                header.ProcessDataBlock(archiveStream, copyData);
-            }
+            header?.ProcessDataBlock(archiveStream, copyData);
 
             return header;
         }
