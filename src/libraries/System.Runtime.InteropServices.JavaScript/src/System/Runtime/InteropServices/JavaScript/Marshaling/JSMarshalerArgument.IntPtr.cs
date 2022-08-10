@@ -14,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out IntPtr value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = slot.IntPtrValue;
         }
 
         /// <summary>
@@ -24,7 +29,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(IntPtr value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.IntPtr;
+            slot.IntPtrValue = value;
         }
 
         /// <summary>
@@ -34,7 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out IntPtr? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = slot.IntPtrValue;
         }
 
         /// <summary>
@@ -44,7 +55,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(IntPtr? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.IntPtr;
+                slot.IntPtrValue = value.Value;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
 
         /// <summary>
@@ -54,7 +73,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out void* value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = (byte*)slot.IntPtrValue;
         }
 
         /// <summary>
@@ -64,7 +88,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(void* value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.IntPtr;
+            slot.IntPtrValue = (IntPtr)value;
         }
     }
 }

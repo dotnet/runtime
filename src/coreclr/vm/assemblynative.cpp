@@ -355,9 +355,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
 
     BEGIN_QCALL;
 
-    if (!wszName)
-        COMPlusThrowArgumentNull(W("name"), W("ArgumentNull_String"));
-
     BOOL prohibitAsmQualifiedName = TRUE;
 
     AssemblyBinder * pBinder = NULL;
@@ -1153,7 +1150,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
                 // Once everything is setup and nothing can fail anymore, the ownership will be
-                // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
+                // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
                 loaderAllocator->SetupManagedTracking(&pManagedLoaderAllocator);
             }
 

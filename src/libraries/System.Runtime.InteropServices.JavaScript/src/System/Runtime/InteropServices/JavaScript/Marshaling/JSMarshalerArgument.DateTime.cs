@@ -14,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTimeOffset value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue);
         }
 
         /// <summary>
@@ -24,7 +29,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTimeOffset value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.DateTimeOffset;
+            slot.DoubleValue = (double)value.ToUnixTimeMilliseconds();
         }
 
         /// <summary>
@@ -34,7 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTimeOffset? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue);
         }
 
         /// <summary>
@@ -44,7 +55,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTimeOffset? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.DateTimeOffset;
+                slot.DoubleValue = value.Value.ToUnixTimeMilliseconds(); ;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
 
         /// <summary>
@@ -54,7 +73,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTime value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue).UtcDateTime;
         }
 
         /// <summary>
@@ -64,7 +88,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTime value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.DateTime;
+            slot.DoubleValue = new DateTimeOffset(value).ToUnixTimeMilliseconds();
         }
 
         /// <summary>
@@ -74,7 +99,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTime? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue).UtcDateTime;
         }
 
         /// <summary>
@@ -84,7 +114,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTime? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.DateTime;
+                slot.DoubleValue = new DateTimeOffset(value.Value).ToUnixTimeMilliseconds();
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
     }
 }

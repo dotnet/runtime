@@ -189,7 +189,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ArgumentOutOfRangeOnNegativCount()
+        public void ArgumentOutOfRangeOnNegativeCount()
         {
             var sr = GetCharArrayStream().Item2;
             AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 0, 1));
@@ -555,8 +555,8 @@ namespace System.IO.Tests
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
             Func<StreamReader, CancellationToken, Task<int>> func = method switch
@@ -657,7 +657,7 @@ namespace System.IO.Tests
                     Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
                 }
 
-                // check disabled BOM, default enconding and leaveOpen
+                // check disabled BOM, default encoding and leaveOpen
                 tempStream.Seek(0, SeekOrigin.Begin);
                 using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {

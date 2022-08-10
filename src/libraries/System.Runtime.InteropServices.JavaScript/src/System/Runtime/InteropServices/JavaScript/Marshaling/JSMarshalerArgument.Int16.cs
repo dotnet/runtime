@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
@@ -14,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out short value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = slot.Int16Value;
         }
 
         /// <summary>
@@ -24,7 +29,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(short value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.Int16;
+            slot.Int16Value = value;
         }
 
         /// <summary>
@@ -34,7 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out short? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = slot.Int16Value;
         }
 
         /// <summary>
@@ -44,7 +55,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(short? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.Int16;
+                slot.Int16Value = value.Value;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
     }
 }

@@ -14,9 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. Also share System.Net.Quic which isn't part of aspnetcore's shared framework but which is needed by them. -->
-    <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
-                               $(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj"
+    <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. -->
+    <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj')"
                       Pack="true"
                       PrivateAssets="all"
                       Private="true"

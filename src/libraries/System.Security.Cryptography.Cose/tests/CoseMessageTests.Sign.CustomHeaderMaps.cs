@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Cose.Tests
             => Sign(content, GetCoseSigner(key, hashAlgorithm, protectedHeaders, unprotectedHeaders, padding), null, null, null, isDetached);
 
         // Returns the map that is set in CoseSigner and used for Signing.
-        // For sign1, it returns one of the the body header maps.
+        // For sign1, it returns one of the body header maps.
         // For multisign, it returns one of the sign header maps.
         internal abstract CoseHeaderMap GetSigningHeaderMap(CoseMessage msg, bool getProtectedMap);
 

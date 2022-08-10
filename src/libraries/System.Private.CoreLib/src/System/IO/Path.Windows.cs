@@ -166,7 +166,7 @@ namespace System.IO
             return (delegate* unmanaged<int, char*, uint>)func;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
             while ((result = GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)

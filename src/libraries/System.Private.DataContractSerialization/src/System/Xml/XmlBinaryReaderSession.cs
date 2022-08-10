@@ -120,8 +120,7 @@ namespace System.Xml
             if (_strings != null)
                 Array.Clear(_strings);
 
-            if (_stringDict != null)
-                _stringDict.Clear();
+            _stringDict?.Clear();
         }
     }
 }

@@ -45,6 +45,7 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
+      - src/mono/wasm/debugger/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
@@ -109,6 +110,7 @@ jobs:
       - src/tests/BuildWasmApps/Directory.Build*
       - src/tests/BuildWasmApps/Wasm.Build.Tests/*
       - src/mono/wasm/build/*
+      - src/mono/wasm/host/*
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
@@ -135,7 +137,17 @@ jobs:
     - subset: allwasm
       include:
       - eng/Version.Details.xml
+      - src/mono/*.proj
+      - src/mono/Directory.Build*
+      - src/mono/CMakeLists.txt
+      - src/mono/System.Private.CoreLib/*
+      - src/mono/mono/*
       - src/mono/wasm/emscripten-version.txt
+      - src/mono/wasm/build/*
+      - src/mono/wasm/data/aot-tests/*
+      - src/mono/wasm/runtime/*
+      - src/mono/wasm/test-main.js
+      - src/mono/wasm/wasm.proj
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

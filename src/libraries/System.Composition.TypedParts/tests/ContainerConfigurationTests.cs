@@ -248,7 +248,7 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        public void WithAssemby_Null_ThrowsNullReferenceExceptionOnCreation()
+        public void WithAssembly_Null_ThrowsNullReferenceExceptionOnCreation()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithAssembly(null);
             Assert.Throws<NullReferenceException>(() => configuration.CreateContainer());
@@ -630,7 +630,7 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        public void CreateContiner_GenericExportWithDependencyConstructorHasConvention_Success()
+        public void CreateContainer_GenericExportWithDependencyConstructorHasConvention_Success()
         {
             var conventions = new ConventionBuilder();
 

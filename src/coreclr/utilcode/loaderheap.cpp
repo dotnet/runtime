@@ -741,7 +741,7 @@ struct LoaderHeapFreeBlock
             {
                 memset((BYTE*)pMem + GetOsPageSize(), 0xcc, dwTotalSize);
             }
-#endif // DEBUG            
+#endif // DEBUG
 
             LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
             // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
@@ -1280,7 +1280,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         if (IsInterleaved())
         {
-            // The end of commited region for interleaved heaps points to the end of the executable
+            // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
             m_pPtrToEndOfCommittedRegion += GetOsPageSize();
         }
@@ -1304,20 +1304,23 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart, IsExecutable());
         if (pData == NULL)
         {
-            _ASSERTE(!"Unable to commit a loaderheap page");
             return FALSE;
         }
 
         if (IsInterleaved())
         {
             // Commit a data page after the code page
-            ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+            void* pDataRW = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+            if (pDataRW == NULL)
+            {
+                return FALSE;
+            }
 
             ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
             m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
             FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
 
-            // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+            // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
             if (unusedRemainder >= m_dwGranularity)
@@ -1341,7 +1344,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
 
     // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
-    // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+    // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
     // block list.
     // Otherwise the remaining bytes that are available will be wasted.
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);

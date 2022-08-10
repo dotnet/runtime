@@ -132,8 +132,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 _lazyGetterInvoker = Getter.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
-            if (index == null)
-                index = Array.Empty<object>();
+            index ??= Array.Empty<object>();
             return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
 

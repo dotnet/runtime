@@ -653,57 +653,57 @@ namespace System.Numerics.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(Zero, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(One, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(Int64MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(Zero, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(One, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(Int64MaxValue, 1));
 
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(Int64MinValue, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(NegativeOne, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(Int64MinValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(NegativeOne, 1));
 
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(Int64MaxValuePlusOne, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThan(UInt64MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(Int64MaxValuePlusOne, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThan(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(Zero, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(One, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(Int64MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(Zero, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(One, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(Int64MaxValue, 1));
 
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(Int64MinValue, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(NegativeOne, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(Int64MinValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(NegativeOne, 1));
 
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(Int64MaxValuePlusOne, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_GreaterThanOrEqual(UInt64MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(Int64MaxValuePlusOne, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_GreaterThanOrEqual(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(Zero, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(One, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(Int64MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(Zero, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(One, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(Int64MaxValue, 1));
 
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(Int64MinValue, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(NegativeOne, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(Int64MinValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(NegativeOne, 1));
 
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(Int64MaxValuePlusOne, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThan(UInt64MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(Int64MaxValuePlusOne, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThan(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(Zero, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(One, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(Int64MaxValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(Zero, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(One, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(Int64MaxValue, 1));
 
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(Int64MinValue, 1));
-            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(NegativeOne, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(Int64MinValue, 1));
+            Assert.True(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(NegativeOne, 1));
 
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(Int64MaxValuePlusOne, 1));
-            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger>.op_LessThanOrEqual(UInt64MaxValue, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(Int64MaxValuePlusOne, 1));
+            Assert.False(ComparisonOperatorsHelper<BigInteger, BigInteger, bool>.op_LessThanOrEqual(UInt64MaxValue, 1));
         }
 
         //
@@ -785,29 +785,29 @@ namespace System.Numerics.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(Zero, 1));
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(One, 1));
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(Int64MaxValue, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(Zero, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(One, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(Int64MaxValue, 1));
 
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(Int64MinValue, 1));
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(NegativeOne, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(Int64MinValue, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(NegativeOne, 1));
 
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(Int64MaxValuePlusOne, 1));
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Equality(UInt64MaxValue, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(Int64MaxValuePlusOne, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Equality(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(Zero, 1));
-            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(One, 1));
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(Int64MaxValue, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(Zero, 1));
+            Assert.False(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(One, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(Int64MaxValue, 1));
 
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(Int64MinValue, 1));
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(NegativeOne, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(Int64MinValue, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(NegativeOne, 1));
 
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(Int64MaxValuePlusOne, 1));
-            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger>.op_Inequality(UInt64MaxValue, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(Int64MaxValuePlusOne, 1));
+            Assert.True(EqualityOperatorsHelper<BigInteger, BigInteger, bool>.op_Inequality(UInt64MaxValue, 1));
         }
 
         //
@@ -2614,43 +2614,43 @@ namespace System.Numerics.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(Zero, 1));
-            Assert.Equal(Two, ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(One, 1));
-            Assert.Equal(unchecked((BigInteger)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(Int64MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(Zero, 1));
+            Assert.Equal(Two, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(One, 1));
+            Assert.Equal(unchecked((BigInteger)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(Int64MaxValue, 1));
 
-            Assert.Equal(NegativeTwoPow64, ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(Int64MinValue, 1));
-            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(NegativeOne, 1));
+            Assert.Equal(NegativeTwoPow64, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(Int64MinValue, 1));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(NegativeOne, 1));
 
-            Assert.Equal(TwoPow64, ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(Int64MaxValuePlusOne, 1));
-            Assert.Equal(UInt64MaxValueTimesTwo, ShiftOperatorsHelper<BigInteger, BigInteger>.op_LeftShift(UInt64MaxValue, 1));
+            Assert.Equal(TwoPow64, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(Int64MaxValuePlusOne, 1));
+            Assert.Equal(UInt64MaxValueTimesTwo, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_LeftShift(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(One, 1));
-            Assert.Equal((BigInteger)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(Int64MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(One, 1));
+            Assert.Equal((BigInteger)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(Int64MaxValue, 1));
 
-            Assert.Equal(unchecked((BigInteger)(long)0xC000000000000000), ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(Int64MinValue, 1));
-            Assert.Equal(NegativeOne, ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(NegativeOne, 1));
+            Assert.Equal(unchecked((BigInteger)(long)0xC000000000000000), ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(Int64MinValue, 1));
+            Assert.Equal(NegativeOne, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(NegativeOne, 1));
 
-            Assert.Equal(unchecked((BigInteger)0x4000000000000000), ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(Int64MaxValuePlusOne, 1));
-            Assert.Equal(Int64MaxValue, ShiftOperatorsHelper<BigInteger, BigInteger>.op_RightShift(UInt64MaxValue, 1));
+            Assert.Equal(unchecked((BigInteger)0x4000000000000000), ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(Int64MaxValuePlusOne, 1));
+            Assert.Equal(Int64MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_RightShift(UInt64MaxValue, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(One, 1));
-            Assert.Equal((BigInteger)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(Int64MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(One, 1));
+            Assert.Equal((BigInteger)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MaxValue, 1));
 
-            Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(Int64MinValue, 1));
-            Assert.Equal(Int32MaxValue, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(NegativeOne, 1));
+            Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MinValue, 1));
+            Assert.Equal(Int32MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(NegativeOne, 1));
 
-            Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(Int64MaxValuePlusOne, 1));
-            Assert.Equal(Int64MaxValue, ShiftOperatorsHelper<BigInteger, BigInteger>.op_UnsignedRightShift(UInt64MaxValue, 1));
+            Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MaxValuePlusOne, 1));
+            Assert.Equal(Int64MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(UInt64MaxValue, 1));
         }
 
         //

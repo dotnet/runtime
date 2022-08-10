@@ -722,11 +722,11 @@ namespace System.IO.Packaging
                 // if the namespace has not yet been mapped, map it
                 mappedNamespace = MapNewNamespace(namespaceName);
             }
-            else if (mappedNamespace == null)
+            else
             {
                 // if the mapped namespace is null, then the namespace was not supported, just return
                 // the given namespace
-                mappedNamespace = namespaceName;
+                mappedNamespace ??= namespaceName;
             }
 
             return mappedNamespace;
@@ -1644,19 +1644,13 @@ namespace System.IO.Packaging
 
             public void Ignorable(string namespaceName)
             {
-                if (_ignorables == null)
-                {
-                    _ignorables = new Dictionary<string, object?>();
-                }
+                _ignorables ??= new Dictionary<string, object?>();
                 _ignorables[namespaceName] = null; // we don't care about value, just key
             }
 
             public void ProcessContent(string namespaceName, string elementName)
             {
-                if (_processContents == null)
-                {
-                    _processContents = new Dictionary<string, ProcessContentSet>();
-                }
+                _processContents ??= new Dictionary<string, ProcessContentSet>();
                 ProcessContentSet? processContentSet;
                 if (!_processContents.TryGetValue(namespaceName, out processContentSet))
                 {
@@ -1668,10 +1662,7 @@ namespace System.IO.Packaging
 
             public void PreserveElement(string namespaceName, string elementName)
             {
-                if (_preserveElements == null)
-                {
-                    _preserveElements = new Dictionary<string, PreserveItemSet>();
-                }
+                _preserveElements ??= new Dictionary<string, PreserveItemSet>();
                 PreserveItemSet? preserveElementSet;
                 if (!_preserveElements.TryGetValue(namespaceName, out preserveElementSet))
                 {
@@ -1683,10 +1674,7 @@ namespace System.IO.Packaging
 
             public void PreserveAttribute(string namespaceName, string attributeName)
             {
-                if (_preserveAttributes == null)
-                {
-                    _preserveAttributes = new Dictionary<string, PreserveItemSet>();
-                }
+                _preserveAttributes ??= new Dictionary<string, PreserveItemSet>();
                 PreserveItemSet? preserveAttributeSet;
                 if (!_preserveAttributes.TryGetValue(namespaceName, out preserveAttributeSet))
                 {

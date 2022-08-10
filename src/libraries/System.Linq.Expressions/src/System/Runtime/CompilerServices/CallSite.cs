@@ -221,18 +221,11 @@ namespace System.Runtime.CompilerServices
             return GetUpdateDelegate(ref s_cachedUpdate);
         }
 
-        private T GetUpdateDelegate(ref T? addr)
-        {
-            if (addr == null)
-            {
-                // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
-                // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
-                // create 2 delegates with no other harm caused.
-                addr = MakeUpdateDelegate();
-            }
-            return addr;
-        }
-
+        private T GetUpdateDelegate(ref T? addr) =>
+            // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
+            // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
+            // create 2 delegates with no other harm caused.
+            addr ??= MakeUpdateDelegate();
 
         private const int MaxRules = 10;
 

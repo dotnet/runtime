@@ -6,27 +6,31 @@
 import createDotnetRuntime from './dotnet.js'
 
 class FrameApp {
-    async init({ BINDING }) {
-        const reachManagedReached = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.AppStartTask/ReachManaged:Reached");
-        await reachManagedReached();
+    async init({ getAssemblyExports }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+        exports.Sample.AppStartTask.FrameApp.ReachedManaged();
     }
 
-    reached() {
-        window.parent.resolveAppStartEvent("reached");
+    reachedCallback() {
+        if (window.parent != window) {
+            window.parent.resolveAppStartEvent("reached");
+        }
     }
 }
 
+let mute = false;
 try {
     globalThis.frameApp = new FrameApp();
-
-    let mute = false;
-    window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    globalThis.frameApp.ReachedCallback = globalThis.frameApp.reachedCallback.bind(globalThis.frameApp);
+    if (window.parent != window) {
+        window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    }
 
     window.muteErrors = () => {
         mute = true;
     }
 
-    const { BINDING } = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -34,17 +38,21 @@ try {
                 console.error(...arguments);
             }
         },
-        onConfigLoaded: () => {
-            window.parent.resolveAppStartEvent("onConfigLoaded");
-            // Module.config.diagnostic_tracing = true;
+        onConfigLoaded: (config) => {
+            if (window.parent != window) {
+                window.parent.resolveAppStartEvent("onConfigLoaded");
+            }
+            // config.diagnosticTracing = true;
         },
         onAbort: (error) => {
             wasm_exit(1, error);
         },
-    }));
+    });
 
-    window.parent.resolveAppStartEvent("onDotnetReady");
-    await frameApp.init({ BINDING });
+    if (window.parent != window) {
+        window.parent.resolveAppStartEvent("onDotnetReady");
+    }
+    await frameApp.init(runtime);
 }
 catch (err) {
     if (!mute) {

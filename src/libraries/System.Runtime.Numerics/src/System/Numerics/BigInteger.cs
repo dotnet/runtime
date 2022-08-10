@@ -1084,12 +1084,10 @@ namespace System.Numerics
             if (_bits is null)
                 return _sign;
 
-            int hash = _sign;
-            for (int iv = _bits.Length; --iv >= 0;)
-                hash = unchecked((int)CombineHash((uint)hash, _bits[iv]));
-            return hash;
-
-            static uint CombineHash(uint u1, uint u2) => ((u1 << 7) | (u1 >> 25)) ^ u2;
+            HashCode hash = default;
+            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
+            hash.Add(_sign);
+            return hash.ToHashCode();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -3520,6 +3518,20 @@ namespace System.Numerics
             }
 
             return result;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<BigInteger>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BigInteger value)
+        {
+            value = new BigInteger(source, isUnsigned, isBigEndian: true);
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<BigInteger>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BigInteger value)
+        {
+            value = new BigInteger(source, isUnsigned, isBigEndian: false);
+            return true;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />

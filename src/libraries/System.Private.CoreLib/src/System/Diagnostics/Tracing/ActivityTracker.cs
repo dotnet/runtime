@@ -1,19 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-using System.Diagnostics;
-#else
 using System.Threading.Tasks;
-#endif
 using System.Threading;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// Tracks activities.  This is meant to be a singleton (accessed by the ActivityTracer.Instance static property)
@@ -265,19 +256,11 @@ namespace System.Diagnostics.Tracing
 
             if (activityName.EndsWith(EventSource.s_ActivityStartSuffix, StringComparison.Ordinal))
             {
-#if ES_BUILD_STANDALONE
-                return string.Concat(providerName, activityName.Substring(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length));
-#else
                 return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length));
-#endif
             }
             else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix, StringComparison.Ordinal))
             {
-#if ES_BUILD_STANDALONE
-                return string.Concat(providerName, activityName.Substring(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length));
-#else
                 return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length));
-#endif
             }
             else if (task != 0)
             {
@@ -376,11 +359,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        // TODO FIXME - differentiate between AD inside PCL
-                        int appDomainID = 0;
-#if (!ES_BUILD_STANDALONE)
-                        appDomainID = System.Threading.Thread.GetDomainID();
-#endif
+                        int appDomainID = System.Threading.Thread.GetDomainID();
                         // We start with the appdomain number to make this unique among appdomains.
                         activityPathGuidOffsetStart = AddIdToGuid(outPtr, activityPathGuidOffsetStart, (uint)appDomainID);
                     }
@@ -632,31 +611,4 @@ namespace System.Diagnostics.Tracing
 
         #endregion
     }
-
-#if ES_BUILD_STANDALONE
-    /******************************** SUPPORT *****************************/
-    /// <summary>
-    /// This is supplied by the framework.   It is has the semantics that the value is copied to any new Tasks that is created
-    /// by the current task.   Thus all causally related code gets this value.    Note that reads and writes to this VARIABLE
-    /// (not what it points it) to this does not need to be protected by locks because it is inherently thread local (you always
-    /// only get your thread local copy which means that you never have races.
-    /// </summary>
-    ///
-    [EventSource(Name = "Microsoft.Tasks.Nuget")]
-    internal sealed class TplEventSource : EventSource
-    {
-        public static class Keywords
-        {
-            public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
-            public const EventKeywords Debug = (EventKeywords)0x20000;
-        }
-
-        public static TplEventSource Log = new TplEventSource();
-        public bool Debug { get { return IsEnabled(EventLevel.Verbose, Keywords.Debug); } }
-
-        public void DebugFacilityMessage(string Facility, string Message) { WriteEvent(1, Facility, Message); }
-        public void DebugFacilityMessage1(string Facility, string Message, string Arg) { WriteEvent(2, Facility, Message, Arg); }
-        public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
-    }
-#endif
 }

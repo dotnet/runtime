@@ -41,18 +41,7 @@ namespace System.Configuration
         /// <summary>
         /// We maintain a single instance of the ClientSettingsStore per instance of provider.
         /// </summary>
-        private ClientSettingsStore Store
-        {
-            get
-            {
-                if (_store == null)
-                {
-                    _store = new ClientSettingsStore();
-                }
-
-                return _store;
-            }
-        }
+        private ClientSettingsStore Store => _store ??= new ClientSettingsStore();
 
         /// <summary>
         /// Abstract ProviderBase method.
