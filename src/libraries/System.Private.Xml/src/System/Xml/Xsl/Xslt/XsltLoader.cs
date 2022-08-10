@@ -42,7 +42,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(compiler != null);
             _compiler = compiler;
-            _xmlResolver = xmlResolver ?? XmlNullResolver.Singleton;
+            _xmlResolver = xmlResolver ?? XmlResolver.ThrowingResolver;
 
             XmlReader? reader = stylesheet as XmlReader;
             if (reader != null)
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // If xmlResolver == null, then the original uri will be resolved using XmlUrlResolver
                     XmlResolver origResolver = xmlResolver!;
-                    if (xmlResolver == null || xmlResolver == XmlNullResolver.Singleton)
+                    if (xmlResolver == null || xmlResolver == XmlResolver.ThrowingResolver)
                         origResolver = new XmlUrlResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)

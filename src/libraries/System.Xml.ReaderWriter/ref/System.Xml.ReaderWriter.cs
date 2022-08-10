@@ -948,11 +948,13 @@ namespace System.Xml
     {
         protected XmlResolver() { }
         public virtual System.Net.ICredentials Credentials { set { } }
+        public static System.Xml.XmlResolver ThrowingResolver { get { throw null; } }
         public abstract object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn);
         public virtual System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public virtual System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
         public virtual bool SupportsType(System.Uri absoluteUri, System.Type? type) { throw null; }
     }
+    [System.ObsoleteAttribute("XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.", DiagnosticId = "SYSLIB0047", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class XmlSecureResolver : System.Xml.XmlResolver
     {
         public XmlSecureResolver(System.Xml.XmlResolver resolver, string? securityUrl) { }

@@ -405,7 +405,7 @@ namespace System.Xml.Xsl
                 return new XmlUrlResolver();
             }
 
-            return XmlNullResolver.Singleton;
+            return XmlResolver.ThrowingResolver;
         }
     }
 }
