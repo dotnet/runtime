@@ -532,7 +532,7 @@ public class LoadDebuggerTest {
     }
 }
 
-public class HiddenSequencePointTest {
+public partial class HiddenSequencePointTest {
     public static void StepOverHiddenSP()
     {
         Console.WriteLine("first line");
@@ -1259,3 +1259,19 @@ public class InspectIntPtr
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public partial class HiddenSequencePointTest {
+    public static void StepOverHiddenSP3()
+    {
+        MethodWithHiddenLinesAtTheEnd3();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void MethodWithHiddenLinesAtTheEnd3()
+    {
+        Console.WriteLine ($"MethodWithHiddenLinesAtTheEnd");
+#line hidden
+        Console.WriteLine ($"debugger shouldn't be able to step here");
+    }
+#line default
+}
+

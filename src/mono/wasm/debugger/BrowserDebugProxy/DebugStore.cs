@@ -1634,7 +1634,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (locations.Count > 0 && locations[0].Line > sequencePoint.StartLine)
                                 locations.RemoveAt(0);
-                            locations.Add(new SourceLocation(method, sequencePoint));
+                            if (locations.Count == 0)
+                                locations.Add(new SourceLocation(method, sequencePoint));
                             break;
                         }
                     }

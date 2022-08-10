@@ -852,24 +852,29 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP");
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(539, 8, 542, 8, "StepOverHiddenSP", "HiddenSequencePointTest.StepOverHiddenSP")]
+        [InlineData(1272, 8, 1266, 8, "StepOverHiddenSP3", "HiddenSequencePointTest.StepOverHiddenSP3")]
+        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine(int line_bp, int column_bp, int line_pause, int column_pause, string method_to_call, string method_name)
         {
-            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 539, 8);
+            Console.WriteLine(await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", line_bp, column_bp));
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 542, 8,
-                "HiddenSequencePointTest.StepOverHiddenSP");
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:" + method_to_call + "'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", line_pause, column_pause,
+                method_name);
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(108, 16, 110, 16, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsyncWithLineHidden")]
+        [InlineData(126, 16, 129, 16, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsyncWithLineHidden2")]
+        [InlineData(149, 20, 101, 12, "DebuggerTests.AsyncTests.ContinueWithTests.RunAsyncWithLineHidden")]
+        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync(int line_bp, int column_bp, int line_pause, int column_pause, string method_name)
         {
-            await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", 105, 16);
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsyncWithLineHidden'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-async-test.cs", 107, 16,
-                "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsyncWithLineHidden");
+                "dotnet://debugger-test.dll/debugger-async-test.cs", line_pause, column_pause,
+                method_name);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
