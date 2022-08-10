@@ -12,4 +12,4 @@ RUN dotnet publish --framework net6.0 -c Release -o out -p:LatestFramework=true
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
 COPY --from=build-env /app/InteropTestsWebsite/out .
-ENTRYPOINT ["dotnet", "InteropTestsWebsite.dll", "--port_http1", "80"]
+ENTRYPOINT ["dotnet", "InteropTestsWebsite.dll", "--use_tls", "true"]
