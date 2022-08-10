@@ -2701,7 +2701,7 @@ namespace System
             #region AppendFormatted ReadOnlySpan<char>
             /// <summary>Writes the specified character span to the handler.</summary>
             /// <param name="value">The span to write.</param>
-            public bool AppendFormatted(ReadOnlySpan<char> value)
+            public bool AppendFormatted(scoped ReadOnlySpan<char> value)
             {
                 // Fast path for when the value fits in the current buffer
                 if (value.TryCopyTo(_destination.Slice(_pos)))
@@ -2717,7 +2717,7 @@ namespace System
             /// <param name="value">The span to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
             /// <param name="format">The format string.</param>
-            public bool AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+            public bool AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string? format = null)
             {
                 bool leftAlign = false;
                 if (alignment < 0)
