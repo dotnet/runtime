@@ -92,14 +92,6 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             }
         }
 
-        internal sealed override string AttributeTypeString
-        {
-            get
-            {
-                return AttributeType.FormatTypeNameForReflection();
-            }
-        }
-
         //
         // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //

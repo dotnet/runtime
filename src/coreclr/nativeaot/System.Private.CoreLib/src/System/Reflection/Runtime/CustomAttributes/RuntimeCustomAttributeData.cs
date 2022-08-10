@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     ComputeTypedArgumentString(namedArgument.TypedValue, typed));
             }
 
-            return string.Format("[{0}({1}{2})]", AttributeTypeString, ctorArgs, namedArgs);
+            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeNameForReflection(), ctorArgs, namedArgs);
         }
 
         protected static ConstructorInfo ResolveAttributeConstructor(
@@ -87,8 +87,6 @@ namespace System.Reflection.Runtime.CustomAttributes
 
             throw new MissingMethodException();
         }
-
-        internal abstract string AttributeTypeString { get; }
 
         //
         // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.

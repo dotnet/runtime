@@ -36,14 +36,6 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        internal sealed override string ParameterTypeString
-        {
-            get
-            {
-                return ParameterType.FormatTypeNameForReflection();
-            }
-        }
-
         protected readonly QSignatureTypeHandle QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;
         private volatile Type _lazyParameterType;
