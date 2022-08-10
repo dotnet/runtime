@@ -373,7 +373,7 @@ namespace System.Net.Http
                 // Server MUST NOT abort our control stream, setup a continuation which will react accordingly
                 _ = _clientControl.WritesClosed.ContinueWith(t =>
                 {
-                    if (t.Exception?.InnerExceptions.FirstOrDefault() is QuicException ex && ex.QuicError == QuicError.StreamAborted)
+                    if (t.Exception?.InnerException is QuicException ex && ex.QuicError == QuicError.StreamAborted)
                     {
                         Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream));
                     }
