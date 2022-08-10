@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="embeddedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -297,15 +297,15 @@ namespace System.Security.Cryptography.Cose
         /// <param name="detachedContent">The content to sign.</param>
         /// <param name="destination">The buffer in which to write the encoded bytes.</param>
         /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
-        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
         /// <param name="protectedHeaders">The protected header parameters to append to the message's content layer.</param>
         /// <param name="unprotectedHeaders">The unprotected header parameters to append to the message's content layer.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
-        /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the encoded message; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the encoded message; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -325,15 +325,15 @@ namespace System.Security.Cryptography.Cose
         /// <param name="embeddedContent">The content to sign and to include in the message.</param>
         /// <param name="destination">The buffer in which to write the encoded bytes.</param>
         /// <param name="signer">The signer information used to sign <paramref name="embeddedContent"/>.</param>
-        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
         /// <param name="protectedHeaders">The protected header parameters to append to the message's content layer.</param>
         /// <param name="unprotectedHeaders">The unprotected header parameters to append to the message's content layer.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
-        /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the encoded message; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the encoded message; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     The <paramref name="protectedHeaders" /> and <paramref name="unprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <paramref name="protectedHeaders"/> and <paramref name="unprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -558,12 +558,12 @@ namespace System.Security.Cryptography.Cose
         /// Attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
-        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the value; otherwise, <see langword="false" />.</returns>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the value; otherwise, <see langword="false"/>.</returns>
         /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
         /// <exception cref="InvalidOperationException">
         ///   <para>
-        ///     The <see cref="CoseMessage.ProtectedHeaders" /> and <see cref="CoseMessage.UnprotectedHeaders" /> collections have one or more labels in common.
+        ///     The <see cref="CoseMessage.ProtectedHeaders"/> and <see cref="CoseMessage.UnprotectedHeaders"/> collections have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>

@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Cose
         /// </summary>
         /// <param name="value">The bytes to be encoded and that the instance will represent.</param>
         /// <returns>An instance that represents the CBOR-encoded <paramref name="value"/>.</returns>
-        /// <seealso cref="FromEncodedValue(ReadOnlySpan{byte})" />
+        /// <seealso cref="FromEncodedValue(ReadOnlySpan{byte})"/>
         public static CoseHeaderValue FromBytes(ReadOnlySpan<byte> value)
         {
             var writer = new CborWriter();
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Cose
         /// <param name="value">The bytes to be encoded and that the instance will represent.</param>
         /// <returns>An instance that represents the CBOR-encoded <paramref name="value"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
-        /// <seealso cref="FromEncodedValue(byte[])" />
+        /// <seealso cref="FromEncodedValue(byte[])"/>
         public static CoseHeaderValue FromBytes(byte[] value)
         {
             if (value == null)
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Cose
         /// Gets the CBOR-encoded value as a byte string.
         /// </summary>
         /// <param name="destination">The buffer in which to write the decoded value.</param>
-        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
         /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
         /// <exception cref="InvalidOperationException">The value could not be decoded as byte string.</exception>
         public int GetValueAsBytes(Span<byte> destination)

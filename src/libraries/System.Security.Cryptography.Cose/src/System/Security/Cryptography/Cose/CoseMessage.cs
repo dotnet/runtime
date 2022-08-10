@@ -541,7 +541,7 @@ namespace System.Security.Cryptography.Cose
         /// Encodes this message as CBOR.
         /// </summary>
         /// <returns>The message encoded as CBOR.</returns>
-        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders"/> and <see cref="UnprotectedHeaders"/> collections have one or more labels in common.</exception>
         public byte[] Encode()
         {
             byte[] buffer = new byte[GetEncodedLength()];
@@ -555,10 +555,10 @@ namespace System.Security.Cryptography.Cose
         /// Encodes this message as CBOR.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
-        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
         /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
         /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders"/> and <see cref="UnprotectedHeaders"/> collections have one or more labels in common.</exception>
         /// <seealso cref="GetEncodedLength()"/>
         public int Encode(Span<byte> destination)
         {
@@ -574,10 +574,10 @@ namespace System.Security.Cryptography.Cose
         /// When overriden in a derived class, attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
-        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />. This parameter is treated as uninitialized.</param>
-        /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the value; otherwise, <see langword="false" />.</returns>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the value; otherwise, <see langword="false"/>.</returns>
         /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
-        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders"/> and <see cref="UnprotectedHeaders"/> collections have one or more labels in common.</exception>
         /// <seealso cref="GetEncodedLength()"/>
         public abstract bool TryEncode(Span<byte> destination, out int bytesWritten);
 

@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="unprotectedHeaders"/> specifies a value with the <see cref="CoseHeaderLabel.Algorithm" /> label.
+        ///     <paramref name="unprotectedHeaders"/> specifies a value with the <see cref="CoseHeaderLabel.Algorithm"/> label.
         ///   </para>
         /// </exception>
         /// <remarks>

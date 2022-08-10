@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -259,7 +259,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>

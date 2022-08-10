@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.Cose
         /// </summary>
         /// <param name="item">The label (key) and value to add to the header map.</param>
         /// <exception cref="InvalidOperationException">The header map is read-only.</exception>
-        /// <exception cref="ArgumentException"><paramref name="item" />'s value is not a valid CBOR value.</exception>
+        /// <exception cref="ArgumentException"><paramref name="item"/>'s value is not a valid CBOR value.</exception>
         public void Add(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item) => Add(item.Key, item.Value);
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The header map is read-only.</exception>
         /// <remarks>
         /// <paramref name="value"/> does not need to contain a valid CBOR-encoded value, as it will be encoded as a CBOR byte string.
-        /// To specify a CBOR-encoded value directly, see <see cref="CoseHeaderValue.FromEncodedValue(ReadOnlySpan{byte})" /> and <see cref="Add(CoseHeaderLabel, CoseHeaderValue)" />.
+        /// To specify a CBOR-encoded value directly, see <see cref="CoseHeaderValue.FromEncodedValue(ReadOnlySpan{byte})"/> and <see cref="Add(CoseHeaderLabel, CoseHeaderValue)"/>.
         /// </remarks>
         public void Add(CoseHeaderLabel label, byte[] value) => Add(label, CoseHeaderValue.FromBytes(value));
 
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The header map is read-only.</exception>
         /// <remarks>
         /// <paramref name="value"/> does not need to contain a valid CBOR-encoded value, as it will be encoded as a CBOR byte string.
-        /// To specify a CBOR-encoded value directly, see <see cref="CoseHeaderValue.FromEncodedValue(ReadOnlySpan{byte})" /> and <see cref="Add(CoseHeaderLabel, CoseHeaderValue)" />.
+        /// To specify a CBOR-encoded value directly, see <see cref="CoseHeaderValue.FromEncodedValue(ReadOnlySpan{byte})"/> and <see cref="Add(CoseHeaderLabel, CoseHeaderValue)"/>.
         /// </remarks>
         public void Add(CoseHeaderLabel label, ReadOnlySpan<byte> value) => Add(label, CoseHeaderValue.FromBytes(value));
 
