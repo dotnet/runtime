@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, MonoConfig } from "./types";
@@ -32,6 +32,7 @@ function initializeImportsAndExports(
     imports: EarlyImports,
     exports: EarlyExports,
     replacements: EarlyReplacements,
+    callbackAPI: any
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -60,6 +61,7 @@ function initializeImportsAndExports(
         },
         ...API,
     };
+    Object.assign(callbackAPI, API);
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
         module.configSrc = "./mono-config.json";

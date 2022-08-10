@@ -218,6 +218,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
     bool keepWaiting;
     YieldProcessorNormalizationInfo normalizationInfo;
+    int waitCycles = 1;
     do
     {
         keepWaiting = false;
@@ -248,7 +249,13 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     	        // @TODO: need tuning for spin
                 // @TODO: need tuning for this whole loop as well.
                 //        we are likley too aggressive with interruptions which may result in longer pauses.
-                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
+                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, waitCycles);
+
+                // simplistic linear backoff for now
+                // we could be catching threads in restartable sequences such as LL/SC style interlocked on ARM64
+                // and forcing them to restart.
+                // if interrupt mechanism is fast, eagerness could be hurting our overall progress.
+                waitCycles += 10000;
             }
         }
 

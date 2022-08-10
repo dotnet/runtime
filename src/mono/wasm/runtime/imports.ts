@@ -3,6 +3,7 @@
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
+/// <reference path="./types/node.d.ts" />
 
 import { DotnetModule, EarlyExports, EarlyImports, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
@@ -25,6 +26,7 @@ export function set_imports_exports(
     exports: EarlyExports,
 ): void {
     INTERNAL = exports.internal;
+    IMPORTS = exports.marshaled_imports;
     Module = exports.module;
 
     ENVIRONMENT_IS_NODE = imports.isNode;
