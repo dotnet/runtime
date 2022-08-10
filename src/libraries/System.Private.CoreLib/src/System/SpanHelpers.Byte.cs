@@ -2374,7 +2374,7 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<byte>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<byte>.Count * 2 <= length)
             {
                 nuint numElements = (nuint)Vector128<byte>.Count;
                 nuint numIters = (length / numElements) / 2;

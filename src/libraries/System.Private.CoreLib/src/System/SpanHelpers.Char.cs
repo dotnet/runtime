@@ -2063,7 +2063,7 @@ namespace System
                 // Store any remaining values one-by-one
                 buf = ref Unsafe.As<byte, char>(ref bufByte);
             }
-            else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<short>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<short>.Count * 2 <= length)
             {
                 ref short bufShort = ref Unsafe.As<char, short>(ref buf);
                 nuint numElements = (nuint)Vector128<short>.Count;

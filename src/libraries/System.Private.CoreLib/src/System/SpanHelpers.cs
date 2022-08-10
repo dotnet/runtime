@@ -442,7 +442,7 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<int>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<int>.Count * 2 <= length)
             {
                 nuint numElements = (nuint)Vector128<int>.Count;
                 nuint numIters = (length / numElements) / 2;
@@ -509,7 +509,7 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<long>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<long>.Count * 2 <= length)
             {
                 nuint numElements = (nuint)Vector128<long>.Count;
                 nuint numIters = (length / numElements) / 2;
