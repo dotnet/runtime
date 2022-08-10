@@ -33,6 +33,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73723", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Ctor_NullTypeName_InstallerTypeThrowsArgumentNullException()
         {
             var attribute = new InstallerTypeAttribute((string)null);

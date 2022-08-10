@@ -97,17 +97,11 @@ namespace System.ComponentModel.Tests
             Assert.Same(attribute, BindableAttribute.Default);
             Debug.Assert(object.ReferenceEquals(attribute, BindableAttribute.Default));
             Debug.Assert(object.ReferenceEquals(attribute, BindableAttribute.No));
-            int debugCount = 100;
-            Console.WriteLine($"Laks_{debugCount++}_{attribute}");
             Assert.Same(attribute, BindableAttribute.No);
-            Console.WriteLine($"Laks_{debugCount++}");
 
             Assert.False(attribute.Bindable);
-            Console.WriteLine($"Laks_{debugCount++}");
             Assert.Equal(BindingDirection.OneWay, attribute.Direction);
-            Console.WriteLine($"Laks_{debugCount++}");
             Assert.True(attribute.IsDefaultAttribute());
-            Console.WriteLine($"Laks_{debugCount++}");
         }
 
         [Fact]
