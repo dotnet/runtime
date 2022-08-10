@@ -125,10 +125,11 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
-export async function start_asset_download(asset: AssetEntry, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+export async function start_asset_download(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
     try {
         return await start_asset_download_throttle(asset, downloadData);
     } catch (err: any) {
+        asset.internalPending = undefined;
         if (err && err.status == 404) {
             throw err;
         }
@@ -137,6 +138,7 @@ export async function start_asset_download(asset: AssetEntry, downloadData: bool
         try {
             return await start_asset_download_throttle(asset, downloadData);
         } catch (err) {
+            asset.internalPending = undefined;
             // third attempt after small delay
             await delay(100);
             return await start_asset_download_throttle(asset, downloadData);
@@ -194,8 +196,9 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         ++actual_downloded_assets_count;
         return asset.internalPending.response;
     }
-    if (asset.internalPending) {
-        return asset.internalPending.response;
+    if (asset.internalPending && asset.internalPending.response) {
+        const response = await asset.internalPending.response;
+        return response;
     }
 
     const sourcesList = asset.loadRemote && runtimeHelpers.config.remoteSources ? runtimeHelpers.config.remoteSources : [""];
@@ -227,7 +230,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
                 continue;// next source
             }
             ++actual_downloded_assets_count;
-            return asset.internalPending.response;
+            return response;
         }
         catch (err) {
             continue; //next source
