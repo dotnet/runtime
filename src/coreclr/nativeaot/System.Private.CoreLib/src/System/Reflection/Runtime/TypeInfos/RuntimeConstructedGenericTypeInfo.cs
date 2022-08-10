@@ -220,8 +220,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => GenericTypeDefinitionTypeInfo.CanBrowseWithoutMissingMetadataExceptions;
-
         internal sealed override Type InternalDeclaringType
         {
             get

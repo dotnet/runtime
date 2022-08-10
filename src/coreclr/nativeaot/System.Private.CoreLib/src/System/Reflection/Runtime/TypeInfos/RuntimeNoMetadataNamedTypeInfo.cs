@@ -142,8 +142,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => false;
-
         internal sealed override Type InternalDeclaringType
         {
             get

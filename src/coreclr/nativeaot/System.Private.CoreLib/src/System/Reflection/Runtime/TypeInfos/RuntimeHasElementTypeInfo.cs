@@ -152,8 +152,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return _key.ElementType.GetHashCode();
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
-
         internal sealed override Type InternalDeclaringType
         {
             get

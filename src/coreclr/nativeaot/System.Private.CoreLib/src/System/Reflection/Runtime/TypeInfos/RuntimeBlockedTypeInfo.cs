@@ -154,8 +154,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
-
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get

@@ -636,11 +636,6 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Returns true if it's possible to ask for a list of members and the base type without triggering a missing metadata exception.
-        //
-        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
-
-        //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)
         //
         internal virtual RuntimeTypeInfo[] RuntimeGenericTypeParameters
