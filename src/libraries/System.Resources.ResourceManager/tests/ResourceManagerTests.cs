@@ -26,6 +26,8 @@ namespace System.Resources.Tests
 
     public class ResourceManagerTests
     {
+        public static bool AllowsCustomResourceTypes => AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool isEnabled) ? isEnabled : true;
+
         [Fact]
         public static void ExpectMissingManifestResourceException()
         {
@@ -82,6 +84,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] // satellite assemblies
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -92,6 +95,7 @@ namespace System.Resources.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] //satellite assemblies
         public static void GetString_FromTestClassWithoutNeutralResources()
         {
             // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
@@ -269,7 +273,7 @@ namespace System.Resources.Tests
             yield return new object[] { "Icon", new Icon("icon.ico") };
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
@@ -279,7 +283,7 @@ namespace System.Resources.Tests
             Assert.Equal(GetImageData(expectedValue), GetImageData(manager.GetObject(key, new CultureInfo("en-US"))));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images_ResourceSet(string key, object expectedValue)
@@ -330,7 +334,9 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetObject(key.ToLower(), true));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        public static bool IsDrawingSupportedAndAllowsCustomResourceTypes => PlatformDetection.IsDrawingSupported && AllowsCustomResourceTypes;
+
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)

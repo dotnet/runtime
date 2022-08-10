@@ -73,7 +73,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             try
             {
-                type = _idParser.ResolveTypeHandle(input, false);
+                bool unusedNonLoadableModule = false;
+                type = _idParser.ResolveTypeHandle(input, ref unusedNonLoadableModule, false);
             }
             catch
             { }
@@ -94,7 +95,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             try
             {
-                method = _idParser.ResolveMethodID(input, false);
+                method = _idParser.ResolveMethodID(input, out _, false);
             }
             catch
             { }
@@ -1284,7 +1285,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ModuleDesc loadedModule = idParser.ResolveModuleID(e.ModuleID, false);
                     if (loadedModule == null)
                     {
-                        PrintWarning($"Unable to find loaded module {e.ModuleILFileName} to verify match");
+                        if (!idParser.IsDynamicModuleID(e.ModuleID))
+                            PrintWarning($"Unable to find loaded module {e.ModuleILFileName} to verify match");
                         continue;
                     }
 
@@ -1365,9 +1367,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                         MethodDesc method = null;
                         string extraWarningText = null;
+                        bool failedDueToNonloadableModule = false;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -1376,7 +1379,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || failedDueToNonloadableModule || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly} when looking up R2R methods");
@@ -1410,9 +1413,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         MethodDesc method = null;
                         string extraWarningText = null;
+                        bool failedDueToNonloadableModule = false;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -1421,7 +1425,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || failedDueToNonloadableModule || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
@@ -1549,7 +1553,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     MethodDesc method = null;
                     try
                     {
-                        method = idParser.ResolveMethodID(methodID, commandLineOptions.VerboseWarnings);
+                        method = idParser.ResolveMethodID(methodID, out _, commandLineOptions.VerboseWarnings);
                     }
                     catch (Exception)
                     {

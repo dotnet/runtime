@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -66,6 +67,18 @@ namespace System.Text.Json.Serialization
         }
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
+
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal sealed override JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        {
+            return new ReflectionJsonTypeInfo<T>(this, options);
+        }
+
+        internal sealed override JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
+        {
+            return new CustomJsonTypeInfo<T>(this, options);
+        }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {

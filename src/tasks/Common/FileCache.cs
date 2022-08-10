@@ -29,7 +29,7 @@ internal sealed class FileCache
             return;
         }
 
-        //Enabled = true;
+        Enabled = true;
         if (File.Exists(cacheFilePath))
         {
             _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),

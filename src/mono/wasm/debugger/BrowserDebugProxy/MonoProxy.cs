@@ -1235,7 +1235,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {

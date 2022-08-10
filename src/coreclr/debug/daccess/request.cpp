@@ -106,7 +106,7 @@ PTR_SyncBlock DACGetSyncBlockFromObjectPointer(TADDR objAddr, ICorDebugDataTarge
     return ste->m_SyncBlock;
 }
 
-BOOL DacValidateEEClass(EEClass *pEEClass)
+BOOL DacValidateEEClass(PTR_EEClass pEEClass)
 {
     // Verify things are right.
     // The EEClass method table pointer should match the method table.
@@ -114,7 +114,7 @@ BOOL DacValidateEEClass(EEClass *pEEClass)
     BOOL retval = TRUE;
     EX_TRY
     {
-        MethodTable *pMethodTable = pEEClass->GetMethodTable();
+        PTR_MethodTable pMethodTable = pEEClass->GetMethodTable();
         if (!pMethodTable)
         {
             // PREfix.
@@ -181,7 +181,7 @@ BadMethodTable: ;
 
 }
 
-BOOL DacValidateMD(MethodDesc * pMD)
+BOOL DacValidateMD(PTR_MethodDesc pMD)
 {
     if (pMD == NULL)
     {
@@ -192,7 +192,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
     BOOL retval = TRUE;
     EX_TRY
     {
-        MethodTable *pMethodTable = pMD->GetMethodTable();
+        PTR_MethodTable pMethodTable = pMD->GetMethodTable();
 
         // Standard fast check
         if (!pMethodTable->ValidateWithPossibleAV())
@@ -245,7 +245,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
 
 BOOL DacValidateMD(LPCVOID pMD)
 {
-    return DacValidateMD((MethodDesc *)pMD);
+    return DacValidateMD(dac_cast<PTR_MethodDesc>(pMD));
 }
 
 VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRESS *pGCInfo)
@@ -1227,7 +1227,7 @@ ClrDataAccess::GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct 
 
     SOSDacEnter();
 
-    MethodDesc *pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
     if (!DacValidateMD(pMD))
     {
         hr = E_INVALIDARG;
@@ -2016,7 +2016,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
-    EEClass * pClass = PTR_EEClass(TO_TADDR(eeClass));
+    PTR_EEClass pClass = PTR_EEClass(TO_TADDR(eeClass));
     if (!DacValidateEEClass(pClass))
     {
         hr = E_INVALIDARG;
