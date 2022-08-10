@@ -90,9 +90,20 @@ namespace System.DirectoryServices.Protocols
 
         internal static int ResultToErrorCode(ConnectionHandle ldapHandle, IntPtr result, int freeIt) => Interop.Ldap.ldap_result2error(ldapHandle, result, freeIt);
 
-        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber) =>
-                                Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, timelimit, sizelimit, ref messageNumber);
+        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber)
+        {
+            LDAP_TIMEVAL searchTimeout = new LDAP_TIMEVAL
+            {
+                tv_sec = timelimit
+            };
 
+            //zero must not be passed otherwise libldap runtime returns LDAP_PARAM_ERROR
+            if (searchTimeout.tv_sec < 1)
+                //-1 means no time limit
+                searchTimeout.tv_sec = -1;
+
+            return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
+        }
         internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
 
         // This option is not supported in Linux, so it would most likely throw.

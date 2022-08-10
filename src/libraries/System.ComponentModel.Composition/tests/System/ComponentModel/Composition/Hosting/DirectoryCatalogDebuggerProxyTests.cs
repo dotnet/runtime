@@ -164,9 +164,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         private string GetTemporaryDirectory(string location = null)
         {
-            string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDirectory);
-            return tempDirectory;
+            return Directory.CreateTempSubdirectory().FullName;
         }
     }
 
@@ -193,16 +191,12 @@ namespace System.ComponentModel.Composition.Primitives
 
         public static string GetNewTemporaryDirectory()
         {
-            string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDirectory);
-            return tempDirectory;
+            return Directory.CreateTempSubdirectory().FullName;
         }
 
         public static string GetTemporaryDirectory()
         {
-            string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDirectory);
-            return tempDirectory;
+            return Directory.CreateTempSubdirectory().FullName;
         }
     }
 }
