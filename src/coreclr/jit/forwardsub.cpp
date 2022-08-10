@@ -209,7 +209,7 @@ public:
         m_treeSize++;
         GenTree* const node = *use;
 
-        if (node->OperIs(GT_LCL_VAR))
+        if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
             unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
 
@@ -465,7 +465,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // If lhs is mulit-reg, rhs must be too.
+    // If lhs is multi-reg, rhs must be too.
     //
     if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
     {
@@ -507,13 +507,67 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     assert(fsv.GetUseCount() <= 1);
 
-    if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
+    if (fsv.GetUseCount() == 0)
     {
         JITDUMP(" no next stmt use\n");
         return false;
     }
 
-    JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
+    GenTree* const fsvNode = fsv.GetNode();
+
+    if (fsvNode == nullptr)
+    {
+        JITDUMP(" found use, but can't forward sub there\n");
+        return false;
+    }
+
+    JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsvNode), dspTreeID(lhsNode), lclNum);
+
+    // Bail if types disagree.
+    // Might be able to tolerate these by retyping.
+    //
+    if (fsvNode->OperIs(GT_LCL_VAR) && (fsvNode->TypeGet() != fwdSubNode->TypeGet()))
+    {
+        JITDUMP(" mismatched types (substitution)\n");
+        return false;
+    }
+
+    // Avoid struct type incompatibilties.
+    // (seems like for LCL_FLD we don't bother capturing layout...?)
+    //
+    if (varTypeIsStruct(varDsc->TypeGet()) && fsvNode->OperIs(GT_LCL_VAR))
+    {
+        ClassLayout* const varLayout = varDsc->GetLayout();
+        ClassLayout* const useLayout = fsvNode->GetLayout(this);
+
+        if (!ClassLayout::AreCompatible(varLayout, useLayout))
+        {
+            JITDUMP(" incompatible struct types\n");
+            return false;
+        }
+    }
+
+    // For LCL_FLD uses, only forward sub unpromoted LCL_VARs.
+    //
+    if (fsvNode->OperIs(GT_LCL_FLD))
+    {
+        if (!fwdSubNode->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP("can't forward !LCL_VAR to LCL_FLD use\n");
+            return false;
+        }
+
+        LclVarDsc* const fwdVar = lvaGetDesc(fwdSubNode->AsLclVarCommon());
+
+        // TODO: handle this case, if the LCL_FLD exactly corresponds to
+        // one of the promoted fields.
+        //
+        if (fwdVar->lvPromotedStruct())
+        {
+            JITDUMP("can't forward promoted LCL_VAR to LCL_FLD use\n");
+            return false;
+        }
+    }
 
     // If next statement already has a large tree, hold off
     // on making it even larger.
@@ -525,20 +579,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(&fwdSubNode, 1))
     {
         JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
-        return false;
-    }
-
-    // Next statement seems suitable.
-    // See if we can forward sub without changing semantics.
-    //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
-
-    // Bail if types disagree.
-    // Might be able to tolerate these by retyping.
-    //
-    if (fsv.GetNode()->TypeGet() != fwdSubNode->TypeGet())
-    {
-        JITDUMP(" mismatched types (substitution)\n");
         return false;
     }
 
@@ -622,38 +662,11 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
     //
-    if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
+    if (fsv.IsCallArg() && fsvNode->TypeIs(TYP_STRUCT) &&
         !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
-    }
-
-    // We may sometimes lose or change a type handle. Avoid substituting if so.
-    //
-    // However, we allow free substitution of hardware SIMD types.
-    //
-    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
-    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
-    if (fwdHnd != useHnd)
-    {
-        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
-        {
-            JITDUMP(" would add/remove struct handle (substitution)\n");
-            return false;
-        }
-
-#ifdef FEATURE_SIMD
-        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
-#else
-        const bool bothHWSIMD = false;
-#endif
-
-        if (!bothHWSIMD)
-        {
-            JITDUMP(" would change struct handle (substitution)\n");
-            return false;
-        }
     }
 
 #ifdef FEATURE_SIMD
@@ -752,7 +765,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // If the use is a multi-reg arg, don't forward sub non-locals.
     //
-    if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
+    if (fsvNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
     {
         JITDUMP(" would change multi-reg (substitution)\n");
         return false;
@@ -769,8 +782,21 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Looks good, forward sub!
     //
-    GenTree** use = fsv.GetUse();
-    *use          = fwdSubNode;
+    if (fsvNode->OperIs(GT_LCL_FLD))
+    {
+        assert(fwdSubNode->OperIs(GT_LCL_VAR));
+        const unsigned newLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
+        fsvNode->AsLclFld()->SetLclNum(newLclNum);
+
+        // Not sure about this.... maybe we should bail out on enregisterable cases.
+        //
+        lvaSetVarDoNotEnregister(newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+    }
+    else
+    {
+        GenTree** use = fsv.GetUse();
+        *use          = fwdSubNode;
+    }
 
     if (!fwdSubNodeInvariant)
     {
