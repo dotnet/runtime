@@ -185,7 +185,7 @@ namespace System
             }
         }
 
-        public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
+        public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -221,14 +221,16 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
+        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T) != null || (object)value != null)
+            if (default(T) != null || (object?)value != null)
             {
+                Debug.Assert(value is not null);
+
                 while (length >= 8)
                 {
                     length -= 8;
@@ -278,7 +280,7 @@ namespace System
                 nint len = length;
                 for (index = 0; index < len; index++)
                 {
-                    if ((object)Unsafe.Add(ref searchSpace, index) is null)
+                    if ((object?)Unsafe.Add(ref searchSpace, index) is null)
                     {
                         goto Found;
                     }
@@ -400,13 +402,15 @@ namespace System
             return (int)(index + 7);
         }
 
-        public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
+        public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T) != null || (object)value != null)
+            if (default(T) != null || (object?)value != null)
             {
+                Debug.Assert(value is not null);
+
                 while (length >= 8)
                 {
                     length -= 8;
@@ -461,7 +465,7 @@ namespace System
                 nint len = (nint)length;
                 for (index = 0; index < len; index++)
                 {
-                    if ((object)Unsafe.Add(ref searchSpace, index) is null)
+                    if ((object?)Unsafe.Add(ref searchSpace, index) is null)
                     {
                         goto Found;
                     }
@@ -487,14 +491,16 @@ namespace System
             return (int)(index + 7);
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null))
             {
+                Debug.Assert(value0 is not null && value1 is not null);
+
                 while ((length - index) >= 8)
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
@@ -591,14 +597,16 @@ namespace System
             return index + 7;
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
+            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
             {
+                Debug.Assert(value0 is not null && value1 is not null && value2 is not null);
+
                 while ((length - index) >= 8)
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
@@ -694,7 +702,7 @@ namespace System
             return index + 7;
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
+        public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -724,7 +732,7 @@ namespace System
                     T candidate = Unsafe.Add(ref searchSpace, i);
                     for (int j = 0; j < valueLength; j++)
                     {
-                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        if (Unsafe.Add(ref value, j)!.Equals(candidate))
                         {
                             return i;
                         }
@@ -765,7 +773,7 @@ namespace System
             return -1; // not found
         }
 
-        public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
+        public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -805,12 +813,14 @@ namespace System
             return -1;
         }
 
-        public static int LastIndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
+        public static int LastIndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
-            if (default(T) != null || (object)value != null)
+            if (default(T) != null || (object?)value != null)
             {
+                Debug.Assert(value is not null);
+
                 while (length >= 8)
                 {
                     length -= 8;
@@ -859,7 +869,7 @@ namespace System
             {
                 for (length--; length >= 0; length--)
                 {
-                    if ((object)Unsafe.Add(ref searchSpace, length) is null)
+                    if ((object?)Unsafe.Add(ref searchSpace, length) is null)
                     {
                         goto Found;
                     }
@@ -886,13 +896,15 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null))
             {
+                Debug.Assert(value0 is not null && value1 is not null);
+
                 while (length >= 8)
                 {
                     length -= 8;
@@ -989,13 +1001,15 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
             {
+                Debug.Assert(value0 is not null && value1 is not null && value2 is not null);
+
                 while (length >= 8)
                 {
                     length -= 8;
@@ -1092,7 +1106,7 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -1110,7 +1124,7 @@ namespace System
                     T candidate = Unsafe.Add(ref searchSpace, i);
                     for (int j = 0; j < valueLength; j++)
                     {
-                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        if (Unsafe.Add(ref value, j)!.Equals(candidate))
                         {
                             return i;
                         }
@@ -1219,7 +1233,7 @@ namespace System
             return -1;
         }
 
-        public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
+        public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
@@ -1311,7 +1325,7 @@ namespace System
         }
 
         public static int SequenceCompareTo<T>(ref T first, int firstLength, ref T second, int secondLength)
-            where T : IComparable<T>
+            where T : IComparable<T>?
         {
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);

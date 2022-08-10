@@ -66,7 +66,6 @@ namespace Sample
             [JSImport("globalThis.frameApp.ReachedCallback")]
             public static partial Task ReachedCallback();
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             [JSExport]
             public static void ReachedManaged()
             {

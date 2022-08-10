@@ -700,19 +700,19 @@ namespace System.Globalization
                             }
                         }
 
-                        // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 99,
-                        // but it can begin with any number of 0s, and thus we may need to check more than two
+                        // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 999_999_999,
+                        // but it can begin with any number of 0s, and thus we may need to check more than 9
                         // digits.  Further, for compat, we need to stop when we hit a null char.
                         int n = 0;
                         int i = 1;
                         while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                         {
-                            int temp = (n * 10) + format[i++] - '0';
-                            if (temp < n)
+                            // Check if we are about to overflow past our limit of 9 digits
+                            if (n >= 100_000_000)
                             {
                                 throw new FormatException(SR.Argument_BadFormatSpecifier);
                             }
-                            n = temp;
+                            n = ((n * 10) + format[i++] - '0');
                         }
 
                         // If we're at the end of the digits rather than having stopped because we hit something
