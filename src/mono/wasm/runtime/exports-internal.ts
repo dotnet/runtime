@@ -1,6 +1,6 @@
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import cwraps from "./cwraps";
-import { mono_wasm_symbolicate_string, mono_wasm_stringify_as_error_with_stack, mono_wasm_get_loaded_files, mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
+import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
 import { get_dotnet_instance } from "./exports";
 import { http_wasm_supports_streaming_response, http_wasm_create_abort_controler, http_wasm_abort_request, http_wasm_abort_response, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes } from "./http";
 import { Module, runtimeHelpers } from "./imports";
@@ -8,7 +8,9 @@ import { get_property, set_property, has_property, get_typeof_property, get_glob
 import { mono_method_resolve } from "./net6-legacy/method-binding";
 import { mono_wasm_set_runtime_options } from "./startup";
 import { mono_intern_string } from "./strings";
+import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
+import { mono_wasm_get_loaded_files } from "./assets";
 
 export function export_internal(): any {
     return {
@@ -24,8 +26,6 @@ export function export_internal(): any {
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
 
-        //
-        mono_wasm_symbolicate_string,
         mono_wasm_stringify_as_error_with_stack,
 
         // used in debugger DevToolsHelper.cs

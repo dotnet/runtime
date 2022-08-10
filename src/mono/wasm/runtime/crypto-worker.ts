@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { resolve_asset_path } from "./assets";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 
@@ -107,22 +108,24 @@ export function init_crypto(): void {
         console.debug("MONO_WASM: Initializing Crypto WebWorker");
 
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
-        const worker = new Worker("dotnet-crypto-worker.js");
+        const asset = resolve_asset_path("js-module-crypto");
+        mono_assert(asset && asset.resolvedUrl, "Can't find js-module-crypto");
+        const worker = new Worker(asset.resolvedUrl);
         mono_wasm_crypto = {
             channel: chan,
             worker: worker,
         };
         const messageData: InitCryptoMessageData = {
-            config: JSON.stringify(runtimeHelpers.config),
+            config: JSON.stringify(runtimeHelpers.config),// there could be things in config which could not be cloned to worker
             comm_buf: chan.get_comm_buffer(),
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
         };
-        worker.postMessage(messageData);
         worker.onerror = event => {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
         };
+        worker.postMessage(messageData);
     }
 }
 

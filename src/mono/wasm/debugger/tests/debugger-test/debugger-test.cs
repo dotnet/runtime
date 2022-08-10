@@ -987,6 +987,8 @@ public class TestHotReloadUsingSDB {
 
         public static void RunMethod(string className, string methodName)
         {
+            if (loadedAssembly is null)
+                throw new InvalidOperationException($"{nameof(loadedAssembly)} is null!");
             var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
             var myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
