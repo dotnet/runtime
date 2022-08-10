@@ -1246,6 +1246,16 @@ get_wrapper_shared_vtype (MonoType *t)
 	}
 	g_assert (tuple_class);
 
+	for (int i = 0; i < findex; i++) {
+		if (m_type_is_byref (args [i])) {
+#if TARGET_SIZEOF_VOID_P == 8
+			args [i] = m_class_get_byval_arg (mono_defaults.int_class);
+#else
+			args [i] = m_class_get_byval_arg (mono_defaults.int32_class);
+#endif
+		}
+	}
+
 	memset (&ctx, 0, sizeof (ctx));
 	ctx.class_inst = mono_metadata_get_generic_inst (findex, args);
 
