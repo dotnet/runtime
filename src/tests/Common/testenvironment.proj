@@ -297,6 +297,7 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
+      <!-- FIXME: adding 'interp' to the aot runtime options was temporarly introduced (for the PR) to test fullaot+interp due to missing lanes for this configuration -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot-interp" />
 
       <!-- CLR interpreter -->

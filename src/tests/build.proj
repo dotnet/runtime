@@ -128,6 +128,7 @@
 
     <ItemGroup>
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
+      <!-- FIXME: adding 'interp' to the aot options was temporarly introduced (for the PR) to test fullaot+interp due to missing lanes for this configuration -->
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="interp" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
