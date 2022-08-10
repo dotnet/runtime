@@ -366,10 +366,10 @@ async function instantiate_wasm_module(
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
-        const pendingAsset = await start_asset_download(assetToLoad);
+        await start_asset_download(assetToLoad, false);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
-        instantiate_wasm_asset(pendingAsset!, imports, successCallback);
+        instantiate_wasm_asset(assetToLoad, imports, successCallback);
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
         afterInstantiateWasm.promise_control.resolve();

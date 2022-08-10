@@ -5,8 +5,8 @@ import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { MONO } from "./net6-legacy/imports";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
-import { beforeOnRuntimeInitialized } from "./startup";
-import { AssetBehaviours, AssetEntry, LoadingResource, mono_assert, ResourceRequest } from "./types";
+import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
+import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
 const allAssetsInMemory = createPromiseController<void>();
@@ -25,6 +25,11 @@ const skipDownloadsAssetTypes: {
 } = {
     "js-module-crypto": true,
     "js-module-threads": true,
+};
+const skipBufferAssetTypes: {
+    [k: string]: boolean
+} = {
+    "dotnetwasm": true,
 };
 const skipInstantiateAssetTypes: {
     [k: string]: boolean
@@ -47,45 +52,59 @@ export async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
-        const download_promises: Promise<AssetEntry | undefined>[] = [];
+        const buffer_promises: Promise<AssetEntry | undefined>[] = [];
         // start fetching and instantiating all assets in parallel
-        for (const asset of runtimeHelpers.config.assets!) {
-            if (!skipDownloadsAssetTypes[asset.behavior]) {
-                expected_downloded_assets_count++;
-            }
+        for (const a of runtimeHelpers.config.assets!) {
+            const asset: AssetEntryInternal = a;
             if (!skipInstantiateAssetTypes[asset.behavior]) {
                 expected_instantiated_assets_count++;
             }
-            if (!asset.pending) {
-                if (!skipDownloadsAssetTypes[asset.behavior]) {
-                    download_promises.push(start_asset_download(asset));
+            if (!skipDownloadsAssetTypes[asset.behavior]) {
+                const dontTouchBuffer = skipBufferAssetTypes[asset.behavior];
+                expected_downloded_assets_count++;
+                if (asset.pending) {
+                    asset.internalPending = asset.pending;
+                    const waitForExternalData: () => Promise<AssetEntry | undefined> = async () => {
+                        const response = await asset.internalPending!.response;
+                        ++actual_downloded_assets_count;
+                        if (dontTouchBuffer) {
+                            return undefined;
+                        }
+                        asset.buffer = await response.arrayBuffer();
+                        return asset;
+                    };
+                    buffer_promises.push(waitForExternalData());
+                } else {
+                    const waitForExternalData: () => Promise<AssetEntry | undefined> = async () => {
+                        asset.buffer = await start_asset_download(asset, !dontTouchBuffer);
+                        if (!asset.buffer) {
+                            return undefined;
+                        }
+                        return asset;
+                    };
+                    buffer_promises.push(waitForExternalData());
                 }
-            } else {
-                const waitForPending = async () => {
-                    await asset.pending!;
-                    return asset;
-                };
-                download_promises.push(waitForPending());
             }
         }
         allDownloadsQueued.promise_control.resolve();
 
         const asset_promises: Promise<void>[] = [];
-        for (const downloadPromise of download_promises) {
-            const downloadedAsset = await downloadPromise;
-            if (downloadedAsset) {
-                if (!skipInstantiateAssetTypes[downloadedAsset.behavior]) {
-                    asset_promises.push((async () => {
-                        const url = downloadedAsset.pending!.url;
-                        const response = await downloadedAsset.pending!.response;
-                        downloadedAsset.pending = undefined; //GC
-                        const buffer = await response.arrayBuffer();
+        for (const downloadPromise of buffer_promises) {
+            asset_promises.push((async () => {
+                const downloadedAsset = await downloadPromise as AssetEntryInternal;
+                if (downloadedAsset) {
+                    if (!skipInstantiateAssetTypes[downloadedAsset.behavior]) {
+                        const url = downloadedAsset.internalPending!.url;
+                        const data = new Uint8Array(downloadedAsset.buffer!);
+                        downloadedAsset.internalPending = undefined; //GC
+                        downloadedAsset.buffer = undefined; //GC
+
                         await beforeOnRuntimeInitialized.promise;
                         // this is after onRuntimeInitialized
-                        _instantiate_asset(downloadedAsset, url, new Uint8Array(buffer));
-                    })());
+                        _instantiate_asset(downloadedAsset, url, data);
+                    }
                 }
-            }
+            })());
         }
 
         // this await will get past the onRuntimeInitialized because we are not blocking via addRunDependency
@@ -94,6 +113,7 @@ export async function mono_download_assets(): Promise<void> {
             allAssetsInMemory.promise_control.resolve();
         }).catch(err => {
             Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
+            abort_startup(err, true);
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
@@ -105,9 +125,9 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
-export async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | undefined> {
+export async function start_asset_download(asset: AssetEntry, downloadData: boolean): Promise<ArrayBuffer | undefined> {
     try {
-        return await start_asset_download_throttle(asset);
+        return await start_asset_download_throttle(asset, downloadData);
     } catch (err: any) {
         if (err && err.status == 404) {
             throw err;
@@ -115,12 +135,119 @@ export async function start_asset_download(asset: AssetEntry): Promise<AssetEntr
         // second attempt only after all first attempts are queued
         await allDownloadsQueued.promise;
         try {
-            return await start_asset_download_throttle(asset);
+            return await start_asset_download_throttle(asset, downloadData);
         } catch (err) {
             // third attempt after small delay
             await delay(100);
-            return await start_asset_download_throttle(asset);
+            return await start_asset_download_throttle(asset, downloadData);
         }
+    }
+}
+
+async function start_asset_download_throttle(asset: AssetEntry, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+    while (throttling) {
+        await throttling.promise;
+    }
+    try {
+        ++parallel_count;
+        if (parallel_count == runtimeHelpers.maxParallelDownloads) {
+            if (runtimeHelpers.diagnosticTracing)
+                console.debug("MONO_WASM: Throttling further parallel downloads");
+            throttling = createPromiseController<void>();
+        }
+
+        const response = await start_asset_download_sources(asset);
+        if (!response) return undefined;
+        if (!downloadData) {
+            return undefined;
+        }
+        return await response.arrayBuffer();
+    }
+    finally {
+        --parallel_count;
+        if (throttling && parallel_count == runtimeHelpers.maxParallelDownloads - 1) {
+            if (runtimeHelpers.diagnosticTracing)
+                console.debug("MONO_WASM: Resuming more parallel downloads");
+            const old_throttling = throttling;
+            throttling = undefined;
+            old_throttling.promise_control.resolve();
+        }
+    }
+}
+
+async function start_asset_download_sources(asset: AssetEntryInternal): Promise<Response | undefined> {
+    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+    if (asset.buffer) {
+        const buffer = asset.buffer;
+        asset.buffer = undefined;//GC later
+        asset.internalPending = {
+            url: "undefined://" + asset.name,
+            name: asset.name,
+            response: Promise.resolve({
+                arrayBuffer: () => buffer,
+                headers: {
+                    get: () => undefined,
+                }
+            }) as any
+        };
+        ++actual_downloded_assets_count;
+        return asset.internalPending.response;
+    }
+    if (asset.internalPending) {
+        return asset.internalPending.response;
+    }
+
+    const sourcesList = asset.loadRemote && runtimeHelpers.config.remoteSources ? runtimeHelpers.config.remoteSources : [""];
+    let response: Response | undefined = undefined;
+    for (let sourcePrefix of sourcesList) {
+        sourcePrefix = sourcePrefix.trim();
+        // HACK: Special-case because MSBuild doesn't allow "" as an attribute
+        if (sourcePrefix === "./")
+            sourcePrefix = "";
+
+        const attemptUrl = resolve_path(asset, sourcePrefix);
+        if (asset.name === attemptUrl) {
+            if (runtimeHelpers.diagnosticTracing)
+                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
+        } else {
+            if (runtimeHelpers.diagnosticTracing)
+                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
+        }
+        try {
+            const loadingResource = download_resource({
+                name: asset.name,
+                resolvedUrl: attemptUrl,
+                hash: asset.hash,
+                behavior: asset.behavior
+            });
+            asset.internalPending = loadingResource;
+            response = await loadingResource.response;
+            if (!response.ok) {
+                continue;// next source
+            }
+            ++actual_downloded_assets_count;
+            return asset.internalPending.response;
+        }
+        catch (err) {
+            continue; //next source
+        }
+    }
+    const isOkToFail = asset.isOptional || (asset.name.match(/\.pdb$/) && runtimeHelpers.config.ignorePdbLoadErrors);
+    mono_assert(response, "Response undefined");
+    if (!isOkToFail) {
+        const err: any = new Error(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        err.status = response.status;
+        throw err;
+    } else {
+        Module.print(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        if (!skipDownloadsAssetTypes[asset.behavior]) {
+            expected_downloded_assets_count--;
+        }
+        if (skipInstantiateAssetTypes[asset.behavior]) {
+            expected_instantiated_assets_count--;
+        }
+        return undefined;
     }
 }
 
@@ -150,118 +277,31 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
 }
 
 function download_resource(request: ResourceRequest): LoadingResource {
-    if (typeof Module.downloadResource === "function") {
-        const loading = Module.downloadResource(request);
-        if (loading) return loading;
-    }
-    const options: any = {};
-    if (request.hash) {
-        options.integrity = request.hash;
-    }
-    const response = runtimeHelpers.fetch_like(request.resolvedUrl!, options);
-    return {
-        name: request.name, url: request.resolvedUrl!, response
-    };
-}
-
-async function start_asset_download_sources(asset: AssetEntry): Promise<AssetEntry | undefined> {
-    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
-    if (asset.buffer) {
-        ++actual_downloded_assets_count;
-        const buffer = asset.buffer;
-        asset.buffer = undefined;//GC later
-        asset.pending = {
-            url: "undefined://" + asset.name,
-            name: asset.name,
-            response: Promise.resolve({
-                arrayBuffer: () => buffer,
-                headers: {
-                    get: () => undefined,
-                }
-            }) as any
-        };
-        return Promise.resolve(asset);
-    }
-    if (asset.pending) {
-        ++actual_downloded_assets_count;
-        return asset;
-    }
-
-    const sourcesList = asset.loadRemote && runtimeHelpers.config.remoteSources ? runtimeHelpers.config.remoteSources : [""];
-    let response: Response | undefined = undefined;
-    for (let sourcePrefix of sourcesList) {
-        sourcePrefix = sourcePrefix.trim();
-        // HACK: Special-case because MSBuild doesn't allow "" as an attribute
-        if (sourcePrefix === "./")
-            sourcePrefix = "";
-
-        const attemptUrl = resolve_path(asset, sourcePrefix);
-        if (asset.name === attemptUrl) {
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
-        } else {
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
-        }
-        try {
-            const loadingResource = download_resource({
-                name: asset.name,
-                resolvedUrl: attemptUrl,
-                hash: asset.hash,
-                behavior: asset.behavior
-            });
-            asset.pending = loadingResource;
-            response = await loadingResource.response;
-            if (!response.ok) {
-                continue;// next source
-            }
-            ++actual_downloded_assets_count;
-            return asset;
-        }
-        catch (err) {
-            continue; //next source
-        }
-    }
-    const isOkToFail = asset.isOptional || (asset.name.match(/\.pdb$/) && runtimeHelpers.config.ignorePdbLoadErrors);
-    mono_assert(response, "Response undefined");
-    if (!isOkToFail) {
-        const err: any = new Error(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
-        err.status = response.status;
-        throw err;
-    } else {
-        if (!skipDownloadsAssetTypes[asset.behavior]) {
-            expected_downloded_assets_count--;
-        }
-        if (skipInstantiateAssetTypes[asset.behavior]) {
-            expected_instantiated_assets_count--;
-        }
-        return asset;
-    }
-}
-
-async function start_asset_download_throttle(asset: AssetEntry): Promise<AssetEntry | undefined> {
-    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
-    while (throttling) {
-        await throttling.promise;
-    }
     try {
-        ++parallel_count;
-        if (parallel_count == runtimeHelpers.maxParallelDownloads) {
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Throttling further parallel downloads");
-            throttling = createPromiseController<void>();
+        if (typeof Module.downloadResource === "function") {
+            const loading = Module.downloadResource(request);
+            if (loading) return loading;
         }
-        return await start_asset_download_sources(asset);
-    }
-    finally {
-        --parallel_count;
-        if (throttling && parallel_count == runtimeHelpers.maxParallelDownloads - 1) {
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Resuming more parallel downloads");
-            const old_throttling = throttling;
-            throttling = undefined;
-            old_throttling.promise_control.resolve();
+        const options: any = {};
+        if (request.hash) {
+            options.integrity = request.hash;
         }
+        const response = runtimeHelpers.fetch_like(request.resolvedUrl!, options);
+        return {
+            name: request.name, url: request.resolvedUrl!, response
+        };
+    } catch (err) {
+        const response = <Response><any>{
+            ok: false,
+            url: request.resolvedUrl,
+            status: 500,
+            statusText: "ERR28: " + err,
+            arrayBuffer: () => { throw err; },
+            json: () => { throw err; }
+        };
+        return {
+            name: request.name, url: request.resolvedUrl!, response: Promise.resolve(response)
+        };
     }
 }
 
@@ -350,12 +390,12 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
 }
 
 export async function instantiate_wasm_asset(
-    pendingAsset: AssetEntry,
+    pendingAsset: AssetEntryInternal,
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
 ) {
-    mono_assert(pendingAsset && pendingAsset.pending, "Can't load dotnet.wasm");
-    const response = await pendingAsset.pending.response;
+    mono_assert(pendingAsset && pendingAsset.internalPending, "Can't load dotnet.wasm");
+    const response = await pendingAsset.internalPending.response;
     const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;

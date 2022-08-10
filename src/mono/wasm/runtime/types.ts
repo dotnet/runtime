@@ -108,6 +108,9 @@ export interface AssetEntry extends ResourceRequest {
     buffer?: ArrayBuffer // if provided, we don't have to fetch it
     pending?: LoadingResource // if provided, we don't have to start fetching it
 }
+export interface AssetEntryInternal extends AssetEntry {
+    internalPending?: LoadingResource
+}
 
 export type AssetBehaviours =
     "resource" // load asset as a managed resource assembly
