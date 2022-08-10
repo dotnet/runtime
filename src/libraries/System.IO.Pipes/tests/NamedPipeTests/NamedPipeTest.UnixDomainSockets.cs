@@ -11,6 +11,7 @@ namespace System.IO.Pipes.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void NamedPipeServer_Connects_With_UnixDomainSocketEndPointClient()
         {
             string pipeName = Path.Combine(Path.GetTempPath(), "pipe-tests-corefx-" + Path.GetRandomFileName());
@@ -28,6 +29,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task NamedPipeClient_Connects_With_UnixDomainSocketEndPointServer()
         {
             string pipeName = Path.Combine(Path.GetTempPath(), "pipe-tests-corefx-" + Path.GetRandomFileName());
