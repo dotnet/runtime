@@ -289,7 +289,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 {
-                    if (this._path?.StartsWith(@"\\?\") ?? false)
+                    if (this._path?.StartsWith(@"\\?\", StringComparison.Ordinal) ?? false)
                     {
                         byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
                         bool success = Interop.Kernel32.DeviceIoControl(
