@@ -1620,7 +1620,7 @@ internal static class ReflectionTest
             {
                 message1 = ex.Message;
             }
-            if (!message1.Contains("ReflectionTest.TypeConstructionTest.Gen<ReflectionTest.TypeConstructionTest.Atom>"))
+            if (!message1.Contains("ReflectionTest.TypeConstructionTest.Gen`1[ReflectionTest.TypeConstructionTest.Atom]"))
                 throw new Exception();
 
             string message2 = "";
