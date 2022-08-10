@@ -97,6 +97,7 @@ export async function mono_download_assets(): Promise<void> {
                         const url = downloadedAsset.internalPending!.url;
                         const data = new Uint8Array(downloadedAsset.buffer!);
                         downloadedAsset.internalPending = undefined; //GC
+                        downloadedAsset.pending = undefined; //GC
                         downloadedAsset.buffer = undefined; //GC
 
                         await beforeOnRuntimeInitialized.promise;
@@ -182,7 +183,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
     if (asset.buffer) {
         const buffer = asset.buffer;
-        asset.buffer = undefined;//GC later
+        asset.buffer = undefined;//GC
         asset.internalPending = {
             url: "undefined://" + asset.name,
             name: asset.name,

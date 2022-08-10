@@ -366,6 +366,7 @@ async function instantiate_wasm_module(
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
+        // FIXME: this would not apply re-try for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
         await start_asset_download(assetToLoad, false);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
