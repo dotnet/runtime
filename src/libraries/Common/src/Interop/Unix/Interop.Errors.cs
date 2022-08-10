@@ -179,7 +179,7 @@ internal static partial class Interop
                 message = buffer;
             }
 
-            return Marshal.PtrToStringAnsi((IntPtr)message)!;
+            return Marshal.PtrToStringUTF8((IntPtr)message)!;
         }
 
 #if SERIAL_PORTS

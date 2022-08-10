@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
@@ -193,6 +194,32 @@ namespace System.IO.Tests
             {
                 File.Delete(tmpFile);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetTempFileNameTempUnicode()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                DirectoryInfo tempPathWithUnicode = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + "\u00F6"));
+                tempPathWithUnicode.Create();
+
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TMP" : "TMPDIR";
+                Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.FullName);
+                
+                try
+                {
+                    string tmpFile = Path.GetTempFileName();
+                    Assert.True(File.Exists(tmpFile));
+                    Assert.Equal(tempPathWithUnicode.FullName, Path.GetDirectoryName(tmpFile));
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.Parent.FullName);
+                }
+                finally
+                {
+                    tempPathWithUnicode.Delete(recursive: true);
+                }
+            }).Dispose();
         }
 
         [Fact]

@@ -44,6 +44,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
+                ReadOnlySequence<byte> originalSequence = reader.OriginalSequence;
 
                 ReadConstructorArguments(ref state, ref reader, options);
 
@@ -65,10 +66,15 @@ namespace System.Text.Json.Serialization.Converters
                         byte[]? propertyNameArray = properties[i].Item4;
                         string? dataExtKey = properties[i].Item5;
 
-                        tempReader = new Utf8JsonReader(
-                            originalSpan.Slice(checked((int)resumptionByteIndex)),
-                            isFinalBlock: true,
-                            state: properties[i].Item2);
+                        tempReader = originalSequence.IsEmpty
+                            ? new Utf8JsonReader(
+                                originalSpan.Slice(checked((int)resumptionByteIndex)),
+                                isFinalBlock: true,
+                                state: properties[i].Item2)
+                            : new Utf8JsonReader(
+                                originalSequence.Slice(resumptionByteIndex),
+                                isFinalBlock: true,
+                                state: properties[i].Item2);
 
                         Debug.Assert(tempReader.TokenType == JsonTokenType.PropertyName);
 

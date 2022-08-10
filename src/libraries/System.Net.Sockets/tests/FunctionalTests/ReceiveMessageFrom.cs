@@ -208,16 +208,9 @@ namespace System.Net.Sockets.Tests
                 if (closeOrDispose) socket.Close();
                 else socket.Dispose();
 
-                if (DisposeDuringOperationResultsInDisposedException)
-                {
-                    await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
-                }
-                else
-                {
-                    SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
-                    SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
-                    Assert.Equal(expectedError, ex.SocketErrorCode);
-                }
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
+                SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
+                Assert.Equal(expectedError, ex.SocketErrorCode);
             }
         }
 

@@ -576,9 +576,10 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) :
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key, true) :
                         keyTypeIsInteger ? Convert.ChangeType(child.Key, keyType) :
                         child.Key;
+
                     var valueBindingPoint = new BindingPoint(
                         initialValueProvider: () =>
                         {
@@ -825,6 +826,7 @@ namespace Microsoft.Extensions.Configuration
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IEnumerable<>)
                 || genericTypeDefinition == typeof(ICollection<>)
+                || genericTypeDefinition == typeof(IList<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }

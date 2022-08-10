@@ -83,6 +83,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_LOONGARCH64</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
+  </PropertyGroup>
 
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
@@ -346,4 +350,12 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
+
+  <!-- Import refererence assembly and ApiCompat logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

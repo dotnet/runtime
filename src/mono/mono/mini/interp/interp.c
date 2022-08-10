@@ -479,7 +479,7 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!(mono_interp_opt & INTERP_OPT_TIERING) || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
 		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
@@ -7127,10 +7127,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem;
+			if (len > 0) {
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
-			if (frame->imethod->init_locals)
-				memset (mem, 0, len);
+				if (frame->imethod->init_locals)
+					memset (mem, 0, len);
+			} else {
+				mem = NULL;
+			}
 			LOCAL_VAR (ip [1], gpointer) = mem;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -7468,7 +7473,7 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 /*
  * interp_run_finally:
  *
- *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the finally clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  * Return TRUE if the finally clause threw an exception.
  */
@@ -7512,7 +7517,7 @@ interp_run_finally (StackFrameInfo *frame, int clause_index)
 /*
  * interp_run_filter:
  *
- *   Run the filter clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the filter clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  */
 // Do not inline in case order of frame addresses matters.

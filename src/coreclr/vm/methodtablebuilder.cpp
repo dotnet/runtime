@@ -396,7 +396,8 @@ MethodTableBuilder::ExpandApproxInterface(
         }
 
         bmtInterfaceEntry * pNewMap = (bmtInterfaceEntry *)new (GetStackingAllocator()) BYTE[safeSize.Value()];
-        memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
+        if (bmtInterface->dwInterfaceMapAllocated > 0)
+            memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
 
         bmtInterface->pInterfaceMap = pNewMap;
         bmtInterface->dwInterfaceMapAllocated = dwNewAllocated.Value();
@@ -10188,7 +10189,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -11690,7 +11691,8 @@ void MethodTableBuilder::bmtMethodImplInfo::AddMethodImpl(
         // If we have to grow this array, we will not free the old array before we clean up the BuildMethodTable operation
         // because this is a stacking allocator. However, the old array will get freed when all the stack allocator is freed.
         Entry *rgEntriesNew = new (pStackingAllocator) Entry[newEntriesCount];
-        memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
+        if (cMaxIndex > 0)
+            memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
 
         // Start using newly allocated array.
         rgEntries = rgEntriesNew;

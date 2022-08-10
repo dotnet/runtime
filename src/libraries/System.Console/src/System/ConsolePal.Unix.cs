@@ -921,8 +921,8 @@ namespace System
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
+        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
+        private static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
             fixed (byte* bufPtr = buffer)
             {

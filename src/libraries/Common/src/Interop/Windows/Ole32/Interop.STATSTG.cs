@@ -73,7 +73,7 @@ internal static partial class Interop
             }
 
             /// <summary>
-            /// Callee is repsonsible for allocating the name memory.
+            /// Callee is responsible for allocating the name memory.
             /// </summary>
             public void AllocName(string? name)
             {

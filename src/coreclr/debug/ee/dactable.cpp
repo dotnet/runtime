@@ -98,7 +98,7 @@ const DacGlobals _DacGlobals::s_dacGlobals =
 
 // DacGlobals::Initialize is a no-op on MSVC builds as we statically initialize the table,
 // however, it provides a nice mechanism for us to get back into the right scope to validate the usage of DEFINE_DACVAR and family
-// without needing to make all of the DAC varables public or include all of the headers in daccess.h.
+// without needing to make all of the DAC variables public or include all of the headers in daccess.h.
 void DacGlobals::Initialize()
 {
 #define DEFINE_DACVAR(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR must not be instantiations of Volatile<T>.");

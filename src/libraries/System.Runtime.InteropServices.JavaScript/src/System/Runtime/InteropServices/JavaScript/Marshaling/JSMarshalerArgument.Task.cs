@@ -175,9 +175,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        public void ToJS(Task value)
+        public void ToJS(Task? value)
         {
-            Task task = value;
+            Task? task = value;
 
             if (task == null)
             {

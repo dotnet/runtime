@@ -217,7 +217,7 @@ class CrstTypeTool
         stream.Close();
     }
 
-    // Peform checking of the Crst type definitions we've read just read. Various forms of logic error are
+    // Perform checking of the Crst type definitions we've read just read. Various forms of logic error are
     // scanned for including cycles in the dependency graph. Returns true if no errors are found. If false is
     // returned a descriptive error message will have already been written to the console.
     bool ValidateCrsts()

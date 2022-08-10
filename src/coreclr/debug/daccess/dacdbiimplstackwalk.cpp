@@ -830,7 +830,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //  2. !pCF->HasFaulted() - It wasn't a "hardware" exception (Access violation, dev by 0, etc.)
         //  3. !pCF->IsIPadjusted() - It hasn't been previously adjusted to point to [call IL_Throw]
         //  4. pJITFuncData->nativeOffset != 0 - nativeOffset contains something that looks like a real return address.
-        pJITFuncData->jsutAfterILThrow = pCF->IsInterrupted()
+        pJITFuncData->justAfterILThrow = pCF->IsInterrupted()
                                      && !pCF->HasFaulted()
                                      && !pCF->IsIPadjusted()
                                      && pJITFuncData->nativeOffset != 0;
