@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <see cref="CoseHeaderLabel.Algorithm"/> was incorrect based on the <paramref name="key"/> and <paramref name="hashAlgorithm"/>.
+        ///     <paramref name="protectedHeaders"/> contains a value with the <see cref="CoseHeaderLabel.Algorithm"/> label, but the value was incorrect based on the <paramref name="key"/> and <paramref name="hashAlgorithm"/>.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     <see cref="CoseHeaderLabel.Algorithm"/> was incorrect based on the <paramref name="key"/>, <paramref name="signaturePadding"/> and <paramref name="hashAlgorithm"/>.
+        ///     <paramref name="protectedHeaders"/> contains a value with the <see cref="CoseHeaderLabel.Algorithm"/> label, but the value was incorrect based on the <paramref name="key"/>, <paramref name="signaturePadding"/> and <paramref name="hashAlgorithm"/>.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
