@@ -296,7 +296,7 @@ interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
     local,
     uuid(F315248D-8B79-49DB-B184-37426559F703)
 ]
-interface ICLRDataEnumMemoryRegionsLoggingCallback : IUnknown
+interface ICLRDataLoggingCallback : IUnknown
 {
     HRESULT LogMessage(
         [in] LPCSTR message);

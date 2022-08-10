@@ -1337,7 +1337,7 @@ public:
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
-    inline bool IsLogMessage()
+    inline bool IsLogMessageEnabled()
     {
         return m_logMessageCb != NULL;
     }
@@ -1461,7 +1461,7 @@ private:
     MDImportsCache m_mdImports;
     ICLRDataEnumMemoryRegionsCallback* m_enumMemCb;
     ICLRDataEnumMemoryRegionsCallback2* m_updateMemCb;
-    ICLRDataEnumMemoryRegionsLoggingCallback* m_logMessageCb;
+    ICLRDataLoggingCallback* m_logMessageCb;
     CLRDataEnumMemoryFlags m_enumMemFlags;
     JITNotification* m_jitNotificationTable;
     GcNotification*  m_gcNotificationTable;

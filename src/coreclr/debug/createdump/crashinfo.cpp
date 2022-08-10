@@ -88,9 +88,9 @@ CrashInfo::QueryInterface(
         AddRef();
         return S_OK;
     }
-    else if (InterfaceId == IID_ICLRDataEnumMemoryRegionsLoggingCallback)
+    else if (InterfaceId == IID_ICLRDataLoggingCallback)
     {
-        *Interface = (ICLRDataEnumMemoryRegionsLoggingCallback*)this;
+        *Interface = (ICLRDataLoggingCallback*)this;
         AddRef();
         return S_OK;
     }

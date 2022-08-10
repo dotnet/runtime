@@ -1938,7 +1938,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsCallback2, (void **)&m_updateMemCb);
 
     // QI for optional logging callback that createdump uses
-    callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsLoggingCallback, (void **)&m_logMessageCb);
+    callback->QueryInterface(IID_ICLRDataLoggingCallback, (void **)&m_logMessageCb);
 
     EX_TRY
     {

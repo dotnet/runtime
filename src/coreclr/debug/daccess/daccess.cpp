@@ -6375,7 +6375,7 @@ void DacLogMessage(LPCSTR format, ...)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
-    if (g_dacImpl->IsLogMessage())
+    if (g_dacImpl->IsLogMessageEnabled())
     {
         va_list args;
         va_start(args, format);
