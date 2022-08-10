@@ -116,6 +116,55 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.None)]
+        public void UnmanagedStructsAreNotConsideredBlittable(BuildArgs buildArgs, string id)
+        {
+            string code =
+            """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            public class Test
+            {
+                public static int Main()
+                {
+                    var x = new S { Value = 5 };
+
+                    Console.WriteLine("Main running " + x.Value);
+                    return 42;
+                }
+
+                public struct S { public int Value; }
+
+                [UnmanagedCallersOnly]
+                public static void M(S myStruct) { }
+            }
+            """;
+
+            buildArgs = ExpandBuildArgs(
+                buildArgs with { ProjectName = $"not_blittable_{buildArgs.Config}_{id}" },
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>"
+            );
+
+            (_, string output) = BuildProject(
+                buildArgs,
+                id: id,
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                    },
+                    Publish: buildArgs.AOT,
+                    DotnetWasmFromRuntimePack: false,
+                    ExpectSuccess: false
+                )
+            );
+
+            Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
         public void UnmanagedStructsAreConsideredBlittable(BuildArgs buildArgs, RunHost host, string id)
         {
@@ -144,9 +193,23 @@ namespace Wasm.Build.Tests
             }
             """;
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(code,
-                                                          buildArgs with { ProjectName = $"blittable_{buildArgs.Config}_{id}" },
-                                                          id);
+            buildArgs = ExpandBuildArgs(
+                buildArgs with { ProjectName = $"blittable_{buildArgs.Config}_{id}" },
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>"
+            );
+
+            (_, string output) = BuildProject(
+                buildArgs,
+                id: id,
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                    },
+                    Publish: buildArgs.AOT,
+                    DotnetWasmFromRuntimePack: false
+                )
+            );
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running 5", output);

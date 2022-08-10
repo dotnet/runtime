@@ -321,7 +321,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private static void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -341,7 +341,7 @@ internal sealed class PInvokeTableGenerator
             MethodInfo method = cb.Method;
             bool isVoid = method.ReturnType.FullName == "System.Void";
 
-            if (method.DeclaringType != null && method.DeclaringType.Assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute"))
+            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
                 continue;
 
             if (!isVoid && !IsBlittable(method.ReturnType))
@@ -459,6 +459,16 @@ internal sealed class PInvokeTableGenerator
             w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
         }
         w.WriteLine("};");
+    }
+
+    private Dictionary<Assembly, bool> assemblyDisableRuntimeMarshallingAttributeCache = new Dictionary<Assembly, bool>();
+
+    private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
+    {
+        if (!assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
+            assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
+
+        return value;
     }
 
     private static bool IsBlittable(Type type)
