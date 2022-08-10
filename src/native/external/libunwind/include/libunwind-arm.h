@@ -50,7 +50,7 @@ extern "C" {
    require recompiling all users of this library.  Stack allocation is
    relatively cheap and unwind-state copying is relatively rare, so we
    want to err on making it rather too big than too small.  */
-   
+
 /* FIXME for ARM. Too big?  What do other things use for similar tasks?  */
 #define UNW_TDEP_CURSOR_LEN     4096
 
@@ -77,7 +77,7 @@ typedef enum
     UNW_ARM_R13,
     UNW_ARM_R14,
     UNW_ARM_R15,
-    
+
     /* VFPv2 s0-s31 (obsolescent numberings).  */
     UNW_ARM_S0 = 64,
     UNW_ARM_S1,
@@ -111,7 +111,7 @@ typedef enum
     UNW_ARM_S29,
     UNW_ARM_S30,
     UNW_ARM_S31,
-    
+
     /* FPA register numberings.  */
     UNW_ARM_F0 = 96,
     UNW_ARM_F1,
@@ -121,7 +121,7 @@ typedef enum
     UNW_ARM_F5,
     UNW_ARM_F6,
     UNW_ARM_F7,
-    
+
     /* iWMMXt GR register numberings.  */
     UNW_ARM_wCGR0 = 104,
     UNW_ARM_wCGR1,
@@ -131,7 +131,7 @@ typedef enum
     UNW_ARM_wCGR5,
     UNW_ARM_wCGR6,
     UNW_ARM_wCGR7,
-    
+
     /* iWMMXt register numberings.  */
     UNW_ARM_wR0 = 112,
     UNW_ARM_wR1,
@@ -149,9 +149,9 @@ typedef enum
     UNW_ARM_wR13,
     UNW_ARM_wR14,
     UNW_ARM_wR15,
-    
+
     /* Two-byte encodings from here on.  */
-    
+
     /* SPSR.  */
     UNW_ARM_SPSR = 128,
     UNW_ARM_SPSR_FIQ,
@@ -159,7 +159,7 @@ typedef enum
     UNW_ARM_SPSR_ABT,
     UNW_ARM_SPSR_UND,
     UNW_ARM_SPSR_SVC,
-    
+
     /* User mode registers.  */
     UNW_ARM_R8_USR = 144,
     UNW_ARM_R9_USR,
@@ -168,7 +168,7 @@ typedef enum
     UNW_ARM_R12_USR,
     UNW_ARM_R13_USR,
     UNW_ARM_R14_USR,
-    
+
     /* FIQ registers.  */
     UNW_ARM_R8_FIQ = 151,
     UNW_ARM_R9_FIQ,
@@ -177,23 +177,23 @@ typedef enum
     UNW_ARM_R12_FIQ,
     UNW_ARM_R13_FIQ,
     UNW_ARM_R14_FIQ,
-    
+
     /* IRQ registers.  */
     UNW_ARM_R13_IRQ = 158,
     UNW_ARM_R14_IRQ,
-    
+
     /* ABT registers.  */
     UNW_ARM_R13_ABT = 160,
     UNW_ARM_R14_ABT,
-    
+
     /* UND registers.  */
     UNW_ARM_R13_UND = 162,
     UNW_ARM_R14_UND,
-    
+
     /* SVC registers.  */
     UNW_ARM_R13_SVC = 164,
     UNW_ARM_R14_SVC,
-    
+
     /* iWMMXt control registers.  */
     UNW_ARM_wC0 = 192,
     UNW_ARM_wC1,
@@ -273,6 +273,13 @@ unw_tdep_context_t;
    may be sufficient for all libunwind use cases.
    In thumb mode, we return directly back to thumb mode on return (with bx), to
    avoid altering any registers after unw_resume. */
+
+#ifdef __SOFTFP__
+#define VSTMIA "nop\n" /* align return address to value stored by stmia */
+#else
+#define VSTMIA "vstmia %[base], {d0-d15}\n" /* this also aligns return address to value stored by stmia */
+#endif
+
 #ifndef __thumb__
 #define unw_tdep_getcontext(uc) ({                                                              \
   unw_tdep_context_t *unw_ctx = (uc);                                                           \
@@ -281,7 +288,7 @@ unw_tdep_context_t;
   __asm__ __volatile__ (                                                                        \
     "mov r0, #0\n"                                                                              \
     "stmia %[base]!, {r0-r15}\n"                                                                \
-    "vstmia %[base], {d0-d15}\n" /* this also aligns return address to value stored by stmia */ \
+    VSTMIA                                                                                      \
     : [r0] "=r" (r0) : [base] "r" (unw_base) : "memory");                                       \
   (int)r0; })
 #else /* __thumb__ */
@@ -298,13 +305,13 @@ unw_tdep_context_t;
     "stmia %[base], {r0-r14}\n"                                         \
     "adr r0, ret%=+1\n"                                                 \
     "stmia %[base]!, {r0}\n"                                            \
-    "vstmia %[base], {d0-d15}\n"                                        \
+    VSTMIA                                                              \
     "orr r0, pc, #1\n"                                                  \
     "bx r0\n"                                                           \
     ".code 16\n"                                                        \
     "mov r0, #0\n"                                                      \
     "ret%=:\n"                                                          \
-    : [r0] "=r" (r0), [base] "+r" (unw_base) : : "memory", "cc");         \
+    : [r0] "=r" (r0), [base] "+r" (unw_base) : : "memory", "cc");       \
   (int)r0; })
 #endif
 

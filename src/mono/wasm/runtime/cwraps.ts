@@ -68,7 +68,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_type_aqn", "string", ["number"]],
 
     // MONO.diagnostics
-    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
+    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
     [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
     [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
@@ -81,6 +81,7 @@ const fn_signatures: SigLine[] = [
 
     //INTERNAL
     [false, "mono_wasm_exit", "void", ["number"]],
+    [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
     [false, "mono_profiler_init_aot", "void", ["number"]],
@@ -189,6 +190,7 @@ export interface t_Cwraps {
 
     //INTERNAL
     mono_wasm_exit(exit_code: number): number;
+    mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_enable_on_demand_gc(enable: number): void;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_profiler_init_aot(desc: string): void;

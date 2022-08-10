@@ -2248,11 +2248,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state) =>
             TaskToApm.Begin(ConnectAsync(addresses, port), requestCallback, state);
 
-        public void EndConnect(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            TaskToApm.End(asyncResult);
-        }
+        public void EndConnect(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(DisconnectAsync(reuseSocket).AsTask(), callback, state);
@@ -2278,12 +2274,7 @@ namespace System.Net.Sockets
             _localEndPoint = null;
         }
 
-        public void EndDisconnect(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            TaskToApm.End(asyncResult);
-        }
-
+        public void EndDisconnect(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
@@ -2331,12 +2322,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndSend(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndSend(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public int EndSend(IAsyncResult asyncResult, out SocketError errorCode) =>
             EndSendReceive(asyncResult, out errorCode);
@@ -2360,13 +2346,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
-        public void EndSendFile(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(asyncResult);
-
-            TaskToApm.End(asyncResult);
-        }
+        public void EndSendFile(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
@@ -2378,11 +2358,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndSendTo(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndSendTo(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
@@ -2428,21 +2404,16 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndReceive(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndReceive(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode) =>
             EndSendReceive(asyncResult, out errorCode);
 
-        private int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
+        private static int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            ThrowIfDisposed();
-
             if (TaskToApm.GetTask(asyncResult) is not Task<int> ti)
             {
+                ArgumentNullException.ThrowIfNull(asyncResult);
                 throw new ArgumentException(null, nameof(asyncResult));
             }
 
@@ -2485,7 +2456,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2522,8 +2492,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            ThrowIfDisposed();
-
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2541,11 +2509,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(AcceptAsync(), callback, state);
 
-        public Socket EndAccept(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<Socket>(asyncResult);
-        }
+        public Socket EndAccept(IAsyncResult asyncResult) => TaskToApm.End<Socket>(asyncResult);
 
         // This method provides support for legacy BeginAccept methods that take a "receiveSize" argument and
         // allow data to be received as part of the accept operation.
@@ -2599,7 +2563,6 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
             Socket s;
             (s, buffer, bytesTransferred) = TaskToApm.End<(Socket, byte[], int)>(asyncResult);
             return s;
