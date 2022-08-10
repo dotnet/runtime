@@ -74,7 +74,7 @@ public class WasmAppBuilder : Task
     private sealed class WasmAppConfig
     {
         [JsonPropertyName("assemblyRootFolder")]
-        public string AssemblyRoot { get; set; } = "managed";
+        public string AssemblyRootFolder { get; set; } = "managed";
         [JsonPropertyName("debugLevel")]
         public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
@@ -96,6 +96,23 @@ public class WasmAppBuilder : Task
         public string Behavior { get; init; }
         [JsonPropertyName("name")]
         public string Name { get; init; }
+        // TODO [JsonPropertyName("hash")]
+        // TODO public string? Hash { get; set; }
+    }
+
+    private sealed class WasmEntry : AssetEntry
+    {
+        public WasmEntry(string name) : base(name, "dotnetwasm") { }
+    }
+
+    private sealed class CryptoWorkerEntry : AssetEntry
+    {
+        public CryptoWorkerEntry(string name) : base(name, "js-module-crypto") { }
+    }
+
+    private sealed class ThreadsWorkerEntry : AssetEntry
+    {
+        public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
     }
 
     private sealed class AssemblyEntry : AssetEntry
@@ -165,7 +182,7 @@ public class WasmAppBuilder : Task
         var config = new WasmAppConfig ();
 
         // Create app
-        var asmRootPath = Path.Combine(AppDir, config.AssemblyRoot);
+        var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
@@ -240,7 +257,7 @@ public class WasmAppBuilder : Task
                 // FIXME: validate the culture?
 
                 string name = Path.GetFileName(fullPath);
-                string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
+                string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
                 Directory.CreateDirectory(directory);
                 FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
@@ -295,6 +312,8 @@ public class WasmAppBuilder : Task
             config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
+        config.Assets.Add(new WasmEntry ("dotnet.wasm") );
+        config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
 
         if (RemoteSources?.Length > 0)
         {

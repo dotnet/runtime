@@ -1,4 +1,4 @@
-import { MonoArray, MonoObject, MonoObjectRef, MonoString, WasmRoot, WasmRootBuffer, MemOffset, NumberOrPointer } from "../types";
+import { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types";
 import { VoidPtr } from "../types/emscripten";
 
 /**
@@ -248,3 +248,5 @@ export type MONOType = {
      */
     getF64: (offset: MemOffset) => number;
 };
+
+export { MonoArray, MonoObject, MonoString };
