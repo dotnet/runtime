@@ -105,9 +105,6 @@ namespace System.Reflection.Runtime.MethodInfos
                 {
                     sb.Append(sep);
                     sep = ",";
-                    string name =
-                        methodTypeArgument.InternalNameIfAvailable ??
-                        Type.DefaultTypeNameWhenMissingMetadata;
                     sb.Append(methodTypeArgument.Name);
                 }
                 sb.Append(']');

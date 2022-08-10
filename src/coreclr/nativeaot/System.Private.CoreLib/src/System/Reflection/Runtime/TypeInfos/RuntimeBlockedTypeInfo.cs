@@ -172,9 +172,12 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            return GeneratedName;
+            get
+            {
+                return GeneratedName;
+            }
         }
 
         internal sealed override string InternalFullNameOfAssembly

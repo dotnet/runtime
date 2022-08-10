@@ -53,6 +53,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsByRefLike { get; }
         public sealed override bool IsCollectible => false;
+        public abstract override string Name { get; }
 
         public abstract override Assembly Assembly { get; }
 
@@ -501,18 +502,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override string Name
-        {
-            get
-            {
-                Type? rootCauseForFailure = null;
-                string? name = InternalGetNameIfAvailable(ref rootCauseForFailure);
-                if (name == null)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(rootCauseForFailure);
-                return name;
-            }
-        }
-
         public sealed override Type ReflectedType
         {
             get
@@ -611,8 +600,6 @@ namespace System.Reflection.Runtime.TypeInfos
         // Return the full name of the "defining assembly" for the purpose of computing TypeInfo.AssemblyQualifiedName;
         //
         internal abstract string InternalFullNameOfAssembly { get; }
-
-        internal abstract override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure);
 
         //
         // Left unsealed as HasElement types must override this.

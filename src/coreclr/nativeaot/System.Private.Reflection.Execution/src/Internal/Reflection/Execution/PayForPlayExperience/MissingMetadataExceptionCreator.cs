@@ -159,21 +159,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
             else
             {
-                // First, see if Type.Name is available. If Type.Name is available, then we can be reasonably confident that it is safe to call Type.FullName.
-                // We'll still wrap the call in a try-catch as a failsafe.
-                string s = type.InternalNameIfAvailable;
-                if (s == null)
-                    return null;
-
-                try
-                {
-                    s = type.FullName;
-                }
-                catch (NotSupportedException)
-                {
-                }
-
-                return s;
+                return type.FullName;
             }
         }
 

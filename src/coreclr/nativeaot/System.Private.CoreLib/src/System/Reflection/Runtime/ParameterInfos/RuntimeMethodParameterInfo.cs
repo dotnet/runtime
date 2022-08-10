@@ -40,7 +40,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return QualifiedParameterTypeHandle.FormatTypeName(_typeContext);
+                return ParameterType.FormatTypeNameForReflection();
             }
         }
 

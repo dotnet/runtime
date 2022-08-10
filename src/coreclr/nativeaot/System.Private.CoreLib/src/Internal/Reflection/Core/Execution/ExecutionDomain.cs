@@ -326,16 +326,13 @@ namespace Internal.Reflection.Core.Execution
             if (type is not RuntimeType)
                 return false;
 
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
-            if (null == runtimeType.InternalNameIfAvailable)
-                return false;
-
             if (ExecutionEnvironment.IsReflectionBlocked(type.TypeHandle))
             {
                 // The type is an internal framework type and is blocked from reflection
                 return false;
             }
 
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType.InternalFullNameOfAssembly == Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName)
             {
                 // The type is an internal framework type but is reflectable for internal class library use

@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         {
             get
             {
-                return new QTypeDefRefOrSpec(_reader, _customAttribute.GetAttributeTypeHandle(_reader)).FormatTypeName(new TypeContext(null, null));
+                return AttributeType.FormatTypeNameForReflection();
             }
         }
 

@@ -162,15 +162,12 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            string? elementTypeName = _key.ElementType.InternalGetNameIfAvailable(ref rootCauseForFailure);
-            if (elementTypeName == null)
+            get
             {
-                rootCauseForFailure = _key.ElementType;
-                return null;
+                return _key.ElementType.Name + Suffix;
             }
-            return elementTypeName + Suffix;
         }
 
         internal sealed override string InternalFullNameOfAssembly

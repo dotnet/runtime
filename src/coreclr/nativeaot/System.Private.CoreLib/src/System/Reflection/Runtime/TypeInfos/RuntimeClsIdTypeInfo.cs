@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool ContainsGenericParameters => false;
         public sealed override string FullName => BaseType.FullName;
         public sealed override Guid GUID => _key.ClsId;
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure) => BaseType.InternalGetNameIfAvailable(ref rootCauseForFailure);
+        public sealed override string Name => BaseType.Name;
         public sealed override bool IsGenericTypeDefinition => false;
         public sealed override int MetadataToken => BaseType.MetadataToken;
         public sealed override string Namespace => BaseType.Namespace;
