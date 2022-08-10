@@ -1,0 +1,15 @@
+<Directives>
+  <Application>
+    <Assembly Name="mscorlib" />
+    <Assembly Name="System.Runtime" />
+
+    <Assembly Name="System.ComponentModel.TypeConverter" Dynamic="Required All" />
+    <Assembly Name="System.Collections.Specialized" Dynamic="Required All" />
+    <Assembly Name="System.ComponentModel.Primitives" Dynamic="Required All" />
+    <Assembly Name="System.Xml.Linq" Dynamic="Required All" />
+    <Assembly Name="System.ObjectModel" Dynamic="Required All" />
+    <Assembly Name="System.Threading.Thread" Dynamic="Required All" />
+    <Assembly Name="System.Memory" Dynamic="Required All" />
+    <Assembly Name="System.Xml.XDocument" Dynamic="Required All" />
+  </Application>
+</Directives>
