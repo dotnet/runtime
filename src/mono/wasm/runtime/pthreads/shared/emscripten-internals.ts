@@ -23,8 +23,9 @@ interface EmscriptenPThreadInfo {
     threadInfoStruct: pthread_ptr;
 }
 
+/// N.B. emscripten deletes the `pthread` property from the worker when it is not actively running a pthread
 interface PThreadWorker extends Worker {
-    pthread?: EmscriptenPThreadInfo;
+    pthread: EmscriptenPThreadInfo;
 }
 
 interface PThreadObject {
@@ -55,9 +56,6 @@ const Internals = {
         if (!isRunningPThreadWorker(worker))
             return undefined;
         const emscriptenThreadInfo = worker.pthread;
-        if (emscriptenThreadInfo === undefined) {
-            return undefined;
-        }
         return emscriptenThreadInfo.threadInfoStruct;
     },
     allocateUnusedWorker: (): void => {
