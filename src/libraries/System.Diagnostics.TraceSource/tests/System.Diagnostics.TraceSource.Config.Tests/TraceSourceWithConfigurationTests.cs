@@ -1,43 +1,36 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using Xunit;
 
 namespace System.Diagnostics.TraceSourceConfigTests
 {
+    // Note that parallelization is disabled due to file access as each test replaces the single config file on disk.
     public class ConfigurationTests
     {
         private static volatile string? _configFile = null;
-
-        private static string ConfigFile
-        {
-            get
-            {
-                if (_configFile == null)
-                {
-                    Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                    _configFile = Path.GetFileName(config.FilePath);
-                }
-
-                return _configFile;
-            }
-        }
 
         private static void CreateAndLoadConfigFile(string filename)
         {
             Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             string dir = Path.GetDirectoryName(config.FilePath);
             string from = Path.Combine(dir, filename);
-            File.Copy(from, ConfigFile, overwrite: true);
-            TraceConfiguration.Register();
-            Trace.Refresh();
+
+            if (_configFile == null)
+            {
+                _configFile = Path.GetFileName(config.FilePath);
+                File.Copy(from, _configFile, overwrite: true);
+                TraceConfiguration.Register();
+                // Do not call Trace.Refresh() here since the first access should be tested without it.
+            }
+            else
+            {
+                File.Copy(from, _configFile, overwrite: true);
+                Trace.Refresh();
+            }
         }
 
         [Fact]
@@ -195,7 +188,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             Assert.Equal(string.Empty, listenerToBeRemoved.Output);
 
             listenerToBeRemoved.Clear();
-            //mySourceToBeRemoved.Close();
+            mySourceToBeRemoved.Close();
         }
 
         [Fact]
@@ -312,8 +305,9 @@ namespace System.Diagnostics.TraceSourceConfigTests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void Switch_MissingValue_Throws()
         {
-            Exception e =  Assert.Throws<ConfigurationErrorsException>(() =>
+            Exception e = Assert.Throws<ConfigurationErrorsException>(() =>
                 CreateAndLoadConfigFile("testhost_Switch_MissingValue_Throws.config"));
+
             Assert.Contains("'value'", e.ToString());
         }
     }

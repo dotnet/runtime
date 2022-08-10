@@ -4,7 +4,7 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     Provides data for the <see cref="Switch.Initializing"/> event.
+    /// Provides data for the <see cref="Switch.Initializing"/> event.
     /// </summary>
     public sealed class InitializingSwitchEventArgs : EventArgs
     {

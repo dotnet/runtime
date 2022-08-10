@@ -12,35 +12,18 @@
     <Compile Include="TraceSourceWithConfigurationTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="testhost_AllTypes.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_ChangeSwitch_after.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_ChangeSwitch_before.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_ConfigWithRuntime.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_RemoveSource_after.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_RemoveSource_before.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_RemoveSwitch_after.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_RemoveSwitch_before.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="testhost_Switch_MissingValue_Throws.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+  <None Include="testhost_AllTypes.config;
+                 testhost_ChangeSwitch_after.config;
+                 testhost_ChangeSwitch_before.config;
+                 testhost_ConfigWithRuntime.config;
+                 testhost_RemoveSource_after.config;
+                 testhost_RemoveSource_before.config;
+                 testhost_RemoveSwitch_after.config;
+                 testhost_RemoveSwitch_before.config;
+                 testhost_Switch_MissingValue_Throws.config"
+          CopyToOutputDirectory="Always" />
   </ItemGroup>
   <ItemGroup>
-      <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
   </ItemGroup>
 </Project>

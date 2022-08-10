@@ -4,7 +4,7 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     Provides data for the <see cref="TraceSource.Initializing"/> event.
+    /// Provides data for the <see cref="TraceSource.Initializing"/> event.
     /// </summary>
     public sealed class InitializingTraceSourceEventArgs : EventArgs
     {
