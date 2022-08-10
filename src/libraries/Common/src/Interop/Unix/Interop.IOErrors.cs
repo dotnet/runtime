@@ -46,6 +46,14 @@ internal static partial class Interop
     }
 
     /// <summary>
+    /// Throws an IOException using the last error info (errno).
+    /// </summary>
+    internal static void ThrowIOExceptionForLastError()
+    {
+        ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path: null, isDirectory: false);
+    }
+
+    /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
     /// If the system call failed for any reason, an exception is thrown. Otherwise, the system call succeeded.

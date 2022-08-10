@@ -232,6 +232,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"
 CONFIG_DWORD_INFO(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If non-zero store some additional debug information for each jitted method")
 
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_OutOfProcessSetContext, W("OutOfProcessSetContext"), 0, "If enabled the debugger will not modify thread contexts in-process.  Enabled by default when CET is enabled for the process.")
+
 ///
 /// Diagnostics (internal general-purpose)
 ///
