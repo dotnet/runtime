@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Net.Quic;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -368,6 +369,16 @@ namespace System.Net.Http
             try
             {
                 _clientControl = await _connection!.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).ConfigureAwait(false);
+
+                // Server MUST NOT abort our control stream, setup a continuation which will react accordingly
+                _ = _clientControl.WritesClosed.ContinueWith(t =>
+                {
+                    if (t.Exception?.InnerExceptions.FirstOrDefault() is QuicException ex && ex.QuicError == QuicError.StreamAborted)
+                    {
+                        Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream));
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)

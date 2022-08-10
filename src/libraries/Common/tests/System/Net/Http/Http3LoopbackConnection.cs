@@ -50,6 +50,7 @@ namespace System.Net.Test.Common
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
 
         public Http3LoopbackStream OutboundControlStream => _outboundControlStream ?? throw new Exception("Control stream has not been opened yet");
+        public Http3LoopbackStream InboundControlStream => _inboundControlStream ?? throw new Exception("Inbound control stream has not been accepted yet");
 
         public Http3LoopbackConnection(QuicConnection connection)
         {
