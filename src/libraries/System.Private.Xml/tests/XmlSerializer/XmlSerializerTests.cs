@@ -4,6 +4,8 @@
 using SerializationTypes;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -192,6 +194,52 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(y.Count == 2);
         Assert.Equal((string)x[0], (string)y[0]);
         Assert.Equal((string)x[1], (string)y[1]);
+    }
+
+    [Fact]
+    public static void Xml_ReadOnlyCollection()
+    {
+        ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
+
+#if ReflectionOnly
+        // Expect exception when _using_ the serializer
+        var serializer = new XmlSerializer(typeof(ReadOnlyCollection<string>));
+        var ex = Assert.Throws<InvalidOperationException>(() => Serialize(roc, null, () => serializer));
+        Assert.Equal("There was an error generating the XML document.", ex.Message);
+        Assert.NotNull(ex.InnerException);
+        Assert.IsType<InvalidOperationException>(ex.InnerException);
+        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.InnerException.Message);
+#else
+        // Expect exception when _creating_ the serializer
+        var ex = Assert.Throws<InvalidOperationException>(() => new XmlSerializer(typeof(ReadOnlyCollection<string>)));
+        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.Message);
+#endif
+    }
+
+    [Fact]
+    public static void Xml_ImmutableArray()
+    {
+        // ImmutableArray does implement Add(T)... it just throws unconditionally. But it means we will be allowed to create a serializer
+        // and even use it to write out. It will fail on deserialization though, with a less-than-helpful exception message.
+        var arr = ImmutableArray.Create(42);
+        string expectedXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>42</int></ArrayOfInt>";
+
+        var serializer = new XmlSerializer(typeof(ImmutableArray<int>));
+
+        string serializedValue = Serialize(arr, expectedXml, () => serializer);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => Deserialize<ImmutableArray<int>>(serializer, serializedValue));
+        Assert.StartsWith("There is an error in XML document", ex.Message);
+        Assert.NotNull(ex.InnerException);
+#if ReflectionOnly
+        // In the reflection case, we see IList.Add()... we call IList.Add()... and IList.Add() throws this exception.
+        // Of note, if we called ImmutableArray.Add() or IImmutableList.Add(), there would be no exception - just a new array returned.
+        Assert.IsType<NotSupportedException>(ex.InnerException);
+#else
+        // In the RefEmit case, we stumble before the Add() step because we don't see a default constructor
+        Assert.IsType<InvalidOperationException>(ex.InnerException);
+        Assert.StartsWith("Could not deserialize global::System.Collections.Immutable.ImmutableArray<global::System.Int32>. Parameterless constructor is required for collections and enumerators.", ex.InnerException.Message);
+#endif
     }
 
     [Fact]
@@ -2197,5 +2245,56 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
+    }
+
+    private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
+    bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
+    {
+        XmlSerializer serializer = (serializerFactory != null) ? serializerFactory() : new XmlSerializer(typeof(T));
+
+        using (MemoryStream ms = new MemoryStream())
+        {
+            if (xns == null)
+            {
+                serializer.Serialize(ms, value);
+            }
+            else
+            {
+                serializer.Serialize(ms, value, xns);
+            }
+
+            ms.Position = 0;
+
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+
+            if (!skipStringCompare)
+            {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+                Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                    Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
+            }
+
+            return actualOutput;
+        }
+    }
+
+    private static T? Deserialize<T>(XmlSerializer serializer, string xmlInput)
+    {
+        using (Stream stream = StringToStream(xmlInput))
+        {
+            return (T?)serializer.Deserialize(stream);
+        }
+    }
+
+    private static Stream StringToStream(string input)
+    {
+        MemoryStream ms = new MemoryStream();
+        StreamWriter sw = new StreamWriter(ms);
+
+        sw.Write(input);
+        sw.Flush();
+        ms.Position = 0;
+
+        return ms;
     }
 }
