@@ -10,15 +10,18 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal static class HelperExtensions
 {
-    private const int s_maxLogMessageLineLength = 65536;
+    private const int MaxLogMessageLineLength = 65536;
+    private static readonly bool TruncateLogMessages = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WASM_DONT_TRUNCATE_LOG_MESSAGES"));
 
-    public static string Truncate(this string s, int maxLen, string suffix = "")
+    public static string Truncate(this string message, int maxLen, string suffix = "")
 
-        => string.Concat(s.Substring(0, Math.Min(s.Length, maxLen)).AsSpan(),
-                            s.Length > maxLen ? suffix : "");
+            => string.Concat(message.Substring(0, Math.Min(message.Length, maxLen)).AsSpan(),
+                                message.Length > maxLen ? suffix : "");
 
-    public static string TruncateLogMessage(this string s)
-        => s.Truncate(s_maxLogMessageLineLength, ".. truncated");
+    public static string TruncateLogMessage(this string message)
+            => TruncateLogMessages
+                ? message.Truncate(MaxLogMessageLineLength, ".. truncated")
+                : message;
 
     public static void AddRange(this JArray arr, JArray addedArr)
     {
