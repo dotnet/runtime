@@ -502,7 +502,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.CodeDom\tests\System.CodeDom.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition.Registration\tests\System.ComponentModel.Composition.Registration.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.Hosting\tests\System.Composition.Hosting.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.TypedParts\tests\System.Composition.TypedParts.Tests.csproj" />
