@@ -1880,7 +1880,30 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+            const char* pgoKind;
+            switch (compiler->fgPgoSource)
+            {
+                case ICorJitInfo::PgoSource::Static:
+                    pgoKind = "Static";
+                    break;
+                case ICorJitInfo::PgoSource::Dynamic:
+                    pgoKind = "Dynamic";
+                    break;
+                case ICorJitInfo::PgoSource::Blend:
+                    pgoKind = "Blend";
+                    break;
+                case ICorJitInfo::PgoSource::Text:
+                    pgoKind = "Textual";
+                    break;
+                case ICorJitInfo::PgoSource::Sampling:
+                    pgoKind = "Sample-based";
+                    break;
+                default:
+                    pgoKind = "Unknown";
+                    break;
+            }
+
+            printf("; with %s PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n", pgoKind,
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
@@ -3361,7 +3384,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (varTypeIsStruct(varDsc) &&
+                if (varTypeIsPromotable(varDsc) &&
                     (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
                 {
                     assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);

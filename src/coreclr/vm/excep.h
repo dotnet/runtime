@@ -201,7 +201,8 @@ enum
     GenerateDumpFlagsNone = 0x00,
     GenerateDumpFlagsLoggingEnabled = 0x01,
     GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04
+    GenerateDumpFlagsCrashReportEnabled = 0x04,
+    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
 };
 
 void InitializeCrashDump();

@@ -1093,6 +1093,11 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
 protected:
 
     //****************************************************************************************

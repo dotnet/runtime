@@ -44,5 +44,6 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="..\src\System.Diagnostics.EventLog.csproj" />
     <ProjectReference Include="..\src\Messages\System.Diagnostics.EventLog.Messages.csproj" />
+    <TrimmerRootAssembly Include="System.Diagnostics.EventLog.Messages" />
   </ItemGroup>
 </Project>

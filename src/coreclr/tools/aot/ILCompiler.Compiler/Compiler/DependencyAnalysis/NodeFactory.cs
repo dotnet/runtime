@@ -349,7 +349,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.Owner, key.SerializableObject);
+                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -1063,9 +1063,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(FieldDesc owningField, TypePreinit.ISerializableReference data)
+        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
-            return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningField, data));
+            return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -1306,18 +1306,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected struct SerializedFrozenObjectKey : IEquatable<SerializedFrozenObjectKey>
         {
-            public readonly FieldDesc Owner;
+            public readonly MetadataType OwnerType;
+            public readonly int AllocationSiteId;
             public readonly TypePreinit.ISerializableReference SerializableObject;
 
-            public SerializedFrozenObjectKey(FieldDesc owner, TypePreinit.ISerializableReference obj)
+            public SerializedFrozenObjectKey(MetadataType ownerType, int allocationSiteId, TypePreinit.ISerializableReference obj)
             {
-                Owner = owner;
+                Debug.Assert(ownerType.HasStaticConstructor);
+                OwnerType = ownerType;
+                AllocationSiteId = allocationSiteId;
                 SerializableObject = obj;
             }
 
             public override bool Equals(object obj) => obj is SerializedFrozenObjectKey && Equals((SerializedFrozenObjectKey)obj);
-            public bool Equals(SerializedFrozenObjectKey other) => Owner == other.Owner;
-            public override int GetHashCode() => Owner.GetHashCode();
+            public bool Equals(SerializedFrozenObjectKey other) => OwnerType == other.OwnerType && AllocationSiteId == other.AllocationSiteId;
+            public override int GetHashCode() => HashCode.Combine(OwnerType.GetHashCode(), AllocationSiteId);
         }
 
         private struct MethodILKey : IEquatable<MethodILKey>
