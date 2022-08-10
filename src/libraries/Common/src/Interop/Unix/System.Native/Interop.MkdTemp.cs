@@ -8,9 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MksTemps", SetLastError = true)]
-        internal static unsafe partial IntPtr MksTemps(
-            byte* template,
-            int suffixlen);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkdTemp", SetLastError = true)]
+        internal static unsafe partial byte* MkdTemp(byte* template);
     }
 }
