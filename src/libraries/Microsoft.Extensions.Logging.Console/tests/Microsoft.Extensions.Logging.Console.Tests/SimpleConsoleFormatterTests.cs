@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Disabled)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50575", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51398", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73436", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
             // Arrange
