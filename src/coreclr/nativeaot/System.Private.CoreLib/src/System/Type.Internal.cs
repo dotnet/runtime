@@ -39,8 +39,6 @@ namespace System
         // This is a port of the desktop CLR's RuntimeType.FormatTypeName() routine. This routine is used by various Reflection ToString() methods
         // to display the name of a type. Do not use for any other purpose as it inherits some pretty quirky desktop behavior.
         //
-        // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
-        //
         internal string FormatTypeNameForReflection()
         {
             // Legacy: this doesn't make sense, why use only Name for nested types but otherwise

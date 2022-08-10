@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         /// <summary>
-        /// Returns the # of candidates for a non-DeclaredOnly search. Caution: Can throw missing metadata exception. Use DeclaredOnlyCount if you don't want to search base classes.
+        /// Returns the # of candidates for a non-DeclaredOnly search. Use DeclaredOnlyCount if you don't want to search base classes.
         /// </summary>
         public int TotalCount
         {
