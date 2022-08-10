@@ -295,27 +295,33 @@ namespace Microsoft.Win32.SafeHandles
                     }
 
                     byte[] buffer = ArrayPool<byte>.Shared.Rent(sizeof(Interop.Kernel32.StorageReadCapacity));
-                    bool success = Interop.Kernel32.DeviceIoControl(
-                        this,
-                        dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
-                        lpInBuffer: IntPtr.Zero,
-                        nInBufferSize: 0,
-                        lpOutBuffer: buffer,
-                        nOutBufferSize: 32,
-                        out _,
-                        IntPtr.Zero);
-
-                    if (!success)
+                    try
                     {
-                        throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                        bool success = Interop.Kernel32.DeviceIoControl(
+                            this,
+                            dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
+                            lpInBuffer: IntPtr.Zero,
+                            nInBufferSize: 0,
+                            lpOutBuffer: buffer,
+                            nOutBufferSize: 32,
+                            out _,
+                            IntPtr.Zero);
+
+                        if (!success)
+                        {
+                            throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                        }
+
+                        Span<byte> bufferSpan = new(buffer);
+                        success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
+                        Debug.Assert(success);
+                        return storageReadCapacity.DiskLength;
                     }
-
-                    Span<byte> bufferSpan = new(buffer);
-                    success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
-                    Debug.Assert(success);
-                    return storageReadCapacity.DiskLength;
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
-
                 return info.EndOfFile;
             }
         }
