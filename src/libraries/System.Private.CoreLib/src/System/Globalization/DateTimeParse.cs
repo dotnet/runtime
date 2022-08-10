@@ -5550,7 +5550,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (m_info.Compare(Value.Slice(Index, str.Length), str, CompareOptions.Ordinal) == 0)
             {
                 // Update the Index to the end of the matching string.
-                // So the following GetNext()/Match() opeartion will get
+                // So the following GetNext()/Match() operation will get
                 // the next character to be parsed.
                 Index += (str.Length - 1);
                 return true;
@@ -5619,7 +5619,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             int repeatCount = (pos - Index);
             // Update the Index to the end of the repeated characters.
-            // So the following GetNext() opeartion will get
+            // So the following GetNext() operation will get
             // the next character to be parsed.
             Index = pos - 1;
             return repeatCount;

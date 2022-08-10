@@ -754,7 +754,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
-                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -1235,7 +1235,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {

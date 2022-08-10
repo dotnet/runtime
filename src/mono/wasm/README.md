@@ -37,7 +37,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 **Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
-## Bulding on Windows
+## Building on Windows
 
 * To build everything
 
@@ -163,11 +163,11 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 * console Hello world sample
 
-`dotnet build /t:RunSample console-v8-cjs/Wasm.Console.V8.CJS.Sample.csproj`
+`dotnet build /t:RunSample console-v8/Wasm.Console.V8.Sample.csproj`
 
 * browser TestMeaning sample
 
-`dotnet build /t:RunSample browser/Wasm.Browser.CJS.Sample.csproj`
+`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
 

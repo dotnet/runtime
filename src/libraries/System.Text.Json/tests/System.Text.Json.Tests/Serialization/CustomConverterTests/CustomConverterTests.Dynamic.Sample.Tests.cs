@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Dynamic;
 using System.Globalization;
 using System.Tests;
 using System.Text.Json.Serialization.Samples;
@@ -61,7 +59,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicNumber>(obj);
 
             double dbl = (double)obj;
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
             string temp = dbl.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);

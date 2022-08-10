@@ -204,8 +204,7 @@ namespace Internal.IL.Stubs
                 MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke", null);
                 callsiteSetupCodeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
             }
-            else if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind
-                .ForwardNativeFunctionWrapper)
+            else if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper)
             {
                 // if the SetLastError flag is set in UnmanagedFunctionPointerAttribute, clear the error code before doing P/Invoke
                 if (_flags.SetLastError)
@@ -309,27 +308,9 @@ namespace Internal.IL.Stubs
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
                     .GetKnownMethod("ResolvePInvoke", null)));
 
-                MethodSignatureFlags unmanagedCallingConvention = _flags.UnmanagedCallingConvention;
-                if (unmanagedCallingConvention == MethodSignatureFlags.None)
-                    unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
-
-                EmbeddedSignatureData[] embeddedSignatureData = null;
-                if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute"))
-                {
-                    embeddedSignatureData = new EmbeddedSignatureData[]
-                    {
-                        new EmbeddedSignatureData()
-                        {
-                            index = MethodSignature.IndexOfCustomModifiersOnReturnType,
-                            kind = EmbeddedSignatureDataKind.OptionalCustomModifier,
-                            type = context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "CallConvSuppressGCTransition")
-                        }
-                    };
-                }
-
                 MethodSignature nativeSig = new MethodSignature(
-                    _targetMethod.Signature.Flags | unmanagedCallingConvention, 0, nativeReturnType,
-                    nativeParameterTypes, embeddedSignatureData);
+                    MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
+                    _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
 
                 ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(context
                     .GetWellKnownType(WellKnownType.IntPtr));

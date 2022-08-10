@@ -206,7 +206,7 @@ namespace System.Reflection
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(m_metadataImport2);
+            return RuntimeHelpers.GetHashCodeOfPtr(m_metadataImport2);
         }
 
         public override bool Equals(object? obj)

@@ -18,12 +18,13 @@ namespace System.IO.Compression
         private readonly CompressionMode _mode;
 
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         public BrotliStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
+
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="System.IO.Compression.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {

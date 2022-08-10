@@ -151,7 +151,7 @@ namespace System.IO
             return path;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
             while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)

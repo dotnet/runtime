@@ -23,6 +23,8 @@ monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
+perf_fork=""
+perf_fork_branch="main"
 run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
@@ -35,6 +37,7 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+only_sanity=false
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -156,6 +159,18 @@ while (($# > 0)); do
     --mauiversion)
       maui_version=$2
       shift 2
+      ;;
+    --perffork)
+      perf_fork=$2
+      shift 2
+      ;;
+    --perfforkbranch)
+      perf_fork_branch=$2
+      shift 2
+      ;;
+    --only-sanity)
+      only_sanity=true
+      shift 1
       ;;
     *)
       echo "Common settings:"
@@ -295,13 +310,21 @@ fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
+if [[ "$internal" != true ]]; then
+    setup_arguments="$setup_arguments --not-in-lab"
+fi
+
 if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    if [[ -n "$perf_fork" ]]; then
+        git clone --branch $perf_fork_branch --depth 1 --quiet $perf_fork $performance_directory
+    else
+        git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -413,3 +436,4 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false

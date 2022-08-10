@@ -257,7 +257,7 @@ GetClrSEHRecordServicingStackPointer(Thread *pThread,
 // state of the EH chain is correct.
 //
 // For x86, check that we do INSTALL_COMPLUS_EXCEPTION_HANDLER before calling managed code.  This check should be
-// done for all managed code sites, not just transistions. But this will catch most problem cases.
+// done for all managed code sites, not just transitions. But this will catch most problem cases.
 void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
 {
     WRAPPER_NO_CONTRACT;
@@ -638,18 +638,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     EXCEPTION_DISPOSITION retval;
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     Thread *pThread = GetThread();
-
-#ifdef _DEBUG
-    static int breakOnSO = -1;
-
-    if (breakOnSO == -1)
-        breakOnSO = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnSO);
-
-    if (breakOnSO != 0 && exceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        DebugBreak();   // ASSERTing will overwrite the guard region
-    }
-#endif
 
     // We always want to be in co-operative mode when we run this function and whenever we return
     // from it, want to go to pre-emptive mode because are returning to OS.

@@ -463,7 +463,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -1229,7 +1229,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return 0;
     }
 
-    return pages * pageSize;
+    return (uint64_t)pages * (uint64_t)pageSize;
 #elif HAVE_SYSCTL
     int mib[3];
     mib[0] = CTL_HW;
