@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../imports";
-
-/// pthread_t in C
-export type pthread_ptr = number;
+import { pthread_ptr } from "./types";
 
 export interface PThreadInfo {
     readonly pthread_id: pthread_ptr;

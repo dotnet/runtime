@@ -302,12 +302,6 @@ export type PThreadReplacements = {
     loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
     threadInitTLS: () => void,
     allocateUnusedWorker: () => void,
-    readonly PThread: PThreadLibrary;
-}
-
-/// The parts of the emscripten PThread library (library_pthread.js) that we may want to access in our replacement functions
-export type PThreadLibrary = Readonly<PThreadReplacements> & {
-    unusedWorkers: Worker[],
 }
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable

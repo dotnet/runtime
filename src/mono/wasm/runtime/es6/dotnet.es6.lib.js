@@ -27,7 +27,6 @@ if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
     __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
-    __dotnet_replacement_PThread.PThread = PThread;
 }
 let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {

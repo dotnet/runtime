@@ -5,7 +5,8 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
-import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
+import { makeChannelCreatedMonoMessage } from "../shared";
+import type { pthread_ptr } from "../shared/types";
 import { mono_assert, is_nullish } from "../../types";
 import type { MonoThreadMessage } from "../shared";
 import {
