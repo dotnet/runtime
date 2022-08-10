@@ -12862,7 +12862,10 @@ void gc_heap::distribute_free_regions()
     // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
     size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
 
-    decommit_step (decommit_step_milliseconds);
+    if (decommit_step_milliseconds != 0)
+    {
+        decommit_step (decommit_step_milliseconds);
+    }
 
     // transfer any remaining regions on the decommit list back to the free list
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
@@ -40630,19 +40633,27 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifndef MULTIPLE_HEAPS
     // we want to limit the amount of decommit we do per time to indirectly
     // limit the amount of time spent in recommit and page faults
-    ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
-    gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+    size_t elapsed_since_last_decommit = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
+    if (elapsed_since_last_decommit >= DECOMMIT_TIME_STEP_MILLISECONDS)
+    {
+        ephemeral_elapsed = elapsed_since_last_decommit;
+        gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
 
-    // this is the amount we were planning to decommit
-    ptrdiff_t decommit_size = heap_segment_committed (ephemeral_heap_segment) - decommit_target;
+        // this is the amount we were planning to decommit
+        ptrdiff_t decommit_size = heap_segment_committed (ephemeral_heap_segment) - decommit_target;
 
-    // we do a max of DECOMMIT_SIZE_PER_MILLISECOND per millisecond of elapsed time since the last GC
-    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
-    ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000)) * DECOMMIT_SIZE_PER_MILLISECOND;
-    decommit_size = min (decommit_size, max_decommit_size);
+        // we do a max of DECOMMIT_SIZE_PER_MILLISECOND per millisecond of elapsed time since the last GC
+        // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+        ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000)) * DECOMMIT_SIZE_PER_MILLISECOND;
+        decommit_size = min (decommit_size, max_decommit_size);
 
-    slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
-    decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);
+        slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
+        decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);
+    }
+    else
+    {
+        ephemeral_elapsed = 0;
+    }
 #endif // !MULTIPLE_HEAPS
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
