@@ -289,7 +289,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 {
-                    if (!this._path?.StartsWith(@"\\?\", StringComparison.Ordinal) ?? true)
+                    if (!this._path?.StartsWith(PathInternal.ExtendedPathPrefix, StringComparison.Ordinal) ?? true)
                     {
                         throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                     }
