@@ -2881,7 +2881,8 @@ namespace System.Xml.Serialization
                 )!;
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
-            ilg.IfNot();
+            ilg.IfNot();    // if (!ReadNull()) { // EnterScope
+            ilg.EnterScope();
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -2976,11 +2977,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.Else();
+                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.Else();         // } else { EnterScope
+                ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
+            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 

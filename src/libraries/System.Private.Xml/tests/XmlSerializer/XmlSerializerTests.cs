@@ -3,6 +3,7 @@
 
 using SerializationTypes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -216,29 +217,74 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 #endif
     }
 
-    [Fact]
-    public static void Xml_ImmutableArray()
+    [Theory]
+    [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
+    public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
-        // ImmutableArray does implement Add(T)... it just throws unconditionally. But it means we will be allowed to create a serializer
-        // and even use it to write out. It will fail on deserialization though, with a less-than-helpful exception message.
-        var arr = ImmutableArray.Create(42);
-        string expectedXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>42</int></ArrayOfInt>";
+        XmlSerializer serializer;
 
-        var serializer = new XmlSerializer(typeof(ImmutableArray<int>));
-
-        string serializedValue = Serialize(arr, expectedXml, () => serializer);
-
-        var ex = Assert.Throws<InvalidOperationException>(() => Deserialize<ImmutableArray<int>>(serializer, serializedValue));
-        Assert.StartsWith("There is an error in XML document", ex.Message);
-        Assert.NotNull(ex.InnerException);
+        // Some collections implement the required enumerator/Add combo (ImmutableList, ImmutableArray) and some don't (ImmutableStack,
+        // ImmutableQueue). If they do not, they will throw upon serializer construction in RefEmit mode. They should throw when
+        // first using the serializer in Reflection mode.
 #if ReflectionOnly
-        // In the reflection case, we see IList.Add()... we call IList.Add()... and IList.Add() throws this exception.
-        // Of note, if we called ImmutableArray.Add() or IImmutableList.Add(), there would be no exception - just a new array returned.
-        Assert.IsType<NotSupportedException>(ex.InnerException);
+        serializer = new XmlSerializer(type);
+        if (createException != null)
+        {
+            var ex = Assert.Throws(createException, () => Serialize(collection, expectedXml, () => serializer));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
 #else
-        // In the RefEmit case, we stumble before the Add() step because we don't see a default constructor
-        Assert.IsType<InvalidOperationException>(ex.InnerException);
-        Assert.StartsWith("Could not deserialize global::System.Collections.Immutable.ImmutableArray<global::System.Int32>. Parameterless constructor is required for collections and enumerators.", ex.InnerException.Message);
+        if (createException != null)
+        {
+            var ex = Assert.Throws(createException, () => serializer = new XmlSerializer(type));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
+        serializer = new XmlSerializer(type);
+#endif
+
+        // If they do meet the signature requirement, they may succeed or fail depending on whether their Add/Indexer explicitly throw
+        // or not. (ImmutableArray throws. ImmutableList does not - it returns a new copy instead... which gets ignored and is thus
+        // essentially a silent failure.) Serializing out to a string first should work though.
+        string serializedValue = Serialize(collection, expectedXml, () => serializer);
+
+        if (addException != null)
+        {
+            var ex = Assert.Throws(addException, () => Deserialize(serializer, serializedValue));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
+
+        // In this case, we can execute everything without exception. But since our calls to '.Add()' do nothing, we end up
+        // with an empty collection
+        var rttCollection = Deserialize(serializer, serializedValue);
+        Assert.NotNull(rttCollection);
+        Assert.Empty((IEnumerable)rttCollection);
+    }
+    public static IEnumerable<object[]> Xml_ImmutableCollections_MemberData()
+    {
+        string arrayOfInt = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>42</int></ArrayOfInt>";
+        string arrayOfAny = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><anyType /></ArrayOfAnyType>";
+
+#if ReflectionOnly
+        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(InvalidOperationException), null, null, "is not supported because it implements IDictionary." };
+#else
+        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Parameterless constructor is required for collections and enumerators." };
+        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Parameterless constructor is required for collections and enumerators." };
+        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, null, arrayOfInt };
+        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        // IDictionary types are denied right from the start with a NotSupportedExcpetion
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(NotSupportedException), null, null, "is not supported because it implements IDictionary." };
 #endif
     }
 
@@ -2278,11 +2324,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
-    private static T? Deserialize<T>(XmlSerializer serializer, string xmlInput)
+    private static object? Deserialize(XmlSerializer serializer, string xmlInput)
     {
         using (Stream stream = StringToStream(xmlInput))
         {
-            return (T?)serializer.Deserialize(stream);
+            return serializer.Deserialize(stream);
         }
     }
 
