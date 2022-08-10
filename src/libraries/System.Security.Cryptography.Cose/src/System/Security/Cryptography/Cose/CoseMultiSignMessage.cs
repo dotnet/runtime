@@ -567,7 +567,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     Message does not contain at least one signature.
+        ///     The message does not contain at least one signature.
         ///   </para>
         /// </exception>
         /// <seealso cref="GetEncodedLength()"/>
