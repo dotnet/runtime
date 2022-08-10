@@ -5,6 +5,7 @@ import { Module } from "../../imports";
 import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
 import { MonoThreadMessage } from "../shared";
 import { PromiseController, createPromiseController } from "../../promise-controller";
+import { MonoConfig } from "../../types";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -103,6 +104,26 @@ export function afterLoadWasmModuleToWorker(worker: Worker): void {
     console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
+export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
+    const n = config?.pthreadPoolSize ?? defaultPthreadPoolSize;
+    for (let i = 0; i < n; i++) {
+        Internals.allocateUnusedWorker();
+    }
+}
+
+export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
+    // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
+    const workers = Internals.getUnusedWorkerPool();
+    const allLoaded = createPromiseController<void>();
+    let leftToLoad = workers.length;
+    workers.forEach((w) => {
+        Internals.loadWasmModuleToWorker(w, function () {
+            if (!--leftToLoad) allLoaded.promise_control.resolve();
+        });
+    });
+    await allLoaded.promise;
+}
+
 /// These utility functions dig into Emscripten internals
 const Internals = {
     getWorker: (pthread_ptr: pthread_ptr): Worker => {
@@ -117,7 +138,18 @@ const Internals = {
             return undefined;
         }
         return emscriptenThreadInfo.threadInfoStruct;
+    },
+    allocateUnusedWorker: (): void => {
+        /// See library_pthread.js in Emscripten.
+        /// This function allocates a new worker and adds it to the pool of workers.
+        /// It's called when the pool of workers is empty and a new thread is created.
+        (<any>Module).PThread.allocateUnusedWorker();
+    },
+    getUnusedWorkerPool: (): Worker[] => {
+        return (<any>Module).PThread.unusedWorkers;
+    },
+    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading: () => void): void => {
+        (<any>Module).PThread.loadWasmModuleToWorker(worker, onFinishedLoading);
     }
 };
-
 

@@ -83,7 +83,8 @@ export type MonoConfig = {
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
     ignorePdbLoadErrors?: boolean,
-    waitForDebugger?: number
+    waitForDebugger?: number,
+    pthreadPoolSize?: number, // initial number of workers to add to the emscripten pthread pool
 };
 
 export type MonoConfigError = {
@@ -298,8 +299,15 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: Function,
-    threadInitTLS: Function
+    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    threadInitTLS: () => void,
+    allocateUnusedWorker: () => void,
+    readonly PThread: PThreadLibrary;
+}
+
+/// The parts of the emscripten PThread library (library_pthread.js) that we may want to access in our replacement functions
+export type PThreadLibrary = Readonly<PThreadReplacements> & {
+    unusedWorkers: Worker[],
 }
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
