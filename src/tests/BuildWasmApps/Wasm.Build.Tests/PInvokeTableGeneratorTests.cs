@@ -144,7 +144,9 @@ namespace Wasm.Build.Tests
 
             buildArgs = ExpandBuildArgs(
                 buildArgs with { ProjectName = $"not_blittable_{buildArgs.Config}_{id}" },
-                extraProperties: "<WasmBuildNative>true</WasmBuildNative>"
+                extraProperties: buildArgs.AOT
+                    ? string.Empty
+                    : "<WasmBuildNative>true</WasmBuildNative>"
             );
 
             (_, string output) = BuildProject(
@@ -195,7 +197,9 @@ namespace Wasm.Build.Tests
 
             buildArgs = ExpandBuildArgs(
                 buildArgs with { ProjectName = $"blittable_{buildArgs.Config}_{id}" },
-                extraProperties: "<WasmBuildNative>true</WasmBuildNative>"
+                extraProperties: buildArgs.AOT
+                    ? string.Empty
+                    : "<WasmBuildNative>true</WasmBuildNative>"
             );
 
             (_, string output) = BuildProject(
