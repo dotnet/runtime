@@ -411,17 +411,19 @@ namespace System.Net.WebSockets
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
             ValueTask writeTask = default;
+            Task flushTask;
             bool releaseSendBufferAndSemaphore = true;
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
                 writeTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes));
+                flushTask = _stream.FlushAsync();
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
                 // the task, and we're done.
-                if (writeTask.IsCompleted)
+                if (writeTask.IsCompleted && flushTask.IsCompleted)
                 {
                     return writeTask;
                 }
@@ -447,14 +449,15 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask);
+            return WaitForWriteTaskAsync(writeTask, flushTask);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, Task flushTask)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
+                await flushTask.ConfigureAwait(false);
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
@@ -478,6 +481,7 @@ namespace System.Net.WebSockets
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
