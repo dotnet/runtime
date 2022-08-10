@@ -622,9 +622,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 typeArgument = methodWithToken.Method.OwningType;
             }
-            else if (helperArgument is FieldDesc fieldDesc)
+            else if (helperArgument is FieldWithToken fieldWithToken)
             {
-                typeArgument = fieldDesc.OwningType;
+                typeArgument = fieldWithToken.Field.OwningType;
             }
             else
             {

@@ -736,6 +736,10 @@ namespace Internal.JitInterface
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
+                        else if (helperArg is FieldDesc fieldDesc)
+                        {
+                            helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                        }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
