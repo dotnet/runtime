@@ -3384,7 +3384,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (varTypeIsStruct(varDsc) &&
+                if (varTypeIsPromotable(varDsc) &&
                     (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
                 {
                     assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);

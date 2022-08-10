@@ -15,9 +15,24 @@ using static System.Net.Http.Functional.Tests.TestHelper;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    public sealed class InvokerConnectTest_Http2 : ConnectTest_Http2
+    {
+        public InvokerConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+    }
+
+    public sealed class HttpClientConnectTest_Http2 : ConnectTest_Http2
+    {
+        public HttpClientConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+    }
+
     public class ConnectTest_Http2 : ClientWebSocketTestBase
     {
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
 
         [Theory]
         [InlineData(false)]
