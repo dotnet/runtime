@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
@@ -206,14 +207,8 @@ namespace Internal.Reflection.Core.Execution
             }
             else
             {
-                if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
-                {
-                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
-                }
-                else
-                {
-                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition);
-                }
+                Debug.Assert(ExecutionEnvironment.IsReflectionBlocked(typeHandle));
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
             }
         }
 
