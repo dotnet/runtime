@@ -33,13 +33,13 @@
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 #ifdef TARGET_POWERPC64
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define MEMORY_SLOT_THUNK_SIZE 8
+#if !defined(PPC_USES_FUNCTION_DESCRIPTOR)
+#define THUNK_SIZE 8
 #define GET_MEMORY_SLOT_THUNK_ADDRESS(c) \
-						((guint64)(((guint32*)(c)) [0] & 0x0000ffff) << 48) \
-						+ ((guint64)(((guint32*)(c + 4)) [0] & 0x0000ffff) << 32) \
-						+ ((guint64)(((guint32*)(c + 12)) [0] & 0x0000ffff) << 16) \
-						+ (guint64)(((guint32*)(c + 16)) [0] & 0x0000ffff)
+						((guint64)(((c)) [0] & 0x0000ffff) << 48) \
+						+ ((guint64)(((c)) [1] & 0x0000ffff) << 32) \
+						+ ((guint64)(((c)) [3] & 0x0000ffff) << 16) \
+						+ (guint64)(((c)) [4] & 0x0000ffff)
 #else
 #define THUNK_SIZE ((2 + 5) * 4)
 #endif

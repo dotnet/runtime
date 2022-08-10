@@ -670,12 +670,12 @@ mono_arch_get_call_target (guint8 *code)
 
 		return target;
 	}
-#if defined(TARGET_POWERPC64) && G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if defined(TARGET_POWERPC64) && !defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
-		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((code - 32));
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 32));
 		return thunk;
 	} else if (((guint32*)(code - 4)) [0] >> 26 == 15) {
-		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((code - 4));
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 4));
 		return thunk;
 	}
 #endif
