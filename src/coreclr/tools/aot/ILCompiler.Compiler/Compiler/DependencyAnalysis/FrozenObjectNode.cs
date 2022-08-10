@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
             if (result != 0)
                 return result;
 
-            return Comparer<int>.Default.Compare(otherFrozenObjectNode._allocationSiteId, _allocationSiteId);
+            return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
     }
 }
