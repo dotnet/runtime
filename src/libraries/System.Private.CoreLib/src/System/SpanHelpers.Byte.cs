@@ -2208,6 +2208,27 @@ namespace System
             return (nuint)(uint)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint FindFirstMatchedLane(Vector128<byte> compareResult)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            // Mask to help find the first lane in compareResult that is set.
+            // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
+            Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
+
+            // Find the first lane that is set inside compareResult.
+            Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);
+            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(maskedSelectedLanes, maskedSelectedLanes);
+            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
+
+            // It should be handled by compareResult != Vector.Zero
+            Debug.Assert(selectedLanes != 0);
+
+            // Find the first lane that is set inside compareResult.
+            return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
+        }
+
         public static void Reverse(ref byte buf, nuint length)
         {
             if (Avx2.IsSupported && (nuint)Vector256<byte>.Count * 2 <= length)
