@@ -100,7 +100,20 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                return ReadEnumFromString(ref reader, options);
+#if NETCOREAPP
+                if (TryParseEnumCore(ref reader, options, out T value))
+#else
+                string? enumString = reader.GetString();
+                if (TryParseEnumCore(enumString, options, out T value))
+#endif
+                {
+                    return value;
+                }
+#if NETCOREAPP
+                return ReadEnumUsingNamingPolicy(reader.GetString());
+#else
+                return ReadEnumUsingNamingPolicy(enumString);
+#endif
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -266,6 +279,13 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             ulong key = ConvertToUInt64(value);
+
+            if (options.DictionaryKeyPolicy == null && _nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
+            {
+                writer.WritePropertyName(formatted);
+                return;
+            }
+
             string original = value.ToString();
 
             if (IsValidIdentifier(original))
@@ -276,30 +296,24 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WritePropertyName(original);
                     return;
                 }
+
+                JavaScriptEncoder? encoder = options.Encoder;
+                original = FormatJsonName(original, _namingPolicy);
+
+                if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
+                {
+                    formatted = JsonEncodedText.Encode(original, encoder);
+                    writer.WritePropertyName(formatted);
+                    _nameCacheForWriting.TryAdd(key, formatted);
+                }
                 else
                 {
-                    // We might be dealing with a combination of flag constants since all constant values were
-                    // likely cached during warm - up (assuming the number of constants <= NameCacheSizeSoftLimit).
-
-                    JavaScriptEncoder? encoder = options.Encoder;
-
-                    if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
-                    {
-                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
-
-                        writer.WritePropertyName(formatted);
-
-                        _nameCacheForWriting.TryAdd(key, formatted);
-                    }
-                    else
-                    {
-                        // We also do not create a JsonEncodedText instance here because passing the string
-                        // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WritePropertyName(original);
-                    }
-
-                    return;
+                    // We also do not create a JsonEncodedText instance here because passing the string
+                    // directly to the writer is cheaper than creating one and not caching it for reuse.
+                    writer.WritePropertyName(original);
                 }
+
+                return;
             }
 
             switch (s_enumTypeCode)
@@ -410,24 +424,6 @@ namespace System.Text.Json.Serialization.Converters
                 new string[] { ValueSeparator }, StringSplitOptions.None
 #endif
                 );
-        }
-
-        private T ReadEnumFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-#if NETCOREAPP
-            if (TryParseEnumCore(ref reader, options, out T value))
-#else
-            string? enumString = reader.GetString();
-            if (TryParseEnumCore(enumString, options, out T value))
-#endif
-            {
-                return value;
-            }
-#if NETCOREAPP
-            return ReadEnumUsingNamingPolicy(reader.GetString());
-#else
-            return ReadEnumUsingNamingPolicy(enumString);
-#endif
         }
 
 #if NETCOREAPP
