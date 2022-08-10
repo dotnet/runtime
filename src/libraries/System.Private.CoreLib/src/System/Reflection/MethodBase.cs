@@ -204,7 +204,6 @@ namespace System.Reflection
                         {
                             // Fast path when the default value's type matches the signature type.
                             isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                            copyBackArg = ParameterCopyBackAction.Copy;
                         }
                         else
                         {
@@ -217,12 +216,12 @@ namespace System.Reflection
                                 {
                                     arg = Enum.ToObject(argumentType, arg);
                                 }
-
-                                copyBackArg = ParameterCopyBackAction.CopyNullable;
                             }
 
                             isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
+
+                        copyBackArg = sigType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
                     }
                 }
 
