@@ -194,29 +194,26 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 string original = value.ToString();
+
                 if (IsValidIdentifier(original))
                 {
                     // We are dealing with a combination of flag constants since
                     // all constant values were cached during warm-up.
                     Debug.Assert(original.Contains(ValueSeparator));
 
-                    JavaScriptEncoder? encoder = options.Encoder;
+                    original = FormatJsonName(original, _namingPolicy);
 
                     if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                     {
-                        formatted = JsonEncodedText.Encode(
-                            FormatJsonName(original, _namingPolicy),
-                            encoder);
-
+                        formatted = JsonEncodedText.Encode(original, options.Encoder);
                         writer.WriteStringValue(formatted);
-
                         _nameCacheForWriting.TryAdd(key, formatted);
                     }
                     else
                     {
                         // We also do not create a JsonEncodedText instance here because passing the string
                         // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WriteStringValue(FormatJsonName(original, _namingPolicy));
+                        writer.WriteStringValue(original);
                     }
 
                     return;
@@ -297,12 +294,11 @@ namespace System.Text.Json.Serialization.Converters
                     return;
                 }
 
-                JavaScriptEncoder? encoder = options.Encoder;
                 original = FormatJsonName(original, _namingPolicy);
 
                 if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
-                    formatted = JsonEncodedText.Encode(original, encoder);
+                    formatted = JsonEncodedText.Encode(original, options.Encoder);
                     writer.WritePropertyName(formatted);
                     _nameCacheForWriting.TryAdd(key, formatted);
                 }
@@ -346,6 +342,89 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                     break;
             }
+        }
+
+#if NETCOREAPP
+        private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
+        {
+            char[]? rentedBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int charsWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
+
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(source, out T result) || Enum.TryParse(source, ignoreCase: true, out result);
+
+            if (rentedBuffer != null)
+            {
+                charBuffer.Slice(0, charsWritten).Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            value = result;
+            return success;
+        }
+#else
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
+        {
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
+            value = result;
+            return success;
+        }
+#endif
+
+        private T ReadEnumUsingNamingPolicy(string? enumString)
+        {
+            if (_namingPolicy == null)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            if (enumString == null)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            Debug.Assert(_nameCacheForReading != null, "Enum value cache should be instantiated if a naming policy is specified.");
+
+            bool success;
+
+            if (!(success = _nameCacheForReading.TryGetValue(enumString, out T value)) && enumString.Contains(ValueSeparator))
+            {
+                string[] enumValues = SplitFlagsEnum(enumString);
+                ulong result = 0;
+
+                for (int i = 0; i < enumValues.Length; i++)
+                {
+                    success = _nameCacheForReading.TryGetValue(enumValues[i], out value);
+                    if (!success)
+                    {
+                        break;
+                    }
+
+                    result |= ConvertToUInt64(value);
+                }
+
+                value = (T)Enum.ToObject(typeof(T), result);
+
+                if (success && _nameCacheForReading.Count < NameCacheSizeSoftLimit)
+                {
+                    _nameCacheForReading[enumString] = value;
+                }
+            }
+
+            if (!success)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return value;
         }
 
         // This method is adapted from Enum.ToUInt64 (an internal method):
@@ -424,89 +503,6 @@ namespace System.Text.Json.Serialization.Converters
                 new string[] { ValueSeparator }, StringSplitOptions.None
 #endif
                 );
-        }
-
-#if NETCOREAPP
-        private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
-        {
-            char[]? rentedBuffer = null;
-            int bufferLength = reader.ValueLength;
-
-            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
-                ? stackalloc char[JsonConstants.StackallocCharThreshold]
-                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
-
-            int charsWritten = reader.CopyString(charBuffer);
-            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
-
-            // Try parsing case sensitive first
-            bool success = Enum.TryParse(source, out T result) || Enum.TryParse(source, ignoreCase: true, out result);
-
-            if (rentedBuffer != null)
-            {
-                charBuffer.Slice(0, charsWritten).Clear();
-                ArrayPool<char>.Shared.Return(rentedBuffer);
-            }
-
-            value = result;
-            return success;
-        }
-#else
-        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
-        {
-            // Try parsing case sensitive first
-            bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
-            value = result;
-            return success;
-        }
-#endif
-
-        private T ReadEnumUsingNamingPolicy(string? enumString)
-        {
-            if (_namingPolicy == null)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            if (enumString == null)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            Debug.Assert(_nameCacheForReading != null, "Enum value cache should be instantiated if a naming policy is specified.");
-
-            bool success;
-
-            if (!(success = _nameCacheForReading.TryGetValue(enumString, out T value)) && enumString.Contains(ValueSeparator))
-            {
-                string[] enumValues = SplitFlagsEnum(enumString);
-                ulong result = 0;
-
-                for (int i = 0; i < enumValues.Length; i++)
-                {
-                    success = _nameCacheForReading.TryGetValue(enumValues[i], out value);
-                    if (!success)
-                    {
-                        break;
-                    }
-
-                    result |= ConvertToUInt64(value);
-                }
-
-                value = (T)Enum.ToObject(typeof(T), result);
-
-                if (_nameCacheForReading.Count < NameCacheSizeSoftLimit)
-                {
-                    _nameCacheForReading[enumString] = value;
-                }
-            }
-
-            if (!success)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            return value;
         }
     }
 }
