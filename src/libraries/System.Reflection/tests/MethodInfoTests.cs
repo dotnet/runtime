@@ -797,8 +797,8 @@ namespace System.Reflection.Tests
             MethodInfo method = typeof(Sample).GetMethod(nameof(Sample.DefaultMissing));
             object[] args = new object[] { Missing.Value };
 
-            Assert.Equal(Missing.Value, method.Invoke(null, args)); // Argument type matches with parameter type, therefore default value null will not copied back
-            Assert.Equal(Missing.Value, args[0]);
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
 
             args[0] = null;
             Assert.Null(method.Invoke(null, args));

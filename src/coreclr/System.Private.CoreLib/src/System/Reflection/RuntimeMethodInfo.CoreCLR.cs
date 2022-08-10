@@ -312,7 +312,7 @@ namespace System.Reflection
             {
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
-                ReadOnlySpan<object?> parameters = new(in parameter);
+                object?[] parameters = new object?[] { parameter };
                 Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;

@@ -143,14 +143,14 @@ namespace System.Reflection
             Span<object?> copyOfParameters,
             IntPtr* byrefParameters,
             Span<ParameterCopyBackAction> shouldCopyBack,
-            ReadOnlySpan<object?> parameters,
+            object?[] parameters,
             RuntimeType[] sigTypes,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr
         )
         {
-            Debug.Assert(!parameters.IsEmpty);
+            Debug.Assert(parameters.Length > 0);
 
             ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -173,7 +173,7 @@ namespace System.Reflection
                 {
                     RuntimeType argType = (RuntimeType)arg.GetType();
 
-                    if (ReferenceEquals(argType, sigType))
+                    if (ReferenceEquals(argType, sigType) && !argType.Equals(typeof(Missing)))
                     {
                         // Fast path when the value's type matches the signature type.
                         isValueType = RuntimeTypeHandle.IsValueType(argType);
@@ -199,7 +199,7 @@ namespace System.Reflection
                             throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
                         }
 
-                        arg = paramInfo.DefaultValue;
+                        parameters[i] = arg = paramInfo.DefaultValue;
                         if (ReferenceEquals(arg?.GetType(), sigType))
                         {
                             // Fast path when the default value's type matches the signature type.
@@ -214,14 +214,12 @@ namespace System.Reflection
                                 Type argumentType = sigType.GetGenericArguments()[0];
                                 if (argumentType.IsEnum)
                                 {
-                                    arg = Enum.ToObject(argumentType, arg);
+                                    parameters[i] = arg = Enum.ToObject(argumentType, arg);
                                 }
                             }
 
                             isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
-
-                        copyBackArg = sigType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
                     }
                 }
 
