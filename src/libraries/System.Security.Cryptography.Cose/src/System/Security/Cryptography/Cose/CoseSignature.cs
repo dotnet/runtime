@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -153,17 +153,9 @@ namespace System.Security.Cryptography.Cose
         /// <param name="detachedContent">The content that was previously signed.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -212,7 +204,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -254,29 +246,17 @@ namespace System.Security.Cryptography.Cose
         /// <param name="detachedContent">The content that was previously signed.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     <paramref name="key"/> is of an unsupported type.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         /// </exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -334,29 +314,17 @@ namespace System.Security.Cryptography.Cose
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     <paramref name="key"/> is of an unsupported type.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         /// </exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.

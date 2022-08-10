@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cose
         public bool IsReadOnly { get; internal set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CoseHeaderMap" /> class.
+        /// Initializes a new instance of the <see cref="CoseHeaderMap"/> class.
         /// </summary>
         public CoseHeaderMap() : this(isReadOnly: false) { }
 
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Cose
         /// </summary>
         /// <param name="label">The label of the value to get.</param>
         /// <param name="destination">The buffer in which to write the value.</param>
-        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
         /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
         /// <exception cref="InvalidOperationException">The value could not be decoded as byte string.</exception>
         /// <exception cref="KeyNotFoundException"><paramref name="label"/> is not found.</exception>
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Cose
         /// <param name="key">The key of the element to add.</param>
         /// <param name="value">The value of the element to add.</param>
         /// <exception cref="InvalidOperationException">The header map is read-only.</exception>
-        /// <exception cref="ArgumentException"><paramref name="value" /> is not a valid CBOR value.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not a valid CBOR value.</exception>
         public void Add(CoseHeaderLabel key, CoseHeaderValue value)
         {
             ValidateIsReadOnly();

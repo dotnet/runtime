@@ -4,8 +4,8 @@
 using Xunit;
 using System.Formats.Cbor;
 using System.Collections.Generic;
-using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 using System.Linq;
+using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {

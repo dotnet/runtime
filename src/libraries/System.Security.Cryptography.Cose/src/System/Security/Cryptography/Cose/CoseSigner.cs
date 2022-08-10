@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <see cref="CoseHeaderLabel.Algorithm"/> was not contained in <paramref name="protectedHeaders"/>.
+        ///     <paramref name="unprotectedHeaders"/> specifies a value with the <see cref="CoseHeaderLabel.Algorithm" /> label.
         ///   </para>
         /// </exception>
         /// <remarks>
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <see cref="CoseHeaderLabel.Algorithm"/> was not contained in <paramref name="protectedHeaders"/>.
+        ///     <paramref name="unprotectedHeaders"/> specifies a value with the <see cref="CoseHeaderLabel.Algorithm"/> label.
         ///   </para>
         /// </exception>
         /// <remarks>

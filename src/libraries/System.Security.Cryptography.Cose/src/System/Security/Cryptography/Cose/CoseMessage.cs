@@ -538,7 +538,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// Encodes this <see cref="CoseMessage"/> as CBOR.
+        /// Encodes this message as CBOR.
         /// </summary>
         /// <returns>The message encoded as CBOR.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
@@ -552,7 +552,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// Encodes this <see cref="CoseMessage"/> as CBOR.
+        /// Encodes this message as CBOR.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
         /// <returns>The number of bytes written to <paramref name="destination" />.</returns>

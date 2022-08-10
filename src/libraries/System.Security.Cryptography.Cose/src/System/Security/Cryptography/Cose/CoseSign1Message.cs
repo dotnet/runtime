@@ -32,22 +32,14 @@ namespace System.Security.Cryptography.Cose
         /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
         /// <returns>The encoded message.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="signer"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static byte[] SignDetached(byte[] detachedContent, CoseSigner signer, byte[]? associatedData = null)
@@ -68,22 +60,14 @@ namespace System.Security.Cryptography.Cose
         /// <param name="signer">The signer information used to sign <paramref name="embeddedContent"/>.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
         /// <returns>The encoded message.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="embeddedContent"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="signer"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="embeddedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static byte[] SignEmbedded(byte[] embeddedContent, CoseSigner signer, byte[]? associatedData = null)
@@ -111,7 +95,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static byte[] SignDetached(ReadOnlySpan<byte> detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
@@ -136,7 +120,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static byte[] SignEmbedded(ReadOnlySpan<byte> embeddedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
@@ -154,22 +138,10 @@ namespace System.Security.Cryptography.Cose
         /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
         /// <returns>The encoded message.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="signer"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -177,7 +149,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static byte[] SignDetached(Stream detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
@@ -220,22 +192,10 @@ namespace System.Security.Cryptography.Cose
         /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task that represents the asynchronous operation. The value of its <see cref="Task{T}.Result"/> property contains the encoded message.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="signer"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -243,7 +203,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
@@ -291,7 +251,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static bool TrySignDetached(ReadOnlySpan<byte> detachedContent, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData = default)
@@ -313,7 +273,7 @@ namespace System.Security.Cryptography.Cose
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     One of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
         ///   </para>
         /// </exception>
         public static bool TrySignEmbedded(ReadOnlySpan<byte> embeddedContent, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData = default)
@@ -405,7 +365,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is detached from this message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -448,7 +408,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is detached from this message, use an overload that accepts a detached content.</exception>        /// <exception cref="CryptographicException">
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>        /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
@@ -489,17 +449,9 @@ namespace System.Security.Cryptography.Cose
         /// <param name="detachedContent">The content that was previously signed.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -547,7 +499,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -589,29 +541,17 @@ namespace System.Security.Cryptography.Cose
         /// <param name="detachedContent">The content that was previously signed.</param>
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     <paramref name="key"/> is of an unsupported type.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         /// </exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -702,29 +642,17 @@ namespace System.Security.Cryptography.Cose
         /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <para>
-        ///     <paramref name="key"/> is <see langword="null"/>.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> is <see langword="null"/>.
-        ///   </para>
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
         ///   <para>
         ///     <paramref name="key"/> is of an unsupported type.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="detachedContent"/> does not support reading.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="detachedContent"/> does not support seeking.
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
         ///   </para>
         /// </exception>
-        /// <exception cref="InvalidOperationException">Content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders" /> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
@@ -857,7 +785,7 @@ namespace System.Security.Cryptography.Cose
             CoseHelpers.GetByteStringEncodedSize(_signature.Length);
 
         /// <summary>
-        /// Encodes this <see cref="CoseMessage"/> as CBOR.
+        /// Attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
         /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
