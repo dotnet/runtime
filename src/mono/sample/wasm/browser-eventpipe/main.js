@@ -41,25 +41,17 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 }
 
 async function main() {
-    const { MONO, BINDING, Module } = await createDotnetRuntime(() => {
-        return {
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-        }
+    const { MONO, Module, getAssemblyExports } = await createDotnetRuntime({
+        configSrc: "./mono-config.json",
     });
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
-    const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
-    const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
-    const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-
+    const exports = await getAssemblyExports("Wasm.Browser.EventPipe.Sample.dll");
 
     const btn = document.getElementById("startWork");
-
     btn.style.backgroundColor = "rgb(192,255,192)";
-    btn.onclick = getOnClickHandler(startWork, stopWork, getIterationsDone);
-
+    btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 }
 
 main();

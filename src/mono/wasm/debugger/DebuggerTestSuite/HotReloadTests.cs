@@ -60,7 +60,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody3", "StaticMethod3", expectBpResolvedEvent: false);
+                    "MethodBody3", "StaticMethod3", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
