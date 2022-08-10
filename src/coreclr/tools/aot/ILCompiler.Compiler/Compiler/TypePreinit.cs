@@ -341,6 +341,16 @@ namespace ILCompiler
                                 TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
+
+                                // Since we don't reset the instruction counter as we interpret the nested cctor,
+                                // remember the instruction counter before we start interpreting so that we can subtract
+                                // the instructions later when we convert object instances allocated in the nested
+                                // cctor to foreign instances in the currently analyzed cctor.
+                                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
+                                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
+                                // site ID of `instructionCounter + 0`.
+                                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
+                                // and resetting it would lead to unpredictable analysis durations.
                                 int baseInstructionCounter = instructionCounter;
                                 Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
                                 if (!status.IsSuccessful)
