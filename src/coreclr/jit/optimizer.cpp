@@ -4598,74 +4598,79 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* last = block->lastStmt()->GetRootNode();
-    noway_assert(last->gtOper == GT_JTRUE);
+    noway_assert(last->OperIs(GT_JTRUE));
     if (!last->AsOp()->gtOp1->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0 ||
         (last->AsOp()->gtOp1->gtFlags & GTF_COLON_COND) != 0)
     {
         return false;
     }
 
-    BasicBlock* middle_block = block;
-    GenTree*    asg_node     = nullptr;
-    Statement*  asg_stmt     = nullptr;
-    bool        found_select = false;
+    BasicBlock* middleBlock = block;
+    GenTree*    asgNode     = nullptr;
+    Statement*  asgStmt     = nullptr;
+    bool        foundSelect = false;
 
-    // Check the the block is followed by a block or chain of blocks that only contain NOPs and
+    // Check the block is followed by a block or chain of blocks that only contain NOPs and
     // a single ASG statement. The destination of the final block must point to the same as the
     // true path of the JTRUE block.
-    bool found_middle = false;
-    while (!found_middle)
+    bool foundMiddle = false;
+    while (!foundMiddle)
     {
-        middle_block = middle_block->bbNext;
-        noway_assert(middle_block != nullptr);
+        middleBlock = middleBlock->bbNext;
+        noway_assert(middleBlock != nullptr);
 
-        if (middle_block->bbNext == block->bbJumpDest)
+        if (middleBlock->bbNext == block->bbJumpDest)
         {
             // This is our final middle block.
-            found_middle = true;
+            foundMiddle = true;
         }
 
         // Make sure there is only one block which jumps to the middle block,
         // and the middle block is not the start of a TRY block or an exception handler.
         noway_assert(!fgCheapPredsValid);
-        if (middle_block->NumSucc() != 1 || middle_block->bbJumpKind != BBJ_NONE ||
-            middle_block->bbPreds->flNext != nullptr || middle_block->bbCatchTyp != BBCT_NONE ||
-            ((middle_block->bbFlags & (BBF_TRY_BEG | BBF_DONT_REMOVE)) != 0))
+        if (middleBlock->NumSucc() != 1 || middleBlock->bbJumpKind != BBJ_NONE ||
+            middleBlock->bbPreds->flNext != nullptr || middleBlock->bbCatchTyp != BBCT_NONE ||
+            bbIsTryBeg(middleBlock) || bbIsHandlerBeg(middleBlock) ||
+            (middleBlock->bbFlags & BBF_DONT_REMOVE) != 0)
         {
             return false;
         }
 
         // Can all the nodes within the middle block be made to conditionally execute?
-        for (Statement* const stmt : middle_block->Statements())
+        for (Statement* const stmt : middleBlock->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
             switch (tree->gtOper)
             {
                 case GT_ASG:
                 {
-                    GenTree* op1 = tree->AsOp()->gtOp1;
-                    GenTree* op2 = tree->AsOp()->gtOp2;
+                    GenTree* op1 = tree->gtGetOp1();
+                    GenTree* op2 = tree->gtGetOp2();
 
                     // Only one per assignment per block can be conditionally executed.
                     // Ensure the destination of the assign is a local variable with integer type,
                     // and the nodes of the assign won't cause any additional side effects.
-                    if (asg_node != nullptr || op1->gtOper != GT_LCL_VAR || !varTypeIsIntegralOrI(op1->TypeGet()) ||
+                    if (asgNode != nullptr || !op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1) ||
                         (op1->gtFlags & GTF_SIDE_EFFECT) != 0 || (op2->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
                         return false;
                     }
-                    asg_node = tree;
-                    asg_stmt = stmt;
+                    asgNode = tree;
+                    asgStmt = stmt;
 
-                    if (op2->gtOper == GT_SELECT)
+                    if (op2->OperIs(GT_SELECT))
                     {
-                        found_select = true;
+                        foundSelect = true;
                     }
                     break;
                 }
 
                 // These do not need conditional execution.
                 case GT_NOP:
+                    if (tree->gtGetOp1() != nullptr)
+                    {
+                        return false;
+                    }
                     break;
 
                 // Cannot optimise this block.
@@ -4674,7 +4679,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
             }
         }
     }
-    if (asg_node == nullptr)
+    if (asgNode == nullptr)
     {
         // The blocks checked didn't contain any ASG nodes.
         return false;
@@ -4683,19 +4688,19 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("Attempting to conditionally execute " FMT_BB " from " FMT_BB "\n", middle_block->bbNum, block->bbNum);
-        for (BasicBlock* dump_block = block; dump_block != middle_block->bbNext; dump_block = dump_block->bbNext)
+        JITDUMP("Attempting to conditionally execute " FMT_BB " from " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
+        for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
-            fgDumpBlock(dump_block);
+            fgDumpBlock(dumpBlock);
         }
         JITDUMP("\n");
     }
 #endif
 
-    if (found_select)
+    if (foundSelect)
     {
         // The assign is already conditional. Try adding another condition.
-        if (!optIfConvertCCmp(last->gtGetOp1(), asg_node))
+        if (!optIfConvertCCmp(last->gtGetOp1(), asgNode))
         {
             return false;
         }
@@ -4703,7 +4708,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     else
     {
         // Make the assign conditional.
-        if (!optIfConvertSelect(last->gtGetOp1(), asg_node))
+        if (!optIfConvertSelect(last->gtGetOp1(), asgNode))
         {
             return false;
         }
@@ -4713,20 +4718,20 @@ bool Compiler::optIfConvert(BasicBlock* block)
     last->ReplaceWith(gtNewNothingNode(), this);
     fgSetStmtSeq(block->lastStmt());
     gtSetEvalOrder(last);
-    fgSetStmtSeq(asg_stmt);
+    fgSetStmtSeq(asgStmt);
 
     // Update the flow.
     fgRemoveAllRefPreds(block->bbJumpDest, block);
     block->bbJumpKind = BBJ_NONE;
-    block->bbJumpDest = middle_block;
+    block->bbJumpDest = middleBlock;
 
 #ifdef DEBUG
     if (verbose)
     {
         JITDUMP("After if conversion\n");
-        for (BasicBlock* dump_block = block; dump_block != middle_block->bbNext; dump_block = dump_block->bbNext)
+        for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
-            fgDumpBlock(dump_block);
+            fgDumpBlock(dumpBlock);
         }
         JITDUMP("\n");
     }
@@ -4736,18 +4741,18 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #endif
 }
 
-bool Compiler::optIfConvertSelect(GenTree* original_condition, GenTree* asg_node)
+bool Compiler::optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode)
 {
-    assert(original_condition->OperIsCmpCompare());
-    assert(asg_node->gtOper == GT_ASG);
+    assert(originalCondition->OperIsCmpCompare());
+    assert(asgNode->OperIs(GT_ASG));
 
     // Duplicate the input of the assign.
     // This will be used as the false result of the select node.
-    GenTree* current_value = gtCloneExpr(asg_node->AsOp()->gtOp1);
-    current_value->gtFlags &= GTF_EMPTY;
+    GenTree* destination = gtCloneExpr(asgNode->AsOp()->gtOp1);
+    destination->gtFlags &= GTF_EMPTY;
 
     // Duplicate the condition and invert it
-    GenTree* cond = gtCloneExpr(original_condition);
+    GenTree* cond = gtCloneExpr(originalCondition);
     cond->gtFlags |= GTF_DONT_CSE;
     cond->gtFlags ^= GTF_RELOP_JMP_USED;
     cond->gtFlags ^= GTF_RELOP_NAN_UN;
@@ -4755,11 +4760,11 @@ bool Compiler::optIfConvertSelect(GenTree* original_condition, GenTree* asg_node
 
     // Create a select node.
     GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asg_node->AsOp()->gtOp2, current_value, asg_node->TypeGet());
+        gtNewConditionalNode(GT_SELECT, cond, asgNode->AsOp()->gtOp2, destination, asgNode->TypeGet());
 
     // Use the select as the input to the assignment.
-    asg_node->AsOp()->gtOp2 = select;
-    asg_node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+    asgNode->AsOp()->gtOp2 = select;
+    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
 
     // Calculate costs.
     gtSetEvalOrder(select);
@@ -4767,13 +4772,13 @@ bool Compiler::optIfConvertSelect(GenTree* original_condition, GenTree* asg_node
     return true;
 }
 
-bool Compiler::optIfConvertCCmp(GenTree* original_condition, GenTree* asg_node)
+bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
 {
-    assert(original_condition->OperIsCmpCompare());
-    assert(asg_node->gtOper == GT_ASG);
+    assert(originalCondition->OperIsCmpCompare());
+    assert(asgNode->OperIs(GT_ASG));
 
-    // For now, don't handle floats.
-    if (!varTypeIsIntegralOrI(original_condition->AsOp()->gtOp1->TypeGet()))
+    // TODO-CQ: Add float support.
+    if (!varTypeIsIntegralOrI(originalCondition->AsOp()->gtOp1->TypeGet()))
     {
         return false;
     }
@@ -4781,26 +4786,26 @@ bool Compiler::optIfConvertCCmp(GenTree* original_condition, GenTree* asg_node)
     // Note: Limiting the maximum number of chained compares may give a performance
     //       boost, at the cost of more emitted code.
 
-    GenTreeConditional* select_node      = asg_node->AsOp()->gtOp2->AsConditional();
-    GenTree*            select_node_cond = select_node->gtCond;
+    GenTreeConditional* selectNode      = asgNode->AsOp()->gtOp2->AsConditional();
+    GenTree*            selectNodeCond  = selectNode->gtCond;
 
     // Duplicate the condition and invert it
-    GenTree* new_cond = gtCloneExpr(original_condition);
-    new_cond->gtFlags |= GTF_DONT_CSE;
-    new_cond->gtFlags ^= GTF_RELOP_JMP_USED;
-    new_cond->gtFlags ^= GTF_RELOP_NAN_UN;
-    new_cond->gtOper = GenTree::ReverseRelop(new_cond->gtOper);
+    GenTree* newCond = gtCloneExpr(originalCondition);
+    newCond->gtFlags |= GTF_DONT_CSE;
+    newCond->gtFlags ^= GTF_RELOP_JMP_USED;
+    newCond->gtFlags ^= GTF_RELOP_NAN_UN;
+    newCond->gtOper = GenTree::ReverseRelop(newCond->gtOper);
 
     // Link together the two conditions.
-    GenTree* const link = gtNewOperNode(GT_AND, TYP_INT, select_node_cond, new_cond);
-    link->gtFlags |= (select_node_cond->gtFlags & GTF_ALL_EFFECT);
-    link->gtFlags |= (new_cond->gtFlags & GTF_ALL_EFFECT);
+    GenTree* const link = gtNewOperNode(GT_AND, TYP_INT, selectNodeCond, newCond);
+    link->gtFlags |= (selectNodeCond->gtFlags & GTF_ALL_EFFECT);
+    link->gtFlags |= (newCond->gtFlags & GTF_ALL_EFFECT);
 
     // Use the link as the conditional input to the select.
-    select_node->gtCond = link;
-    select_node->gtFlags |= (link->gtFlags & GTF_ALL_EFFECT);
-    select_node->gtFlags ^= GTF_RELOP_NAN_UN;
-    asg_node->AsOp()->gtFlags |= (select_node->gtFlags & GTF_ALL_EFFECT);
+    selectNode->gtCond = link;
+    selectNode->gtFlags |= (link->gtFlags & GTF_ALL_EFFECT);
+    selectNode->gtFlags ^= GTF_RELOP_NAN_UN;
+    asgNode->AsOp()->gtFlags |= (selectNode->gtFlags & GTF_ALL_EFFECT);
 
     // Calculate costs.
     gtSetEvalOrder(link);

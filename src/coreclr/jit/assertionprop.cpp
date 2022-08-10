@@ -4388,18 +4388,6 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     return optAssertionProp_Update(op2, tree, stmt);
 }
 
-/*****************************************************************************
- *
- *  Given a tree ConditionalOp, check using standard morph function.
- */
-
-GenTree* Compiler::optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
-{
-    assert(tree->OperIsConditional());
-    GenTree* newTree = fgMorphTree(tree);
-    return optAssertionProp_Update(newTree, tree, stmt);
-}
-
 //------------------------------------------------------------------------
 // optAssertionProp_Cast: Propagate assertion for a cast, possibly removing it.
 //
@@ -5085,9 +5073,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
                 return optVNConstantPropOnJTrue(block, tree);
             }
             return nullptr;
-
-        case GT_SELECT:
-            return optAssertionProp_ConditionalOp(assertions, tree, stmt);
 
         default:
             return nullptr;
@@ -6026,7 +6011,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_NEG:
         case GT_CAST:
         case GT_INTRINSIC:
-        case GT_SELECT:
             break;
 
         case GT_JTRUE:

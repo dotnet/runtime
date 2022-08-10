@@ -6480,8 +6480,8 @@ protected:
     bool optInvertWhileLoop(BasicBlock* block);
 
     bool optIfConvert(BasicBlock* block);
-    bool optIfConvertSelect(GenTree* original_condition, GenTree* asg_node);
-    bool optIfConvertCCmp(GenTree* original_condition, GenTree* asg_node);
+    bool optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode);
+    bool optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);

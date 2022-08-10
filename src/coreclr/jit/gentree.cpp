@@ -12895,12 +12895,12 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         JITDUMP("\nFolding conditional op with constant condition:\n");
         DISPTREE(tree);
 
-        assert(cond->TypeGet() == TYP_INT);
+        assert(cond->TypeIs(TYP_INT));
         assert((tree->gtFlags & GTF_SIDE_EFFECT & ~GTF_ASG) == 0);
         assert((tree->gtFlags & GTF_ORDER_SIDEEFF) == 0);
 
         GenTree* replacement = nullptr;
-        if (cond->AsIntConCommon()->IntegralValue() == 0)
+        if (cond->IsIntegralConst(0))
         {
             JITDUMP("Bashed to false path:\n");
             replacement = op2;
@@ -12908,8 +12908,7 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         else
         {
             // Condition should never be a constant other than 0 or 1
-            assert(cond->AsIntConCommon()->IntegralValue() == 1);
-
+            assert (cond->IsIntegralConst(1));
             JITDUMP("Bashed to true path:\n");
             replacement = op1;
         }
