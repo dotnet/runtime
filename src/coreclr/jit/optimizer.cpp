@@ -4762,7 +4762,7 @@ bool Compiler::optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode)
     GenTreeConditional* select =
         gtNewConditionalNode(GT_SELECT, cond, asgNode->AsOp()->gtOp2, destination, asgNode->TypeGet());
 
-    // Use the select as the input to the assignment.
+    // Use the select as the source of the assignment.
     asgNode->AsOp()->gtOp2 = select;
     asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
 
@@ -4819,15 +4819,19 @@ bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
 // Returns:
 //   suitable phase status
 //
-void Compiler::optIfConversion()
+PhaseStatus Compiler::optIfConversion()
 {
+    bool madeChanges = false;
+
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
     {
-        optIfConvert(block);
+        madeChanges |= optIfConvert(block);
         block = block->bbPrev;
     }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************
