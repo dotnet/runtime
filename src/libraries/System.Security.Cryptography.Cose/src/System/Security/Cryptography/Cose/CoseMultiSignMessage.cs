@@ -535,7 +535,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// Calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
+        /// Calculates the number of bytes produced by encoding this message.
         /// </summary>
         /// <returns>The number of bytes produced by encoding this message.</returns>
         public override int GetEncodedLength()
