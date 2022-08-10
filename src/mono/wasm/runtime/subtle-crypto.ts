@@ -211,7 +211,7 @@ class LibraryChannel {
             this.send_request(msg);
             return this.read_response();
         } catch (err) {
-            this.reset(LibraryChannel._stringify_err(err));
+            this.reset(LibraryChannel.stringify_err(err));
             throw err;
         }
     }
@@ -224,7 +224,7 @@ class LibraryChannel {
 
         this.using_lock(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-            this._change_state_locked(this.STATE_SHUTDOWN);
+            this.change_state_locked(this.STATE_SHUTDOWN);
         });
         // Notify webworker
         Atomics.notify(this.comm, this.STATE_IDX);
@@ -243,7 +243,7 @@ class LibraryChannel {
 
         this.using_lock(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-            this._change_state_locked(this.STATE_RESET);
+            this.change_state_locked(this.STATE_RESET);
         });
         // Notify webworker
         Atomics.notify(this.comm, this.STATE_IDX);
@@ -266,7 +266,7 @@ class LibraryChannel {
                 // Indicate if this was the whole message or part of it.
                 state = msg_written === msg_len ? this.STATE_REQ : this.STATE_REQ_P;
 
-                this._change_state_locked(state);
+                this.change_state_locked(state);
             });
             // Notify webworker
             Atomics.notify(this.comm, this.STATE_IDX);
@@ -298,7 +298,6 @@ class LibraryChannel {
         let response = "";
         for (; ;) {
             this.wait_for_state_change_to(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
-            let state;
             const done = this.using_lock(() => {
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
@@ -306,7 +305,7 @@ class LibraryChannel {
                 response += this.read_from_msg(0, size_to_read);
 
                 // The response is complete.
-                state = Atomics.load(this.comm, this.STATE_IDX);
+                const state = Atomics.load(this.comm, this.STATE_IDX);
                 if (state === this.STATE_RESP) {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                     return true;
@@ -316,27 +315,29 @@ class LibraryChannel {
 
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-                this._change_state_locked(this.STATE_AWAIT);
+                this.change_state_locked(this.STATE_AWAIT);
                 return false;
             });
 
             // Notify webworker
             Atomics.notify(this.comm, this.STATE_IDX);
 
-            if (done) break;
+            if (done) {
+                break;
+            }
         }
 
         // Reset the communication channel's state and let the
         // webworker know we are done.
         this.using_lock(() => {
-            this._change_state_locked(this.STATE_IDLE);
+            this.change_state_locked(this.STATE_IDLE);
         });
         Atomics.notify(this.comm, this.STATE_IDX);
 
         return response;
     }
 
-    private _change_state_locked(newState: number): void {
+    private change_state_locked(newState: number): void {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
@@ -362,16 +363,16 @@ class LibraryChannel {
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    private using_lock(cb: Function) {
+    private using_lock(callback: Function) {
         try {
-            this._acquire_lock();
-            return cb();
+            this.acquire_lock();
+            return callback();
         } finally {
-            this._release_lock();
+            this.release_lock();
         }
     }
 
-    private _acquire_lock() {
+    private acquire_lock() {
         for (; ;) {
             const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
 
@@ -384,14 +385,14 @@ class LibraryChannel {
         }
     }
 
-    private _release_lock() {
+    private release_lock() {
         const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
         if (result !== this.LOCK_OWNED) {
             throw new Error("CRYPTO: LibraryChannel tried to release a lock that wasn't acquired: " + result);
         }
     }
 
-    private static _stringify_err(err: any) {
+    private static stringify_err(err: any) {
         return (err instanceof Error && err.stack !== undefined) ? err.stack : err;
     }
 
