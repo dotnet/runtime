@@ -289,31 +289,31 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 {
-                    if (this._path?.StartsWith(@"\\?\", StringComparison.Ordinal) ?? false)
+                    if (!this._path?.StartsWith(@"\\?\", StringComparison.Ordinal) ?? true)
                     {
-                        byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
-                        bool success = Interop.Kernel32.DeviceIoControl(
-                            this,
-                            dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
-                            lpInBuffer: IntPtr.Zero,
-                            nInBufferSize: 0,
-                            lpOutBuffer: buffer,
-                            nOutBufferSize: 4096,
-                            out _,
-                            IntPtr.Zero);
-
-                        if (!success)
-                        {
-                            throw Win32Marshal.GetExceptionForLastWin32Error(Path);
-                        }
-
-                        Span<byte> bufferSpan = new(buffer);
-                        success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
-                        Debug.Assert(success);
-                        return storageReadCapacity.DiskLength;
+                        throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                     }
 
-                    throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(sizeof(Interop.Kernel32.StorageReadCapacity));
+                    bool success = Interop.Kernel32.DeviceIoControl(
+                        this,
+                        dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
+                        lpInBuffer: IntPtr.Zero,
+                        nInBufferSize: 0,
+                        lpOutBuffer: buffer,
+                        nOutBufferSize: 32,
+                        out _,
+                        IntPtr.Zero);
+
+                    if (!success)
+                    {
+                        throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                    }
+
+                    Span<byte> bufferSpan = new(buffer);
+                    success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
+                    Debug.Assert(success);
+                    return storageReadCapacity.DiskLength;
                 }
 
                 return info.EndOfFile;
