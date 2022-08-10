@@ -14,187 +14,155 @@ namespace Microsoft.Interop.JavaScript
         public static JSTypeInfo CreateJSTypeInfoForTypeSymbol(ITypeSymbol type)
         {
             string fullTypeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return CreateJSTypeInfoForTypeSymbol(fullTypeName);
-        }
-
-        private static JSTypeInfo CreateJSTypeInfoForTypeSymbol(string fullTypeName)
-        {
-            switch (fullTypeName.Trim())
+            switch (type)
             {
-                case "global::System.Void":
-                case "void":
+                case { SpecialType: SpecialType.System_Void }:
                     return new JSSimpleTypeInfo(KnownManagedType.Void)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))
                     };
-                case "global::System.Boolean":
-                case "bool":
+                case { SpecialType: SpecialType.System_Boolean }:
                     return new JSSimpleTypeInfo(KnownManagedType.Boolean)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword))
                     };
-                case "global::System.Byte":
-                case "byte":
+                case { SpecialType: SpecialType.System_Byte }:
                     return new JSSimpleTypeInfo(KnownManagedType.Byte)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ByteKeyword))
                     };
-                case "global::System.Char":
-                case "char":
+                case { SpecialType: SpecialType.System_Char }:
                     return new JSSimpleTypeInfo(KnownManagedType.Char)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.CharKeyword))
                     };
-                case "global::System.Int16":
-                case "short":
+                case { SpecialType: SpecialType.System_Int16 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int16)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ShortKeyword))
                     };
-                case "global::System.Int32":
-                case "int":
+                case { SpecialType: SpecialType.System_Int32 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int32)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.IntKeyword))
                     };
-                case "global::System.Int64":
-                case "long":
+                case { SpecialType: SpecialType.System_Int64 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int64)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.LongKeyword))
                     };
-                case "global::System.Single":
-                case "float":
+                case { SpecialType: SpecialType.System_Single }:
                     return new JSSimpleTypeInfo(KnownManagedType.Single)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.FloatKeyword))
                     };
-                case "global::System.Double":
-                case "double":
+                case { SpecialType: SpecialType.System_Double }:
                     return new JSSimpleTypeInfo(KnownManagedType.Double)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword))
                     };
-                case "global::System.IntPtr":
-                case "nint":
-                case "void*":
+                case { SpecialType: SpecialType.System_IntPtr }:
+                case IPointerTypeSymbol { PointedAtType.SpecialType: SpecialType.System_Void }:
                     return new JSSimpleTypeInfo(KnownManagedType.IntPtr)
                     {
                         Syntax = SyntaxFactory.IdentifierName("nint")
                     };
-                case "global::System.DateTime":
+                case { SpecialType: SpecialType.System_DateTime }:
                     return new JSSimpleTypeInfo(KnownManagedType.DateTime)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
-                case "global::System.DateTimeOffset":
+                case ITypeSymbol when fullTypeName == "global.System.DateTimeOffset":
                     return new JSSimpleTypeInfo(KnownManagedType.DateTimeOffset)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
-                case "global::System.Exception":
+                case ITypeSymbol when fullTypeName == "global.System.Exception":
                     return new JSSimpleTypeInfo(KnownManagedType.Exception)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
-                case "global::System.Object":
-                case "object":
+                case { SpecialType: SpecialType.System_Object }:
                     return new JSSimpleTypeInfo(KnownManagedType.Object)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
                     };
-                case "global::System.String":
-                case "string":
+                case { SpecialType: SpecialType.System_String }:
                     return new JSSimpleTypeInfo(KnownManagedType.String)
                     {
                         Syntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword))
                     };
-                case "global::System.Runtime.InteropServices.JavaScript.JSObject":
+                case ITypeSymbol when fullTypeName == "global::System.Runtime.InteropServices.JavaScript.JSObject":
                     return new JSSimpleTypeInfo(KnownManagedType.JSObject)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
 
                 //nullable
-                case string ftn when ftn.EndsWith("?"):
-                    var ut = fullTypeName.Remove(fullTypeName.Length - 1);
-                    if (CreateJSTypeInfoForTypeSymbol(ut) is JSSimpleTypeInfo uti)
+                case INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T } nullable:
+                    if (CreateJSTypeInfoForTypeSymbol(nullable.TypeArguments[0]) is JSSimpleTypeInfo uti)
                     {
                         return new JSNullableTypeInfo(uti);
                     }
                     return new JSInvalidTypeInfo();
 
                 // array
-                case string ftn when ftn.EndsWith("[]"):
-                    var et = fullTypeName.Remove(fullTypeName.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(et) is JSSimpleTypeInfo eti)
+                case IArrayTypeSymbol { IsSZArray: true, ElementType: ITypeSymbol elementType }:
+                    if (CreateJSTypeInfoForTypeSymbol(elementType) is JSSimpleTypeInfo eti)
                     {
                         return new JSArrayTypeInfo(eti);
                     }
                     return new JSInvalidTypeInfo();
 
                 // task
-                case Constants.TaskGlobal:
-                    return new JSTaskTypeInfo((JSSimpleTypeInfo)CreateJSTypeInfoForTypeSymbol("void"));
-                case string ft when ft.StartsWith(Constants.TaskGlobal):
-                    var rt = fullTypeName.Substring(Constants.TaskGlobal.Length + 1, fullTypeName.Length - Constants.TaskGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(rt) is JSSimpleTypeInfo rti)
+                case ITypeSymbol when fullTypeName == Constants.TaskGlobal:
+                    return new JSTaskTypeInfo(new JSSimpleTypeInfo(KnownManagedType.Void, SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))));
+                case INamedTypeSymbol { TypeArguments.Length: 1 } taskType when fullTypeName.StartsWith(Constants.TaskGlobal, StringComparison.Ordinal):
+                    if (CreateJSTypeInfoForTypeSymbol(taskType.TypeArguments[0]) is JSSimpleTypeInfo rti)
                     {
                         return new JSTaskTypeInfo(rti);
                     }
                     return new JSInvalidTypeInfo();
 
                 // span
-                case string ft when ft.StartsWith(Constants.SpanGlobal):
-                    var st = fullTypeName.Substring(Constants.SpanGlobal.Length + 1, fullTypeName.Length - Constants.SpanGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(st) is JSSimpleTypeInfo sti)
+                case INamedTypeSymbol { TypeArguments.Length: 1 } spanType when fullTypeName.StartsWith(Constants.SpanGlobal, StringComparison.Ordinal):
+                    if (CreateJSTypeInfoForTypeSymbol(spanType.TypeArguments[0]) is JSSimpleTypeInfo sti)
                     {
                         return new JSSpanTypeInfo(sti);
                     }
                     return new JSInvalidTypeInfo();
 
                 // array segment
-                case string ft when ft.StartsWith(Constants.ArraySegmentGlobal):
-                    var gt = fullTypeName.Substring(Constants.ArraySegmentGlobal.Length + 1, fullTypeName.Length - Constants.ArraySegmentGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(gt) is JSSimpleTypeInfo gti)
+                case INamedTypeSymbol { TypeArguments.Length: 1 } arraySegmentType when fullTypeName.StartsWith(Constants.ArraySegmentGlobal, StringComparison.Ordinal):
+                    if (CreateJSTypeInfoForTypeSymbol(arraySegmentType.TypeArguments[0]) is JSSimpleTypeInfo gti)
                     {
                         return new JSArraySegmentTypeInfo(gti);
                     }
                     return new JSInvalidTypeInfo();
 
                 // action
-                case Constants.ActionGlobal:
+                case ITypeSymbol when fullTypeName == Constants.ActionGlobal:
                     return new JSFunctionTypeInfo(true, Array.Empty<JSSimpleTypeInfo>());
-                case string ft when ft.StartsWith(Constants.ActionGlobal):
-                    var argNames = fullTypeName.Substring(Constants.ActionGlobal.Length + 1, fullTypeName.Length - Constants.ActionGlobal.Length - 2);
-                    if (!argNames.Contains("<"))
+                case INamedTypeSymbol actionType when fullTypeName.StartsWith(Constants.ActionGlobal, StringComparison.Ordinal):
+                    var argumentTypes = actionType.TypeArguments
+                        .Select(arg => CreateJSTypeInfoForTypeSymbol(arg) as JSSimpleTypeInfo)
+                        .ToArray();
+                    if (argumentTypes.Any(x => x is null))
                     {
-                        var ga = argNames.Split(',')
-                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName) as JSSimpleTypeInfo)
-                            .ToArray();
-                        if (ga.Any(x => x == null))
-                        {
-                            return new JSInvalidTypeInfo();
-                        }
-                        return new JSFunctionTypeInfo(true, ga);
+                        return new JSInvalidTypeInfo();
                     }
-                    return new JSInvalidTypeInfo();
+                    return new JSFunctionTypeInfo(true, argumentTypes);
 
                 // function
-                case string ft when ft.StartsWith(Constants.FuncGlobal):
-                    var fargNames = fullTypeName.Substring(Constants.FuncGlobal.Length + 1, fullTypeName.Length - Constants.FuncGlobal.Length - 2);
-                    if (!fargNames.Contains("<"))
+                case INamedTypeSymbol funcType when fullTypeName.StartsWith(Constants.FuncGlobal, StringComparison.Ordinal):
+                    var signatureTypes = funcType.TypeArguments
+                        .Select(argName => CreateJSTypeInfoForTypeSymbol(argName) as JSSimpleTypeInfo)
+                        .ToArray();
+                    if (signatureTypes.Any(x => x is null))
                     {
-                        var ga = fargNames.Split(',')
-                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName) as JSSimpleTypeInfo)
-                            .ToArray();
-                        if (ga.Any(x => x == null))
-                        {
-                            return new JSInvalidTypeInfo();
-                        }
-                        return new JSFunctionTypeInfo(false, ga);
+                        return new JSInvalidTypeInfo();
                     }
-                    return new JSInvalidTypeInfo();
+                    return new JSFunctionTypeInfo(false, signatureTypes);
                 default:
                     return new JSInvalidTypeInfo();
             }
