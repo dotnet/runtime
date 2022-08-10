@@ -1,5 +1,5 @@
 rem build/run tests
-dotnet build unity\managed.sln -c Release
+cmd /c dotnet build unity\managed.sln -c Release
 rem  - |
 rem    cd unity\embed_api_tests
 rem    cmake . -A Win32
