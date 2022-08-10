@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Buffers;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -288,6 +289,30 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 {
+                    if (this._path?.StartsWith(@"\\?\") ?? false)
+                    {
+                        byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+                        bool success = Interop.Kernel32.DeviceIoControl(
+                            this,
+                            dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
+                            lpInBuffer: IntPtr.Zero,
+                            nInBufferSize: 0,
+                            lpOutBuffer: buffer,
+                            nOutBufferSize: 4096,
+                            out _,
+                            IntPtr.Zero);
+
+                        if (!success)
+                        {
+                            throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                        }
+
+                        Span<byte> bufferSpan = new(buffer);
+                        success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
+                        Debug.Assert(success);
+                        return storageReadCapacity.DiskLength;
+                    }
+
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                 }
 

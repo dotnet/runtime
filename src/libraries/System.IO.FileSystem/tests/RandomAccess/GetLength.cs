@@ -36,5 +36,18 @@ namespace System.IO.Tests
                 Assert.Equal(fileSize, RandomAccess.GetLength(handle));
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndElevated))]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void TestDevice(FileOptions options)
+        {
+            string filePath = @"\\?\PhysicalDrive0";
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: options))
+            {
+                var length = RandomAccess.GetLength(handle);
+                Assert.True(length > 0);
+            }
+        }
     }
 }
