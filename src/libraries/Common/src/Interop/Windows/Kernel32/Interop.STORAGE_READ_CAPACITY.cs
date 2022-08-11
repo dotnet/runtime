@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         // https://docs.microsoft.com/en-us/windows/win32/devio/storage-read-capacity
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct StorageReadCapacity
+        internal unsafe struct STORAGE_READ_CAPACITY
         {
             internal uint Version;
             internal uint Size;

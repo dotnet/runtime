@@ -20,9 +20,9 @@ internal static partial class Interop
         internal static unsafe partial bool DeviceIoControl(
             SafeHandle hDevice,
             uint dwIoControlCode,
-            IntPtr lpInBuffer,
+            void* lpInBuffer,
             uint nInBufferSize,
-            byte* lpOutBuffer,
+            void* lpOutBuffer,
             uint nOutBufferSize,
             out uint lpBytesReturned,
             IntPtr lpOverlapped);

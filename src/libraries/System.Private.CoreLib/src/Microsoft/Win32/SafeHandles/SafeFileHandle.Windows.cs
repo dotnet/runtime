@@ -297,16 +297,16 @@ namespace Microsoft.Win32.SafeHandles
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                 }
 
-                const int requiredBufferSize = 32;
-                byte* pBuffer = stackalloc byte[requiredBufferSize];
+                Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
+
                 bool success = Interop.Kernel32.DeviceIoControl(
                     this,
                     dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
-                    lpInBuffer: IntPtr.Zero,
+                    lpInBuffer: null,
                     nInBufferSize: 0,
-                    lpOutBuffer: pBuffer,
-                    nOutBufferSize: requiredBufferSize,
-                    out uint bytesReturned,
+                    lpOutBuffer: &storageReadCapacity,
+                    nOutBufferSize: (uint)sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY),
+                    out _,
                     IntPtr.Zero);
 
                 if (!success)
@@ -314,8 +314,6 @@ namespace Microsoft.Win32.SafeHandles
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                 }
 
-                success = MemoryMarshal.TryRead(new ReadOnlySpan<byte>(pBuffer, (int)bytesReturned), out Interop.Kernel32.StorageReadCapacity storageReadCapacity);
-                Debug.Assert(success);
                 return storageReadCapacity.DiskLength;
             }
         }

@@ -581,7 +581,7 @@ namespace System.IO
                     success = Interop.Kernel32.DeviceIoControl(
                         handle,
                         dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
-                        lpInBuffer: IntPtr.Zero,
+                        lpInBuffer: null,
                         nInBufferSize: 0,
                         lpOutBuffer: pBuffer,
                         nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
