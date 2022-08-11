@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
@@ -11,6 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="fieldlayouttests.cs" />
-    <Compile Include="InstanceFieldLayout.cs" />
+    <Compile Include="../../../coreclr/tools/aot/ILCompiler.TypeSystem.Tests/CoreTestAssembly/InstanceFieldLayout.cs" />
   </ItemGroup>
 </Project>
