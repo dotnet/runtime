@@ -24,7 +24,7 @@ import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { DotnetPublicAPI } from "./exports";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
-import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
+import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download_with_retries, wait_for_all_assets } from "./assets";
 import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
@@ -366,8 +366,8 @@ async function instantiate_wasm_module(
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
-        // FIXME: this would not apply re-try for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
-        await start_asset_download(assetToLoad, false);
+        // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
+        await start_asset_download_with_retries(assetToLoad, false);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
         instantiate_wasm_asset(assetToLoad, imports, successCallback);
