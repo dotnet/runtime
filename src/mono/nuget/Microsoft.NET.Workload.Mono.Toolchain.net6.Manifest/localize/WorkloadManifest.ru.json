@@ -1,3 +1,3 @@
 ﻿{
-  "workloads/wasm-tools/description": "Средства сборки WebAssembly .NET"
+  "workloads/wasm-tools-net6/description": "Средства сборки WebAssembly .NET"
 }
