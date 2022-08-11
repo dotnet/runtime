@@ -46,9 +46,15 @@ typedef struct {
 } MonoCoreLookupPaths;
 
 typedef struct {
+	uint64_t current_local_time;
+	uint64_t kernel_monotonic_clock;
+} MonoCoreLocalTime;
+
+typedef struct {
 	MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 	MonoCoreLookupPaths *app_paths;
 	MonoCoreLookupPaths *native_dll_search_directories;
+	MonoCoreLocalTime *local_time;
 	PInvokeOverrideFn pinvoke_override;
 } MonoCoreRuntimeProperties;
 
