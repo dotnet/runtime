@@ -116,10 +116,12 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running", output);
         }
 
-        [Theory]
-        [BuildAndRun(host: RunHost.None, config: "Debug")]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
+            // Build a library containing icalls with overloaded parameters.
+
             string code =
             """
             using System;
@@ -160,11 +162,12 @@ namespace Wasm.Build.Tests
                 )
             );
 
+            // Build a project with ManagedToNativeGenerator task reading icals from the above library and runtime-icall-table.h bellow.
 
             string projectCode =
             """
             <Project>
-                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="..\..\..\..\..\dotnet-workload\packs\Microsoft.NET.Runtime.WebAssembly.Sdk\7.0.0-dev\tasks\net7.0\WasmAppBuilder.dll" />
+                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
                 <Target Name="Build">
                   <PropertyGroup>
                     <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
@@ -194,7 +197,7 @@ namespace Wasm.Build.Tests
             </Project>
             """;
 
-            string AddAssembly(string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(libraryDir, "bin", "Debug", "net7.0", "browser-wasm", name + ".dll")}\" />";
+            string AddAssembly(string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(libraryDir, "bin", buildArgs.Config, DefaultTargetFramework, "browser-wasm", name + ".dll")}\" />";
 
             string icallTable =
             """
@@ -206,7 +209,9 @@ namespace Wasm.Build.Tests
             
             """;
 
-            projectCode = projectCode.Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName));
+            projectCode = projectCode
+                .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
+                .Replace("###WasmAppBuilder###", Path.Combine(s_buildEnv.WorkloadPacksDir, "Microsoft.NET.Runtime.WebAssembly.Sdk", s_buildEnv.WorkloadPacksVersion, "tasks", DefaultTargetFramework, "WasmAppBuilder.dll"));
 
             buildArgs = buildArgs with { ProjectName = $"icall_enum_{buildArgs.Config}_{id}", ProjectFileContents = projectCode };
 
