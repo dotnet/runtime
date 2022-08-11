@@ -652,6 +652,10 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Remove="@(ProjectReference)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.CodeDom\tests\System.CodeDom.Tests.csproj" />
+  </ItemGroup>
   <Target Name="GenerateMergedCoverageReport"
           AfterTargets="Test"
           DependsOnTargets="GenerateCoverageReport"

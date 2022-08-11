@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
 using System.Diagnostics;
 using System.Text;
 
@@ -47,7 +49,18 @@ namespace System.IO
             {
                 if (Interop.Sys.MkdTemp(pPath) is null)
                 {
-                    Interop.ThrowIOExceptionForLastError();
+                    StringBuilder sb = new();
+                    sb.AppendLine ($"Tried to create {Encoding.UTF8.GetString(path)} in {tempPath}");
+                    foreach (var s in Directory.EnumerateFiles(tempPath, "*"))
+                        sb.AppendLine($"\tf: {s}");
+                    foreach (var s in Directory.EnumerateDirectories(tempPath, "*"))
+                        sb.AppendLine($"\td: {s}");
+                    try {
+                        Interop.ThrowIOExceptionForLastError();
+                        throw new Exception($"IO didn't throw, debug: {sb}");
+                    } catch (Exception ex) {
+                        throw new Exception($"io: {ex}, debug: {sb}");
+                    }
                 }
             }
 
