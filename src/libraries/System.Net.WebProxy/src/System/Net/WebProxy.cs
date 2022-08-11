@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -154,16 +156,26 @@ namespace System.Net
         {
             UpdateRegexList(canThrow: false);
 
-            if (_regexBypassList != null)
+            if (_regexBypassList is Regex[] bypassList)
             {
-                Span<char> stackBuffer = stackalloc char[128];
-                string matchUriString = input.IsDefaultPort ?
-                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}") :
-                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}:{(uint)input.Port}");
-
-                foreach (Regex r in _regexBypassList)
+                bool isDefaultPort = input.IsDefaultPort;
+                int lengthRequired = input.Scheme.Length + 3 + input.Host.Length;
+                if (isDefaultPort)
                 {
-                    if (r.IsMatch(matchUriString))
+                    lengthRequired += 1 + 10; // 1 for ':' and 10 for max formatted length of a uint
+                }
+
+                int charsWritten;
+                Span<char> url = lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
+                bool formatted = isDefaultPort ?
+                    url.TryWrite($"{input.Scheme}://{input.Host}", out charsWritten) :
+                    url.TryWrite($"{input.Scheme}://{input.Host}:{(uint)input.Port}", out charsWritten);
+                Debug.Assert(formatted);
+                url = url.Slice(0, charsWritten);
+
+                foreach (Regex r in bypassList)
+                {
+                    if (r.IsMatch(url))
                     {
                         return true;
                     }
