@@ -41,11 +41,17 @@ namespace System.IO.Tests
         [MemberData(nameof(GetSyncAsyncOptions))]
         public void ReturnsActualLengthForDevices(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(@"\\?\PhysicalDrive0", FileMode.Open, options: options))
+            // both File.Exists and Path.Exists return false when "\\?\PhysicalDrive0" exists
+            // that is why we just try and swallow the exception when it occurs
+            try
             {
-                long length = RandomAccess.GetLength(handle);
-                Assert.True(length > 0);
+                using (SafeFileHandle handle = File.OpenHandle(@"\\?\PhysicalDrive0", FileMode.Open, options: options))
+                {
+                    long length = RandomAccess.GetLength(handle);
+                    Assert.True(length > 0);
+                }
             }
+            catch (FileNotFoundException) { }
         }
     }
 }
