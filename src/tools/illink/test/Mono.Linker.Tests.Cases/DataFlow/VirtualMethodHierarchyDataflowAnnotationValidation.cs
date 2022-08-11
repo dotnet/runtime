@@ -5,13 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Mono.Linker.Tests.Cases.DataFlow.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[SandboxDependency ("Dependencies/TestSystemTypeBase.cs")]
+	[SetupCompileBefore ("skiplibrary.dll", new[] { "Dependencies/Library.cs" })]
+	[SetupLinkerAction ("skip", "skiplibrary")]
 
 	// Suppress warnings about accessing methods with annotations via reflection - the test below does that a LOT
 	// (The test accessed these methods through DynamicallyAccessedMembers annotations which is effectively the same reflection access)
@@ -43,6 +47,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (ITwoInterfacesImplementedByOneMethod_One));
 			RequirePublicMethods (typeof (ITwoInterfacesImplementedByOneMethod_Two));
 			RequirePublicMethods (typeof (ImplementationOfTwoInterfacesWithOneMethod));
+			StaticInterfaceMethods.Test ();
+			BaseInPreservedScope.Test ();
 		}
 
 		static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -623,22 +629,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIDamOnAllMissing : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // PR: https://github.com/dotnet/linker/pull/2926
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
 				public static Type AbstractMethod<T> (Type type) => null;
 
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // PR: https://github.com/dotnet/linker/pull/2926
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
 				public static Type VirtualMethod<T> (Type type) => null;
 			}
 
 			class ImplIDamOnAllMismatch : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // PR: https://github.com/dotnet/linker/pull/2926
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -647,9 +653,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					Type type)
 				{ return null; }
 
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // PR: https://github.com/dotnet/linker/pull/2926
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -676,6 +682,191 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 					Type type)
 				{ return null; }
+			}
+
+			interface IDamOnNone
+			{
+				static virtual Type VirtualMethod<T> (Type t) { return null; }
+				static abstract Type AbstractMethod<T> (Type t);
+			}
+
+			class ImplIDamOnNoneMatch : IDamOnNone
+			{
+				public static Type VirtualMethod<T> (Type t) { return null; }
+				public static Type AbstractMethod<T> (Type t) { return null; }
+			}
+
+			class ImplIDamOnNoneMismatch : IDamOnNone
+			{
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				public static Type AbstractMethod
+					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				T> (
+					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+					Type type)
+				{ return null; }
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				public static Type VirtualMethod
+					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				T> (
+					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+					Type type)
+				{ return null; }
+			}
+
+
+			public static void Test ()
+			{
+				typeof (ImplIDamOnAllMatch).RequiresPublicMethods ();
+				typeof (ImplIDamOnAllMismatch).RequiresPublicMethods ();
+				typeof (ImplIDamOnAllMissing).RequiresPublicMethods ();
+				typeof (IDamOnAll).RequiresPublicMethods ();
+				typeof (ImplIDamOnNoneMatch).RequiresPublicMethods ();
+				typeof (ImplIDamOnNoneMismatch).RequiresPublicMethods ();
+				typeof (IDamOnNone).RequiresPublicMethods ();
+
+			}
+		}
+
+		class BaseInPreservedScope
+		{
+			class ImplIAnnotatedMethodsMismatch : Library.IAnnotatedMethods
+			{
+				[ExpectedWarning ("IL2095")]
+				public static void GenericWithMethodsStatic<T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public static void ParamWithMethodsStatic (Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				public static Type ReturnWithMethodsStatic () => typeof (int);
+
+				[ExpectedWarning ("IL2095")]
+				public void GenericWithMethods<T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public void ParamWithMethods (Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				public Type ReturnWithMethods () => typeof (int);
+			}
+
+			class ImplIUnannotatedMethodsMismatch : Library.IUnannotatedMethods
+			{
+				[ExpectedWarning ("IL2095")]
+				public static void GenericStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public static void ParamStatic ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static Type ReturnStatic () => typeof (int);
+
+				[ExpectedWarning ("IL2095")]
+				public void Generic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public void Param ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type Return () => typeof (int);
+			}
+
+			class DerivedFromUnannotatedMismatch : Library.UnannotatedMethods
+			{
+				[ExpectedWarning ("IL2095")]
+				public override void Generic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public override void Param ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public override Type Return () => typeof (int);
+			}
+
+			class DerivedFromAnnotatedMismatch : Library.AnnotatedMethods
+			{
+				[ExpectedWarning ("IL2095")]
+				public override void GenericWithMethods<T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				public override void ParamWithMethods (Type t) { }
+
+				[ExpectedWarning ("IL2093")]
+				public override Type ReturnWithMethods () => typeof (int);
+			}
+
+			class ImplIUnannotatedMethodsMatch : Library.IUnannotatedMethods
+			{
+				public static void GenericStatic<T> () { }
+
+				public static void ParamStatic (Type t) { }
+
+				public static Type ReturnStatic () => typeof (int);
+
+				public void Generic<T> () { }
+
+				public void Param (Type t) { }
+
+				public Type Return () => typeof (int);
+			}
+
+			class ImplIAnnotatedMethodsMatch : Library.IAnnotatedMethods
+			{
+				public static void GenericWithMethodsStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				public static void ParamWithMethodsStatic ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static Type ReturnWithMethodsStatic () => typeof (int);
+
+				public void GenericWithMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				public void ParamWithMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type ReturnWithMethods () => typeof (int);
+			}
+
+			class DerivedFromAnnotatedMatch : Library.AnnotatedMethods
+			{
+				public override void GenericWithMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				public override void ParamWithMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) { }
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public override Type ReturnWithMethods () => typeof (int);
+			}
+
+			class DerivedFromUnannotatedMatch : Library.UnannotatedMethods
+			{
+				public override void Generic<T> () { }
+
+				public override void Param (Type t) { }
+
+				public override Type Return () => typeof (int);
+			}
+
+			public static void Test ()
+			{
+				typeof (ImplIUnannotatedMethodsMismatch).RequiresPublicMethods ();
+				typeof (ImplIAnnotatedMethodsMismatch).RequiresPublicMethods ();
+				typeof (DerivedFromAnnotatedMismatch).RequiresPublicMethods ();
+				typeof (DerivedFromUnannotatedMismatch).RequiresPublicMethods ();
+				typeof (ImplIUnannotatedMethodsMatch).RequiresPublicMethods ();
+				typeof (ImplIAnnotatedMethodsMatch).RequiresPublicMethods ();
+				typeof (DerivedFromAnnotatedMatch).RequiresPublicMethods ();
+				typeof (DerivedFromUnannotatedMatch).RequiresPublicMethods ();
 			}
 		}
 	}

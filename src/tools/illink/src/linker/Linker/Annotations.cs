@@ -608,7 +608,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Determines if a member requires unreferenced code (and thus any usage of such method should be warned about).
 		/// </summary>
-		/// <remarks>Unlike <see cref="IsInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods 
+		/// <remarks>Unlike <see cref="IsInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods
 		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
 		internal bool DoesMemberRequireUnreferencedCode (IMemberDefinition member, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
@@ -673,10 +673,26 @@ namespace Mono.Linker
 			return TryGetLinkerAttribute (field.DeclaringType, out attribute);
 		}
 
+		/// <Summary>
+		/// Adds a virtual method to the queue if it is annotated and must have matching annotations on its bases and overrides. It does not check if the method is marked before producing a warning about mismatched annotations.
+		/// </summary>
 		public void EnqueueVirtualMethod (MethodDefinition method)
 		{
 			if (!method.IsVirtual)
 				return;
+
+			// Implementations of static interface methods are not virtual and won't reach here
+			// We'll search through the implementations of static interface methods to find if any need to be enqueued
+			if (method.IsStatic) {
+				Debug.Assert (method.DeclaringType.IsInterface);
+				var overrides = GetOverrides (method);
+				if (overrides is not null) {
+					foreach (var @override in overrides) {
+						if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (@override.Override) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (@override.Override))
+							VirtualMethodsWithAnnotationsToValidate.Add (@override.Override);
+					}
+				}
+			}
 
 			if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
