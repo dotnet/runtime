@@ -781,9 +781,12 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnMono("Nullability attributes trimmed on Mono")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73811", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GenericMethodWithPointersTest()
         {
+            // Dummy call to MakeGenericMethod to make the code generated ahead of time 
+            if (string.Empty.Length > 0) 
+                TypeWithNotNullContext.GenericMethodWithPointers<float>(null, null);
+                
             // GenericMethodWithPointers<T>(T* a, T?* b)
             MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.GenericMethodWithPointers))!
                 .MakeGenericMethod(typeof(float));
