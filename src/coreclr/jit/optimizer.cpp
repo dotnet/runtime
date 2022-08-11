@@ -4568,13 +4568,110 @@ PhaseStatus Compiler::optUnrollLoops()
 // optIfConvert
 //
 // Find blocks representing simple if statements represented by conditional jumps
-// over another block. Try to replace the jumps by use of conditional nodes.
+// over another block. Try to replace the jumps by use of SELECT nodes.
 //
 // Arguments:
 //   block -- block that may represent the conditional jump in an if statement.
 //
 // Returns:
 //   true if any IR changes possibly made.
+//
+// Notes:
+//
+// 1: Example of simple if conversion:
+//
+// This is optimising a simple if statement. There is a single condition being
+// tested, and a single assignment inside the body. There must be no else
+// statement. For example:
+// if (x < 7) { a = 5; }
+//
+// This is represented in IR by two basic blocks. The first block ends with a
+// JTRUE statement which conditionally jumps to the second block. Both blocks
+// then jump to the same destination. The second block just contains a single
+// assign statement. (Note that the first block may contain additional statements
+// prior to the JTRUE statement.)
+//
+// For example:
+// ------------ BB03 [009..00D) -> BB05 (cond), preds={BB02} succs={BB04,BB05}
+// STMT00004
+//   *  JTRUE     void   $VN.Void
+//   \--*  GE        int    $102
+//      +--*  LCL_VAR   int    V02
+//      \--*  CNS_INT   int    7 $46
+//
+// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
+// STMT00005
+//   *  ASG       int    $VN.Void
+// +--*  LCL_VAR   int    V00 arg0
+// \--*  CNS_INT   int    5 $47
+//
+// The JTRUE statement in the first block is replace with a SELECT node in the
+// assignment in the second block. If the result of the SELECTs op1 is true,
+// then op2 is passed to the assignment. Otherwise op3 is used. For example:
+//
+// ------------ BB03 [009..00D), preds={BB02} succs={BB04}
+// STMT00004
+//   *  NOP       void
+//
+// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
+// STMT00005
+//   *  ASG       int    $VN.Void
+//   +--*  LCL_VAR   int    V00 arg0
+//   \--*  SELECT    int
+//      +--*  LT        int    $102
+//      |  +--*  LCL_VAR   int    V02
+//      |  \--*  CNS_INT   int    7 $46
+//      +--*  CNS_INT   int    5 $47
+//      \--*  LCL_VAR   int    V00
+//
+//
+// 2: Example of if conversion with AND chains:
+//
+// Consider the previous example, but with an additional condition. The two conditions
+// must be combined via an AND condition. For example:
+// if (y != 10 && x < 7) { a = 5; }
+//
+// The IR here will be the same as the previous example, except it will be preceeded
+// by a block containing the first condition:
+//
+// ------------ BB02 [004..009) -> BB05 (cond), preds={BB01} succs={BB03,BB05}
+// STMT00003
+//   *  JTRUE     void   $VN.Void
+//   \--*  EQ        int    $101
+//     +--*  LCL_VAR   int    V01
+//     \--*  CNS_INT   int    10 $45
+//
+// First the previous optimisation across blocks BB03 and BB04 will be applied.
+// Then the JTRUE in the addition condition will be removed and added onto the
+// condition in the select via an AND node:
+//
+// ------------ BB02 [004..009), preds={BB01} succs={BB03}
+// STMT00003
+//   *  NOP       void
+//
+// ------------ BB03 [009..00D), preds={BB02} succs={BB04}
+// STMT00004
+//   *  NOP       void
+//
+// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
+// STMT00005
+//  *  ASG       int    $VN.Void
+//  +--*  LCL_VAR   int    V00 arg0
+//  \--*  SELECT    int
+//     +--*  AND       int
+//     |  +--*  LT        int    $102
+//     |  |  +--*  LCL_VAR   int    V02
+//     |  |  \--*  CNS_INT   int    7 $46
+//     |  \--*  NE        int    $101
+//     |     +--*  LCL_VAR   int    V01
+//     |     \--*  CNS_INT   int    10 $45
+//     +--*  CNS_INT   int    5 $47
+//     \--*  LCL_VAR   int    V00
+//
+// There is no limit on the number of conditions that could potentially be
+// combined this way. However this ordering means that every condition is
+// evalutated at execution time, which puts a practical limit on the number
+// of conditions to chain.
 //
 bool Compiler::optIfConvert(BasicBlock* block)
 {
@@ -4699,7 +4796,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     if (foundSelect)
     {
         // The assign is already conditional. Try adding another condition.
-        if (!optIfConvertCCmp(last->gtGetOp1(), asgNode))
+        if (!extendConditionalAssignment(asgNode, last->gtGetOp1()))
         {
             return false;
         }
@@ -4707,7 +4804,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     else
     {
         // Make the assign conditional.
-        if (!optIfConvertSelect(last->gtGetOp1(), asgNode))
+        if (!createConditionalAssignment(asgNode, last->gtGetOp1()))
         {
             return false;
         }
@@ -4740,18 +4837,34 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #endif
 }
 
-bool Compiler::optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode)
+//-----------------------------------------------------------------------------
+// createConditionalAssignment
+//
+// Helper function for optIfConvert. Given an assignment, make the assignment
+// conditionally execute based on the given condition. This is done by adding
+// a SELECT node as the source of the assignment. The exisiting value of the
+// assignment is used as the false path of the select
+// For example: (ASG Var Val) becomes (ASG Var (SELECT condition Val Var))
+//
+// Arguments:
+//   asg -- The assignment to conditionally execute.
+//   condition -- The assignment should only happen if this evaluates to true.
+//
+// Returns:
+//   true if any IR changes possibly made.
+//
+bool Compiler::createConditionalAssignment(GenTree* asg, GenTree* condition)
 {
-    assert(originalCondition->OperIsCmpCompare());
-    assert(asgNode->OperIs(GT_ASG));
+    assert(condition->OperIsCmpCompare());
+    assert(asg->OperIs(GT_ASG));
 
     // Duplicate the input of the assign.
     // This will be used as the false result of the select node.
-    GenTree* destination = gtCloneExpr(asgNode->AsOp()->gtOp1);
+    GenTree* destination = gtCloneExpr(asg->AsOp()->gtOp1);
     destination->gtFlags &= GTF_EMPTY;
 
     // Duplicate the condition and invert it
-    GenTree* cond = gtCloneExpr(originalCondition);
+    GenTree* cond = gtCloneExpr(condition);
     cond->gtFlags |= GTF_DONT_CSE;
     cond->gtFlags ^= GTF_RELOP_JMP_USED;
     cond->gtFlags ^= GTF_RELOP_NAN_UN;
@@ -4759,11 +4872,11 @@ bool Compiler::optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode)
 
     // Create a select node.
     GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asgNode->AsOp()->gtOp2, destination, asgNode->TypeGet());
+        gtNewConditionalNode(GT_SELECT, cond, asg->AsOp()->gtOp2, destination, asg->TypeGet());
 
     // Use the select as the source of the assignment.
-    asgNode->AsOp()->gtOp2 = select;
-    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+    asg->AsOp()->gtOp2 = select;
+    asg->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
 
     // Calculate costs.
     gtSetEvalOrder(select);
@@ -4771,10 +4884,25 @@ bool Compiler::optIfConvertSelect(GenTree* originalCondition, GenTree* asgNode)
     return true;
 }
 
-bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
+//-----------------------------------------------------------------------------
+// extendConditionalAssignment
+//
+// Helper function for optIfConvert. Given an assignment, which is already executed
+// conditionally via a SELECT node, add an additional condition.
+// For example: (ASG Var (SELECT oldcondition Val Var)) becomes
+// (ASG Var (SELECT (AND oldcondition newcondition) Val Var))
+//
+// Arguments:
+//   asg -- The conditional assignment to extend.
+//   condition -- The assignment should only happen if this evaluates to true.
+//
+// Returns:
+//   true if any IR changes possibly made.
+//
+bool Compiler::extendConditionalAssignment(GenTree* asg, GenTree* originalCondition)
 {
     assert(originalCondition->OperIsCmpCompare());
-    assert(asgNode->OperIs(GT_ASG));
+    assert(asg->OperIs(GT_ASG));
 
     // TODO-CQ: Add float support.
     if (!varTypeIsIntegralOrI(originalCondition->AsOp()->gtOp1->TypeGet()))
@@ -4785,7 +4913,7 @@ bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
     // Note: Limiting the maximum number of chained compares may give a performance
     //       boost, at the cost of more emitted code.
 
-    GenTreeConditional* selectNode     = asgNode->AsOp()->gtOp2->AsConditional();
+    GenTreeConditional* selectNode     = asg->AsOp()->gtOp2->AsConditional();
     GenTree*            selectNodeCond = selectNode->gtCond;
 
     // Duplicate the condition and invert it
@@ -4804,7 +4932,7 @@ bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
     selectNode->gtCond = link;
     selectNode->gtFlags |= (link->gtFlags & GTF_ALL_EFFECT);
     selectNode->gtFlags ^= GTF_RELOP_NAN_UN;
-    asgNode->AsOp()->gtFlags |= (selectNode->gtFlags & GTF_ALL_EFFECT);
+    asg->AsOp()->gtFlags |= (selectNode->gtFlags & GTF_ALL_EFFECT);
 
     // Calculate costs.
     gtSetEvalOrder(link);
