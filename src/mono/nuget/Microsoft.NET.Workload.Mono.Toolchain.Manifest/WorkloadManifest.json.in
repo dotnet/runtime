@@ -139,15 +139,24 @@
   "packs": {
     "Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.MonoAOTCompiler.Task"
+      }
     },
     "Microsoft.NET.Runtime.MonoTargets.Sdk.net6": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.MonoTargets.Sdk"
+      }
     },
     "Microsoft.NET.Runtime.WebAssembly.Sdk.net6": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.WebAssembly.Sdk"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-arm": {
       "kind": "framework",
@@ -353,7 +362,10 @@
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.browser-wasm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-x64" : {
       "kind": "framework",

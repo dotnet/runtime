@@ -23,7 +23,7 @@
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
 
-    <Import Condition="'$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
+    <Import Condition="'$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6" />
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net6" />
