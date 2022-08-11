@@ -543,6 +543,7 @@ enum GenTreeFlags : unsigned int
     GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
                                               //             castclass or instanceof?
 
+    GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
     GTF_ICON_HDL_MASK           = 0xF0000000, // Bits used by handle types below
@@ -3638,6 +3639,16 @@ struct GenTreeBox : public GenTreeUnOp
     {
     }
 #endif
+
+    bool WasCloned()
+    {
+        return (gtFlags & GTF_BOX_CLONED) != 0;
+    }
+
+    void SetCloned()
+    {
+        gtFlags |= GTF_BOX_CLONED;
+    }
 };
 
 /* gtField  -- data member ref  (GT_FIELD) */
