@@ -48,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst, "Not supported on OSX/MacCatalyst.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
