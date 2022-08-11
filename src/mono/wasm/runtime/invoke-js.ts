@@ -31,7 +31,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const closure: any = { fn, marshal_exception_to_cs, signature };
         const bound_js_function_name = "_bound_js_" + js_function_name.replace(/\./g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
+        let body = `//# sourceURL=https://dotnet.generated.invalid/${bound_js_function_name} \n`;
         let converter_names = "";
 
 

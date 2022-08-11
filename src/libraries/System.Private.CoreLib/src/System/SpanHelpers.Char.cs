@@ -1986,10 +1986,10 @@ namespace System
 
         public static void Reverse(ref char buf, nuint length)
         {
-            ref byte bufByte = ref Unsafe.As<char, byte>(ref buf);
-            nuint byteLength = length * sizeof(char);
             if (Avx2.IsSupported && (nuint)Vector256<short>.Count * 2 <= length)
             {
+                ref byte bufByte = ref Unsafe.As<char, byte>(ref buf);
+                nuint byteLength = length * sizeof(char);
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
                     14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1); // second 128-bit lane
@@ -2028,20 +2028,22 @@ namespace System
                 }
                 bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
                 length -= numIters * (nuint)Vector256<short>.Count * 2;
+                // Store any remaining values one-by-one
+                buf = ref Unsafe.As<byte, char>(ref bufByte);
             }
-            else if (Ssse3.IsSupported && (nuint)Vector128<short>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<short>.Count * 2 <= length)
             {
-                Vector128<byte> reverseMask = Vector128.Create((byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
-                nuint numElements = (nuint)Vector128<byte>.Count;
-                nuint numIters = ((length * sizeof(char)) / numElements) / 2;
+                ref short bufShort = ref Unsafe.As<char, short>(ref buf);
+                nuint numElements = (nuint)Vector128<short>.Count;
+                nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
                 {
                     nuint firstOffset = i * numElements;
-                    nuint lastOffset = byteLength - ((1 + i) * numElements);
+                    nuint lastOffset = length - ((1 + i) * numElements);
 
                     // Load in values from beginning and end of the array.
-                    Vector128<byte> tempFirst = Vector128.LoadUnsafe(ref bufByte, firstOffset);
-                    Vector128<byte> tempLast = Vector128.LoadUnsafe(ref bufByte, lastOffset);
+                    Vector128<short> tempFirst = Vector128.LoadUnsafe(ref bufShort, firstOffset);
+                    Vector128<short> tempLast = Vector128.LoadUnsafe(ref bufShort, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +-------------------------------+
@@ -2051,19 +2053,18 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
-                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref bufByte, firstOffset);
-                    tempFirst.StoreUnsafe(ref bufByte, lastOffset);
+                    tempLast.StoreUnsafe(ref bufShort, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufShort, lastOffset);
                 }
-                bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
+                bufShort = ref Unsafe.Add(ref bufShort, numIters * numElements);
                 length -= numIters * (nuint)Vector128<short>.Count * 2;
+                // Store any remaining values one-by-one
+                buf = ref Unsafe.As<short, char>(ref bufShort);
             }
-
-            // Store any remaining values one-by-one
-            buf = ref Unsafe.As<byte, char>(ref bufByte);
             ReverseInner(ref buf, length);
         }
     }

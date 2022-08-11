@@ -710,12 +710,15 @@ HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
+extern void DacLogMessage(LPCSTR format, ...);
+
 // This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
 #define RethrowCancelExceptions                                         \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
-    }
+    }                                                                   \
+    DacLogMessage("DAC exception caught at %s:%d\n", __FILE__, __LINE__);
 
 // Occasionally it's necessary to allocate some host memory for
 // instance data that's created on the fly and so doesn't directly
