@@ -13,7 +13,134 @@ namespace System.Net
 {
     public partial class WebProxy : IWebProxy, ISerializable
     {
-        private ArrayList? _bypassList;
+
+        private sealed class DirtyTrackingArrayList : ArrayList
+        {
+
+            public DirtyTrackingArrayList()
+            {
+
+            }
+
+            public DirtyTrackingArrayList(ICollection c) : base(c)
+            {
+
+            }
+
+            public DirtyTrackingArrayList(int capacity) : base(capacity)
+            {
+
+            }
+
+            public bool IsDirty { get; private set; }
+
+            public bool CheckDirty()
+            {
+                var dirty = IsDirty;
+                IsDirty = false;
+                return dirty;
+            }
+
+            public override object? this[int index]
+            {
+                get
+                {
+                    return base[index];
+                }
+                set
+                {
+                    IsDirty = true;
+                    base[index] = value;
+                }
+            }
+
+
+            public override int Add(object? value)
+            {
+                IsDirty = true;
+                return base.Add(value);
+            }
+
+            public override void AddRange(ICollection c)
+            {
+                IsDirty = true;
+                base.AddRange(c);
+            }
+
+            public override void Insert(int index, object? value)
+            {
+                IsDirty = true;
+                base.Insert(index, value);
+            }
+
+            public override void InsertRange(int index, ICollection c)
+            {
+                IsDirty = true;
+                base.InsertRange(index, c);
+            }
+
+            public override void SetRange(int index, ICollection c)
+            {
+                IsDirty = true;
+                base.SetRange(index, c);
+            }
+
+            public override void Remove(object? obj)
+            {
+                IsDirty = true;
+                base.Remove(obj);
+            }
+
+            public override void RemoveAt(int index)
+            {
+                IsDirty = true;
+                base.RemoveAt(index);
+            }
+
+            public override void RemoveRange(int index, int count)
+            {
+                IsDirty = true;
+                base.RemoveRange(index, count);
+            }
+
+            public override void Clear()
+            {
+                IsDirty = true;
+                base.Clear();
+            }
+
+            public override void Sort()
+            {
+                IsDirty = true;
+                base.Sort();
+            }
+
+            public override void Sort(IComparer? comparer)
+            {
+                IsDirty = true;
+                base.Sort(comparer);
+            }
+
+            public override void Sort(int index, int count, IComparer? comparer)
+            {
+                IsDirty = true;
+                base.Sort(index, count, comparer);
+            }
+
+            public override void Reverse()
+            {
+                IsDirty = true;
+                base.Reverse();
+            }
+
+            public override void Reverse(int index, int count)
+            {
+                IsDirty = true;
+                base.Reverse(index, count);
+            }
+        }
+
+        private DirtyTrackingArrayList? _bypassList;
         private Regex[]? _regexBypassList;
 
         public WebProxy() : this((Uri?)null, false, null, null) { }
@@ -31,8 +158,8 @@ namespace System.Net
             this.BypassProxyOnLocal = BypassOnLocal;
             if (BypassList != null)
             {
-                _bypassList = new ArrayList(BypassList);
-                UpdateRegexList(true);
+                _bypassList = new DirtyTrackingArrayList(BypassList);
+                UpdateRegexList();
             }
         }
 
@@ -79,12 +206,12 @@ namespace System.Net
             }
             set
             {
-                _bypassList = value != null ? new ArrayList(value) : null;
-                UpdateRegexList(true);
+                _bypassList = value != null ? new DirtyTrackingArrayList(value) : null;
+                UpdateRegexList();
             }
         }
 
-        public ArrayList BypassArrayList => _bypassList ??= new ArrayList();
+        public ArrayList BypassArrayList => _bypassList ??= new DirtyTrackingArrayList();
 
         public ICredentials? Credentials { get; set; }
 
@@ -123,13 +250,33 @@ namespace System.Net
             return proxyUri;
         }
 
-        private void UpdateRegexList(bool canThrow)
+
+        //Replaces calls to UpdateRegexList wich took a 'canThrow' flag, set to false, so we just swallow any exception.
+        private void UpdateRegexListIfBypassListIsDirty()
         {
-            Regex[]? regexBypassList = null;
-            ArrayList? bypassList = _bypassList;
-            try
+            DirtyTrackingArrayList? bypassList = _bypassList;
+            if (bypassList != null && bypassList.CheckDirty())
             {
-                if (bypassList != null && bypassList.Count > 0)
+                try
+                {
+                    UpdateRegexList();
+                }
+                catch
+                {
+                    _regexBypassList = null;
+                }
+            }
+        }
+
+        private void UpdateRegexList()
+        {
+            DirtyTrackingArrayList? bypassList = _bypassList;
+
+            Regex[]? regexBypassList = null;
+            if (bypassList != null)
+            {
+                bypassList.CheckDirty();
+                if (bypassList.Count > 0)
                 {
                     regexBypassList = new Regex[bypassList.Count];
                     for (int i = 0; i < bypassList.Count; i++)
@@ -138,23 +285,12 @@ namespace System.Net
                     }
                 }
             }
-            catch
-            {
-                if (!canThrow)
-                {
-                    _regexBypassList = null;
-                    return;
-                }
-                throw;
-            }
-
-            // Update field here, as it could throw earlier in the loop
             _regexBypassList = regexBypassList;
         }
 
         private bool IsMatchInBypassList(Uri input)
         {
-            UpdateRegexList(canThrow: false);
+            UpdateRegexListIfBypassListIsDirty();
 
             if (_regexBypassList is Regex[] bypassList)
             {

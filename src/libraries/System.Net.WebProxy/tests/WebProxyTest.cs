@@ -133,6 +133,27 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public static void WebProxy_BypassUrl_AddedDirectlyToList_IsBypassed()
+        {
+            var p = new WebProxy("http://microsoft.com", false);
+            Assert.Equal(new Uri("http://microsoft.com"), p.GetProxy(new Uri("http://bing.com")));
+            p.BypassArrayList.Add("bing");
+            Assert.Equal(new Uri("http://bing.com"), p.GetProxy(new Uri("http://bing.com")));
+        }
+
+        [Fact]
+        public static void WebProxy_BypassRegexList_ShouldNotRefreshBetweenCalls()
+        {
+            var p = new WebProxy("http://microsoft.com", false, new string[] { "foobar" });
+
+            //not sure what the policy is for reflexion in unit tests...
+            object regexList1 = typeof(WebProxy).GetField("_regexBypassList", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).GetValue(p);
+            _ = p.GetProxy(new Uri("http://bing.com"));
+            object regexList2 = typeof(WebProxy).GetField("_regexBypassList", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).GetValue(p);
+            Assert.True(regexList1 != null && regexList1 == regexList2);
+        }
+
+        [Fact]
         public static void WebProxy_BypassList_DoesntContainUrl_NotBypassed()
         {
             var p = new WebProxy("http://microsoft.com");
