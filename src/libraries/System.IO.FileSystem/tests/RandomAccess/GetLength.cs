@@ -39,13 +39,11 @@ namespace System.IO.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndElevated))]
         [MemberData(nameof(GetSyncAsyncOptions))]
-        public void TestDevice(FileOptions options)
+        public void ReturnsActualLengthForDevices(FileOptions options)
         {
-            string filePath = @"\\?\PhysicalDrive0";
-
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: options))
+            using (SafeFileHandle handle = File.OpenHandle(@"\\?\PhysicalDrive0", FileMode.Open, options: options))
             {
-                var length = RandomAccess.GetLength(handle);
+                long length = RandomAccess.GetLength(handle);
                 Assert.True(length > 0);
             }
         }
