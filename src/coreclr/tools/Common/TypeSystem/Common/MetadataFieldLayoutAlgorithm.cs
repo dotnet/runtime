@@ -520,25 +520,41 @@ namespace Internal.TypeSystem
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
-                largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
-
                 if (IsByValueClass(fieldType))
                 {
+                    largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
                     instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
-                }
-                else if (fieldType.IsGCPointer)
-                {
-                    instanceGCPointerFieldsArr[instanceGCPointerFieldsCount++] = field;
                 }
                 else
                 {
-                    int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
-                    instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
+                    // non-value-type fields always require pointer alignment
+                    // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                    // but that is explicitly handled when we calculate the final alignment for the type.
+
+                    // This behavior is extremely strange for primitive types, as it makes a struct with a single byte in it
+                    // have 8 byte alignment, but that is the current implementation.
+
+                    largestAlignmentRequired = LayoutInt.Max(new LayoutInt(context.Target.PointerSize), largestAlignmentRequired);
+
+                    if (fieldType.IsGCPointer)
+                    {
+                        instanceGCPointerFieldsArr[instanceGCPointerFieldsCount++] = field;
+                    }
+                    else
+                    {
+                        int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
+                        instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
+
+                        if (fieldType.IsPrimitive || fieldType.IsEnum)
+                        {
+                            // Handle alignment of long/ulong/double on ARM32
+                            largestAlignmentRequired = LayoutInt.Max(context.Target.GetObjectAlignment(fieldSizeAndAlignment.Size), largestAlignmentRequired);
+                        }
+                    }
                 }
             }
 
-            largestAlignmentRequired = context.Target.GetObjectAlignment(largestAlignmentRequired);
-            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
+            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4 && context.Target.PointerSize == 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
             // Base alignment is not always required, it's only applied when there's a version bubble boundary
