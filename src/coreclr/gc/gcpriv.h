@@ -1230,7 +1230,7 @@ public:
 
     uint8_t* get_next_marked();
 
-    ~mark_queue_t();
+    void verify_empty();
 };
 
 //class definition of the internal class
