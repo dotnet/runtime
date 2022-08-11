@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Xml
 #if NET7_0_OR_GREATER
             return XmlResolver.ThrowingResolver;
 #else
-            return XmlThrowingResolver.Singleton;
+            return XmlThrowingResolver.s_singleton;
 #endif
         }
 

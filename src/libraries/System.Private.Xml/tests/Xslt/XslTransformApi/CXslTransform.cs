@@ -1019,7 +1019,9 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { "" });
+                string expectedFile = FullFilePath("XmlResolver_Include.xsl");
+                string expectedFileAsUri = new Uri(new FileInfo(expectedFile).FullName).ToString();
+                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { expectedFileAsUri });
                 return;
             }
             _output.WriteLine("Exception not thrown for null resolver");
@@ -1104,7 +1106,10 @@ namespace System.Xml.Tests
             Assert.False(isEnabled);
             var e = Assert.Throws<XsltCompileException>(() => LoadXSL("XmlResolver_Main.xsl", inputType, readerType));
             var xmlException = Assert.IsType<XmlException>(e.InnerException);
-            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", Array.Empty<string>());
+
+            string expectedFile = FullFilePath("XmlResolver_Include.xsl");
+            string expectedFileAsUri = new Uri(new FileInfo(expectedFile).FullName).ToString();
+            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", new string[] { expectedFileAsUri });
         }
 
         //[Variation("Load with resolver with credentials, then load XSL that does not need cred.")]

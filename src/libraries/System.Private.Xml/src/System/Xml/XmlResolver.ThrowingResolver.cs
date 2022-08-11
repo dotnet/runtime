@@ -37,12 +37,12 @@ namespace System.Xml
 
             public override object GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
             {
-                throw new XmlException(SR.Xml_NullResolver);
+                throw new XmlException(SR.Format(SR.Xml_NullResolver, absoluteUri));
             }
 
             public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
             {
-                throw new XmlException(SR.Xml_NullResolver);
+                throw new XmlException(SR.Format(SR.Xml_NullResolver, absoluteUri));
             }
         }
     }
