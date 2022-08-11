@@ -1439,8 +1439,7 @@ namespace System
             {
                 for (int i = length - 1; i >= 0; i--)
                 {
-                    T current = Unsafe.Add(ref searchSpace, i);
-                    if (comparer.Equals(current, value0) || comparer.Equals(current, value1))
+                    if (comparer.Equals(Unsafe.Add(ref searchSpace, i), value0, value1))
                     {
                         return i;
                     }
@@ -1448,14 +1447,13 @@ namespace System
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
+                Vector256<T> equals, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
                 ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = comparer.Equals256(values0, current) | comparer.Equals256(values1, current);
+                    equals = comparer.Equals256(Vector256.LoadUnsafe(ref currentSearchSpace), values0, values1);
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
@@ -1469,8 +1467,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
-                    current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = comparer.Equals256(values0, current) | comparer.Equals256(values1, current);
+                    equals = comparer.Equals256(Vector256.LoadUnsafe(ref searchSpace), values0, values1);
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1479,14 +1476,13 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
+                Vector128<T> equals, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
                 ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = comparer.Equals128(values0, current) | comparer.Equals128(values1, current);
+                    equals = comparer.Equals128(Vector128.LoadUnsafe(ref currentSearchSpace), values0, values1);
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
@@ -1500,8 +1496,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
-                    current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = comparer.Equals128(values0, current) | comparer.Equals128(values1, current);
+                    equals = comparer.Equals128(Vector128.LoadUnsafe(ref searchSpace), values0, values1);
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1530,23 +1525,32 @@ namespace System
 
         internal interface IVectorEqualityComparer<T> where T : struct, IEquatable<T>
         {
-            bool Equals(T left, T right);
-            Vector128<T> Equals128(Vector128<T> left, Vector128<T> right);
-            Vector256<T> Equals256(Vector256<T> left, Vector256<T> right);
+            bool Equals(T current, T value);
+            bool Equals(T current, T value0, T value1);
+            Vector128<T> Equals128(Vector128<T> current, Vector128<T> value);
+            Vector128<T> Equals128(Vector128<T> current, Vector128<T> value0, Vector128<T> value1);
+            Vector256<T> Equals256(Vector256<T> current, Vector256<T> value);
+            Vector256<T> Equals256(Vector256<T> current, Vector256<T> value0, Vector256<T> value1);
         }
 
         internal readonly struct DefaultEqualityComparer<T> : IVectorEqualityComparer<T> where T : struct, IEquatable<T>
         {
-            public bool Equals(T left, T right) => left.Equals(right);
-            public Vector128<T> Equals128(Vector128<T> left, Vector128<T> right) => Vector128.Equals(left, right);
-            public Vector256<T> Equals256(Vector256<T> left, Vector256<T> right) => Vector256.Equals(left, right);
+            public bool Equals(T current, T value) => current.Equals(value);
+            public bool Equals(T current, T value0, T value1) => current.Equals(value0) || current.Equals(value1);
+            public Vector128<T> Equals128(Vector128<T> current, Vector128<T> value) => Vector128.Equals(current, value);
+            public Vector128<T> Equals128(Vector128<T> current, Vector128<T> value0, Vector128<T> value1) => Vector128.Equals(current, value0) | Vector128.Equals(current, value1);
+            public Vector256<T> Equals256(Vector256<T> current, Vector256<T> value) => Vector256.Equals(current, value);
+            public Vector256<T> Equals256(Vector256<T> current, Vector256<T> value0, Vector256<T> value1) => Vector256.Equals(current, value0) | Vector256.Equals(current, value1);
         }
 
         internal readonly struct ExceptEqualityComparer<T> : IVectorEqualityComparer<T> where T : struct, IEquatable<T>
         {
-            public bool Equals(T left, T right) => !left.Equals(right);
-            public Vector128<T> Equals128(Vector128<T> left, Vector128<T> right) => ~Vector128.Equals(left, right);
-            public Vector256<T> Equals256(Vector256<T> left, Vector256<T> right) => ~Vector256.Equals(left, right);
+            public bool Equals(T current, T value) => !current.Equals(value);
+            public bool Equals(T current, T value0, T value1) => !current.Equals(value0) && !current.Equals(value1);
+            public Vector128<T> Equals128(Vector128<T> current, Vector128<T> value) => ~Vector128.Equals(current, value);
+            public Vector128<T> Equals128(Vector128<T> current, Vector128<T> value0, Vector128<T> value1) => ~(Vector128.Equals(current, value0) | Vector128.Equals(current, value1));
+            public Vector256<T> Equals256(Vector256<T> current, Vector256<T> value) => ~Vector256.Equals(current, value);
+            public Vector256<T> Equals256(Vector256<T> current, Vector256<T> value0, Vector256<T> value1) => ~(Vector256.Equals(current, value0) | Vector256.Equals(current, value1));
         }
     }
 }

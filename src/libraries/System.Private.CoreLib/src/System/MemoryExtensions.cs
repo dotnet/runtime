@@ -726,6 +726,42 @@ namespace System
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.ExceptEqualityComparer<byte>>(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.ExceptEqualityComparer<short>>(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<int, SpanHelpers.ExceptEqualityComparer<int>>(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value0),
+                        Unsafe.As<T, int>(ref value1),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<long, SpanHelpers.ExceptEqualityComparer<long>>(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value0),
+                        Unsafe.As<T, long>(ref value1),
+                        span.Length);
+                }
+            }
+
             for (int i = span.Length - 1; i >= 0; i--)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
