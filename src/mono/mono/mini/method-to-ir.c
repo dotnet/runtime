@@ -9582,6 +9582,7 @@ calli_end:
 					(iface_method_sig = mono_method_signature_internal (iface_method)) && // callee signture is healthy
 					iface_method_sig->hasthis && 
 					iface_method_sig->param_count == 0 && // the callee has no args (other than this)
+					!iface_method_sig->has_type_parameters &&
 					iface_method_sig->generic_param_count == 0) { // and no type params, apparently virtual generic methods require special handling
 					
 					if (!m_class_is_inited (iface_method->klass)) {
@@ -9596,10 +9597,10 @@ calli_end:
 						MonoMethodSignature* struct_method_sig = mono_method_signature_internal (struct_method);
 
 						if (!struct_method ||
-							!mono_method_can_access_method (method, struct_method) ||
-							(struct_method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+							!MONO_METHOD_IS_FINAL (struct_method) ||
 							!struct_method_sig ||
-							struct_method_sig->has_type_parameters) {
+							struct_method_sig->has_type_parameters ||
+							!mono_method_can_access_method (method, struct_method)) {
 							// do not optimize, let full callvirt deal with it
 						} else if (val->opcode == OP_TYPED_OBJREF) {
 							*sp++ = val;
@@ -9612,7 +9613,6 @@ calli_end:
 							EMIT_NEW_VARLOADA (cfg, ins, srcvar, m_class_get_byval_arg (klass));
 							*sp++= ins;
 							cmethod_override = struct_method;
-
 							break;
 						}
 					} else {
