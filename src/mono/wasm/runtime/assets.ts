@@ -53,12 +53,15 @@ export function resolve_asset_path(behavior: AssetBehaviours) {
     }
     return asset;
 }
-
+type AssetWithBuffer = {
+    asset: AssetEntryInternal,
+    buffer?: ArrayBuffer
+}
 export async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
-        const promises_of_assets_with_buffer: Promise<AssetEntryInternal | undefined>[] = [];
+        const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
@@ -70,23 +73,19 @@ export async function mono_download_assets(): Promise<void> {
                 expected_downloaded_assets_count++;
                 if (asset.pendingDownload) {
                     asset.pendingDownloadInternal = asset.pendingDownload;
-                    const waitForExternalData: () => Promise<AssetEntryInternal | undefined> = async () => {
+                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
                         const response = await asset.pendingDownloadInternal!.response;
                         ++actual_downloaded_assets_count;
-                        if (headersOnly) {
-                            return undefined;
+                        if (!headersOnly) {
+                            asset.buffer = await response.arrayBuffer();
                         }
-                        asset.buffer = await response.arrayBuffer();
-                        return asset;
+                        return { asset, buffer: asset.buffer };
                     };
                     promises_of_assets_with_buffer.push(waitForExternalData());
                 } else {
-                    const waitForExternalData: () => Promise<AssetEntry | undefined> = async () => {
+                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
                         asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
-                        if (!asset.buffer) {
-                            return undefined;
-                        }
-                        return asset;
+                        return { asset, buffer: asset.buffer };
                     };
                     promises_of_assets_with_buffer.push(waitForExternalData());
                 }
@@ -97,18 +96,31 @@ export async function mono_download_assets(): Promise<void> {
         const promises_of_asset_instantiation: Promise<void>[] = [];
         for (const downloadPromise of promises_of_assets_with_buffer) {
             promises_of_asset_instantiation.push((async () => {
-                const downloadedAsset = await downloadPromise as AssetEntryInternal;
-                if (downloadedAsset) {
-                    if (!skipInstantiateByAssetTypes[downloadedAsset.behavior]) {
-                        const url = downloadedAsset.pendingDownloadInternal!.url;
-                        const data = new Uint8Array(downloadedAsset.buffer!);
-                        downloadedAsset.pendingDownloadInternal = null as any; // GC
-                        downloadedAsset.pendingDownload = null as any; // GC
-                        downloadedAsset.buffer = null as any; // GC
+                const assetWithBuffer = await downloadPromise;
+                const asset = assetWithBuffer.asset;
+                if (assetWithBuffer.buffer) {
+                    if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                        const url = asset.pendingDownloadInternal!.url;
+                        const data = new Uint8Array(asset.buffer!);
+                        asset.pendingDownloadInternal = null as any; // GC
+                        asset.pendingDownload = null as any; // GC
+                        asset.buffer = null as any; // GC
+                        assetWithBuffer.buffer = null as any; // GC
 
                         await beforeOnRuntimeInitialized.promise;
                         // this is after onRuntimeInitialized
-                        _instantiate_asset(downloadedAsset, url, data);
+                        _instantiate_asset(asset, url, data);
+                    }
+                } else {
+                    const headersOnly = skipBufferByAssetTypes[asset.behavior];
+                    if (!headersOnly) {
+                        mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
+                        if (!skipDownloadsByAssetTypes[asset.behavior]) {
+                            expected_downloaded_assets_count--;
+                        }
+                        if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                            expected_instantiated_assets_count--;
+                        }
                     }
                 }
             })());
@@ -181,8 +193,7 @@ async function start_asset_download_with_throttle(asset: AssetEntry, downloadDat
         }
 
         const response = await start_asset_download_sources(asset);
-        if (!response) return undefined;
-        if (!downloadData) {
+        if (!downloadData || !response) {
             return undefined;
         }
         return await response.arrayBuffer();
@@ -264,13 +275,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         err.status = response.status;
         throw err;
     } else {
-        Module.print(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
-        if (!skipDownloadsByAssetTypes[asset.behavior]) {
-            expected_downloaded_assets_count--;
-        }
-        if (skipInstantiateByAssetTypes[asset.behavior]) {
-            expected_instantiated_assets_count--;
-        }
+        Module.print(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
