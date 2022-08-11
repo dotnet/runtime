@@ -220,6 +220,94 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+            """
+            using System;
+
+            public struct S { public int Value; }
+
+            class Program
+            {
+                public static void Main()
+                {
+                    // Noop
+                }
+            }
+            """;
+
+            var libraryBuildArgs = ExpandBuildArgs(
+                buildArgs with { ProjectName = $"blittable_different_library_{buildArgs.Config}_{id}" }
+            );
+
+            (string libraryDir, string output) = BuildProject(
+                libraryBuildArgs,
+                id: id + "_library",
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "S.cs"), code);
+                    },
+                    Publish: buildArgs.AOT,
+                    DotnetWasmFromRuntimePack: false,
+                    AssertAppBundle: false
+                )
+            );
+
+
+            code =
+            """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public class Test
+            {
+                public static int Main()
+                {
+                    var x = new S { Value = 5 };
+            
+                    Console.WriteLine("Main running " + x.Value);
+                    return 42;
+                }
+
+                [UnmanagedCallersOnly]
+                public static void M(S myStruct) { }
+            }
+            """;
+
+            buildArgs = ExpandBuildArgs(
+                buildArgs with { ProjectName = $"blittable_different_app_{buildArgs.Config}_{id}" },
+                extraItems: $@"<ProjectReference Include='{Path.Combine(libraryDir, libraryBuildArgs.ProjectName + ".csproj")}' />",
+                extraProperties: buildArgs.AOT
+                    ? string.Empty
+                    : "<WasmBuildNative>true</WasmBuildNative>"
+            );
+
+            _projectDir = null;
+
+            (_, output) = BuildProject(
+                buildArgs,
+                id: id,
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                    },
+                    Publish: buildArgs.AOT,
+                    DotnetWasmFromRuntimePack: false
+                )
+            );
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running 5", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { "tr_TR.UTF-8" })]
         public void BuildNativeInNonEnglishCulture(BuildArgs buildArgs, string culture, RunHost host, string id)
         {
