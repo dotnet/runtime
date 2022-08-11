@@ -164,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     TypePreinit.ISerializableValue val = preinitInfo.GetFieldValue(field);
                     int currentOffset = builder.CountBytes;
-                    val.WriteFieldData(ref builder, field, factory);
+                    val.WriteFieldData(ref builder, factory);
                     Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);
                 }
 
