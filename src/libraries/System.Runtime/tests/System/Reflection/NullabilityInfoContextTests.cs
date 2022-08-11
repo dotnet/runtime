@@ -781,6 +781,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnMono("Nullability attributes trimmed on Mono")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73811", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GenericMethodWithPointersTest()
         {
             // GenericMethodWithPointers<T>(T* a, T?* b)
