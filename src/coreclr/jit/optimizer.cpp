@@ -4666,7 +4666,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr)
+                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & GTF_SIDE_EFFECT) != 0 )
                     {
                         return false;
                     }
