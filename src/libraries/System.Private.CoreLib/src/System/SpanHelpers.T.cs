@@ -1342,5 +1342,99 @@ namespace System
             }
             return firstLength.CompareTo(secondLength);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal static int LastIndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+            Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                for (int i = length - 1; i >= 0; i--)
+                {
+                    if (Unsafe.Add(ref searchSpace, i).Equals(value))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            {
+                Vector256<T> equals, values = Vector256.Create(value);
+                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace));
+                    if (equals == Vector256<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
+                        continue;
+                    }
+
+                    return ComputeLastIndex(ref searchSpace, ref currentSearchSpace, equals);
+                }
+                while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
+
+                // If any elements remain, process the first vector in the search space.
+                if ((uint)length % Vector256<T>.Count != 0)
+                {
+                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace));
+                    if (equals != Vector256<T>.Zero)
+                    {
+                        return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
+                    }
+                }
+            }
+            else
+            {
+                Vector128<T> equals, values = Vector128.Create(value);
+                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace));
+                    if (equals == Vector128<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
+                        continue;
+                    }
+
+                    return ComputeLastIndex(ref searchSpace, ref currentSearchSpace, equals);
+                }
+                while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
+
+                // If any elements remain, process the first vector in the search space.
+                if ((uint)length % Vector128<T>.Count != 0)
+                {
+                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace));
+                    if (equals != Vector128<T>.Zero)
+                    {
+                        return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeLastIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct, IEquatable<T>
+        {
+            uint notEqualsElements = equals.ExtractMostSignificantBits();
+            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+            return (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>()) + index;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeLastIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct, IEquatable<T>
+        {
+            uint notEqualsElements = equals.ExtractMostSignificantBits();
+            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+            return (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>()) + index;
+        }
     }
 }

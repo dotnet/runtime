@@ -675,11 +675,11 @@ namespace System
             nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
+            if (Vector128.IsHardwareAccelerated && length >= Vector128<byte>.Count)
             {
-                lengthToExamine = UnalignedCountVectorFromEnd(ref searchSpace, length);
+                return LastIndexOfValueType(ref searchSpace, value, length);
             }
-        SequentialScan:
+
             while (lengthToExamine >= 8)
             {
                 lengthToExamine -= 8;
@@ -727,31 +727,6 @@ namespace System
                     goto Found;
             }
 
-            if (Vector.IsHardwareAccelerated && (offset > 0))
-            {
-                lengthToExamine = (offset & (nuint)~(Vector<byte>.Count - 1));
-
-                Vector<byte> values = new Vector<byte>(value);
-
-                while (lengthToExamine > (nuint)(Vector<byte>.Count - 1))
-                {
-                    var matches = Vector.Equals(values, LoadVector(ref searchSpace, offset - (nuint)Vector<byte>.Count));
-                    if (Vector<byte>.Zero.Equals(matches))
-                    {
-                        offset -= (nuint)Vector<byte>.Count;
-                        lengthToExamine -= (nuint)Vector<byte>.Count;
-                        continue;
-                    }
-
-                    // Find offset of first match and add to current offset
-                    return (int)(offset) - Vector<byte>.Count + LocateLastFoundByte(matches);
-                }
-                if (offset > 0)
-                {
-                    lengthToExamine = offset;
-                    goto SequentialScan;
-                }
-            }
             return -1;
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)offset;
