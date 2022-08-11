@@ -108,7 +108,7 @@ namespace System
 
             if (dstEEType.IsPointer)
             {
-                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstIntPtr);
+                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
                 {
                     dstObject = null;
@@ -215,17 +215,17 @@ namespace System
             return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstIntPtr)
+        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
-            if (srcObject is IntPtr srcIntPtr)
+            if (srcObject is IntPtr)
             {
-                dstIntPtr = srcIntPtr;
+                dstPtr = srcObject;
                 return null;
             }
 
-            if (srcObject is UIntPtr srcUIntPtr)
+            if (srcObject is UIntPtr)
             {
-                dstIntPtr = srcUIntPtr;
+                dstPtr = srcUIntPtr;
                 return null;
             }
 
