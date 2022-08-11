@@ -214,7 +214,8 @@ namespace System
 
             int valueTailLength = valueLength - 1;
             if (valueTailLength == 0)
-                return LastIndexOf(ref searchSpace, value, searchSpaceLength); // for single-char values use plain LastIndexOf
+                return LastIndexOfValueType<short, DefaultEqualityComparer<short>>(
+                    ref Unsafe.As<char, short>(ref searchSpace), (short)value, searchSpaceLength); // for single-char values use plain LastIndexOf
 
             int offset = 0;
             char valueHead = value;
@@ -234,7 +235,8 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Do a quick search for the first element of "value".
-                int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
+                int relativeIndex = LastIndexOfValueType<short, DefaultEqualityComparer<short>>(
+                    ref Unsafe.As<char, short>(ref searchSpace), (short)valueHead, remainingSearchSpaceLength);
                 if (relativeIndex == -1)
                     break;
 
@@ -1759,96 +1761,6 @@ namespace System
 
             Debug.Fail("Unreachable");
             goto NotFound;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int LastIndexOf(ref char searchSpace, char value, int length)
-        {
-            Debug.Assert(length >= 0);
-
-            fixed (char* pChars = &searchSpace)
-            {
-                char* pCh = pChars + length;
-                char* pEndCh = pChars;
-
-                if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
-                {
-                    // Figure out how many characters to read sequentially from the end until we are vector aligned
-                    // This is equivalent to: length = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / elementsPerByte
-                    const int elementsPerByte = sizeof(ushort) / sizeof(byte);
-                    length = ((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte;
-                }
-
-            SequentialScan:
-                while (length >= 4)
-                {
-                    length -= 4;
-                    pCh -= 4;
-
-                    if (*(pCh + 3) == value)
-                        goto Found3;
-                    if (*(pCh + 2) == value)
-                        goto Found2;
-                    if (*(pCh + 1) == value)
-                        goto Found1;
-                    if (*pCh == value)
-                        goto Found;
-                }
-
-                while (length > 0)
-                {
-                    length--;
-                    pCh--;
-
-                    if (*pCh == value)
-                        goto Found;
-                }
-
-                // We get past SequentialScan only if IsHardwareAccelerated is true. However, we still have the redundant check to allow
-                // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
-                if (Vector.IsHardwareAccelerated && pCh > pEndCh)
-                {
-                    // Get the highest multiple of Vector<ushort>.Count that is within the search space.
-                    // That will be how many times we iterate in the loop below.
-                    // This is equivalent to: length = Vector<ushort>.Count * ((int)(pCh - pEndCh) / Vector<ushort>.Count)
-                    length = (int)((pCh - pEndCh) & ~(Vector<ushort>.Count - 1));
-
-                    // Get comparison Vector
-                    Vector<ushort> vComparison = new Vector<ushort>(value);
-
-                    while (length > 0)
-                    {
-                        char* pStart = pCh - Vector<ushort>.Count;
-                        // Using Unsafe.Read instead of ReadUnaligned since the search space is pinned and pCh (and hence pSart) is always vector aligned
-                        Debug.Assert(((int)pStart & (Unsafe.SizeOf<Vector<ushort>>() - 1)) == 0);
-                        Vector<ushort> vMatches = Vector.Equals(vComparison, Unsafe.Read<Vector<ushort>>(pStart));
-                        if (Vector<ushort>.Zero.Equals(vMatches))
-                        {
-                            pCh -= Vector<ushort>.Count;
-                            length -= Vector<ushort>.Count;
-                            continue;
-                        }
-                        // Find offset of last match
-                        return (int)(pStart - pEndCh) + LocateLastFoundChar(vMatches);
-                    }
-
-                    if (pCh > pEndCh)
-                    {
-                        length = (int)(pCh - pEndCh);
-                        goto SequentialScan;
-                    }
-                }
-
-                return -1;
-            Found:
-                return (int)(pCh - pEndCh);
-            Found1:
-                return (int)(pCh - pEndCh) + 1;
-            Found2:
-                return (int)(pCh - pEndCh) + 2;
-            Found3:
-                return (int)(pCh - pEndCh) + 3;
-            }
         }
 
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138

@@ -197,7 +197,7 @@ namespace System
 
             int valueTailLength = valueLength - 1;
             if (valueTailLength == 0)
-                return LastIndexOf(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain LastIndexOf
+                return LastIndexOfValueType<byte, DefaultEqualityComparer<byte>>(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain LastIndexOf
 
             int offset = 0;
             byte valueHead = value;
@@ -217,7 +217,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Do a quick search for the first element of "value".
-                int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
+                int relativeIndex = LastIndexOfValueType<byte, DefaultEqualityComparer<byte>>(ref searchSpace, valueHead, remainingSearchSpaceLength);
                 if (relativeIndex < 0)
                     break;
 
@@ -647,86 +647,6 @@ namespace System
                     }
                 }
             }
-            return -1;
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)offset;
-        Found1:
-            return (int)(offset + 1);
-        Found2:
-            return (int)(offset + 2);
-        Found3:
-            return (int)(offset + 3);
-        Found4:
-            return (int)(offset + 4);
-        Found5:
-            return (int)(offset + 5);
-        Found6:
-            return (int)(offset + 6);
-        Found7:
-            return (int)(offset + 7);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static int LastIndexOf(ref byte searchSpace, byte value, int length)
-        {
-            Debug.Assert(length >= 0);
-
-            uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)(uint)length;
-
-            if (Vector128.IsHardwareAccelerated && length >= Vector128<byte>.Count)
-            {
-                return LastIndexOfValueType<byte, DefaultEqualityComparer<byte>>(ref searchSpace, value, length);
-            }
-
-            while (lengthToExamine >= 8)
-            {
-                lengthToExamine -= 8;
-                offset -= 8;
-
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 7))
-                    goto Found7;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 6))
-                    goto Found6;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 5))
-                    goto Found5;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 4))
-                    goto Found4;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
-                    goto Found3;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
-                    goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
-                    goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
-                    goto Found;
-            }
-
-            if (lengthToExamine >= 4)
-            {
-                lengthToExamine -= 4;
-                offset -= 4;
-
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
-                    goto Found3;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
-                    goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
-                    goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
-                    goto Found;
-            }
-
-            while (lengthToExamine > 0)
-            {
-                lengthToExamine -= 1;
-                offset -= 1;
-
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
-                    goto Found;
-            }
-
             return -1;
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)offset;
