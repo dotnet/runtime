@@ -1223,24 +1223,27 @@ ves_array_create (MonoClass *klass, int param_count, stackval *values, MonoError
 	return (MonoObject*) mono_array_new_full_checked (klass, lengths, lower_bounds, error);
 }
 
-static gint32
-ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
+static gsize
+ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean native_int)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
 
-	guint32 pos = 0;
+	gsize pos = 0;
 	if (ao->bounds) {
 		for (gint32 i = 0; i < m_class_get_rank (ac); i++) {
 			gint32 idx = sp [i].data.i;
 			gint32 lower = ao->bounds [i].lower_bound;
 			guint32 len = ao->bounds [i].length;
-			if (safe && (idx < lower || (guint32)(idx - lower) >= len))
+			if (idx < lower || (guint32)(idx - lower) >= len)
 				return -1;
 			pos = (pos * len) + (guint32)(idx - lower);
 		}
 	} else {
-		pos = sp [0].data.i;
-		if (safe && pos >= ao->max_length)
+		if (native_int)
+			pos = sp [0].data.nati;
+		else
+			pos = (gsize)sp [0].data.i;
+		if (pos >= ao->max_length)
 			return -1;
 	}
 	return pos;
@@ -1268,17 +1271,17 @@ ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSig
 }
 
 static MonoException*
-ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, gpointer *ret, stackval *sp, gboolean needs_typecheck)
+ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, gpointer *ret, stackval *sp, gboolean native_int)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
 
 	g_assert (m_class_get_rank (ac) >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, TRUE);
+	gsize pos = ves_array_calculate_index (ao, sp, native_int);
 	if (pos == -1)
 		return mono_get_exception_index_out_of_range ();
 
-	if (needs_typecheck && !mono_class_is_assignable_from_internal (m_class_get_element_class (mono_object_class ((MonoObject *) ao)), required_type))
+	if (!mono_class_is_assignable_from_internal (m_class_get_element_class (mono_object_class ((MonoObject *) ao)), required_type))
 		return mono_get_exception_array_type_mismatch ();
 	gint32 esize = mono_array_element_size (ac);
 	*ret = mono_array_addr_with_size_fast (ao, esize, pos);
@@ -3528,6 +3531,19 @@ static long total_executed_opcodes;
 #endif
 
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
+
+static MONO_ALWAYS_INLINE gsize
+get_array_offset (unsigned char *locals, guint16 var_offset, gboolean native_int)
+{
+#if SIZEOF_VOID_P == 8
+	if (native_int)
+		return LOCAL_VAR (var_offset, gsize);
+	else
+		return (gsize)LOCAL_VAR (var_offset, guint32);
+#else
+	return LOCAL_VAR (var_offset, gsize);
+#endif
+}
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -6102,12 +6118,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			/* No bounds, one direction */
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);
 			NULL_CHECK (ao);
-			guint32 index = LOCAL_VAR (ip [3], guint32);
+			gsize index = get_array_offset (locals, ip [3], ip [5]);
 			if (index >= ao->max_length)
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 			guint16 size = ip [4];
 			LOCAL_VAR (ip [1], gpointer) = mono_array_addr_with_size_fast (ao, size, index);
-			ip += 5;
+			ip += 6;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDELEMA) {
@@ -6119,7 +6135,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			NULL_CHECK (ao);
 
 			g_assert (ao->bounds);
-			guint32 pos = 0;
+			gsize pos = 0;
 			for (int i = 0; i < rank; i++) {
 				gint32 idx = sp [i + 1].data.i;
 				gint32 lower = ao->bounds [i].lower_bound;
@@ -6140,22 +6156,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MonoObject *o = (MonoObject*) sp [0].data.o;
 			NULL_CHECK (o);
 
+			gboolean native_int = ip [4];
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [3]];
-			MonoException *address_ex = ves_array_element_address (frame, klass, (MonoArray *) o, (gpointer*)(locals + ip [1]), sp + 1, TRUE);
+			MonoException *address_ex = ves_array_element_address (frame, klass, (MonoArray *) o, (gpointer*)(locals + ip [1]), sp + 1, native_int);
 			if (address_ex)
 				THROW_EX (address_ex, ip);
-			ip += 4;
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 
 #define LDELEM(datatype,elemtype) do { \
 	MonoArray *o = LOCAL_VAR (ip [2], MonoArray*); \
 	NULL_CHECK (o); \
-	guint32 aindex = LOCAL_VAR (ip [3], guint32); \
+	gsize aindex = get_array_offset (locals, ip [3], ip [4]); \
 	if (aindex >= mono_array_length_internal (o)) \
 		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 	LOCAL_VAR (ip [1], datatype) = mono_array_get_fast (o, elemtype, aindex); \
-	ip += 4; \
+	ip += 5; \
 } while (0)
 		MINT_IN_CASE(MINT_LDELEM_I1) LDELEM(gint32, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_U1) LDELEM(gint32, guint8); MINT_IN_BREAK;
@@ -6171,7 +6188,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [2], MonoArray*);
 			NULL_CHECK (o);
-			mono_u aindex = LOCAL_VAR (ip [3], gint32);
+			gsize aindex = get_array_offset (locals, ip [3], ip [5]);
 			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
@@ -6179,23 +6196,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
 			memcpy (locals + ip [1], src_addr, size);
 
-			ip += 5;
+			ip += 6;
 			MINT_IN_BREAK;
 		}
 #define STELEM_PROLOG(o, aindex) do { \
 	o = LOCAL_VAR (ip [1], MonoArray*); \
 	NULL_CHECK (o); \
-	aindex = LOCAL_VAR (ip [2], gint32); \
+	aindex = get_array_offset (locals, ip [2], ip [4]); \
 	if (aindex >= mono_array_length_internal (o)) \
 		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 } while (0)
 
 #define STELEM(datatype, elemtype) do { \
 	MonoArray *o; \
-	guint32 aindex; \
+	gsize aindex; \
 	STELEM_PROLOG(o, aindex); \
 	mono_array_set_fast (o, elemtype, aindex, LOCAL_VAR (ip [3], datatype)); \
-	ip += 4; \
+	ip += 5; \
 } while (0)
 		MINT_IN_CASE(MINT_STELEM_I1) STELEM(gint32, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_U1) STELEM(gint32, guint8); MINT_IN_BREAK;
@@ -6208,7 +6225,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
-			guint32 aindex;
+			gsize aindex;
 			STELEM_PROLOG(o, aindex);
 			MonoObject *ref = LOCAL_VAR (ip [3], MonoObject*);
 
@@ -6219,14 +6236,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 					THROW_EX (interp_get_exception_array_type_mismatch (frame, ip), ip);
 			}
 			mono_array_setref_fast ((MonoArray *) o, aindex, ref);
-			ip += 4;
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
-			guint32 aindex = LOCAL_VAR (ip [2], guint32);
+			gsize aindex = get_array_offset (locals, ip [2], ip [6]);
 			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
@@ -6234,7 +6251,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
 			MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [4]];
 			mono_value_copy_internal (dst_addr, locals + ip [3], klass_vt);
-			ip += 6;
+			ip += 7;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U4) {

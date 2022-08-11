@@ -4253,12 +4253,13 @@ static void
 handle_ldelem (TransformData *td, int op, int type)
 {
 	CHECK_STACK (td, 2);
-	ENSURE_I4 (td, 1);
+	gboolean native_int = td->sp [-1].type != STACK_TYPE_I4;
 	interp_add_ins (td, op);
 	td->sp -= 2;
 	interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 	push_simple_type (td, type);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = native_int;
 	++td->ip;
 }
 
@@ -4266,10 +4267,11 @@ static void
 handle_stelem (TransformData *td, int op)
 {
 	CHECK_STACK (td, 3);
-	ENSURE_I4 (td, 2);
+	gboolean native_int = td->sp [-2].type != STACK_TYPE_I4;
 	interp_add_ins (td, op);
 	td->sp -= 3;
 	interp_ins_set_sregs3 (td->last_ins, td->sp [0].local, td->sp [1].local, td->sp [2].local);
+	td->last_ins->data [0] = native_int;
 	++td->ip;
 }
 
@@ -6308,7 +6310,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDELEMA: {
 			gint32 size;
 			CHECK_STACK (td, 2);
-			ENSURE_I4 (td, 1);
 			token = read32 (td->ip + 1);
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
@@ -6317,6 +6318,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				klass = mini_get_class (method, token, generic_context);
 
 			CHECK_TYPELOAD (klass);
+
+			gboolean native_int = td->sp [-1].type != STACK_TYPE_I4;
 
 			if (!m_class_is_valuetype (klass) && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
 				/*
@@ -6334,6 +6337,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_simple_type (td, STACK_TYPE_MP);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, klass);
+				td->last_ins->data [1] = native_int;
 				td->last_ins->info.call_args = call_args;
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
@@ -6346,6 +6350,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				mono_class_init_internal (klass);
 				size = mono_class_array_element_size (klass);
 				td->last_ins->data [0] = GINT32_TO_UINT16 (size);
+				td->last_ins->data [1] = native_int;
 			}
 
 			readonly = FALSE;
@@ -6423,13 +6428,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					g_assert (size < G_MAXUINT16);
 
 					CHECK_STACK (td, 2);
-					ENSURE_I4 (td, 1);
+					gboolean native_int = td->sp [-1].type != STACK_TYPE_I4;
 					interp_add_ins (td, MINT_LDELEM_VT);
 					td->sp -= 2;
 					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 					push_type_vt (td, klass, size);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					td->last_ins->data [0] = GINT_TO_UINT16 (size);
+					td->last_ins->data [1] = native_int;
 					++td->ip;
 					break;
 				}
@@ -6504,9 +6510,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int size = mono_class_value_size (klass, NULL);
 					g_assert (size < G_MAXUINT16);
 
-					handle_stelem (td, MINT_STELEM_VT);
+					gboolean native_int = td->sp [-2].type != STACK_TYPE_I4;
+					interp_add_ins (td, MINT_STELEM_VT);
+					td->sp -= 3;
+					interp_ins_set_sregs3 (td->last_ins, td->sp [0].local, td->sp [1].local, td->sp [2].local);
 					td->last_ins->data [0] = get_data_item_index (td, klass);
 					td->last_ins->data [1] = GINT_TO_UINT16 (size);
+					td->last_ins->data [2] = native_int;
+					td->ip++;
 					break;
 				}
 				default: {
