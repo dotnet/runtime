@@ -197,6 +197,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal((string)x[1], (string)y[1]);
     }
 
+// ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
+// pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
+// but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
+// horizon that it's not worth the trouble.
+#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void Xml_ReadOnlyCollection()
     {
@@ -287,6 +292,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(NotSupportedException), null, null, "is not supported because it implements IDictionary." };
 #endif
     }
+#endif  // !XMLSERIALIZERGENERATORTESTS
 
     [Fact]
     public static void Xml_EnumAsRoot()
