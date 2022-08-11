@@ -717,10 +717,15 @@ CMiniMdBase::InitColsForTable(
                                     // should we write the data into the structure
 {
     const CMiniTableDef *pTemplate;     // Template table definition.
-    CMiniColDef pCols[9];               // The col defs to init.
+    struct {
+      uint32_t holds_memory_marker;     // a marker so UsesAllocateMemory knows it is not allocated
+      CMiniColDef pCols[9];             // The col defs to init.
+    } p;
     BYTE        iOffset;                // Running size of a record.
     BYTE        iSize;                  // Size of a field.
     HRESULT     hr = S_OK;
+
+    p.holds_memory_marker = ~((ALLOCATED_MEMORY_MARKER&0xff) * 0x01010101U);
 
     _ASSERTE((bExtra == 0) || (bExtra == 1));
     _ASSERTE(ARRAY_SIZE(pCols) >= pTable->m_cCols);
@@ -737,18 +742,18 @@ CMiniMdBase::InitColsForTable(
     for (ULONG ixCol = 0; ixCol < pTable->m_cCols; ++ixCol)
     {
         // Initialize from the template values (type, maybe offset, size).
-        pCols[ixCol] = pTemplate->m_pColDefs[ixCol];
+        p.pCols[ixCol] = pTemplate->m_pColDefs[ixCol];
 
         // Is the field a RID into a table?
-        if (pCols[ixCol].m_Type <= iRidMax)
+        if (p.pCols[ixCol].m_Type <= iRidMax)
         {
-            iSize = cbRID(Schema.m_cRecs[pCols[ixCol].m_Type] << bExtra);
+            iSize = cbRID(Schema.m_cRecs[p.pCols[ixCol].m_Type] << bExtra);
         }
         else
         // Is the field a coded token?
-        if (pCols[ixCol].m_Type <= iCodedTokenMax)
+        if (p.pCols[ixCol].m_Type <= iCodedTokenMax)
         {
-            ULONG iCdTkn = pCols[ixCol].m_Type - iCodedToken;
+            ULONG iCdTkn = p.pCols[ixCol].m_Type - iCodedToken;
             ULONG cRecs = 0;
 
             _ASSERTE(iCdTkn < ARRAY_SIZE(g_CodedTokens));
@@ -773,7 +778,7 @@ CMiniMdBase::InitColsForTable(
         }
         else
         {   // Fixed type.
-            switch (pCols[ixCol].m_Type)
+            switch (p.pCols[ixCol].m_Type)
             {
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
             /* Portable PDB tables */
@@ -826,8 +831,8 @@ CMiniMdBase::InitColsForTable(
         }
 
         // Now save the size and offset.
-        pCols[ixCol].m_oColumn = iOffset;
-        pCols[ixCol].m_cbColumn = iSize;
+        p.pCols[ixCol].m_oColumn = iOffset;
+        p.pCols[ixCol].m_cbColumn = iSize;
 
         // Align to 2 bytes.
         iSize += iSize & 1;
@@ -842,12 +847,12 @@ CMiniMdBase::InitColsForTable(
     // Can we write to the memory
     if (!fUsePointers)
     {
-        memcpy(pTable->m_pColDefs, pCols, sizeof(CMiniColDef)*pTable->m_cCols);
+        memcpy(pTable->m_pColDefs, p.pCols, sizeof(CMiniColDef)*pTable->m_cCols);
     }
     else
     {
         // We'll need to have pTable->m_pColDefs point to some data instead
-        hr = SetNewColumnDefinition(pTable, pCols, ixTbl);
+        hr = SetNewColumnDefinition(pTable, p.pCols, ixTbl);
     }
     // If no key, set to a distinct value.
     if (pTable->m_iKey >= pTable->m_cCols)
