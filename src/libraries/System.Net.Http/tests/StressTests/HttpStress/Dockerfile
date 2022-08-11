@@ -42,5 +42,9 @@ EXPOSE 5001
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=''
-CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec \
-    ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
+# Try to find the newest testhost in live-runtime-artifacts to use for the stress.
+# Note that docker cannot export variables (https://github.com/moby/moby/issues/29110) so we generate script to run the stress.
+RUN TESTHOST=$( ls -td /live-runtime-artifacts/testhost/net$VERSION-Linux-*-x64 | head -1 ) && \
+    echo "$TESTHOST/dotnet exec ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS" > run-stress.sh && \
+    chmod +x run-stress.sh
+CMD ./run-stress.sh
