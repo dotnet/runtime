@@ -1329,6 +1329,39 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
+
+        [Fact]
+        public async Task UpgradeConnection_ResponseStreamSupportsZeroByteReads()
+        {
+            var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                ValueTask<int> zeroByteReadTask = responseStream.ReadAsync(Memory<byte>.Empty);
+
+                Assert.False(zeroByteReadTask.IsCompleted);
+                await Task.Delay(10);
+                Assert.False(zeroByteReadTask.IsCompleted);
+
+                zeroByteReadIssued.SetResult();
+
+                Assert.Equal(0, await zeroByteReadTask);
+                Assert.Equal(1, await responseStream.ReadAsync(new byte[2]));
+            },
+            server => server.AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
+
+                await zeroByteReadIssued.Task;
+
+                await connection.Stream.WriteAsync(new byte[] { (byte)'A' });
+            }));
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
