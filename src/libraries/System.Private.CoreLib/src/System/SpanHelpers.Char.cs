@@ -214,7 +214,7 @@ namespace System
 
             int valueTailLength = valueLength - 1;
             if (valueTailLength == 0)
-                return LastIndexOfValueType<short, DefaultEqualityComparer<short>>(
+                return LastIndexOfValueType<short, DontNegate<short>>(
                     ref Unsafe.As<char, short>(ref searchSpace), (short)value, searchSpaceLength); // for single-char values use plain LastIndexOf
 
             int offset = 0;
@@ -235,7 +235,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Do a quick search for the first element of "value".
-                int relativeIndex = LastIndexOfValueType<short, DefaultEqualityComparer<short>>(
+                int relativeIndex = LastIndexOfValueType<short, DontNegate<short>>(
                     ref Unsafe.As<char, short>(ref searchSpace), (short)valueHead, remainingSearchSpaceLength);
                 if (relativeIndex == -1)
                     break;

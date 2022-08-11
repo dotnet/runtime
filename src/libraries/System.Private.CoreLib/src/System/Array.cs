@@ -1586,7 +1586,7 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<byte, SpanHelpers.DefaultEqualityComparer<byte>>(
+                    int result = SpanHelpers.LastIndexOfValueType<byte, SpanHelpers.DontNegate<byte>>(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
@@ -1596,7 +1596,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DefaultEqualityComparer<short>>(
+                    int result = SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DontNegate<short>>(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<short[]>(array)), endIndex),
                         Unsafe.As<T, short>(ref value),
                         count);
@@ -1606,7 +1606,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<int, SpanHelpers.DefaultEqualityComparer<int>>(
+                    int result = SpanHelpers.LastIndexOfValueType<int, SpanHelpers.DontNegate<int>>(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
@@ -1616,7 +1616,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<long, SpanHelpers.DefaultEqualityComparer<long>>(
+                    int result = SpanHelpers.LastIndexOfValueType<long, SpanHelpers.DontNegate<long>>(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
