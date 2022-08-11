@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        protected override void InitializeConstructorArgumentCaches(scoped ref ReadStack state, JsonSerializerOptions options)
+        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 

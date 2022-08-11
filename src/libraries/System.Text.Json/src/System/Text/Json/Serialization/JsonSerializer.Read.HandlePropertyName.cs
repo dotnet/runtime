@@ -19,7 +19,7 @@ namespace System.Text.Json
         internal static JsonPropertyInfo LookupProperty(
             object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
-            scoped ref ReadStack state,
+            ref ReadStack state,
             JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)

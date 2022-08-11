@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
             return obj;
         }
 
-        protected sealed override void InitializeConstructorArgumentCaches(scoped ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 

@@ -246,7 +246,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        protected abstract void InitializeConstructorArgumentCaches(scoped ref ReadStack state, JsonSerializerOptions options);
+        protected abstract void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options);
 
         protected abstract bool ReadAndCacheConstructorArgument(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo);
 
