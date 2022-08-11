@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Xml
 {
     internal static class XmlResolverHelper
     {
-        public static XmlResolver GetThrowingResolver()
+        internal static XmlResolver GetThrowingResolver()
         {
 #if NET7_0_OR_GREATER
             return XmlResolver.ThrowingResolver;
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Xml
         // (Copied from XmlResolver.ThrowingResolver.cs.)
         private sealed class XmlThrowingResolver : XmlResolver
         {
-            internal static XmlThrowingResolver Singleton = new();
+            internal static readonly XmlThrowingResolver s_singleton = new();
 
             // Private constructor ensures existing only one instance of XmlThrowingResolver
             private XmlThrowingResolver() { }

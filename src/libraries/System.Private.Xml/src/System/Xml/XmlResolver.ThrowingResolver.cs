@@ -9,8 +9,9 @@ namespace System.Xml
     public abstract partial class XmlResolver
     {
         /// <summary>
-        /// Gets an <see cref="XmlResolver"/> which forbids entity resolution.
+        /// Gets an XML resolver which forbids entity resolution.
         /// </summary>
+        /// <value>An XML resolver which forbids entity resolution.</value>
         /// <remarks>
         /// Calling <see cref="GetEntity"/> or <see cref="GetEntityAsync"/> on the
         /// <see cref="XmlResolver"/> instance returned by this property is forbidden
@@ -24,7 +25,7 @@ namespace System.Xml
         // An XmlResolver that forbids all external entity resolution.
         private sealed class XmlThrowingResolver : XmlResolver
         {
-            internal static XmlThrowingResolver Singleton = new();
+            internal static readonly XmlThrowingResolver s_singleton = new();
 
             // Private constructor ensures existing only one instance of XmlThrowingResolver
             private XmlThrowingResolver() { }
