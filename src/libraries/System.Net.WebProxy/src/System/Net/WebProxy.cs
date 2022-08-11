@@ -13,134 +13,7 @@ namespace System.Net
 {
     public partial class WebProxy : IWebProxy, ISerializable
     {
-
-        private sealed class DirtyTrackingArrayList : ArrayList
-        {
-
-            public DirtyTrackingArrayList()
-            {
-
-            }
-
-            public DirtyTrackingArrayList(ICollection c) : base(c)
-            {
-
-            }
-
-            public DirtyTrackingArrayList(int capacity) : base(capacity)
-            {
-
-            }
-
-            public bool IsDirty { get; private set; }
-
-            public bool CheckDirty()
-            {
-                var dirty = IsDirty;
-                IsDirty = false;
-                return dirty;
-            }
-
-            public override object? this[int index]
-            {
-                get
-                {
-                    return base[index];
-                }
-                set
-                {
-                    IsDirty = true;
-                    base[index] = value;
-                }
-            }
-
-
-            public override int Add(object? value)
-            {
-                IsDirty = true;
-                return base.Add(value);
-            }
-
-            public override void AddRange(ICollection c)
-            {
-                IsDirty = true;
-                base.AddRange(c);
-            }
-
-            public override void Insert(int index, object? value)
-            {
-                IsDirty = true;
-                base.Insert(index, value);
-            }
-
-            public override void InsertRange(int index, ICollection c)
-            {
-                IsDirty = true;
-                base.InsertRange(index, c);
-            }
-
-            public override void SetRange(int index, ICollection c)
-            {
-                IsDirty = true;
-                base.SetRange(index, c);
-            }
-
-            public override void Remove(object? obj)
-            {
-                IsDirty = true;
-                base.Remove(obj);
-            }
-
-            public override void RemoveAt(int index)
-            {
-                IsDirty = true;
-                base.RemoveAt(index);
-            }
-
-            public override void RemoveRange(int index, int count)
-            {
-                IsDirty = true;
-                base.RemoveRange(index, count);
-            }
-
-            public override void Clear()
-            {
-                IsDirty = true;
-                base.Clear();
-            }
-
-            public override void Sort()
-            {
-                IsDirty = true;
-                base.Sort();
-            }
-
-            public override void Sort(IComparer? comparer)
-            {
-                IsDirty = true;
-                base.Sort(comparer);
-            }
-
-            public override void Sort(int index, int count, IComparer? comparer)
-            {
-                IsDirty = true;
-                base.Sort(index, count, comparer);
-            }
-
-            public override void Reverse()
-            {
-                IsDirty = true;
-                base.Reverse();
-            }
-
-            public override void Reverse(int index, int count)
-            {
-                IsDirty = true;
-                base.Reverse(index, count);
-            }
-        }
-
-        private DirtyTrackingArrayList? _bypassList;
+        private ChangeTrackingArrayList? _bypassList;
         private Regex[]? _regexBypassList;
 
         public WebProxy() : this((Uri?)null, false, null, null) { }
@@ -158,7 +31,7 @@ namespace System.Net
             this.BypassProxyOnLocal = BypassOnLocal;
             if (BypassList != null)
             {
-                _bypassList = new DirtyTrackingArrayList(BypassList);
+                _bypassList = new ChangeTrackingArrayList(BypassList);
                 UpdateRegexList();
             }
         }
@@ -206,12 +79,12 @@ namespace System.Net
             }
             set
             {
-                _bypassList = value != null ? new DirtyTrackingArrayList(value) : null;
+                _bypassList = value != null ? new ChangeTrackingArrayList(value) : null;
                 UpdateRegexList();
             }
         }
 
-        public ArrayList BypassArrayList => _bypassList ??= new DirtyTrackingArrayList();
+        public ArrayList BypassArrayList => _bypassList ??= new ChangeTrackingArrayList();
 
         public ICredentials? Credentials { get; set; }
 
@@ -251,11 +124,11 @@ namespace System.Net
         }
 
 
-        //Replaces calls to UpdateRegexList wich took a 'canThrow' flag, set to false, so we just swallow any exception.
-        private void UpdateRegexListIfBypassListIsDirty()
+        /// <summary>Replaces calls to UpdateRegexList which took a 'canThrow' flag, set to false, so we just swallow any exception.</summary>
+        private void UpdateRegexListIfBypassListIsChanged()
         {
-            DirtyTrackingArrayList? bypassList = _bypassList;
-            if (bypassList != null && bypassList.CheckDirty())
+            ChangeTrackingArrayList? bypassList = _bypassList;
+            if (bypassList != null && bypassList.IsChanged)
             {
                 try
                 {
@@ -270,12 +143,12 @@ namespace System.Net
 
         private void UpdateRegexList()
         {
-            DirtyTrackingArrayList? bypassList = _bypassList;
+            ChangeTrackingArrayList? bypassList = _bypassList;
 
             Regex[]? regexBypassList = null;
             if (bypassList != null)
             {
-                bypassList.CheckDirty();
+                bypassList.ResetIsChanged();
                 if (bypassList.Count > 0)
                 {
                     regexBypassList = new Regex[bypassList.Count];
@@ -290,7 +163,7 @@ namespace System.Net
 
         private bool IsMatchInBypassList(Uri input)
         {
-            UpdateRegexListIfBypassListIsDirty();
+            UpdateRegexListIfBypassListIsChanged();
 
             if (_regexBypassList is Regex[] bypassList)
             {
@@ -345,5 +218,118 @@ namespace System.Net
             // The .NET Framework here returns a proxy that fetches IE settings and
             // executes JavaScript to determine the correct proxy.
             throw new PlatformNotSupportedException();
+
+        private sealed class ChangeTrackingArrayList : ArrayList
+        {
+            public ChangeTrackingArrayList()
+            {
+            }
+
+            public ChangeTrackingArrayList(ICollection c) : base(c)
+            {
+            }
+
+            public ChangeTrackingArrayList(int capacity) : base(capacity)
+            {
+            }
+
+            public bool IsChanged { get; private set; }
+
+            public void ResetIsChanged() => IsChanged = false;
+
+            public override object? this[int index]
+            {
+                get => base[index];
+                set
+                {
+                    IsChanged = true;
+                    base[index] = value;
+                }
+            }
+
+            public override int Add(object? value)
+            {
+                IsChanged = true;
+                return base.Add(value);
+            }
+
+            public override void AddRange(ICollection c)
+            {
+                IsChanged = true;
+                base.AddRange(c);
+            }
+
+            public override void Insert(int index, object? value)
+            {
+                IsChanged = true;
+                base.Insert(index, value);
+            }
+
+            public override void InsertRange(int index, ICollection c)
+            {
+                IsChanged = true;
+                base.InsertRange(index, c);
+            }
+
+            public override void SetRange(int index, ICollection c)
+            {
+                IsChanged = true;
+                base.SetRange(index, c);
+            }
+
+            public override void Remove(object? obj)
+            {
+                IsChanged = true;
+                base.Remove(obj);
+            }
+
+            public override void RemoveAt(int index)
+            {
+                IsChanged = true;
+                base.RemoveAt(index);
+            }
+
+            public override void RemoveRange(int index, int count)
+            {
+                IsChanged = true;
+                base.RemoveRange(index, count);
+            }
+
+            public override void Clear()
+            {
+                IsChanged = true;
+                base.Clear();
+            }
+
+            public override void Sort()
+            {
+                IsChanged = true;
+                base.Sort();
+            }
+
+            public override void Sort(IComparer? comparer)
+            {
+                IsChanged = true;
+                base.Sort(comparer);
+            }
+
+            public override void Sort(int index, int count, IComparer? comparer)
+            {
+                IsChanged = true;
+                base.Sort(index, count, comparer);
+            }
+
+            public override void Reverse()
+            {
+                IsChanged = true;
+                base.Reverse();
+            }
+
+            public override void Reverse(int index, int count)
+            {
+                IsChanged = true;
+                base.Reverse(index, count);
+            }
+        }
     }
 }
