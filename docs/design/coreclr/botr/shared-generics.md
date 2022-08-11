@@ -95,7 +95,7 @@ The first N slots in an instantiation of N arguments are always going to be the 
 
 For instance, here is an example of the contents of the generic dictionary for our `Method<string>` example:
 
-| `Method<string>'s dicionary` |
+| `Method<string>'s dictionary` |
 |--------------------------|
 | slot[0]: TypeHandle(`string`)      |
 | slot[1]: Total dictionary size  |

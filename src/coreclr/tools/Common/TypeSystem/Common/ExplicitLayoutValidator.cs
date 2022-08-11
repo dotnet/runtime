@@ -157,7 +157,7 @@ namespace Internal.TypeSystem
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ORef);
                     }
-                    else if (field.FieldType.IsByRef || field.FieldType.IsByReferenceOfT)
+                    else if (field.FieldType.IsByRef)
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ByRef);
                     }

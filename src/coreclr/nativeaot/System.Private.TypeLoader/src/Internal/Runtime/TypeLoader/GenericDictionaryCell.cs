@@ -313,6 +313,24 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        private class ThreadStaticIndexCell : GenericDictionaryCell
+        {
+            internal TypeDesc Type;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (Type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute static field locations for a canonical type.");
+
+                builder.RegisterForPreparation(Type);
+            }
+
+            internal override unsafe IntPtr Create(TypeBuilder builder)
+            {
+                return TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldData(builder.GetRuntimeTypeHandle(Type));
+            }
+        }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         public static GenericDictionaryCell CreateMethodDictionaryCell(InstantiatedMethod method)
         {
@@ -474,7 +492,7 @@ namespace Internal.Runtime.TypeLoader
             //    - Fully universal canonical. USG types always have a dictionary slot, so if the dynamically created type does not share
             //      normal canonical code, we subtract 1 from the vtable offset (the dynamic type does not have a dictionary slot in that case)
             //    - Exact non-canonical type. In that case, we do not need to make any changes to the vtable offset (the binder/ILCompiler
-            //      would have written the correct vtable offset, taking in the account the existance or non-existance of a dictionary slot.
+            //      would have written the correct vtable offset, taking in the account the existence or non-existence of a dictionary slot.
             //
             private void AdjustVtableSlot(TypeDesc currentType, TypeDesc currentTemplateType, ref int vtableSlot)
             {
@@ -732,7 +750,7 @@ namespace Internal.Runtime.TypeLoader
                         // We have exhausted exact resolution options so we must resort to calling
                         // convention conversion. Prepare the type parameters of the method so that
                         // the calling convention converter can have RuntimeTypeHandle's to work with.
-                        // For canonical methods, convert paramters to their CanonAlike form
+                        // For canonical methods, convert parameters to their CanonAlike form
                         // as the Canonical RuntimeTypeHandle's are not permitted to exist.
                         Debug.Assert(!Method.IsCanonicalMethod(CanonicalFormKind.Universal));
 
@@ -802,7 +820,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (_exactFunctionPointer != IntPtr.Zero)
                 {
-                    // We are done... we don't need to create any unboxing stubs or calling convertion translation
+                    // We are done... we don't need to create any unboxing stubs or calling conversion translation
                     // thunks for exact non-shareable method instantiations
                     return _exactFunctionPointer;
                 }
@@ -1843,8 +1861,16 @@ namespace Internal.Runtime.TypeLoader
                     break;
 #endif
 
-                case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.ThreadStaticIndex:
+                    {
+                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        TypeLoaderLogger.WriteLine("ThreadStaticIndex on: " + type.ToString());
+
+                        cell = new ThreadStaticIndexCell { Type = type };
+                    }
+                    break;
+
+                case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();

@@ -75,7 +75,7 @@ internal static partial class Interop
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
 
-            [CustomMarshaller(typeof(IPv6MulticastRequest), Scenario.Default, typeof(Marshaller))]
+            [CustomMarshaller(typeof(IPv6MulticastRequest), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(IPv6MulticastRequest managed) => new(managed);

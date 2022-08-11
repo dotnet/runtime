@@ -1393,10 +1393,7 @@ namespace System.Transactions
             }
 
             // Notify the durable enlistment
-            if (tx._durableEnlistment != null)
-            {
-                tx._durableEnlistment.State.InternalAborted(tx._durableEnlistment);
-            }
+            tx._durableEnlistment?.State.InternalAborted(tx._durableEnlistment);
 
             // Remove this from the timeout list
             TransactionTable.Remove(tx);
@@ -4030,10 +4027,7 @@ namespace System.Transactions
             }
 
             // Notify the durable enlistment
-            if (tx._durableEnlistment != null)
-            {
-                tx._durableEnlistment.State.InternalAborted(tx._durableEnlistment);
-            }
+            tx._durableEnlistment?.State.InternalAborted(tx._durableEnlistment);
 
             // Fire Completion for anyone listening
             tx.FireCompletion();

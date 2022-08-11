@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -68,22 +69,23 @@ namespace System.Net.Http.Functional.Tests
 
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
             Assert.True(handler.ClientCertificates.Contains(cert));
 
             return CreateHttpClient(handler);
         }
-            
-        [Theory]
+
+        [ConditionalTheory]
         [InlineData(1, true)]
         [InlineData(2, true)]
         [InlineData(3, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]
+            if (IsWinHttpHandler) throw new SkipTestException("https://github.com/dotnet/runtime/issues/69238");
+
             var options = new LoopbackServer.Options { UseSsl = true };
 
             X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
@@ -130,7 +132,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
@@ -190,10 +191,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(ClientCertificateOption.Automatic)]
         public async Task AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable(ClientCertificateOption mode)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.ClientCertificateOptions = mode;
 
                 await LoopbackServer.CreateServerAsync(async server =>

@@ -1195,6 +1195,30 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal IntPtr DynamicThreadStaticsIndex
+        {
+            get
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicThreadStaticOffset);
+                fixed (MethodTable* pThis = &this)
+                {
+                    return *(IntPtr*)((byte*)pThis + cbOffset);
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicThreadStaticOffset);
+                fixed (MethodTable* pThis = &this)
+                {
+                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
+                }
+            }
+#endif
+        }
+
         internal DynamicModule* DynamicModule
         {
             get
@@ -1243,12 +1267,14 @@ namespace Internal.Runtime
         {
             get
             {
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
-                // This is always a pointer to a pointer to a type manager
-                return (IntPtr)(*(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset));
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+
+                return GetField<RelativePointer>(EETypeField.ETF_TypeManagerIndirection).Value;
             }
             set
             {
+                Debug.Assert(IsDynamicType);
                 uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
                 // This is always a pointer to a pointer to a type manager
                 *(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = (TypeManagerHandle*)value;
@@ -1497,7 +1523,7 @@ namespace Internal.Runtime
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
-                (fHasThreadStatics ? sizeof(uint) : 0)); // tls offset
+                (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
         }
 #endif
     }

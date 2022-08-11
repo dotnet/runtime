@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <typeparam name="T">The type that the converter for the property returns or accepts when converting JSON data.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
         /// <param name="propertyInfo">Provides serialization metadata about the property or field.</param>
-        /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
+        /// <returns>A <see cref="JsonPropertyInfo"/> instance initialized with the provided metadata.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
         {
@@ -48,9 +48,7 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new InvalidOperationException(SR.Format(SR.FieldCannotBeVirtual, nameof(propertyInfo.IsProperty), nameof(propertyInfo.IsVirtual)));
             }
 
-            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>(parentTypeInfo: null);
-            jsonPropertyInfo.InitializeForSourceGen(options, propertyInfo);
-            return jsonPropertyInfo;
+            return new JsonPropertyInfo<T>(propertyInfo, options);
         }
 
         /// <summary>

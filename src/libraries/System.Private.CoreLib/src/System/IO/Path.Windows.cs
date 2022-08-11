@@ -3,12 +3,15 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO
 {
-    public static partial class Path
+    public static unsafe partial class Path
     {
+        private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
+
         public static char[] GetInvalidFileNameChars() => new char[]
         {
             '\"', '<', '>', '|', '\0',
@@ -151,10 +154,22 @@ namespace System.IO
             return path;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+        private static unsafe delegate* unmanaged<int, char*, uint> GetGetTempPathWFunc()
+        {
+            IntPtr kernel32 = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, 0, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (!NativeLibrary.TryGetExport(kernel32, "GetTempPath2W", out IntPtr func))
+            {
+                func = NativeLibrary.GetExport(kernel32, "GetTempPathW");
+            }
+
+            return (delegate* unmanaged<int, char*, uint>)func;
+        }
+
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
-            while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
+            while ((result = GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.
                 builder.EnsureCapacity(checked((int)result));
@@ -164,6 +179,27 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 
             builder.Length = (int)result;
+
+            static uint GetTempPathW(int bufferLen, ref char buffer)
+            {
+                delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
+                if (func == null)
+                {
+                    func = s_GetTempPathWFunc = GetGetTempPathWFunc();
+                }
+
+                int lastError;
+                uint retVal;
+                fixed (char* ptr = &buffer)
+                {
+                    Marshal.SetLastSystemError(0);
+                    retVal = func(bufferLen, ptr);
+                    lastError = Marshal.GetLastSystemError();
+                }
+
+                Marshal.SetLastPInvokeError(lastError);
+                return retVal;
+            }
         }
 
         // Returns a unique temporary file name, and creates a 0-byte file by that

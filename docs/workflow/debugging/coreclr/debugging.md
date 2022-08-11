@@ -8,6 +8,14 @@ SOS has moved to the diagnostics repo. For more information on SOS, installation
 Debugging CoreCLR on Windows
 ============================
 
+When working with IDE, it's suggested to run `./build.cmd -subset clr` in prior to generate necessary artifact files.
+
+If CoreLib is missing, using `./build.cmd -subset clr.corelib+clr.corelibnative` can generate it only.
+
+When debugging with `CORE_LIBRARIES`, `./build -subset libraries` is required.
+
+### Using Visual Studio Solution
+
 1. Open the CoreCLR solution in Visual Studio.
    - Method 1: Use the build scripts to open the solution.
       1. Run `./build.cmd -vs coreclr.sln -a <platform> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration.
@@ -35,6 +43,47 @@ Debugging CoreCLR on Windows
 
 Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10 can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2019 as writing.
 Keeping with latest version of Visual Studio is recommended.
+
+### Using Visual Studio Open Folder with CMake
+
+1. Open either runtime repository or coreclr directory in Visual Studio using open folder feature.
+  - When opening repository root, Visual Studio will prompt about finding CMake files. Select `src\coreclr\CMakeList.txt` as the CMake workspace.
+2. Set the corerun project as startup project.
+  - When using folder view instead of CMake targets view, right click `coreclr\hosts\corerun\CMakeLists.txt` to set as startup project, or select it from debug target dropdown of Visual Studio.
+3. Right click the corerun project and open debug configuration.
+  - Can also use 'Debug->Debug and Launch Configuration' from Visual Studio menu.
+4. In the opened `launch.vs.json`, set following properties to the configuration of corerun:
+```json
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "corerun.exe (hosts\\corerun\\corerun.exe)",
+      "name": "corerun.exe (hosts\\corerun\\corerun.exe)",
+      "environment": [
+        {
+          "name": "CORE_ROOT",
+          "value": "${cmake.installRoot}"
+        },
+        {
+          "name": "CORE_LIBRARIES",
+          // for example net7.0-windows-Debug-x64
+          "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
+        }
+      ],
+      "args": [
+        // path to a managed application to debug
+        // remember to use double backslashes (\\)
+        "HelloWorld.dll"
+      ]
+    }
+```
+*For VS 17.3, changing the location of launched executable doesn't work, so CORE_ROOT is required.*
+*Requirement of CORE_LIBRARIES is the same with solution experience.*
+
+5. Right click the root CoreCLR project or `coreclr\CMakeLists.txt` in folder view, invoke the 'Install' command.
+6. Press F10 or F11 to start debugging at main, or set a breakpoint and press F5.
+
+When there's source code change in coreclr, invoke the 'Install' command again to set them in place.
 
 ### Using SOS with windbg or cdb on Windows ###
 

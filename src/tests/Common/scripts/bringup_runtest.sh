@@ -65,7 +65,7 @@ function print_usage {
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
-    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
+    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specified path (default: <test root>/coreclrtests.xml)'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -985,8 +985,14 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"

@@ -15,8 +15,6 @@ static bool strictArmAsm;
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
 
-#ifdef DEBUG
-
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
@@ -49,7 +47,6 @@ void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
-#endif // DEBUG
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -266,7 +263,7 @@ static code_t insEncodeReg_Va(regNumber reg);
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
-// Returns an encoding for the imm whioch represents the 'condition code'
+// Returns an encoding for the imm which represents the 'condition code'
 //  with the lowest bit inverted (marked by invert(<cond>) in the architecture manual.
 static code_t insEncodeInvertedCond(insCond cond);
 
@@ -356,6 +353,12 @@ static bool isStackRegister(regNumber reg)
 {
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 <= value) && (value <= 0x1FLL);
+};
 
 // Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
 static bool isValidUimm8(ssize_t value)
@@ -488,6 +491,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
+
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 static bool canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size);

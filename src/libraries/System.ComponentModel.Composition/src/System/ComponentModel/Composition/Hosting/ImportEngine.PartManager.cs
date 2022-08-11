@@ -109,12 +109,9 @@ namespace System.ComponentModel.Composition.Hosting
             public Export[]? GetSavedImport(ImportDefinition import)
             {
                 Export[]? exports = null;
-                if (_importCache != null)
-                {
-                    // We don't care about the return value we just want the exports
-                    // and if it isn't present we just return the initialized null value
-                    _importCache.TryGetValue(import, out exports);
-                }
+                // We don't care about the return value we just want the exports
+                // and if it isn't present we just return the initialized null value
+                _importCache?.TryGetValue(import, out exports);
                 return exports;
             }
 

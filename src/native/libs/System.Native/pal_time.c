@@ -53,6 +53,33 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
+int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
+{
+    int32_t result;
+
+#if HAVE_FUTIMENS
+    struct timespec updatedTimes[2];
+    updatedTimes[0].tv_sec = (time_t)times[0].tv_sec;
+    updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
+    updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
+    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
+
+    while (CheckInterrupted(result = futimens(ToFileDescriptor(fd), updatedTimes)));
+#else
+    // Fallback on unsupported platforms (e.g. iOS, tvOS, watchOS)
+    // to futimes (lower precision)
+    struct timeval updatedTimes[2];
+    updatedTimes[0].tv_sec = (long)times[0].tv_sec;
+    updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
+    updatedTimes[1].tv_sec = (long)times[1].tv_sec;
+    updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
+
+    while (CheckInterrupted(result = futimes(ToFileDescriptor(fd), updatedTimes)));
+#endif
+
+    return result;
+}
+
 uint64_t SystemNative_GetTimestamp()
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
@@ -68,7 +95,7 @@ uint64_t SystemNative_GetTimestamp()
 #endif
 }
 
-int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
+double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
@@ -82,7 +109,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     else
     {
         kernelTime =
-            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) + 
+            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) +
             ((uint64_t)(resUsage.ru_stime.tv_usec) * MicroSecondsToNanoSeconds);
         userTime =
             ((uint64_t)(resUsage.ru_utime.tv_sec) * SecondsToNanoSeconds) +
@@ -107,10 +134,10 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
         cpuBusyTime = (userTime - lastRecordedUserTime) + (kernelTime - lastRecordedKernelTime);
     }
 
-    int32_t cpuUtilization = 0;
+    double cpuUtilization = 0.0;
     if (cpuTotalTime > 0 && cpuBusyTime > 0)
     {
-        cpuUtilization = (int32_t)(cpuBusyTime * 100 / cpuTotalTime);
+        cpuUtilization = ((double)cpuBusyTime * 100.0 / (double)cpuTotalTime);
     }
 
     previousCpuInfo->lastRecordedCurrentTime = currentTime;

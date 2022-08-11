@@ -268,27 +268,27 @@ namespace System
                 return 1;
         }
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator ==(float left, float right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator !=(float left, float right) => left != right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <(float left, float right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >(float left, float right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <=(float left, float right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >=(float left, float right) => left >= right;
 
@@ -539,6 +539,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static float IBinaryNumber<float>.AllBitsSet => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(float value)
         {
@@ -757,11 +760,21 @@ namespace System
         }
 
         //
-        // IFloatingPointIeee754
+        // IFloatingPointConstants
         //
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
-        static float IFloatingPointIeee754<float>.E => E;
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        static float IFloatingPointConstants<float>.E => E;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        static float IFloatingPointConstants<float>.Pi => Pi;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        static float IFloatingPointConstants<float>.Tau => Tau;
+
+        //
+        // IFloatingPointIeee754
+        //
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Epsilon" />
         static float IFloatingPointIeee754<float>.Epsilon => Epsilon;
@@ -775,14 +788,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         static float IFloatingPointIeee754<float>.NegativeZero => NegativeZero;
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
-        static float IFloatingPointIeee754<float>.Pi => Pi;
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
         static float IFloatingPointIeee754<float>.PositiveInfinity => PositiveInfinity;
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
-        static float IFloatingPointIeee754<float>.Tau => Tau;
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static float Atan2(float y, float x) => MathF.Atan2(y, x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static float Atan2Pi(float y, float x) => Atan2(y, x) / Pi;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static float BitDecrement(float x) => MathF.BitDecrement(x);
@@ -971,6 +984,63 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static float Abs(float value) => MathF.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<float>.IsCanonical(float value) => true;
@@ -1391,8 +1461,8 @@ namespace System
             return result;
         }
 
-        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
-        public static float Root(float x, int n)
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static float RootN(float x, int n)
         {
             float result;
 
@@ -1566,15 +1636,6 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static float Atan(float x) => MathF.Atan(x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
-        public static float Atan2(float y, float x) => MathF.Atan2(y, x);
-
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
-        public static float Atan2Pi(float y, float x)
-        {
-            return Atan2(y, x) / Pi;
-        }
-
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static float AtanPi(float x)
         {
@@ -1610,11 +1671,13 @@ namespace System
 
                         if (fractional <= 0.25f)
                         {
-                            result = sign;
-
                             if (fractional != 0.00f)
                             {
-                                result *= CosForIntervalPiBy4(fractional * Pi);
+                                result = sign * CosForIntervalPiBy4(fractional * Pi);
+                            }
+                            else
+                            {
+                                result = sign;
                             }
                         }
                         else if (fractional <= 0.50f)
@@ -1643,8 +1706,8 @@ namespace System
                     }
                     else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
                     {
-                        result = x * Pi;
-                        result = 1.0f - (result * result * 0.5f);
+                        float value = x * Pi;
+                        result = 1.0f - (value * value * 0.5f);
                     }
                     else
                     {
@@ -1676,6 +1739,124 @@ namespace System
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (float SinPi, float CosPi) SinCosPi(float x)
+        {
+            // This code is based on `cospif` and `sinpif` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            float sinPi;
+            float cosPi;
+
+            if (IsFinite(x))
+            {
+                float ax = Abs(x);
+
+                if (ax < 8_388_608.0f)              // |x| < 2^23
+                {
+                    if (ax > 0.25f)
+                    {
+                        int integral = (int)ax;
+
+                        float fractional = ax - integral;
+                        float sign = int.IsOddInteger(integral) ? -1.0f : +1.0f;
+
+                        float sinSign = ((x > 0.0f) ? +1.0f : -1.0f) * sign;
+                        float cosSign = sign;
+
+                        if (fractional <= 0.25f)
+                        {
+                            if (fractional != 0.00f)
+                            {
+                                float value = fractional * Pi;
+
+                                sinPi = sinSign * SinForIntervalPiBy4(value);
+                                cosPi = cosSign * CosForIntervalPiBy4(value);
+                            }
+                            else
+                            {
+                                sinPi = x * 0.0f;
+                                cosPi = cosSign;
+                            }
+                        }
+                        else if (fractional <= 0.50f)
+                        {
+                            if (fractional != 0.50f)
+                            {
+                                float value = (0.5f - fractional) * Pi;
+
+                                sinPi = sinSign * CosForIntervalPiBy4(value);
+                                cosPi = cosSign * SinForIntervalPiBy4(value);
+                            }
+                            else
+                            {
+                                sinPi = sinSign;
+                                cosPi = 0.0f;
+                            }
+                        }
+                        else if (fractional <= 0.75f)
+                        {
+                            float value = (fractional - 0.5f) * Pi;
+
+                            sinPi = +sinSign * CosForIntervalPiBy4(value);
+                            cosPi = -cosSign * SinForIntervalPiBy4(value);
+                        }
+                        else
+                        {
+                            float value = (1.0f - fractional) * Pi;
+
+                            sinPi = +sinSign * SinForIntervalPiBy4(value);
+                            cosPi = -cosSign * CosForIntervalPiBy4(value);
+                        }
+                    }
+                    else if (ax >= 7.8125E-3f)      // |x| >= 2^-7
+                    {
+                        float value = x * Pi;
+
+                        sinPi = SinForIntervalPiBy4(value);
+                        cosPi = CosForIntervalPiBy4(value);
+                    }
+                    else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
+                    {
+                        float value = x * Pi;
+                        float valueSq = value * value;
+
+                        sinPi = value - (valueSq * value * (1.0f / 6.0f));
+                        cosPi = 1.0f - (valueSq * 0.5f);
+                    }
+                    else
+                    {
+                        sinPi = x * Pi;
+                        cosPi = 1.0f;
+                    }
+                }
+                else if (ax < 16_777_216.0f)        // |x| < 2^24
+                {
+                    // x is an integer
+                    sinPi = x * 0.0f;
+
+                    int bits = BitConverter.SingleToInt32Bits(ax);
+                    cosPi = int.IsOddInteger(bits) ? -1.0f : +1.0f;
+                }
+                else
+                {
+                    // x is an even integer
+                    sinPi = x * 0.0f;
+                    cosPi = 1.0f;
+                }
+            }
+            else
+            {
+                sinPi = NaN;
+                cosPi = NaN;
+            }
+
+            return (sinPi, cosPi);
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         public static float SinPi(float x)
@@ -1714,11 +1895,13 @@ namespace System
                         }
                         else if (fractional <= 0.50f)
                         {
-                            result = sign;
-
                             if (fractional != 0.50f)
                             {
-                                result *= CosForIntervalPiBy4((0.5f - fractional) * Pi);
+                                result = sign * CosForIntervalPiBy4((0.5f - fractional) * Pi);
+                            }
+                            else
+                            {
+                                result = sign;
                             }
                         }
                         else if (fractional <= 0.75f)
@@ -1736,8 +1919,8 @@ namespace System
                     }
                     else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
                     {
-                        result = x * Pi;
-                        result -= result * (result * (result * (1.0f / 6.0f)));
+                        float value = x * Pi;
+                        result = value - (value * value * value * (1.0f / 6.0f));
                     }
                     else
                     {
@@ -1786,28 +1969,24 @@ namespace System
 
                         if (fractional <= 0.25f)
                         {
-                            result = sign;
-
                             if (fractional != 0.00f)
                             {
-                                result *= TanForIntervalPiBy4(fractional * Pi, isReciprocal: false);
+                                result = sign * TanForIntervalPiBy4(fractional * Pi, isReciprocal: false);
                             }
                             else
                             {
-                                result *= int.IsOddInteger(integral) ? -0.0f : +0.0f;
+                                result = sign * (int.IsOddInteger(integral) ? -0.0f : +0.0f);
                             }
                         }
                         else if (fractional <= 0.50f)
                         {
-                            result = sign;
-
                             if (fractional != 0.50f)
                             {
-                                result *= -TanForIntervalPiBy4((0.5f - fractional) * Pi, isReciprocal: true);
+                                result = -sign * TanForIntervalPiBy4((0.5f - fractional) * Pi, isReciprocal: true);
                             }
                             else
                             {
-                                result *= int.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity;
+                                result = +sign * (int.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity);
                             }
                         }
                         else if (fractional <= 0.75f)
@@ -1825,8 +2004,8 @@ namespace System
                     }
                     else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
                     {
-                        result = x * Pi;
-                        result += (result * (result * (result * (1.0f / 3.0f))));
+                        float value = x * Pi;
+                        result = value + (value * value * value * (1.0f / 3.0f));
                     }
                     else
                     {

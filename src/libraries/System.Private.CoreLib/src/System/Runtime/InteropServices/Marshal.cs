@@ -625,6 +625,8 @@ namespace System.Runtime.InteropServices
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -1272,8 +1274,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
         /// </summary>
-        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
-        /// <param name="handle">Pre-existing handle</param>
+        /// <param name="safeHandle">The <see cref="SafeHandle"/> instance to update.</param>
+        /// <param name="handle">The pre-existing handle.</param>
         public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.

@@ -20,17 +20,9 @@ namespace System.Net.Http
         private HttpMessageHandlerStage? _handler;
         private bool _disposed;
 
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(SocketsHttpHandler));
-            }
-        }
-
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_handler != null)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
@@ -547,7 +539,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
             }
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -566,7 +558,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (cancellationToken.IsCancellationRequested)
             {

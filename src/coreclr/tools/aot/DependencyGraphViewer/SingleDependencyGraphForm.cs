@@ -22,7 +22,7 @@ namespace DependencyLogViewer
         {
             _graph = graph;
             InitializeComponent();
-            this.Text = this.Text + graph.ToString();
+            this.Text = $"{this.Text}, {graph.ToString()}";
         }
 
         private void filterButton_Click(object sender, EventArgs e)

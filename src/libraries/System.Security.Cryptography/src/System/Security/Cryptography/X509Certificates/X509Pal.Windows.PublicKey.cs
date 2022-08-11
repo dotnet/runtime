@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDsaCng(cngKey));
+                    factory: cngKey => new ECDsaCng(cngKey, transferOwnership: true));
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDiffieHellmanCng(cngKey),
+                    factory: cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true),
                     importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.CNG_RSA_PUBLIC_KEY_BLOB, encodedKeyValue);
                         CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
-                        return new RSACng(cngKey);
+                        return new RSACng(cngKey, transferOwnership: true);
                     }
                 case AlgId.CALG_DSS_SIGN:
                     {
@@ -80,7 +80,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             TAlgorithm key;
 
-            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
+            using (SafeCertContextHandle certContext = certificatePal.GetCertContext())
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
@@ -98,10 +99,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
-                    using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
-                    {
-                        key = factory(cngKey);
-                    }
+                    key = factory(CngKey.Import(keyBlob, blobFormat));
                 }
                 else
                 {
@@ -131,7 +129,12 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
-                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        {
+                            Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                            bCryptKeyHandle.Dispose();
+                            throw e;
+                        }
+
                         return bCryptKeyHandle;
                     }
                 }

@@ -862,6 +862,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             Debug.Assert(method.HasInstantiation);
+            Debug.Assert(!method.IsGenericMethodDefinition);
             Debug.Assert(method.IsCanonicalMethod(CanonicalFormKind.Any));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method, "Assert that the canonical method passed in is in standard canonical form");
         }
@@ -953,7 +954,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.GcStaticEEType;
+            staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
         }
@@ -961,7 +962,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
+            staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
         }

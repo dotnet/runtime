@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <!-- ActiveIssue Apple Silicon No usable version of libssl was found
-        https://github.com/dotnet/runtime/issues/49083 -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
     <!-- The library is not supported on mobile platforms (PNSE) -->
     <IgnoreForCI Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

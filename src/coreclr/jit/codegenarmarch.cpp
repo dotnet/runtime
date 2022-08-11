@@ -363,9 +363,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_ARM64
         case GT_TEST_EQ:
         case GT_TEST_NE:
+            // On ARM64 genCodeForCompare does not consume its own operands because
+            // genCodeForBinary also has this behavior and it can end up calling
+            // genCodeForCompare when generating compare chains for GT_AND.
+            // Thus, we must do it here.
+            genConsumeOperands(treeNode->AsOp());
 #endif // TARGET_ARM64
             genCodeForCompare(treeNode->AsOp());
             break;
+
+#ifdef TARGET_ARM64
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
+            break;
+#endif
 
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode->AsOp());
@@ -1150,16 +1161,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 {
                     firstOnStackOffs = use.GetOffset();
                 }
-                var_types type = nextArgNode->TypeGet();
-                emitAttr  attr = emitTypeSize(type);
 
-                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
+                var_types type   = use.GetType();
+                unsigned  offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
                 // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
+                assert((offset + genTypeSize(type)) <= argOffsetMax);
 
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
+                emit->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), fieldReg, varNumOut, offset);
             }
             else
             {
@@ -1223,9 +1233,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
         }
-
-        // We don't split HFAs.
-        assert(!compiler->IsHfa(layout->GetClassHandle()));
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
@@ -1332,7 +1339,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     assert(op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
-    // Treat dst register as a homogenous vector with element size equal to the src size
+    // Treat dst register as a homogeneous vector with element size equal to the src size
     // Insert pieces in reverse order
     for (int i = regCount - 1; i >= 0; --i)
     {
@@ -1495,10 +1502,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber tmpReg = arrIndex->GetSingleTempReg();
     assert(tgtReg != tmpReg);
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
-    unsigned  offset;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
+    unsigned offset;
 
     offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
@@ -1549,10 +1555,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
         regNumber tmpReg = arrOffset->GetSingleTempReg();
 
-        unsigned  dim      = arrOffset->gtCurrDim;
-        unsigned  rank     = arrOffset->gtArrRank;
-        var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
+        unsigned dim    = arrOffset->gtCurrDim;
+        unsigned rank   = arrOffset->gtArrRank;
+        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.
@@ -2852,8 +2857,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-    if (!node->gtBlkOpGcUnsafe &&
-        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
+    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
     {
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
@@ -4469,7 +4473,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     assert(src->isUsedFromReg());
     regNumber srcReg = src->GetRegNum();
 
-    // Treat src register as a homogenous vector with element size equal to the reg size
+    // Treat src register as a homogeneous vector with element size equal to the reg size
     // Insert pieces in order
     unsigned regCount = retTypeDesc->GetReturnRegCount();
     for (unsigned i = 0; i < regCount; ++i)

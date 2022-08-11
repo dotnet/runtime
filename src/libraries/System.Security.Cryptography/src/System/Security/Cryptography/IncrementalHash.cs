@@ -93,18 +93,14 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(count));
             if ((data.Length - count) < offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             AppendData(new ReadOnlySpan<byte>(data, offset, count));
         }
 
         public void AppendData(ReadOnlySpan<byte> data)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(IncrementalHash));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             Debug.Assert((_hash != null) ^ (_hmac != null));
             if (_hash != null)
@@ -126,8 +122,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetHashAndReset()
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             byte[] ret = new byte[HashLengthInBytes];
 
@@ -156,8 +151,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public int GetHashAndReset(Span<byte> destination)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (destination.Length < HashLengthInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -166,8 +160,7 @@ namespace System.Security.Cryptography
 
         public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (destination.Length < HashLengthInBytes)
             {
@@ -201,8 +194,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetCurrentHash()
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             byte[] ret = new byte[HashLengthInBytes];
 
@@ -231,8 +223,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public int GetCurrentHash(Span<byte> destination)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (destination.Length < HashLengthInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -259,8 +250,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (destination.Length < HashLengthInBytes)
             {

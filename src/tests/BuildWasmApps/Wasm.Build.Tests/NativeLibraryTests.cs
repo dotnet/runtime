@@ -98,8 +98,8 @@ public class Test
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
+        [BuildAndRun(aot: false, host: RunHost.Chrome)]
+        [BuildAndRun(aot: true, host: RunHost.Chrome)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingBrowserNativeCrypto";
@@ -140,14 +140,7 @@ public class Test
                 output);
 
             string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
-            if (host == RunHost.V8 || host == RunHost.NodeJS)
-            {
-                Assert.DoesNotContain(cryptoInitMsg, output);
-            }
-            else
-            {
-                Assert.Contains(cryptoInitMsg, output);
-            }
+            Assert.Contains(cryptoInitMsg, output);
         }
     }
 }

@@ -4351,7 +4351,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4479,13 +4479,15 @@ mini_init (const char *filename)
 #endif
 
 	mono_interp_stub_init ();
+
+	mono_components_init ();
+
+	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
+
 #ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
-	mono_components_init ();
-
-	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 

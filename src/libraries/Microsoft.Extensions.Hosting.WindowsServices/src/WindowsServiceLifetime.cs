@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             cancellationToken.Register(() => _delayStart.TrySetCanceled());
             ApplicationLifetime.ApplicationStarted.Register(() =>
             {
-                Logger.LogInformation("Application started. Hosting environment: {envName}; Content root path: {contentRoot}",
+                Logger.LogInformation("Application started. Hosting environment: {EnvName}; Content root path: {ContentRoot}",
                     Environment.EnvironmentName, Environment.ContentRootPath);
             });
             ApplicationLifetime.ApplicationStopping.Register(() =>

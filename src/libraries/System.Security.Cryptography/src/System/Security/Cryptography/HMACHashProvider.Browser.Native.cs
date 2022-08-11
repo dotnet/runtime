@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
 
         public HMACNativeHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
+            Debug.Assert(Interop.BrowserCrypto.CanUseSubtleCrypto);
 
             (_hashAlgorithm, _hashSizeInBytes) = SHANativeHashProvider.HashAlgorithmToPal(hashAlgorithmId);
             _key = key.ToArray();
@@ -43,42 +43,37 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
-            byte[] srcArray = Array.Empty<byte>();
-            int srcLength = 0;
-            if (_buffer != null)
-            {
-                srcArray = _buffer.GetBuffer();
-                srcLength = (int)_buffer.Length;
-            }
+            ReadOnlySpan<byte> source = _buffer != null ?
+                new ReadOnlySpan<byte>(_buffer.GetBuffer(), 0, (int)_buffer.Length) :
+                default;
 
-            unsafe
-            {
-                fixed (byte* key = _key)
-                fixed (byte* src = srcArray)
-                fixed (byte* dest = destination)
-                {
-                    int res = Interop.BrowserCrypto.Sign(_hashAlgorithm, key, _key.Length, src, srcLength, dest, destination.Length);
-                    Debug.Assert(res != 0);
-                }
-            }
+            Sign(_hashAlgorithm, _key, source, destination);
 
             return _hashSizeInBytes;
         }
 
-        public static unsafe int MacDataOneShot(string hashAlgorithmId, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data, Span<byte> destination)
+        public static int MacDataOneShot(string hashAlgorithmId, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data, Span<byte> destination)
         {
             (SimpleDigest hashName, int hashSizeInBytes) = SHANativeHashProvider.HashAlgorithmToPal(hashAlgorithmId);
             Debug.Assert(destination.Length >= hashSizeInBytes);
 
+            Sign(hashName, key, data, destination);
+
+            return hashSizeInBytes;
+        }
+
+        private static unsafe void Sign(SimpleDigest hashName, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data, Span<byte> destination)
+        {
             fixed (byte* k = key)
             fixed (byte* src = data)
             fixed (byte* dest = destination)
             {
                 int res = Interop.BrowserCrypto.Sign(hashName, k, key.Length, src, data.Length, dest, destination.Length);
-                Debug.Assert(res != 0);
+                if (res != 0)
+                {
+                    throw new CryptographicException(SR.Format(SR.Unknown_SubtleCrypto_Error, res));
+                }
             }
-
-            return hashSizeInBytes;
         }
 
         public override int HashSizeInBytes => _hashSizeInBytes;

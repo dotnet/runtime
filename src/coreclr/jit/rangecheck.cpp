@@ -1202,7 +1202,8 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
         return true;
     }
 
-    JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
+    JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()),
+            op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
 
     if (binop->OperIs(GT_ADD))
@@ -1462,7 +1463,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing 
     if (m_pCompiler->verbose)
     {
         Indent(indent);
-        JITDUMP("[RangeCheck::GetRange] " FMT_BB, block->bbNum);
+        JITDUMP("[RangeCheck::GetRange] " FMT_BB " ", block->bbNum);
         m_pCompiler->gtDispTree(expr);
         Indent(indent);
         JITDUMP("{\n", expr);

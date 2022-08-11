@@ -619,7 +619,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 assembly = store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
-                return Result.Err("Assembly '" + aname + "' not found.");
+                return Result.Err($"Assembly '{aname}' not found," +
+                                    $"needed to get method location of '{typeName}:{methodName}'");
             }
 
             TypeInfo type = assembly.GetTypeByName(typeName);
@@ -764,7 +765,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
-                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -1140,7 +1141,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (urlSymbolServerList.Count == 0)
                 return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.PdbInformationAvailable)
+            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
             var pdbName = Path.GetFileName(asm.PdbName);
@@ -1245,7 +1246,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {
@@ -1634,7 +1635,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
+            logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 

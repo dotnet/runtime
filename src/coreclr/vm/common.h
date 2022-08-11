@@ -27,7 +27,7 @@
     // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4201)   // nameless struct/union
 #pragma warning(disable:4512)   // can't generate assignment constructor
-#pragma warning(disable:4211)   // nonstandard extention used (char name[0] in structs)
+#pragma warning(disable:4211)   // nonstandard extension used (char name[0] in structs)
 #pragma warning(disable:4268)   // 'const' static/global data initialized with compiler generated default constructor fills the object with zeros
 #pragma warning(disable:4238)   // nonstandard extension used : class rvalue used as lvalue
 #pragma warning(disable:4291)   // no matching operator delete found
@@ -154,6 +154,7 @@ typedef DPTR(class TypeHandle)          PTR_TypeHandle;
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 typedef VPTR(class VirtualCallStubManagerManager) PTR_VirtualCallStubManagerManager;
 typedef VPTR(class IGCHeap)             PTR_IGCHeap;
+typedef VPTR(class ModuleBase)          PTR_ModuleBase;
 
 //
 // _UNCHECKED_OBJECTREF is for code that can't deal with DEBUG OBJECTREFs

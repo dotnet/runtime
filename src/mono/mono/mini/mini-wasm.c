@@ -79,9 +79,8 @@ get_storage (MonoType *type, gboolean is_return)
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
-		if (mini_is_gsharedvt_type (type)) {
+		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {

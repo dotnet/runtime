@@ -770,7 +770,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NotSupportedException>(() => list[0] = 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.Create<int>());
@@ -784,7 +784,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(list, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableList.Create<double>());

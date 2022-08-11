@@ -625,19 +625,15 @@ namespace System.ServiceProcess
 
         private static SafeServiceHandle GetDataBaseHandleWithAccess(string machineName, int serviceControlManagerAccess)
         {
-            SafeServiceHandle? databaseHandle;
-            if (machineName.Equals(DefaultMachineName) || machineName.Length == 0)
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess));
-            }
-            else
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
-            }
+            var databaseHandle = new SafeServiceHandle();
+            Marshal.InitHandle(databaseHandle, machineName.Equals(DefaultMachineName) || machineName.Length == 0 ?
+                Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess) :
+                Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
 
             if (databaseHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                databaseHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenSC, machineName), inner);
             }
 
@@ -683,10 +679,12 @@ namespace System.ServiceProcess
         {
             GetDataBaseHandleWithConnectAccess();
 
-            var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
+            var serviceHandle = new SafeServiceHandle();
+            Marshal.InitHandle(serviceHandle, Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
             if (serviceHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                serviceHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenService, ServiceName, _machineName), inner);
             }
 

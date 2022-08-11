@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'Browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Runtime.InteropServices.JavaScript.SupportedOSPlatform.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\ArrayBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalAsAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSType.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSFunctionBinding.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Types.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerArgument.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Char.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Double.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Func.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Single.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Int52.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Int16.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Byte.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Bool.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Task.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.DateTime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.IntPtr.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Object.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Int32.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" />
+  </ItemGroup>
+</Project>

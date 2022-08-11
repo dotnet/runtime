@@ -324,7 +324,7 @@ corehost_error_writer_fn corehost_set_error_writer(corehost_error_writer_fn erro
 Set a callback which will be used to report error messages. By default no callback is registered and the errors are written to standard error.
 * `error_writer` - callback function which will be invoked every time an error is reported. When set to `nullptr`, this function unregisters any previously registered callback and the default behaviour is restored.
 
-The return value is the previouly registered callback (which is now unregistered) or `nullptr` if there was no previously registered callback.
+The return value is the previously registered callback (which is now unregistered) or `nullptr` if there was no previously registered callback.
 
 The error writer is registered per-thread. On each thread, only one callback can be registered. Subsequent registrations overwrite the previous ones.
 
@@ -374,7 +374,7 @@ Contract for performing operations on an initialized hostpolicy.
   * `delegate` - function pointer to the requested runtime functionality
 
 ``` C
-enum intialization_options_t
+enum initialization_options_t
 {
     none = 0x0,
     wait_for_initialized = 0x1,

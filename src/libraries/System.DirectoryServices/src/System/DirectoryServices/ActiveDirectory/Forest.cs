@@ -833,10 +833,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the domain controller passing on  the
@@ -994,10 +991,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return appNCs;
@@ -1051,10 +1045,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return domains;

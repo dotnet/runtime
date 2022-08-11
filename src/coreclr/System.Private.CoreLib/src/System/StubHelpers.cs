@@ -301,7 +301,7 @@ namespace System.StubHelpers
                 if (length == 1)
                 {
                     // In the empty string case, we need to use FastAllocateString rather than the
-                    // String .ctor, since newing up a 0 sized string will always return String.Emtpy.
+                    // String .ctor, since newing up a 0 sized string will always return String.Empty.
                     // When we marshal that out as a bstr, it can wind up getting modified which
                     // corrupts string.Empty.
                     ret = string.FastAllocateString(0);
@@ -1180,9 +1180,11 @@ namespace System.StubHelpers
         {
             Exception? ex = s_pendingExceptionObject;
             if (ex != null)
+            {
                 ex.InternalPreserveStackTrace();
+                s_pendingExceptionObject = null;
+            }
 
-            s_pendingExceptionObject = null;
             return ex;
         }
 

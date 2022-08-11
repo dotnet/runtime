@@ -1805,11 +1805,8 @@ namespace System.Xml
 
         private void FlushEncoders()
         {
-            if (null != _base64Encoder)
-            {
-                // The Flush will call WriteRaw to write out the rest of the encoded characters
-                _base64Encoder.Flush();
-            }
+            // The Flush will call WriteRaw to write out the rest of the encoded characters
+            _base64Encoder?.Flush();
             _flush = false;
         }
     }
