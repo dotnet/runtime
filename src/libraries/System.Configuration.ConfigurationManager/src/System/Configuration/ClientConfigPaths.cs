@@ -64,17 +64,7 @@ namespace System.Configuration
                 if (exeAssembly != null && !isSingleFile)
                 {
                     HasEntryAssembly = true;
-
-                    // The original .NET Framework code tried to get the local path without using Uri.
-                    // If we ever find a need to do this again be careful with the logic. "file:///" is
-                    // used for local paths and "file://" for UNCs. Simply removing the prefix will make
-                    // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
-                    // "/home").
-                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
-                    Uri uri = new Uri(configBasePath);
-
-                    Debug.Assert(uri.IsFile);
-                    ApplicationUri = uri.LocalPath;
+                    ApplicationUri = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
                 }
                 else
                 {
@@ -258,7 +248,6 @@ namespace System.Configuration
             if (assembly != null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
-                Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
                 try
                 {
@@ -271,7 +260,7 @@ namespace System.Configuration
                 {
                     typeName = StrongNameDesc;
                 }
-                else
+                else if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.Absolute, out Uri codeBase))
                 {
                     try
                     {
