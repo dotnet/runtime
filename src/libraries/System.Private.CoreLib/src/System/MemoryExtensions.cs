@@ -786,6 +786,29 @@ namespace System
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.ExceptEqualityComparer<byte>>(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        Unsafe.As<T, byte>(ref value2),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.ExceptEqualityComparer<short>>(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        Unsafe.As<T, short>(ref value2),
+                        span.Length);
+                }
+                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
+            }
+
             for (int i = span.Length - 1; i >= 0; i--)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
@@ -1286,17 +1309,7 @@ namespace System
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
-        {
-            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
-                return SpanHelpers.LastIndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    Unsafe.As<T, byte>(ref value0),
-                    Unsafe.As<T, byte>(ref value1),
-                    Unsafe.As<T, byte>(ref value2),
-                    span.Length);
-
-            return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
-        }
+            => LastIndexOfAny((ReadOnlySpan<T>)span, value0, value1, value2);
 
         /// <summary>
         /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
@@ -1374,13 +1387,28 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
-            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
-                return SpanHelpers.LastIndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    Unsafe.As<T, byte>(ref value0),
-                    Unsafe.As<T, byte>(ref value1),
-                    Unsafe.As<T, byte>(ref value2),
-                    span.Length);
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.DefaultEqualityComparer<byte>>(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        Unsafe.As<T, byte>(ref value2),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.DefaultEqualityComparer<short>>(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        Unsafe.As<T, short>(ref value2),
+                        span.Length);
+                }
+                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
+            }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
         }
