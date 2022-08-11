@@ -16,13 +16,8 @@ internal sealed class PInvokeTableGenerator
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
 
     private TaskLoggingHelper Log { get; set; }
-    private Action<string> LogUnsupportedInteropSignature { get; set; }
 
-    public PInvokeTableGenerator(TaskLoggingHelper log, Action<string> logUnsupportedInteropSignature)
-    {
-        Log = log;
-        LogUnsupportedInteropSignature = logUnsupportedInteropSignature;
-    }
+    public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
@@ -76,7 +71,7 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                LogUnsupportedInteropSignature($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message} [suppress_placeholder]");
+                Log.LogWarning(null, "WS0001", "", "", 0, 0, 0, 0, $"Could not get pinvoke, or callbacks for method '{method.Name}' because '{ex.Message}'");
             }
         }
 
@@ -106,7 +101,7 @@ internal sealed class PInvokeTableGenerator
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
 
-                    callbacks.Add(new PInvokeCallback(method));
+                        callbacks.Add(new PInvokeCallback(method));
                 }
                 catch
                 {
@@ -306,7 +301,7 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
-            LogUnsupportedInteropSignature($"Skipping the following DllImport because '{reason}'. [suppress_placeholder]{Environment.NewLine}  {pinvoke.Method}");
+            Log.LogWarning(null, "WS0001", "", "", 0, 0, 0, 0, $"Skipping pinvoke '{pinvoke.Method}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;

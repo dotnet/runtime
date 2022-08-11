@@ -23,13 +23,8 @@ internal sealed class IcallTableGenerator
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
-    private Action<string> LogUnsupportedInteropSignature { get; set; }
 
-    public IcallTableGenerator(TaskLoggingHelper log, Action<string> logUnsupportedInteropSignature)
-    {
-        Log = log;
-        LogUnsupportedInteropSignature = logUnsupportedInteropSignature;
-    }
+    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -157,7 +152,7 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                LogUnsupportedInteropSignature($"Could not get icall, or callbacks for method {method.Name}: {ex.Message} [suppress_placeholder]");
+                Log.LogWarning(null, "WS0001", "", "", 0, 0, 0, 0, $"Could not get icall, or callbacks for method '{method.Name}' because '{ex.Message}'");
                 continue;
             }
 

@@ -34,8 +34,6 @@ public class ManagedToNativeGenerator : Task
     [Required, NotNull]
     public string? InterpToNativeOutputPath { get; set; }
 
-    public bool UnsupportedInteropSignatureAsWarning { get; set; }
-
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -67,8 +65,8 @@ public class ManagedToNativeGenerator : Task
 
     private void ExecuteInternal()
     {
-        var pinvoke = new PInvokeTableGenerator(Log, LogUnsupportedInteropSignature);
-        var icall = new IcallTableGenerator(Log, LogUnsupportedInteropSignature);
+        var pinvoke = new PInvokeTableGenerator(Log);
+        var icall = new IcallTableGenerator(Log);
 
         IEnumerable<string> cookies = Enumerable.Concat(
             pinvoke.Generate(PInvokeModules, Assemblies!, PInvokeOutputPath!),
@@ -81,13 +79,5 @@ public class ManagedToNativeGenerator : Task
         FileWrites = IcallOutputPath != null
             ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
             : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
-    }
-
-    private void LogUnsupportedInteropSignature(string messageTemplate)
-    {
-        if (UnsupportedInteropSignatureAsWarning)
-            Log.LogWarning(messageTemplate.Replace("[suppress_placeholder]", "To suppress this warning, use WasmUnsupportedInteropSignatureAsWarning=false. "));
-        else
-            Log.LogMessage(MessageImportance.Normal, messageTemplate.Replace("[suppress_placeholder]", string.Empty));
     }
 }

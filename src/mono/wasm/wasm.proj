@@ -77,8 +77,7 @@
       Assemblies="@(WasmPInvokeAssembly)"
       PInvokeModules="@(WasmPInvokeModule)"
       PInvokeOutputPath="$(WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)"
-      UnsupportedInteropSignatureAsWarning="true">
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>

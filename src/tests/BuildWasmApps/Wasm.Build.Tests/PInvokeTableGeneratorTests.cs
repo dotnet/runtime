@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types.*To suppress this warning.*WasmUnsupportedInteropSignatureAsWarning=false", output);
+            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types", output);
             Assert.Matches("warning.*Skipping.*because.*function pointer", output);
             Assert.Matches("warning.*using_sum_one", output);
 
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
-            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types.*To suppress this warning.*WasmUnsupportedInteropSignatureAsWarning=false", output);
+            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types", output);
             Assert.Matches("warning.*Skipping.*because.*function pointer", output);
             Assert.Matches("warning.*using_sum_one", output);
 
@@ -123,7 +123,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.V8)]
-        public void DllImportWithFunctionPointers_WasmUnsupportedInteropSignatureAsWarningFalse(BuildArgs buildArgs, RunHost host, string id)
+        public void DllImportWithFunctionPointers_WarningsAsMessages(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -147,11 +147,10 @@ namespace Wasm.Build.Tests
                 buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                 id,
                 verbosity: "normal",
-                wasmUnsupportedInteropSignatureAsWarning: false
+                extraProperties: "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WS0001</MSBuildWarningsAsMessages>"
             );
 
             Assert.Matches("Could not get pinvoke.*Parsing function pointer types", output);
-            Assert.DoesNotMatch("WasmUnsupportedInteropSignatureAsWarning=false", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -208,11 +207,9 @@ namespace Wasm.Build.Tests
             Assert.Contains("square: 25", output);
         }
 
-        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, string? verbosity = null, bool wasmUnsupportedInteropSignatureAsWarning = true)
+        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, string? verbosity = null, string extraProperties = "")
         {
-            string extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
-            if (!wasmUnsupportedInteropSignatureAsWarning)
-                extraProperties += "<WasmUnsupportedInteropSignatureAsWarning>false</WasmUnsupportedInteropSignatureAsWarning>";
+            extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
 
             string filename = "variadic.o";
             buildArgs = ExpandBuildArgs(buildArgs,
