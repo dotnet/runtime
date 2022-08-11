@@ -52,6 +52,7 @@ namespace Internal.JitInterface
             AMD64 = 0x8664,
             ARM = 0x01c4,
             ARM64 = 0xaa64,
+            LoongArch64 = 0x6264,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -658,7 +659,7 @@ namespace Internal.JitInterface
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
         private List<Object> _handleToObject = new List<Object>();
 
-        private const int handleMultipler = 8;
+        private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
 #if DEBUG
@@ -672,7 +673,7 @@ namespace Internal.JitInterface
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
-                handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+                handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
 #if DEBUG
                 handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
 #endif
@@ -687,7 +688,7 @@ namespace Internal.JitInterface
 #if DEBUG
             handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
 #endif
-            int index = ((int)handle - handleBase) / handleMultipler;
+            int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
 
@@ -735,24 +736,6 @@ namespace Internal.JitInterface
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
-
-#if READYTORUN
-            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
-            {
-                foreach (var region in exceptionRegions)
-                {
-                    if (region.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
-                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
-                            break;
-                        }
-                    }
-                }
-            }
-#endif
 
             return true;
         }
@@ -1246,7 +1229,7 @@ namespace Internal.JitInterface
 #if DEBUG
                 if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
                 {
-                    Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targetting type {objType}");
+                    Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
                 }
 #endif
@@ -1730,12 +1713,7 @@ namespace Internal.JitInterface
                 _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
 #endif
 
-#if READYTORUN
-                if (recordToken)
-                {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
-                }
-#else
+#if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #endif
             }
@@ -2375,7 +2353,7 @@ namespace Internal.JitInterface
                     // To maintain backward compatibility, we are doing it for reference types only.
                     // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
-                    // semantics, we can assume that the .ctor triggerred the
+                    // semantics, we can assume that the .ctor triggered the
                     // type initialization.
                     // This does not hold for NULL "this" object. However, the spec does
                     // not require that case to work.
@@ -2916,11 +2894,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
-        {
-            throw new NotImplementedException("For LoongArch64, would be implemented later");
-        }
-
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
@@ -3138,6 +3111,12 @@ namespace Internal.JitInterface
 
             SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
             return true;
+        }
+
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc typeDesc = HandleToObject(cls);
+            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -3408,14 +3387,14 @@ namespace Internal.JitInterface
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
-            // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
+            // Console.WriteLine(Marshal.PtrToStringUTF8((IntPtr)fmt));
             return false;
         }
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szExpr));
 
             return 1;
         }
@@ -3518,25 +3497,46 @@ namespace Internal.JitInterface
         // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
         private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
         {
-            if (targetArchitecture != TargetArchitecture.ARM64)
-                return (RelocType)fRelocType;
-
-            const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
-            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
-            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
-
-            switch (fRelocType)
+            switch (targetArchitecture)
             {
-                case IMAGE_REL_ARM64_BRANCH26:
-                    return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
-                case IMAGE_REL_ARM64_PAGEBASE_REL21:
-                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
-                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                case TargetArchitecture.ARM64:
+                {
+                    const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
+                    const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+                    const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_ARM64_BRANCH26:
+                            return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
+                        case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                        case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
+                case TargetArchitecture.LoongArch64:
+                {
+                    const ushort IMAGE_REL_LOONGARCH64_PC = 3;
+                    const ushort IMAGE_REL_LOONGARCH64_JIR = 4;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_LOONGARCH64_PC:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
+                        case IMAGE_REL_LOONGARCH64_JIR:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
                 default:
-                    Debug.Fail("Invalid RelocType: " + fRelocType);
-                    return 0;
-            };
+                    return (RelocType)fRelocType;
+            }
         }
 
         private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
@@ -3631,6 +3631,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
                     return (uint)ImageFileMachine.ARM64;
+                case TargetArchitecture.LoongArch64:
+                    return (uint)ImageFileMachine.LoongArch64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -3649,7 +3651,7 @@ namespace Internal.JitInterface
             // and logical field pair then return true. This is needed as the field handle here
             // is used as a key into a hashtable mapping writes to fields to value numbers.
             //
-            // In this implmentation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
+            // In this implementation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
             // pointers which represent exact instantions, so performing exact matching is the necessary approach
 
             // BaseType._field, BaseType -> true
@@ -3691,7 +3693,7 @@ namespace Internal.JitInterface
 
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
-            // Set the rest of the flags that don't make sense to expose publically.
+            // Set the rest of the flags that don't make sense to expose publicly.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);

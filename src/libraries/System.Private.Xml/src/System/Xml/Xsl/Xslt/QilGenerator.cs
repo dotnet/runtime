@@ -946,7 +946,7 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     nsUri = (string)(QilLiteral)qilNs;
-                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid reseting ns management
+                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid resetting ns management
                     explicitNamespace = true;
                 }
                 // Check the case <xsl:attribute name="foo:xmlns" namespace=""/>
@@ -1054,7 +1054,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        [return: NotNullIfNotNull("avt")]
+        [return: NotNullIfNotNull(nameof(avt))]
         private QilNode? CompileStringAvt(string? avt)
         {
             if (avt == null)
@@ -1681,7 +1681,7 @@ namespace System.Xml.Xsl.Xslt
         /// returning "1" if AVT evaluates to value1, or "0" if AVT evaluates to value0 or any other value.
         /// If AVT evaluates to neither value0 nor value1 and fwdCompat == false, an error is reported.
         /// </returns>
-        [return: NotNullIfNotNull("attName")]
+        [return: NotNullIfNotNull(nameof(attName))]
         private QilNode CompileOrderAttribute(string attName, string? attValue, string value0, string value1, bool fwdCompat)
         {
             QilNode? result = CompileStringAvt(attValue);

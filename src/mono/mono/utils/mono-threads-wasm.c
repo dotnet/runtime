@@ -404,13 +404,6 @@ mono_threads_wasm_browser_thread_tid (void)
 #endif
 }
 
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	/* Suspend the browser thread after all the other threads are suspended already. */
-	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
-}
-
 #ifndef DISABLE_THREADS
 extern void
 mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);

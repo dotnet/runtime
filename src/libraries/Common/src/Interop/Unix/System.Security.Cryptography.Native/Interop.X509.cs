@@ -159,8 +159,8 @@ internal static partial class Interop
             return store;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
-        internal static partial void X509StoreDestory(IntPtr v);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestroy")]
+        internal static partial void X509StoreDestroy(IntPtr v);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCrl")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -243,7 +243,7 @@ internal static partial class Interop
 
         internal static string GetX509VerifyCertErrorString(int n)
         {
-            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n))!;
+            return Marshal.PtrToStringUTF8(X509VerifyCertErrorString(n))!;
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]

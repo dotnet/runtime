@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("FOO")]
         public void SignWithUnsupportedHashAlgorithm(string hashAlgorithm)
         {
-            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
+            Assert.Throws<ArgumentException>("hashAlgorithm", () => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
         }
 
         [Theory]
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(0, signatures.Count);
 
             // You can't create a message without signatures.
-            Assert.Throws<CryptographicException>(multiSignMsg.Encode);
+            Assert.Throws<InvalidOperationException>(multiSignMsg.Encode);
         }
 
         [Theory]

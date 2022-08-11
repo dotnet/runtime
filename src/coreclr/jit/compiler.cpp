@@ -344,12 +344,12 @@ Histogram loopExitCountTable(loopExitCountBuckets);
 //                of the BYTE[] returned from getClassGClayout()
 //
 // Return Value:
-//    The corresponsing enum value from the JIT's var_types
+//    The corresponding enum value from the JIT's var_types
 //
 // Notes:
 //   The gcLayout of each field of a struct is returned from getClassGClayout()
 //   as a BYTE[] but each BYTE element is actually a CorInfoGCType value
-//   Note when we 'know' that there is only one element in theis array
+//   Note when we 'know' that there is only one element in this array
 //   the JIT will often pass the address of a single BYTE, instead of a BYTE[]
 //
 
@@ -879,7 +879,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
         {
             // If this is returned as a floating type, use that.
-            // Otherwise, leave as TYP_UNKONWN and we'll sort things out below.
+            // Otherwise, leave as TYP_UNKNOWN and we'll sort things out below.
             useType           = GetEightByteType(structDesc, 0);
             howToReturnStruct = SPK_PrimitiveType;
         }
@@ -1774,6 +1774,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     bRangeAllowStress = false;
+
+    // set this early so we can use it without relying on random memory values
+    verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
@@ -2076,10 +2079,6 @@ unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
     return defaultFill;
 }
 
-#endif // DEBUG
-
-/*****************************************************************************/
-#ifdef DEBUG
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -2124,13 +2123,15 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
     return nullptr;
 }
 
+#endif // DEBUG
+
 const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloatReg)
 {
-
 #ifdef TARGET_ARM
     isFloatReg = genIsValidFloatReg(reg);
 #endif
 
+#ifdef DEBUG
     if (displayVar && (reg != REG_NA))
     {
         VarName varName = compVarName(reg, isFloatReg);
@@ -2148,6 +2149,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             return nameVarReg[index];
         }
     }
+#endif
 
     /* no debug info required or no variable in that register
        -> return standard name */
@@ -2194,6 +2196,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     return sizeNames[reg][size - 1];
 }
 
+#ifdef DEBUG
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 {
     unsigned     i;
@@ -2214,9 +2217,8 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 
     return nullptr;
 }
+#endif
 
-/*****************************************************************************/
-#endif // DEBUG
 /*****************************************************************************/
 
 void Compiler::compSetProcessor()
@@ -2633,29 +2635,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         if (!compIsForInlining())
         {
-            if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
-                if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    verboseDump = true;
-                }
-                unsigned ngenHashDumpVal = (unsigned)JitConfig.NgenHashDump();
-                if ((ngenHashDumpVal != (DWORD)-1) && (ngenHashDumpVal == info.compMethodHash()))
-                {
-                    verboseDump = true;
-                }
+                verboseDump = true;
             }
-            else
+            unsigned jitHashDumpVal = (unsigned)JitConfig.JitHashDump();
+            if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
             {
-                if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    verboseDump = true;
-                }
-                unsigned jitHashDumpVal = (unsigned)JitConfig.JitHashDump();
-                if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
-                {
-                    verboseDump = true;
-                }
+                verboseDump = true;
             }
         }
     }
@@ -2819,14 +2806,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
+    opts.disAsm      = false;
+    opts.disDiffable = false;
+    opts.dspDiffable = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
-    opts.disAsm          = false;
     opts.disAsmSpilled   = false;
-    opts.disDiffable     = false;
     opts.disAddr         = false;
     opts.disAlignment    = false;
     opts.dspCode         = false;
@@ -2849,109 +2837,67 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //
     if (!altJitConfig || opts.altJit)
     {
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        bool disEnabled = true;
+
+        // Setup assembly name list for disassembly, if not already set up.
+        if (!s_pJitDisasmIncludeAssembliesListInitialized)
         {
-            if ((JitConfig.NgenOrder() & 1) == 1)
+            const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
+            if (assemblyNameList != nullptr)
+            {
+                s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
+                    AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
+            }
+            s_pJitDisasmIncludeAssembliesListInitialized = true;
+        }
+
+        // If we have an assembly name list for disassembly, also check this method's assembly.
+        if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
+        {
+            const char* assemblyName = info.compCompHnd->getAssemblyName(
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+
+            if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+            {
+                disEnabled = false;
+            }
+        }
+
+        if (disEnabled)
+        {
+            if ((JitConfig.JitOrder() & 1) == 1)
             {
                 opts.dspOrder = true;
             }
 
-            if (JitConfig.NgenGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspGCtbls = true;
             }
 
-            if (JitConfig.NgenDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.disAsm = true;
             }
-            if (JitConfig.NgenDisasm().contains("SPILLED", nullptr, nullptr))
+
+            if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
             {
                 opts.disAsmSpilled = true;
             }
 
-            if (JitConfig.NgenUnwindDump().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspUnwind = true;
             }
 
-            if (JitConfig.NgenEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspEHTable = true;
             }
 
-            if (JitConfig.NgenDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspDebugInfo = true;
-            }
-        }
-        else
-        {
-            bool disEnabled = true;
-
-            // Setup assembly name list for disassembly, if not already set up.
-            if (!s_pJitDisasmIncludeAssembliesListInitialized)
-            {
-                const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
-                if (assemblyNameList != nullptr)
-                {
-                    s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
-                        AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
-                }
-                s_pJitDisasmIncludeAssembliesListInitialized = true;
-            }
-
-            // If we have an assembly name list for disassembly, also check this method's assembly.
-            if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
-            {
-                const char* assemblyName = info.compCompHnd->getAssemblyName(
-                    info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
-
-                if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
-                {
-                    disEnabled = false;
-                }
-            }
-
-            if (disEnabled)
-            {
-                if ((JitConfig.JitOrder() & 1) == 1)
-                {
-                    opts.dspOrder = true;
-                }
-
-                if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.dspGCtbls = true;
-                }
-
-                if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.disAsm = true;
-                }
-
-                if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
-                {
-                    opts.disAsmSpilled = true;
-                }
-
-                if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName,
-                                                       &info.compMethodInfo->args))
-                {
-                    opts.dspUnwind = true;
-                }
-
-                if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.dspEHTable = true;
-                }
-
-                if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName,
-                                                      &info.compMethodInfo->args))
-                {
-                    opts.dspDebugInfo = true;
-                }
             }
         }
         if (opts.disAsm && JitConfig.JitDisasmWithGC())
@@ -2993,7 +2939,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
         // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
         // JitEarlyExpandMDArraysFilter.
         if (JitConfig.JitEarlyExpandMDArrays() == 0)
         {
@@ -3069,8 +3015,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         s_pJitFunctionFileInitialized = true;
     }
-
-#endif // DEBUG
+#else  // DEBUG
+    if (!JitConfig.JitDisasm().isEmpty())
+    {
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
+        {
+            opts.disAsm = true;
+        }
+    }
+#endif // !DEBUG
 
 //-------------------------------------------------------------------------
 
@@ -4327,7 +4282,7 @@ void Compiler::EndPhase(Phases phase)
 //
 // Arguments:
 //   methodCodePtr [OUT] - address of generated code
-//   methodCodeSize [OUT] - size of the generated code (hot + cold setions)
+//   methodCodeSize [OUT] - size of the generated code (hot + cold sections)
 //   compileFlags [IN] - flags controlling jit behavior
 //
 // Notes:
@@ -5561,8 +5516,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     Compiler* me  = this;
     forceFrameJIT = (void*)&me; // let us see the this pointer in fastchecked build
-    // set this early so we can use it without relying on random memory values
-    verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
 #if FUNC_INFO_LOGGING
@@ -6677,8 +6630,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
         if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const char* noPatchpointReason = nullptr;
-            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
+            bool canEscapeViaOSR = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
             if (canEscapeViaOSR)
@@ -6703,7 +6655,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             }
             else
             {
-                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                JITDUMP("\nOSR disabled for this method: %s\n", reason);
                 assert(reason != nullptr);
             }
         }
@@ -6733,6 +6685,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif
 
+    compMethodID = 0;
 #ifdef DEBUG
     /* Give the function a unique number */
 
@@ -9539,6 +9492,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BOX_VALUE]");
                 }
+
+                if (tree->gtFlags & GTF_BOX_CLONED)
+                {
+                    chars += printf("[BOX_CLONED]");
+                }
                 break;
 
             case GT_ARR_ADDR:
@@ -9729,14 +9687,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
 
-                    if (call->IsUnmanaged())
-                    {
-                        if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
-                        {
-                            chars += printf("[CALL_M_UNMGD_THISCALL]");
-                        }
-                    }
-                    else if (call->IsVirtualStub())
+                    if (call->IsVirtualStub())
                     {
                         if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                         {

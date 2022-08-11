@@ -22,7 +22,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody1", "StaticMethod1");
+                    "MethodBody1", "StaticMethod1", expectBpResolvedEvent: false);
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1");
@@ -40,7 +40,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody2", "StaticMethod1");
+                    "MethodBody2", "StaticMethod1", expectBpResolvedEvent: false);
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1");
@@ -60,7 +60,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody3", "StaticMethod3");
+                    "MethodBody3", "StaticMethod3", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
@@ -108,7 +108,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody4", "StaticMethod4");
+                    "MethodBody4", "StaticMethod4", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4");
@@ -164,7 +164,7 @@ namespace DebuggerTests
             string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody1", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody1", "StaticMethod1", expectBpResolvedEvent: false);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
@@ -196,7 +196,7 @@ namespace DebuggerTests
             string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody2", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody2", "StaticMethod1", expectBpResolvedEvent: false);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
@@ -227,7 +227,7 @@ namespace DebuggerTests
             int line = 30;
             await SetBreakpoint(".*/MethodBody1.cs$", line, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody3", "StaticMethod3");
+                    asm_file, pdb_file, "MethodBody3", "StaticMethod3", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
@@ -290,7 +290,7 @@ namespace DebuggerTests
             int line = 38;
             await SetBreakpoint(".*/MethodBody1.cs$", line, 0, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody4", "StaticMethod4");
+                    asm_file, pdb_file, "MethodBody4", "StaticMethod4", expectBpResolvedEvent: true);
 
             //apply first update
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
@@ -347,11 +347,11 @@ namespace DebuggerTests
 
             var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             //apply first update
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
-                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, 
+                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1,
                     rebindBreakpoint : async () =>
                     {
                         await RemoveBreakpoint(bp.Value["breakpointId"].Value<string>());
@@ -372,11 +372,11 @@ namespace DebuggerTests
 
             var bp = await SetBreakpoint(".*/MethodBody1.cs$", 49, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             //apply first update
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
-                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, 
+                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1,
                     rebindBreakpoint : async () =>
                     {
                         await RemoveBreakpoint(bp.Value["breakpointId"].Value<string>());
@@ -399,7 +399,7 @@ namespace DebuggerTests
             var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 48, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             //apply first update
@@ -422,7 +422,7 @@ namespace DebuggerTests
             var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true);
 
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             //apply first update
@@ -452,7 +452,7 @@ namespace DebuggerTests
             var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true);
 
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             //apply first update
@@ -488,7 +488,7 @@ namespace DebuggerTests
             var bp_invalid2 = await SetBreakpoint(".*/MethodBody1.cs$", 102, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true);
 
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             //apply first update
@@ -511,7 +511,7 @@ namespace DebuggerTests
             Assert.Equal(3, props.Count());
             CheckNumber(props, "attr1", 15);
             await CheckString(props, "attr2", "20");
-            
+
             await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),
             ("ApplyUpdateReferencedAssembly.MethodBody7.staticField", TNumber(80)));
 

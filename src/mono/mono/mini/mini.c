@@ -1237,7 +1237,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
+			 * Always allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
@@ -1491,7 +1491,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
+			 * Always allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
@@ -2983,8 +2983,6 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	backend->gshared_supported = 1;
 #endif
-	if (MONO_ARCH_USE_FPSTACK)
-		backend->use_fpstack = 1;
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 	backend->have_volatile_non_param_register = MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER;
@@ -3067,7 +3065,7 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
  * @parts: debug flag
  *
  * Returns: a MonoCompile* pointer. Caller must check the exception_type
- * field in the returned struct to see if compilation succeded.
+ * field in the returned struct to see if compilation succeeded.
  */
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index)
@@ -3780,7 +3778,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		g_assert (cfg->got_var_allocated);
 
 		/*
-		 * Allways allocate the GOT var to a register, because keeping it
+		 * Always allocate the GOT var to a register, because keeping it
 		 * in memory will increase the number of live temporaries in some
 		 * code created by inssel.brg, leading to the well known spills+
 		 * branches problem. Testcase: mcs crash in
@@ -4044,7 +4042,7 @@ mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type)
 
 /* Assumes ownership of the MSG argument */
 void
-mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
+mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 {
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 	mono_error_set_generic_error (cfg->error, "System", "InvalidProgramException", "%s", msg);

@@ -216,15 +216,20 @@ namespace Microsoft.Extensions.Hosting
         {
             var hostingEnvironment = new HostingEnvironment()
             {
-                ApplicationName = hostConfiguration[HostDefaults.ApplicationKey],
                 EnvironmentName = hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
                 ContentRootPath = ResolveContentRootPath(hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
             };
 
-            if (string.IsNullOrEmpty(hostingEnvironment.ApplicationName))
+            string? applicationName = hostConfiguration[HostDefaults.ApplicationKey];
+            if (string.IsNullOrEmpty(applicationName))
             {
                 // Note GetEntryAssembly returns null for the net4x console test runner.
-                hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+                applicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+            }
+
+            if (applicationName is not null)
+            {
+                hostingEnvironment.ApplicationName = applicationName;
             }
 
             var physicalFileProvider = new PhysicalFileProvider(hostingEnvironment.ContentRootPath);

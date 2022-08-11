@@ -319,7 +319,7 @@ escape_special_chars (const char* identifier)
  * \returns The name in external form, that is with escaping backslashes.
  *
  * The displayed form of an identifier has the characters ,+&*[]\
- * that have special meaning in type names escaped with a preceeding
+ * that have special meaning in type names escaped with a preceding
  * backslash (\) character.
  */
 char*
@@ -1179,7 +1179,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	/*
 	 * A method only needs to be inflated if the context has argument for which it is
-	 * parametric. Eg:
+	 * parameteric. Eg:
 	 *
 	 * class Foo<T> { void Bar(); } - doesn't need to be inflated if only mvars' are supplied
 	 * class Foo { void Bar<T> (); } - doesn't need to be if only vars' are supplied
@@ -1422,7 +1422,7 @@ mono_method_set_verification_success (MonoMethod *method)
 }
 
 /**
- * mono_method_get_verification_sucess:
+ * mono_method_get_verification_success:
  *
  * Returns \c TRUE if the method has been verified successfully.
  *
@@ -1702,7 +1702,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 /*
  * mono_class_get_method_by_index:
  *
- *   Returns klass->methods [index], initializing klass->methods if neccesary.
+ *   Returns klass->methods [index], initializing klass->methods if necessary.
  *
  * LOCKING: Acquires the loader lock.
  */
@@ -1787,7 +1787,7 @@ mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method, MonoError 
 /*
  * mono_class_get_vtable_entry:
  *
- *   Returns klass->vtable [offset], computing it if neccesary. Returns NULL on failure.
+ *   Returns klass->vtable [offset], computing it if necessary. Returns NULL on failure.
  * LOCKING: Acquires the loader lock.
  */
 MonoMethod*
@@ -1971,7 +1971,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 /*
  * mono_method_get_vtable_slot:
  *
- *   Returns method->slot, computing it if neccesary. Return -1 on failure.
+ *   Returns method->slot, computing it if necessary. Return -1 on failure.
  * LOCKING: Acquires the loader lock.
  *
  * FIXME Use proper MonoError machinery here.
@@ -2911,7 +2911,7 @@ done:
  * \param context the generic context used to evaluate generic instantiations in
  * \param error Error handling context
  *
- * This functions exists to fullfill the fact that sometimes it's desirable to have access to the
+ * This functions exists to fulfill the fact that sometimes it's desirable to have access to the
  *
  * \returns The MonoType that represents \p type_token in \p image
  */
@@ -3779,7 +3779,7 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
  * mono_byref_type_is_assignable_from:
  * \param type The type assignee
  * \param ctype The type being assigned
- * \param signature_assignment whether this is a signature assginment check according to ECMA rules, or reflection
+ * \param signature_assignment whether this is a signature assignment check according to ECMA rules, or reflection
  *
  * Given two byref types, returns \c TRUE if values of the second type are assignable to locations of the first type.
  *
@@ -3813,7 +3813,7 @@ mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean si
 		if (m_class_is_valuetype (klassc))
 			return FALSE;
 		/*
-		 * assignment compatability for location types, ECMA I.8.7.2 - two managed pointer types T& and U& are
+		 * assignment compatibility for location types, ECMA I.8.7.2 - two managed pointer types T& and U& are
 		 * assignment compatible if the verification types of T and U are identical.
 		 */
 		if (signature_assignment)
@@ -3860,12 +3860,12 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 }
 
 /*
- * ECMA I.8.7.3 general assignment compatability is defined in terms of an "intermediate type"
- * whereas ECMA I.8.7.1 assignment compatability for signature types is defined in terms of a "reduced type".
+ * ECMA I.8.7.3 general assignment compatibility is defined in terms of an "intermediate type"
+ * whereas ECMA I.8.7.1 assignment compatibility for signature types is defined in terms of a "reduced type".
  *
  * This matters when we're comparing arrays of IntPtr.  IntPtr[] is generally
  * assignable to int[] or long[], depending on architecture.  But for signature
- * compatability, IntPtr[] is distinct from both of them.
+ * compatibility, IntPtr[] is distinct from both of them.
  *
  * Similarly for ulong* and IntPtr*, etc.
  */
@@ -4162,7 +4162,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 			 * if both klass and oklass are fnptr, and they're equal, we would have returned at the
 			 * beginning.
 			 */
-			/* Is this right? or do we need to look at signature compatability? */
+			/* Is this right? or do we need to look at signature compatibility? */
 			*result = FALSE;
 			return;
 		}

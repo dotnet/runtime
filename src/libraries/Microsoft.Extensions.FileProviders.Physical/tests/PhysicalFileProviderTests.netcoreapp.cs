@@ -107,16 +107,15 @@ namespace Microsoft.Extensions.FileProviders
 
             // Act - Change link target to file 2.
             File.Delete(linkPath);
-            try
-            {
-                File.CreateSymbolicLink(linkPath, file2Path);
 
-                // Assert - It should report the change regardless of the timestamp being older.
-                Assert.True(await tcs.Task,
-                    $"Change event was not raised - current time: {DateTime.UtcNow:O}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path):O}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}.");
-            }
-            // https://github.com/dotnet/runtime/issues/56810
-            catch (UnauthorizedAccessException) { }
+            RetryHelper.Execute(() =>
+            {
+                File.CreateSymbolicLink(linkPath, file2Path); // can fail, presumably due to some latency of delete of linkPath
+            }, maxAttempts: 10, retryWhen: e => e is UnauthorizedAccessException);
+
+            // Assert - It should report the change regardless of the timestamp being older.
+            Assert.True(await tcs.Task,
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path):O}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}.");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]

@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization
   /// <summary>
   /// When placed on a constructor, indicates that the constructor should be used to create
   /// instances of the type on deserialization.
-  /// <remarks>The construtor must be public. The attribute cannot be placed on multiple constructors.</remarks>
+  /// <remarks>The constructor must be public. The attribute cannot be placed on multiple constructors.</remarks>
   /// </summary>
   [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
   public sealed partial class JsonConstructorAttribute : JsonAttribute

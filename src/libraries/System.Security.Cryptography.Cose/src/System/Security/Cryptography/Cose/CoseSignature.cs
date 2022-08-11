@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
+    /// <summary>
+    /// Represents a COSE_Signature that carries one signature and information about that signature associated with a <see cref="CoseMultiSignMessage"/>.
+    /// </summary>
     public sealed class CoseSignature
     {
         private readonly byte[] _encodedBodyProtectedHeaders;
@@ -16,7 +19,16 @@ namespace System.Security.Cryptography.Cose
         internal readonly byte[] _signature;
         private CoseMultiSignMessage? _message;
 
+        /// <summary>
+        /// Gets the protected header parameters of this instance.
+        /// </summary>
+        /// <value>A collection of protected header parameters associated to this instance.</value>
         public CoseHeaderMap ProtectedHeaders { get; }
+
+        /// <summary>
+        /// Gets the unprotected header parameters of this instance.
+        /// </summary>
+        /// <value>A collection of unprotected header parameters associated to this instance.</value>
         public CoseHeaderMap UnprotectedHeaders { get; }
 
 
@@ -34,6 +46,7 @@ namespace System.Security.Cryptography.Cose
             _encodedSignProtectedHeaders = encodedSignProtectedHeaders;
             _signature = signature;
         }
+
         internal CoseMultiSignMessage Message
         {
             get
@@ -47,6 +60,34 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, ReadOnlySpan<byte> associatedData)
         {
             if (key is null)
@@ -62,6 +103,34 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, byte[], byte[])"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, byte[]? associatedData = null)
         {
             if (key is null)
@@ -77,6 +146,35 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyEmbedded(AsymmetricAlgorithm, byte[])"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null)
         {
             if (key is null)
@@ -97,6 +195,35 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyEmbedded(AsymmetricAlgorithm, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
             if (key is null)
@@ -112,6 +239,43 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetachedAsync(AsymmetricAlgorithm, Stream, ReadOnlyMemory{byte}, CancellationToken)"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
             if (key is null)
@@ -142,6 +306,44 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Asynchronously verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, Stream, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
         public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
             if (key is null)

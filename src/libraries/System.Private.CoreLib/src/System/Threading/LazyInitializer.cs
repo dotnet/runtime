@@ -135,7 +135,7 @@ namespace System.Threading
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
         /// been initialized, a new object will be instantiated.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock)
+        public static T EnsureInitialized<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull(nameof(syncLock))] ref object? syncLock)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -195,7 +195,7 @@ namespace System.Threading
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the
         /// reference or value.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory)
+        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull(nameof(syncLock))] ref object? syncLock, Func<T> valueFactory)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -244,7 +244,7 @@ namespace System.Threading
         /// been initialized, a new object will be instantiated.</param>
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory) where T : class =>
+        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull(nameof(syncLock))] ref object? syncLock, Func<T> valueFactory) where T : class =>
             Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
 
         /// <summary>

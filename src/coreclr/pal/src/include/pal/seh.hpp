@@ -148,7 +148,9 @@ CorUnix::PAL_ERROR SEHDisable(CorUnix::CPalThread *pthrCurrent);
 // Offset of the local variable containing pointer to windows style context in the common_signal_handler / PAL_DispatchException function.
 // This offset is relative to the frame pointer.
 extern int g_hardware_exception_context_locvar_offset;
-
+// Offset of the local variable containing pointer to windows style context in the inject_activation_handler.
+// This offset is relative to the frame pointer.
+extern int g_inject_activation_context_locvar_offset;
 
 #endif /* _PAL_SEH_HPP_ */
 

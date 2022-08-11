@@ -27,7 +27,7 @@ namespace LifeTimeFX
             get;
             set;
         }
-        
+
     }
 
     public interface LifeTimeStrategy
@@ -41,7 +41,7 @@ namespace LifeTimeFX
     /// implementation.
     /// The only restriction on the ObjectContainer is that the objects contained in it must implement
     /// LifeTime interface.
-    /// Right now we have a simple array container as a stock implementation for that. for more information 
+    /// Right now we have a simple array container as a stock implementation for that. for more information
     /// see code:#ArrayContainer
     /// </summary>
     /// <param name="o"></param>
@@ -58,105 +58,105 @@ namespace LifeTimeFX
             get;
         }
     }
-    
-    
+
+
     public sealed class BinaryTreeObjectContainer<T> : ObjectContainer<T> where T:LifeTime
     {
-    
+
         class Node
         {
             public Node LeftChild;
             public Node RightChild;
             public int id;
             public T Data;
-        
-        }
-        
 
-        
+        }
+
+
+
         private Node root;
         private int count;
-        
+
         public BinaryTreeObjectContainer()
         {
             root = null;
             count = 0;
         }
-    
+
         public void Init(int numberOfObjects)
         {
-               
+
             if (numberOfObjects<=0)
             {
                 return;
             }
-            
+
             root = new Node();
             root.id = 0;
             count = numberOfObjects;
             if (numberOfObjects>1)
             {
-                int depth = (int)Math.Log(numberOfObjects,2)+1;         
+                int depth = (int)Math.Log(numberOfObjects,2)+1;
 
                 root.LeftChild = CreateTree(depth-1, 1);
                 root.RightChild = CreateTree(depth-1, 2);
             }
-            
-          
+
+
         }
-        
+
         public void AddObjectAt(T o, int index)
-        {                           
+        {
             Node node = Find(index);
-            
+
             if (node!=null)
             {
-                node.Data = o;               
+                node.Data = o;
             }
 
         }
-        
-        
+
+
         public T GetObject(int index)
         {
-            
-           
-            Node node = Find(index);
-            
-            if (node==null)
-            {
-                return default(T);
-            }
-            
-            return node.Data;
-                                    
-        }
-        
-        public T SetObjectAt(T o , int index)
-        {
-            
+
+
             Node node = Find(index);
 
             if (node==null)
             {
                 return default(T);
             }
-                        
+
+            return node.Data;
+
+        }
+
+        public T SetObjectAt(T o , int index)
+        {
+
+            Node node = Find(index);
+
+            if (node==null)
+            {
+                return default(T);
+            }
+
             T old = node.Data;
             node.Data = o;
             return old;
-            
-        }        
-        
+
+        }
+
         public int Count
         {
             get
             {
                 return count;
             }
-        }        
-    
-    
+        }
+
+
 
         private Node CreateTree(int depth, int id)
         {
@@ -169,15 +169,15 @@ namespace LifeTimeFX
             node.id = id;
             node.LeftChild = CreateTree(depth-1, id*2+1);
             node.RightChild = CreateTree(depth-1, id*2+2);
-            
+
             return node;
-        }    
-        
+        }
+
         private Node Find(int id)
         {
-                      
-            List<int> path = new List<int>();            
-            
+
+            List<int> path = new List<int>();
+
             // find the path from node to root
             int n=id;
             while (n>0)
@@ -187,28 +187,28 @@ namespace LifeTimeFX
             }
 
             // follow the path from root to node
-            Node node = root;             
+            Node node = root;
             for (int i=path.Count-1; i>=0; i--)
             {
                 if (path[i]==(id*2+1))
-                {                    
+                {
                     node = node.LeftChild;
                 }
                 else
                 {
                     node = node.RightChild;
                 }
-                                
+
             }
-            
-            return node;            
+
+            return node;
         }
-            
+
     }
-    
-    
-    
-//#ArrayContainer Simple Array Stock Implemntation for ObjectContainer
+
+
+
+//#ArrayContainer Simple Array Stock Implementation for ObjectContainer
     public sealed class ArrayObjectContainer<T> : ObjectContainer<T> where T:LifeTime
     {
         private T[] objContainer = null;
@@ -242,8 +242,8 @@ namespace LifeTimeFX
                 return objContainer.Length;
             }
         }
-    }   
-    
+    }
+
 
 
     public delegate void ObjectDiedEventHandler(LifeTime o, int index );
@@ -253,13 +253,13 @@ namespace LifeTimeFX
         private LifeTimeStrategy strategy;
 
         private ObjectContainer<LifeTime> objectContainer = null;
-       // 
+       //
 
         public void SetObjectContainer (ObjectContainer<LifeTime> objectContainer)
         {
             this.objectContainer = objectContainer;
         }
-        
+
         public event ObjectDiedEventHandler objectDied;
 
         public void Init(int numberObjects)
@@ -284,8 +284,8 @@ namespace LifeTimeFX
 
         public void Run()
         {
-        
-        
+
+
             LifeTime objLifeTime;
 
             for (int i = 0; i < objectContainer.Count; ++i)
@@ -299,7 +299,7 @@ namespace LifeTimeFX
                     int index = strategy.NextObject(objLifeTime.LifeTime);
                     LifeTime oldObject  = objectContainer.SetObjectAt(null, index);
                     //objContainer[index] = null;
-                    // fire the event 
+                    // fire the event
                     objectDied(oldObject, index);
                 }
 

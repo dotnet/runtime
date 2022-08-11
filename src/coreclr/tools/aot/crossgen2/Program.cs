@@ -81,6 +81,9 @@ namespace ILCompiler
                 case Architecture.Arm64:
                     arch = TargetArchitecture.ARM64;
                     break;
+                case Architecture.LoongArch64:
+                    arch = TargetArchitecture.LoongArch64;
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -207,6 +210,8 @@ namespace ILCompiler
             }
             else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
+            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.LoongArch64;
             else
                 throw new CommandLineException(SR.TargetArchitectureUnsupported);
         }
@@ -784,6 +789,7 @@ namespace ILCompiler
                         typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData,
+                        _commandLineOptions.SupportIbc,
                         crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);

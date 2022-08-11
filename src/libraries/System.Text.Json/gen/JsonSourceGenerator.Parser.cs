@@ -40,6 +40,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
@@ -100,7 +101,7 @@ namespace System.Text.Json.SourceGeneration
 
             // Unsupported types
             private readonly Type _delegateType;
-            private readonly Type _typeType;
+            private readonly Type _memberInfoType;
             private readonly Type _serializationInfoType;
             private readonly Type _intPtrType;
             private readonly Type _uIntPtrType;
@@ -231,15 +232,15 @@ namespace System.Text.Json.SourceGeneration
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
                 _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
                 _jsonDocumentType = _metadataLoadContext.Resolve(JsonDocumentFullName);
+                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
+                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 // Unsupported types.
                 _delegateType = _metadataLoadContext.Resolve(SpecialType.System_Delegate);
-                _typeType = _metadataLoadContext.Resolve(typeof(Type));
+                _memberInfoType = _metadataLoadContext.Resolve(typeof(MemberInfo));
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
                 _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
-                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
-                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 _jsonConverterOfTType = _metadataLoadContext.Resolve(JsonConverterOfTFullName);
 
@@ -959,7 +960,10 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
                 }
-                else if (_knownUnsupportedTypes.Contains(type) || _delegateType.IsAssignableFrom(type))
+                else if (
+                    _knownUnsupportedTypes.Contains(type) ||
+                    _memberInfoType.IsAssignableFrom(type) ||
+                    _delegateType.IsAssignableFrom(type))
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -1031,7 +1035,7 @@ namespace System.Text.Json.SourceGeneration
                                 bool isVirtual = propertyInfo.IsVirtual();
 
                                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                                    PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                                    PropertyIsOverriddenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1042,7 +1046,7 @@ namespace System.Text.Json.SourceGeneration
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                                if (PropertyIsOverriddenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1163,7 +1167,7 @@ namespace System.Text.Json.SourceGeneration
             private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
                 => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
 
-            private static bool PropertyIsOverridenAndIgnored(
+            private static bool PropertyIsOverriddenAndIgnored(
                 string currentMemberName,
                 Type currentMemberType,
                 bool currentMemberIsVirtual,
@@ -1197,7 +1201,8 @@ namespace System.Text.Json.SourceGeneration
                     out string? converterInstantiationLogic,
                     out int order,
                     out bool hasFactoryConverter,
-                    out bool isExtensionData);
+                    out bool isExtensionData,
+                    out bool isRequired);
 
                 ProcessMember(
                     memberInfo,
@@ -1229,6 +1234,7 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
+                    IsRequired = isRequired,
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
@@ -1275,7 +1281,8 @@ namespace System.Text.Json.SourceGeneration
                 out string? converterInstantiationLogic,
                 out int order,
                 out bool hasFactoryConverter,
-                out bool isExtensionData)
+                out bool isExtensionData,
+                out bool isRequired)
             {
                 hasJsonInclude = false;
                 jsonPropertyName = null;
@@ -1284,6 +1291,7 @@ namespace System.Text.Json.SourceGeneration
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
+                isRequired = false;
 
                 bool foundDesignTimeCustomConverter = false;
                 hasFactoryConverter = false;
@@ -1348,6 +1356,11 @@ namespace System.Text.Json.SourceGeneration
                             case JsonExtensionDataAttributeFullName:
                                 {
                                     isExtensionData = true;
+                                }
+                                break;
+                            case JsonRequiredAttributeFullName:
+                                {
+                                    isRequired = true;
                                 }
                                 break;
                             default:
@@ -1580,7 +1593,6 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonValueType);
                 AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
-                _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);
                 _knownUnsupportedTypes.Add(_intPtrType);
                 _knownUnsupportedTypes.Add(_uIntPtrType);

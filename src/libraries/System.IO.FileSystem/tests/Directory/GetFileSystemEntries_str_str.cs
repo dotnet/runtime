@@ -697,8 +697,7 @@ namespace System.IO.Tests
             Assert.Empty(GetEntries(TestDirectory, "\t"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         public void SearchPatternCaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

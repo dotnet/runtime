@@ -19,7 +19,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void NativeLibraryWithVariadicFunctions(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -56,7 +56,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
@@ -92,7 +92,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -122,7 +122,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointers_WarningsAsMessages(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
@@ -157,7 +157,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8, parameters: new object[] { "tr_TR.UTF-8" })]
+        [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { "tr_TR.UTF-8" })]
         public void BuildNativeInNonEnglishCulture(BuildArgs buildArgs, string culture, RunHost host, string id)
         {
             // Check that we can generate interp tables in non-english cultures

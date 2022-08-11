@@ -839,10 +839,8 @@ namespace System.Transactions
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TransactionScopeResult parameter is an enum and is trimmer safe")]
-#endif
         [Event(TRANSACTIONSCOPE_CREATED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionScope, Opcode = Opcodes.Created, Message = "Transactionscope was created: Transaction ID is {0}, TransactionScope Result is {1}")]
         private void TransactionScopeCreated(string transactionID, TransactionScopeResult transactionScopeResult)
         {
