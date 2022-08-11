@@ -45,24 +45,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                       optionalAttributeTypeFilter.IsSubclassOf(typeof(Attribute))))
                     throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
-                try
-                {
-                    typeFilterKnownToBeSealed = optionalAttributeTypeFilter.IsSealed;
-                }
-                catch (MissingMetadataException)
-                {
-                    // If we got here, the custom attribute type itself was not opted into metadata. This can and does happen in the real world when an app
-                    // contains a check for custom attributes that never actually appear on any entity within the app.
-                    //
-                    // Since "typeFilterKnownToBeSealed" is only used to enable an optimization, it's always safe to leave it "false".
-                    //
-                    // Because the NativeAOT toolchain removes any custom attribute that refuses to opt into metadata so at this point,
-                    // we could simply return an empty enumeration and "be correct." However, the code paths following this already do that naturally.
-                    // (i.e. the "passFilter" will never return true, thus we will never attempt to query the custom attribute type for its
-                    // own AttributeUsage custom attribute.) If the toolchain behavior changes in the future, it's preferable that
-                    // this shows up as new MissingMetadataExceptions rather than incorrect results from the api so we will not put
-                    // in an explicit return here.
-                }
+                typeFilterKnownToBeSealed = optionalAttributeTypeFilter.IsSealed;
             }
 
             Func<Type, bool> passesFilter;
