@@ -203,7 +203,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 int
-mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
+mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[], int local_date_time_offset)
 {
     // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
 
@@ -225,13 +225,29 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
 
-    const char* appctx_keys[2];
+    const char* appctx_keys[4];
     appctx_keys[0] = "RUNTIME_IDENTIFIER";
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+    appctx_keys[2] = "LOCAL_DATE_TIME_OFFSET";
+    appctx_keys[3] = "KERNEL_MONOTONIC_CLOCK";
 
-    const char* appctx_values[2];
+    const char* appctx_values[4];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
+    char buffer_one[32];
+    snprintf (buffer_one, sizeof(buffer_one), "%d", local_date_time_offset);
+    appctx_values[2] = strdup (buffer_one);
+    char buffer_two[64];
+    struct timespec ts;
+    int result = clock_gettime (CLOCK_MONOTONIC, &ts);
+    int64_t kernel_monotonic_clock;
+    if (result == 0)
+    {
+        kernel_monotonic_clock = (int64_t)(ts.tv_sec * (int64_t)(1000000000)) + (int64_t)(ts.tv_nsec);
+        snprintf (buffer_two, sizeof(buffer_two), "%ld", kernel_monotonic_clock);
+    }
+    const char* mitch_two = strdup (buffer_two);
+    appctx_values[3] = mitch_two;
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
     int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
@@ -251,7 +267,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
         free (file_path);
     }
 
-    monovm_initialize(2, appctx_keys, appctx_values);
+    monovm_initialize(4, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);
@@ -318,7 +334,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -347,7 +363,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
         managed_argv[i + 1] = (*env)->GetStringUTFChars(env, j_arg, NULL);
     }
 
-    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv);
+    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv, current_local_time);
 
     for (int i = 0; i < args_len; ++i)
     {
