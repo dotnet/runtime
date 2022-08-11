@@ -112,13 +112,7 @@ namespace System.Reflection
 
         private static bool TryConvertPointer(object srcObject, [NotNullWhen(true)] out object? dstPtr)
         {
-            if (srcObject is IntPtr)
-            {
-                dstPtr = srcObject;
-                return true;
-            }
-
-            if (srcObject is UIntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
                 dstPtr = srcObject;
                 return true;

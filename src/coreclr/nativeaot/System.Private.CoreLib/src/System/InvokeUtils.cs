@@ -217,13 +217,7 @@ namespace System
 
         private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
-            if (srcObject is IntPtr)
-            {
-                dstPtr = srcObject;
-                return null;
-            }
-
-            if (srcObject is UIntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
                 dstPtr = srcObject;
                 return null;
