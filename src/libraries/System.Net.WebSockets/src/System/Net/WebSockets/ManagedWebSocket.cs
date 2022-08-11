@@ -418,14 +418,17 @@ namespace System.Net.WebSockets
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
                 writeTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes));
-                flushTask = _stream.FlushAsync();
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
                 // the task, and we're done.
-                if (writeTask.IsCompleted && flushTask.IsCompleted)
+                if (writeTask.IsCompleted)
                 {
-                    return writeTask;
+                    flushTask = _stream.FlushAsync();
+                    if (flushTask.IsCompleted)
+                    {
+                        return writeTask;
+                    }
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -449,15 +452,15 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask, flushTask);
+            return WaitForWriteTaskAsync(writeTask);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, Task flushTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
-                await flushTask.ConfigureAwait(false);
+                await _stream.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
