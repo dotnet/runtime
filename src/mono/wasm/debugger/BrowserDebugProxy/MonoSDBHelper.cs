@@ -2368,17 +2368,4 @@ namespace Microsoft.WebAssembly.Diagnostics
             => s_primitiveTypeNames.Contains(simplifiedClassName);
 
     }
-
-    internal static class HelperExtensions
-    {
-        public static void AddRange(this JArray arr, JArray addedArr)
-        {
-            foreach (var item in addedArr)
-                arr.Add(item);
-        }
-
-        public static bool IsNullValuedObject(this JObject obj)
-            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
-
-    }
 }

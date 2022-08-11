@@ -1235,11 +1235,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            string eventStr = eventArgs.ToString();
-            string newStr = eventStr.Substring(0, Math.Min(1024, eventStr.Length));
-            if (newStr.Length != eventStr.Length)
-                newStr += " ... truncated }";
-            logger.LogDebug($"OnJsEventRaised: args: {newStr}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {

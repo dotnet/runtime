@@ -7828,6 +7828,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             pMTCanonical->EnumMemoryRegions(flags);
         }
+        else
+        {
+            DacLogMessage("MT %p invalid canonical MT %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pMTCanonical));
+        }
     }
     else
     {
@@ -7845,6 +7849,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                 DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
             }
             pClass->EnumMemoryRegions(flags, this);
+        }
+        else
+        {
+            DacLogMessage("MT %p invalid class %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pClass));
         }
     }
 

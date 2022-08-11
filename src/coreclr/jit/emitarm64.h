@@ -15,8 +15,6 @@ static bool strictArmAsm;
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
 
-#ifdef DEBUG
-
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
@@ -49,7 +47,6 @@ void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
-#endif // DEBUG
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

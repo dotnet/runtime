@@ -23,6 +23,7 @@ namespace System.Diagnostics.TraceSourceTests
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(1, trace.Listeners.Count);
             Assert.IsType<DefaultTraceListener>(trace.Listeners[0]);
+            Assert.Equal(SourceLevels.Off, trace.Switch.Level);
         }
 
         [Fact]
