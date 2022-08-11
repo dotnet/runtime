@@ -142,6 +142,47 @@ namespace System
             return Utc;
         }
 
+        private static TimeSpan? _localUtcOffset;
+        private static object _localUtcOffsetLock = new();
+        // Shortcut for TimeZoneInfo.Local.GetUtcOffset
+        internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
+        {
+            if (_localUtcOffset != null)
+            {
+                CachedData cachedData = s_cachedData;
+                return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+            }
+
+            if (_localUtcOffset == null)
+            {
+                lock (_localUtcOffsetLock)
+                {
+                    if (_localUtcOffset == null)
+                    {
+                        Thread loadAndroidTZData = new Thread(() => {
+                            CachedData cachedData = s_cachedData;
+                            _localUtcOffset = cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+                        });
+                        loadAndroidTZData.IsBackground = true;
+                        loadAndroidTZData.Start();
+                        Thread.Sleep(1000);
+                    }
+                }
+            }
+
+            object? localDateTimeOffset = AppContext.GetData("LOCAL_DATE_TIME_OFFSET");
+            int localDateTimeOffsetSeconds;
+            if (localDateTimeOffset != null)
+                localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
+            else
+            {
+                throw new Exception ("LOCAL_DATE_TIME_OFFSET NOT SET");
+            }
+            long localDateTimeOffsetTicks = localDateTimeOffsetSeconds * 10000000; // 10^7 ticks per second
+            TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
+            return offset;
+        }
+
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
 
