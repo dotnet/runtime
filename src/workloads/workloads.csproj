@@ -18,6 +18,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
     <WorkloadIntermediateOutputPath>$(ArtifactsObjDir)workloads/</WorkloadIntermediateOutputPath>
+    <VSTemp>$(WorkloadIntermediateOutputPath)VS/</VSTemp>
     <WorkloadOutputPath>$(ArtifactsBinDir)workloads/</WorkloadOutputPath>
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
@@ -112,7 +113,7 @@
     </CreateVisualStudioWorkload>
 
     <!-- Build all the SWIX projects. This requires full framework MSBuild-->
-    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VisualStudioSetupInsertionPath)%(SwixProjects.SdkFeatureBand)" />
+    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VSTemp)%(SwixProjects.SdkFeatureBand)" />
 
     <!-- Create payload package for VSDROP creation -->
     <ItemGroup>
@@ -120,7 +121,8 @@
     </ItemGroup>
     
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
-    <ZipDirectory Overwrite="true" DestinationFile="$(WorkloadOutputPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VisualStudioSetupInsertionPath)%(SdkFeatureBand.Identity)"/>
+    <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />
+    <ZipDirectory Overwrite="true" DestinationFile="$(VisualStudioSetupInsertionPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VSTemp)%(SdkFeatureBand.Identity)"/>
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
