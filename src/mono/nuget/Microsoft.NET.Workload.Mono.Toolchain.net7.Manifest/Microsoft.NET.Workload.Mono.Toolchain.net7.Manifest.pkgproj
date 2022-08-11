@@ -8,7 +8,7 @@
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest-$(SdkBandVersion)</Id>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <File Include="localize/**/*">
+      <File Include="../Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/localize/**/*">
         <TargetPath>data/localize</TargetPath>
       </File>
     </ItemGroup>
