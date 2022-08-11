@@ -48,7 +48,7 @@ namespace System.IO.Hashing.Tests
                         targetMethodName,
                         BindingFlags.Instance | BindingFlags.Public);
 
-                    if (info2 is null)
+                    if (info2 is null && !info.IsDefined(typeof(OverrideOptionalAttribute)))
                     {
                         missingMethods ??= new List<string>();
                         missingMethods.Add(targetMethodName);
@@ -113,6 +113,20 @@ namespace System.IO.Hashing.Tests
 
             destination.Clear();
             hash.GetCurrentHash(destination);
+            testCase.VerifyResponse(answer);
+        }
+
+        [OverrideOptional]
+        protected void InstanceMultiAppendLargeInputDriver(LargeTestCase testCase)
+        {
+            NonCryptographicHashAlgorithm hash = CreateInstance();
+
+            foreach (ReadOnlyMemory<byte> chunk in testCase.EnumerateDataChunks())
+            {
+                hash.Append(chunk.Span);
+            }
+
+            byte[] answer = hash.GetHashAndReset();
             testCase.VerifyResponse(answer);
         }
 
@@ -280,46 +294,23 @@ namespace System.IO.Hashing.Tests
             }
         }
 
-        public sealed class TestCase
+        public abstract class TestCaseBase
         {
-            private byte[] _input;
-            private byte[] _output;
-
+            private readonly byte[] _output;
             public string Name { get; }
-            public ReadOnlySpan<byte> Input => new ReadOnlySpan<byte>(_input);
+            public ReadOnlySpan<byte> OutputBytes => _output;
             public string OutputHex { get; }
 
-            public TestCase(string name, byte[] input, byte[] output)
+            protected TestCaseBase(string name, byte[] output)
             {
-                Name = name;
-                _input = input;
-                OutputHex = ToHexString(output);
-                _output = FromHexString(OutputHex);
-            }
-
-            public TestCase(string name, byte[] input, string outputHex)
-            {
-                Name = name;
-                _input = input;
-                OutputHex = outputHex.ToUpperInvariant();
-                _output = FromHexString(OutputHex);
-            }
-
-            public TestCase(string name, string inputHex, string outputHex)
-            {
-                Name = name;
-                _input = FromHexString(inputHex);
-                OutputHex = outputHex.ToUpperInvariant();
-                _output = FromHexString(OutputHex);
-            }
-
-            internal void VerifyResponse(ReadOnlySpan<byte> response)
-            {
-                if (!response.SequenceEqual(_output))
+                if (output is null || output.Length == 0)
                 {
-                    // We know this will fail, but it gives a nice presentation.
-                    Assert.Equal(OutputHex, ToHexString(response));
+                    throw new ArgumentException("Argument should not be null or empty.", nameof(output));
                 }
+
+                Name = name;
+                _output = output;
+                OutputHex = ToHexString(output);
             }
 
             internal static string ToHexString(ReadOnlySpan<byte> input)
@@ -356,6 +347,80 @@ namespace System.IO.Hashing.Tests
             }
 
             public override string ToString() => Name;
+
+            internal void VerifyResponse(ReadOnlySpan<byte> response)
+            {
+                if (!response.SequenceEqual(OutputBytes))
+                {
+                    // We know this will fail, but it gives a nice presentation.
+                    Assert.Equal(OutputHex, ToHexString(response));
+                }
+            }
+        }
+
+        public sealed class TestCase : TestCaseBase
+        {
+            private readonly byte[] _input;
+            public ReadOnlySpan<byte> Input => new ReadOnlySpan<byte>(_input);
+
+            public TestCase(string name, byte[] input, byte[] output)
+                : base(name, output)
+            {
+                _input = input;
+            }
+
+            public TestCase(string name, byte[] input, string outputHex)
+                : base(name, FromHexString(outputHex))
+            {
+                _input = input;
+            }
+
+            public TestCase(string name, string inputHex, string outputHex)
+                : base(name, FromHexString(outputHex))
+            {
+                _input = FromHexString(inputHex);
+            }
+        }
+
+        public sealed class LargeTestCase : TestCaseBase
+        {
+            private readonly byte _data;
+            private readonly long _repeatCount;
+
+            public LargeTestCase(string name, byte data, long repeatCount, string outputHex)
+                : base(name, FromHexString(outputHex))
+            {
+                if (repeatCount < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(repeatCount));
+                }
+
+                _data = data;
+                _repeatCount = repeatCount;
+            }
+
+            public IEnumerable<ReadOnlyMemory<byte>> EnumerateDataChunks()
+            {
+#if NET5_0_OR_GREATER
+                byte[] chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
+#else
+                byte[] chunk = new byte[1024 * 1024];
+#endif
+                chunk.AsSpan().Fill(_data);
+
+                long remaining = _repeatCount;
+                while (remaining > 0)
+                {
+                    int thisChunkLength = (int)Math.Min(remaining, chunk.Length);
+                    yield return chunk.AsMemory(0, thisChunkLength);
+                    remaining -= thisChunkLength;
+                }
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+        private sealed class OverrideOptionalAttribute : Attribute
+        {
         }
     }
 }
