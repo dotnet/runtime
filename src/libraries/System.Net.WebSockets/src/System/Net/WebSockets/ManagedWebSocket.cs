@@ -432,6 +432,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
+                        releaseSendBufferAndSemaphore = false;
                         return WaitForWriteTaskAsync(flushTask, false);
                     }
                 }
