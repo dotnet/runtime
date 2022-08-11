@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions;
 /// will transform it to `[Aa][Bb][Cc]`. The equivalences found on this internal casing table can change over time, for example in the case new characters are added to
 /// a new version of Unicode. When using the source generator's engine, this transformation happens at compile time, which means that the casing table used to find the
 /// equivalences will be depending on the target framework at compile time. This differs from the rest of our engines, which will make the transformation at runtime, meaning
-/// it will always use the most current casing table for the current runtime. This discrepancy is explained further here: https://github.com/dotnet/runtime/issues/70214
+/// it will always use the most current casing table for the current runtime.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class GeneratedRegexAttribute : Attribute
