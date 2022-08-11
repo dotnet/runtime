@@ -30,7 +30,6 @@ public class KerberosExecutor : IDisposable
 
     public static bool IsSupported { get; } =
         RemoteExecutor.IsSupported && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
-
     public const string DefaultAdminPassword = "PLACEHOLDERadmin.";
 
     public const string DefaultUserPassword = "PLACEHOLDERcorrect20";

@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
-    public static int IntAdd(int a, int b)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int IntAdd(int a, int b)
     {
         int c = a + b;
         int d = c + b;
@@ -14,7 +14,7 @@ public partial class Math
         return e;
     }
 
-    public static int UseComplex(int a, int b)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int UseComplex(int a, int b)
     {
         var complex = new Simple.Complex(10, "xx");
         int c = a + b;
@@ -27,7 +27,7 @@ public partial class Math
 
     delegate bool IsMathNull(Math m);
 
-    public static int DelegatesTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int DelegatesTest()
     {
         Func<Math, bool> fn_func = (Math m) => m == null;
         Func<Math, bool> fn_func_null = null;
@@ -54,7 +54,7 @@ public partial class Math
         return res ? 0 : 1;
     }
 
-    public static int GenericTypesTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int GenericTypesTest()
     {
         var list = new System.Collections.Generic.Dictionary<Math[], IsMathNull>();
         System.Collections.Generic.Dictionary<Math[], IsMathNull> list_null = null;
@@ -79,7 +79,7 @@ public partial class Math
 
     static bool IsMathNullDelegateTarget(Math m) => m == null;
 
-    public static void OuterMethod()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void OuterMethod()
     {
         Console.WriteLine($"OuterMethod called");
         var nim = new Math.NestedInMath();
@@ -100,7 +100,7 @@ public partial class Math
         return i - 2;
     }
 
-    public class NestedInMath
+    public partial class NestedInMath
     {
         public int InnerMethod(int i)
         {
@@ -136,7 +136,7 @@ public partial class Math
             Console.WriteLine($"str: {str}");
         }
 
-        public static async System.Threading.Tasks.Task<bool> AsyncTest(string s, int i)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task<bool> AsyncTest(string s, int i)
         {
             var li = 10 + i;
             var ls = s + "test";
@@ -321,9 +321,9 @@ public partial class Math
 
 }
 
-public class DebuggerTest
+public partial class DebuggerTest
 {
-    public static void run_all()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run_all()
     {
         locals();
     }
@@ -987,6 +987,8 @@ public class TestHotReloadUsingSDB {
 
         public static void RunMethod(string className, string methodName)
         {
+            if (loadedAssembly is null)
+                throw new InvalidOperationException($"{nameof(loadedAssembly)} is null!");
             var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
             var myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);

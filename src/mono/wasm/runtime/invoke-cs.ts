@@ -57,7 +57,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             invoke_method_and_handle_exception
         };
         const bound_js_function_name = "_bound_cs_" + `${namespace}_${classname}_${methodname}`.replace(/\./g, "_").replace(/\//g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
+        let body = `//# sourceURL=https://dotnet.generated.invalid/${bound_js_function_name} \n`;
         let bodyToCs = "";
         let converter_names = "";
 

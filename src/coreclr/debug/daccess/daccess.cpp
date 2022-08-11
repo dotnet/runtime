@@ -6109,7 +6109,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,

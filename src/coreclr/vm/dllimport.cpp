@@ -4119,7 +4119,8 @@ namespace
         //
         for (int i = 0; i < pParams->m_nParamTokens; ++i)
         {
-            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            if (paramInfos[i].cbNativeType > 0)
+                memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
             pBlobParams += paramInfos[i].cbNativeType;
         }
 

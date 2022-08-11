@@ -439,6 +439,46 @@ namespace System.Numerics.Tests
             RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
+        [Fact]
+        public static void ToString_InvalidFormat_ThrowsFormatException()
+        {
+            BigInteger b = new BigInteger(123456789000m);
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format
+            Assert.Throws<FormatException>(() => b.ToString("E" + int.MaxValue.ToString()));
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => b.ToString("E" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => b.ToString("E4772185890"));
+            Assert.Throws<FormatException>(() => b.ToString("E1000000000"));
+            Assert.Throws<FormatException>(() => b.ToString("E000001000000000"));
+
+            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            Assert.Throws<FormatException>(() => b.ToString("G" + int.MaxValue.ToString()));
+            Assert.Throws<FormatException>(() => b.ToString("G" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => b.ToString("G4772185890"));
+            Assert.Throws<FormatException>(() => b.ToString("G1000000000"));
+            Assert.Throws<FormatException>(() => b.ToString("G000001000000000"));
+        }
+
+        [Fact]
+        [OuterLoop("Takes a long time, allocates a lot of memory")]
+        public static void ToString_ValidLargeFormat()
+        {
+            BigInteger b = new BigInteger(123456789000m);
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+
+            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format
+            b.ToString("E999999999"); // Should not throw
+            b.ToString("E00000999999999"); // Should not throw
+
+            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            b.ToString("G999999999"); // Should not throw
+            b.ToString("G00000999999999"); // Should not throw
+        }
+
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
         {
             string test;

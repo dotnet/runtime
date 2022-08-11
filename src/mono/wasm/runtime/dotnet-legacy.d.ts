@@ -304,4 +304,4 @@ declare type MONOType = {
     getF64: (offset: MemOffset) => number;
 };
 
-export { BINDINGType, MONOType };
+export { BINDINGType, MONOType, MonoArray, MonoObject, MonoString };

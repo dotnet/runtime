@@ -2347,9 +2347,8 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if (Ssse3.IsSupported && (nuint)Vector128<byte>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<byte>.Count * 2 <= length)
             {
-                Vector128<byte> reverseMask = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
                 nuint numElements = (nuint)Vector128<byte>.Count;
                 nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
@@ -2369,8 +2368,10 @@ namespace System
                     //     +---------------------------------------------------------------+
                     //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
                     //     +---------------------------------------------------------------+
-                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
-                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(
+                        (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(
+                        (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref buf, firstOffset);
