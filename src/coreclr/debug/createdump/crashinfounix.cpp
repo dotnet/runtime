@@ -3,6 +3,12 @@
 
 #include "createdump.h"
 
+#ifndef PT_ARM_EXIDX
+#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
+#endif
+
+extern CrashInfo* g_crashInfo;
+
 int g_readProcessMemoryErrno = 0;
 
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
@@ -143,7 +149,7 @@ CrashInfo::GetAuxvEntries()
 // Get the module mappings for the core dump NT_FILE notes
 //
 bool
-CrashInfo::EnumerateModuleMappings()
+CrashInfo::EnumerateMemoryRegions()
 {
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
@@ -219,6 +225,7 @@ CrashInfo::EnumerateModuleMappings()
             if (moduleName != nullptr && *moduleName == '/')
             {
                 m_moduleMappings.insert(memoryRegion);
+                m_cbModuleMappings += memoryRegion.Size();
             }
             else
             {
@@ -226,7 +233,7 @@ CrashInfo::EnumerateModuleMappings()
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryBackedRegion(memoryRegion);
+                InsertMemoryRegion(memoryRegion);
             }
             free(moduleName);
             free(permissions);
@@ -235,7 +242,7 @@ CrashInfo::EnumerateModuleMappings()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings:\n");
+        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const MemoryRegion& region : m_moduleMappings)
         {
             region.Trace();
@@ -333,6 +340,14 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     EnumerateProgramHeaders(baseAddress);
 }
 
+// Helper for PAL_GetUnwindInfoSize. Reads memory directly without adding it to the memory region list.
+BOOL
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    size_t read = 0;
+    return g_crashInfo->ReadProcessMemory(address, buffer, size, &read);
+}
+
 //
 // Called for each program header adding the build id note, unwind frame
 // region and module addresses to the crash info.
@@ -344,9 +359,37 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
     {
     case PT_DYNAMIC:
     case PT_NOTE:
-    case PT_GNU_EH_FRAME:
-        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0) {
+#if defined(TARGET_ARM)
+    case PT_ARM_EXIDX:
+#endif
+        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0)
+        {
             InsertMemoryRegion(loadbias + phdr->p_vaddr, phdr->p_memsz);
+        }
+        break;
+
+    case PT_GNU_EH_FRAME:
+        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0)
+        {
+            uint64_t ehFrameHdrStart = loadbias + phdr->p_vaddr;
+            uint64_t ehFrameHdrSize = phdr->p_memsz;
+            TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
+            InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
+
+            uint64_t ehFrameStart;
+            uint64_t ehFrameSize;
+            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
+            {
+                TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
+                if (ehFrameStart != 0 && ehFrameSize != 0)
+                {
+                    InsertMemoryRegion(ehFrameStart, ehFrameSize);
+                }
+            }
+            else
+            {
+                TRACE("VisitProgramHeader: PAL_GetUnwindInfoSize FAILED\n");
+            }
         }
         break;
 

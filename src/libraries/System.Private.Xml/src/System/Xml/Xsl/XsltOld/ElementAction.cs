@@ -107,11 +107,11 @@ namespace System.Xml.Xsl.XsltOld
                 case Initialized:
                     if (_qname != null)
                     {
-                        frame.CalulatedName = _qname;
+                        frame.CalculatedName = _qname;
                     }
                     else
                     {
-                        frame.CalulatedName = CreateElementQName(
+                        frame.CalculatedName = CreateElementQName(
                             _nameAvt == null ? _name! : _nameAvt.Evaluate(processor, frame),
                             _nsAvt == null ? _nsUri : _nsAvt.Evaluate(processor, frame),
                             _manager
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case NameDone:
                     {
-                        PrefixQName qname = frame.CalulatedName!;
+                        PrefixQName qname = frame.CalculatedName!;
                         if (processor.BeginEvent(XPathNodeType.Element, qname.Prefix, qname.Name, qname.Namespace, _empty) == false)
                         {
                             // Come back later

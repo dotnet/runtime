@@ -15,6 +15,7 @@ namespace System.Text.Json.Tests
     public static partial class Utf8JsonReaderTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void TestingNumbers_TryGetMethods()
         {
             byte[] dataUtf8 = JsonNumberTestData.JsonData;
@@ -153,6 +154,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void TestingNumbers_GetMethods()
         {
             byte[] dataUtf8 = JsonNumberTestData.JsonData;
@@ -1026,7 +1028,7 @@ namespace System.Text.Json.Tests
             var expectedPropertyNames = new List<string>();
             var expectedValues = new List<string>();
 
-            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             while (jsonNewtonsoft.Read())
             {
                 if (jsonNewtonsoft.TokenType == JsonToken.String)

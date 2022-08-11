@@ -3155,6 +3155,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 
     m_enumMemCb = NULL;
     m_updateMemCb = NULL;
+    m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
     m_gcNotificationTable  = NULL;
@@ -5536,7 +5537,7 @@ ClrDataAccess::Initialize(void)
     {
         // DAC fatal error: Platform mismatch - the platform reported by the data target
         // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
     }
 
     //
@@ -6109,7 +6110,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -6362,6 +6363,27 @@ bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* 
     }
 
     return true;
+}
+
+//
+// DacLogMessage - logs a message to an external DAC client
+//
+// Parameters:
+//   message - message to log
+//
+void DacLogMessage(LPCSTR format, ...)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (g_dacImpl->IsLogMessageEnabled())
+    {
+        va_list args;
+        va_start(args, format);
+        char buffer[1024];
+        _vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, format, args);
+        g_dacImpl->LogMessage(buffer);
+        va_end(args);
+    }
 }
 
 //

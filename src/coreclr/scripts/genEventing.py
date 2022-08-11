@@ -833,7 +833,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
-                                    help='full path to manifest containig the description of events')
+                                    help='full path to manifest containing the description of events')
     required.add_argument('--inc',  type=str, default=None,
                                     help='full path to directory where the header files will be generated')
     required.add_argument('--dummy',  type=str,default=None,

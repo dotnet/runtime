@@ -138,7 +138,7 @@ initDistroRidGlobal()
     fi
 
     if [ -n "${rootfsDir}" ]; then
-        # We may have a cross build. Check for the existance of the rootfsDir
+        # We may have a cross build. Check for the existence of the rootfsDir
         if [ ! -e "${rootfsDir}" ]; then
             echo "Error rootfsDir has been passed, but the location is not valid."
             exit 1

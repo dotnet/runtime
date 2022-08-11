@@ -231,7 +231,7 @@ blah blah
         {
             // Create a MIME message that would be sent using System.Net.Mail.
             var stream = new MemoryStream();
-            var mailWriterType = mail.GetType().Assembly.GetType("System.Net.Mail.MailWriter");
+            var mailWriterType = Type.GetType("System.Net.Mail.MailWriter, System.Net.Mail");
             var mailWriter = Activator.CreateInstance(
                                 type: mailWriterType,
                                 bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic,
@@ -241,7 +241,7 @@ blah blah
                                 activationAttributes: null);
 
             // Send the message.
-            mail.GetType().InvokeMember(
+            typeof(MailMessage).InvokeMember(
                                 name: "Send",
                                 invokeAttr: BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
                                 binder: null,

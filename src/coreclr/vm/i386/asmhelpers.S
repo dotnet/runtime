@@ -350,7 +350,7 @@ LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
 LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
     mov         eax, ecx        // eax = MachState*
 #endif // _DEBUG
-    // restore the registers from the m_MachState stucture.  Note that
+    // restore the registers from the m_MachState structure.  Note that
     // we only do this for register that where not saved on the stack
     // at the time the machine state snapshot was taken.
 

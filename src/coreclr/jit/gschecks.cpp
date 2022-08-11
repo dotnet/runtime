@@ -376,7 +376,7 @@ bool Compiler::gsFindVulnerableParams()
 void Compiler::gsParamsToShadows()
 {
     // Cache old count since we'll add new variables, and
-    // gsShadowVarInfo will not grow to accomodate the new ones.
+    // gsShadowVarInfo will not grow to accommodate the new ones.
     UINT lvaOldCount = lvaCount;
 
     // Create shadow copy for each param candidate
@@ -422,7 +422,7 @@ void Compiler::gsParamsToShadows()
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag

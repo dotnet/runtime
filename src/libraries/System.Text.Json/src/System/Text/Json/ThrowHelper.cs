@@ -665,12 +665,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializationCallbacksNotSupported(JsonTypeInfoKind typeInfoKind)
-        {
-            throw GetInvalidOperationException(SR.Format(SR.SerializationCallbacksNotSupported, typeInfoKind));
-        }
-
-        [DoesNotReturn]
         public static void ThrowObjectDisposedException_Utf8JsonWriter()
         {
             throw new ObjectDisposedException(nameof(Utf8JsonWriter));

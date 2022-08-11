@@ -75,6 +75,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
+            ThrowIfDisposed();
             SafeEcKeyHandle currentKey = _key.Value;
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 

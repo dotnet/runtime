@@ -170,20 +170,14 @@ namespace System.Net
 
         public override void Clear()
         {
-            if (_internalObjects != null)
-            {
-                _internalObjects.Clear();
-            }
+            _internalObjects?.Clear();
             base.Clear();
             IsChanged = true;
         }
 
         public override void Remove(string key)
         {
-            if (_internalObjects != null)
-            {
-                _internalObjects.Remove(key);
-            }
+            _internalObjects?.Remove(key);
             base.Remove(key);
             IsChanged = true;
         }

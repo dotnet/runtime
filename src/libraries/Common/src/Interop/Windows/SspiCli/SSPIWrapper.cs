@@ -192,6 +192,7 @@ namespace System.Net
             int errorCode = secModule.QueryContextChannelBinding(securityContext, contextAttribute, out result);
             if (errorCode != 0)
             {
+                result.Dispose();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
                 return null;
             }
@@ -201,20 +202,12 @@ namespace System.Net
 
         public static bool QueryBlittableContextAttributes<T>(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, ref T attribute) where T : unmanaged
         {
-            Span<T> span =
-#if NETSTANDARD2_0
-                stackalloc T[1] { attribute };
-#else
-                MemoryMarshal.CreateSpan(ref attribute, 1);
-#endif
+            Span<T> span = new Span<T>(ref attribute);
             int errorCode = secModule.QueryContextAttributes(
                 securityContext, contextAttribute,
                 MemoryMarshal.AsBytes(span),
                 null,
                 out SafeHandle? sspiHandle);
-#if NETSTANDARD2_0
-            attribute = span[0];
-#endif
 
             using (sspiHandle)
             {
@@ -230,20 +223,12 @@ namespace System.Net
 
         public static bool QueryBlittableContextAttributes<T>(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, Type safeHandleType, out SafeHandle? sspiHandle, ref T attribute) where T : unmanaged
         {
-            Span<T> span =
-#if NETSTANDARD2_0
-                stackalloc T[1] { attribute };
-#else
-                MemoryMarshal.CreateSpan(ref attribute, 1);
-#endif
+            Span<T> span = new Span<T>(ref attribute);
             int errorCode = secModule.QueryContextAttributes(
                 securityContext, contextAttribute,
                 MemoryMarshal.AsBytes(span),
                 safeHandleType,
                 out sspiHandle);
-#if NETSTANDARD2_0
-            attribute = span[0];
-#endif
 
             if (errorCode != 0)
             {
@@ -318,21 +303,13 @@ namespace System.Net
 
         public static bool QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(ISSPIInterface secModule, SafeDeleteContext securityContext, ref Interop.SspiCli.SecPkgContext_IssuerListInfoEx ctx, out SafeHandle? sspiHandle)
         {
-            Span<Interop.SspiCli.SecPkgContext_IssuerListInfoEx> buffer =
-#if NETSTANDARD2_0
-                stackalloc Interop.SspiCli.SecPkgContext_IssuerListInfoEx[1] { ctx };
-#else
-                MemoryMarshal.CreateSpan(ref ctx, 1);
-#endif
+            Span<Interop.SspiCli.SecPkgContext_IssuerListInfoEx> buffer = new Span<Interop.SspiCli.SecPkgContext_IssuerListInfoEx>(ref ctx);
             int errorCode = secModule.QueryContextAttributes(
                 securityContext,
                 Interop.SspiCli.ContextAttribute.SECPKG_ATTR_ISSUER_LIST_EX,
                 MemoryMarshal.AsBytes(buffer),
                 typeof(SafeFreeContextBuffer),
                 out sspiHandle);
-#if NETSTANDARD2_0
-            ctx = buffer[0];
-#endif
 
             if (errorCode != 0)
             {

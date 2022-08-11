@@ -8,19 +8,26 @@ namespace System.IO.Tests
     // Tests that are valid for File and FileInfo
     public abstract class FileGetSetAttributes : BaseGetSetAttributes
     {
-        [Theory]
-        [InlineData(FileAttributes.ReadOnly)]
-        [InlineData(FileAttributes.Normal)]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void SettingAttributes_Unix(FileAttributes attributes)
+        public void SettingAttributes_Unix_Normal()
         {
             string path = CreateItem();
-            AssertSettingAttributes(path, attributes);
+            AssertSettingAttributes(path, FileAttributes.Normal);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void SettingAttributes_Unix_ReadOnly()
+        {
+            if (!CanBeReadOnly) return;
+            string path = CreateItem();
+            AssertSettingAttributes(path, FileAttributes.ReadOnly);
         }
 
         [Theory]
         [InlineData(FileAttributes.Hidden)]
-        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SettingAttributes_OSXAndFreeBSD(FileAttributes attributes)
         {
             string path = CreateItem();
@@ -28,16 +35,25 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(FileAttributes.ReadOnly)]
         [InlineData(FileAttributes.Hidden)]
         [InlineData(FileAttributes.System)]
         [InlineData(FileAttributes.Archive)]
         [InlineData(FileAttributes.Normal)]
         [InlineData(FileAttributes.Temporary)]
-        [InlineData(FileAttributes.ReadOnly | FileAttributes.Hidden)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SettingAttributes_Windows(FileAttributes attributes)
         {
+            string path = CreateItem();
+            AssertSettingAttributes(path, attributes);
+        }
+
+        [Theory]
+        [InlineData(FileAttributes.ReadOnly)]
+        [InlineData(FileAttributes.ReadOnly | FileAttributes.Hidden)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SettingAttributes_Windows_ReadOnly(FileAttributes attributes)
+        {
+            if (!CanBeReadOnly) return;
             string path = CreateItem();
             AssertSettingAttributes(path, attributes);
         }
@@ -62,10 +78,9 @@ namespace System.IO.Tests
             AssertSettingInvalidAttributes(path, attributes);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         [InlineData(FileAttributes.Hidden)]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst))]
         public void SettingInvalidAttributes_UnixExceptOSXAndFreeBSD(FileAttributes attributes)
         {
             string path = CreateItem();

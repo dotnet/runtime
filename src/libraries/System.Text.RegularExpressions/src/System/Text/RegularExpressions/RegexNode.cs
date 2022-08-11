@@ -1210,7 +1210,6 @@ namespace System.Text.RegularExpressions
                 }
 
                 Span<char> scratchChar = stackalloc char[1];
-                ReadOnlySpan<char> startingSpan = stackalloc char[0];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
@@ -1221,7 +1220,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
-                    startingSpan = startingNode.Str.AsSpan();
+                    scoped ReadOnlySpan<char> startingSpan = startingNode.Str.AsSpan();
                     if (startingNode.Kind == RegexNodeKind.One)
                     {
                         scratchChar[0] = startingNode.Ch;

@@ -44,17 +44,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
-            if (_type.IsDelegate)
-            {
-                // We've decided as a policy that delegate Invoke methods will be generated in full.
-                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
-                // in places where they assume IL-level trimming (where the method cannot be removed).
-                // We ask for a full reflectable method with its method body instead of just the
-                // metadata.
-                var invokeMethod = _type.GetMethod("Invoke", null);
-                if (!mdManager.IsReflectionBlocked(invokeMethod))
-                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method");
-            }
 
             if (_type.IsEnum)
             {

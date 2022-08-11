@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -16,6 +18,20 @@ namespace Wasm.Build.Tests
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
+        }
+
+        private void updateProgramCS() {
+            string programText = """
+            Console.WriteLine("Hello, Console!");
+
+            for (int i = 0; i < args.Length; i ++)
+                Console.WriteLine ($"args[{i}] = {args[i]}");
+            """;
+            var path = Path.Combine(_projectDir!, "Program.cs");
+            string text = File.ReadAllText(path);
+            text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
+            text = text.Replace("return 0;", "return 42;");
+            File.WriteAllText(path, text);
         }
 
         [Theory]
@@ -118,21 +134,19 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void ConsoleBuildAndRun(string config)
+        [InlineData("Debug", false)]
+        [InlineData("Debug", true)]
+        [InlineData("Release", false)]
+        [InlineData("Release", true)]
+        public void ConsoleBuildAndRun(string config, bool relinking)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            updateProgramCS();
+            if (relinking)
+                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -140,7 +154,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
+                            DotnetWasmFromRuntimePack: !relinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.mjs",
@@ -148,40 +162,52 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0"
                             ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
-            Assert.Equal(0, exitCode);
+            Assert.Equal(42, exitCode);
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
             Assert.Contains("args[2] = z", output);
         }
 
+        public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
+        {
+            var data = new TheoryData<string, bool, bool>();
+            data.Add("Debug", false, false);
+            data.Add("Debug", false, false);
+            data.Add("Debug", false, true);
+            data.Add("Release", false, false); // Release relinks by default
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
+            if (!OperatingSystem.IsWindows())
+            {
+                data.Add("Debug", true, false);
+                data.Add("Release", true, false);
+            }
+
+            return data;
+        }
+
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", false)]
-        [InlineData("Debug", true)]
-        [InlineData("Release", false)]
-        [InlineData("Release", true)]
-        public void ConsolePublishAndRun(string config, bool aot)
+        [MemberData(nameof(TestDataForConsolePublishAndRun))]
+        public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
+            updateProgramCS();
 
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+            else if (relinking)
+                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
             var buildArgs = new BuildArgs(projectName, config, aot, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            bool expectRelinking = config == "Release" || aot;
+            bool expectRelinking = config == "Release" || aot || relinking;
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -193,7 +219,15 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0",
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            if (!aot)
+            {
+                // These are disabled for AOT explicitly
+                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            }
+            else
+            {
+                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
+            }
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
@@ -203,7 +237,7 @@ namespace Wasm.Build.Tests
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
                                 .ExecuteWithCapturedOutput(runArgs)
-                                .EnsureSuccessful();
+                                .EnsureExitCode(42);
 
             if (aot)
                 Assert.Contains($"AOT: image '{Path.GetFileNameWithoutExtension(projectFile)}' found", res.Output);
@@ -212,7 +246,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-#if false // FIXME: playwright on CI
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         public async Task BlazorRunTest()
         {
@@ -267,6 +300,5 @@ namespace Wasm.Build.Tests
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }
-#endif
     }
 }

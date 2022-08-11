@@ -42,4 +42,14 @@ PALEXPORT int32_t SystemCryptoNativeBrowser_EncryptDecrypt(
     uint8_t* output_buffer,
     int32_t output_len);
 
+PALEXPORT int32_t SystemCryptoNativeBrowser_DeriveBits(
+    uint8_t* password_buffer,
+    int32_t password_len,
+    uint8_t* salt_buffer,
+    int32_t salt_len,
+    int32_t iterations,
+    enum simple_digest hashAlgorithm,
+    uint8_t* output_buffer,
+    int32_t output_len);
+
 PALEXPORT int32_t SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl(void);

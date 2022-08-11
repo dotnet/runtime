@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
     {
         public HostingEnvironment() { }
-        public string? ApplicationName { get { throw null; } set { } }
+        public string ApplicationName { get { throw null; } set { } }
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get { throw null; } set { } }
         public string ContentRootPath { get { throw null; } set { } }
         public string EnvironmentName { get { throw null; } set { } }
