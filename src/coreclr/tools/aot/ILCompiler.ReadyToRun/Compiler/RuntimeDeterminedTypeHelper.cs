@@ -146,6 +146,15 @@ namespace ILCompiler
                 RuntimeDeterminedTypeHelper.Equals(field1.FieldType, field2.FieldType);
         }
 
+        public static bool Equals(FieldWithToken field1, FieldWithToken field2)
+        {
+            if (field1 == null || field2 == null)
+            {
+                return field1 == null && field2 == null;
+            }
+            return RuntimeDeterminedTypeHelper.Equals(field1.Field, field2.Field);
+        }
+
         public static int GetHashCode(Instantiation instantiation)
         {
             int hashcode = unchecked(instantiation.Length << 24);
@@ -197,6 +206,15 @@ namespace ILCompiler
                 return 0;
             }
             return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.Name.GetHashCode());
+        }
+
+        public static int GetHashCode(FieldWithToken field)
+        {
+            if (field == null)
+            {
+                return 0;
+            }
+            return GetHashCode(field.Field);
         }
     }
 }

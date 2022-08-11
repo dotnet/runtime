@@ -2608,19 +2608,11 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
-    /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
         Default = 0,
-
-        /// <summary>Forces the garbage collection to occur immediately.</summary>
         Forced = 1,
-
-        /// <summary>Allows the garbage collector to determine whether the current time is optimal to reclaim objects.</summary>
         Optimized = 2,
-
-        /// <summary>Requests that the garbage collector decommit as much memory as possible.</summary>
         Aggressive = 3,
     }
 
@@ -9157,6 +9149,7 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static System.IO.DirectoryInfo CreateTempSubdirectory(string? prefix = null) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
