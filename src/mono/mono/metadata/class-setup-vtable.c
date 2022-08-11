@@ -256,15 +256,20 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, int
 
 		if (ifaces) {
 			for (guint i = 0; i < ifaces->len; ++i) {
-				int io;
+				int io = -1;
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 
 				/*Force the sharing of interface offsets between parent and subtypes.*/
-				io = mono_class_interface_offset (k, ic);
-				g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
-					mono_type_get_full_name (klass),
-					mono_type_get_full_name (k),
-					mono_type_get_full_name (ic));
+				if (!bitmap_only) {
+					io = mono_class_interface_offset (k, ic);
+					g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
+						   mono_type_get_full_name (klass),
+						   mono_type_get_full_name (k),
+						   mono_type_get_full_name (ic));
+				} else {
+					/* if we don't care about offsets, just use a fake one */
+					io = 0;
+				}
 
 				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, io, TRUE);
 			}
