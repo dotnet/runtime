@@ -241,10 +241,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
-    LARGE_INTEGER li;
-    PalQueryPerformanceCounter(&li);
-    int64_t startTicks = li.QuadPart;
-
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
@@ -289,6 +285,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
         else
         {
             SpinWait(retries++, 100);
+            observeOnly = false;
 
             // make sure our spining is not starving other threads, but not too often,
             // this can cause a 1-15 msec delay, depending on OS, and that is a lot while
@@ -297,9 +294,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
             {
                 PalSwitchToThread();
             }
-
-            observeOnly = false;
-            // printf("RETRY: %i \n", retries);
         }
     }
 
@@ -312,15 +306,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // preemptive mode.
     PalFlushProcessWriteBuffers();
 #endif //TARGET_ARM || TARGET_ARM64
-
-    PalQueryPerformanceFrequency(&li);
-    int64_t ticksPerSecond = li.QuadPart;
-
-    PalQueryPerformanceCounter(&li);
-    int64_t endTicks = li.QuadPart;
-    int64_t usecTotal = (endTicks - startTicks) * 1000000 / ticksPerSecond;
-
-    printf("@: %i \n", (int)usecTotal);
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
