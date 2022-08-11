@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private readonly bool _isDeserializable = typeof(TDictionary).IsAssignableFrom(typeof(Dictionary<TKey, TValue>));
 
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, scoped ref ReadStack state)
+        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }

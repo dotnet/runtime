@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         : JsonDictionaryConverter<TDictionary, string, object?>
         where TDictionary : IDictionary
     {
-        protected override void Add(string key, in object? value, JsonSerializerOptions options, scoped ref ReadStack state)
+        protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
             collection[key] = value;

@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, scoped ref ReadStack state)
+        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
