@@ -11827,7 +11827,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         {
             if (isAddrOffset)
             {
-                printf("%08XH", imm);
+                printf("%llXH", imm);
             }
             else
             {
@@ -12264,7 +12264,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         if (!insOptsPostIndex(opt) && (imm != 0))
         {
             printf(",");
-            emitDispImm(imm, false);
+            emitDispImm(imm, false, true, true);
         }
         printf("]");
 
@@ -12275,7 +12275,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         else if (insOptsPostIndex(opt))
         {
             printf(",");
-            emitDispImm(imm, false);
+            emitDispImm(imm, false, true, true);
         }
     }
     else // !strictArmAsm
@@ -12309,7 +12309,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         {
             printf("%c", operStr[1]);
         }
-        emitDispImm(imm, false);
+        emitDispImm(imm, false, true, true);
         printf("]");
     }
 }
