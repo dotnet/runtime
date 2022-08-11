@@ -16,6 +16,7 @@
 
   <PropertyGroup>
     <BuildTargetFramework Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)</BuildTargetFramework>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
 
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target). -->
@@ -47,7 +48,6 @@
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework)
-        HelixBaseUri='https://helix.int-dot.net/'
       </_PropertiesToPass>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>
     </PropertyGroup>
@@ -59,6 +59,7 @@
     <Message Importance="High" Text="TestArchiveTestsRoot: $(TestArchiveTestsRoot)" />
     <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
     <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
+    <Message Importance="High" Text="HelixBaseUri: $(HelixBaseUri) />
     <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
     <!-- Re-invoke MSBuild on this project to create the correlation payload -->
@@ -92,7 +93,7 @@
       <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
 
       <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity);HelixBaseUri=$(HelixBaseUri)</AdditionalProperties>
       </_WasmDebuggerTestsProjectsToBuild>
     </ItemGroup>
 
