@@ -420,6 +420,9 @@
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
 
+    <!-- temp work around to see full test run for https://github.com/dotnet/runtime/pull/73416 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager\tests\System.Resources.ResourceManager.Tests.csproj" />
+
     <!-- Test needs to copy .so file: https://github.com/dotnet/runtime/issues/72987 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
                       Condition="'$(TargetOS)' != 'windows'" />
