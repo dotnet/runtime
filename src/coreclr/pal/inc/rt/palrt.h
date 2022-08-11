@@ -156,27 +156,12 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #define _WINNT_
 
-//
-// The draft C++ standard (as of Aug 2022) 17.2.4 says the language
-// support for offsetof() on anything other than a standard-layout class
-// is conditionally supported.
-// This is more generous than the C++ standards when this code was originally written 
-//
-// PAL_safe_offsetof is a version of offsetof that protects against an
-// overridden operator&.  Note, however, C++-98 and newer
-// requires offsetof to work correctly even if operator& is overloaded.
-//
-
-#define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
-
 #ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
 #endif
 
-#define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
-
 #define CONTAINING_RECORD(address, type, field) \
-    ((type *)((LONG_PTR)(address) - FIELD_OFFSET(type, field)))
+    ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )

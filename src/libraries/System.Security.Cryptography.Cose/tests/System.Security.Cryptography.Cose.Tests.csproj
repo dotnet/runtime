@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
 
@@ -34,10 +32,6 @@
     <Compile Include="CoseTestHelpers.cs" />
   </ItemGroup>
   
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.15.0" />
   </ItemGroup>
