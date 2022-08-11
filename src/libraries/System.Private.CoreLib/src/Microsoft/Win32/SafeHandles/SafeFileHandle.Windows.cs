@@ -292,14 +292,16 @@ namespace Microsoft.Win32.SafeHandles
                     return info.EndOfFile;
                 }
 
-                if (_path is null || !PathInternal.IsDevice(_path))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(Path);
-                }
-
-                // In theory GetFileInformationByHandleEx might fail, then DeviceIoControl succeed (last error set to ERROR_SUCCESS)
-                // but return fewer bytes than requested. The error is stored and in such case exception for the first failure is going to be thrown.
+                // In theory when GetFileInformationByHandleEx fails, then
+                // a) IsDevice can modify last error (not true today, but can be in the future),
+                // b) DeviceIoControl can succeed (last error set to ERROR_SUCCESS) but return fewer bytes than requested.
+                // The error is stored and in such cases exception for the first failure is going to be thrown.
                 int lastError = Marshal.GetLastWin32Error();
+
+                if (Path is null || !PathInternal.IsDevice(Path))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
+                }
 
                 Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
                 bool success = Interop.Kernel32.DeviceIoControl(
