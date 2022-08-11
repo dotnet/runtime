@@ -4630,8 +4630,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
         noway_assert(!fgCheapPredsValid);
         if (middleBlock->NumSucc() != 1 || middleBlock->bbJumpKind != BBJ_NONE ||
             middleBlock->bbPreds->flNext != nullptr || middleBlock->bbCatchTyp != BBCT_NONE ||
-            bbIsTryBeg(middleBlock) || bbIsHandlerBeg(middleBlock) ||
-            (middleBlock->bbFlags & BBF_DONT_REMOVE) != 0)
+            bbIsTryBeg(middleBlock) || bbIsHandlerBeg(middleBlock) || (middleBlock->bbFlags & BBF_DONT_REMOVE) != 0)
         {
             return false;
         }
@@ -4786,8 +4785,8 @@ bool Compiler::optIfConvertCCmp(GenTree* originalCondition, GenTree* asgNode)
     // Note: Limiting the maximum number of chained compares may give a performance
     //       boost, at the cost of more emitted code.
 
-    GenTreeConditional* selectNode      = asgNode->AsOp()->gtOp2->AsConditional();
-    GenTree*            selectNodeCond  = selectNode->gtCond;
+    GenTreeConditional* selectNode     = asgNode->AsOp()->gtOp2->AsConditional();
+    GenTree*            selectNodeCond = selectNode->gtCond;
 
     // Duplicate the condition and invert it
     GenTree* newCond = gtCloneExpr(originalCondition);

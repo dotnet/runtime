@@ -12908,7 +12908,7 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         else
         {
             // Condition should never be a constant other than 0 or 1
-            assert (cond->IsIntegralConst(1));
+            assert(cond->IsIntegralConst(1));
             JITDUMP("Bashed to true path:\n");
             replacement = op1;
         }
