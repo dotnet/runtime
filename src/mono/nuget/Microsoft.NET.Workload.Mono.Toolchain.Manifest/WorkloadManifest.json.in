@@ -160,19 +160,31 @@
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-arm": {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-arm64": {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-x64": {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.android-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-x86": {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.android-x86"
+      }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.android-x86": {
       "kind": "Sdk",
@@ -217,66 +229,108 @@
     "Microsoft.NETCore.App.Runtime.Mono.net6.maccatalyst-arm64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.maccatalyst-x64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.osx-arm64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.osx-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.osx-x64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.osx-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.osx-arm64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.osx-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.osx-x64": {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.osx-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.ios-arm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.ios-arm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.ios-arm64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.ios-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.iossimulator-arm64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.iossimulator-x64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.iossimulator-x86" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x86"
+      }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.tvos-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.tvos-arm64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.tvossimulator-arm64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.tvossimulator-x64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.maccatalyst-arm64": {
       "kind": "Sdk",
@@ -369,19 +423,31 @@
     },
     "Microsoft.NETCore.App.Runtime.net6.win-x64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.win-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-x86" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.win-x86"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-arm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.win-arm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-arm64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.net6.win-arm64"
+      }
     }
   }
 }
