@@ -8459,6 +8459,11 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
     }
     else
     {
+        // Skip any thread that doesn't have a OS thread id because DacGetThreadContext is going to throw an exception.
+        if (GetOSThreadId() == 0)
+        {
+            return;
+        }
         DacGetThreadContext(this, &context);
     }
 

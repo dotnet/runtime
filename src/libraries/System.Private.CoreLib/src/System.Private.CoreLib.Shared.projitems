@@ -1645,9 +1645,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs</Link>
     </Compile>
@@ -2093,6 +2090,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MkDir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkdTemp.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MkdTemp.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>

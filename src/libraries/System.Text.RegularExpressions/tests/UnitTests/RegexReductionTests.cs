@@ -593,5 +593,22 @@ namespace System.Text.RegularExpressions.Tests
                 maxPossibleLength == 1 /* successfully analyzed */ || maxPossibleLength is null /* ran out of stack space to complete analysis */,
                 $"Expected 1 or null, got {maxPossibleLength}");
         }
+
+        [Theory]
+        [InlineData("(?i)abc", RegexOptions.IgnoreCase)]
+        [InlineData("(?i)abc(?-i)", RegexOptions.IgnoreCase)]
+        [InlineData("(?:hello(nested(?:abc|(?:(?i:b)))))", RegexOptions.IgnoreCase)]
+        [InlineData("(?-i)abc", RegexOptions.None)]
+        [InlineData("(?mi)abc", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        [InlineData("(?im)abc", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        [InlineData("(?i)ab(?m)c", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        [InlineData("(?xmi)abc", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline)]
+        [InlineData("(?s)abc", RegexOptions.Singleline)]
+        [InlineData("(?-simx)abc", RegexOptions.None)]
+        public void FoundOptionsInPatternIsCorrect(string pattern, RegexOptions expectedOptions)
+        {
+            RegexOptions foundOptions = RegexParser.ParseOptionsInPattern(pattern, RegexOptions.None);
+            Assert.Equal(expectedOptions, foundOptions);
+        }
     }
 }
