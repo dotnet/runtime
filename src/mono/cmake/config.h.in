@@ -620,9 +620,6 @@
 /* Have getifaddrs */
 #cmakedefine HAVE_GETIFADDRS 1
 
-/* Have struct ifaddrs */
-#cmakedefine HAVE_IFADDRS 1
-
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
 
