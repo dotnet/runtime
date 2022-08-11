@@ -24,6 +24,13 @@ namespace System
             return GetLocalTimeZoneFromTzFile();
         }
 
+        // Shortcut for TimeZoneInfo.Local.GetUtcOffset
+        internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
+        {
+            CachedData cachedData = s_cachedData;
+            return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+        }
+
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
             value = null;
