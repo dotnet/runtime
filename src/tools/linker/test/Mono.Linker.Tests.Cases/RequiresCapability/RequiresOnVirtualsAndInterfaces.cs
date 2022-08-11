@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestCovariantReturnCallOnDerived ();
 			CovariantReturnViaLdftn.Test ();
 			NewSlotVirtual.Test ();
+			StaticInterfaces.Test ();
 		}
 
 		class BaseType
@@ -228,6 +229,48 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static void Test ()
 			{
 				typeof (Derived).RequiresPublicMethods ();
+			}
+		}
+
+		class StaticInterfaces
+		{
+			interface IRequires
+			{
+				[RequiresUnreferencedCode ("Message for --StaticInterfaces.IRequires.VirtualMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaces.IRequires.VirtualMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaces.IRequires.VirtualMethod--")]
+				static virtual void VirtualMethod () { }
+				[RequiresUnreferencedCode ("Message for --StaticInterfaces.IRequires.AbstractMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaces.IRequires.AbstractMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaces.IRequires.AbstractMethod--")]
+				static abstract void AbstractMethod ();
+			}
+			class ImplsIRequires : IRequires
+			{
+				[RequiresUnreferencedCode ("Message for --StaticInterfaces.ImplIRequires.VirtualMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaces.ImplIRequires.VirtualMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaces.ImplIRequires.VirtualMethod--")]
+				public static void VirtualMethod () { }
+				[RequiresUnreferencedCode ("Message for --StaticInterfaces.ImplIRequires.AbstractMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaces.ImplIRequires.AbstractMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaces.ImplIRequires.AbstractMethod--")]
+				public static void AbstractMethod () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--StaticInterfaces.IRequires.VirtualMethod--")]
+			[ExpectedWarning ("IL3002", "--StaticInterfaces.IRequires.VirtualMethod--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--StaticInterfaces.IRequires.VirtualMethod--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--StaticInterfaces.IRequires.AbstractMethod--")]
+			[ExpectedWarning ("IL3002", "--StaticInterfaces.IRequires.AbstractMethod--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--StaticInterfaces.IRequires.AbstractMethod--", ProducedBy = ProducedBy.Analyzer)]
+			static void UseRequiresMethods<T> () where T : IRequires
+			{
+				T.AbstractMethod ();
+				T.VirtualMethod ();
+			}
+			public static void Test ()
+			{
+				UseRequiresMethods<ImplsIRequires> ();
 			}
 		}
 	}

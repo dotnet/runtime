@@ -62,6 +62,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			typeof (ExplicitImplementationClassWithoutRequires).RequiresPublicMethods ();
 			typeof (ImplementationClassWithoutRequiresInSource).RequiresPublicMethods ();
 			typeof (ImplementationClassWithRequiresInSource).RequiresPublicMethods ();
+			typeof (StaticInterfaceMethods).RequiresPublicMethods ();
 		}
 
 		class BaseClassWithRequires
@@ -450,6 +451,94 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInProperty", "IBaseWithoutRequiresInReference.PropertyAnnotationInProperty", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresAssemblyFiles ("Message")]
 			public string PropertyAnnotationInProperty { get; set; }
+		}
+
+
+		class StaticInterfaceMethods
+		{
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			public static void Test ()
+			{
+				typeof (IRequires).RequiresPublicMethods ();
+				typeof (INoRequires).RequiresPublicMethods ();
+				typeof (ImplINoRequiresMatching).RequiresPublicMethods ();
+				typeof (ImplINoRequiresMismatching).RequiresPublicMethods ();
+				typeof (ImplIRequiresMismatching).RequiresPublicMethods ();
+				typeof (ImplIRequiresMatching).RequiresPublicMethods ();
+			}
+			interface IRequires
+			{
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.IRequires.VirtualMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.IRequires.VirtualMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.IRequires.VirtualMethod--")]
+				static virtual void VirtualMethod () { }
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.IRequires.AbstractMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.IRequires.AbstractMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.IRequires.AbstractMethod--")]
+				static abstract void AbstractMethod ();
+			}
+
+			interface INoRequires
+			{
+				static virtual void VirtualMethod () { }
+				static abstract void AbstractMethod ();
+			}
+
+			class ImplIRequiresMatching : IRequires
+			{
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.VirtualMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.VirtualMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.VirtualMethod--")]
+				public static void VirtualMethod () { }
+
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.AbstractMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.AbstractMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplIRequiresMatching.AbstractMethod--")]
+				public static void AbstractMethod () { }
+			}
+
+			class ImplIRequiresMismatching : IRequires
+			{
+				[ExpectedWarning ("IL2046", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod")]
+				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				public static void VirtualMethod () { }
+
+				[ExpectedWarning ("IL2046", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod")]
+				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				public static void AbstractMethod () { }
+			}
+			class ImplINoRequiresMatching : INoRequires
+			{
+				public static void VirtualMethod () { }
+
+				public static void AbstractMethod () { }
+			}
+
+			class ImplINoRequiresMismatching : INoRequires
+			{
+				[ExpectedWarning ("IL2046", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod")]
+				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
+				public static void VirtualMethod () { }
+
+				[ExpectedWarning ("IL2046", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod")]
+				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
+				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
+				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
+				public static void AbstractMethod () { }
+			}
 		}
 	}
 }
