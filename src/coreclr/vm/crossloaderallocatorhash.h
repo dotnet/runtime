@@ -243,7 +243,19 @@ private:
         }
 
         static bool IsDeleted(KeyValueStoreOrLAHashKeyToTrackers *e) { return s_supports_remove && Base::IsDeleted(e); }
-        static void OnRemovePerEntryCleanupAction(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry) { delete hashKeyEntry; }
+        static void OnRemovePerEntryCleanupAction(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry) {
+            //
+            // delete hashKeyEntry;  // asan finds mismatch: new[] vs delete
+            //
+            // In order to have matching new/delete and new[]/delete[]
+            // we can not merely delete the hashKeyEntry,
+            // but must return the storage in a manner compatible with
+            // how the storage was allocated in our static Create() member,
+            // namely as a new BYTE[].
+            //
+            hashKeyEntry->~KeyValueStoreOrLAHashKeyToTrackers();  // fire destructor
+            delete [] (BYTE *) hashKeyEntry;  // fire storage reclaimer
+        }
         static TKey GetKey(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry);
         static BOOL Equals(const TKey &k1, const TKey &k2) { return TRAITS::KeyEquals(k1, k2); }
         static TCount Hash(const TKey &k) { return TRAITS::Hash(k); }
