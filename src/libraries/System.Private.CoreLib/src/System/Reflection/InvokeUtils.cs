@@ -16,9 +16,14 @@ namespace System.Reflection
 
             if (dstType.IsPointer)
             {
-                if (TryConvertPointer(srcObject, out IntPtr dstIntPtr))
+                if (TryConvertIntPtr(srcObject, out IntPtr dstIntPtr))
                 {
                     return dstIntPtr;
+                }
+
+                if (TryConvertUIntPtr(srcObject, out UIntPtr dstUIntPtr))
+                {
+                    return dstUIntPtr;
                 }
 
                 Debug.Fail($"Unexpected CorElementType: {dstElementType}. Not a valid widening target.");
@@ -109,7 +114,7 @@ namespace System.Reflection
             return dstObject;
         }
 
-        private static bool TryConvertPointer(object srcObject, out IntPtr dstIntPtr)
+        private static bool TryConvertIntPtr(object srcObject, out IntPtr dstIntPtr)
         {
             if (srcObject is IntPtr srcIntPtr)
             {
@@ -117,10 +122,22 @@ namespace System.Reflection
                 return true;
             }
 
-            // The source pointer should already have been converted to an IntPtr.
+            dstIntPtr = IntPtr.Zero;
+            return false;
+        }
+
+        private static bool TryConvertUIntPtr(object srcObject, out UIntPtr dstIntPtr)
+        {
+            if (srcObject is UIntPtr srcIntPtr)
+            {
+                dstIntPtr = srcIntPtr;
+                return true;
+            }
+
+            // The source pointer should already have been converted to an UntPtr.
             Debug.Assert(srcObject is not Pointer);
 
-            dstIntPtr = IntPtr.Zero;
+            dstIntPtr = UIntPtr.Zero;
             return false;
         }
     }
