@@ -47,7 +47,7 @@ jobs:
   - bash: |
       $(httpStressProject)/run-docker-compose.sh -o -c Debug -t $(sdkBaseImage) && \
       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildStress
+    name: buildStressDebug
     displayName: Build HttpStress Debug
 
   - bash: |
@@ -56,6 +56,7 @@ jobs:
       export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server-debug/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+      export CONFIGURATION=Debug
       docker-compose up --abort-on-container-exit --no-color
     timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
     displayName: Run HttpStress - HTTP 3.0 Debug
@@ -64,7 +65,7 @@ jobs:
   - bash: |
       $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildStressdebug
+    name: buildStress
     displayName: Build HttpStress
 
   - bash: |
