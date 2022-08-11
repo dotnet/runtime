@@ -20,7 +20,7 @@ namespace System.Xml
         /// Use <see cref="ThrowingResolver"/> when external entity resolution must be
         /// prohibited, even when DTD processing is otherwise enabled.
         /// </remarks>
-        public static XmlResolver ThrowingResolver => XmlThrowingResolver.Singleton;
+        public static XmlResolver ThrowingResolver => XmlThrowingResolver.s_singleton;
 
         // An XmlResolver that forbids all external entity resolution.
         private sealed class XmlThrowingResolver : XmlResolver

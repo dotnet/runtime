@@ -58,9 +58,7 @@ namespace System.Xml.Xsl.Xslt
                 if (uri != null)
                 {
                     // If xmlResolver == null, then the original uri will be resolved using XmlUrlResolver
-                    XmlResolver origResolver = xmlResolver!;
-                    if (xmlResolver == null || xmlResolver == XmlResolver.ThrowingResolver)
-                        origResolver = new XmlUrlResolver();
+                    XmlResolver origResolver = xmlResolver ?? new XmlUrlResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {
