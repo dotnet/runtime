@@ -57,6 +57,9 @@ namespace System.Net.WebSockets.Client.Tests
                 // send status 200 OK to establish websocket
                 await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
 
+                WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+                Assert.Equal(WebSocketState.Open, websocket.State);
+
                 // send reply
                 byte binaryMessageType = 2;
                 var prefix = new byte[] { binaryMessageType, (byte)serverMessage.Length };
@@ -96,6 +99,9 @@ namespace System.Net.WebSockets.Client.Tests
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 // send status 200 OK to establish websocket
                 await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+
+                WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+                Assert.Equal(WebSocketState.Open, websocket.State);
 
                 // send reply
                 byte binaryMessageType = 2;
