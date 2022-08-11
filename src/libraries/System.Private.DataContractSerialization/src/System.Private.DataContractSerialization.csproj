@@ -165,6 +165,7 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XDocument" />
     <Reference Include="System.Xml.XmlSerializer" />

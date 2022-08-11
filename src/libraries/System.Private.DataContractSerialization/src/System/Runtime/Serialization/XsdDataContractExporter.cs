@@ -123,8 +123,11 @@ namespace System.Runtime.Serialization
 
                 Export();
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -151,8 +154,11 @@ namespace System.Runtime.Serialization
 
                 Export();
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -173,8 +179,11 @@ namespace System.Runtime.Serialization
                 AddType(type);
                 Export();
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -320,8 +329,11 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -354,8 +366,11 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -383,8 +398,11 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
+
                 _dataContractSet = oldValue;
                 throw;
             }

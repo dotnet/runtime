@@ -217,7 +217,7 @@ namespace System.Runtime.Serialization.DataContracts
                         {
                             if (IsReadOnlyContract)
                             {
-                                ThrowInvalidDataContractException(DeserializationExceptionMessage, null /*type*/);
+                                ThrowInvalidDataContractException(DeserializationExceptionMessage, type: null);
                             }
                             XmlFormatClassReaderDelegate tempDelegate = CreateXmlFormatReaderDelegate();
                             Interlocked.MemoryBarrier();
@@ -302,8 +302,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             if (!IsArraySegment(type))
             {
-                Type[] interfaceTypes = type.GetInterfaces();
-                foreach (Type interfaceType in interfaceTypes)
+                foreach (Type interfaceType in type.GetInterfaces())
                 {
                     if (CollectionDataContract.IsCollectionInterface(interfaceType))
                         return false;
@@ -584,7 +583,6 @@ namespace System.Runtime.Serialization.DataContracts
             private MethodInfo? _extensionDataSetMethod;
             private DataContractDictionary? _knownDataContracts;
             private string? _serializationExceptionMessage;
-            private bool _isISerializable;
             private bool _isKnownTypeAttributeChecked;
             private bool _isMethodChecked;
 
@@ -620,9 +618,9 @@ namespace System.Runtime.Serialization.DataContracts
                     return;
                 }
                 Type? baseType = type.BaseType;
-                _isISerializable = (Globals.TypeOfISerializable.IsAssignableFrom(type));
+                IsISerializable = (Globals.TypeOfISerializable.IsAssignableFrom(type));
                 SetIsNonAttributedType(type);
-                if (_isISerializable)
+                if (IsISerializable)
                 {
                     if (HasDataContract)
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.ISerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
@@ -660,7 +658,7 @@ namespace System.Runtime.Serialization.DataContracts
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.OnlyDataContractTypesCanHaveExtensionData, DataContract.GetClrTypeFullName(type))));
                 }
 
-                if (_isISerializable)
+                if (IsISerializable)
                 {
                     SetDataContractName(xmlName);
                 }
@@ -1211,11 +1209,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal string? DeserializationExceptionMessage => (_serializationExceptionMessage == null) ? null : SR.Format(SR.ReadOnlyClassDeserialization, _serializationExceptionMessage);
 
-            internal override bool IsISerializable
-            {
-                get => _isISerializable;
-                set => _isISerializable = value;
-            }
+            internal override bool IsISerializable { get; set; }
 
             internal bool HasDataContract => _hasDataContract;
 
@@ -1360,7 +1354,8 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "All ctor's required to create an instance of this type are marked with RequiresUnreferencedCode.")]
         internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (IsEqualOrChecked(other, checkedContracts))
@@ -1446,12 +1441,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         private static bool IsEveryDataMemberOptional(IEnumerable<DataMember> dataMembers)
         {
-            foreach (DataMember dataMember in dataMembers)
-            {
-                if (dataMember.IsRequired)
-                    return false;
-            }
-            return true;
+            return !dataMembers.Any(dm => dm.IsRequired);
         }
 
         public override int GetHashCode()

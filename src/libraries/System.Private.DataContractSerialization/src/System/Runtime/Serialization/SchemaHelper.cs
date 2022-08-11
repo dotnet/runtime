@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
 
     internal sealed class SchemaDefinedType
     {
-        private XmlQualifiedName _xmlName;
+        internal XmlQualifiedName _xmlName;
 
         public SchemaDefinedType(XmlQualifiedName xmlName)
         {

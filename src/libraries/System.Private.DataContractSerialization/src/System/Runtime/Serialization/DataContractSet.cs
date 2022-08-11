@@ -67,6 +67,7 @@ namespace System.Runtime.Serialization.DataContracts
             get => _knownTypesForObject;
             internal set => _knownTypesForObject = value;
         }
+
         internal static void EnsureTypeNotGeneric(Type type)
         {
             if (type.ContainsGenericParameters)
@@ -395,12 +396,14 @@ namespace System.Runtime.Serialization.DataContracts
                         CollectionDataContract.IsCollection(type, out _) ||
                         ClassDataContract.IsNonAttributedTypeValidForSerialization(type));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // An exception can be thrown in the designer when a project has a runtime binding redirection for a referenced assembly or a reference dependent assembly.
                 // Type.IsDefined is known to throw System.IO.FileLoadException.
                 // ClassDataContract.IsNonAttributedTypeValidForSerialization is known to throw System.IO.FileNotFoundException.
                 // We guard against all non-critical exceptions.
+                if (Fx.IsFatal(ex))
+                    throw;
             }
 
             return false;

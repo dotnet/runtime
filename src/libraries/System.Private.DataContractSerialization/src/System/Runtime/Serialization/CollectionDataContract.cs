@@ -25,39 +25,28 @@ namespace System.Runtime.Serialization
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
     internal struct KeyValue<K, V> : IKeyValue
     {
-        private K _key;
-        private V _value;
-
         internal KeyValue(K key, V value)
         {
-            _key = key;
-            _value = value;
+            Key = key;
+            Value = value;
         }
 
         [DataMember(IsRequired = true)]
-        public K Key
-        {
-            get => _key;
-            set => _key = value;
-        }
+        public K Key { get; set; }
 
         [DataMember(IsRequired = true)]
-        public V Value
-        {
-            get => _value;
-            set => _value = value;
-        }
+        public V Value { get; set; }
 
         object? IKeyValue.Key
         {
-            get => _key;
-            set => _key = (K)value!;
+            get => this.Key;
+            set => this.Key = (K)value!;
         }
 
         object? IKeyValue.Value
         {
-            get => _value;
-            set => _value = (V)value!;
+            get => this.Value;
+            set => this.Value = (V)value!;
         }
     }
 
@@ -1490,7 +1479,8 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "All ctor's required to create an instance of this type are marked with RequiresUnreferencedCode.")]
         internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (IsEqualOrChecked(other, checkedContracts))

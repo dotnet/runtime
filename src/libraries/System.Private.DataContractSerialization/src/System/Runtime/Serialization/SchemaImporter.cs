@@ -62,6 +62,8 @@ namespace System.Runtime.Serialization
 #pragma warning suppress 56500 // covered by FxCOP
             catch (Exception ex)
             {
+                if (Fx.IsFatal(ex))
+                    throw;
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotImportInvalidSchemas), ex));
             }
 

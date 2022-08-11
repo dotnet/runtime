@@ -737,6 +737,7 @@ namespace System.Runtime.Serialization
                 _internalNodeType = ExtensionDataNodeType.Text;
             return handled;
         }
+
         private void PushElement()
         {
             GrowElementsIfNeeded();

@@ -123,7 +123,7 @@ namespace System.Runtime.Serialization.DataContracts
                 Type baseType = Enum.GetUnderlyingType(type);
                 XmlQualifiedName baseTypeName = GetBaseContractName(baseType);
                 _baseContract = DataContract.GetBuiltInDataContract(baseTypeName.Name, baseTypeName.Namespace)!;
-                // NOTE TODO smolloy - Setting XmlName might be redundant. But I don't want to miss an edge case.
+                // Setting XmlName might be redundant. But I don't want to miss an edge case.
                 _baseContract.XmlName = baseTypeName;
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
@@ -164,7 +164,7 @@ namespace System.Runtime.Serialization.DataContracts
                                 SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, XmlName.Name, XmlName.Namespace));
                     ImportBaseType(baseType);
                     _baseContract = DataContract.GetBuiltInDataContract(value.Name, value.Namespace)!;
-                    // NOTE TODO smolloy - Setting XmlName might be redundant. But I don't want to miss an edge case.
+                    // Setting XmlName might be redundant. But I don't want to miss an edge case.
                     _baseContract.XmlName = value;
                 }
             }
@@ -401,7 +401,6 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (IsEqualOrChecked(other, checkedContracts))
@@ -431,11 +430,6 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
             return false;
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

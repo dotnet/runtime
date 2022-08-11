@@ -118,7 +118,6 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (other is PrimitiveDataContract)

@@ -113,6 +113,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_BinarySerializationOfDateTime()
+    {
+        DateTime dateTime = DateTime.Parse("2021-01-01");
+        MemoryStream ms = new();
+        DataContractSerializer dcs = new(dateTime.GetType());
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: true))
+            dcs.WriteObject(writer, dateTime);
+        var serializedBytes = ms.ToArray();
+        Assert.Equal(72, serializedBytes.Length);
+    }
+
+    [Fact]
     public static void DCS_DecimalAsRoot()
     {
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })

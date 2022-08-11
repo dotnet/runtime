@@ -204,6 +204,9 @@ namespace System.Runtime.Serialization.Json
                         }
                         catch (Exception ex)
                         {
+                            if (Fx.IsFatal(ex))
+                                throw;
+
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }

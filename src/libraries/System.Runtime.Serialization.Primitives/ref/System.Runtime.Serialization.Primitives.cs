@@ -3,8 +3,6 @@
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
-using System.Collections.ObjectModel;
-using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
@@ -80,9 +78,9 @@ namespace System.Runtime.Serialization
     }
     public interface ISerializationSurrogateProvider2 : ISerializationSurrogateProvider
     {
-        object? GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType);
+        object? GetCustomDataToExport(Reflection.MemberInfo memberInfo, Type dataContractType);
         object? GetCustomDataToExport(Type runtimeType, Type dataContractType);
-        void GetKnownCustomDataTypes(Collection<Type> customDataTypes);
+        void GetKnownCustomDataTypes(Collections.ObjectModel.Collection<Type> customDataTypes);
         Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=true, AllowMultiple=true)]

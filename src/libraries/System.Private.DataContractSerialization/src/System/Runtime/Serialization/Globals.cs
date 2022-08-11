@@ -328,7 +328,7 @@ namespace System.Runtime.Serialization
 
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
         internal static MemberInfo SchemaMemberInfoPlaceholder =>
-            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_xmlName", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField(nameof(SchemaDefinedType._xmlName), BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private static Uri? s_dataContractXsdBaseNamespaceUri;
         internal static Uri DataContractXsdBaseNamespaceUri =>

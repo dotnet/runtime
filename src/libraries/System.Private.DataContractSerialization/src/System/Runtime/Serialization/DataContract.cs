@@ -415,6 +415,9 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 catch (Exception ex)
                 {
+                    if (Fx.IsFatal(ex))
+                        throw;
+
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                 }
             }
@@ -905,6 +908,9 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 catch (Exception ex)
                 {
+                    if (Fx.IsFatal(ex))
+                        throw;
+
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                 }
             }
@@ -923,6 +929,9 @@ namespace System.Runtime.Serialization.DataContracts
                         }
                         catch (Exception ex)
                         {
+                            if (Fx.IsFatal(ex))
+                                throw;
+
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -935,6 +944,9 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     catch (Exception ex)
                     {
+                        if (Fx.IsFatal(ex))
+                            throw;
+
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return value;
@@ -2000,7 +2012,6 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                 }
 
-                // NOTE TODO smolloy - This entire try/catch block is new in CoreFx from the beginning. I wonder why it wasn't there in NetFx. Is it needed there? Or not-needed here?
                 //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
                 try
                 {
@@ -2036,7 +2047,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
             else if (nameToDataContractTable.TryGetValue(dataContract.XmlName, out DataContract? alreadyExistingContract))
             {
-                // NOTE TODO smolloy - The existing contract type was used as-is in NetFx. The call to get the appropriate adapter type was added in CoreFx with https://github.com/dotnet/runtime/commit/50c0a70c52fa66fafa1227be552ccdab5e4cf8e4
+                // The alreadyExistingContract type was used as-is in NetFx. The call to get the appropriate adapter type was added in CoreFx with https://github.com/dotnet/runtime/commit/50c0a70c52fa66fafa1227be552ccdab5e4cf8e4
                 // Don't throw duplicate if its a KeyValuePair<K,T> as it could have been added by Dictionary<K,T>
                 if (DataContractCriticalHelper.GetDataContractAdapterType(alreadyExistingContract.UnderlyingType) != DataContractCriticalHelper.GetDataContractAdapterType(type))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.XmlName.Namespace, dataContract.XmlName.Name)));
@@ -2046,9 +2057,6 @@ namespace System.Runtime.Serialization.DataContracts
             ImportKnownTypeAttributes(type, typesChecked, ref nameToDataContractTable);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "DataContract is an internal type, but the override here is the very public Object.Equals(). Being an internal type" +
-            "though, we control when this is called, and all callers are annotated with [RequiresUnreferencedCode].")]
         public sealed override bool Equals(object? obj)
         {
             if ((object)this == obj)
@@ -2056,7 +2064,6 @@ namespace System.Runtime.Serialization.DataContracts
             return Equals(obj, new HashSet<DataContractPairKey>());
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (other is DataContract dataContract)
@@ -2232,10 +2239,7 @@ namespace System.Runtime.Serialization.DataContracts
             return typeName.Replace('.', '_');
         }
     }
-}
 
-namespace System.Runtime.Serialization
-{
     internal interface IGenericNameProvider
     {
         int GetParameterCount();
