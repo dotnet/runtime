@@ -4,6 +4,7 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -16,7 +17,7 @@ namespace System.Reflection
 
             if (dstType.IsPointer)
             {
-                if (TryConvertPointer(srcObject, out object dstPtr))
+                if (TryConvertPointer(srcObject, out object? dstPtr))
                 {
                     return dstPtr;
                 }
@@ -109,7 +110,7 @@ namespace System.Reflection
             return dstObject;
         }
 
-        private static bool TryConvertPointer(object srcObject, out object dstPtr)
+        private static bool TryConvertPointer(object srcObject, [NotNullWhen(true)] out object? dstPtr)
         {
             if (srcObject is IntPtr)
             {

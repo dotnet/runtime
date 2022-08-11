@@ -114,7 +114,7 @@ namespace System
                     dstObject = null;
                     return exception;
                 }
-                dstObject = dstIntPtr;
+                dstObject = dstPtr;
                 return null;
             }
 
@@ -225,7 +225,7 @@ namespace System
 
             if (srcObject is UIntPtr)
             {
-                dstPtr = srcUIntPtr;
+                dstPtr = srcObject;
                 return null;
             }
 
@@ -233,12 +233,12 @@ namespace System
             {
                 if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
                 {
-                    dstIntPtr = srcPointer.GetPointerValue();
+                    dstPtr = srcPointer.GetPointerValue();
                     return null;
                 }
             }
 
-            dstIntPtr = IntPtr.Zero;
+            dstPtr = null;
             return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
         }
 
