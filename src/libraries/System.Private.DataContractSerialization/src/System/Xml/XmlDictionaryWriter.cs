@@ -54,7 +54,7 @@ namespace System.Xml
         {
             XmlUTF8TextWriter writer = new XmlUTF8TextWriter();
             writer.SetOutput(stream, encoding, ownsStream);
-            var asyncWriter = new XmlDictionaryAsyncCheckWriter<XmlUTF8TextWriter>(writer);
+            var asyncWriter = new XmlDictionaryAsyncCheckWriter(writer);
             return asyncWriter;
         }
 
