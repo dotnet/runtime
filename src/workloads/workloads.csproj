@@ -120,7 +120,7 @@
     </ItemGroup>
     
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
-    <ZipDirectory Overwrite="true" DestinationFile="$(ArtifactsNonShippingPackagesDir)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VisualStudioSetupInsertionPath)%(SdkFeatureBand.Identity)"/>
+    <ZipDirectory Overwrite="true" DestinationFile="$(WorkloadOutputPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VisualStudioSetupInsertionPath)%(SdkFeatureBand.Identity)"/>
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
