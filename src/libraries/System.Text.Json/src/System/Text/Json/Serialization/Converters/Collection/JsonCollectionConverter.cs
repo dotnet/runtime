@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization
         internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.Enumerable;
         internal override Type ElementType => typeof(TElement);
 
-        protected abstract void Add(in TElement value, scoped ref ReadStack state);
+        protected abstract void Add(in TElement value, ref ReadStack state);
 
         /// <summary>
         /// When overridden, create the collection. It may be a temporary collection or the final collection.

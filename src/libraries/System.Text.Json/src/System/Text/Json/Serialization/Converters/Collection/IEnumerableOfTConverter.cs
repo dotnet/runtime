@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private readonly bool _isDeserializable = typeof(TCollection).IsAssignableFrom(typeof(List<TElement>));
 
-        protected override void Add(in TElement value, scoped ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }

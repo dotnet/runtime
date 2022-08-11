@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
             return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
         }
 
-        protected override void Add(in TElement value, scoped ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
         }

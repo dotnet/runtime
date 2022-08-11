@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
             _listConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpListConstructor<TList, TElement>();
         }
 
-        protected override void Add(in TElement value, scoped ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }

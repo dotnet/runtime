@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ConcurrentQueue<TElement>
     {
-        protected override void Add(in TElement value, scoped ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Enqueue(value);
         }
