@@ -47,7 +47,7 @@ elseif ($privateAspNetCore) {
 
 # Dockerize the stress app using docker-compose
 
-$BUILD_ARGS = ""
+$BUILD_ARGS = "--build-arg CONFIGURATION=$configuration"
 if (![string]::IsNullOrEmpty($sdkImageName))
 {
     $BUILD_ARGS += " --build-arg SDK_BASE_IMAGE=$sdkImageName"

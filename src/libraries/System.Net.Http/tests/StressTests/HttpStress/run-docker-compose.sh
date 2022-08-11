@@ -70,9 +70,9 @@ if [[ "$buildcurrentlibraries" -eq 1 ]]; then
     fi
 fi
 
-build_args=""
+build_args="--build-arg CONFIGURATION=$configuration"
 if [[ -n "$imagename" ]]; then
-    build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
+    build_args="${build_args} --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 
 compose_file="$scriptroot/docker-compose.yml"
@@ -90,6 +90,7 @@ if [[ "$buildonly" -eq 0 ]]; then
 
     export HTTPSTRESS_CLIENT_ARGS=$clientstressargs
     export HTTPSTRESS_SERVER_ARGS=$serverstressargs
+    export CONFIGURATION=$configuration
     docker-compose --file "$compose_file" up --abort-on-container-exit
     exit $?
 fi
