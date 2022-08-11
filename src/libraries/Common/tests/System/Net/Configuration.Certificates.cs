@@ -19,9 +19,9 @@ namespace System.Net.Test.Common
         public static partial class Certificates
         {
             private static readonly X509KeyUsageExtension s_eeKeyUsage =
-            new X509KeyUsageExtension(
-                X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment,
-                critical: false);
+                new X509KeyUsageExtension(
+                    X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment,
+                    critical: false);
 
             private static readonly X509EnhancedKeyUsageExtension s_tlsServerEku =
                 new X509EnhancedKeyUsageExtension(
@@ -161,6 +161,7 @@ namespace System.Net.Test.Common
                             {
                                 store.Remove(cert);
                             }
+                            cert.Dispose();
                         }
                     }
                 }
@@ -177,6 +178,7 @@ namespace System.Net.Test.Common
                             {
                                 store.Remove(cert);
                             }
+                            cert.Dispose();
                         }
                     }
                 }
@@ -206,7 +208,7 @@ namespace System.Net.Test.Common
 
             public static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
             {
-                const int keySize = 2048;
+                const int KeySize = 2048;
                 if (PlatformDetection.IsWindows && testName != null)
                 {
                     CleanupCertificates(testName);
@@ -224,7 +226,7 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
-                    keySize: keySize,
+                    keySize: KeySize,
                     extensions: extensions);
 
                 // Walk the intermediates backwards so we build the chain collection as
