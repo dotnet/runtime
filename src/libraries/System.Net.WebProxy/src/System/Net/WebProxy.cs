@@ -160,9 +160,9 @@ namespace System.Net
             {
                 bool isDefaultPort = input.IsDefaultPort;
                 int lengthRequired = input.Scheme.Length + 3 + input.Host.Length;
-                if (isDefaultPort)
+                if (!isDefaultPort)
                 {
-                    lengthRequired += 1 + 10; // 1 for ':' and 10 for max formatted length of a uint
+                    lengthRequired += 1 + 5; // 1 for ':' and 5 for max formatted length of a port (16 bit value)
                 }
 
                 int charsWritten;
