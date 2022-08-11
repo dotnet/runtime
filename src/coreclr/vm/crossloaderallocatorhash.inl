@@ -83,9 +83,9 @@ template<class TRAITS>
 }
 
 template<class TRAITS>
-/*static*/ void* CrossLoaderAllocatorHash<TRAITS>::KeyValueStore::operator new(size_t baseSize, TCount capacity)
+/*static*/ void* CrossLoaderAllocatorHash<TRAITS>::KeyValueStore::operator new(size_t baseSize, CountWrapper capacity)
 {
-    return ::operator new(baseSize + capacity * sizeof(TValue));
+    return ::operator new(baseSize + capacity.value * sizeof(TValue));
 }
 
 template<class TRAITS>
@@ -101,7 +101,7 @@ template<class TRAITS>
     }
     CONTRACTL_END;
 
-    KeyValueStore *keyValueStore = new(capacity) KeyValueStore(capacity, key);
+    KeyValueStore *keyValueStore = new({capacity}) KeyValueStore(capacity, key);
     for (TCount i = 0; i < capacity; i++)
     {
         keyValueStore->GetValues()[i] = TRAITS::NullValue();

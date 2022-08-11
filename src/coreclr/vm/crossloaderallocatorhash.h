@@ -192,8 +192,12 @@ private:
     private:
         KeyValueStore(TCount capacity, const TKey &key) : _capacity(capacity), _key(key) {}
 
+        struct CountWrapper
+        {
+            TCount value;
+        };
         static void* operator new(size_t) = delete;
-        static void* operator new(size_t baseSize, TCount capacity);
+        static void* operator new(size_t baseSize, CountWrapper capacity);
 
     public:
         static KeyValueStore *Create(TCount capacity, const TKey &key);
