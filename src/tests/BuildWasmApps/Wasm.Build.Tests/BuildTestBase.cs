@@ -381,7 +381,7 @@ namespace Wasm.Build.Tests
 
                 // check that we are using the correct runtime pack!
 
-                if (options.ExpectSuccess)
+                if (options.ExpectSuccess && options.AssertAppBundle)
                 {
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
                     AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -938,6 +938,7 @@ namespace Wasm.Build.Tests
         bool    HasIcudt                  = true,
         bool    UseCache                  = true,
         bool    ExpectSuccess             = true,
+        bool    AssertAppBundle           = true,
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
