@@ -677,7 +677,7 @@ namespace System
 
             if (Vector128.IsHardwareAccelerated && length >= Vector128<byte>.Count)
             {
-                return LastIndexOfValueType(ref searchSpace, value, length);
+                return LastIndexOfValueType<byte, DefaultEqualityComparer<byte>>(ref searchSpace, value, length);
             }
 
             while (lengthToExamine >= 8)

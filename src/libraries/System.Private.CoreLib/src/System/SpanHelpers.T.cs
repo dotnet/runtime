@@ -1344,16 +1344,20 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static int LastIndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        internal static int LastIndexOfValueType<T, C>(ref T searchSpace, T value, int length)
+            where T : struct, IEquatable<T>
+            where C : struct, IVectorEqualityComparer<T>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            C comparer = default;
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = length - 1; i >= 0; i--)
                 {
-                    if (Unsafe.Add(ref searchSpace, i).Equals(value))
+                    if (comparer.Equals(Unsafe.Add(ref searchSpace, i), value))
                     {
                         return i;
                     }
@@ -1367,7 +1371,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace));
+                    equals = comparer.Equals256(values, Vector256.LoadUnsafe(ref currentSearchSpace));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
@@ -1381,7 +1385,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
-                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace));
+                    equals = comparer.Equals256(values, Vector256.LoadUnsafe(ref searchSpace));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1396,7 +1400,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace));
+                    equals = comparer.Equals128(values, Vector128.LoadUnsafe(ref currentSearchSpace));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
@@ -1410,7 +1414,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
-                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace));
+                    equals = comparer.Equals128(values, Vector128.LoadUnsafe(ref searchSpace));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1435,6 +1439,27 @@ namespace System
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
             return (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>()) + index;
+        }
+
+        internal interface IVectorEqualityComparer<T> where T : struct, IEquatable<T>
+        {
+            bool Equals(T left, T right);
+            Vector128<T> Equals128(Vector128<T> left, Vector128<T> right);
+            Vector256<T> Equals256(Vector256<T> left, Vector256<T> right);
+        }
+
+        internal readonly struct DefaultEqualityComparer<T> : IVectorEqualityComparer<T> where T : struct, IEquatable<T>
+        {
+            public bool Equals(T left, T right) => left.Equals(right);
+            public Vector128<T> Equals128(Vector128<T> left, Vector128<T> right) => Vector128.Equals(left, right);
+            public Vector256<T> Equals256(Vector256<T> left, Vector256<T> right) => Vector256.Equals(left, right);
+        }
+
+        internal readonly struct ExceptEqualityComparer<T> : IVectorEqualityComparer<T> where T : struct, IEquatable<T>
+        {
+            public bool Equals(T left, T right) => !left.Equals(right);
+            public Vector128<T> Equals128(Vector128<T> left, Vector128<T> right) => ~Vector128.Equals(left, right);
+            public Vector256<T> Equals256(Vector256<T> left, Vector256<T> right) => ~Vector256.Equals(left, right);
         }
     }
 }
