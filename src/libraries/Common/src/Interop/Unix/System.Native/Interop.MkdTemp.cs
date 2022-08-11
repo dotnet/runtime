@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Kernel32
+    internal static partial class Sys
     {
-        [LibraryImport(Libraries.Kernel32, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial uint GetTempPathW(int bufferLen, ref char buffer);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkdTemp", SetLastError = true)]
+        internal static unsafe partial byte* MkdTemp(byte* template);
     }
 }

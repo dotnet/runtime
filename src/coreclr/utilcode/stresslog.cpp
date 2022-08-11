@@ -143,7 +143,7 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
-void AppendPid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength)
+LPCWSTR ReplacePid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength)
 {
     // if the string "{pid}" occurs in the logFilename,
     // replace it by the PID of our process
@@ -164,6 +164,11 @@ void AppendPid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength)
 
         // append the rest of the filename
         wcscat_s(fileName, fileNameLength, logFilename + pidInx + wcslen(pidLit));
+        return fileName;
+    }
+    else
+    {
+        return logFilename;
     }
 }
 
@@ -176,9 +181,9 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     WCHAR fileName[MAX_PATH];
-    AppendPid(logFilename, fileName, MAX_PATH);
+    LPCWSTR logFilenameReplaced = ReplacePid(logFilename, fileName, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(fileName,
+    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor
