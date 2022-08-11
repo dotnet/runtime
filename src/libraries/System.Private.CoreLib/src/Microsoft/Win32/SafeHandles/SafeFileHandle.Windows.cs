@@ -297,8 +297,11 @@ namespace Microsoft.Win32.SafeHandles
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                 }
 
-                Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
+                // In theory GetFileInformationByHandleEx might fail, then DeviceIoControl succeed (last error set to ERROR_SUCCESS)
+                // but return fewer bytes than requested. The error is stored and in such case exception for the first failure is going to be thrown.
+                int lastError = Marshal.GetLastWin32Error();
 
+                Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
                 bool success = Interop.Kernel32.DeviceIoControl(
                     this,
                     dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
@@ -306,12 +309,16 @@ namespace Microsoft.Win32.SafeHandles
                     nInBufferSize: 0,
                     lpOutBuffer: &storageReadCapacity,
                     nOutBufferSize: (uint)sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY),
-                    out _,
+                    out uint bytesReturned,
                     IntPtr.Zero);
 
                 if (!success)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                }
+                else if (bytesReturned != sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
                 }
 
                 return storageReadCapacity.DiskLength;
