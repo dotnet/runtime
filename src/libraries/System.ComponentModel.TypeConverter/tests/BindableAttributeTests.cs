@@ -95,8 +95,6 @@ namespace System.ComponentModel.Tests
         {
             BindableAttribute attribute = BindableAttribute.Default;
             Assert.Same(attribute, BindableAttribute.Default);
-            Debug.Assert(object.ReferenceEquals(attribute, BindableAttribute.Default));
-            Debug.Assert(object.ReferenceEquals(attribute, BindableAttribute.No));
             Assert.Same(attribute, BindableAttribute.No);
 
             Assert.False(attribute.Bindable);

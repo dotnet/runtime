@@ -42,7 +42,7 @@ namespace Internal.Reflection.Core.Execution
         public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, IList<string> defaultAssemblyNames)
         {
             if (typeName == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(typeName));
 
             if (typeName.Length == 0)
             {
