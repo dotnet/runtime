@@ -1426,9 +1426,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
             <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
-            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/GenericAttribute/**">
             <Issue>https://github.com/dotnet/runtime/issues/56887</Issue>
         </ExcludeList>
