@@ -562,6 +562,14 @@ PALEXPORT int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32
 PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode);
 
 /**
+ * Creates a directory name that adheres to the specified template, creates the directory on disk with
+ * 0700 permissions, and returns the directory name.
+ *
+ * Returns a pointer to the modified template string on success; otherwise, returns NULL and errno is set.
+ */
+PALEXPORT char* SystemNative_MkdTemp(char* pathTemplate);
+
+/**
  * Creates a file name that adheres to the specified template, creates the file on disk with
  * 0600 permissions, and returns an open r/w File Descriptor on the file.
  *

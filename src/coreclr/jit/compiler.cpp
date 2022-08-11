@@ -2079,10 +2079,6 @@ unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
     return defaultFill;
 }
 
-#endif // DEBUG
-
-/*****************************************************************************/
-#ifdef DEBUG
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -2127,13 +2123,15 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
     return nullptr;
 }
 
+#endif // DEBUG
+
 const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloatReg)
 {
-
 #ifdef TARGET_ARM
     isFloatReg = genIsValidFloatReg(reg);
 #endif
 
+#ifdef DEBUG
     if (displayVar && (reg != REG_NA))
     {
         VarName varName = compVarName(reg, isFloatReg);
@@ -2151,6 +2149,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             return nameVarReg[index];
         }
     }
+#endif
 
     /* no debug info required or no variable in that register
        -> return standard name */
@@ -2197,6 +2196,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     return sizeNames[reg][size - 1];
 }
 
+#ifdef DEBUG
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 {
     unsigned     i;
@@ -2217,9 +2217,8 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 
     return nullptr;
 }
+#endif
 
-/*****************************************************************************/
-#endif // DEBUG
 /*****************************************************************************/
 
 void Compiler::compSetProcessor()
@@ -2807,14 +2806,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
+    opts.disAsm      = false;
+    opts.disDiffable = false;
+    opts.dspDiffable = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
-    opts.disAsm          = false;
     opts.disAsmSpilled   = false;
-    opts.disDiffable     = false;
     opts.disAddr         = false;
     opts.disAlignment    = false;
     opts.dspCode         = false;
@@ -3015,8 +3015,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         s_pJitFunctionFileInitialized = true;
     }
-
-#endif // DEBUG
+#else  // DEBUG
+    if (!JitConfig.JitDisasm().isEmpty())
+    {
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
+        {
+            opts.disAsm = true;
+        }
+    }
+#endif // !DEBUG
 
 //-------------------------------------------------------------------------
 
@@ -6676,6 +6685,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif
 
+    compMethodID = 0;
 #ifdef DEBUG
     /* Give the function a unique number */
 
