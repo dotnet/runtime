@@ -237,6 +237,10 @@ internal sealed class IcallTableGenerator
             AppendType(sb, t.GetElementType()!);
             sb.Append('*');
         }
+        else if (t.IsEnum)
+        {
+            AppendType(sb, Enum.GetUnderlyingType(t));
+        }
         else
         {
             sb.Append(t.Name switch
