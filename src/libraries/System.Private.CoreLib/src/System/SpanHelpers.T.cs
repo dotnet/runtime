@@ -1220,14 +1220,6 @@ namespace System
                         return ComputeIndex(ref searchSpace, ref oneVectorAwayFromEnd, notEquals);
                     }
                 }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static int ComputeIndex(ref T searchSpace, ref T current, Vector128<T> notEquals)
-                {
-                    uint notEqualsElements = notEquals.ExtractMostSignificantBits();
-                    int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                    return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
-                }
             }
 
             return -1;
@@ -1343,7 +1335,7 @@ namespace System
             return firstLength.CompareTo(secondLength);
         }
 
-        public static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, IEquatable<T>
+        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, IEquatable<T>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
@@ -1391,17 +1383,17 @@ namespace System
                         return ComputeIndex(ref searchSpace, ref oneVectorAwayFromEnd, notEquals);
                     }
                 }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static int ComputeIndex(ref T searchSpace, ref T current, Vector128<T> notEquals)
-                {
-                    uint notEqualsElements = notEquals.ExtractMostSignificantBits();
-                    int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                    return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
-                }
             }
 
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeIndex<T>(ref T searchSpace, ref T current, Vector128<T> notEquals) where T : struct, IEquatable<T>
+        {
+            uint notEqualsElements = notEquals.ExtractMostSignificantBits();
+            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
         }
     }
 }
