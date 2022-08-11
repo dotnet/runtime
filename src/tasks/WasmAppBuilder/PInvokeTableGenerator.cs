@@ -14,6 +14,7 @@ using Microsoft.Build.Utilities;
 internal sealed class PInvokeTableGenerator
 {
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new Dictionary<Assembly, bool>();
 
     private TaskLoggingHelper Log { get; set; }
 
@@ -461,12 +462,14 @@ internal sealed class PInvokeTableGenerator
         w.WriteLine("};");
     }
 
-    private Dictionary<Assembly, bool> assemblyDisableRuntimeMarshallingAttributeCache = new Dictionary<Assembly, bool>();
-
     private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
     {
-        if (!assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
-            assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
+        if (!_assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
+        {
+            _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
+                .GetCustomAttributesData()
+                .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
+        }
 
         return value;
     }
