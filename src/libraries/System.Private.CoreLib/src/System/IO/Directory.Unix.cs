@@ -48,22 +48,24 @@ namespace System.IO
             fixed (byte* pPath = path)
             {
                 StringBuilder sb = new();
-                sb.AppendLine ($"Tried to create {Encoding.UTF8.GetString(path)} in {tempPath}");
-                foreach (var s in Directory.EnumerateFiles(tempPath, "*"))
-                    sb.AppendLine($"\tf: {s}");
-                foreach (var s in Directory.EnumerateDirectories(tempPath, "*"))
-                    sb.AppendLine($"\td: {s}");
+                sb.AppendLine ($"Tries to create {Encoding.UTF8.GetString(path)} in {tempPath}");
+                sb.AppendLine($"before: files: {string.Join(',', Directory.EnumerateFiles(tempPath, "*"))}");
+                sb.AppendLine($"before: directories: {string.Join(',', Directory.EnumerateDirectories(tempPath, "*"))}");
+
                 if (Interop.Sys.MkdTemp(pPath) is null)
                 {
                     try {
                         Interop.ThrowIOExceptionForLastError();
-                        throw new Exception($"IO didn't throw, debug: {sb}");
+                        throw new Exception($"IO didn't throw{Environment.NewLine}debug: {sb}");
                     } catch (Exception ex) {
-                        throw new Exception($"io: {ex}, debug: {sb}");
+                        sb.AppendLine($"after: files: {string.Join(',', Directory.EnumerateFiles(tempPath, "*"))}");
+                        sb.AppendLine($"after: directories: {string.Join(',', Directory.EnumerateDirectories(tempPath, "*"))}");
+
+                        throw new Exception($"io: {ex} (hresult: {(ex as IOException)?.HResult} ${Environment.NewLine}debug: {sb}");
                     }
                 }
-                else if (tempPath.Length > 0)
-                    throw new Exception($"IO didn't throw, debug: {sb}");
+                //else if (tempPath.Length > 0)
+                    //throw new Exception($"IO didn't throw, debug: {sb}");
             }
 
             // 'path' is now the name of the directory
