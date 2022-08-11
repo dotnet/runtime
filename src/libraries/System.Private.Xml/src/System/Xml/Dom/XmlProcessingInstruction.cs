@@ -16,9 +16,9 @@ namespace System.Xml
 
         protected internal XmlProcessingInstruction(string target, string? data, XmlDocument doc) : base(doc)
         {
-            Debug.Assert(target != null, "All callsites should have already checked for null");
+            ArgumentNullException.ThrowIfNull(target);
 
-            if (string.IsNullOrEmpty(target))
+            if (target.Length == 0)
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
@@ -38,7 +38,7 @@ namespace System.Xml
         public override string Value
         {
             get => _data;
-            set { Data = value; } // use Data instead of data so that event will be fired
+            set { Data = value; } // use Data instead of data so that event will be fired and null will be normalized to empty string
         }
 
         // Gets the target of the processing instruction.
@@ -75,7 +75,7 @@ namespace System.Xml
         public override string InnerText
         {
             get => _data;
-            set { Data = value; } // use Data instead of data so that change event will be fired
+            set { Data = value; } // use Data instead of data so that event will be fired and null will be normalized to empty string
         }
 
         /// <inheritdoc />
