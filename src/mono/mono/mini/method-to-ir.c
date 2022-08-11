@@ -4216,7 +4216,16 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	mult_reg = alloc_preg (cfg);
 	array_reg = arr->dreg;
 
-	realidx2_reg = index2_reg = mini_emit_sext_index_reg (cfg, index);
+	if (TARGET_SIZEOF_VOID_P == 8) {
+		// If index is not I4 don't sign extend otherwise we lose high word
+		if (index->type == STACK_I4)
+			index2_reg = mini_emit_sext_index_reg (cfg, index);
+		else
+			index2_reg = index->dreg;
+	} else {
+		index2_reg = index->dreg;
+	}
+	realidx2_reg = index2_reg;
 
 	if (bounded) {
 		bounds_reg = alloc_preg (cfg);
