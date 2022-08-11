@@ -1,20 +1,20 @@
 {
   "version": "${WorkloadVersion}",
   "depends-on": {
-    "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersionNet6}"
+    "Microsoft.NET.Workload.Emscripten.net6": "${EmscriptenVersionNet6}"
   },
   "workloads": {
-    "wasm-tools": {
+    "wasm-tools-net6": {
       "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-net6" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6", "microsoft-net-sdk-emscripten-net6-net6" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
-    "microsoft-net-runtime-android": {
+    "microsoft-net-runtime-android-net6": {
       "abstract": true,
       "description": "Android Mono Runtime",
       "packs": [
@@ -23,10 +23,10 @@
         "Microsoft.NETCore.App.Runtime.Mono.android-x64",
         "Microsoft.NETCore.App.Runtime.Mono.android-x86"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
-    "microsoft-net-runtime-android-aot": {
+    "microsoft-net-runtime-android-aot-net6": {
       "abstract": true,
       "description": "Android Mono AOT Workload",
       "packs": [
@@ -35,10 +35,10 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
       ],
-      "extends": [ "microsoft-net-runtime-android" ],
+      "extends": [ "microsoft-net-runtime-android-net6" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
-    "microsoft-net-runtime-ios": {
+    "microsoft-net-runtime-ios-net6": {
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
@@ -48,10 +48,10 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86"
       ],
-      "extends": [ "runtimes-ios" ],
+      "extends": [ "runtimes-ios-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "runtimes-ios": {
+    "runtimes-ios-net6": {
       "abstract": true,
       "description": "iOS Mono Runtime Packs",
       "packs": [
@@ -61,30 +61,30 @@
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64",
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x86"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "microsoft-net-runtime-maccatalyst": {
+    "microsoft-net-runtime-maccatalyst-net6": {
       "abstract": true,
       "description": "MacCatalyst Mono Runtime and AOT Workload",
       "packs": [
         "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64"
       ],
-      "extends": [ "runtimes-maccatalyst" ],
+      "extends": [ "runtimes-maccatalyst-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "runtimes-maccatalyst": {
+    "runtimes-maccatalyst-net6": {
       "abstract": true,
       "description": "MacCatalyst Mono Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "microsoft-net-runtime-macos": {
+    "microsoft-net-runtime-macos-net6": {
       "abstract": true,
       "description": "MacOS CoreCLR and Mono Runtime Workload",
       "packs": [
@@ -93,10 +93,10 @@
         "Microsoft.NETCore.App.Runtime.osx-arm64",
         "Microsoft.NETCore.App.Runtime.osx-x64"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
     },
-    "microsoft-net-runtime-tvos": {
+    "microsoft-net-runtime-tvos-net6": {
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
       "packs": [
@@ -104,10 +104,10 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64"
       ],
-      "extends": [ "runtimes-tvos" ],
+      "extends": [ "runtimes-tvos-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "runtimes-tvos": {
+    "runtimes-tvos-net6": {
       "abstract": true,
       "description": "tvOS Mono Runtime Packs",
       "packs": [
@@ -115,10 +115,10 @@
         "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "runtimes-windows": {
+    "runtimes-windows-net6": {
       "description": "Windows Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.win-x64",
@@ -127,7 +127,7 @@
         "Microsoft.NETCore.App.Runtime.win-arm64"
       ]
     },
-    "microsoft-net-runtime-mono-tooling": {
+    "microsoft-net-runtime-mono-tooling-net6": {
       "abstract": true,
       "description": "Shared native build tooling for Mono runtime",
       "packs": [
