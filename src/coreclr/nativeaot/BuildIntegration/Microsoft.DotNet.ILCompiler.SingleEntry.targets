@@ -55,6 +55,6 @@
 
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets" />
 
 </Project>
