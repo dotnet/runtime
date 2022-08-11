@@ -47,14 +47,14 @@ namespace System.IO
             // Create the temp directory.
             fixed (byte* pPath = path)
             {
+                StringBuilder sb = new();
+                sb.AppendLine ($"Tried to create {Encoding.UTF8.GetString(path)} in {tempPath}");
+                foreach (var s in Directory.EnumerateFiles(tempPath, "*"))
+                    sb.AppendLine($"\tf: {s}");
+                foreach (var s in Directory.EnumerateDirectories(tempPath, "*"))
+                    sb.AppendLine($"\td: {s}");
                 if (Interop.Sys.MkdTemp(pPath) is null)
                 {
-                    StringBuilder sb = new();
-                    sb.AppendLine ($"Tried to create {Encoding.UTF8.GetString(path)} in {tempPath}");
-                    foreach (var s in Directory.EnumerateFiles(tempPath, "*"))
-                        sb.AppendLine($"\tf: {s}");
-                    foreach (var s in Directory.EnumerateDirectories(tempPath, "*"))
-                        sb.AppendLine($"\td: {s}");
                     try {
                         Interop.ThrowIOExceptionForLastError();
                         throw new Exception($"IO didn't throw, debug: {sb}");
@@ -62,6 +62,8 @@ namespace System.IO
                         throw new Exception($"io: {ex}, debug: {sb}");
                     }
                 }
+                else if (tempPath.Length > 0)
+                    throw new Exception($"IO didn't throw, debug: {sb}");
             }
 
             // 'path' is now the name of the directory
