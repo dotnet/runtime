@@ -8835,7 +8835,7 @@ private:
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
 #endif
@@ -8850,14 +8850,13 @@ private:
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit = (1ULL << isa);
-        if ((opts.compSupportsISAReported & isaBit) == 0)
+        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA & isaBit) != 0))
-                ((Compiler*)this)->opts.compSupportsISAExactly |= isaBit;
-            ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
+            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+                ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
+            ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
-        return (opts.compSupportsISAExactly & isaBit) != 0;
+        return (opts.compSupportsISAExactly.HasInstructionSet(isa));
 #else
         return false;
 #endif
@@ -8879,7 +8878,7 @@ private:
     // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        if (opts.compSupportsISA.HasInstructionSet(isa))
         {
             return compExactlyDependsOn(isa);
         }
@@ -8894,7 +8893,7 @@ private:
     {
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
-        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
+        return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
     bool canUseVexEncoding() const
@@ -8999,19 +8998,19 @@ public:
         JitFlags* jitFlags; // all flags passed from the EE
 
         // The instruction sets that the compiler is allowed to emit.
-        uint64_t compSupportsISA;
+        CORINFO_InstructionSetFlags compSupportsISA;
         // The instruction sets that were reported to the VM as being used by the current method. Subset of
         // compSupportsISA.
-        uint64_t compSupportsISAReported;
+        CORINFO_InstructionSetFlags compSupportsISAReported;
         // The instruction sets that the compiler is allowed to take advantage of implicitly during optimizations.
         // Subset of compSupportsISA.
         // The instruction sets available in compSupportsISA and not available in compSupportsISAExactly can be only
         // used via explicit hardware intrinsics.
-        uint64_t compSupportsISAExactly;
+        CORINFO_InstructionSetFlags compSupportsISAExactly;
 
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-            compSupportsISA = isas.GetFlagsRaw();
+            compSupportsISA = isas;
         }
 
         unsigned compFlags; // method attributes
