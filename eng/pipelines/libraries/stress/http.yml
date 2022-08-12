@@ -60,7 +60,7 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
     displayName: Run HttpStress - HTTP 3.0 Debug
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStressDebug.succeeded'], 'true'))
 
   - bash: |
       $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
