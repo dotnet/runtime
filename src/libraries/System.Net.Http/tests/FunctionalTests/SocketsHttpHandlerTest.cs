@@ -3758,7 +3758,11 @@ namespace System.Net.Http.Functional.Tests
                     socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-                    Assert.Equal("foo", await client.GetStringAsync(uri));
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                    // This will drive SNI and name verification
+                    request.Headers.Host = "localhost";
+                    HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                    Assert.Equal("foo", await response.Content.ReadAsStringAsync());
                 },
                 async server =>
                 {
