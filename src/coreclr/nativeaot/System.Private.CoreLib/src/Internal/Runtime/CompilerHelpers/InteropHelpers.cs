@@ -55,7 +55,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(byte*)buffer, 0, length);
+            int end = SpanHelpers.IndexOfValueType<byte>(ref *buffer, 0, length);
             if (end != -1)
             {
                 length = end;
@@ -77,7 +77,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe string UnicodeToStringFixedArray(ushort* buffer, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(char*)buffer, '\0', length);
+            int end = SpanHelpers.IndexOfChar(ref *(char*)buffer, '\0', length);
             if (end != -1)
             {
                 length = end;
