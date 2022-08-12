@@ -1019,9 +1019,8 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                string expectedFile = FullFilePath("XmlResolver_Include.xsl");
-                string expectedFileAsUri = new Uri(new FileInfo(expectedFile).FullName).ToString();
-                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { expectedFileAsUri });
+                var absoluteUri = new Uri(Path.Combine(Environment.CurrentDirectory, FullFilePath("XmlResolver_Include.xsl"))).AbsoluteUri;
+                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { absoluteUri });
                 return;
             }
             _output.WriteLine("Exception not thrown for null resolver");
@@ -1107,9 +1106,8 @@ namespace System.Xml.Tests
             var e = Assert.Throws<XsltCompileException>(() => LoadXSL("XmlResolver_Main.xsl", inputType, readerType));
             var xmlException = Assert.IsType<XmlException>(e.InnerException);
 
-            string expectedFile = FullFilePath("XmlResolver_Include.xsl");
-            string expectedFileAsUri = new Uri(new FileInfo(expectedFile).FullName).ToString();
-            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", new string[] { expectedFileAsUri });
+            var absoluteUri = new Uri(Path.Combine(Environment.CurrentDirectory, FullFilePath("XmlResolver_Include.xsl"))).AbsoluteUri;
+            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", new string[] { absoluteUri });
         }
 
         //[Variation("Load with resolver with credentials, then load XSL that does not need cred.")]
