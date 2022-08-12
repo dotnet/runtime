@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <File Include="../Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/localize/**/*">
+      <File Include="localize/**/*">
         <TargetPath>data/localize</TargetPath>
       </File>
     </ItemGroup>
