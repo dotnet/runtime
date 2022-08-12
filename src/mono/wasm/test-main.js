@@ -398,6 +398,9 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([runArgs, createDotnet
 
                 // Must be after loading npm modules.
                 config.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+                if (is_node) {
+                    config.environmentVariables["NodeJSPlatform"] = process.platform;
+                }
             },
             preRun: () => {
                 if (!runArgs.enableGC) {
