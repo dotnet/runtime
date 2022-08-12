@@ -281,10 +281,8 @@ namespace System
         // The search starts at startIndex and runs backwards to startIndex - count + 1.
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
-        //
         public int LastIndexOf(char value)
-            => SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DontNegate<short>>(
-                    ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+            => SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
 
         public int LastIndexOf(char value, int startIndex)
         {
@@ -309,8 +307,7 @@ namespace System
             }
 
             int startSearchAt = startIndex + 1 - count;
-            int result = SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DontNegate<short>>
-                (ref Unsafe.As<char, short>(ref Unsafe.Add(ref _firstChar, startSearchAt)), (short)value, count);
+            int result = SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref Unsafe.Add(ref _firstChar, startSearchAt)), (short)value, count);
 
             return result < 0 ? result : result + startSearchAt;
         }

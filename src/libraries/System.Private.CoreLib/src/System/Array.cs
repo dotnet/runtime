@@ -1586,7 +1586,7 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<byte, SpanHelpers.DontNegate<byte>>(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
@@ -1596,7 +1596,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DontNegate<short>>(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<short[]>(array)), endIndex),
                         Unsafe.As<T, short>(ref value),
                         count);
@@ -1606,7 +1606,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<int, SpanHelpers.DontNegate<int>>(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
@@ -1616,7 +1616,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOfValueType<long, SpanHelpers.DontNegate<long>>(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);

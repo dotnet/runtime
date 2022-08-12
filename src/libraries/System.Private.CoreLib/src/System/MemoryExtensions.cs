@@ -652,28 +652,28 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfValueType<byte, SpanHelpers.Negate<byte>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value),
                         span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfValueType<short, SpanHelpers.Negate<short>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value),
                         span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    return SpanHelpers.LastIndexOfValueType<int, SpanHelpers.Negate<int>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    return SpanHelpers.LastIndexOfValueType<long, SpanHelpers.Negate<long>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
@@ -706,7 +706,7 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.Negate<byte>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
@@ -714,7 +714,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.Negate<short>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value0),
                         Unsafe.As<T, short>(ref value1),
@@ -722,7 +722,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<int, SpanHelpers.Negate<int>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value0),
                         Unsafe.As<T, int>(ref value1),
@@ -730,7 +730,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<long, SpanHelpers.Negate<long>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value0),
                         Unsafe.As<T, long>(ref value1),
@@ -766,7 +766,7 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.Negate<byte>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
@@ -775,7 +775,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.Negate<short>>(
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value0),
                         Unsafe.As<T, short>(ref value1),
@@ -953,28 +953,28 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfValueType<byte, SpanHelpers.DontNegate<byte>>(
+                    return SpanHelpers.LastIndexOfValueType(
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                             Unsafe.As<T, byte>(ref value),
                             span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfValueType<short, SpanHelpers.DontNegate<short>>(
+                    return SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value),
                         span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    return SpanHelpers.LastIndexOfValueType<int, SpanHelpers.DontNegate<int>>(
+                    return SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    return SpanHelpers.LastIndexOfValueType<long, SpanHelpers.DontNegate<long>>(
+                    return SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
@@ -1318,7 +1318,7 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.DontNegate<byte>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
@@ -1326,7 +1326,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.DontNegate<short>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value0),
                         Unsafe.As<T, short>(ref value1),
@@ -1334,7 +1334,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<int, SpanHelpers.DontNegate<int>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value0),
                         Unsafe.As<T, int>(ref value1),
@@ -1342,7 +1342,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<long, SpanHelpers.DontNegate<long>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value0),
                         Unsafe.As<T, long>(ref value1),
@@ -1367,7 +1367,7 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<byte, SpanHelpers.DontNegate<byte>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
@@ -1376,7 +1376,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType<short, SpanHelpers.DontNegate<short>>(
+                    return SpanHelpers.LastIndexOfAnyValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value0),
                         Unsafe.As<T, short>(ref value1),

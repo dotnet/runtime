@@ -1422,8 +1422,17 @@ namespace System
 
             return false;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+            => LastIndexOfValueType<T, DontNegate<T>>(ref searchSpace, value, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+            => LastIndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static int LastIndexOfValueType<T, N>(ref T searchSpace, T value, int length)
+        private static int LastIndexOfValueType<T, N>(ref T searchSpace, T value, int length)
             where T : struct, IEquatable<T>
             where N : struct, INegator<T>
         {
@@ -1504,8 +1513,16 @@ namespace System
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, IEquatable<T>
+            => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, IEquatable<T>
+            => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, int length)
+        private static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, int length)
             where T : struct, IEquatable<T>
             where N : struct, INegator<T>
         {
@@ -1591,8 +1608,16 @@ namespace System
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, IEquatable<T>
+            => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, IEquatable<T>
+            => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, int length)
+        private static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, int length)
             where T : struct, IEquatable<T>
             where N : struct, INegator<T>
         {
@@ -1694,26 +1719,25 @@ namespace System
             return (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>()) + index;
         }
 
-        internal interface INegator<T> where T : struct, IEquatable<T>
+        private interface INegator<T> where T : struct, IEquatable<T>
         {
             bool NegateIfNeeded(bool equals);
             Vector128<T> NegateIfNeeded(Vector128<T> equals);
             Vector256<T> NegateIfNeeded(Vector256<T> equals);
         }
 
-        internal readonly struct DontNegate<T> : INegator<T> where T : struct, IEquatable<T>
+        private readonly struct DontNegate<T> : INegator<T> where T : struct, IEquatable<T>
         {
             public bool NegateIfNeeded(bool equals) => equals;
             public Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
             public Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
         }
 
-        internal readonly struct Negate<T> : INegator<T> where T : struct, IEquatable<T>
+        private readonly struct Negate<T> : INegator<T> where T : struct, IEquatable<T>
         {
             public bool NegateIfNeeded(bool equals) => !equals;
             public Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
             public Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
-
         }
     }
 }
