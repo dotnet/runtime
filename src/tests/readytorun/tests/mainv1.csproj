@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CrossGenTest>false</CrossGenTest>
+    <!-- https://github.com/dotnet/runtime/issues/73139 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
