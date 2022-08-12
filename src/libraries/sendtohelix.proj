@@ -47,6 +47,7 @@
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
+        HelixBaseUri=https://helix.int-dot.net/;
         BuildTargetFramework=$(BuildTargetFramework)
       </_PropertiesToPass>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>

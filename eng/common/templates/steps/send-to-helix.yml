@@ -54,7 +54,7 @@ steps:
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      HelixBaseUri: ${{ parameters.HelixBaseUri }}
+      HelixBaseUri: 'https://helix.int-dot.net/'
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
@@ -84,7 +84,7 @@ steps:
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      HelixBaseUri: ${{ parameters.HelixBaseUri }}
+      HelixBaseUri: 'https://helix.int-dot.net/'
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
