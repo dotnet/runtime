@@ -968,7 +968,7 @@ namespace System.Runtime.InteropServices
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(object structure) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the 'sizeof' operator if T is blittable or the SizeOf<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(System.Type t) { throw null; }
         public static int SizeOf<T>() { throw null; }

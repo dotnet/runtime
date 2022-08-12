@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
         }
 
-        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the 'sizeof' operator if T is blittable or the SizeOf<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static int SizeOf(Type t)
         {
