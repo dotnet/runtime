@@ -481,6 +481,12 @@
     <!-- Xslt is ref.emit -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
 
+    <!-- These are failing in localized runs due to satellite assembly reflection in the test. Work fine otherwise. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'windows'"/>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'windows'"/>
+
     <!--This test fails on Windows.10.Amd64.Server2022 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
