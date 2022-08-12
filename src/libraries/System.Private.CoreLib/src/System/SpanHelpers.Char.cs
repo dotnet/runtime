@@ -24,7 +24,7 @@ namespace System
             if (valueTailLength == 0)
             {
                 // for single-char values use plain IndexOf
-                return IndexOf(ref searchSpace, value, searchSpaceLength);
+                return IndexOfChar(ref searchSpace, value, searchSpaceLength);
             }
 
             nint offset = 0;
@@ -41,7 +41,7 @@ namespace System
             while (remainingSearchSpaceLength > 0)
             {
                 // Do a quick search for the first element of "value".
-                int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueHead, remainingSearchSpaceLength);
+                int relativeIndex = IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueHead, remainingSearchSpaceLength);
                 if (relativeIndex < 0)
                     break;
 

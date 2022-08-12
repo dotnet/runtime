@@ -815,11 +815,11 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.IndexOf(ref Unsafe.As<T, byte>(ref searchSpace), Unsafe.As<T, byte>(ref value), length);
+                    return SpanHelpers.IndexOfValueType(ref Unsafe.As<T, byte>(ref searchSpace), Unsafe.As<T, byte>(ref value), length);
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    return SpanHelpers.IndexOf(ref Unsafe.As<T, char>(ref searchSpace), Unsafe.As<T, char>(ref value), length);
+                    return SpanHelpers.IndexOfValueType(ref Unsafe.As<T, short>(ref searchSpace), Unsafe.As<T, short>(ref value), length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
@@ -1096,10 +1096,7 @@ namespace System
                             return -1;
 
                         case 1:
-                            return SpanHelpers.IndexOf(
-                                ref spanRef,
-                                valueRef,
-                                span.Length);
+                            return SpanHelpers.IndexOfChar(ref spanRef, valueRef, span.Length);
 
                         case 2:
                             return SpanHelpers.IndexOfAny(

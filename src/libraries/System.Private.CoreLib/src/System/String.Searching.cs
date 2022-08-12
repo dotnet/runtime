@@ -37,8 +37,7 @@ namespace System
 
         // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
-        //
-        public int IndexOf(char value) => SpanHelpers.IndexOf(ref _firstChar, value, Length);
+        public int IndexOf(char value) => SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
 
         public int IndexOf(char value, int startIndex)
         {
@@ -82,7 +81,7 @@ namespace System
                 return SpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length);
             }
 
-            return SpanHelpers.IndexOf(ref _firstChar, value, Length);
+            return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
         }
 
         public unsafe int IndexOf(char value, int startIndex, int count)
@@ -97,7 +96,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            int result = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
+            int result = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
 
             return result < 0 ? result : result + startIndex;
         }
