@@ -78,24 +78,36 @@ namespace System.Net.NetworkInformation
             using Process pingProcess = GetPingProcess(address, buffer, timeout, options);
             pingProcess.Start();
 
+            var timedOutOrCanceled = false;
             try
             {
-                await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
+                string stdout;
+                try
+                {
+                    await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
-                string stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
+                    stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
+                }
+                catch when (timeoutOrCancellationToken.IsCancellationRequested)
+                {
+                    timedOutOrCanceled = true;
+                    if (!pingProcess.HasExited)
+                    {
+                        pingProcess.Kill();
+                    }
+                    if (_canceled)
+                    {
+                        throw;
+                    }
+                    return CreatePingReply(IPStatus.TimedOut);
+                }
+
                 return ParsePingUtilityOutput(address, pingProcess.ExitCode, stdout);
             }
-            catch when (timeoutOrCancellationToken.IsCancellationRequested)
+            catch (Exception e) when (!timedOutOrCanceled)
             {
-                if (!pingProcess.HasExited)
-                {
-                    pingProcess.Kill();
-                }
-                if (_canceled)
-                {
-                    throw;
-                }
-                return CreatePingReply(IPStatus.TimedOut);
+                // If the standard output cannot be successfully read/parsed, throw a generic PingException.
+                throw new PingException(SR.net_ping, e);
             }
         }
 

@@ -332,6 +332,21 @@ namespace System.Net.NetworkInformation
             return SendPingAsync(address, timeout, buffer, options, CancellationToken.None);
         }
 
+        /// <summary>
+        /// Sends an Internet Control Message Protocol (ICMP) echo message with the specified data buffer to the computer that has the specified
+        /// <see cref="IPAddress"/>, and receives a corresponding ICMP echo reply message from that computer as an asynchronous operation. This
+        /// overload allows you to specify a time-out value for the operation, a buffer to use for send and receive, control fragmentation and
+        /// Time-to-Live values, and a <see cref="CancellationToken"/> for the ICMP echo message packet.
+        /// </summary>
+        /// <param name="address">An IP address that identifies the computer that is the destination for the ICMP echo message.</param>
+        /// <param name="timeout">The amount of time (after sending the echo message) to wait for the ICMP echo reply message.</param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
         {
             return SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
@@ -357,6 +372,24 @@ namespace System.Net.NetworkInformation
             return SendPingAsync(hostNameOrAddress, timeout, buffer, options, CancellationToken.None);
         }
 
+        /// <summary>
+        /// Sends an Internet Control Message Protocol (ICMP) echo message with the specified data buffer to the specified computer, and
+        /// receives a corresponding ICMP echo reply message from that computer as an asynchronous operation. This overload allows you to
+        /// specify a time-out value for the operation, a buffer to use for send and receive, control fragmentation and Time-to-Live values,
+        /// and a <see cref="CancellationToken"/> for the ICMP echo message packet.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// The computer that is the destination for the ICMP echo message. The value specified for this parameter can be a host name or a
+        /// string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">The amount of time (after sending the echo message) to wait for the ICMP echo reply message.</param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
         {
             return SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
@@ -452,11 +485,11 @@ namespace System.Net.NetworkInformation
 
                 IPAddress address = await getAddress(getAddressArg, _timeoutOrCancellationSource!.Token).ConfigureAwait(false);
 
+                Task<PingReply> pingTask = SendPingAsyncCore(address, buffer, timeout, options);
                 _timeoutOrCancellationSource.CancelAfter(timeout);
-
-                return await SendPingAsyncCore(address, buffer, timeout, options).ConfigureAwait(false);
+                return await pingTask.ConfigureAwait(false);
             }
-            catch (Exception e) when (e is not PlatformNotSupportedException && !_canceled)
+            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _canceled))
             {
                 throw new PingException(SR.net_ping, e);
             }
