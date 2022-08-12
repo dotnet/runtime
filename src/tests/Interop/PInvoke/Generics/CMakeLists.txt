@@ -12,6 +12,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   add_definitions(-DTARGET_ARM64)
   add_definitions(-DTARGET_ARMARCH)
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+  add_definitions(-DTARGET_LOONGARCH64)
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # The ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
