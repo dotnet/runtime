@@ -463,6 +463,7 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerThrowsExceptionData()
         {
+            yield return new object[] { "1E+1000000000" };
             yield return new object[] { "1E+2147483647" };
             yield return new object[] { "1E+21474836492" };
         }
@@ -471,7 +472,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(RunFormatScientificNotationToBigIntegerThrowsExceptionData))]
         public static void RunFormatScientificNotationToBigIntegerThrowsException(string testingValue)
         {
-            Assert.Throws<PlatformNotSupportedException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
+            Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
         }
 
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)

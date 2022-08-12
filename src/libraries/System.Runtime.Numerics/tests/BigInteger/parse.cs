@@ -34,7 +34,7 @@ namespace System.Numerics.Tests
         [Theory]
         [MemberData(nameof(Cultures))]
         [OuterLoop]
-        public static void RunParseToStringTests(CultureInfo culture)
+         public static void RunParseToStringTests(CultureInfo culture)
         {
             Test();
             BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);

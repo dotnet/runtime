@@ -515,20 +515,25 @@ namespace System.Globalization
                             int exp = 0;
                             do
                             {
+                                // Check if we are about to overflow past our limit of 9 digits
+                                if (exp >= 100_000_000)
+                                {
+                                    // Set exp to Int.MaxValue to signify the requested exponent is too large. This will lead to an OverflowException later.
+                                    exp = int.MaxValue;
+                                    number.scale = 0;
+
+                                    // Finish parsing the number, a FormatException could still occur later on.
+                                    while (char.IsAsciiDigit(ch))
+                                    {
+                                        ch = ++p < strEnd ? *p : '\0';
+                                    }
+                                    break;
+                                }
+
                                 exp = exp * 10 + (ch - '0');
                                 ch = ++p < strEnd ? *p : '\0';
-                            } while (char.IsAsciiDigit(ch) && (exp < int.MaxValue / 10));
 
-                            if (char.IsAsciiDigit(ch))
-                            {
-                                // We still had remaining characters but bailed early because
-                                // the exponent was going to overflow. If exp is exactly 214748364
-                                // then we can technically handle one more character being 0-7
-                                // but the additional complexity might not be worthwhile.
-
-                                Debug.Assert(exp >= 214748364);
-                                throw new PlatformNotSupportedException();
-                            }
+                            } while (char.IsAsciiDigit(ch));
 
                             if (negExp)
                             {
