@@ -236,6 +236,8 @@ namespace System.Net.Http
 
         private bool CheckKeepAliveTimeoutExceeded()
         {
+            // We intentionally honor the Keep-Alive timeout on all HTTP/1.X versions, not just 1.0. This is to maximize compat with
+            // servers that use a lower idle timeout than the client, but give us a hint in the form of a Keep-Alive timeout parameter.
             // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
             return _keepAliveTimeoutSeconds != 0 &&
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
@@ -1122,6 +1124,8 @@ namespace System.Net.Http
 
                 if (descriptor.Equals(KnownHeaders.KeepAlive))
                 {
+                    // We are intentionally going against RFC to honor the Keep-Alive header even if
+                    // we haven't received a Keep-Alive connection token to maximize compat with servers.
                     connection.ProcessKeepAliveHeader(headerValue);
                 }
 
@@ -1140,6 +1144,7 @@ namespace System.Net.Http
             {
                 foreach (NameValueHeaderValue nameValue in parsedValues)
                 {
+                    // The HTTP/1.1 spec does not define any parameters for the Keep-Alive header, so we are using the de facto standard ones - timeout and max.
                     if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
                     {
                         if (!string.IsNullOrEmpty(nameValue.Value) &&
