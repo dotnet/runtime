@@ -200,26 +200,8 @@ namespace ILCompiler
                     throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    try
-                    {
-                        pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
-                                    ?? OpenAssociatedSymbolFile(filePath, peReader);
-                    }
-                    catch (BadImageFormatException e)
-                    {
-                        if (e.Message.Equals("Invalid directory size."))
-                        {
-                            int actualDbgDirSize = peReader.PEHeaders.PEHeader.DebugTableDirectory.Size;
-
-                            // This comes from the Size property of the DebugDirectoryEntry class.
-                            int expectedDbgDirSizeBase = 28;
-
-                            Console.WriteLine("WARNING: This image's Debug Directory Entry size should be a"
-                                            + $" multiple of {expectedDbgDirSizeBase}, but was {actualDbgDirSize}."
-                                            + " Debugging tools may not work correctly with this image.");
-                        }
-                        else throw;
-                    }
+                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else
                 {
@@ -346,7 +328,7 @@ namespace ILCompiler
             string pdbFileName = null;
             BlobContentId pdbContentId = default;
 
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;

@@ -89,30 +89,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_module == null)
                 return 0;
 
-            PEReader moduleReader = _module.PEReader;
-            ImmutableArray<DebugDirectoryEntry> entries = ImmutableArray<DebugDirectoryEntry>.Empty;
-
-            try
-            {
-                entries = moduleReader.ReadDebugDirectory();
-            }
-            catch (BadImageFormatException e)
-            {
-                if (e.Message.Equals("Invalid directory size."))
-                {
-                    int actualDbgDirSize = moduleReader.PEHeaders.PEHeader.DebugTableDirectory.Size;
-
-                    // This comes from the Size property of the DebugDirectoryEntry class.
-                    int expectedDbgDirSizeBase = 28;
-
-                    Console.WriteLine("WARNING: This image's Debug Directory Entry size should be a"
-                                    + $" multiple of {expectedDbgDirSizeBase}, but was {actualDbgDirSize}."
-                                    + " Debugging tools may not work correctly with this image.");
-                }
-                else throw;
-            }
-
-            return entries.IsEmpty ? 0 : entries.Length;
+            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.SafeReadDebugDirectory();
+            return entries == null ? 0 : entries.Length;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -121,31 +99,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            PEReader moduleReader = _module.PEReader;
             ImmutableArray<DebugDirectoryEntry> entries = ImmutableArray<DebugDirectoryEntry>.Empty;
 
             if (_module != null)
-            {
-                try
-                {
-                    entries = moduleReader.ReadDebugDirectory();
-                }
-                catch (BadImageFormatException e)
-                {
-                    if (e.Message.Equals("Invalid directory size."))
-                    {
-                        int actualDbgDirSize = moduleReader.PEHeaders.PEHeader.DebugTableDirectory.Size;
-
-                        // This comes from the Size property of the DebugDirectoryEntry class.
-                        int expectedDbgDirSizeBase = 28;
-
-                        Console.WriteLine("WARNING: This image's Debug Directory Entry size should be a"
-                                        + $" multiple of {expectedDbgDirSizeBase}, but was {actualDbgDirSize}."
-                                        + " Debugging tools may not work correctly with this image.");
-                    }
-                    else throw;
-                }
-            }
+                entries = _module.PEReader.SafeReadDebugDirectory();
 
             int numEntries = GetNumDebugDirectoryEntriesInModule();
 
