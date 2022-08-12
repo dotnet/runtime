@@ -1857,6 +1857,19 @@ void TestMethod()
 
   ```
 
+#### `IL2121`: Unused 'UnconditionalSuppressMessageAttribute' for warning 'warning'. Consider removing the unused warning suppression.
+
+- The 'UnconditionalSuppressMessageAttribute' did not suppress any warning 'warning' caused by trimmer-incompatible patterns. Consider removing the attribute.
+
+  ```C#
+  // Trim analysis warning IL2121: TestMethod(): Unused 'UnconditionalSuppressMessageAttribute' for warning 'IL2070'. Consider removing the unused warning suppression.
+  [UnconditionalSuppressMessage("trim", "IL2070")]
+  void TestMethod()
+  {
+      Console.WriteLine("test");
+  }
+  ```
+
 
 ## Single-File Warning Codes
 
