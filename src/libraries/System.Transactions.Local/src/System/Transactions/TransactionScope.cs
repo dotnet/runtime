@@ -854,7 +854,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionScopeInternalError("TransactionScopeTimerObjectInvalid");
+                    etwLog.InternalError("TransactionScopeTimerObjectInvalid");
                 }
 
                 throw TransactionException.Create(TraceSourceType.TraceSourceBase, SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
