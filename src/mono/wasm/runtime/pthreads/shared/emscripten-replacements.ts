@@ -34,7 +34,8 @@ export function replaceEmscriptenPThreadLibrary(replacements: PThreadReplacement
 
 /// We replace Module["PThreads"].allocateUnusedWorker with this version that knows about assets
 function replacementAllocateUnusedWorker(): void {
-    console.debug("MONO_WASM: replacementAllocateUnusedWorker");
+    if (runtimeHelpers.diagnosticTracing)
+        console.debug("MONO_WASM: replacementAllocateUnusedWorker");
     const asset = resolve_asset_path("js-module-threads");
     const uri = asset.resolvedUrl;
     mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
