@@ -47,7 +47,6 @@ namespace System.Net.Security
         }
 
         public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
-            SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             return null;
         }
