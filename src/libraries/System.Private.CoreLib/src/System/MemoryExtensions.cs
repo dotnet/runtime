@@ -265,36 +265,7 @@ namespace System
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>?
-        {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
-            {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
-                    return SpanHelpers.Contains(
-                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, byte>(ref value),
-                        span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                    return SpanHelpers.Contains(
-                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, char>(ref value),
-                        span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(int))
-                    return 0 <= SpanHelpers.IndexOfValueType(
-                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, int>(ref value),
-                        span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(long))
-                    return 0 <= SpanHelpers.IndexOfValueType(
-                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, long>(ref value),
-                        span.Length);
-            }
-
-            return SpanHelpers.Contains(ref MemoryMarshal.GetReference(span), value, span.Length);
-        }
+            => Contains((ReadOnlySpan<T>)span, value);
 
         /// <summary>
         /// Searches for the specified value and returns true if found. If not found, returns false. Values are compared using IEquatable{T}.Equals(T).
@@ -308,28 +279,33 @@ namespace System
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
-                    return SpanHelpers.Contains(
+                {
+                    return SpanHelpers.ContainsValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value),
                         span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                    return SpanHelpers.Contains(
-                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, char>(ref value),
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.ContainsValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value),
                         span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(int))
-                    return 0 <= SpanHelpers.IndexOfValueType(
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.ContainsValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(long))
-                    return 0 <= SpanHelpers.IndexOfValueType(
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.ContainsValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
+                }
             }
 
             return SpanHelpers.Contains(ref MemoryMarshal.GetReference(span), value, span.Length);

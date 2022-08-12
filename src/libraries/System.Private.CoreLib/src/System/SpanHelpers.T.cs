@@ -1344,6 +1344,85 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal static bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+            Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    if (Unsafe.Add(ref searchSpace, i).Equals(value))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            {
+                Vector256<T> equals, values = Vector256.Create(value);
+                ref T currentSearchSpace = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace));
+                    if (equals == Vector256<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        continue;
+                    }
+
+                    return true;
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)length % Vector256<T>.Count != 0)
+                {
+                    equals = Vector256.Equals(values, Vector256.LoadUnsafe(ref oneVectorAwayFromEnd));
+                    if (equals != Vector256<T>.Zero)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                Vector128<T> equals, values = Vector128.Create(value);
+                ref T currentSearchSpace = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace));
+                    if (equals == Vector128<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        continue;
+                    }
+
+                    return true;
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the first vector in the search space.
+                if ((uint)length % Vector128<T>.Count != 0)
+                {
+                    equals = Vector128.Equals(values, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd));
+                    if (equals != Vector128<T>.Zero)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static int LastIndexOfValueType<T, N>(ref T searchSpace, T value, int length)
             where T : struct, IEquatable<T>
             where N : struct, INegator<T>

@@ -27,7 +27,8 @@ namespace System
 #pragma warning restore CA2249
         }
 
-        public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);
+        public bool Contains(char value)
+            => SpanHelpers.ContainsValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
 
         public bool Contains(char value, StringComparison comparisonType)
         {
