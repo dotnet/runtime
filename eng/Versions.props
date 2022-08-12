@@ -167,7 +167,7 @@
     <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
     <GrpcAuthVersion>2.46.3</GrpcAuthVersion>
     <GrpcCoreVersion>2.46.3</GrpcCoreVersion>
-    <GrpcDotnetClientVersion>2.46.0</GrpcDotnetClientVersion>
+    <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <MicrosoftExtensionsLoggingVersion>3.0.3</MicrosoftExtensionsLoggingVersion>
     <!-- Uncomment to set a fixed version, else the latest is used -->
