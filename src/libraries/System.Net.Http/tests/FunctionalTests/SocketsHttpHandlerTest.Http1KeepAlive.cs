@@ -60,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nKeep-Alive: timeout=1\r\nContent-Length: 1\r\n\r\n1");
+                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nKeep-Alive: timeout=2\r\nContent-Length: 1\r\n\r\n1");
                     connection.CompleteRequestProcessing();
 
                     await Assert.ThrowsAnyAsync<Exception>(() => connection.ReadRequestDataAsync());
