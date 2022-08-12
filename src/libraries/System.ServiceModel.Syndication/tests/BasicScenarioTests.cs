@@ -177,6 +177,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS), nameof(PlatformDetection.IsWindows))]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
             string RssPath = Path.GetTempFileName();
