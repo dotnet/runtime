@@ -94,27 +94,12 @@ namespace System.Runtime.InteropServices.JavaScript {
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        // the marshaled signature is:
-        // void InstallSynchronizationContext()
-        internal static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
-            // For linker reasons we perform a dummy call to this method elsewhere in the runtime, this is used to ignore it
-            if (arguments_buffer == null)
-                return;
+        internal static void Install () {
+            if (MainThreadSynchronizationContext == null)
+                MainThreadSynchronizationContext = new JSSynchronizationContext(Thread.CurrentThread);
 
-            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            try
-            {
-                if (MainThreadSynchronizationContext == null)
-                    MainThreadSynchronizationContext = new JSSynchronizationContext(Thread.CurrentThread);
-
-                SynchronizationContext.SetSynchronizationContext(MainThreadSynchronizationContext);
-                MainThreadSynchronizationContext.AwaitNewData();
-            }
-            catch (Exception ex)
-            {
-                arg_exc.ToJS(ex);
-            }
+            SynchronizationContext.SetSynchronizationContext(MainThreadSynchronizationContext);
+            MainThreadSynchronizationContext.AwaitNewData();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

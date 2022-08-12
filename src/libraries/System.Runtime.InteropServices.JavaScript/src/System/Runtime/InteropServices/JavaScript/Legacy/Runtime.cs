@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -9,11 +9,6 @@ namespace System.Runtime.InteropServices.JavaScript
     [Obsolete]
     public static class Runtime
     {
-        static unsafe Runtime () {
-            // HACK: For some reason the linker trims this class even if I set all the attributes to disable trimming.
-            JSSynchronizationContext.InstallSynchronizationContext(null);
-        }
-
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetGlobalObject(string str)
