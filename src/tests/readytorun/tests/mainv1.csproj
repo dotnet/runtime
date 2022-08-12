@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CrossGenTest>false</CrossGenTest>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
