@@ -977,12 +977,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
             // Human readable?
             ms.Position = 0;
+            string nl = Environment.NewLine;
             string actualFormatting = new StreamReader(ms).ReadToEnd();
-            string expectedFormatting = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <P1>foo</P1>
-  <P2>1</P2>
-</SimpleType>";
+            string expectedFormatting = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>{nl}<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{ nl}</SimpleType>";
             Assert.Equal(expectedFormatting, actualFormatting);
         }
     }
