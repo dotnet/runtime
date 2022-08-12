@@ -435,6 +435,26 @@ namespace System
         /// </returns>
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        span.Length);
+                }
+            }
+
             for (int i = 0; i < span.Length; i++)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
@@ -935,18 +955,21 @@ namespace System
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
-                    return SpanHelpers.IndexOfAny(
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
                         span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                    return SpanHelpers.IndexOfAny(
-                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, char>(ref value0),
-                        Unsafe.As<T, char>(ref value1),
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
                         span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -1005,18 +1028,21 @@ namespace System
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
-                    return SpanHelpers.IndexOfAny(
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref value0),
                         Unsafe.As<T, byte>(ref value1),
                         span.Length);
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                    return SpanHelpers.IndexOfAny(
-                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, char>(ref value0),
-                        Unsafe.As<T, char>(ref value1),
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
                         span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -1069,7 +1095,7 @@ namespace System
                     ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
                     if (values.Length == 2)
                     {
-                        return SpanHelpers.IndexOfAny(
+                        return SpanHelpers.IndexOfAnyValueType(
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                             valueRef,
                             Unsafe.Add(ref valueRef, 1),
@@ -1099,11 +1125,7 @@ namespace System
                             return SpanHelpers.IndexOfChar(ref spanRef, valueRef, span.Length);
 
                         case 2:
-                            return SpanHelpers.IndexOfAny(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                span.Length);
+                            return SpanHelpers.IndexOfAnyChar(ref spanRef, valueRef, Unsafe.Add(ref valueRef, 1), span.Length);
 
                         case 3:
                             return SpanHelpers.IndexOfAny(

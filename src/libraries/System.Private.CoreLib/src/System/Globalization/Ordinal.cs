@@ -264,7 +264,7 @@ namespace System.Globalization
             {
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
-                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
                     SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
                 if (relativeIndex < 0)
                 {
