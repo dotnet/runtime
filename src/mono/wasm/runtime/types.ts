@@ -117,7 +117,8 @@ export type MonoConfigInternal = MonoConfig & {
     waitForDebugger?: number
     appendElementOnExit?: boolean
     logExitCode?: boolean
-    forwardConsoleLogsToWS?: boolean
+    forwardConsoleLogsToWS?: boolean,
+    asyncFlushOnExit?: boolean
 };
 
 export type RunArguments = {

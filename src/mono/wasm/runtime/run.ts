@@ -63,7 +63,7 @@ export function mono_on_abort(error: any): void {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_exit(exit_code: number, reason?: any): void {
-    if (ENVIRONMENT_IS_NODE && exit_code === 0) {
+    if (runtimeHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
             try {

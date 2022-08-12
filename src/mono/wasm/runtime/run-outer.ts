@@ -53,6 +53,19 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withAsyncFlushOnExit(): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                asyncFlushOnExit: true
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withExitCodeLogging(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {

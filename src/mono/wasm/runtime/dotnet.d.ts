@@ -16,6 +16,7 @@ interface DotnetHostBuilder {
     withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
     withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
     withDebugging(level: number): DotnetHostBuilder;
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
