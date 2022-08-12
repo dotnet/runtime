@@ -14,7 +14,7 @@ using Microsoft.Build.Utilities;
 internal sealed class PInvokeTableGenerator
 {
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
-    private Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new Dictionary<Assembly, bool>();
+    private Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new ();
 
     private TaskLoggingHelper Log { get; set; }
 
