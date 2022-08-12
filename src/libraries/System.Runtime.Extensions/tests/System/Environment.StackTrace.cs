@@ -17,8 +17,6 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15315", TestRuntimes.Mono)]
-        // Retain parameter names for NativeAOT
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(EnvironmentStackTrace))]
         public void StackTraceTest()
         {
             //arrange
@@ -56,6 +54,7 @@ namespace System.Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [return: NotNull] // Add extra IL return parameter
         private static void StaticFrame(object obj)
         {
             s_stackTrace = Environment.StackTrace;

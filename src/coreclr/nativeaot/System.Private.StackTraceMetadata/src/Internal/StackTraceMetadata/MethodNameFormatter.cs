@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -187,30 +185,49 @@ namespace Internal.StackTraceMetadata
         /// <param name="methodHandle">Method handle to use for parameter formatting</param>
         private void EmitMethodParameters(MethodHandle methodHandle)
         {
+            bool EnumerateParameters(ref ParameterHandleCollection.Enumerator enumerator, out Parameter parameter)
+            {
+                bool hasNext = enumerator.MoveNext();
+                parameter = hasNext ? enumerator.Current.GetParameter(_metadataReader) : default;
+
+                return hasNext;
+            }
+
             Method method = methodHandle.GetMethod(_metadataReader);
             HandleCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
-            ParameterHandleCollection.Enumerator names = method.Parameters.GetEnumerator();
+            ParameterHandleCollection.Enumerator parameters = method.Parameters.GetEnumerator();
 
-            bool first = true;
+            bool hasNext = EnumerateParameters(ref parameters, out Parameter parameter);
+            if (hasNext && parameter.Sequence == 0)
+            {
+                hasNext = EnumerateParameters(ref parameters, out parameter);
+            }
 
             _outputBuilder.Append('(');
-            foreach (Handle handle in typeVector)
+
+            uint typeIndex = 0;
+            foreach (Handle type in typeVector)
             {
-                if (first)
-                {
-                    first = false;
-                }
-                else
+                if (typeIndex != 0)
                 {
                     _outputBuilder.Append(", ");
                 }
 
-                names.MoveNext();
+                EmitTypeName(type, namespaceQualified: false);
 
-                EmitTypeName(handle, namespaceQualified: false);
-                _outputBuilder.Append(' ');
-                EmitString(names.Current.GetParameter(_metadataReader).Name);
+                if (++typeIndex == parameter.Sequence && hasNext)
+                {
+                    string name = parameter.Name.GetConstantStringValue(_metadataReader).Value;
+                    hasNext = EnumerateParameters(ref parameters, out parameter);
+
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        _outputBuilder.Append(' ');
+                        _outputBuilder.Append(name);
+                    }
+                }
             }
+
             _outputBuilder.Append(')');
         }
 
