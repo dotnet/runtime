@@ -433,7 +433,7 @@ namespace System.Net.WebSockets
                     else
                     {
                         releaseSendBufferAndSemaphore = false;
-                        return WaitForWriteTaskAsync(flushTask, false);
+                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
                     }
                 }
 
@@ -458,7 +458,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask, true);
+            return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
         private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
