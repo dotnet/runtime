@@ -9568,7 +9568,8 @@ calli_end:
 			//   call SomeStruct::Method()
 			guchar* callvirt_ip;
 			guint32 callvirt_proc_token;
-			if (next_ip < end &&
+			if (!cfg->llvm_only && // virtual calls are handled differently with llvm aot
+				next_ip < end &&
 				(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) && 
 				ip_in_bb (cfg, cfg->cbb, callvirt_ip) ) {
 				MonoMethod* iface_method;
