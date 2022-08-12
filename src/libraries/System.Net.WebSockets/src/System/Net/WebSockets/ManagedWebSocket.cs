@@ -411,7 +411,6 @@ namespace System.Net.WebSockets
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
             ValueTask writeTask = default;
-            ValueTask flushTask;
             bool releaseSendBufferAndSemaphore = true;
             try
             {
@@ -425,7 +424,7 @@ namespace System.Net.WebSockets
                 if (writeTask.IsCompleted)
                 {
                     writeTask.GetAwaiter().GetResult();
-                    flushTask = new ValueTask(_stream.FlushAsync());
+                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
                     if (flushTask.IsCompleted)
                     {
                         return flushTask;
