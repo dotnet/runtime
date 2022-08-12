@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
             int actualDbgDirSize = peReader.PEHeaders.PEHeader.DebugTableDirectory.Size;
 
             // This comes from the Size property of the DebugDirectoryEntry class.
-            int expectedDbgDirSizeBase = 28;
+            const int expectedDbgDirSizeBase = 28;
 
             if (actualDbgDirSize % expectedDbgDirSizeBase != 0)
                 return ImmutableArray<DebugDirectoryEntry>.Empty;
