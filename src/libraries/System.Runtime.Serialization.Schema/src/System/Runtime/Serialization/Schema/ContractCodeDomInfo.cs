@@ -56,7 +56,7 @@ namespace System.Runtime.Serialization
         {
             HashSet<string> names = GetMemberNames();
 
-            // If the name already exists, 4.8 threw an exception because the backing collection type was Dictionary<string, null>
+            // If the name already exists, 4.8 threw an exception because the backing collection type was Dictionary<string, null>.
             Debug.Assert(!names.Contains(memberName));
             return names.Add(memberName);
         }
