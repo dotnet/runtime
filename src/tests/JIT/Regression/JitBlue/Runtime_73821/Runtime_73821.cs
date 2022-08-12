@@ -9,8 +9,9 @@ unsafe class Runtime_73821
     {
         public int F;
     }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static S TestMethod(int val)
+    public static S Test1(int val)
     {
         S s;
         int size = sizeof(S);
@@ -18,8 +19,17 @@ unsafe class Runtime_73821
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Test2(int val)
+    {
+        int val2;
+        int size = sizeof(int);
+        Unsafe.CopyBlockUnaligned(&val2, &val, (uint)size);
+        return val2;
+    }
+
     static int Main()
     {
-        return TestMethod(100).F;
+        return Test1(33).F + Test2(67);
     }
 }
