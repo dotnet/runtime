@@ -2894,51 +2894,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
-        {
-#if !READYTORUN
-            MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null)
-            {
-                return 0;
-            }
-
-            // type is already sealed, return it
-            if (_compilation.IsEffectivelySealed(type))
-            {
-                *exactClsRet = baseType;
-                return 1;
-            }
-
-            if (!type.IsInterface)
-            {
-                // TODO: handle classes
-                return 0;
-            }
-
-            TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
-            if (implClasses == null || implClasses.Length > maxExactClasses)
-            {
-                return 0;
-            }
-
-            int index = 0;
-            foreach (TypeDesc implClass in implClasses)
-            {
-                if (implClass.IsRuntimeDeterminedType)
-                {
-                    return 0;
-                }
-                exactClsRet[index++] = ObjectToHandle(implClass);
-            }
-
-            Debug.Assert(index <= maxExactClasses);
-            return index;
-#else
-            return 0;
-#endif
-        }
-
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
