@@ -59,7 +59,7 @@
     <Message Importance="High" Text="TestArchiveTestsRoot: $(TestArchiveTestsRoot)" />
     <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
     <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
-    <Message Importance="High" Text="HelixBaseUri: $(HelixBaseUri) />
+    <Message Importance="High" Text="HelixBaseUri: $(HelixBaseUri)" />
     <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
     <!-- Re-invoke MSBuild on this project to create the correlation payload -->
