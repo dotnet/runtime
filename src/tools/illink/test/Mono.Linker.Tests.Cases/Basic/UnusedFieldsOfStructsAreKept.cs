@@ -40,10 +40,51 @@ namespace Mono.Linker.Tests.Cases.Basic
 			public ref int UnusedRefField;
 
 			[Kept]
+			public ref ReferencedType UnusedClass;
+
+			[Kept]
+			public ref ReferencedStruct UnusedStruct;
+
+			[Kept]
+			public ReferencedRefStruct UnusedRefStruct;
+
+			[Kept]
 			int UnusedField;
 
 			[Kept]
 			int UsedField;
+		}
+
+		[Kept]
+		struct ReferencedStruct
+		{
+			[Kept]
+			int UnusedField;
+
+			[Kept]
+			int UnusedField2;
+		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (IsByRefLikeAttribute))]
+		[KeptAttributeAttribute (typeof (CompilerFeatureRequiredAttribute))]
+		[KeptAttributeAttribute (typeof (ObsoleteAttribute))]
+		ref struct ReferencedRefStruct
+		{
+			[Kept]
+			public ref int UnusedRefField;
+
+			[Kept]
+			public ref ReferencedType UnusedClass;
+
+			[Kept]
+			int UnusedField;
+		}
+
+		[Kept]
+		class ReferencedType
+		{
+			int field;
 		}
 	}
 }
