@@ -15,6 +15,7 @@ export interface DotnetHostBuilder {
     withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder
     withDiagnosticTracing(enabled: boolean): DotnetHostBuilder
     withDebugging(level: number): DotnetHostBuilder
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -185,6 +186,16 @@ class HostBuilder implements DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
             Object.assign(this.moduleConfig, { runtimeOptions });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder {
+        try {
+            this.moduleConfig.config!.mainAssemblyName = mainAssemblyName;
             return this;
         } catch (err) {
             mono_exit(1, err);
