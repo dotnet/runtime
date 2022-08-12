@@ -1118,7 +1118,6 @@ MemberLoader::FindMethod(
     for (; it.IsValid(); it.Prev())
     {
         MethodDesc *pCurDeclMD = it.GetDeclMethodDesc();
-        LPCUTF8 pCurDeclMDName = NULL;
 #ifdef _DEBUG
         MethodTable *pCurDeclMT = pCurDeclMD->GetMethodTable();
         CONSISTENCY_CHECK(!pMT->IsInterface() || pCurDeclMT == pMT->GetCanonicalMethodTable());
@@ -1133,8 +1132,7 @@ MemberLoader::FindMethod(
             ||
             (pCurDeclMD->MightHaveName(targetNameHash)
             // This is done last since it is the most expensive of the IF statement.
-            && (pCurDeclMDName = pCurDeclMD->GetName()) != NULL
-            && StrCompFunc(pszName, pCurDeclMDName) == 0)
+            && StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
            )
         {
             if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
