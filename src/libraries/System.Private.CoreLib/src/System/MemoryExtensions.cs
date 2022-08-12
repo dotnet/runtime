@@ -1183,40 +1183,44 @@ namespace System
                     }
                 }
 
-                if (Unsafe.SizeOf<T>() == sizeof(char))
+                if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    ref char spanRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span));
-                    ref char valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
+                    ref short spanRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span));
+                    ref short valueRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
                     switch (values.Length)
                     {
                         case 0:
                             return -1;
 
                         case 1:
-                            return SpanHelpers.IndexOfChar(ref spanRef, valueRef, span.Length);
+                            return SpanHelpers.IndexOfValueType(ref spanRef, valueRef, span.Length);
 
                         case 2:
-                            return SpanHelpers.IndexOfAnyChar(ref spanRef, valueRef, Unsafe.Add(ref valueRef, 1), span.Length);
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                span.Length);
 
                         case 3:
                             return SpanHelpers.IndexOfAnyValueType(
-                                ref Unsafe.As<char, short>(ref spanRef),
-                                Unsafe.As<char, short>(ref valueRef),
-                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 1)),
-                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 2)),
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
                                 span.Length);
 
                         case 4:
                             return SpanHelpers.IndexOfAnyValueType(
-                                ref Unsafe.As<char, short>(ref spanRef),
-                                Unsafe.As<char, short>(ref valueRef),
-                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 1)),
-                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 2)),
-                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 3)),
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
                                 span.Length);
 
                         case 5:
-                            return SpanHelpers.IndexOfAny(
+                            return SpanHelpers.IndexOfAnyValueType(
                                 ref spanRef,
                                 valueRef,
                                 Unsafe.Add(ref valueRef, 1),
@@ -1226,7 +1230,7 @@ namespace System
                                 span.Length);
 
                         default:
-                            return IndexOfAnyProbabilistic(ref spanRef, span.Length, ref valueRef, values.Length);
+                            return IndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
                     }
                 }
             }
