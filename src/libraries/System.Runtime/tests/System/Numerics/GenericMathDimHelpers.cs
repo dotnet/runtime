@@ -8,14 +8,15 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-
     public struct BinaryNumberDimHelper : IBinaryNumber<BinaryNumberDimHelper>
     {
-        public int value = 0;
-        BinaryNumberDimHelper(int value)
+        public int Value = 0;
+
+        private BinaryNumberDimHelper(int value)
         {
-            this.value = value;
+            Value = value;
         }
+
         static BinaryNumberDimHelper INumberBase<BinaryNumberDimHelper>.Zero => new BinaryNumberDimHelper(0);
 
         static BinaryNumberDimHelper IBitwiseOperators<BinaryNumberDimHelper, BinaryNumberDimHelper, BinaryNumberDimHelper>.operator ~(BinaryNumberDimHelper value)
