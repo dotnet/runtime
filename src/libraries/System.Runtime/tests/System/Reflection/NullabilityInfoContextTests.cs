@@ -785,7 +785,7 @@ namespace System.Reflection.Tests
         {
             // Dummy call to MakeGenericMethod to make the code generated ahead of time 
             if (string.Empty.Length > 0) 
-                TypeWithNotNullContext.GenericMethodWithPointers<float>(null, null);
+                new TypeWithNotNullContext().GenericMethodWithPointers<float>(null, null);
                 
             // GenericMethodWithPointers<T>(T* a, T?* b)
             MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.GenericMethodWithPointers))!
