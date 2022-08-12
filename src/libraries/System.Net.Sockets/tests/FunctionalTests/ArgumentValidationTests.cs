@@ -372,7 +372,34 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void Select_InfiniteTimeSpan_Ok()
+        public void SelectPoll_NegativeTimeSpan_Throws()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+                Task accept = host.AcceptAsync();
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    s.Connect(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)host.LocalEndPoint).Port));
+
+                    var list = new List<Socket>();
+                    list.Add(s);
+
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, list, null, TimeSpan.FromMicroseconds(-1)));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, list, null, TimeSpan.FromMicroseconds((double)int.MaxValue + 1)));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, list, null, TimeSpan.FromMilliseconds(-1.1)));
+
+                    Assert.Throws<ArgumentOutOfRangeException>(() => s.Poll(TimeSpan.FromMicroseconds(-1), SelectMode.SelectWrite));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => s.Poll(TimeSpan.FromMicroseconds((double)int.MaxValue + 1), SelectMode.SelectWrite));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => s.Poll(TimeSpan.FromMilliseconds(-1.1), SelectMode.SelectWrite));
+                }
+            }
+        }
+
+        [Fact]
+        public void SelectPoll_InfiniteTimeSpan_Ok()
         {
             using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -390,6 +417,8 @@ namespace System.Net.Sockets.Tests
                     // should be writable
                     Socket.Select(null, list, null, Timeout.InfiniteTimeSpan);
                     Socket.Select(null, list, null, -1);
+                    s.Poll(Timeout.InfiniteTimeSpan, SelectMode.SelectWrite);
+                    s.Poll(-1, SelectMode.SelectWrite);
                 }
             }
         }
