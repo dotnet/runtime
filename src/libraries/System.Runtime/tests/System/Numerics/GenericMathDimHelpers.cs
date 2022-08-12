@@ -21,7 +21,7 @@ namespace System.Numerics.Tests
 
         static BinaryNumberDimHelper IBitwiseOperators<BinaryNumberDimHelper, BinaryNumberDimHelper, BinaryNumberDimHelper>.operator ~(BinaryNumberDimHelper value)
         {
-            return new BinaryNumberDimHelper(~value.value);
+            return new BinaryNumberDimHelper(~value.Value);
         }
 
         //

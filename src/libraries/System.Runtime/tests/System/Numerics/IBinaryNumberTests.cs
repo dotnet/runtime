@@ -10,8 +10,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            Assert.Equal(unchecked((int)0xFFFF_FFFF), BinaryNumberHelper<BinaryNumberDimHelper>.AllBitsSet.value);
-            Assert.Equal(0, ~BinaryNumberHelper<BinaryNumberDimHelper>.AllBitsSet.value);
+            Assert.Equal(unchecked((int)0xFFFF_FFFF), BinaryNumberHelper<BinaryNumberDimHelper>.AllBitsSet.Value);
+            Assert.Equal(0, ~BinaryNumberHelper<BinaryNumberDimHelper>.AllBitsSet.Value);
         }
     }
 }
