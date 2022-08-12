@@ -282,7 +282,7 @@ namespace System.Data.SqlTypes
             (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode() => IsNull ? 0 : _value.GetValueOrDefault().GetHashCode();
+        public override int GetHashCode() => _value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
