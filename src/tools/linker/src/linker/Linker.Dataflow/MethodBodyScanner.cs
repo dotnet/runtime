@@ -542,7 +542,7 @@ namespace Mono.Linker.Dataflow
 
 				case Code.Stfld:
 				case Code.Stsfld:
-					ScanStfld (operation, currentStack, thisMethod, methodBody, ref interproceduralState);
+					ScanStfld (operation, currentStack, thisMethod, methodBody, locals, ref interproceduralState);
 					break;
 
 				case Code.Cpobj:
@@ -558,7 +558,7 @@ namespace Mono.Linker.Dataflow
 				case Code.Stind_R8:
 				case Code.Stind_Ref:
 				case Code.Stobj:
-					ScanIndirectStore (operation, currentStack, methodBody, locals, curBasicBlock);
+					ScanIndirectStore (operation, currentStack, methodBody, locals, curBasicBlock, ref interproceduralState);
 					break;
 
 				case Code.Initobj:
@@ -863,12 +863,13 @@ namespace Mono.Linker.Dataflow
 			Stack<StackSlot> currentStack,
 			MethodBody methodBody,
 			LocalVariableStore locals,
-			int curBasicBlock)
+			int curBasicBlock,
+			ref InterproceduralState ipState)
 		{
 			StackSlot valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			StackSlot destination = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-			StoreInReference (destination.Value, valueToStore.Value, methodBody.Method, operation, locals, curBasicBlock);
+			StoreInReference (destination.Value, valueToStore.Value, methodBody.Method, operation, locals, curBasicBlock, ref ipState);
 		}
 
 		/// <summary>
@@ -879,7 +880,7 @@ namespace Mono.Linker.Dataflow
 		/// <param name="method">The method body that contains the operation causing the store</param>
 		/// <param name="operation">The instruction causing the store</param>
 		/// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
-		protected void StoreInReference (MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock)
+		protected void StoreInReference (MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState)
 		{
 			foreach (var value in target) {
 				switch (value) {
@@ -901,6 +902,9 @@ namespace Mono.Linker.Dataflow
 				case MethodReturnValue methodReturnValue:
 					// Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
 					HandleStoreMethodReturnValue (method, methodReturnValue, operation, source);
+					break;
+				case FieldValue fieldValue:
+					HandleStoreField (method, fieldValue, operation, DereferenceValue (source, locals, ref ipState));
 					break;
 				case IValueWithStaticType valueWithStaticType:
 					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType))
@@ -971,6 +975,7 @@ namespace Mono.Linker.Dataflow
 			Stack<StackSlot> currentStack,
 			MethodDefinition thisMethod,
 			MethodBody methodBody,
+			LocalVariableStore locals,
 			ref InterproceduralState interproceduralState)
 		{
 			StackSlot valueToStoreSlot = PopUnknown (currentStack, 1, methodBody, operation.Offset);
@@ -990,7 +995,10 @@ namespace Mono.Linker.Dataflow
 					if (value is not FieldValue fieldValue)
 						continue;
 
-					HandleStoreField (thisMethod, fieldValue, operation, valueToStoreSlot.Value);
+					// Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
+					MultiValue valueToStore = DereferenceValue (valueToStoreSlot.Value, locals, ref interproceduralState);
+
+					HandleStoreField (thisMethod, fieldValue, operation, valueToStore);
 				}
 			}
 		}
@@ -1034,7 +1042,7 @@ namespace Mono.Linker.Dataflow
 			return methodParams;
 		}
 
-		internal MultiValue DereferenceValue (MultiValue maybeReferenceValue, Dictionary<VariableDefinition, ValueBasicBlockPair> locals, ref InterproceduralState interproceduralState)
+		internal MultiValue DereferenceValue (MultiValue maybeReferenceValue, LocalVariableStore locals, ref InterproceduralState interproceduralState)
 		{
 			MultiValue dereferencedValue = MultiValueLattice.Top;
 			foreach (var value in maybeReferenceValue) {
@@ -1059,6 +1067,10 @@ namespace Mono.Linker.Dataflow
 					break;
 				case ReferenceValue referenceValue:
 					throw new NotImplementedException ($"Unhandled dereference of ReferenceValue of type {referenceValue.GetType ().FullName}");
+				// Incomplete handling for ref values
+				case FieldValue fieldValue:
+					dereferencedValue = MultiValue.Meet (dereferencedValue, fieldValue);
+					break;
 				default:
 					dereferencedValue = MultiValue.Meet (dereferencedValue, value);
 					break;
@@ -1076,7 +1088,8 @@ namespace Mono.Linker.Dataflow
 			ValueNodeList methodArguments,
 			Instruction operation,
 			LocalVariableStore locals,
-			int curBasicBlock)
+			int curBasicBlock,
+			ref InterproceduralState ipState)
 		{
 			MethodDefinition? calledMethodDefinition = _context.Resolve (calledMethod);
 			bool methodIsResolved = calledMethodDefinition is not null;
@@ -1088,7 +1101,7 @@ namespace Mono.Linker.Dataflow
 				SingleValue newByRefValue = methodIsResolved
 					? _context.Annotations.FlowAnnotations.GetMethodParameterValue (calledMethodDefinition!, parameterIndex)
 					: UnknownValue.Instance;
-				StoreInReference (methodArguments[ilArgumentIndex], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock);
+				StoreInReference (methodArguments[ilArgumentIndex], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState);
 			}
 		}
 
@@ -1135,7 +1148,7 @@ namespace Mono.Linker.Dataflow
 			if (isNewObj || !calledMethod.ReturnsVoid ())
 				currentStack.Push (new StackSlot (methodReturnValue));
 
-			AssignRefAndOutParameters (callingMethodBody, calledMethod, methodArguments, operation, locals, curBasicBlock);
+			AssignRefAndOutParameters (callingMethodBody, calledMethod, methodArguments, operation, locals, curBasicBlock, ref interproceduralState);
 
 			foreach (var param in methodArguments) {
 				foreach (var v in param) {

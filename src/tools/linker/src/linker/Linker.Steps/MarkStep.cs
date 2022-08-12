@@ -3503,18 +3503,8 @@ namespace Mono.Linker.Steps
 			foreach (Instruction instruction in body.Instructions) {
 				switch (instruction.OpCode.OperandType) {
 				case OperandType.InlineField:
-					switch (instruction.OpCode.Code) {
-					case Code.Stfld:
-					case Code.Stsfld:
-					case Code.Ldflda:
-					case Code.Ldsflda:
-						if (ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (Context, (FieldReference) instruction.Operand))
-							return true;
-						break;
-
-					default:
-						break;
-					}
+					if (InstructionRequiresReflectionMethodBodyScannerForFieldAccess (instruction))
+						return true;
 					break;
 
 				case OperandType.InlineMethod:
@@ -3595,22 +3585,27 @@ namespace Mono.Linker.Steps
 				MarkInterfaceImplementation (implementation, new MessageOrigin (type));
 		}
 
+		bool InstructionRequiresReflectionMethodBodyScannerForFieldAccess (Instruction instruction)
+			=> instruction.OpCode.Code switch {
+				// Field stores (Storing value to annotated field must be checked)
+				Code.Stfld or
+				Code.Stsfld or
+				// Field address loads (as those can be used to store values to annotated field and thus must be checked)
+				Code.Ldflda or
+				Code.Ldsflda
+					=> ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (Context, (FieldReference) instruction.Operand),
+				// For ref fields, ldfld loads an address which can be used to store values to annotated fields
+				Code.Ldfld or Code.Ldsfld when ((FieldReference) instruction.Operand).FieldType.IsByRefOrPointer ()
+					=> ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (Context, (FieldReference) instruction.Operand),
+				// Other field operations are not interesting as they don't need to be checked
+				_ => false
+			};
+
 		protected virtual void MarkInstruction (Instruction instruction, MethodDefinition method, ref bool requiresReflectionMethodBodyScanner)
 		{
 			switch (instruction.OpCode.OperandType) {
 			case OperandType.InlineField:
-				switch (instruction.OpCode.Code) {
-				case Code.Stfld: // Field stores (Storing value to annotated field must be checked)
-				case Code.Stsfld:
-				case Code.Ldflda: // Field address loads (as those can be used to store values to annotated field and thus must be checked)
-				case Code.Ldsflda:
-					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (Context, (FieldReference) instruction.Operand);
-					break;
-
-				default: // Other field operations are not interesting as they don't need to be checked
-					break;
-				}
+				requiresReflectionMethodBodyScanner |= InstructionRequiresReflectionMethodBodyScannerForFieldAccess (instruction);
 
 				ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 				MarkField ((FieldReference) instruction.Operand, new DependencyInfo (DependencyKind.FieldAccess, method), ScopeStack.CurrentScope.Origin);

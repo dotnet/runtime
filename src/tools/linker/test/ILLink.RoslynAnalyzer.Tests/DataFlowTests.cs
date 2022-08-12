@@ -253,6 +253,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (PropertyDataFlow));
 		}
 
+		[Fact]
+		public Task RefFieldDataFlow ()
+		{
+			return RunTest (nameof (RefFieldDataFlow));
+		}
+
 		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
 		public Task SuppressWarningWithLinkAttributes ()
 		{
