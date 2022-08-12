@@ -337,7 +337,7 @@ namespace System.Xml
         {
             if (BitConverter.IsLittleEndian)
             {
-                new ReadOnlySpan<byte>((byte*)chars, 2 * charCount)
+                new ReadOnlySpan<byte>((byte*)chars, sizeof(char) * charCount)
                     .CopyTo(buffer.AsSpan(offset));
             }
             else
