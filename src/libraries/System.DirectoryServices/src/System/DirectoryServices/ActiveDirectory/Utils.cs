@@ -2082,6 +2082,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
+                        tokenHandle.Dispose();
 
                         // Current thread doesn't have a token, try the process
                         if (!global::Interop.Advapi32.OpenProcessToken(

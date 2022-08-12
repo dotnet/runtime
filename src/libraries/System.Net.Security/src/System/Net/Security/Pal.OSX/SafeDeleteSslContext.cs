@@ -127,7 +127,7 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions options)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
             switch (options.EncryptionPolicy)
             {
@@ -143,7 +143,7 @@ namespace System.Net
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, options.EncryptionPolicy));
             }
 
-            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(options.IsServer ? 1 : 0);
+            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(sslAuthenticationOptions.IsServer ? 1 : 0);
 
             try
             {
@@ -155,14 +155,14 @@ namespace System.Net
                 }
 
                 // Let None mean "system default"
-                if (options.EnabledSslProtocols != SslProtocols.None)
+                if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None)
                 {
-                    SetProtocols(sslContext, options.EnabledSslProtocols);
+                    SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (options.CertificateContext != null)
+                if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    SetCertificate(sslContext, options.CertificateContext);
+                    SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
 
                 Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
@@ -357,7 +357,6 @@ namespace System.Net
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
-
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
 

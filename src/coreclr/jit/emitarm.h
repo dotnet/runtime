@@ -27,8 +27,6 @@ unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-#ifdef DEBUG
-
 void emitDispInst(instruction ins, insFlags flags);
 void emitDispImm(int imm, bool addComma, bool alwaysHex = false);
 void emitDispReloc(BYTE* addr);
@@ -60,8 +58,6 @@ void emitDispInsHelp(instrDesc* id,
                      BYTE*      code = 0,
                      size_t     sz   = 0,
                      insGroup*  ig   = NULL);
-
-#endif // DEBUG
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -353,7 +349,7 @@ inline bool emitIsCondJump(instrDesc* jmp)
 
 /*****************************************************************************
  *
- *  Given an instrDesc, return true if it's a comapre and jump.
+ *  Given an instrDesc, return true if it's a compare and jump.
  */
 
 inline bool emitIsCmpJump(instrDesc* jmp)

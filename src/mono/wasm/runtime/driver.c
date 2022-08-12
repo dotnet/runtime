@@ -42,7 +42,6 @@
 void core_initialize_internals ();
 #endif
 
-extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
@@ -282,6 +281,12 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_getenv (const char *name)
+{
+	return monoeg_g_getenv (name); // JS must free
+}
+
 static void *sysglobal_native_handle;
 
 static void*
@@ -446,8 +451,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
-
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 

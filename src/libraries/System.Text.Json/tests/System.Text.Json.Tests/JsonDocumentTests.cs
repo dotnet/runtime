@@ -553,7 +553,7 @@ namespace System.Text.Json.Tests
 
                     using (var stream = new MemoryStream(dataUtf8))
                     using (var streamReader = new StreamReader(stream, Encoding.UTF8, false, 1024, true))
-                    using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
+                    using (var jsonReader = new JsonTextReader(streamReader) { MaxDepth = null })
                     {
                         JToken jToken = JToken.ReadFrom(jsonReader);
 
@@ -3656,7 +3656,7 @@ namespace System.Text.Json.Tests
                 return existing;
             }
 
-            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            using (var jsonReader = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null })
             {
                 jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
                 JToken jtoken = JToken.ReadFrom(jsonReader);

@@ -97,25 +97,20 @@
         <target state="translated">인식할 수 없는 그룹화 구성입니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">11 이상의 C# LangVersion이 필요합니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">지정한 regex가 잘못되었습니다. '{0}'</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">RegexGeneratorAttribute의 형식이 잘못되었습니다.</target>
-        <note>{Locked="RegexGeneratorAttribute"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">GeneratedRegexAttribute의 형식이 잘못되었습니다.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
-        <source>Invalid RegexGenerator usage</source>
-        <target state="translated">잘못된 RegexGenerator 사용</target>
-        <note>{Locked="RegexGenerator"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">잘못된 GeneratedRegexAttribute 사용</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -128,13 +123,13 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator가 내부 제한으로 인해 지정된 정규식에 대한 전체 소스 구현을 생성할 수 없습니다.</target>
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">regex 생성기가 내부 제한으로 인해 지정된 정규식에 대한 전체 원본 구현을 생성할 수 없습니다. 자세한 내용은 생성된 원본의 설명을 참조하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
-        <source>RegexGenerator limitation reached.</source>
-        <target state="translated">RegexGenerator 제한에 도달했습니다.</target>
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">regex 생성기 제한에 도달했습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -157,9 +152,9 @@
         <target state="translated">제어 문자가 없습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">동일한 메서드에 여러 RegexGeneratorAttributes가 적용되었지만 하나만 허용됩니다.</target>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">여러 GeneratedRegexAttributes가 동일한 메서드에 적용되었지만 하나만 허용됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -203,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">RegexGenerator 메서드는 부분적이고 매개 변수가 없고 제네릭이 아니어야 하며 비추상적이고 regex 반환이어야 합니다.</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">GeneratedRegexAttribute 메서드는 부분적이고 매개 변수가 없으며 제네릭이 아닌 비추상 메서드여야 하며 regex를 반환해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -263,13 +258,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">'RegexGeneratorAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">'GeneratedRegexAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">'RegexGenerator'로 변환합니다.</target>
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">'GeneratedRegexAttribute'로 변환합니다.</target>
         <note />
       </trans-unit>
     </body>

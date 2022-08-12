@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
     public abstract class JsonConverterFactory : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverterFactory"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverterFactory"/> instance.
         /// </summary>
         protected JsonConverterFactory() { }
 
@@ -31,13 +31,6 @@ namespace System.Text.Json.Serialization
         /// If <see langword="null"/> is returned, a <see cref="NotSupportedException"/> will be thrown.
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
-
-        internal override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
 
         internal override JsonParameterInfo CreateJsonParameterInfo()
         {

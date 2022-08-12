@@ -20,62 +20,26 @@ namespace System.Text.RegularExpressions.Tests
         where TAnalyzer : DiagnosticAnalyzer, new()
         where TCodeFix : CodeFixProvider, new()
     {
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic()"/>
-        public static DiagnosticResult Diagnostic()
-            => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, XUnitVerifier>.Diagnostic();
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic(string)"/>
-        public static DiagnosticResult Diagnostic(string diagnosticId)
-            => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, XUnitVerifier>.Diagnostic(diagnosticId);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic(DiagnosticDescriptor)"/>
-        public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
-            => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, XUnitVerifier>.Diagnostic(descriptor);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-        public static async Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
-            => await VerifyAnalyzerAsync(source, null, usePreviewLanguageVersion: true, expected);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-        public static async Task VerifyAnalyzerAsync(string source, ReferenceAssemblies? references, bool usePreviewLanguageVersion, params DiagnosticResult[] expected)
+        public static async Task VerifyAnalyzerAsync(string source, ReferenceAssemblies? references = null)
         {
-            Test test = new Test(references, usePreviewLanguageVersion, numberOfIterations: 1)
-            {
-                TestCode = source,
-            };
-
-            test.ExpectedDiagnostics.AddRange(expected);
-            await test.RunAsync(CancellationToken.None);
+            await VerifyCodeFixAsync(source, source, references);
         }
 
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, int numberOfIterations = 1)
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, ReferenceAssemblies? references = null)
         {
-            Test test = new Test(null, usePreviewLanguageVersion: true, numberOfIterations)
+            Test test = new Test(references)
             {
                 TestCode = source,
                 FixedCode = fixedSource,
             };
 
-            test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
 
         public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
-            public Test(ReferenceAssemblies? references, bool usePreviewLanguageVersion, int numberOfIterations)
+            public Test(ReferenceAssemblies? references = null)
             {
-                // Code Fixer generates partial methods that will need to use the source generator to be filled.
-                this.CompilerDiagnostics = CompilerDiagnostics.None;
-
                 if (references != null)
                 {
                     ReferenceAssemblies = references;
@@ -87,21 +51,17 @@ namespace System.Text.RegularExpressions.Tests
                     ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
                     TestState.AdditionalReferences.AddRange(RegexGeneratorHelper.References);
                 }
-
-                NumberOfFixAllIterations = numberOfIterations;
-
-                SolutionTransforms.Add((solution, projectId) =>
-                {
-                    if (usePreviewLanguageVersion)
-                    {
-                        CSharpParseOptions parseOptions = solution.GetProject(projectId).ParseOptions as CSharpParseOptions;
-                        parseOptions = parseOptions.WithLanguageVersion(LanguageVersion.Preview);
-                        solution = solution.WithProjectParseOptions(projectId, parseOptions);
-                    }
-
-                    return solution;
-                });
             }
+
+            public LanguageVersion LanguageVersion { get; set; } = LanguageVersion.Preview;
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+            }
+
+            // CS8795: Partial method '{0}' must have an implementation part because it has accessibility modifiers.
+            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics) => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics) && diagnostic.Id != "CS8795";
         }
     }
 }

@@ -32,11 +32,11 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(0)]
             internal int Int32Value;
             [FieldOffset(0)]
-            internal long Int64Value;// must be alligned to 8 because of HEAPI64 alignment
+            internal long Int64Value;// must be aligned to 8 because of HEAPI64 alignment
             [FieldOffset(0)]
             internal float SingleValue;
             [FieldOffset(0)]
-            internal double DoubleValue;// must be alligned to 8 because of Module.HEAPF64 view alignment
+            internal double DoubleValue;// must be aligned to 8 because of Module.HEAPF64 view alignment
             [FieldOffset(0)]
             internal IntPtr IntPtrValue;
 

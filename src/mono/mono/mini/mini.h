@@ -1001,7 +1001,7 @@ enum {
 };
 
 enum {
-	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an unitialized rgctx slot */
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an uninitialized rgctx slot */
 	MONO_GSHAREDVT_BOX_TYPE_VTYPE = 1,
 	MONO_GSHAREDVT_BOX_TYPE_REF = 2,
 	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3
@@ -1228,7 +1228,6 @@ typedef struct {
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean         have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
-	guint            use_fpstack : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
 	guint            need_div_check : 1;
@@ -1402,7 +1401,7 @@ typedef struct {
 	MonoInst *lmf_addr_var;
 	MonoInst *il_state_var;
 
-	MonoInst *stack_inbalance_var;
+	MonoInst *stack_imbalance_var;
 
 	unsigned char   *cil_start;
 	unsigned char   *native_code;
@@ -2780,7 +2779,7 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type);
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
-void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
+void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
 #define MONO_TIME_TRACK(a, phase) \
 	{ \

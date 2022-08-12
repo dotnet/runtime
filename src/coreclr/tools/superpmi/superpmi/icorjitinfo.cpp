@@ -971,7 +971,7 @@ void MyICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of
     freeArray(pMap); // see note in recSetBoundaries... we own this array and own destroying it.
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.

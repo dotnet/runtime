@@ -55,7 +55,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,

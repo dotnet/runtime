@@ -1727,9 +1727,9 @@ namespace System.Xml
         {
             if (DocumentType != null)
             {
-                XmlNamedNodeMap entites = DocumentType.Entities;
-                if (entites != null)
-                    return (XmlEntity?)(entites.GetNamedItem(name));
+                XmlNamedNodeMap entities = DocumentType.Entities;
+                if (entities != null)
+                    return (XmlEntity?)(entities.GetNamedItem(name));
             }
             return null;
         }

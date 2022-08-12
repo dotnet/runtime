@@ -30,6 +30,7 @@ const char* g_help = "createdump [options]\n"
 "-l, --logtofile - file path and name to log diagnostic messages.\n"
 #ifdef HOST_UNIX
 "--crashreport - write crash report file (dump file path + .crashreport.json).\n"
+"--crashreportonly - write crash report file only (no dump).\n"
 "--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
 "--singlefile - enable single-file app check.\n"
@@ -40,10 +41,13 @@ FILE *g_logfile = nullptr;
 FILE *g_stdout = stdout;
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
+uint64_t g_ticksPerMS = 0;
+uint64_t g_startTime = 0;
+uint64_t GetTickFrequency();
+uint64_t GetTimeStamp();
+
 #ifdef HOST_UNIX
 bool g_checkForSingleFile = false;
-uint64_t g_ticksPerMS = 0;
-uint64_t GetTickFrequency();
 #endif
 
 //
@@ -61,6 +65,7 @@ int __cdecl main(const int argc, const char* argv[])
     const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
     bool crashReport = false;
+    bool createDump = true;
     bool help = false;
     int signal = 0;
     int crashThread = 0;
@@ -133,6 +138,11 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 crashReport = true;
             }
+            else if (strcmp(*argv, "--crashreportonly") == 0)
+            {
+                crashReport = true;
+                createDump = false;
+            }
             else if (strcmp(*argv, "--crashthread") == 0)
             {
                 crashThread = atoi(*++argv);
@@ -188,8 +198,6 @@ int __cdecl main(const int argc, const char* argv[])
     {
         help = true;
     }
-    g_ticksPerMS = GetTickFrequency() / 1000000UL;
-    TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
 #endif
 
     if (help)
@@ -198,6 +206,10 @@ int __cdecl main(const int argc, const char* argv[])
         printf_error("%s", g_help);
         return -1;
     }
+
+    g_ticksPerMS = GetTickFrequency() / 1000UL;
+    g_startTime = GetTimeStamp();
+    TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
 
     ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
     if (dumpPathTemplate == nullptr)
@@ -216,12 +228,13 @@ int __cdecl main(const int argc, const char* argv[])
         dumpPathTemplate = tmpPath;
     }
 
-    if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
+    if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, createDump, crashReport, crashThread, signal))
     {
-        printf_status("Dump successfully written\n");
+        printf_status("Dump successfully written in %llums\n", GetTimeStamp() - g_startTime);
     }
     else
     {
+        printf_error("Failure took %llums\n", GetTimeStamp() - g_startTime);
         exitCode = -1;
     }
 
@@ -268,7 +281,7 @@ GetLastErrorString()
     }
 #endif
     char buffer[64];
-    sprintf(buffer, "(%d)", error);
+    snprintf(buffer, sizeof(buffer), "(%d)", error);
     result.append(buffer);
     return result;
 }
@@ -308,8 +321,6 @@ printf_error(const char* format, ...)
     va_end(args);
 }
 
-#ifdef HOST_UNIX
-
 uint64_t
 GetTickFrequency()
 {
@@ -319,7 +330,7 @@ GetTickFrequency()
     return ret.QuadPart;
 }
 
-static uint64_t
+uint64_t
 GetTimeStamp()
 {
     LARGE_INTEGER ret;
@@ -327,6 +338,8 @@ GetTimeStamp()
     QueryPerformanceCounter(&ret);
     return ret.QuadPart / g_ticksPerMS;
 }
+
+#ifdef HOST_UNIX
 
 static void
 trace_prefix()

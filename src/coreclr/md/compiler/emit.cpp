@@ -417,7 +417,7 @@ ErrExit:
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
-    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the TypeDef.
+    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG    cbHashValue,           // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
@@ -589,7 +589,7 @@ ErrExit:
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
-    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the Member.
+    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG        cbHashValue,           // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Import scope, with member.

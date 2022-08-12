@@ -28,7 +28,7 @@ public sealed partial class QuicListener
         /// <summary>
         /// It will contain the established <see cref="QuicConnection" /> in case of a successful handshake; otherwise, <c>null</c>.
         /// </summary>
-        private readonly TaskCompletionSource<QuicConnection?> _finishHandshakeTask;
+        private readonly TaskCompletionSource<QuicConnection> _finishHandshakeTask;
         /// <summary>
         /// Use to impose the handshake timeout.
         /// </summary>
@@ -36,7 +36,7 @@ public sealed partial class QuicListener
 
         public PendingConnection()
         {
-            _finishHandshakeTask = new TaskCompletionSource<QuicConnection?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _finishHandshakeTask = new TaskCompletionSource<QuicConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
             _cancellationTokenSource = new CancellationTokenSource();
         }
 
@@ -57,6 +57,7 @@ public sealed partial class QuicListener
             {
                 _cancellationTokenSource.CancelAfter(s_handshakeTimeout);
                 QuicServerConnectionOptions options = await connectionOptionsCallback(connection, clientHello, _cancellationTokenSource.Token).ConfigureAwait(false);
+                options.Validate(nameof(options)); // Validate and fill in defaults for the options.
                 await connection.FinishHandshakeAsync(options, clientHello.ServerName, _cancellationTokenSource.Token).ConfigureAwait(false);
                 _finishHandshakeTask.SetResult(connection);
             }
@@ -68,12 +69,12 @@ public sealed partial class QuicListener
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(connection, $"Connection handshake failed: {ex}");
+                    NetEventSource.Error(connection, $"{connection} Connection handshake failed: {ex}");
                 }
 
                 await connection.CloseAsync(default).ConfigureAwait(false);
-                connection.Dispose();
-                _finishHandshakeTask.SetResult(null);
+                await connection.DisposeAsync().ConfigureAwait(false);
+                _finishHandshakeTask.SetException(ex);
             }
         }
 
@@ -82,7 +83,7 @@ public sealed partial class QuicListener
         /// </summary>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>An asynchronous task that completes with the established connection if it succeeded or <c>null</c> if it failed.</returns>
-        public ValueTask<QuicConnection?> FinishHandshakeAsync(CancellationToken cancellationToken = default)
+        public ValueTask<QuicConnection> FinishHandshakeAsync(CancellationToken cancellationToken = default)
             => new(_finishHandshakeTask.Task.WaitAsync(cancellationToken));
 
 
@@ -90,10 +91,17 @@ public sealed partial class QuicListener
         /// Cancels the handshake in progress and awaits for it so that the connection can be safely cleaned from the listener queue.
         /// </summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             _cancellationTokenSource.Cancel();
-            return new ValueTask(_finishHandshakeTask.Task);
+            try
+            {
+                await _finishHandshakeTask.Task.ConfigureAwait(false);
+            }
+            catch
+            {
+                // Just swallow the exception, we don't want it to propagate outside of dispose and it has already been logged in StartHandshake catch block.
+            }
         }
     }
 }

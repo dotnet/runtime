@@ -2,6 +2,7 @@ parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
   platforms: []
+  shouldContinueOnError: false
 
 jobs:
 
@@ -15,6 +16,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
@@ -32,6 +34,7 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
+          eq(variables['wasmDarcDependenciesChanged'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
       # extra steps, run tests

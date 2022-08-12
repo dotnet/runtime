@@ -32,9 +32,8 @@ namespace System.Net.Quic.Tests
 
             var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = clientPolicy;
-            using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
+            await using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
 
-            await clientConnection.ConnectAsync();
             await clientConnection.CloseAsync(0);
         }
 
@@ -72,7 +71,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MismatchedCipherPolicies_ConnectAsync_ThrowsQuicException()
         {
-            await Assert.ThrowsAnyAsync<QuicException>(() => TestConnection(
+            await Assert.ThrowsAsync<QuicException>(() => TestConnection(
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_128_GCM_SHA256 }),
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_256_GCM_SHA384 })
             ));

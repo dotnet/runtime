@@ -3,7 +3,7 @@
 
 /*============================================================
 **
-** Source: test1.c 
+** Source: test1.c
 **
 ** Purpose: Test for WaitForMultipleObjects. Call the function
 ** on an array of 4 events, and ensure that it returns correct
@@ -25,16 +25,16 @@ BOOL WaitForMultipleObjectsTest()
     DWORD i = 0, j = 0;
 
     LPSECURITY_ATTRIBUTES lpEventAttributes = NULL;
-    BOOL bManualReset = TRUE; 
+    BOOL bManualReset = TRUE;
     BOOL bInitialState = TRUE;
 
     HANDLE hEvent[MAX_EVENTS];
 
-    /* Run through this for loop and create 4 events */ 
+    /* Run through this for loop and create 4 events */
     for (i = 0; i < MAX_EVENTS; i++)
     {
-        hEvent[i] = CreateEvent( lpEventAttributes, 
-                                 bManualReset, bInitialState, NULL);  
+        hEvent[i] = CreateEvent( lpEventAttributes,
+                                 bManualReset, bInitialState, NULL);
 
         if (hEvent[i] == INVALID_HANDLE_VALUE)
         {
@@ -42,7 +42,7 @@ BOOL WaitForMultipleObjectsTest()
             bRet = FALSE;
             break;
         }
-        
+
         /* Set the current event */
         bRet = SetEvent(hEvent[i]);
 
@@ -52,7 +52,7 @@ BOOL WaitForMultipleObjectsTest()
             bRet = FALSE;
             break;
         }
-        
+
         /* Ensure that this returns the correct value */
         dwRet = WaitForSingleObject(hEvent[i],0);
 
@@ -74,7 +74,7 @@ BOOL WaitForMultipleObjectsTest()
             bRet = FALSE;
             break;
         }
-        
+
         dwRet = WaitForSingleObject(hEvent[i],0);
 
         if (dwRet != WAIT_TIMEOUT)
@@ -84,24 +84,24 @@ BOOL WaitForMultipleObjectsTest()
             break;
         }
     }
-    
-    /* 
+
+    /*
      * If the first section of the test passed, move on to the
-     * second. 
+     * second.
     */
 
     if (bRet)
     {
         BOOL bWaitAll = TRUE;
         DWORD nCount = MAX_EVENTS;
-        CONST HANDLE *lpHandles = &hEvent[0]; 
+        CONST HANDLE *lpHandles = &hEvent[0];
 
-        /* Call WaitForMultipleOjbects on all the events, the return
+        /* Call WaitForMultipleObjects on all the events, the return
            should be WAIT_TIMEOUT
         */
-        dwRet = WaitForMultipleObjects( nCount, 
-                                        lpHandles, 
-                                        bWaitAll, 
+        dwRet = WaitForMultipleObjects( nCount,
+                                        lpHandles,
+                                        bWaitAll,
                                         0);
 
         if (dwRet != WAIT_TIMEOUT)
@@ -111,18 +111,18 @@ BOOL WaitForMultipleObjectsTest()
         else
         {
             /* Step through each event and one at a time, set the
-               currect test, while reseting all the other tests
+               current test, while resetting all the other tests
             */
-            
+
             for (i = 0; i < MAX_EVENTS; i++)
             {
                 for (j = 0; j < MAX_EVENTS; j++)
                 {
                     if (j == i)
                     {
-                        
+
                         bRet = SetEvent(hEvent[j]);
-                        
+
                         if (!bRet)
                         {
                             Trace("WaitForMultipleObjectsTest:SetEvent %u failed (%x)\n", j, GetLastError());
@@ -132,20 +132,20 @@ BOOL WaitForMultipleObjectsTest()
                     else
                     {
                         bRet = ResetEvent(hEvent[j]);
-                        
+
                         if (!bRet)
                         {
                             Trace("WaitForMultipleObjectsTest:ResetEvent %u failed (%x)\n", j, GetLastError());
                         }
                     }
                 }
-                
+
                 bWaitAll = FALSE;
 
-                /* Check that WaitFor returns WAIT_OBJECT + i */ 
-                dwRet = WaitForMultipleObjects( nCount, 
+                /* Check that WaitFor returns WAIT_OBJECT + i */
+                dwRet = WaitForMultipleObjects( nCount,
                                                 lpHandles, bWaitAll, 0);
-                
+
                 if (dwRet != WAIT_OBJECT_0+i)
                 {
                     Trace("WaitForMultipleObjectsTest:WaitForMultipleObjects failed (%x)\n", GetLastError());
@@ -154,18 +154,18 @@ BOOL WaitForMultipleObjectsTest()
                 }
             }
         }
-        
+
         for (i = 0; i < MAX_EVENTS; i++)
         {
             bRet = CloseHandle(hEvent[i]);
-            
+
             if (!bRet)
             {
                 Trace("WaitForMultipleObjectsTest:CloseHandle %u failed (%x)\n", i, GetLastError());
             }
         }
     }
-    
+
     return bRet;
 }
 
@@ -201,12 +201,12 @@ BOOL WaitMultipleDuplicateHandleTest_WFMO_test1()
 
 PALTEST(threading_WaitForMultipleObjects_test1_paltest_waitformultipleobjects_test1, "threading/WaitForMultipleObjects/test1/paltest_waitformultipleobjects_test1")
 {
-    
+
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return ( FAIL );
     }
-    
+
     if(!WaitForMultipleObjectsTest())
     {
         Fail ("Test failed\n");

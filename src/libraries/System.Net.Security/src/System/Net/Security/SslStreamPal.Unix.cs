@@ -46,7 +46,7 @@ namespace System.Net.Security
             return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             return null;

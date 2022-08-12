@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
@@ -25,10 +26,36 @@ namespace System.Net.WebSockets
         internal X509CertificateCollection? _clientCertificates;
         internal WebHeaderCollection? _requestHeaders;
         internal List<string>? _requestedSubProtocols;
+        private Version _version = Net.HttpVersion.Version11;
+        private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+        private bool _collectHttpResponseDetails;
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
+
+        public Version HttpVersion
+        {
+            get => _version;
+            [UnsupportedOSPlatform("browser")]
+            set
+            {
+                ThrowIfReadOnly();
+                ArgumentNullException.ThrowIfNull(value);
+                _version = value;
+            }
+        }
+
+        public HttpVersionPolicy HttpVersionPolicy
+        {
+            get => _versionPolicy;
+            [UnsupportedOSPlatform("browser")]
+            set
+            {
+                ThrowIfReadOnly();
+                _versionPolicy = value;
+            }
+        }
 
         [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
@@ -204,6 +231,20 @@ namespace System.Net.WebSockets
 
             _receiveBufferSize = receiveBufferSize;
             _buffer = buffer;
+        }
+
+        /// <summary>
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
+        /// </summary>
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public bool CollectHttpResponseDetails
+        {
+            get => _collectHttpResponseDetails;
+            set
+            {
+                ThrowIfReadOnly();
+                _collectHttpResponseDetails = value;
+            }
         }
 
         #endregion WebSocket settings

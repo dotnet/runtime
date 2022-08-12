@@ -11,12 +11,10 @@ System.BinaryData</PackageDescription>
 
   <ItemGroup>
     <Compile Include="System\BinaryData.cs" />
-    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
-             Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs" Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="System\BinaryDataConverter.cs" />
   </ItemGroup>
 
   <ItemGroup>

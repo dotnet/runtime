@@ -48,7 +48,7 @@ token validation.
 -------------------------------------------------------------------------------
 #ClassConstruction
 
-First of all class contruction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
+First of all class construction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
 if you declare an explicit class constructor method and the later if you declaratively initialize static
 fields. Precise class construction guarantees that the .cctor is run precisely before the first access to any
 method or field of the class. 'beforeFieldInit' semantics guarantees only that the .cctor will be run some
@@ -85,7 +85,7 @@ Thus there four cases
         don't have hooks because a .ctor would have to be called first.
 
 Technically speaking, however the optimization of avoiding checks on instance methods is flawed. It requires
-that a .ctor always preceed a call to an instance methods. This break down when
+that a .ctor always precede a call to an instance methods. This break down when
 
     * A NULL is passed to an instance method.
     * A .ctor does not call its superclasses .ctor. This allows an instance to be created without necessarily
@@ -437,6 +437,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTANY,
     CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
+
+    CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
 
     CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
@@ -1652,7 +1654,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
     // - details on the computation done by the jit host
-    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targetting an R2R image
+    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
@@ -2706,7 +2708,7 @@ public:
                                                         //      jit allocated with allocateArray, EE frees
                 ) = 0;
 
-    // Query the EE to find out the scope of local varables.
+    // Query the EE to find out the scope of local variables.
     // normally the JIT would trash variables after last use, but
     // under debugging, the JIT needs to keep them live over their
     // entire scope so that they can be inspected.

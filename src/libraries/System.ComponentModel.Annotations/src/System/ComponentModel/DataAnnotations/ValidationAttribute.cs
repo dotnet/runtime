@@ -284,7 +284,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>
         ///     The error message will be re-evaluated every time this function is called.
-        ///     It applies the <paramref name="name" /> (for example, the name of a field) to the formated error message, resulting
+        ///     It applies the <paramref name="name" /> (for example, the name of a field) to the formatted error message, resulting
         ///     in something like "The field 'name' has an incorrect value".
         ///     <para>
         ///         Derived classes can override this method to customize how errors are generated.

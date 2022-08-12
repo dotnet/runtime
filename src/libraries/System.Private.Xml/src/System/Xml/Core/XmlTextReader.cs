@@ -317,7 +317,7 @@ namespace System.Xml
             get { return false; }
         }
 
-        // Overriden helper methods
+        // Overridden helper methods
 
         public override string ReadString()
         {

@@ -118,7 +118,7 @@ namespace System.Net.Mail.Functional.Tests
 
         private ICredentialsByHost GetTransportCredentials(SmtpClient client)
         {
-            Type smtpTransportType = (typeof(SmtpClient)).Assembly.GetType("System.Net.Mail.SmtpTransport");
+            Type smtpTransportType = Type.GetType("System.Net.Mail.SmtpTransport, System.Net.Mail");
 
             var transport = typeof(SmtpClient)
                 .GetField("_transport", BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance)
