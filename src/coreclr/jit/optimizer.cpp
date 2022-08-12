@@ -4702,14 +4702,24 @@ bool Compiler::optIfConvert(BasicBlock* block)
                     GenTree* op2 = tree->gtGetOp2();
 
                     // Only one per assignment per block can be conditionally executed.
-                    // Ensure the destination of the assign is a local variable with integer type,
-                    // and the nodes of the assign won't cause any additional side effects.
-                    if (asgNode != nullptr || !op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1) ||
-                        (op1->gtFlags & GTF_SIDE_EFFECT) != 0 || (op2->gtFlags & GTF_SIDE_EFFECT) != 0 ||
-                        op2->OperIs(GT_SELECT))
+                    if (asgNode != nullptr || op2->OperIs(GT_SELECT))
                     {
                         return false;
                     }
+
+                    // Ensure the destination of the assign is a local variable with integer type.
+                    if (!op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1))
+                    {
+                        return false;
+                    }
+
+                    // Ensure the nodes of the assign won't cause any additional side effects.
+                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
+                        (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    {
+                        return false;
+                    }
+
                     asgNode = tree;
                     asgStmt = stmt;
                     break;
@@ -4717,7 +4727,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
                         return false;
                     }
