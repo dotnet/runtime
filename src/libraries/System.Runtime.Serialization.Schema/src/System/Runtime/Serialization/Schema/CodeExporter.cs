@@ -660,10 +660,10 @@ namespace System.Runtime.Serialization
 
                 // A dictionary should have a Key/Value item contract that has at least two members: key and value.
                 Debug.Assert(itemContract != null);
-                Debug.Assert(itemContract.Members != null && itemContract.Members.Count > 1);
+                Debug.Assert(itemContract.DataMembers.Count > 1);
 
-                DataMember keyMember = itemContract.Members[0];
-                DataMember valueMember = itemContract.Members[1];
+                DataMember keyMember = itemContract.DataMembers[0];
+                DataMember valueMember = itemContract.DataMembers[1];
                 CodeTypeReference? keyTypeReference = GetElementTypeReference(keyMember.MemberTypeContract, keyMember.IsNullable);
                 CodeTypeReference? valueTypeReference = GetElementTypeReference(valueMember.MemberTypeContract, valueMember.IsNullable);
                 if (keyTypeReference != null && valueTypeReference != null)
@@ -838,49 +838,46 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            if (classDataContract.Members != null)
+            for (int i = 0; i < classDataContract.DataMembers.Count; i++)
             {
-                for (int i = 0; i < classDataContract.Members.Count; i++)
+                DataMember dataMember = classDataContract.DataMembers[i];
+
+                CodeTypeReference memberType = GetElementTypeReference(dataMember.MemberTypeContract,
+                    (dataMember.IsNullable && dataMember.MemberTypeContract.IsValueType));
+
+                string dataMemberName = GetNameForAttribute(dataMember.Name);
+                string propertyName = GetMemberName(dataMemberName, contractCodeDomInfo);
+                string fieldName = GetMemberName(AppendToValidClrIdentifier(propertyName, ImportGlobals.DefaultFieldSuffix), contractCodeDomInfo);
+
+                CodeMemberField field = new CodeMemberField();
+                field.Type = memberType;
+                field.Name = fieldName;
+                field.Attributes = MemberAttributes.Private;
+
+                CodeMemberProperty property = CreateProperty(memberType, propertyName, fieldName, dataMember.MemberTypeContract.IsValueType && SupportsDeclareValueTypes, raisePropertyChanged);
+                object? surrogateData = _dataContractSet.SurrogateData[dataMember];
+                if (surrogateData != null)
+                    property.UserData.Add(s_surrogateDataKey, surrogateData);
+
+                CodeAttributeDeclaration dataMemberAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(DataMemberAttribute)));
+                if (dataMemberName != property.Name)
+                    dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NameProperty, new CodePrimitiveExpression(dataMemberName)));
+                if (dataMember.IsRequired != ImportGlobals.DefaultIsRequired)
+                    dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.IsRequiredProperty, new CodePrimitiveExpression(dataMember.IsRequired)));
+                if (dataMember.EmitDefaultValue != ImportGlobals.DefaultEmitDefaultValue)
+                    dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.EmitDefaultValueProperty, new CodePrimitiveExpression(dataMember.EmitDefaultValue)));
+                if (dataMember.Order != ImportGlobals.DefaultOrder)
+                    dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.OrderProperty, new CodePrimitiveExpression(dataMember.Order)));
+                property.CustomAttributes.Add(dataMemberAttribute);
+
+                if (GenerateSerializableTypes && !dataMember.IsRequired)
                 {
-                    DataMember dataMember = classDataContract.Members[i];
-
-                    CodeTypeReference memberType = GetElementTypeReference(dataMember.MemberTypeContract,
-                        (dataMember.IsNullable && dataMember.MemberTypeContract.IsValueType));
-
-                    string dataMemberName = GetNameForAttribute(dataMember.Name);
-                    string propertyName = GetMemberName(dataMemberName, contractCodeDomInfo);
-                    string fieldName = GetMemberName(AppendToValidClrIdentifier(propertyName, ImportGlobals.DefaultFieldSuffix), contractCodeDomInfo);
-
-                    CodeMemberField field = new CodeMemberField();
-                    field.Type = memberType;
-                    field.Name = fieldName;
-                    field.Attributes = MemberAttributes.Private;
-
-                    CodeMemberProperty property = CreateProperty(memberType, propertyName, fieldName, dataMember.MemberTypeContract.IsValueType && SupportsDeclareValueTypes, raisePropertyChanged);
-                    object? surrogateData = _dataContractSet.SurrogateData[dataMember];
-                    if (surrogateData != null)
-                        property.UserData.Add(s_surrogateDataKey, surrogateData);
-
-                    CodeAttributeDeclaration dataMemberAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(DataMemberAttribute)));
-                    if (dataMemberName != property.Name)
-                        dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NameProperty, new CodePrimitiveExpression(dataMemberName)));
-                    if (dataMember.IsRequired != ImportGlobals.DefaultIsRequired)
-                        dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.IsRequiredProperty, new CodePrimitiveExpression(dataMember.IsRequired)));
-                    if (dataMember.EmitDefaultValue != ImportGlobals.DefaultEmitDefaultValue)
-                        dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.EmitDefaultValueProperty, new CodePrimitiveExpression(dataMember.EmitDefaultValue)));
-                    if (dataMember.Order != ImportGlobals.DefaultOrder)
-                        dataMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.OrderProperty, new CodePrimitiveExpression(dataMember.Order)));
-                    property.CustomAttributes.Add(dataMemberAttribute);
-
-                    if (GenerateSerializableTypes && !dataMember.IsRequired)
-                    {
-                        CodeAttributeDeclaration optionalFieldAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(OptionalFieldAttribute)));
-                        field.CustomAttributes.Add(optionalFieldAttribute);
-                    }
-
-                    type.Members.Add(field);
-                    type.Members.Add(property);
+                    CodeAttributeDeclaration optionalFieldAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(OptionalFieldAttribute)));
+                    field.CustomAttributes.Add(optionalFieldAttribute);
                 }
+
+                type.Members.Add(field);
+                type.Members.Add(property);
             }
         }
 
@@ -940,26 +937,23 @@ namespace System.Runtime.Serialization
                 return classDataContract.KnownDataContracts;
 
             handledContracts.Add(classDataContract, null);
-            if (classDataContract.Members != null)
-            {
                 bool objectMemberHandled = false;
-                foreach (DataMember dataMember in classDataContract.Members)
+            foreach (DataMember dataMember in classDataContract.DataMembers)
+            {
+                DataContract memberContract = dataMember.MemberTypeContract;
+                if (!objectMemberHandled && _dataContractSet.KnownTypesForObject != null && IsObjectContract(memberContract))
                 {
-                    DataContract memberContract = dataMember.MemberTypeContract;
-                    if (!objectMemberHandled && _dataContractSet.KnownTypesForObject != null && IsObjectContract(memberContract))
+                    AddKnownTypeContracts(classDataContract, _dataContractSet.KnownTypesForObject);
+                    objectMemberHandled = true;
+                }
+                else if (memberContract.Is(DataContractType.ClassDataContract))
+                {
+                    ContractCodeDomInfo memberCodeDomInfo = GetContractCodeDomInfo(memberContract);
+                    if (!memberCodeDomInfo.IsProcessed)
+                        GenerateType(memberContract, memberCodeDomInfo);
+                    if (memberCodeDomInfo.ReferencedTypeExists)
                     {
-                        AddKnownTypeContracts(classDataContract, _dataContractSet.KnownTypesForObject);
-                        objectMemberHandled = true;
-                    }
-                    else if (memberContract.Is(DataContractType.ClassDataContract))
-                    {
-                        ContractCodeDomInfo memberCodeDomInfo = GetContractCodeDomInfo(memberContract);
-                        if (!memberCodeDomInfo.IsProcessed)
-                            GenerateType(memberContract, memberCodeDomInfo);
-                        if (memberCodeDomInfo.ReferencedTypeExists)
-                        {
-                            AddKnownTypeContracts(classDataContract, GetKnownTypeContracts(memberContract, handledContracts));
-                        }
+                        AddKnownTypeContracts(classDataContract, GetKnownTypeContracts(memberContract, handledContracts));
                     }
                 }
             }
@@ -1089,25 +1083,22 @@ namespace System.Runtime.Serialization
             type.CustomAttributes.Add(dataContractAttribute);
             AddImportStatement(typeof(DataContractAttribute).Namespace, contractCodeDomInfo.CodeNamespace);
 
-            if (enumDataContract.Members != null)
+            for (int i = 0; i < enumDataContract.DataMembers.Count; i++)
             {
-                for (int i = 0; i < enumDataContract.Members.Count; i++)
-                {
-                    string stringValue = enumDataContract.Members[i].Name;
-                    long longValue = enumDataContract.Members[i].Order;   // Members[] and Values[] go hand in hand.
+                string stringValue = enumDataContract.DataMembers[i].Name;
+                long longValue = enumDataContract.DataMembers[i].Order;   // Members[] and Values[] go hand in hand.
 
-                    CodeMemberField enumMember = new CodeMemberField();
-                    if (baseType == typeof(ulong))
-                        enumMember.InitExpression = new CodeSnippetExpression(XmlConvert.ToString((ulong)longValue));
-                    else
-                        enumMember.InitExpression = new CodePrimitiveExpression(longValue);
-                    enumMember.Name = GetMemberName(stringValue, contractCodeDomInfo);
-                    CodeAttributeDeclaration enumMemberAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(EnumMemberAttribute)));
-                    if (enumMember.Name != stringValue)
-                        enumMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ValueProperty, new CodePrimitiveExpression(stringValue)));
-                    enumMember.CustomAttributes.Add(enumMemberAttribute);
-                    type.Members.Add(enumMember);
-                }
+                CodeMemberField enumMember = new CodeMemberField();
+                if (baseType == typeof(ulong))
+                    enumMember.InitExpression = new CodeSnippetExpression(XmlConvert.ToString((ulong)longValue));
+                else
+                    enumMember.InitExpression = new CodePrimitiveExpression(longValue);
+                enumMember.Name = GetMemberName(stringValue, contractCodeDomInfo);
+                CodeAttributeDeclaration enumMemberAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(EnumMemberAttribute)));
+                if (enumMember.Name != stringValue)
+                    enumMemberAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ValueProperty, new CodePrimitiveExpression(stringValue)));
+                enumMember.CustomAttributes.Add(enumMemberAttribute);
+                type.Members.Add(enumMember);
             }
         }
 

@@ -22,6 +22,10 @@ namespace System.Runtime.Serialization.Schema.Tests
         [Fact]
         public void RountTripTest()
         {
+            // AppContext SetSwitch seems to be unreliable in the unit test case. So let's not rely on it
+            // for test coverage. But let's do look at the app switch to get our verification correct.
+            AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
+
             XsdDataContractExporter exporter = new XsdDataContractExporter();
             exporter.Export(typeof(RootClass));
             XsdDataContractImporter importer = new XsdDataContractImporter();
@@ -30,6 +34,7 @@ namespace System.Runtime.Serialization.Schema.Tests
             importer.Options.ReferencedTypes.Add(typeof(DBNull));
             importer.Options.ReferencedTypes.Add(typeof(DateTimeOffset));
             importer.Import(exporter.Schemas);
+
             string code = SchemaUtils.DumpCode(importer.CodeCompileUnit);
             _output.WriteLine(code);
 
@@ -56,7 +61,19 @@ namespace System.Runtime.Serialization.Schema.Tests
             Assert.Contains(@"public partial class ArrayOfKeyValueOfintArrayOfstringty7Ep6D1 : object, System.Xml.Serialization.IXmlSerializable", code);
             Assert.Contains(@"private static System.Xml.XmlQualifiedName typeName = new System.Xml.XmlQualifiedName(""ArrayOfKeyValueOfintArrayOfstringty7Ep6D1"", ""http://schemas.microsoft.com/2003/10/Serialization/Arrays"");", code);
             Assert.Contains(@"public partial class ArrayOfKeyValueOfNullableOfunsignedByteNullableOfunsignedByte_ShTDFhl_P : object, System.Xml.Serialization.IXmlSerializable", code);
-            Assert.Contains(@"[System.Runtime.Serialization.DataContractAttribute(Name=""KeyValuePairOfstringNullableOfintU6ho3Bhd"", Namespace=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"")]", code);
+
+            if (autoImportKVP)
+            {
+                Assert.Contains(@"public partial struct KeyValuePairOfintArrayOfstringty7Ep6D1 : System.Runtime.Serialization.IExtensibleDataObject", code);
+                Assert.Contains(@"public partial struct KeyValuePairOfNullableOfunsignedByteNullableOfunsignedByte_ShTDFhl_P : System.Runtime.Serialization.IExtensibleDataObject", code);
+                Assert.Contains(@"[System.Runtime.Serialization.DataContractAttribute(Name=""KeyValuePairOfstringNullableOfintU6ho3Bhd"", Namespace=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"")]", code);
+            }
+            else
+            {
+                Assert.DoesNotContain(@"public partial struct KeyValuePairOfintArrayOfstringty7Ep6D1 : System.Runtime.Serialization.IExtensibleDataObject", code);
+                Assert.DoesNotContain(@"public partial struct KeyValuePairOfNullableOfunsignedByteNullableOfunsignedByte_ShTDFhl_P : System.Runtime.Serialization.IExtensibleDataObject", code);
+                Assert.DoesNotContain(@"[System.Runtime.Serialization.DataContractAttribute(Name=""KeyValuePairOfstringNullableOfintU6ho3Bhd"", Namespace=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"")]", code);
+            }
         }
 
         [Fact]

@@ -120,8 +120,11 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             } };
 
             // Export(ICollection<Assembly>)
+            // AppContext SetSwitch seems to be unreliable in the unit test case. So let's not rely on it
+            // for test coverage. But let's do look at the app switch to get our verification correct.
+            AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
             yield return new object[] { "Exp2", (XsdDataContractExporter exp) => exp.Export(new Assembly[] { typeof(DataContractTypes).Assembly }), (string s, XmlSchemaSet ss) => {
-                Assert.Equal(21, ss.Count);
+                Assert.Equal(autoImportKVP ? 21 : 20, ss.Count);
             } };
 
             // Export(ICollection<Type>)

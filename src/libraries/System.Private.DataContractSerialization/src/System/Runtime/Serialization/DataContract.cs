@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -31,6 +32,8 @@ namespace System.Runtime.Serialization.DataContracts
             DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicProperties;
+
+        internal static ReadOnlyCollection<DataMember> s_emptyDataMemberList = new List<DataMember>().AsReadOnly();
 
         private XmlDictionaryString _name;
         private XmlDictionaryString _ns;
@@ -251,11 +254,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        public virtual List<DataMember>? Members
-        {
-            get => null;
-            internal set { }
-        }
+        public virtual ReadOnlyCollection<DataMember> DataMembers => s_emptyDataMemberList;
 
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -2012,24 +2011,45 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                 }
 
-                //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
-                try
+                AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
+                if (autoImportKVP)
                 {
-                    if (DataContract.GetDataContract(type) is CollectionDataContract collectionDataContract && collectionDataContract.IsDictionary &&
-                        collectionDataContract.ItemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue)
+                    //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
+                    //
+                    // ^^^ Years later I think this is referring to how we treat dictionaries as collections of the
+                    // 'KeyValue' struct we have internally. But Json for some reason needed contracts for KeyValuePair<K,T>
+                    // as well. Possibly related to 'UseSimpleDictionaryFormat'? So we would import both KeyValue and KVP
+                    // contracts and be happy.
+                    // Years later, we've had and gotten rid of a KeyValuePair adapter, and I'm not sure I see a case where
+                    // DCJS is failing with either dictionary format without this code. This seems extraneous at this
+                    // point. Perhaps its there to bridge a potential mis-match between producer and consumer?
+                    //
+                    //
+                    // Or, if I put more faith in the 'catch' comment - this was a case where DCSJ might have used
+                    // an internal KV struct because KVP was missing [Serializable], but regular DCS was using a
+                    // KVPAdapter class? And now KVP does have [Serializable] so we don't need either of those workarounds
+                    // anymore. We already dropped KVPAdapter in this PR. We can probably drop this workaround as well.
+                    // This seems the more likely explaination for this block.
+                    //
+                    // TODO smolloy - discuss potential removal of this altogether.
+                    try
                     {
-                        DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
-                        knownDataContracts ??= new DataContractDictionary();
+                        if (DataContract.GetDataContract(type) is CollectionDataContract collectionDataContract && collectionDataContract.IsDictionary &&
+                            collectionDataContract.ItemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue)
+                        {
+                            DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
+                            knownDataContracts ??= new DataContractDictionary();
 
-                        knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
+                            knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
+                        }
                     }
-                }
-                catch (InvalidDataContractException)
-                {
-                    //Ignore any InvalidDataContractException as this phase is a workaround for lack of ISerializable.
-                    //InvalidDataContractException may happen as we walk the type hierarchy back to Object and encounter
-                    //types that may not be valid DC. This step is purely for KeyValuePair and shouldn't fail the (de)serialization.
-                    //Any IDCE in this case fails the serialization/deserialization process which is not the optimal experience.
+                    catch (InvalidDataContractException)
+                    {
+                        //Ignore any InvalidDataContractException as this phase is a workaround for lack of ISerializable.
+                        //InvalidDataContractException may happen as we walk the type hierarchy back to Object and encounter
+                        //types that may not be valid DC. This step is purely for KeyValuePair and shouldn't fail the (de)serialization.
+                        //Any IDCE in this case fails the serialization/deserialization process which is not the optimal experience.
+                    }
                 }
 
                 type = type.BaseType;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -63,11 +64,13 @@ namespace System.Runtime.Serialization.DataContracts
             set => _helper.BaseClassContract = value;
         }
 
-        public override List<DataMember>? Members
+        internal List<DataMember>? Members
         {
             get => _helper.Members;
-            internal set => _helper.Members = value;
+            set => _helper.Members = value;
         }
+
+        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? DataContract.s_emptyDataMemberList : Members.AsReadOnly();
 
         internal XmlDictionaryString?[]? ChildElementNamespaces
         {
@@ -1306,7 +1309,7 @@ namespace System.Runtime.Serialization.DataContracts
                     xmlName = XmlName;
                     genericParams = paramContracts;
 
-                    // NOTE TODO smolloy - this type-binding ('boundType') stuff is new here. We did not do this in NetFx. We used to use default constructors and let the
+                    // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors and let the
                     // underlying type get filled in later. But default constructors for DataContracts runs afoul of requiring an underlying type. Our web of nullable
                     // notations make it hard to get around. But it also allows us to feel good about using .UnderlyingType from matching parameter contracts.
                     Type[] underlyingParamTypes = new Type[paramContracts.Length];

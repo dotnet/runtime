@@ -492,7 +492,7 @@ namespace System.Runtime.Serialization.DataContracts
         public virtual bool IsReference { get { throw null; } }
         public virtual bool IsValueType { get { throw null; } }
         public virtual System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>? KnownDataContracts { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
-        public virtual System.Collections.Generic.List<DataMember>? Members { get { throw null; } }
+        public virtual System.Collections.ObjectModel.ReadOnlyCollection<DataMember> DataMembers { get { throw null; } }
         public virtual Type OriginalUnderlyingType { get { throw null; } }
         public virtual System.Xml.XmlQualifiedName XmlName { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(DataContract.DataContractPreserveMemberTypes)]

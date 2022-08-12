@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -43,12 +44,13 @@ namespace System.Runtime.Serialization.DataContracts
             set => _helper.BaseContractName = value;
         }
 
-        [NotNull]
-        public override List<DataMember>? Members
+        internal List<DataMember> Members
         {
             get => _helper.Members;
-            internal set => _helper.Members = value!;
+            set => _helper.Members = value;
         }
+
+        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? DataContract.s_emptyDataMemberList : Members.AsReadOnly();
 
         internal List<long>? Values
         {
