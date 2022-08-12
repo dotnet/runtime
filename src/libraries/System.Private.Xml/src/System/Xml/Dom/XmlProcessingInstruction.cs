@@ -20,7 +20,7 @@ namespace System.Xml
 
             if (target.Length == 0)
             {
-                throw new ArgumentException(SR.Xml_EmptyName);
+                throw new ArgumentException(SR.Xml_EmptyName, nameof(target));
             }
 
             _target = target;
@@ -38,7 +38,7 @@ namespace System.Xml
         public override string Value
         {
             get => _data;
-            set { Data = value; } // use Data instead of data so that event will be fired and null will be normalized to empty string
+            set { Data = value; } // uses Data instead of data so that event will be fired and null will be normalized to empty string
         }
 
         // Gets the target of the processing instruction.
@@ -75,7 +75,7 @@ namespace System.Xml
         public override string InnerText
         {
             get => _data;
-            set { Data = value; } // use Data instead of data so that event will be fired and null will be normalized to empty string
+            set { Data = value; } // uses Data instead of data so that event will be fired and null will be normalized to empty string
         }
 
         /// <inheritdoc />
