@@ -4578,7 +4578,7 @@ PhaseStatus Compiler::optUnrollLoops()
 //
 // Notes:
 //
-// 1: Example of simple if conversion:
+// Example of simple if conversion:
 //
 // This is optimising a simple if statement. There is a single condition being
 // tested, and a single assignment inside the body. There must be no else
@@ -4625,54 +4625,6 @@ PhaseStatus Compiler::optUnrollLoops()
 //      \--*  LCL_VAR   int    V00
 //
 //
-// 2: Example of if conversion with AND chains:
-//
-// Consider the previous example, but with an additional condition. The two conditions
-// must be combined via an AND condition. For example:
-// if (y != 10 && x < 7) { a = 5; }
-//
-// The IR here will be the same as the previous example, except it will be preceeded
-// by a block containing the first condition:
-//
-// ------------ BB02 [004..009) -> BB05 (cond), preds={BB01} succs={BB03,BB05}
-// STMT00003
-//   *  JTRUE     void   $VN.Void
-//   \--*  EQ        int    $101
-//     +--*  LCL_VAR   int    V01
-//     \--*  CNS_INT   int    10 $45
-//
-// First the previous optimisation across blocks BB03 and BB04 will be applied.
-// Then the JTRUE in the addition condition will be removed and added onto the
-// condition in the select via an AND node:
-//
-// ------------ BB02 [004..009), preds={BB01} succs={BB03}
-// STMT00003
-//   *  NOP       void
-//
-// ------------ BB03 [009..00D), preds={BB02} succs={BB04}
-// STMT00004
-//   *  NOP       void
-//
-// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
-// STMT00005
-//  *  ASG       int    $VN.Void
-//  +--*  LCL_VAR   int    V00 arg0
-//  \--*  SELECT    int
-//     +--*  AND       int
-//     |  +--*  LT        int    $102
-//     |  |  +--*  LCL_VAR   int    V02
-//     |  |  \--*  CNS_INT   int    7 $46
-//     |  \--*  NE        int    $101
-//     |     +--*  LCL_VAR   int    V01
-//     |     \--*  CNS_INT   int    10 $45
-//     +--*  CNS_INT   int    5 $47
-//     \--*  LCL_VAR   int    V00
-//
-// There is no limit on the number of conditions that could potentially be
-// combined this way. However this ordering means that every condition is
-// evalutated at execution time, which puts a practical limit on the number
-// of conditions to chain.
-//
 bool Compiler::optIfConvert(BasicBlock* block)
 {
 #ifndef TARGET_ARM64
@@ -4696,8 +4648,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* last = block->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
-    if (!last->AsOp()->gtOp1->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0 ||
-        (last->AsOp()->gtOp1->gtFlags & GTF_COLON_COND) != 0)
+    if (!last->gtGetOp1()->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0 ||
+        (last->gtGetOp1()->gtFlags & GTF_COLON_COND) != 0)
     {
         return false;
     }
@@ -4705,7 +4657,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
     BasicBlock* middleBlock = block;
     GenTree*    asgNode     = nullptr;
     Statement*  asgStmt     = nullptr;
-    bool        foundSelect = false;
 
     // Check the block is followed by a block or chain of blocks that only contain NOPs and
     // a single ASG statement. The destination of the final block must point to the same as the
@@ -4747,23 +4698,19 @@ bool Compiler::optIfConvert(BasicBlock* block)
                     // Ensure the destination of the assign is a local variable with integer type,
                     // and the nodes of the assign won't cause any additional side effects.
                     if (asgNode != nullptr || !op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1) ||
-                        (op1->gtFlags & GTF_SIDE_EFFECT) != 0 || (op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        (op1->gtFlags & GTF_SIDE_EFFECT) != 0 || (op2->gtFlags & GTF_SIDE_EFFECT) != 0 ||
+                        op2->OperIs(GT_SELECT))
                     {
                         return false;
                     }
                     asgNode = tree;
                     asgStmt = stmt;
-
-                    if (op2->OperIs(GT_SELECT))
-                    {
-                        foundSelect = true;
-                    }
                     break;
                 }
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & GTF_SIDE_EFFECT) != 0 )
+                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
                         return false;
                     }
@@ -4784,7 +4731,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("Attempting to conditionally execute " FMT_BB " from " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
+        JITDUMP("Conditionally executing " FMT_BB " from " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
         for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
             fgDumpBlock(dumpBlock);
@@ -4793,22 +4740,28 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 #endif
 
-    if (foundSelect)
-    {
-        // The assign is already conditional. Try adding another condition.
-        if (!extendConditionalAssignment(asgNode, last->gtGetOp1()))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        // Make the assign conditional.
-        if (!createConditionalAssignment(asgNode, last->gtGetOp1()))
-        {
-            return false;
-        }
-    }
+    // Duplicate the input of the assign.
+    // This will be used as the false result of the select node.
+    GenTree* destination = gtCloneExpr(asgNode->AsOp()->gtOp1);
+    destination->gtFlags &= GTF_EMPTY;
+
+    // Duplicate the condition and invert it
+    GenTree* cond = gtCloneExpr(last->gtGetOp1());
+    cond->gtFlags |= GTF_DONT_CSE;
+    cond->gtFlags ^= GTF_RELOP_JMP_USED;
+    cond->gtFlags ^= GTF_RELOP_NAN_UN;
+    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+
+    // Create a select node.
+    GenTreeConditional* select =
+        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), destination, asgNode->TypeGet());
+
+    // Use the select as the source of the assignment.
+    asgNode->AsOp()->gtOp2 = select;
+    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+
+    // Calculate costs.
+    gtSetEvalOrder(select);
 
     // Remove the JTRUE statement.
     last->ReplaceWith(gtNewNothingNode(), this);
@@ -4835,109 +4788,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     return true;
 #endif
-}
-
-//-----------------------------------------------------------------------------
-// createConditionalAssignment
-//
-// Helper function for optIfConvert. Given an assignment, make the assignment
-// conditionally execute based on the given condition. This is done by adding
-// a SELECT node as the source of the assignment. The exisiting value of the
-// assignment is used as the false path of the select
-// For example: (ASG Var Val) becomes (ASG Var (SELECT condition Val Var))
-//
-// Arguments:
-//   asg -- The assignment to conditionally execute.
-//   condition -- The assignment should only happen if this evaluates to true.
-//
-// Returns:
-//   true if any IR changes possibly made.
-//
-bool Compiler::createConditionalAssignment(GenTree* asg, GenTree* condition)
-{
-    assert(condition->OperIsCmpCompare());
-    assert(asg->OperIs(GT_ASG));
-
-    // Duplicate the input of the assign.
-    // This will be used as the false result of the select node.
-    GenTree* destination = gtCloneExpr(asg->AsOp()->gtOp1);
-    destination->gtFlags &= GTF_EMPTY;
-
-    // Duplicate the condition and invert it
-    GenTree* cond = gtCloneExpr(condition);
-    cond->gtFlags |= GTF_DONT_CSE;
-    cond->gtFlags ^= GTF_RELOP_JMP_USED;
-    cond->gtFlags ^= GTF_RELOP_NAN_UN;
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
-
-    // Create a select node.
-    GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asg->AsOp()->gtOp2, destination, asg->TypeGet());
-
-    // Use the select as the source of the assignment.
-    asg->AsOp()->gtOp2 = select;
-    asg->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-
-    // Calculate costs.
-    gtSetEvalOrder(select);
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-// extendConditionalAssignment
-//
-// Helper function for optIfConvert. Given an assignment, which is already executed
-// conditionally via a SELECT node, add an additional condition.
-// For example: (ASG Var (SELECT oldcondition Val Var)) becomes
-// (ASG Var (SELECT (AND oldcondition newcondition) Val Var))
-//
-// Arguments:
-//   asg -- The conditional assignment to extend.
-//   condition -- The assignment should only happen if this evaluates to true.
-//
-// Returns:
-//   true if any IR changes possibly made.
-//
-bool Compiler::extendConditionalAssignment(GenTree* asg, GenTree* originalCondition)
-{
-    assert(originalCondition->OperIsCmpCompare());
-    assert(asg->OperIs(GT_ASG));
-
-    // TODO-CQ: Add float support.
-    if (!varTypeIsIntegralOrI(originalCondition->AsOp()->gtOp1->TypeGet()))
-    {
-        return false;
-    }
-
-    // Note: Limiting the maximum number of chained compares may give a performance
-    //       boost, at the cost of more emitted code.
-
-    GenTreeConditional* selectNode     = asg->AsOp()->gtOp2->AsConditional();
-    GenTree*            selectNodeCond = selectNode->gtCond;
-
-    // Duplicate the condition and invert it
-    GenTree* newCond = gtCloneExpr(originalCondition);
-    newCond->gtFlags |= GTF_DONT_CSE;
-    newCond->gtFlags ^= GTF_RELOP_JMP_USED;
-    newCond->gtFlags ^= GTF_RELOP_NAN_UN;
-    newCond->gtOper = GenTree::ReverseRelop(newCond->gtOper);
-
-    // Link together the two conditions.
-    GenTree* const link = gtNewOperNode(GT_AND, TYP_INT, selectNodeCond, newCond);
-    link->gtFlags |= (selectNodeCond->gtFlags & GTF_ALL_EFFECT);
-    link->gtFlags |= (newCond->gtFlags & GTF_ALL_EFFECT);
-
-    // Use the link as the conditional input to the select.
-    selectNode->gtCond = link;
-    selectNode->gtFlags |= (link->gtFlags & GTF_ALL_EFFECT);
-    selectNode->gtFlags ^= GTF_RELOP_NAN_UN;
-    asg->AsOp()->gtFlags |= (selectNode->gtFlags & GTF_ALL_EFFECT);
-
-    // Calculate costs.
-    gtSetEvalOrder(link);
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------

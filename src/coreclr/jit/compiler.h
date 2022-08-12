@@ -6478,10 +6478,7 @@ protected:
     OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
-
     bool optIfConvert(BasicBlock* block);
-    bool createConditionalAssignment(GenTree* asg, GenTree* condition);
-    bool extendConditionalAssignment(GenTree* asg, GenTree* originalCondition);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
