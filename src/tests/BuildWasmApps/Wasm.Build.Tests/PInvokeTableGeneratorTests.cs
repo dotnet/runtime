@@ -83,9 +83,8 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types", output);
-            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
-            Assert.Matches("warning.*using_sum_one", output);
+            Assert.Matches("warning\\sWS0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.Matches("warning\\sWS0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -113,9 +112,9 @@ namespace Wasm.Build.Tests
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
-            Assert.Matches("warning.*Could not get pinvoke.*Parsing function pointer types", output);
-            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
-            Assert.Matches("warning.*using_sum_one", output);
+
+            Assert.Matches("warning\\sWS0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.Matches("warning\\sWS0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -150,7 +149,7 @@ namespace Wasm.Build.Tests
                 extraProperties: "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WS0001</MSBuildWarningsAsMessages>"
             );
 
-            Assert.Matches("Could not get pinvoke.*Parsing function pointer types", output);
+            Assert.DoesNotContain("warning WS0001", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
