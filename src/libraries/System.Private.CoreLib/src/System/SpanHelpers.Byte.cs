@@ -334,28 +334,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int IndexOf(ref byte searchSpace, byte value, int length)
+        public static unsafe int IndexOfNullByte(ref byte searchSpace)
         {
-            Debug.Assert(length >= 0);
+            const int length = int.MaxValue;
 
-            uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            const uint uValue = 0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
             if (Vector128.IsHardwareAccelerated)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
-                if (length >= Vector128<byte>.Count * 2)
-                {
-                    lengthToExamine = UnalignedCountVector128(ref searchSpace);
-                }
+                lengthToExamine = UnalignedCountVector128(ref searchSpace);
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                if (length >= Vector<byte>.Count * 2)
-                {
-                    lengthToExamine = UnalignedCountVector(ref searchSpace);
-                }
+                lengthToExamine = UnalignedCountVector(ref searchSpace);
             }
         SequentialScan:
             while (lengthToExamine >= 8)
@@ -421,11 +415,10 @@ namespace System
                         // with no upper bound e.g. String.strlen.
                         // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
                         // This ensures we do not fault across memory pages while searching for an end of string.
-                        Vector128<byte> values = Vector128.Create(value);
                         Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as below
-                        uint matches = Vector128.Equals(values, search).ExtractMostSignificantBits();
+                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -441,11 +434,10 @@ namespace System
                     lengthToExamine = GetByteVector256SpanLength(offset, length);
                     if (lengthToExamine > offset)
                     {
-                        Vector256<byte> values = Vector256.Create(value);
                         do
                         {
                             Vector256<byte> search = Vector256.LoadUnsafe(ref searchSpace, offset);
-                            uint matches = Vector256.Equals(values, search).ExtractMostSignificantBits();
+                            uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
@@ -463,11 +455,10 @@ namespace System
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
                     if (lengthToExamine > offset)
                     {
-                        Vector128<byte> values = Vector128.Create(value);
                         Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as above
-                        uint matches = Vector128.Equals(values, search).ExtractMostSignificantBits();
+                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -493,13 +484,12 @@ namespace System
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
-                    Vector128<byte> values = Vector128.Create(value);
                     while (lengthToExamine > offset)
                     {
                         Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as above
-                        Vector128<byte> compareResult = Vector128.Equals(values, search);
+                        Vector128<byte> compareResult = Vector128.Equals(Vector128<byte>.Zero, search);
                         if (compareResult == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
@@ -510,34 +500,6 @@ namespace System
                         // Find bitflag offset of first match and add to current offset
                         uint matches = compareResult.ExtractMostSignificantBits();
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
-                    }
-
-                    if (offset < (nuint)(uint)length)
-                    {
-                        lengthToExamine = ((nuint)(uint)length - offset);
-                        goto SequentialScan;
-                    }
-                }
-            }
-            else if (Vector.IsHardwareAccelerated)
-            {
-                if (offset < (nuint)(uint)length)
-                {
-                    lengthToExamine = GetByteVectorSpanLength(offset, length);
-
-                    Vector<byte> values = new Vector<byte>(value);
-
-                    while (lengthToExamine > offset)
-                    {
-                        var matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                        if (Vector<byte>.Zero.Equals(matches))
-                        {
-                            offset += (nuint)Vector<byte>.Count;
-                            continue;
-                        }
-
-                        // Find offset of first match and add to current offset
-                        return (int)offset + LocateFirstFoundByte(matches);
                     }
 
                     if (offset < (nuint)(uint)length)

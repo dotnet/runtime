@@ -422,9 +422,10 @@ namespace System
 
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int IndexOf(ref char searchSpace, char value, int length)
+        public static unsafe int IndexOfNullCharacter(ref char searchSpace)
         {
-            Debug.Assert(length >= 0);
+            const char value = '\0';
+            const int length = int.MaxValue;
 
             nint offset = 0;
             nint lengthToExamine = length;
@@ -437,18 +438,12 @@ namespace System
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
-                if (length >= Vector128<ushort>.Count * 2)
-                {
-                    lengthToExamine = UnalignedCountVector128(ref searchSpace);
-                }
+                lengthToExamine = UnalignedCountVector128(ref searchSpace);
             }
             else if (Vector.IsHardwareAccelerated)
             {
                 // Needs to be double length to allow us to align the data first.
-                if (length >= Vector<ushort>.Count * 2)
-                {
-                    lengthToExamine = UnalignedCountVector(ref searchSpace);
-                }
+                lengthToExamine = UnalignedCountVector(ref searchSpace);
             }
 
         SequentialScan:
@@ -507,11 +502,10 @@ namespace System
                         // method, so the alignment only acts as best endeavour. The GC cost is likely to dominate over
                         // the misalignment that may occur after; to we default to giving the GC a free hand to relocate and
                         // its up to the caller whether they are operating over fixed data.
-                        Vector128<ushort> values = Vector128.Create((ushort)value);
                         Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
 
                         // Same method as below
-                        uint matches = Vector128.Equals(values, search).AsByte().ExtractMostSignificantBits();
+                        uint matches = Vector128.Equals(Vector128<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -527,13 +521,12 @@ namespace System
                     lengthToExamine = GetCharVector256SpanLength(offset, length);
                     if (lengthToExamine > 0)
                     {
-                        Vector256<ushort> values = Vector256.Create((ushort)value);
                         do
                         {
                             Debug.Assert(lengthToExamine >= Vector256<ushort>.Count);
 
                             Vector256<ushort> search = Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
-                            uint matches = Vector256.Equals(values, search).AsByte().ExtractMostSignificantBits();
+                            uint matches = Vector256.Equals(Vector256<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
@@ -555,11 +548,10 @@ namespace System
                     {
                         Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
 
-                        Vector128<ushort> values = Vector128.Create((ushort)value);
                         Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
 
                         // Same method as above
-                        uint matches = Vector128.Equals(values, search).AsByte().ExtractMostSignificantBits();
+                        uint matches = Vector128.Equals(Vector128<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // Zero flags set so no matches
@@ -591,7 +583,6 @@ namespace System
                     lengthToExamine = GetCharVector128SpanLength(offset, length);
                     if (lengthToExamine > 0)
                     {
-                        Vector128<ushort> values = Vector128.Create((ushort)value);
                         do
                         {
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
@@ -599,7 +590,7 @@ namespace System
                             Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (uint)offset);
 
                             // Same method as above
-                            Vector128<ushort> compareResult = Vector128.Equals(values, search);
+                            Vector128<ushort> compareResult = Vector128.Equals(Vector128<ushort>.Zero, search);
                             if (compareResult == Vector128<ushort>.Zero)
                             {
                                 // Zero flags set so no matches
@@ -612,41 +603,6 @@ namespace System
                             // flags are in bytes so divide for chars
                             uint matches = compareResult.AsByte().ExtractMostSignificantBits();
                             return (int)(offset + ((uint)BitOperations.TrailingZeroCount(matches) / sizeof(char)));
-                        } while (lengthToExamine > 0);
-                    }
-
-                    if (offset < length)
-                    {
-                        lengthToExamine = length - offset;
-                        goto SequentialScan;
-                    }
-                }
-            }
-            else if (Vector.IsHardwareAccelerated)
-            {
-                if (offset < length)
-                {
-                    Debug.Assert(length - offset >= Vector<ushort>.Count);
-
-                    lengthToExamine = GetCharVectorSpanLength(offset, length);
-
-                    if (lengthToExamine > 0)
-                    {
-                        Vector<ushort> values = new Vector<ushort>((ushort)value);
-                        do
-                        {
-                            Debug.Assert(lengthToExamine >= Vector<ushort>.Count);
-
-                            var matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                            if (Vector<ushort>.Zero.Equals(matches))
-                            {
-                                offset += Vector<ushort>.Count;
-                                lengthToExamine -= Vector<ushort>.Count;
-                                continue;
-                            }
-
-                            // Find offset of first match
-                            return (int)(offset + LocateFirstFoundChar(matches));
                         } while (lengthToExamine > 0);
                     }
 
