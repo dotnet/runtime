@@ -1125,7 +1125,7 @@ namespace System.Net.Http
             {
                 string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
 
-                if (descriptor.Equals(KnownHeaders.KeepAlive))
+                if (ReferenceEquals(descriptor.KnownHeader, KnownHeaders.KeepAlive))
                 {
                     // We are intentionally going against RFC to honor the Keep-Alive header even if
                     // we haven't received a Keep-Alive connection token to maximize compat with servers.
