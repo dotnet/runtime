@@ -569,10 +569,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "DotnetDebugger.setEvaluationOptions":
                     {
                         //receive the available options from DAP to variables, stack and evaluate commands.
-                        if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
-                            context.AutoEvaluateProperties = false;
-                        else
-                            context.AutoEvaluateProperties = true;
+                        try {
+                            if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
+                                context.AutoEvaluateProperties = false;
+                            else
+                                context.AutoEvaluateProperties = true;
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"DotnetDebugger.setEvaluationOptions failed for {id} with args {args}: {ex}");
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"DotnetDebugger.setEvaluationOptions got incorrect argument ({args})")),
+                                token);
+                        }
                         return true;
                     }
             }
