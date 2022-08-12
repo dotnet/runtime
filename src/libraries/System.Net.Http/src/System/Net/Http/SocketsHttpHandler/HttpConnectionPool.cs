@@ -1021,7 +1021,7 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsWebSocketH2Request() &&
+                        !request.IsExtendedConnectRequest &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
                         Debug.Assert(async);
@@ -1050,7 +1050,7 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (request.IsWebSocketH2Request())
+                                if (request.IsExtendedConnectRequest)
                                 {
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
@@ -1123,7 +1123,7 @@ namespace System.Net.Http
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
                         HttpRequestException exception = new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
-                        if (request.IsWebSocketH2Request())
+                        if (request.IsExtendedConnectRequest)
                         {
                             exception.Data["HTTP2_ENABLED"] = false;
                         }
