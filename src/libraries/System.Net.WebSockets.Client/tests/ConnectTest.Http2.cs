@@ -120,6 +120,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                 Assert.IsType<HttpRequestException>(ex.InnerException);
                 Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }
 
@@ -143,6 +144,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     await cws.ConnectAsync(server, cts.Token);
                 }
+                Assert.Equal(WebSocketState.Open, cws.State);
             }
         }
 
