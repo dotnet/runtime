@@ -196,7 +196,7 @@ namespace System
 
             int valueTailLength = valueLength - 1;
             if (valueTailLength == 0)
-                return LastIndexOfValueType<byte, DontNegate<byte>>(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain LastIndexOf
+                return LastIndexOfValueType(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain LastIndexOf
 
             int offset = 0;
             byte valueHead = value;
@@ -216,7 +216,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Do a quick search for the first element of "value".
-                int relativeIndex = LastIndexOfValueType<byte, DontNegate<byte>>(ref searchSpace, valueHead, remainingSearchSpaceLength);
+                int relativeIndex = LastIndexOfValueType(ref searchSpace, valueHead, remainingSearchSpaceLength);
                 if (relativeIndex < 0)
                     break;
 
