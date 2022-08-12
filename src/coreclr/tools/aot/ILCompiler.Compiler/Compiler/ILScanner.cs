@@ -437,6 +437,7 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
