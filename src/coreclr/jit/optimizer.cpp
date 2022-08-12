@@ -4654,7 +4654,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    BasicBlock* middleBlock = block;
+    BasicBlock* middleBlock = block->bbNext;
     GenTree*    asgNode     = nullptr;
     Statement*  asgStmt     = nullptr;
 
@@ -4664,8 +4664,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     bool foundMiddle = false;
     while (!foundMiddle)
     {
-        middleBlock = middleBlock->bbNext;
         noway_assert(middleBlock != nullptr);
+        BasicBlock* const middleNext = middleBlock->GetUniqueSucc();
 
         if (middleBlock->bbNext == block->bbJumpDest)
         {
@@ -4673,12 +4673,19 @@ bool Compiler::optIfConvert(BasicBlock* block)
             foundMiddle = true;
         }
 
-        // Make sure there is only one block which jumps to the middle block,
-        // and the middle block is not the start of a TRY block or an exception handler.
-        noway_assert(!fgCheapPredsValid);
-        if (middleBlock->NumSucc() != 1 || middleBlock->bbJumpKind != BBJ_NONE ||
-            middleBlock->bbPreds->flNext != nullptr || middleBlock->bbCatchTyp != BBCT_NONE ||
-            bbIsTryBeg(middleBlock) || bbIsHandlerBeg(middleBlock) || (middleBlock->bbFlags & BBF_DONT_REMOVE) != 0)
+        // Check that we have linear flow and are still in the same EH region
+        //
+        if (middleBlock->NumSucc() != 1 || middleBlock->bbJumpKind != BBJ_NONE)
+        {
+            return false;
+        }
+
+        if (middleBlock->GetUniquePred(this) == nullptr)
+        {
+            return false;
+        }
+
+        if (!BasicBlock::sameEHRegion(middleBlock, block))
         {
             return false;
         }
@@ -4721,6 +4728,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
                     return false;
             }
         }
+
+        middleBlock = middleNext;
     }
     if (asgNode == nullptr)
     {
