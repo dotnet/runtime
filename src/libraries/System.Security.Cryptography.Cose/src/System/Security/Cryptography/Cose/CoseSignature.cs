@@ -20,21 +20,21 @@ namespace System.Security.Cryptography.Cose
         private CoseMultiSignMessage? _message;
 
         /// <summary>
-        /// Gets the protected header parameters associated to this instance.
+        /// Gets the protected header parameters associated with this instance.
         /// </summary>
-        /// <value>A collection of protected header parameters associated to this instance.</value>
+        /// <value>A collection of protected header parameters associated with this instance.</value>
         public CoseHeaderMap ProtectedHeaders { get; }
 
         /// <summary>
-        /// Gets the unprotected header parameters associated to this instance.
+        /// Gets the unprotected header parameters associated with this instance.
         /// </summary>
-        /// <value>A collection of unprotected header parameters associated to this instance.</value>
+        /// <value>A collection of unprotected header parameters associated with this instance.</value>
         public CoseHeaderMap UnprotectedHeaders { get; }
 
         /// <summary>
-        /// Gets the raw bytes of the protected header parameters associated to this instance.
+        /// Gets the raw bytes of the protected header parameters associated with this instance.
         /// </summary>
-        /// <value>A region of memory that contains the raw bytes of the protected header parameters associated to this instance.</value>
+        /// <value>A region of memory that contains the raw bytes of the protected header parameters associated with this instance.</value>
         public ReadOnlyMemory<byte> RawProtectedHeaders => _encodedSignProtectedHeaders;
 
         /// <summary>
