@@ -3734,7 +3734,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task SslOptions_CustomTrust_Ok()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
