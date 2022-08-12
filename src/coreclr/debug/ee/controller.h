@@ -1397,7 +1397,7 @@ public:
     // 3) then sends the event
     // If SetIp gets invoked at step 2, the thread's IP may have changed such that it should no
     // longer trigger. Eg, perhaps we were about to send a breakpoint, and then SetIp moved us off
-    // the bp. So we pass in an extra flag, fInteruptedBySetIp,  to let the controller decide how to handle this.
+    // the bp. So we pass in an extra flag, fInterruptedBySetIp,  to let the controller decide how to handle this.
     // Since SetIP only works within a single function, this can only be an issue if a thread's current stopping
     // location and the patch it set are in the same function. (So this could happen for step-over, but never
     // step-out).
@@ -1409,7 +1409,7 @@ public:
     // still send.
     //
     // Returns true if send an event, false elsewise.
-    virtual bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    virtual bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 
     AppDomain           *m_pAppDomain;
 
@@ -1516,7 +1516,7 @@ private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 };
 
 // * ------------------------------------------------------------------------ *
@@ -1625,7 +1625,7 @@ protected:
                       SIZE_T offset, FramePointer fp,
                       CorDebugStepReason unwindReason);
     void TriggerTraceCall(Thread *thread, const BYTE *ip);
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
@@ -1784,7 +1784,7 @@ private:
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
     void TriggerTraceCall(Thread *thread, const BYTE *ip);
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 };
 
 #ifdef FEATURE_DATABREAKPOINT
@@ -1809,7 +1809,7 @@ public:
 
     virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
 
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp)
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp)
     {
         CONTRACTL
         {
@@ -1855,7 +1855,7 @@ private:
 
     virtual bool IsInterestingFrame(FrameInfo * pFrame);
 
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 };
 
 /* ------------------------------------------------------------------------- *
@@ -1874,7 +1874,7 @@ private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
     DebuggerEval* m_pDE;
 };
 
@@ -1901,7 +1901,7 @@ private:
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
 
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
 };
 
 

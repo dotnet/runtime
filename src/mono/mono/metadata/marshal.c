@@ -32,7 +32,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
+#include "metadata/marshal-shared.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
@@ -41,8 +41,10 @@ MONO_PRAGMA_WARNING_POP()
 #include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
+#include "mono/metadata/marshal-noilgen.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
@@ -126,6 +128,66 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
 static gboolean type_is_blittable (MonoType *type);
+
+static IlgenCallbacksToMono ilgenCallbacksToMono = {
+	&mono_get_object_type,
+	&mono_marshal_get_ptr_to_string_conv,
+	&mono_class_is_subclass_of_internal,
+	&mono_class_native_size,
+	&mono_class_try_get_handleref_class,
+	&mono_class_try_get_safehandle_class,
+	&mono_class_try_get_stringbuilder_class,
+	&mono_defaults,
+	&mono_marshal_boolean_conv_in_get_local_type,
+	&mono_marshal_boolean_managed_conv_in_get_conv_arg_class,
+	&mono_marshal_get_ptr_to_stringbuilder_conv,
+	&mono_marshal_get_string_encoding,
+	&mono_marshal_get_string_to_ptr_conv,
+	&mono_marshal_get_stringbuilder_to_ptr_conv,
+	&mono_marshal_load_type_info,
+	&mono_marshal_shared_conv_to_icall,
+	&mono_marshal_shared_emit_marshal_custom_get_instance,
+	&mono_marshal_shared_emit_struct_conv,
+	&mono_marshal_shared_emit_struct_conv_full,
+	&mono_marshal_shared_get_method_nofail,
+	&mono_marshal_shared_get_sh_dangerous_add_ref,
+	&mono_marshal_shared_get_sh_dangerous_release,
+	&mono_marshal_shared_init_safe_handle,
+	&mono_marshal_shared_is_in,
+	&mono_marshal_shared_is_out,
+	&mono_marshal_shared_mb_emit_exception_marshal_directive,
+	&mono_mb_add_local,
+	&mono_mb_emit_add_to_local,
+	&mono_mb_emit_auto_layout_exception,
+	&mono_mb_emit_branch,
+	&mono_mb_emit_branch_label,
+	&mono_mb_emit_byte,
+	&mono_mb_emit_exception,
+	&mono_mb_emit_exception_full,
+	&mono_mb_emit_icall_id,
+	&mono_mb_emit_icon,
+	&mono_mb_emit_ldarg,
+	&mono_mb_emit_ldarg_addr,
+	&mono_mb_emit_ldflda,
+	&mono_mb_emit_ldloc,
+	&mono_mb_emit_ldloc_addr,
+	&mono_mb_emit_managed_call,
+	&mono_mb_emit_op,
+	&mono_mb_emit_stloc,
+	&mono_mb_get_label,
+	&mono_mb_patch_branch,
+	&mono_pinvoke_is_unicode,
+	&mono_reflection_type_from_name_checked,
+	&mono_memory_barrier,
+	&mono_marshal_need_free,
+	&mono_get_int_type
+};
+
+IlgenCallbacksToMono*
+mono_marshal_get_mono_callbacks_for_ilgen (void)
+{
+	return &ilgenCallbacksToMono;
+}
 
 static MonoImage*
 get_method_image (MonoMethod *method)
@@ -1467,7 +1529,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 }
 
 /*
- * Return the hash table pointed to by VAR, lazily creating it if neccesary.
+ * Return the hash table pointed to by VAR, lazily creating it if necessary.
  */
 static GHashTable*
 get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
@@ -3155,12 +3217,13 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
 
-	
+
 
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-	return mono_emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
+	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
 } 
 
 static void
@@ -3283,7 +3346,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		mono_custom_attrs_free(cinfo);
 }
 
-static void 
+static void
 mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
 {
 	g_assert (cmod_type->type == MONO_TYPE_CLASS);
@@ -3619,7 +3682,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
-	
+
 	return res;
 }
 
@@ -6037,7 +6100,7 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
  * Windows kernel32 APIs, which are DllImport-able under MS.NET,
  * although not exported by kernel32.
  *
- * We map the appropiate kernel32 entries to these functions using
+ * We map the appropriate kernel32 entries to these functions using
  * dllmaps declared in the global etc/mono/config.
  */
 
@@ -6260,7 +6323,6 @@ get_marshal_cb (void)
 		mono_marshal_noilgen_init_lightweight ();
 #endif
 	}
-	
 	return &marshal_lightweight_cb;
 }
 

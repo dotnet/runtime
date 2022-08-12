@@ -13,19 +13,19 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private List<GeneralNameAsn>? _decoded;
 
-        public X509SubjectAlternativeNameExtension() : base(Oids.SubjectAltName)
+        public X509SubjectAlternativeNameExtension() : base(Oids.SubjectAltNameOid)
         {
             _decoded = new List<GeneralNameAsn>(0);
         }
 
         public X509SubjectAlternativeNameExtension(byte[] rawData, bool critical = false)
-            : base(Oids.SubjectAltName, rawData, critical)
+            : base(Oids.SubjectAltNameOid, rawData, critical)
         {
             _decoded = Decode(RawData);
         }
 
         public X509SubjectAlternativeNameExtension(ReadOnlySpan<byte> rawData, bool critical = false)
-            : base(Oids.SubjectAltName, rawData, critical)
+            : base(Oids.SubjectAltNameOid, rawData, critical)
         {
             _decoded = Decode(RawData);
         }

@@ -169,7 +169,7 @@ private:
     void Set(const WCHAR *string, COUNT_T count);
 
     // Set this string to a prellocated copy of a given string.
-    // The caller is the owner of the bufffer and has to coordinate its lifetime.
+    // The caller is the owner of the buffer and has to coordinate its lifetime.
     void SetPreallocated(const WCHAR *string, COUNT_T count);
 
     void SetASCII(const ASCII *string, COUNT_T count);
@@ -355,7 +355,7 @@ private:
         const CHAR *GetASCII() const;
 
       public:
-        // Note these should supercede the Indexer versions
+        // Note these should supersede the Indexer versions
         // since this class comes first in the inheritance list
         WCHAR operator*() const;
         void operator->() const;
@@ -515,7 +515,7 @@ private:
     WCHAR *OpenUnicodeBuffer(COUNT_T maxCharCount);
     UTF8 *OpenUTF8Buffer(COUNT_T maxSingleCharCount);
 
-    //Returns the unicode string, the caller is reponsible for lifetime of the string
+    //Returns the unicode string, the caller is responsible for lifetime of the string
     WCHAR *GetCopyOfUnicodeString();
 
     // Get the max size that can be passed to OpenUnicodeBuffer without causing allocations.

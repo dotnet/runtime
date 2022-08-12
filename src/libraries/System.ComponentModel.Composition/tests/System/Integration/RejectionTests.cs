@@ -327,9 +327,9 @@ namespace Tests.Integration
         // - All parts involved in the loop are rejected
         // - A consistent subset are not rejected (exactly one of LoopA1/LoopA2 and one of LoopB1/LoopB2
         //
-        // Both have desireable and undesirable characteristics.  The first case is non-discriminatory but
+        // Both have desirable and undesirable characteristics.  The first case is non-discriminatory but
         // rejects more parts than are necessary, the second minimizes rejection but must choose a subset
-        // on somewhat arbitary grounds.
+        // on somewhat arbitrary grounds.
         [Fact]
         public void Rejection_TheClemensLoop()
         {

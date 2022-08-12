@@ -303,7 +303,7 @@ namespace System.Data.ProviderBase
 
             if (!haveExactMatch && haveMultipleInexactMatches)
             {
-                throw ADP.AmbigousCollectionName(collectionName);
+                throw ADP.AmbiguousCollectionName(collectionName);
             }
 
             return requestedCollectionRow;
@@ -439,7 +439,7 @@ namespace System.Data.ProviderBase
 
                     // TODO: Consider an alternate method that doesn't involve special casing -- perhaps _prepareCollection
 
-                    // for the data source infomation table we need to fix up the version columns at run time
+                    // for the data source information table we need to fix up the version columns at run time
                     // since the version is determined at run time
                     if (exactCollectionName == DbMetaDataCollectionNames.DataSourceInformation)
                     {

@@ -1224,7 +1224,7 @@ HRESULT ShimProcess::DebugActiveProcess(
         // bit indicating managed attach is coming.
         // However in interop debugging we can't do that because there are debug events which come before the
         // loader breakpoint (which is how far we need to get to set the debuggee bit). If we blocked
-        // DebugActiveProcess there then the debug events would be refering to an ICorDebugProcess that hasn't
+        // DebugActiveProcess there then the debug events would be referring to an ICorDebugProcess that hasn't
         // yet been returned to the caller of DebugActiveProcess. Instead, for interop debugging we force the
         // native debugger to wait until it gets the loader breakpoint to set the event. Note we can't converge
         // on that solution for the pure managed case because there is no loader breakpoint event. Hence pure
@@ -1470,7 +1470,7 @@ void CordbProcess::CloseIPCHandles()
 //-----------------------------------------------------------------------------
 // Create new OS Thread for the Win32 Event Thread (the thread used in interop-debugging to sniff
 // native debug events). This is 1:1 w/ a CordbProcess object.
-// This will then be used to actuall create the CordbProcess object.
+// This will then be used to actually create the CordbProcess object.
 // The process object will then take ownership of the thread.
 //
 // Arguments:
@@ -2005,7 +2005,7 @@ void SendAttachProcessWorkItem::Do()
 
     // This just acts like an async-break, which will kick off things.
     // This will not induce any faked attach events from the VM (like it did in V2).
-    // The Left-side will still slip foward allowing the async-break to happen, so
+    // The Left-side will still slip forward allowing the async-break to happen, so
     // we may get normal debug events in addition to the sync-complete.
     //
     // 1. In the common attach case, we should just get a sync-complete.
@@ -2963,7 +2963,7 @@ void CordbProcess::FlushAll()
 //
 //
 // Return Value:
-//    S_OK on successful detach. Else errror.
+//    S_OK on successful detach. Else error.
 //
 // Assumptions:
 //    Target is stopped.
@@ -5499,7 +5499,7 @@ void CordbProcess::RawDispatchEvent(
                 ("AppDomain changed from Func-Eval. Eval=%p, Started=%p, Now=%p\n",
                 pEval, pEval->m_DbgAppDomainStarted, (void*) pAppDomain));
 
-            // If we did this func eval with this thread stopped at an excpetion, then we need to pretend as if we
+            // If we did this func eval with this thread stopped at an exception, then we need to pretend as if we
             // really didn't continue from the exception, since, of course, we really didn't on the Left Side.
             if (pEval->IsEvalDuringException())
             {
@@ -5616,7 +5616,7 @@ void CordbProcess::RawDispatchEvent(
             // Neutering will dump it back down to zero.
             this->AddToNeuterOnExitList(pMDA);
 
-            // We bump up and down the external ref so that even if the callback doensn't touch the refs,
+            // We bump up and down the external ref so that even if the callback doesn't touch the refs,
             // our Ext-Release here will still cause a 1->0 ext-ref transition, which will get it
             // swept on the neuter list.
             RSExtSmartPtr<ICorDebugMDA> pExternalMDARef;
@@ -5967,7 +5967,7 @@ void CordbProcess::RawDispatchEvent(
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
 //
-// Arugments:
+// Arguments:
 //    vmThread - thread as part of the eunmeration.
 //    pUserData - data supplied with callback. It's a CordbProcess* object.
 //
@@ -7661,6 +7661,8 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
 
+    LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     0x%p\n",
+         m_runtimeOffsets.m_setThreadContextNeededAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08x\n",
          m_runtimeOffsets.m_TLSIndex));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08x\n",
@@ -7719,6 +7721,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
             m_runtimeOffsets.m_signalHijackCompleteBPAddr,
             m_runtimeOffsets.m_excepNotForRuntimeBPAddr,
             m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr,
+            m_runtimeOffsets.m_setThreadContextNeededAddr,
         };
 
         const int NumFlares = ARRAY_SIZE(flares);
@@ -10485,7 +10488,7 @@ void CordbRCEventThread::ThreadProc()
                 // Only listen to unsynchronized processes. Processes that are synchronized will not send events without
                 // being asked by us first, so there is no need to async listen to them.
                 //
-                // Note: if a process is not synchronized then there is no way for it to transition to the syncrhonized
+                // Note: if a process is not synchronized then there is no way for it to transition to the synchronized
                 // state without this thread receiving an event and taking action. So there is no need to lock the
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
@@ -11152,7 +11155,162 @@ void CordbProcess::FilterClrNotification(
     }
 }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
+{
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    HandleHolder hThread = OpenThread(
+        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME,
+        FALSE, // thread handle is not inheritable.
+        dwThreadId);
+
+    if (hThread == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from OpenThread\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    DWORD previousSuspendCount = ::SuspendThread(hThread);
+    if (previousSuspendCount == (DWORD)-1)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SuspendThread\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
+    }
+
+    CONTEXT context = { 0 };
+    context.ContextFlags = CONTEXT_FULL;
+
+    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(CONTEXT), reinterpret_cast<BYTE*> (&context));
+    IfFailThrow(hr);
+
+    TADDR lsContextAddr = (TADDR)context.Rcx;
+    DWORD contextSize = (DWORD)context.Rdx;
+
+    TADDR expectedRip = (TADDR)context.R8;
+    TADDR expectedRsp = (TADDR)context.R9;
+
+    if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
+    {
+        _ASSERTE(!"Corrupted HandleSetThreadContextNeeded message received");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Corrupted HandleSetThreadContextNeeded message received\n"));
+
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    PCONTEXT pContext = (PCONTEXT)_alloca(contextSize);
+    ULONG32 cbRead;
+    hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
+    if (FAILED(hr))
+    {
+        _ASSERTE(!"ReadVirtual failed");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual (error: 0x%X).\n", hr));
+
+        ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
+    }
+
+    if (cbRead != contextSize)
+    {
+        _ASSERTE(!"ReadVirtual context size mismatch");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
+
+        ThrowHR(ERROR_PARTIAL_COPY);
+    }
+
+    if (pContext->Rip != expectedRip || pContext->Rsp != expectedRsp)
+    {
+        _ASSERTE(!"ReadVirtual unexpectedly returned mismatched Rip and Rsp registers");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual unexpectedly returned mismatched Rip and Rsp registers\n"));
+
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    // TODO: Ideally we would use ICorDebugMutableDataTarget::SetThreadContext however this API currently only handles the legacy context.
+    // We should combine the following code with the shared implementation
+
+    // The initialize call should fail but return contextSize
+    contextSize = 0;
+    DWORD contextFlags = pContext->ContextFlags;
+    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+    if(success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        _ASSERTE(!"InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER\n"));
+
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext ContextSize %d\n", contextSize));
+
+    PVOID pBuffer = _alloca(contextSize);
+    PCONTEXT pFrameContext = NULL;
+    success = InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+    if (!success)
+    {
+        HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        _ASSERTE(!"InitializeContext failed");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from InitializeContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+
+        ThrowHR(hr);
+    }
+
+    _ASSERTE((BYTE*)pFrameContext == pBuffer);
+
+    success = CopyContext(pFrameContext, contextFlags, pContext);
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - CopyContext=%s %d\n", success?"SUCCESS":"FAIL", GetLastError()));
+    if (!success)
+    {
+        HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        _ASSERTE(!"CopyContext failed");
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from CopyContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+
+        ThrowHR(hr);
+    }
+
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context - ID = 0x%X, SS enabled = %d\n", dwThreadId,  /*(uint64_t)hThread,*/ (pContext->EFlags & 0x100) != 0));
+
+    DWORD lastError = 0;
+
+    success = ::SetThreadContext(hThread, pFrameContext);
+    if (!success)
+    {
+        lastError = ::GetLastError();
+    }
+
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
+    _ASSERTE(success);
+
+    DWORD suspendCount = ::ResumeThread(hThread);
+    if (suspendCount == (DWORD)-1)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
+    }
+    if (suspendCount != previousSuspendCount + 1)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    if (!success)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
+        ThrowHR(HRESULT_FROM_WIN32(lastError));
+    }
+#else
+    #error Platform not supported
+#endif
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 //
 // If the thread has an unhandled managed exception, hijack it.
@@ -11277,7 +11435,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
 //    pRawRecord - non-null raw bytes of the exception
 //    countBytes - number of bytes in pRawRecord buffer.
 //    format - format of pRawRecord
-//    dwFlags - flags providing auxillary info for exception record.
+//    dwFlags - flags providing auxiliary info for exception record.
 //    dwThreadId - thread that exception occurred on.
 //    pCallback - callback to dispatch potential managed events on.
 //    pContinueStatus - Continuation status for exception. This dictates what
@@ -11377,7 +11535,15 @@ HRESULT CordbProcess::Filter(
 
             // holder will invoke DeleteIPCEventHelper(pManagedEvent).
         }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_BREAKPOINT && pRecord->ExceptionAddress == m_runtimeOffsets.m_setThreadContextNeededAddr)
+        {
+            // this is a request to set the thread context out of process
 
+            HandleSetThreadContextNeeded(dwThreadId);
+            *pContinueStatus = DBG_CONTINUE;
+        }
+#endif
     }
     PUBLIC_API_END(hr);
     // we may not find the correct mscordacwks so fail gracefully
@@ -12350,7 +12516,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
 
             // These breakpoint and single step exceptions have to be dispatched to the debugger as
             // out-of-band events. This tells the debugger that they must continue from these events
-            // immediatly, and that no interaction with the Left Side is allowed until they do so. This
+            // immediately, and that no interaction with the Left Side is allowed until they do so. This
             // makes sense, since these events are on the helper thread.
             return REACTION(cOOB);
         }
@@ -12565,7 +12731,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
     _ASSERTE(ThreadHoldsProcessLock());
 
     // Lots of special cases for exception events. The vast majority of hybrid debugging work that takes
-    // place is in response to exception events. The work below will consider certian exception events
+    // place is in response to exception events. The work below will consider certain exception events
     // special cases and rather than letting them be queued and dispatched, they will be handled right
     // here.
     if (pEvent->dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
@@ -12658,7 +12824,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
 //    The process just got a native debug event via WaitForDebugEvent
 //
 // Notes:
-//    The function will Triage the excpetion and then handle it based on the
+//    The function will Triage the exception and then handle it based on the
 //    appropriate reaction (see: code:Reaction).
 //
 // @dbgtodo interop: this should all go into the shim.
@@ -13754,7 +13920,7 @@ void CordbWin32EventThread::CreateProcess()
 
     if (SUCCEEDED(hr))
     {
-        // Process ID is filled in after process is succesfully created.
+        // Process ID is filled in after process is successfully created.
         DWORD dwProcessId = m_actionData.createData.lpProcessInformation->dwProcessId;
         ProcessDescriptor pd = ProcessDescriptor::FromPid(dwProcessId);
 
@@ -14365,7 +14531,7 @@ void ExitProcessWorkItem::Do()
         GetProcess()->IncStopCount();
 
         // By the time we release the SG + Process locks here, the process object has been
-        // marked as exiting + terminated (by the w32et which queued us). Future attemps to
+        // marked as exiting + terminated (by the w32et which queued us). Future attempts to
         // continue should fail, and thus we should remain synchronized.
     }
 
@@ -14788,8 +14954,8 @@ LONG CordbProcess::OutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Increment the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::DecrementOutstandingHandles
+// Increment the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::DecrementOutstandingHandles
 void CordbProcess::IncrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());
@@ -14797,8 +14963,8 @@ void CordbProcess::IncrementOutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Decrement the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::IncrementOutstandingHandles
+// Decrement the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::IncrementOutstandingHandles
 void CordbProcess::DecrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());

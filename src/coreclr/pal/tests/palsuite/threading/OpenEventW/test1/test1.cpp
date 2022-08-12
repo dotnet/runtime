@@ -29,7 +29,7 @@ PALTEST(threading_OpenEventW_test1_paltest_openeventw_test1, "threading/OpenEven
         return( FAIL );
     }
 
-    /* Create an event (with a 0 intial state!) and ensure that the
+    /* Create an event (with a 0 initial state!) and ensure that the
        HANDLE is valid
     */
     hEvent = CreateEventW( NULL, TRUE, FALSE, lpName );

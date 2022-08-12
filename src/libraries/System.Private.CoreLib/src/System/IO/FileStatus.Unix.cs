@@ -18,7 +18,7 @@ namespace System.IO
         private const int Uninitialized = 0;          // uninitialized, '0' to make default(FileStatus) uninitialized.
 
         // Tracks the initialization state.
-        // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile, InitializedExistsDir or InitializedExistsBrokenLink.
+        // < 0 : initialized successfully. Value is InitializedNotExists, InitializedExistsFile, InitializedExistsDir or InitializedExistsBrokenLink.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
         private int _state;

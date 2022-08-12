@@ -55,7 +55,7 @@ namespace JSImportGenerator.Unit.Tests
         [MemberData(nameof(CodeSnippetsToFail))]
         public async Task ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
         {
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = await TestUtils.CreateCompilation(source, allowUnsafe: true);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
@@ -72,6 +72,22 @@ namespace JSImportGenerator.Unit.Tests
             {
                 JSTestUtils.AssertMessages(compilationDiags, compilerMessages);
             }
+        }
+
+        [Fact]
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
+        {
+            string source = CodeSnippets.TrivialClassDeclarations;
+            Compilation comp = await TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
+                new Microsoft.Interop.JavaScript.JSImportGenerator(),
+                new Microsoft.Interop.JavaScript.JSExportGenerator());
+
+            // The errors should indicate the AllowUnsafeBlocks is required.
+            Assert.True(generatorDiags.Single(d => d.Id == "SYSLIB1074") != null);
+            Assert.True(generatorDiags.Single(d => d.Id == "SYSLIB1075") != null);
         }
     }
 }

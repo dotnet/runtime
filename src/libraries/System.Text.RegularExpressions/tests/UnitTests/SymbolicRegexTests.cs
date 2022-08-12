@@ -78,7 +78,7 @@ namespace System.Text.RegularExpressions.Tests
                 ("(((ab){10,}c){10,})|((cd){0,10})", 274),  // (2x11+1)x11 + 20 + 1
                 // lower bound int.MaxValue is never unfolded and treated as infinity
                 ("(a{2147483647,})", 2),
-                // typical case that blows up the DFA size to 2^100 when .* is added at the beginnig (below)
+                // typical case that blows up the DFA size to 2^100 when .* is added at the beginning (below)
                 ("a.{100}b", 103)
             };
 

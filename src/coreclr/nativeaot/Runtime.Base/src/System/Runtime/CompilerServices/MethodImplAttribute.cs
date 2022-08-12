@@ -5,7 +5,7 @@ using System;
 
 namespace System.Runtime.CompilerServices
 {
-    // This Enum matchs the miImpl flags defined in corhdr.h. It is used to specify
+    // This Enum matches the miImpl flags defined in corhdr.h. It is used to specify
     // certain method properties.
     public enum MethodImplOptions
     {

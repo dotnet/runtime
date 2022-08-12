@@ -164,7 +164,7 @@ namespace System.Net.Mail
             //   is able to receive, and the remaining octets containing the
             //   authorization identity.
             //
-            // So now this contructs the "wrapped" response.
+            // So now this constructs the "wrapped" response.
 
             // let MakeSignature figure out length of output
             ArrayBufferWriter<byte> outputWriter = new ArrayBufferWriter<byte>();

@@ -178,7 +178,7 @@ Both methodCold and methodCode are declared as `BYTE *`, but in fact hold target
 
 If this code seems overly complex and confusing to you, that's good. In fact it is. Worse, it provides no protection for the separation of host and target addresses. From the declarations of `methodCold` and `methodCode`, there is no particular reason to interpret them as target addresses at all. If these pointers were dereferenced in DAC builds as if they really were host pointers, the process would probably AV. This snippet demonstrates that any arbitrary pointer type (as opposed to a `PTR` type) can be casted to a `TADDR`. Given that these two variables always hold target addresses, they should be of type `PTR_BYTE`, rather than `BYTE *`.
 
-There is also a disciplined means to cast between different `PTR` types: `dac_cast`. The `dac_cast` operator is the DAC-aware vesion of the C++ `static_cast` operator (which the CLR coding conventions stipulate instead of C-style casts when casting pointer types). The `dac_cast` operator will do any of the following things:
+There is also a disciplined means to cast between different `PTR` types: `dac_cast`. The `dac_cast` operator is the DAC-aware version of the C++ `static_cast` operator (which the CLR coding conventions stipulate instead of C-style casts when casting pointer types). The `dac_cast` operator will do any of the following things:
 
 1. Create a `PTR` type from a `TADDR`
 2. Convert one `PTR` type to another
