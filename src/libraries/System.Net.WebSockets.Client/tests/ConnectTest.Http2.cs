@@ -126,7 +126,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
-        [MemberData(nameof(SecureEchoServersAndBoolean))]
+        [MemberData(nameof(EchoServersAndBoolean))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server, bool useHandler)
         {
