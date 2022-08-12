@@ -27,58 +27,58 @@
     <Import Condition="'$(TargetsNet7)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'android'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'android' and '$(RunAOTCompilation)' == 'true'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x86" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'macOS'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'ios'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'ios' and $([MSBuild]::IsOSPlatform('osx'))">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x86" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'maccatalyst'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'maccatalyst' and $([MSBuild]::IsOSPlatform('osx'))">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-x64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'tvos'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'tvos' and $([MSBuild]::IsOSPlatform('osx'))">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvos-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-x64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
-        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
 
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true')">

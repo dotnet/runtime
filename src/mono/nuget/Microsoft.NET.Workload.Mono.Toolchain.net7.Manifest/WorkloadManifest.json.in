@@ -7,9 +7,9 @@
     "wasm-tools": {
       "description": ".NET WebAssembly build tools",
       "packs": [
-        "Microsoft.NET.Runtime.WebAssembly.Sdk",
+        "Microsoft.NET.Runtime.WebAssembly.Sdk.net7",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -40,10 +40,10 @@
       "abstract": true,
       "description": "Android Mono AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x86",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm64"
       ],
       "extends": [ "microsoft-net-runtime-android" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -52,11 +52,11 @@
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x86"
       ],
       "extends": [ "runtimes-ios" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
@@ -78,8 +78,8 @@
       "abstract": true,
       "description": "MacCatalyst Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-x64"
       ],
       "extends": [ "runtimes-maccatalyst" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
@@ -110,9 +110,9 @@
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvos-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-x64"
       ],
       "extends": [ "runtimes-tvos" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
@@ -149,15 +149,24 @@
   "packs": {
     "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.MonoAOTCompiler.Task"
+      }
     },
     "Microsoft.NET.Runtime.MonoTargets.Sdk": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.MonoTargets.Sdk"
+      }
     },
     "Microsoft.NET.Runtime.WebAssembly.Sdk": {
       "kind": "Sdk",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NET.Runtime.WebAssembly.Sdk"
+      }
     },
     "Microsoft.NET.Runtime.WebAssembly.Templates": {
       "kind": "template",
@@ -179,7 +188,7 @@
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x86": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -189,7 +198,7 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x86"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-x64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -199,7 +208,7 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -209,7 +218,7 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.android-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -263,7 +272,7 @@
       "kind": "framework",
       "version": "${PackageVersion}",
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvos-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -283,7 +292,7 @@
       "kind": "framework",
       "version": "${PackageVersion}",
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -291,7 +300,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-arm64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.maccatalyst-x64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -299,7 +308,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-x64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -307,7 +316,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-arm64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.tvossimulator-x64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -315,7 +324,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-x64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -323,7 +332,7 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.ios-arm",
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.ios-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -331,7 +340,7 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.ios-arm64",
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-arm64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -339,7 +348,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-arm64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -347,7 +356,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.iossimulator-x86": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
@@ -355,7 +364,7 @@
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x86"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
