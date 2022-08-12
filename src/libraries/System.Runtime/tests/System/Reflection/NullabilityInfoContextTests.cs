@@ -781,7 +781,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnMono("Nullability attributes trimmed on Mono")]
-        public void GenericMethodWithPointersTest()
+        public unsafe void GenericMethodWithPointersTest()
         {
             // Dummy call to MakeGenericMethod to make the code generated ahead of time 
             if (string.Empty.Length > 0) 
