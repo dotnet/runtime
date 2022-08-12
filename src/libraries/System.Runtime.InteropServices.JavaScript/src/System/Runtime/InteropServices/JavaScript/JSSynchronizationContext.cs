@@ -10,6 +10,12 @@ using System.Runtime.CompilerServices;
 using QueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
 
 namespace System.Runtime.InteropServices.JavaScript {
+    /// <summary>
+    /// Provides a thread-safe default SynchronizationContext for the browser that will automatically
+    ///  route callbacks to the main browser thread where they can interact with the DOM and other
+    ///  thread-affinity-having APIs like WebSockets, fetch, WebGL, etc.
+    /// Callbacks are processed during event loop turns via the runtime's background job system.
+    /// </summary>
     internal sealed unsafe class JSSynchronizationContext : SynchronizationContext {
         public readonly Thread MainThread;
 
@@ -117,17 +123,21 @@ namespace System.Runtime.InteropServices.JavaScript {
         }
 
         private void Pump () {
-            while (Queue.Reader.TryRead(out var item)) {
-                try {
-                    item.Callback(item.Data);
-                    // While we would ideally have a catch block here and do something to dispatch/forward unhandled
-                    //  exceptions, the standard threadpool (and thus standard synchronizationcontext) have zero
-                    //  error handling, so for consistency with them we do nothing. Don't throw in SyncContext callbacks.
-                } finally {
-                    item.Signal?.Set();
+            try {
+                while (Queue.Reader.TryRead(out var item)) {
+                    try {
+                        item.Callback(item.Data);
+                        // While we would ideally have a catch block here and do something to dispatch/forward unhandled
+                        //  exceptions, the standard threadpool (and thus standard synchronizationcontext) have zero
+                        //  error handling, so for consistency with them we do nothing. Don't throw in SyncContext callbacks.
+                    } finally {
+                        item.Signal?.Set();
+                    }
                 }
+            } finally {
+                // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.
+                AwaitNewData();
             }
-            AwaitNewData();
         }
     }
 }
