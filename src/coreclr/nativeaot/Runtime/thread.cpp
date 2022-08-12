@@ -77,7 +77,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 
     do
     {
-        // set preemptive mode
+        // set preemptive mode.
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
