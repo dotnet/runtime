@@ -1674,8 +1674,8 @@ namespace System.Xml
                 }
                 else
                 {
-                    _oldStream = ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).Stream;
-                    ((XmlStreamNodeWriter)_signingWriter.NodeWriter).Stream = stream;
+                    _oldStream = ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).OutputStream;
+                    ((XmlStreamNodeWriter)_signingWriter.NodeWriter).OutputStream = stream;
                 }
             }
             else
@@ -1687,8 +1687,8 @@ namespace System.Xml
                 }
                 else
                 {
-                    _oldStream = _nodeWriter.Stream;
-                    _nodeWriter.Stream = stream;
+                    _oldStream = _nodeWriter.OutputStream;
+                    _nodeWriter.OutputStream = stream;
                 }
             }
         }
@@ -1711,14 +1711,14 @@ namespace System.Xml
                 if (_oldWriter != null)
                     _signingWriter!.NodeWriter = _oldWriter;
                 else
-                    ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).Stream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
+                    ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).OutputStream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
             }
             else
             {
                 if (_oldWriter != null)
                     _writer = _oldWriter;
                 else
-                    _nodeWriter.Stream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
+                    _nodeWriter.OutputStream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
             }
             NamespaceBoundary = _oldNamespaceBoundary;
             _oldWriter = null;
@@ -1744,7 +1744,7 @@ namespace System.Xml
             FlushElement();
             FlushBase64();
             _nodeWriter.Flush();
-            _nodeWriter.Stream.Write(buffer, offset, count);
+            _nodeWriter.OutputStream.Write(buffer, offset, count);
         }
 
         private void FlushBase64()

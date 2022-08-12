@@ -125,6 +125,8 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
             yield return new object[] { "Exp2", (XsdDataContractExporter exp) => exp.Export(new Assembly[] { typeof(DataContractTypes).Assembly }), (string s, XmlSchemaSet ss) => {
                 Assert.Equal(autoImportKVP ? 21 : 20, ss.Count);
+                Assert.Equal(autoImportKVP ? 171 : 163, ss.GlobalTypes.Count);
+                Assert.Equal(autoImportKVP ? 204 : 196, ss.GlobalElements.Count);
             } };
 
             // Export(ICollection<Type>)

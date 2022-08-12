@@ -4,6 +4,7 @@
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.Schema;
 
@@ -49,6 +50,15 @@ namespace System.Runtime.Serialization
                 throw ExceptionUtil.ThrowHelperError(new InvalidOperationException(SR.Format(SR.CannotSetMembersForReferencedType, TypeReference?.BaseType)));
             else
                 return _memberNames ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        internal bool AddMemberName(string memberName)
+        {
+            HashSet<string> names = GetMemberNames();
+
+            // If the name already exists, 4.8 threw an exception because the backing collection type was Dictionary<string, null>
+            Debug.Assert(!names.Contains(memberName));
+            return names.Add(memberName);
         }
     }
 }

@@ -247,7 +247,7 @@ namespace System.Xml
         {
             try
             {
-                return new UniqueId(Trim(value));
+                return new UniqueId(value.Trim());
             }
             catch (ArgumentException exception)
             {
@@ -293,7 +293,7 @@ namespace System.Xml
         {
             try
             {
-                return new Guid(Trim(value));
+                return new Guid(value.Trim());
             }
             catch (FormatException exception)
             {
@@ -458,14 +458,14 @@ namespace System.Xml
             if (index < 0)
             {
                 prefix = string.Empty;
-                localName = Trim(qname);
+                localName = qname.Trim();
             }
             else
             {
                 if (index == qname.Length - 1)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlInvalidQualifiedName, qname)));
-                prefix = Trim(qname.Substring(0, index));
-                localName = Trim(qname.Substring(index + 1));
+                prefix = qname.Substring(0, index).Trim();
+                localName = qname.Substring(index + 1).Trim();
             }
         }
 
@@ -1133,22 +1133,6 @@ namespace System.Xml
                     }
                 }
             });
-        }
-
-        private static string Trim(string s)
-        {
-            int i;
-            for (i = 0; i < s.Length && IsWhitespace(s[i]); i++);
-
-            int j;
-            for (j = s.Length; j > 0 && IsWhitespace(s[j - 1]); j--);
-
-            if (i == 0 && j == s.Length)
-                return s;
-            else if (j == 0)
-                return string.Empty;
-            else
-                return s.Substring(i, j - i);
         }
     }
 }

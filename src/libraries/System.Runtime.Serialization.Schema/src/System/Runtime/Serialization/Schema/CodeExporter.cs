@@ -301,7 +301,7 @@ namespace System.Runtime.Serialization
                         InvokeProcessImportedType(newCodeTypeDeclaration.Members, surrogateProvider);
                 }
             }
-    }
+        }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         internal CodeTypeReference GetCodeTypeReference(DataContract dataContract)
@@ -323,6 +323,7 @@ namespace System.Runtime.Serialization
             return new CodeTypeReference(type);
         }
 
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private CodeTypeReference? GetCodeTypeReference(Type type, IList? parameters)
         {
             CodeTypeReference codeTypeReference = GetCodeTypeReference(type);
@@ -660,7 +661,7 @@ namespace System.Runtime.Serialization
 
                 // A dictionary should have a Key/Value item contract that has at least two members: key and value.
                 Debug.Assert(itemContract != null);
-                Debug.Assert(itemContract.DataMembers.Count > 1);
+                Debug.Assert(itemContract.DataMembers.Count >= 2);
 
                 DataMember keyMember = itemContract.DataMembers[0];
                 DataMember valueMember = itemContract.DataMembers[1];
@@ -708,6 +709,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private Type? GetReferencedTypeOnImport(DataContract dataContract)
         {
             Type? type = null;
@@ -1023,10 +1025,10 @@ namespace System.Runtime.Serialization
                     extensionDataObjectField.CustomAttributes.Add(nonSerializedAttribute);
                 }
                 type.Members.Add(extensionDataObjectField);
-                contractCodeDomInfo.GetMemberNames().Add(extensionDataObjectField.Name);
+                contractCodeDomInfo.AddMemberName(extensionDataObjectField.Name);
                 CodeMemberProperty extensionDataObjectProperty = ExtensionDataObjectProperty;
                 type.Members.Add(extensionDataObjectProperty);
-                contractCodeDomInfo.GetMemberNames().Add(extensionDataObjectProperty.Name);
+                contractCodeDomInfo.AddMemberName(extensionDataObjectProperty.Name);
             }
         }
 
@@ -1042,8 +1044,8 @@ namespace System.Runtime.Serialization
                 if (!isValueType)
                     raisePropertyChangedEventMethod.Attributes |= MemberAttributes.Family;
                 codeTypeDeclaration.Members.Add(raisePropertyChangedEventMethod);
-                contractCodeDomInfo.GetMemberNames().Add(memberEvent.Name);
-                contractCodeDomInfo.GetMemberNames().Add(raisePropertyChangedEventMethod.Name);
+                contractCodeDomInfo.AddMemberName(memberEvent.Name);
+                contractCodeDomInfo.AddMemberName(raisePropertyChangedEventMethod.Name);
             }
         }
 
@@ -1389,7 +1391,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            contractCodeDomInfo.GetMemberNames().Add(memberName);
+            contractCodeDomInfo.AddMemberName(memberName);
             return memberName;
         }
 

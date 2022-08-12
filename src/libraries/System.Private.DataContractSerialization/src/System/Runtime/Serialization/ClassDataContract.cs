@@ -1309,7 +1309,7 @@ namespace System.Runtime.Serialization.DataContracts
                     xmlName = XmlName;
                     genericParams = paramContracts;
 
-                    // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors and let the
+                    // This type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default contract constructors and let the
                     // underlying type get filled in later. But default constructors for DataContracts runs afoul of requiring an underlying type. Our web of nullable
                     // notations make it hard to get around. But it also allows us to feel good about using .UnderlyingType from matching parameter contracts.
                     Type[] underlyingParamTypes = new Type[paramContracts.Length];

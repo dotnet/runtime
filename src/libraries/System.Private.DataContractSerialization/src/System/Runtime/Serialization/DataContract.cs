@@ -996,7 +996,7 @@ namespace System.Runtime.Serialization.DataContracts
             [MemberNotNull(nameof(_typeForInitialization))]
             private void SetTypeForInitialization(Type classType)
             {
-                // NOTE TODO smolloy - This 'if' was not commented out in 4.8. But 4.8 was not dealing with nullable notations, which we do have here in Core.
+                // TODO - This 'if' was not commented out in 4.8. But 4.8 was not dealing with nullable notations, which we do have here in Core.
                 // With the absence of schema importing, it does not make sense to have a data contract without a valid serializable underlying type. (Even
                 // with schema importing it doesn't make sense, but there is a building period while we're still figuring out all the data types and contracts
                 // where the underlying type may be null.) Anyway... might it make sense to re-instate this if clause - but use it to throw an exception if
@@ -2011,27 +2011,18 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                 }
 
+                // After careful consideration, I don't think this code is necessary anymore. After trying to
+                // decipher the intent of the comments here, my best guess is that this was DCJS's way of working
+                // around a non-[Serializable] KVP in Silverlight/early .Net Core. The regular DCS went with a
+                // KVPAdapter approach. Neither is needed now.
+                //
+                // But this code does produce additional artifacts in schema handling. To be cautious, just in case
+                // somebody needs a KVP contract in addition to the KV contract in their schema, I've kept this
+                // here behind this AppContext switch.
                 AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
                 if (autoImportKVP)
                 {
                     //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
-                    //
-                    // ^^^ Years later I think this is referring to how we treat dictionaries as collections of the
-                    // 'KeyValue' struct we have internally. But Json for some reason needed contracts for KeyValuePair<K,T>
-                    // as well. Possibly related to 'UseSimpleDictionaryFormat'? So we would import both KeyValue and KVP
-                    // contracts and be happy.
-                    // Years later, we've had and gotten rid of a KeyValuePair adapter, and I'm not sure I see a case where
-                    // DCJS is failing with either dictionary format without this code. This seems extraneous at this
-                    // point. Perhaps its there to bridge a potential mis-match between producer and consumer?
-                    //
-                    //
-                    // Or, if I put more faith in the 'catch' comment - this was a case where DCSJ might have used
-                    // an internal KV struct because KVP was missing [Serializable], but regular DCS was using a
-                    // KVPAdapter class? And now KVP does have [Serializable] so we don't need either of those workarounds
-                    // anymore. We already dropped KVPAdapter in this PR. We can probably drop this workaround as well.
-                    // This seems the more likely explaination for this block.
-                    //
-                    // TODO smolloy - discuss potential removal of this altogether.
                     try
                     {
                         if (DataContract.GetDataContract(type) is CollectionDataContract collectionDataContract && collectionDataContract.IsDictionary &&
