@@ -79,7 +79,7 @@ namespace System.Threading.RateLimiting
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public abstract int GetAvailablePermits(TResource resource);
-        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(System.Func<TOuter, TResource> keyAdapter) { throw null; }
+        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(System.Func<TOuter, TResource> keyAdapter, bool leaveOpen) { throw null; }
     }
     public enum QueueProcessingOrder
     {

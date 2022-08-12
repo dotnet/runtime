@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,29 +60,32 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
-            string code = @"
+            string code =
+                """
                 using System;
                 using System.Runtime.InteropServices;
                 public class Test
                 {
                     public static int Main()
                     {
-                        Console.WriteLine($""Main running"");
+                        Console.WriteLine("Main running");
                         return 42;
                     }
 
-                    [DllImport(""variadic"", EntryPoint=""sum"")]
+                    [DllImport("variadic", EntryPoint="sum")]
                     public unsafe static extern int using_sum_one(delegate* unmanaged<char*, IntPtr, void> callback);
 
-                    [DllImport(""variadic"", EntryPoint=""sum"")]
+                    [DllImport("variadic", EntryPoint="sum")]
                     public static extern int sum_one(int a, int b);
-                }";
+                }
+                """;
 
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
-            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
-            Assert.Matches("warning.*using_sum_one", output);
+
+            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -109,8 +113,44 @@ namespace Wasm.Build.Tests
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
-            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
-            Assert.Matches("warning.*using_sum_one", output);
+
+            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void DllImportWithFunctionPointers_WarningsAsMessages(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public class Test
+                {
+                    public static int Main()
+                    {
+                        Console.WriteLine("Main running");
+                        return 42;
+                    }
+
+                    [DllImport("someting")]
+                    public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
+                }
+                """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
+                id,
+                verbosity: "normal",
+                extraProperties: "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>"
+            );
+
+            Assert.DoesNotContain("warning WASM0001", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -286,12 +326,14 @@ namespace Wasm.Build.Tests
             Assert.Contains("square: 25", output);
         }
 
-        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id)
+        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, string? verbosity = null, string extraProperties = "")
         {
+            extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
+
             string filename = "variadic.o";
             buildArgs = ExpandBuildArgs(buildArgs,
                                         extraItems: $"<NativeFileReference Include=\"{filename}\" />",
-                                        extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>");
+                                        extraProperties: extraProperties);
 
             (_, string output) = BuildProject(buildArgs,
                                         id: id,
@@ -303,6 +345,7 @@ namespace Wasm.Build.Tests
                                                             Path.Combine(_projectDir!, filename));
                                             },
                                             Publish: buildArgs.AOT,
+                                            Verbosity: verbosity,
                                             DotnetWasmFromRuntimePack: false));
 
             return (buildArgs, output);

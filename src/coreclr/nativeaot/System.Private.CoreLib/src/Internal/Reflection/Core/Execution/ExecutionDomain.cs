@@ -207,7 +207,7 @@ namespace Internal.Reflection.Core.Execution
             }
             else
             {
-                Debug.Assert(ExecutionEnvironment.IsReflectionBlocked(typeHandle));
+                Debug.Assert(ExecutionEnvironment.IsReflectionBlocked(typeHandle) || RuntimeAugments.MightBeUnconstructedType(typeHandle));
                 return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
             }
         }
