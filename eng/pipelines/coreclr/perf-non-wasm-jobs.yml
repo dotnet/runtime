@@ -370,8 +370,8 @@ jobs:
         logicalmachine: 'perftiger'
 
   # Uncomment to reenable package replacement
-  # # build maui runtime packs
-  # - template: /eng/pipelines/common/platform-matrix.yml
+  ## build maui runtime packs
+  #- template: /eng/pipelines/common/platform-matrix.yml
   #  parameters:
   #    jobTemplate: /eng/pipelines/common/global-build-job.yml
   #    buildConfig: release
