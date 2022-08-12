@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using Xunit;
-using System.Diagnostics;
 
 namespace System.ComponentModel.Tests
 {
