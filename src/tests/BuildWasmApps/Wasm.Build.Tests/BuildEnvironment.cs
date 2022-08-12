@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
         public string                           RuntimeNativeDir              { get; init; }
         public string                           LogRootPath                   { get; init; }
 
-        public string                           WorkloadPacksDir => Path.Combine(Path.GetDirectoryName(DotNet)!, "packs");
+        public string                           WorkloadPacksDir              { get; init; }
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
@@ -68,6 +68,7 @@ namespace Wasm.Build.Tests
                 if (string.IsNullOrEmpty(workloadPacksVersion))
                     throw new Exception($"Cannot test with workloads without WORKLOAD_PACKS_VER environment variable being set");
 
+                WorkloadPacksDir = Path.Combine(sdkForWorkloadPath, "packs");
                 WorkloadPacksVersion = workloadPacksVersion;
 
                 RuntimePackDir = Path.Combine(sdkForWorkloadPath, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", WorkloadPacksVersion);
@@ -83,6 +84,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
+                WorkloadPacksDir = "/dont-use-this-no-workload-installed";
                 WorkloadPacksVersion = "dont-use-this-no-workload-installed";
                 RuntimePackDir = "/dont-check-runtime-pack-dir-for-no-workloads-case";
                 var appRefDir = EnvironmentVariables.AppRefDir;
