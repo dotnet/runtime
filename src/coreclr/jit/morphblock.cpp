@@ -1556,6 +1556,12 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 
             JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
 
+            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
+            if (lclVarTree != nullptr)
+            {
+                lclVarTree->gtFlags |= GTF_VAR_DEF;
+            }
+
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }
     }
