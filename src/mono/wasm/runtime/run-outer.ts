@@ -194,17 +194,19 @@ class HostBuilder implements DotnetHostBuilder {
 
     async create(): Promise<RuntimeAPI> {
         try {
-            if (ENVIRONMENT_IS_NODE) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore:
-                const process = await import(/* webpackIgnore: true */"process");
-                if (process.versions.node.split(".")[0] < 14) {
-                    throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+            if (!this.instance) {
+                if (ENVIRONMENT_IS_NODE) {
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore:
+                    const process = await import(/* webpackIgnore: true */"process");
+                    if (process.versions.node.split(".")[0] < 14) {
+                        throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+                    }
                 }
+                mono_assert(this.moduleConfig, "Null moduleConfig");
+                mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
+                this.instance = await emscriptenEntrypoint(this.moduleConfig);
             }
-            mono_assert(this.moduleConfig, "Null moduleConfig");
-            mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
-            this.instance = await emscriptenEntrypoint(this.moduleConfig);
             return this.instance;
         } catch (err) {
             mono_exit(1, err);
