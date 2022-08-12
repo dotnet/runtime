@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                 snapshotHandle = Interop.Kernel32.CreateToolhelp32Snapshot(Interop.Kernel32.SnapshotFlags.Process, 0);
 
                 Interop.Kernel32.PROCESSENTRY32 procEntry = default(Interop.Kernel32.PROCESSENTRY32);
-                procEntry.dwSize = Marshal.SizeOf(typeof(Interop.Kernel32.PROCESSENTRY32));
+                procEntry.dwSize = Marshal.SizeOf<Interop.Kernel32.PROCESSENTRY32>();
                 if (Interop.Kernel32.Process32First(snapshotHandle, ref procEntry))
                 {
                     int currentProcessId =
