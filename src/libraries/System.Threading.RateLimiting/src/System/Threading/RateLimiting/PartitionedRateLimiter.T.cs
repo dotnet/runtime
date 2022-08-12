@@ -127,15 +127,16 @@ namespace System.Threading.RateLimiting
         /// <typeparam name="TOuter">The type to translate into <typeparamref name="TResource"/>.</typeparam>
         /// <param name="keyAdapter">The function to be called every time a <typeparamref name="TOuter"/> is passed to
         /// PartitionedRateLimiter&lt;TOuter&gt;.Acquire(TOuter, int) or PartitionedRateLimiter&lt;TOuter&gt;.WaitAsync(TOuter, int, CancellationToken).</param>
+        /// <param name="leaveOpen">Specifies whether the returned <see cref="PartitionedRateLimiter{TOuter}"/> will dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</param>
         /// <remarks><see cref="PartitionedRateLimiter{TResource}.Dispose()"/> or <see cref="PartitionedRateLimiter{TResource}.DisposeAsync()"/> does not dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</remarks>
         /// <returns>A new PartitionedRateLimiter&lt;TOuter&gt; that translates <typeparamref name="TOuter"/>
         /// to <typeparamref name="TResource"/> and calls the inner <see cref="PartitionedRateLimiter{TResource}"/>.</returns>
-        public PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(Func<TOuter, TResource> keyAdapter)
+        public PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(Func<TOuter, TResource> keyAdapter, bool leaveOpen)
         {
             // REVIEW: Do we want to have an option to dispose the inner limiter?
             // Should the default be to dispose the inner limiter and have an option to not dispose it?
             // See Stream wrappers like SslStream for prior-art
-            return new TranslatingLimiter<TResource, TOuter>(this, keyAdapter);
+            return new TranslatingLimiter<TResource, TOuter>(this, keyAdapter, leaveOpen);
         }
     }
 }

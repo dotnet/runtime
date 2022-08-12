@@ -460,7 +460,6 @@ export function bindings_init(): void {
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
-
     } catch (err) {
         _print_error("MONO_WASM: Error in bindings_init", err);
         throw err;

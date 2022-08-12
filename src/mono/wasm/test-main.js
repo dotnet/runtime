@@ -263,6 +263,7 @@ async function run() {
             .withElementOnExit();
 
         if (is_node) {
+            dotnet.withEnvironmentVariable("NodeJSPlatform", process.platform)
             const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
             if (modulesToLoad) {
                 dotnet.withModuleConfig({
