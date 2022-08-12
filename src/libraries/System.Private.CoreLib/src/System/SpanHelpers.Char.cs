@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -420,7 +419,6 @@ namespace System
             return lengthDelta;
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfNullCharacter(ref char searchSpace)
         {
@@ -624,68 +622,6 @@ namespace System
             return (int)(offset);
         }
 
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(Vector<ushort> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = 0;
-            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
-            for (; i < Vector<ulong>.Count; i++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 4 + LocateFirstFoundChar(candidate);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(ulong match)
-            => BitOperations.TrailingZeroCount(match) >> 4;
-
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateLastFoundChar(Vector<ushort> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = Vector<ulong>.Count - 1;
-
-            // This pattern is only unrolled by the Jit if the limit is Vector<T>.Count
-            // As such, we need a dummy iteration variable for that condition to be satisfied
-            for (int j = 0; j < Vector<ulong>.Count; j++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-
-                i--;
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 4 + LocateLastFoundChar(candidate);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateLastFoundChar(ulong match)
-            => BitOperations.Log2(match) >> 4;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<ushort> LoadVector(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<ushort> LoadVector(ref char start, nuint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (nint)offset)));
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<ushort> LoadVector128(ref char start, nint offset)
             => Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
@@ -701,13 +637,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ushort> LoadVector256(ref char start, nuint offset)
             => Unsafe.ReadUnaligned<Vector256<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (nint)offset)));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref char Add(ref char start, nuint offset) => ref Unsafe.Add(ref start, (nint)offset);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nint GetCharVectorSpanLength(nint offset, nint length)
-            => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector128SpanLength(nint offset, nint length)
@@ -740,21 +669,6 @@ namespace System
             // If a GC does occur and alignment is lost, the GC cost will outweigh any gains from alignment so it
             // isn't too important to pin to maintain the alignment.
             return (nint)(uint)(-(int)Unsafe.AsPointer(ref searchSpace) / ElementsPerByte) & (Vector128<ushort>.Count - 1);
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int FindFirstMatchedLane(Vector128<ushort> compareResult)
-        {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
-
-            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult.AsByte(), compareResult.AsByte());
-            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
-
-            // It should be handled by compareResult != Vector.Zero
-            Debug.Assert(selectedLanes != 0);
-
-            return BitOperations.TrailingZeroCount(selectedLanes) >> 3;
         }
 
         public static void Reverse(ref char buf, nuint length)

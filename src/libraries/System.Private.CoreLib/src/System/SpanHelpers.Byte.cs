@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -528,136 +527,6 @@ namespace System
             return (int)(offset + 7);
         }
 
-        public static int LastIndexOfAny(ref byte searchSpace, byte value0, byte value1, byte value2, int length)
-        {
-            Debug.Assert(length >= 0);
-
-            uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            uint uValue1 = value1;
-            uint uValue2 = value2;
-            nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)(uint)length;
-
-            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
-            {
-                lengthToExamine = UnalignedCountVectorFromEnd(ref searchSpace, length);
-            }
-        SequentialScan:
-            uint lookUp;
-            while (lengthToExamine >= 8)
-            {
-                lengthToExamine -= 8;
-                offset -= 8;
-
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found7;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found6;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found5;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found4;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found3;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found2;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found1;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found;
-            }
-
-            if (lengthToExamine >= 4)
-            {
-                lengthToExamine -= 4;
-                offset -= 4;
-
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found3;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found2;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found1;
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found;
-            }
-
-            while (lengthToExamine > 0)
-            {
-                lengthToExamine -= 1;
-                offset -= 1;
-
-                lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
-                    goto Found;
-            }
-
-            if (Vector.IsHardwareAccelerated && (offset > 0))
-            {
-                lengthToExamine = (offset & (nuint)~(Vector<byte>.Count - 1));
-
-                Vector<byte> values0 = new Vector<byte>(value0);
-                Vector<byte> values1 = new Vector<byte>(value1);
-                Vector<byte> values2 = new Vector<byte>(value2);
-
-                while (lengthToExamine > (nuint)(Vector<byte>.Count - 1))
-                {
-                    Vector<byte> search = LoadVector(ref searchSpace, offset - (nuint)Vector<byte>.Count);
-
-                    var matches = Vector.BitwiseOr(
-                                    Vector.BitwiseOr(
-                                        Vector.Equals(search, values0),
-                                        Vector.Equals(search, values1)),
-                                    Vector.Equals(search, values2));
-
-                    if (Vector<byte>.Zero.Equals(matches))
-                    {
-                        offset -= (nuint)Vector<byte>.Count;
-                        lengthToExamine -= (nuint)Vector<byte>.Count;
-                        continue;
-                    }
-
-                    // Find offset of first match and add to current offset
-                    return (int)(offset) - Vector<byte>.Count + LocateLastFoundByte(matches);
-                }
-
-                if (offset > 0)
-                {
-                    lengthToExamine = offset;
-                    goto SequentialScan;
-                }
-            }
-            return -1;
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)offset;
-        Found1:
-            return (int)(offset + 1);
-        Found2:
-            return (int)(offset + 2);
-        Found3:
-            return (int)(offset + 3);
-        Found4:
-            return (int)(offset + 4);
-        Found5:
-            return (int)(offset + 5);
-        Found6:
-            return (int)(offset + 6);
-        Found7:
-            return (int)(offset + 7);
-        }
-
         // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
         public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)
@@ -859,27 +728,6 @@ namespace System
             // - exceptions are conditional forwards jmps and not predicted
         NotEqual:
             return false;
-        }
-
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundByte(Vector<byte> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = 0;
-            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
-            for (; i < Vector<ulong>.Count; i++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 8 + LocateFirstFoundByte(candidate);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1157,39 +1005,6 @@ namespace System
             return i + uint.TrailingZeroCount(mask);
         }
 
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateLastFoundByte(Vector<byte> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = Vector<ulong>.Count - 1;
-
-            // This pattern is only unrolled by the Jit if the limit is Vector<T>.Count
-            // As such, we need a dummy iteration variable for that condition to be satisfied
-            for (int j = 0; j < Vector<ulong>.Count; j++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-
-                i--;
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 8 + LocateLastFoundByte(candidate);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundByte(ulong match)
-            => BitOperations.TrailingZeroCount(match) >> 3;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateLastFoundByte(ulong match)
-            => BitOperations.Log2(match) >> 3;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort LoadUShort(ref byte start)
             => Unsafe.ReadUnaligned<ushort>(ref start);
@@ -1223,10 +1038,6 @@ namespace System
             => Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint GetByteVectorSpanLength(nuint offset, int length)
-            => (nuint)(uint)((length - (int)offset) & ~(Vector<byte>.Count - 1));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector128SpanLength(nuint offset, int length)
             => (nuint)(uint)((length - (int)offset) & ~(Vector128<byte>.Count - 1));
 
@@ -1246,34 +1057,6 @@ namespace System
         {
             nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector128<byte>.Count - 1);
             return (nuint)(uint)((Vector128<byte>.Count - unaligned) & (Vector128<byte>.Count - 1));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint UnalignedCountVectorFromEnd(ref byte searchSpace, int length)
-        {
-            nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
-            return (nuint)(uint)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint FindFirstMatchedLane(Vector128<byte> compareResult)
-        {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
-
-            // Mask to help find the first lane in compareResult that is set.
-            // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
-            Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-
-            // Find the first lane that is set inside compareResult.
-            Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);
-            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(maskedSelectedLanes, maskedSelectedLanes);
-            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
-
-            // It should be handled by compareResult != Vector.Zero
-            Debug.Assert(selectedLanes != 0);
-
-            // Find the first lane that is set inside compareResult.
-            return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
         }
 
         public static void Reverse(ref byte buf, nuint length)
