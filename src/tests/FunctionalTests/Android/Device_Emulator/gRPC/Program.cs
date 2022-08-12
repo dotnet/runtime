@@ -41,7 +41,6 @@ foreach (var options in configurations)
         DefaultServiceAccount: {options.DefaultServiceAccount}
         OAuthScope: {options.OAuthScope}
         ServiceAccountKeyFile: {options.ServiceAccountKeyFile}
-        GrpcWebMode: {options.GrpcWebMode}
         UseHttp3: {options.UseHttp3}
         ---
         """);

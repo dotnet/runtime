@@ -46,13 +46,12 @@
       ProtoRoot="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Proto\grpc\testing\"
       GrpcServices="Client" />
 
-    <PackageReference Include="Grpc.Auth" Version="$(GrpcClientVersion)" />
-    <PackageReference Include="Grpc.Net.Client" Version="$(GrpcClientVersion)" />
-    <PackageReference Include="Grpc.Net.Client.Web" Version="$(GrpcClientVersion)" />
 
     <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
+    <PackageReference Include="Grpc.Auth" Version="$(GrpcAuthVersion)" />
     <PackageReference Include="Grpc.Core" Version="$(GrpcCoreVersion)" PrivateAssets="All" />
-    <PackageReference Include="Grpc.Tools" Version="$(GrpcClientVersion)" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Net.Client" Version="$(GrpcDotnetClientVersion)" />
+    <PackageReference Include="Grpc.Tools" Version="$(GrpcToolsVersion)" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>

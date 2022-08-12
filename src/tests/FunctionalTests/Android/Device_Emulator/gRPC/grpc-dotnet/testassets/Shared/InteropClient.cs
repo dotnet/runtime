@@ -20,7 +20,6 @@ using System.Security.Cryptography.X509Certificates;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Grpc.Net.Client.Web;
 using Grpc.Testing;
 using Microsoft.Extensions.Logging;
 using Empty = Grpc.Testing.Empty;
@@ -40,7 +39,6 @@ namespace Grpc.Shared.TestAssets
         public string? DefaultServiceAccount { get; set; }
         public string? OAuthScope { get; set; }
         public string? ServiceAccountKeyFile { get; set; }
-        public string? GrpcWebMode { get; set; }
         public bool UseHttp3 { get; set; }
     }
 
@@ -66,10 +64,6 @@ namespace Grpc.Shared.TestAssets
             try
             {
                 var message = "Running " + options.TestCase;
-                if (options.GrpcWebMode != null)
-                {
-                    message += $" ({options.GrpcWebMode})";
-                }
                 logger.LogInformation(message);
                 await RunTestCaseAsync(channel, options);
                 logger.LogInformation("Passed!");
@@ -97,14 +91,6 @@ namespace Grpc.Shared.TestAssets
             }
 
             HttpMessageHandler httpMessageHandler = CreateHttpClientHandler();
-            if (!string.IsNullOrEmpty(options.GrpcWebMode) && !string.Equals(options.GrpcWebMode, "None", StringComparison.OrdinalIgnoreCase))
-            {
-                var mode = (GrpcWebMode)Enum.Parse(typeof(GrpcWebMode), options.GrpcWebMode);
-                httpMessageHandler = new GrpcWebHandler(mode, httpMessageHandler)
-                {
-                    HttpVersion = new Version(1, 1)
-                };
-            }
             if (options.UseHttp3)
             {
 #if NET6_0_OR_GREATER
