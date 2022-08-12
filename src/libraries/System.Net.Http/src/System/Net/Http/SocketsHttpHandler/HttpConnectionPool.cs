@@ -424,7 +424,7 @@ namespace System.Net.Http
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
             HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
-            if (request.IsExtendedConnectRequest)
+            if (request.IsExtendedConnectRequest && desiredVersion == 2)
             {
                 ex.Data["HTTP2_ENABLED"] = false;
             }
