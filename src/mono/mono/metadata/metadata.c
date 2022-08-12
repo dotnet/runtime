@@ -2111,7 +2111,7 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 		}
 	}
 
-	/* Maybe it's one of the globaly-known basic types */
+	/* Maybe it's one of the globally-known basic types */
 	MonoType *cached;
 	/* No need to use locking since nobody is modifying the hash table */
 	if ((cached = (MonoType *)g_hash_table_lookup (type_cache, type))) {

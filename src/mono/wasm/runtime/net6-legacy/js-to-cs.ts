@@ -1,16 +1,17 @@
 import { isThenable } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { runtimeHelpers, Module } from "../imports";
+import { Module } from "../imports";
 import { wrap_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
-import { WasmRoot, mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
+import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
-import { MonoObject, is_nullish, MonoClass, wasm_type_symbol, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed } from "../types";
+import { MonoObject, is_nullish, MonoClass, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
+import { legacyHelpers, wasm_type_symbol } from "./imports";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
@@ -71,17 +72,17 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
         case typeof js_obj === "number": {
             let box_class: MonoClass;
             if ((js_obj | 0) === js_obj) {
-                setI32_unchecked(runtimeHelpers._box_buffer, js_obj);
-                box_class = runtimeHelpers._class_int32;
+                setI32_unchecked(legacyHelpers._box_buffer, js_obj);
+                box_class = legacyHelpers._class_int32;
             } else if ((js_obj >>> 0) === js_obj) {
-                setU32_unchecked(runtimeHelpers._box_buffer, js_obj);
-                box_class = runtimeHelpers._class_uint32;
+                setU32_unchecked(legacyHelpers._box_buffer, js_obj);
+                box_class = legacyHelpers._class_uint32;
             } else {
-                setF64(runtimeHelpers._box_buffer, js_obj);
-                box_class = runtimeHelpers._class_double;
+                setF64(legacyHelpers._box_buffer, js_obj);
+                box_class = legacyHelpers._class_double;
             }
 
-            cwraps.mono_wasm_box_primitive_ref(box_class, runtimeHelpers._box_buffer, 8, result.address);
+            cwraps.mono_wasm_box_primitive_ref(box_class, legacyHelpers._box_buffer, 8, result.address);
             return;
         }
         case typeof js_obj === "string":
@@ -91,8 +92,8 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             js_string_to_mono_string_interned_root(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
-            setB32(runtimeHelpers._box_buffer, js_obj);
-            cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, result.address);
+            setB32(legacyHelpers._box_buffer, js_obj);
+            cwraps.mono_wasm_box_primitive_ref(legacyHelpers._class_boolean, legacyHelpers._box_buffer, 4, result.address);
             return;
         case isThenable(js_obj) === true: {
             _wrap_js_thenable_as_task_root(js_obj, result);

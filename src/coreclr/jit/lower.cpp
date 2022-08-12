@@ -238,6 +238,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_JTRUE:
             return LowerJTrue(node->AsOp());
 
+        case GT_SELECT:
+#ifdef TARGET_ARM64
+            ContainCheckSelect(node->AsConditional());
+#endif
+            break;
+
         case GT_JMP:
             LowerJmpMethod(node);
             break;
@@ -261,11 +267,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif // TARGET_XARCH
 
         case GT_ARR_ELEM:
-            assert(!comp->opts.compJitEarlyExpandMDArrays);
+            noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
             return LowerArrElem(node->AsArrElem());
 
         case GT_ARR_OFFSET:
-            assert(!comp->opts.compJitEarlyExpandMDArrays);
+            noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
             ContainCheckArrOffset(node->AsArrOffs());
             break;
 
@@ -1832,7 +1838,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     if (!putargs.Empty())
     {
         // Get the earliest operand of the first PUTARG_STK node. We will make
-        // the requred copies of args before this node.
+        // the required copies of args before this node.
         bool     unused;
         GenTree* insertionPoint = BlockRange().GetTreeRange(putargs.Bottom(), &unused).FirstNode();
         // Insert GT_START_NONGC node before we evaluate the PUTARG_STK args.
@@ -2742,6 +2748,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
+#ifdef TARGET_ARM64
+    // Do not optimise further if op1 has a contained chain.
+    if (op1->OperIs(GT_AND) &&
+        (op1->gtGetOp1()->isContainedAndNotIntOrIImmed() || op1->gtGetOp2()->isContainedAndNotIntOrIImmed()))
+    {
+        return cmp;
+    }
+#endif
+
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
@@ -2772,7 +2787,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
+            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
             // the result of bool returning calls.
             //
             bool removeCast =
@@ -2836,7 +2851,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             if ((op2Value == 1) && cmp->OperIs(GT_EQ))
             {
                 if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
+                    !cmpUse.User()->OperIsConditional())
                 {
                     GenTree* next = cmp->gtNext;
 
@@ -3620,7 +3636,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     switch (retVal->OperGet())
     {
         case GT_CNS_INT:
-            // When we promote LCL_VAR single fields into return we could have all type of constans here.
+            // When we promote LCL_VAR single fields into return, we could have all types of constants here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
                 // ZeroObj assertion propagation can create INT zeros for DOUBLE returns.
@@ -3738,7 +3754,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerCallStruct: Lowers a call node that returns a stuct.
+// LowerCallStruct: Lowers a call node that returns a struct.
 //
 // Arguments:
 //     call - The call node to lower.
@@ -4675,8 +4691,8 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckReturnTrap(tree->AsOp());
 
-    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
-    // happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
+    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets
+    // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
@@ -4749,7 +4765,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     if (g_TrapReturningThreads)
     //         RareDisablePreemptiveGC();
     //
-    // Transistions using helpers:
+    // Transitions using helpers:
     //
     //     OpaqueFrame opaqueFrame;
     //
@@ -5657,7 +5673,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
 #ifdef TARGET_XARCH
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // reduntant copies otherwise
+        // redundant copies otherwise
         if (firstNode && !simpleMul)
         {
             adjustedDividend->SetRegNum(REG_RAX);
@@ -6812,6 +6828,12 @@ void Lowering::ContainCheckNode(GenTree* node)
 
         case GT_JTRUE:
             ContainCheckJTrue(node->AsOp());
+            break;
+
+        case GT_SELECT:
+#ifdef TARGET_ARM64
+            ContainCheckSelect(node->AsConditional());
+#endif
             break;
 
         case GT_ADD:

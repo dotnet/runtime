@@ -15,8 +15,12 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+
+using ILCompiler.Dataflow;
 using ILLink.Shared;
+
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 #nullable enable
 
@@ -191,6 +195,9 @@ namespace ILCompiler
                 // TODO: Process exported types
 
                 // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
+                // for now just hack replacing / for + to support basic resolving of nested types
+                // https://github.com/dotnet/runtime/issues/73083
+                fullname = fullname.Replace("/", "+");
                 TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
 
                 if (type == null)
@@ -230,7 +237,8 @@ namespace ILCompiler
             {
                 ProcessSelectedFields(nav, type);
                 ProcessSelectedMethods(nav, type, customData);
-                // TODO: In order to be compatible with the format we need to be able to recognize properties, events and maybe attributes
+                ProcessSelectedEvents(nav, type, customData);
+                ProcessSelectedProperties(nav, type, customData);
             }
         }
 
@@ -344,8 +352,7 @@ namespace ILCompiler
 
         protected virtual void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData) { }
 
-#if false
-        void ProcessSelectedEvents(XPathNavigator nav, TypeDefinition type, object? customData)
+        void ProcessSelectedEvents(XPathNavigator nav, TypeDesc type, object? customData)
         {
             foreach (XPathNavigator eventNav in nav.SelectChildren(EventElementName, XmlNamespace))
             {
@@ -355,15 +362,15 @@ namespace ILCompiler
             }
         }
 
-        protected virtual void ProcessEvent(TypeDefinition type, XPathNavigator nav, object? customData)
+        protected virtual void ProcessEvent(TypeDesc type, XPathNavigator nav, object? customData)
         {
             string signature = GetSignature(nav);
             if (!String.IsNullOrEmpty(signature))
             {
-                EventDefinition? @event = GetEvent(type, signature);
-                if (@event == null)
+                EventPseudoDesc? @event = GetEvent(type, signature);
+                if (@event is null)
                 {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName());
+                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName());
                     return;
                 }
 
@@ -374,37 +381,34 @@ namespace ILCompiler
             if (!String.IsNullOrEmpty(name))
             {
                 bool foundMatch = false;
-                foreach (EventDefinition @event in type.Events)
+                if (type.GetTypeDefinition() is not EcmaType ecmaType)
                 {
-                    if (@event.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessEvent(type, @event, nav, customData);
-                    }
+                    return;
+                }
+                foreach (var @event in type.GetEventsOnTypeHierarchy(e => e.Name == name))
+                {
+                    foundMatch = true;
+                    ProcessEvent(type, @event, nav, customData);
                 }
 
                 if (!foundMatch)
                 {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName());
+                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName());
                 }
             }
         }
 
-        protected static EventDefinition? GetEvent(TypeDefinition type, string signature)
+        protected static EventPseudoDesc? GetEvent(TypeDesc type, string signature)
         {
-            if (!type.HasEvents)
-                return null;
-
-            foreach (EventDefinition @event in type.Events)
-                if (signature == @event.EventType.FullName + " " + @event.Name)
-                    return @event;
+            foreach (EventPseudoDesc @event in type.GetEventsOnTypeHierarchy(e => string.Concat(CecilTypeNameFormatter.Instance.FormatName(e.AddMethod.Signature[0]), " ", e.Name) == signature))
+                return @event;
 
             return null;
         }
 
-        protected virtual void ProcessEvent(TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData) { }
+        protected virtual void ProcessEvent(TypeDesc type, EventPseudoDesc @event, XPathNavigator nav, object? customData) { }
 
-        void ProcessSelectedProperties(XPathNavigator nav, TypeDefinition type, object? customData)
+        void ProcessSelectedProperties(XPathNavigator nav, TypeDesc type, object? customData)
         {
             foreach (XPathNavigator propertyNav in nav.SelectChildren(PropertyElementName, XmlNamespace))
             {
@@ -414,15 +418,15 @@ namespace ILCompiler
             }
         }
 
-        protected virtual void ProcessProperty(TypeDefinition type, XPathNavigator nav, object? customData)
+        protected virtual void ProcessProperty(TypeDesc type, XPathNavigator nav, object? customData)
         {
             string signature = GetSignature(nav);
             if (!String.IsNullOrEmpty(signature))
             {
-                PropertyDefinition? property = GetProperty(type, signature);
-                if (property == null)
+                PropertyPseudoDesc? property = GetProperty(type, signature);
+                if (property is null)
                 {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName());
+                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName());
                     return;
                 }
 
@@ -433,36 +437,28 @@ namespace ILCompiler
             if (!String.IsNullOrEmpty(name))
             {
                 bool foundMatch = false;
-                foreach (PropertyDefinition property in type.Properties)
+                foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => p.Name == name))
                 {
-                    if (property.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessProperty(type, property, nav, customData, false);
-                    }
+                   foundMatch = true;
+                   ProcessProperty(type, property, nav, customData, false);
                 }
 
                 if (!foundMatch)
                 {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName());
+                    //LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName());
                 }
             }
         }
 
-        protected static PropertyDefinition? GetProperty(TypeDefinition type, string signature)
+        protected static PropertyPseudoDesc? GetProperty(TypeDesc type, string signature)
         {
-            if (!type.HasProperties)
-                return null;
-
-            foreach (PropertyDefinition property in type.Properties)
-                if (signature == property.PropertyType.FullName + " " + property.Name)
-                    return property;
+            foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => string.Concat(CecilTypeNameFormatter.Instance.FormatName(p.Signature.ReturnType), " ", p.Name) == signature))
+                return property;
 
             return null;
         }
 
-        protected virtual void ProcessProperty(TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature) { }
-#endif
+        protected virtual void ProcessProperty(TypeDesc type, PropertyPseudoDesc property, XPathNavigator nav, object? customData, bool fromSignature) { }
 
         protected virtual AssemblyName GetAssemblyName(XPathNavigator nav)
         {

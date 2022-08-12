@@ -387,7 +387,7 @@ HRESULT Disp::FindAssembly(             // S_OK or error
     LPCWSTR     szAssemblyName,         // [IN] required - this is the assembly you are requesting
     LPCWSTR     szName,                 // [OUT] buffer - to hold name
     ULONG       cchName,                // [IN] the name buffer's size
-    ULONG       *pcName)                // [OUT] the number of characters returend in the buffer
+    ULONG       *pcName)                // [OUT] the number of characters returned in the buffer
 {
     BEGIN_ENTRYPOINT_NOTHROW;
     END_ENTRYPOINT_NOTHROW;
@@ -403,7 +403,7 @@ HRESULT Disp::FindAssemblyModule(           // S_OK or error
     LPCWSTR     szModuleName,               // [IN] required - the name of the module
     _Out_writes_ (cchName) LPWSTR  szName,  // [OUT] buffer - to hold name
     ULONG       cchName,                    // [IN]  the name buffer's size
-    ULONG       *pcName)                    // [OUT] the number of characters returend in the buffer
+    ULONG       *pcName)                    // [OUT] the number of characters returned in the buffer
 {
     BEGIN_ENTRYPOINT_NOTHROW;
     END_ENTRYPOINT_NOTHROW;

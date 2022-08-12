@@ -545,7 +545,7 @@ namespace ILCompiler.Dataflow
                     }
                     else if (uniqueValue is SystemTypeValue)
                     {
-                        // SystemTypeValue can fullfill any requirement, so it's always valid
+                        // SystemTypeValue can fulfill any requirement, so it's always valid
                         // The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
                     }
                     else

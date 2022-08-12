@@ -3,17 +3,14 @@
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
+/// <reference path="./types/node.d.ts" />
 
-import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
-import { DotnetModule, EarlyExports, EarlyImports, MonoConfig, RuntimeHelpers } from "./types";
+import { DotnetModule, EarlyExports, EarlyImports, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
-export let MONO: MONOType;
-export let BINDING: BINDINGType;
 export let INTERNAL: any;
-export let EXPORTS: any;
 export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
@@ -28,13 +25,9 @@ export function set_imports_exports(
     imports: EarlyImports,
     exports: EarlyExports,
 ): void {
-    MONO = exports.mono;
-    BINDING = exports.binding;
     INTERNAL = exports.internal;
+    IMPORTS = exports.marshaled_imports;
     Module = exports.module;
-
-    EXPORTS = exports.marshaled_exports; // [JSExport]
-    IMPORTS = exports.marshaled_imports; // [JSImport]
 
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
@@ -46,29 +39,12 @@ export function set_imports_exports(
     runtimeHelpers.requirePromise = imports.requirePromise;
 }
 
-let monoConfig: MonoConfig = {} as any;
-let runtime_is_ready = false;
-
 export const runtimeHelpers: RuntimeHelpers = <any>{
     javaScriptExports: {},
     mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
-    get mono_wasm_runtime_is_ready() {
-        return runtime_is_ready;
-    },
-    set mono_wasm_runtime_is_ready(value: boolean) {
-        runtime_is_ready = value;
-        INTERNAL.mono_wasm_runtime_is_ready = value;
-    },
-    get config() {
-        return monoConfig;
-    },
-    set config(value: MonoConfig) {
-        monoConfig = value;
-        MONO.config = value;
-        Module.config = value;
-    },
-    diagnostic_tracing: false,
-    enable_debugging: false,
+    max_parallel_downloads: 16,
+    config: {},
+    diagnosticTracing: false,
     fetch: null
 };

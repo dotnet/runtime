@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class ReleaseComObjectTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ReleaseComObject_ValidComObject_Success()
         {
             var comObject = new ComImportObject();

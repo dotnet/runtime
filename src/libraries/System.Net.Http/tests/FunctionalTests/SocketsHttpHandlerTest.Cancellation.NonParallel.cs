@@ -26,6 +26,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("2.0", 10_000, 1_000, 100)]
         [InlineData("1.1", 20_000, 10_000, null)]
         [InlineData("2.0", 20_000, 10_000, null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72977", TestPlatforms.Linux)]
         public static void CancelPendingRequest_DropsStalledConnectionAttempt(string versionString, int firstConnectionDelayMs, int requestTimeoutMs, int? pendingConnectionTimeoutOnRequestCompletion)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

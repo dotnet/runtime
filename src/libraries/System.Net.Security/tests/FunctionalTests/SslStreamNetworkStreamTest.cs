@@ -45,12 +45,12 @@ namespace System.Net.Security.Tests
         private static bool SupportsRenegotiation => TestConfiguration.SupportsRenegotiation;
 
         readonly ITestOutputHelper _output;
-        readonly CertificateSetup certificates;
+        readonly CertificateSetup _certificates;
 
         public SslStreamNetworkStreamTest(ITestOutputHelper output, CertificateSetup setup)
         {
             _output = output;
-            certificates = setup;
+            _certificates = setup;
         }
 
         [ConditionalFact]
@@ -756,19 +756,22 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
-            int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.CertificateChainPolicy = new X509ChainPolicy() { RevocationMode = X509RevocationMode.NoCheck,
-                                                                     TrustMode = X509ChainTrustMode.CustomRootTrust };
-            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
+            clientOptions.CertificateChainPolicy = new X509ChainPolicy()
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+                TrustMode = X509ChainTrustMode.CustomRootTrust
+            };
+            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
             // Add only one CA to verify that peer did send intermediate CA cert.
             // In case of partial chain, we need to make missing certs available.
             if (usePartialChain)
             {
-                for (int i = split; i < certificates.serverChain.Count - 1; i++)
+                for (int i = split; i < _certificates.serverChain.Count - 1; i++)
                 {
-                    clientOptions.CertificateChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
+                    clientOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.serverChain[i]);
                 }
             }
 
@@ -780,15 +783,18 @@ namespace System.Net.Security.Tests
                 serverChain = new X509Certificate2Collection();
                 for (int i = 0; i < split; i++)
                 {
-                    serverChain.Add(certificates.serverChain[i]);
+                    serverChain.Add(_certificates.serverChain[i]);
                 }
             }
             else
             {
-                serverChain = certificates.serverChain;
+                serverChain = _certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
+            // TODO: line below is wrong, but it breaks on Mac, it should be
+            // serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73295")]
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -818,7 +824,7 @@ namespace System.Net.Security.Tests
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
                         // Add only root CA to verify that peer did send intermediate CA cert.
-                        chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
+                        chain.ChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
                         chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                         // This should work and we should be able to trust the chain.
                         Assert.True(chain.Build((X509Certificate2)certificate));
@@ -835,7 +841,7 @@ namespace System.Net.Security.Tests
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)

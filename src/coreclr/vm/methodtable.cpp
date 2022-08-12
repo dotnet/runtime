@@ -2885,7 +2885,7 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing(CLASS_LOAD_APPROXPARENTS, TRUE).GetMethodTable();
+                    pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
                         ret = IsLoongArch64OnlyOneField(pMethodTable);
@@ -3000,26 +3000,31 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
-                    {
-                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                    }
-                    else if (pMethodTable->GetNumIntroducedInstanceFields() == 2)
-                    {
-                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                    }
+                    pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                 }
             }
             else if (numIntroducedFields == 2)
             {
-                FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
-                if (pFieldStart->GetSize() > 8)
+                FieldDesc *pFieldSecond;
+                FieldDesc *pFieldFirst = pMethodTable->GetApproxFieldDescListRaw();
+                if (pFieldFirst->GetOffset() == 0)
+                {
+                    pFieldSecond = pFieldFirst + 1;
+                }
+                else
+                {
+                    pFieldSecond = pFieldFirst;
+                    pFieldFirst  = pFieldFirst + 1;
+                }
+                assert(pFieldFirst->GetOffset() == 0);
+
+                if (pFieldFirst->GetSize() > 8)
                 {
                     goto _End_arg;
                 }
 
-                CorElementType fieldType = pFieldStart[0].GetFieldType();
+                CorElementType fieldType = pFieldFirst[0].GetFieldType();
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
@@ -3030,7 +3035,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     {
                         size = STRUCT_FIRST_FIELD_DOUBLE;
                     }
-                    else if (pFieldStart[0].GetSize() == 8)
+                    else if (pFieldFirst[0].GetSize() == 8)
                     {
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
                     }
@@ -3038,17 +3043,17 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
+                    pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    if (IsLoongArch64OnlyOneField(pMethodTable))
                     {
                         size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
-                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
+                            size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
                         }
                         else if (size == STRUCT_NO_FLOAT_FIELD)
                         {
-                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
+                            size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
                         }
                         else
                         {
@@ -3062,11 +3067,13 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         goto _End_arg;
                     }
                 }
-                else if (pFieldStart[0].GetSize() == 8)
+                else if (pFieldFirst[0].GetSize() == 8)
+                {
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                }
 
-                fieldType = pFieldStart[1].GetFieldType();
-                if (pFieldStart[1].GetSize() > 8)
+                fieldType = pFieldSecond[0].GetFieldType();
+                if (pFieldSecond[0].GetSize() > 8)
                 {
                     size = STRUCT_NO_FLOAT_FIELD;
                     goto _End_arg;
@@ -3085,20 +3092,20 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     {
                         size = STRUCT_NO_FLOAT_FIELD;
                     }
-                    else if (pFieldStart[1].GetSize() == 8)
+                    else if (pFieldSecond[0].GetSize() == 8)
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
+                    pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    if (IsLoongArch64OnlyOneField(pMethodTable))
                     {
                         int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
-                            if (pFieldStart[1].GetSize() == 8)
+                            if (pFieldSecond[0].GetSize() == 8)
                             {
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                             }
@@ -3113,7 +3120,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                         else if (size2 == STRUCT_NO_FLOAT_FIELD)
                         {
-                            size |= pFieldStart[1].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
+                            size |= pFieldSecond[0].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
                         }
                         else
                         {
@@ -3129,11 +3136,12 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 {
                     size = STRUCT_NO_FLOAT_FIELD;
                 }
-                else if (pFieldStart[1].GetSize() == 8)
+                else if (pFieldSecond[0].GetSize() == 8)
                 {
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
             }
+
             goto _End_arg;
         }
     }
@@ -3169,7 +3177,10 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
+                    {
                         goto _End_arg;
+                    }
+
                     if (fieldType == ELEMENT_TYPE_R4)
                     {
                         if (numIntroducedFields == 1)
@@ -3338,20 +3349,6 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
-                }
-                else if (fieldType == ELEMENT_TYPE_CLASS)
-                {
-                    MethodTable* pMethodTable2  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
-
-                    if (pMethodTable2->IsArray())
-                    {
-                        // Here is just skip the array as its elements' count greater than 1.
-                        // TODO-LoongArch64: liking `struct {int array[1]; float field_2;}` which the array field is only one element,
-                        // this struct can be passed by registers and should using float-register.
-                        // Details see github https://github.com/dotnet/runtime/pull/62885#discussion_r821878981
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
-                    }
                     else if (pFieldStart[0].GetSize() == 8)
                     {
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
@@ -3438,28 +3435,6 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         {
                             size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                         }
-                    }
-                    else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                    }
-                    else if (pFieldStart[1].GetSize() == 8)
-                    {
-                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-                    }
-                }
-                else if (fieldType == ELEMENT_TYPE_CLASS)
-                {
-                    MethodTable* pMethodTable2  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
-
-                    if (pMethodTable2->IsArray())
-                    {
-                        // Here is just skip the array as its elements' count greater than 1.
-                        // TODO-LoongArch64: liking `struct {int array[1]; float field_2;}` which the array field is only one element,
-                        // this struct can be passed by registers and should using float-register.
-                        // Details see github https://github.com/dotnet/runtime/pull/62885#discussion_r821878981
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
                     }
                     else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                     {

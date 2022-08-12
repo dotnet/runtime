@@ -49,6 +49,31 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
+        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        /// </summary>
+        /// <param name="ruleSet">The encoding constraints for the writer.</param>
+        /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="ruleSet"/> is not defined.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="initialCapacity"/> is a negative number.</para>
+        /// </exception>
+        /// <remarks>
+        ///   Specifying <paramref name="initialCapacity" /> with a value of zero behaves as if no initial capacity were
+        ///   specified.
+        /// </remarks>
+        public AsnWriter(AsnEncodingRules ruleSet, int initialCapacity) : this(ruleSet)
+        {
+            if (initialCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (initialCapacity > 0)
+            {
+                _buffer = new byte[initialCapacity];
+            }
+        }
+
+        /// <summary>
         ///   Reset the writer to have no data, without releasing resources.
         /// </summary>
         public void Reset()
