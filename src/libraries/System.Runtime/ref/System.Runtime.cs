@@ -10239,10 +10239,10 @@ namespace System.Numerics
         static abstract TSelf PopCount(TSelf value);
         static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static virtual TSelf ReadBigEndian(System.Span<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static virtual TSelf ReadLittleEndian(System.Span<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
         static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);
