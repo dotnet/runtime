@@ -233,8 +233,8 @@ namespace System.Reflection.Tests
             };
 
         [Theory]
-        [MemberData(nameof(Pointers))]
-        public void UIntPtrMethodParameter(int value)
+        [MemberData(nameof(PointersUInt))]
+        public void UIntPtrMethodParameter(uint value)
         {
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod(nameof(PointerHolder.MethodWithVoidPointer));
