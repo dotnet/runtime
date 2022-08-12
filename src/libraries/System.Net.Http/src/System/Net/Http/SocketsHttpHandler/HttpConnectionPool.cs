@@ -43,6 +43,9 @@ namespace System.Net.Http
         /// <summary>If true, the <see cref="_http3Authority"/> will persist across a network change. If false, it will be reset to <see cref="_originAuthority"/>.</summary>
         private bool _persistAuthority;
 
+        /// <summary>The User-Agent header to use when creating a CONNECT tunnel.</summary>
+        private string? _connectTunnelUserAgent;
+
         /// <summary>
         /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
         /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
@@ -1024,7 +1027,7 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsWebSocketH2Request() &&
+                        !request.IsExtendedConnectRequest &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
                         Debug.Assert(async);
@@ -1053,7 +1056,7 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (request.IsWebSocketH2Request())
+                                if (request.IsExtendedConnectRequest)
                                 {
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
@@ -1483,6 +1486,15 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            // We need the User-Agent header when we send a CONNECT request to the proxy.
+            // We must read the header early, before we return the ownership of the request back to the user.
+            if ((Kind is HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SslProxyTunnel) &&
+                request.HasHeaders &&
+                request.Headers.NonValidated.TryGetValues(HttpKnownHeaderNames.UserAgent, out HeaderStringValues userAgent))
+            {
+                _connectTunnelUserAgent = userAgent.ToString();
+            }
+
             if (doRequestAuth && Settings._credentials != null)
             {
                 return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
@@ -1511,7 +1523,7 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.ProxyTunnel:
                 case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.SocksTunnel:
@@ -1701,7 +1713,7 @@ namespace System.Net.Http
             return http2Connection;
         }
 
-        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
 
@@ -1709,9 +1721,9 @@ namespace System.Net.Http
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_originAuthority.IdnHost}:{_originAuthority.Port}";    // This specifies destination host/port to connect to
 
-            if (headers != null && headers.TryGetValues(HttpKnownHeaderNames.UserAgent, out IEnumerable<string>? values))
+            if (_connectTunnelUserAgent is not null)
             {
-                tunnelRequest.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.UserAgent, values);
+                tunnelRequest.Headers.TryAddWithoutValidation(KnownHeaders.UserAgent.Descriptor, _connectTunnelUserAgent);
             }
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);

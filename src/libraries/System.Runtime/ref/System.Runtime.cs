@@ -2608,19 +2608,11 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
-    /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
         Default = 0,
-
-        /// <summary>Forces the garbage collection to occur immediately.</summary>
         Forced = 1,
-
-        /// <summary>Allows the garbage collector to determine whether the current time is optimal to reclaim objects.</summary>
         Optimized = 2,
-
-        /// <summary>Requests that the garbage collector decommit as much memory as possible.</summary>
         Aggressive = 3,
     }
 
@@ -10247,10 +10239,10 @@ namespace System.Numerics
         static abstract TSelf PopCount(TSelf value);
         static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static virtual TSelf ReadBigEndian(System.Span<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static virtual TSelf ReadLittleEndian(System.Span<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
         static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);
