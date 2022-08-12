@@ -124,5 +124,8 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task GetStatisticsWithZeroPermitCount();
+
+        [Fact]
+        public abstract void GetStatisticsThrowsAfterDispose();
     }
 }

@@ -38,7 +38,8 @@ namespace System.Threading.RateLimiting
         /// Methods on the returned <see cref="PartitionedRateLimiter{TResource}"/> will iterate over the passed in <paramref name="limiters"/> in the order given.
         /// </para>
         /// <para>
-        /// <see cref="PartitionedRateLimiter{TResource}.GetStatistics(TResource)"/> will return the lowest value for <see cref="RateLimiterStatistics.CurrentAvailablePermits"/>
+        /// <see cref="PartitionedRateLimiter{TResource}.GetStatistics(TResource)"/> will return the lowest value for <see cref="RateLimiterStatistics.CurrentAvailablePermits"/>,
+        /// the inner-most limiter's <see cref="RateLimiterStatistics.TotalSuccessfulLeases"/>,
         /// and the aggregate values for the rest of the properties from the <paramref name="limiters"/>.
         /// </para>
         /// <para>

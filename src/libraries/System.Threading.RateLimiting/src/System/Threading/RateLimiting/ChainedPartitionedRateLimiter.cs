@@ -29,7 +29,7 @@ namespace System.Threading.RateLimiting
             long lowestAvailablePermits = long.MaxValue;
             long currentQueuedCount = 0;
             long totalFailedLeases = 0;
-            long totalSuccessfulLeases = 0;
+            long innerMostSuccessfulLeases = 0;
             foreach (PartitionedRateLimiter<TResource> limiter in _limiters)
             {
                 if (limiter.GetStatistics(resource) is { } statistics)
@@ -40,7 +40,7 @@ namespace System.Threading.RateLimiting
                     }
                     currentQueuedCount += statistics.CurrentQueuedCount;
                     totalFailedLeases += statistics.TotalFailedLeases;
-                    totalSuccessfulLeases += statistics.TotalSuccessfulLeases;
+                    innerMostSuccessfulLeases = statistics.TotalSuccessfulLeases;
                 }
             }
             return new RateLimiterStatistics()
@@ -48,7 +48,7 @@ namespace System.Threading.RateLimiting
                 CurrentAvailablePermits = lowestAvailablePermits,
                 CurrentQueuedCount = currentQueuedCount,
                 TotalFailedLeases = totalFailedLeases,
-                TotalSuccessfulLeases = totalSuccessfulLeases,
+                TotalSuccessfulLeases = innerMostSuccessfulLeases,
             };
         }
 

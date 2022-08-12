@@ -88,6 +88,7 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc/>
         public override RateLimiterStatistics? GetStatistics()
         {
+            ThrowIfDisposed();
             return new RateLimiterStatistics()
             {
                 CurrentAvailablePermits = _tokenCount,

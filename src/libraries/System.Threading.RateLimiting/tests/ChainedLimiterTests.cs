@@ -194,7 +194,7 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public void GetStatisticsHasCorrectValues()
+        public async Task GetStatisticsHasCorrectValues()
         {
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
@@ -231,7 +231,7 @@ namespace System.Threading.RateLimiting.Tests
 
             Assert.Equal(3, stats.CurrentAvailablePermits);
             Assert.Equal(0, stats.CurrentQueuedCount);
-            Assert.Equal(3, stats.TotalSuccessfulLeases);
+            Assert.Equal(1, stats.TotalSuccessfulLeases);
             Assert.Equal(0, stats.TotalFailedLeases);
 
             var lease2 = chainedLimiter.AttemptAcquire("", 10);
@@ -240,7 +240,7 @@ namespace System.Threading.RateLimiting.Tests
 
             Assert.Equal(3, stats.CurrentAvailablePermits);
             Assert.Equal(0, stats.CurrentQueuedCount);
-            Assert.Equal(5, stats.TotalSuccessfulLeases);
+            Assert.Equal(1, stats.TotalSuccessfulLeases);
             Assert.Equal(1, stats.TotalFailedLeases);
 
             var task = chainedLimiter.AcquireAsync("", 10);
@@ -249,7 +249,18 @@ namespace System.Threading.RateLimiting.Tests
 
             Assert.Equal(2, stats.CurrentAvailablePermits);
             Assert.Equal(10, stats.CurrentQueuedCount);
-            Assert.Equal(7, stats.TotalSuccessfulLeases);
+            Assert.Equal(1, stats.TotalSuccessfulLeases);
+            Assert.Equal(1, stats.TotalFailedLeases);
+
+            lease.Dispose();
+
+            lease = await task;
+            Assert.True(lease.IsAcquired);
+            stats = chainedLimiter.GetStatistics("");
+
+            Assert.Equal(3, stats.CurrentAvailablePermits);
+            Assert.Equal(0, stats.CurrentQueuedCount);
+            Assert.Equal(2, stats.TotalSuccessfulLeases);
             Assert.Equal(1, stats.TotalFailedLeases);
         }
 

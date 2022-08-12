@@ -1136,5 +1136,20 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(1, limiter.GetStatistics().TotalFailedLeases);
             Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
         }
+
+        [Fact]
+        public override void GetStatisticsThrowsAfterDispose()
+        {
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 50,
+                Window = TimeSpan.Zero,
+                AutoReplenishment = false
+            });
+            limiter.Dispose();
+            Assert.Throws<ObjectDisposedException>(limiter.GetStatistics);
+        }
     }
 }
