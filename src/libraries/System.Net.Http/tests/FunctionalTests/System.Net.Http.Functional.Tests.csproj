@@ -78,6 +78,8 @@
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs"
+             Link="Common\System\Net\Configuration.Certificates.Dynamic.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"

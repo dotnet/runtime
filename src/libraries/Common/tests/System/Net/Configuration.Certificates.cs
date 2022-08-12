@@ -3,11 +3,9 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Threading;
 using Test.Cryptography;
 using Xunit;
@@ -18,30 +16,6 @@ namespace System.Net.Test.Common
     {
         public static partial class Certificates
         {
-            private static readonly X509KeyUsageExtension s_eeKeyUsage =
-                new X509KeyUsageExtension(
-                    X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment,
-                    critical: false);
-
-            private static readonly X509EnhancedKeyUsageExtension s_tlsServerEku =
-                new X509EnhancedKeyUsageExtension(
-                    new OidCollection
-                    {
-                    new Oid("1.3.6.1.5.5.7.3.1", null)
-                    },
-                    false);
-
-            private static readonly X509EnhancedKeyUsageExtension s_tlsClientEku =
-                new X509EnhancedKeyUsageExtension(
-                    new OidCollection
-                    {
-                    new Oid("1.3.6.1.5.5.7.3.2", null)
-                    },
-                    false);
-
-            private static readonly X509BasicConstraintsExtension s_eeConstraints =
-                new X509BasicConstraintsExtension(false, false, 0, false);
-
             private const string CertificatePassword = "PLACEHOLDER";
             private const string TestDataFolder = "TestDataCertificates";
             private const int MutexTimeoutMs = 120_000;
@@ -52,8 +26,6 @@ namespace System.Net.Test.Common
             private static readonly X509Certificate2 s_selfSignedServerCertificate;
             private static readonly X509Certificate2 s_selfSignedClientCertificate;
             private static X509Certificate2 s_selfSigned13ServerCertificate;
-            private static X509Certificate2 s_dynamicServerCertificate;
-            private static X509Certificate2Collection s_dynamicCaCertificates;
 
             static Certificates()
             {
@@ -81,8 +53,6 @@ namespace System.Net.Test.Common
                             s_noEKUCertificate = new X509Certificate2(noEKUCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
                             s_selfSignedServerCertificate = new X509Certificate2(selfSignedServerCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
                             s_selfSignedClientCertificate = new X509Certificate2(selfSignedClientCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
-                            CleanupCertificates();
-                            (s_dynamicServerCertificate, s_dynamicCaCertificates) = GenerateCertificates("localhost", nameof(Configuration)+nameof(Certificates));
                         }
                         finally { mutex?.ReleaseMutex(); }
                     }
@@ -102,12 +72,6 @@ namespace System.Net.Test.Common
             public static X509Certificate2 GetNoEKUCertificate() => new X509Certificate2(s_noEKUCertificate);
             public static X509Certificate2 GetSelfSignedServerCertificate() => new X509Certificate2(s_selfSignedServerCertificate);
             public static X509Certificate2 GetSelfSignedClientCertificate() => new X509Certificate2(s_selfSignedClientCertificate);
-
-            public static X509Certificate2 GetDynamicServerCerttificate(X509Certificate2Collection? chainCertificates)
-            {
-                chainCertificates?.AddRange(s_dynamicCaCertificates);
-                return new X509Certificate2(s_dynamicServerCertificate);
-            }
 
             public static X509Certificate2 GetSelfSigned13ServerCertificate()
             {
@@ -146,117 +110,6 @@ namespace System.Net.Test.Common
 
                 return new X509Certificate2(s_selfSigned13ServerCertificate);
             }
-
-            public static void CleanupCertificates([CallerMemberName] string? testName = null, StoreName storeName = StoreName.CertificateAuthority)
-            {
-                string caName = $"O={testName}";
-                try
-                {
-                    using (X509Store store = new X509Store(storeName, StoreLocation.LocalMachine))
-                    {
-                        store.Open(OpenFlags.ReadWrite);
-                        foreach (X509Certificate2 cert in store.Certificates)
-                        {
-                            if (cert.Subject.Contains(caName))
-                            {
-                                store.Remove(cert);
-                            }
-                            cert.Dispose();
-                        }
-                    }
-                }
-                catch { };
-
-                try
-                {
-                    using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
-                    {
-                        store.Open(OpenFlags.ReadWrite);
-                        foreach (X509Certificate2 cert in store.Certificates)
-                        {
-                            if (cert.Subject.Contains(caName))
-                            {
-                                store.Remove(cert);
-                            }
-                            cert.Dispose();
-                        }
-                    }
-                }
-                catch { };
-            }
-
-            private static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
-            {
-                return BuildTlsCertExtensions(serverName, true);
-            }
-
-            private static X509ExtensionCollection BuildTlsCertExtensions(string targetName, bool serverCertificate)
-            {
-                X509ExtensionCollection extensions = new X509ExtensionCollection();
-
-                SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
-                builder.AddDnsName(targetName);
-                builder.AddIpAddress(IPAddress.Loopback);
-                builder.AddIpAddress(IPAddress.IPv6Loopback);
-                extensions.Add(builder.Build());
-                extensions.Add(s_eeConstraints);
-                extensions.Add(s_eeKeyUsage);
-                extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
-
-                return extensions;
-            }
-
-            public static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
-            {
-                const int KeySize = 2048;
-                if (PlatformDetection.IsWindows && testName != null)
-                {
-                    CleanupCertificates(testName);
-                }
-
-                X509Certificate2Collection chain = new X509Certificate2Collection();
-                X509ExtensionCollection extensions = BuildTlsCertExtensions(targetName, serverCertificate);
-
-                CertificateAuthority.BuildPrivatePki(
-                    PkiOptions.IssuerRevocationViaCrl,
-                    out RevocationResponder responder,
-                    out CertificateAuthority root,
-                    out CertificateAuthority[] intermediates,
-                    out X509Certificate2 endEntity,
-                    intermediateAuthorityCount: longChain ? 3 : 1,
-                    subjectName: targetName,
-                    testName: testName,
-                    keySize: KeySize,
-                    extensions: extensions);
-
-                // Walk the intermediates backwards so we build the chain collection as
-                // Issuer3
-                // Issuer2
-                // Issuer1
-                // Root
-                for (int i = intermediates.Length - 1; i >= 0; i--)
-                {
-                    CertificateAuthority authority = intermediates[i];
-
-                    chain.Add(authority.CloneIssuerCert());
-                    authority.Dispose();
-                }
-
-                chain.Add(root.CloneIssuerCert());
-
-                responder.Dispose();
-                root.Dispose();
-
-                if (PlatformDetection.IsWindows)
-                {
-                    X509Certificate2 ephemeral = endEntity;
-                    endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
-                    ephemeral.Dispose();
-                }
-
-                return (endEntity, chain);
-            }
-
         }
     }
 }

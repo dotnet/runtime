@@ -3730,9 +3730,9 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    public abstract class SocketsHttpHandler_SslTest : HttpClientHandlerTestBase
+    public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
     {
-        public SocketsHttpHandler_SslTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task SslOptions_CustomTrust_Ok()
@@ -3836,23 +3836,23 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SslTest_Http11 : SocketsHttpHandler_SslTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11 : SocketsHttpHandler_SecurityTest
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SslTest_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SslTest_Http2 : SocketsHttpHandler_SslTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2 : SocketsHttpHandler_SecurityTest
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SslTest_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SslTest_Http3 : SocketsHttpHandler_SslTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SslTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
