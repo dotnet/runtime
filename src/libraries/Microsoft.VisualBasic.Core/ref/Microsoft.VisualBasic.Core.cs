@@ -54,7 +54,7 @@ namespace Microsoft.VisualBasic
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public sealed partial class ComClassAttribute : System.Attribute
     {
         public ComClassAttribute() { }
@@ -487,7 +487,7 @@ namespace Microsoft.VisualBasic
         FirstFourDays = 2,
         FirstFullWeek = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class HideModuleNameAttribute : System.Attribute
     {
@@ -542,7 +542,9 @@ namespace Microsoft.VisualBasic
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string? GetSetting(string AppName, string Section, string Key, string? Default = "") { throw null; }
         public static object? IIf(bool Expression, object? TruePart, object? FalsePart) { throw null; }
+        [System.Obsolete(System.Obsoletions.VisualBasicInputBoxMessage, error: false, DiagnosticId = System.Obsoletions.VisualBasicInputBoxDiagId, UrlFormat = System.Obsoletions.SharedUrlFormat)]
         public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
+        [System.Obsolete(System.Obsoletions.VisualBasicMsgBoxMessage, error: false, DiagnosticId = System.Obsoletions.VisualBasicMsgBoxDiagId, UrlFormat = System.Obsoletions.SharedUrlFormat)]
         public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object? Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -583,7 +585,7 @@ namespace Microsoft.VisualBasic
         MsgBoxRight = 524288,
         MsgBoxRtlReading = 1048576,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
     public sealed partial class MyGroupCollectionAttribute : System.Attribute
     {
@@ -724,7 +726,7 @@ namespace Microsoft.VisualBasic
         UserDefinedType = 36,
         Array = 8192,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public sealed partial class VBFixedArrayAttribute : System.Attribute
     {
         public VBFixedArrayAttribute(int UpperBound1) { }
@@ -732,7 +734,7 @@ namespace Microsoft.VisualBasic
         public int[] Bounds { get { throw null; } }
         public int Length { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public sealed partial class VBFixedStringAttribute : System.Attribute
     {
         public VBFixedStringAttribute(int Length) { }
@@ -884,7 +886,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static decimal FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static decimal Parse(string Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DesignerGeneratedAttribute : System.Attribute
     {
@@ -1128,13 +1130,13 @@ namespace Microsoft.VisualBasic.CompilerServices
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? XorObject(object? Left, object? Right) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class OptionCompareAttribute : System.Attribute
     {
         public OptionCompareAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class OptionTextAttribute : System.Attribute
     {
@@ -1166,7 +1168,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static float FromString(string? Value) { throw null; }
         public static float FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class StandardModuleAttribute : System.Attribute
     {
