@@ -1,4 +1,7 @@
 import { APIType } from "./exports";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { runtimeHelpers } from "./imports";
 import { mono_wasm_get_assembly_exports } from "./invoke-cs";
 import { mono_wasm_set_module_imports } from "./invoke-js";

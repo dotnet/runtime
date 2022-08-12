@@ -1,4 +1,7 @@
 import { INTERNAL, Module, runtimeHelpers } from "./imports";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";

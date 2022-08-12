@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
