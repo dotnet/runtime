@@ -38,8 +38,10 @@
 
   <ItemGroup>
     <!-- If called via package instead of the SDK, update the runtime package version to match the build package -->
-    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" Condition="@(PackageReference->'%(Identity)')=='Microsoft.DotNet.ILCompiler'">
-        <ILCompilerPackVersion> @(PackageReference->'%(Version)')</ILCompilerPackVersion>
+    <_PackageReferenceExceptILCompiler Include="@(PackageReference)" Exclude="Microsoft.DotNet.ILCompiler" />
+    <_ILCompilerPackageReference Include="@(PackageReference)" Exclude="@(_PackageReferenceExceptILCompiler)" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" Condition="@(_ILCompilerPackageReference->'%(Identity)')=='Microsoft.DotNet.ILCompiler'">
+        <ILCompilerPackVersion>@(_ILCompilerPackageReference->'%(Version)')</ILCompilerPackVersion>
     </KnownILCompilerPack>
   </ItemGroup>
 
