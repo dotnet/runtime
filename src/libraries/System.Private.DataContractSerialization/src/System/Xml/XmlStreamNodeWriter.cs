@@ -356,33 +356,7 @@ namespace System.Xml
 
         protected unsafe int UnsafeGetUTF8Length(char* chars, int charCount)
         {
-            char* charsMax = chars + charCount;
-
-            // This method is only called from 2 places and will use length of at least (128/3 and 256/3) respectivly
-            // We avoid Vector<T> sine it is unsure how downclocking due to AVX512 would affect total throughput
-            if (Vector256.IsHardwareAccelerated
-                && Vector256<short>.Count < charCount && charCount <= 2048)
-            {
-                char* lastSimd = chars + charCount - Vector256<short>.Count;
-                Vector256<short> mask = Vector256.Create(unchecked((short)0xff80));
-
-                while (chars < lastSimd)
-                {
-                    if (((*(Vector256<short>*)chars) & mask) != Vector256<short>.Zero)
-                        goto NonAscii;
-
-                    chars += Vector256<short>.Count;
-                }
-
-                if ((*(Vector256<short>*)lastSimd & mask) == Vector256<short>.Zero)
-                    return charCount;
-            }
-
-        NonAscii:
-            int numRemaining = (int)(charsMax - chars);
-            int numAscii = charCount - numRemaining;
-
-            return numAscii + (_encoding ?? s_UTF8Encoding).GetByteCount(chars, numRemaining);
+            return (_encoding ?? s_UTF8Encoding).GetByteCount(chars, charCount);
         }
 
         protected unsafe int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
