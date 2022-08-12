@@ -2969,5 +2969,11 @@ namespace Internal.JitInterface
 
             entryPoint = CreateConstLookupToSymbol(newEntryPoint);
         }
+
+        private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
+        {
+            // Not implemented for R2R yet
+            return 0;
+        }
     }
 }
