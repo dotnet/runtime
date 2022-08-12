@@ -20,11 +20,11 @@ namespace System.Threading.RateLimiting
             _disposeInnerLimiter = !leaveOpen;
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
             ThrowIfDispose();
             TInner key = _keyAdapter(resource);
-            return _innerRateLimiter.GetAvailablePermits(key);
+            return _innerRateLimiter.GetStatistics(key);
         }
 
         protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
