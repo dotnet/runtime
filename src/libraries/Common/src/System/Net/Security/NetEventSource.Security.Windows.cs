@@ -183,39 +183,5 @@ namespace System.Net
                 WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3)
-        {
-            arg1 ??= "";
-            arg2 ??= "";
-
-            fixed (char* arg1Ptr = arg1)
-            fixed (char* arg2Ptr = arg2)
-            {
-                const int NumEventDatas = 3;
-                EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                descrs[0] = new EventData
-                {
-                    DataPointer = (IntPtr)(arg1Ptr),
-                    Size = (arg1.Length + 1) * sizeof(char)
-                };
-                descrs[1] = new EventData
-                {
-                    DataPointer = (IntPtr)(arg2Ptr),
-                    Size = (arg2.Length + 1) * sizeof(char)
-                };
-                descrs[2] = new EventData
-                {
-                    DataPointer = (IntPtr)(&arg3),
-                    Size = sizeof(int)
-                };
-
-                WriteEventCore(eventId, NumEventDatas, descrs);
-            }
-        }
     }
 }
