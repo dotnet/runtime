@@ -867,10 +867,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(108, 16, 110, 16, "HiddenLinesInAnAsyncBlock")]
         [InlineData(126, 16, 129, 16, "HiddenLinesJustBeforeANestedAsyncBlock")]
-        [InlineData(149, 20, 101, 12, "RunAsyncWithLineHidden")] // not working
-        [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod")] // not working
-        [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod")] // not working
-        [InlineData(150, 20, 101, 12, "HiddenLinesContainingStartOfAnAsyncBlock")] // not working
+        [InlineData(149, 20, 151, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
+        [InlineData(150, 20, 151, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
         public async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync(int line_bp, int column_bp, int line_pause, int column_pause, string method_name)
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
