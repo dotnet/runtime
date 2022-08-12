@@ -83,7 +83,7 @@ namespace Mono.Linker
 			string? fileName = FileName;
 			if (Provider is MethodDefinition method &&
 				method.DebugInformation.HasSequencePoints) {
-				var offset = ILOffset ?? 0;
+				var offset = ILOffset ?? method.DebugInformation.SequencePoints[0].Offset;
 				SequencePoint? correspondingSequencePoint = method.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= offset)?.Last ();
 
