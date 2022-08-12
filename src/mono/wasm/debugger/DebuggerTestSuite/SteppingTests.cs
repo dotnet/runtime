@@ -870,7 +870,6 @@ namespace DebuggerTests
         [InlineData(149, 20, 101, 12, "RunAsyncWithLineHidden")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod")] // not working
-        [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlock")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesContainingStartOfAnAsyncBlock")] // not working
         public async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync(int line_bp, int column_bp, int line_pause, int column_pause, string method_name)
         {
