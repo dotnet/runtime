@@ -209,20 +209,12 @@
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
       <!--
-        Workloads VS insertion artifacts produced by src/workloads/workloads.csproj.
-        Manually dedupe the file set for publishing since we have duplicates files in separate
-        feature band folders and Distinct() works on the actual Include value.
+        Workloads VS insertion artifacts produced by src/workloads/workloads.csproj. Only grab
+        the zip artifacts as they're grouped by SDK feature band which correlates with specific VS versions.
       -->
-      <_WorkloadsVSInsertionFile
-        Include="
-          $(DownloadDirectory)*\workloads-vs\**\*.msi;
-          $(DownloadDirectory)*\workloads-vs\**\*.json" />
-      <__WorkloadsVSInsertionFile Include="%(_WorkloadsVSInsertionFile.Filename)%(Extension)" ActualPath="%(FullPath)" />
-      <___WorkloadsVSInsertionFile Include="@(__WorkloadsVSInsertionFile->Distinct())" />
-      <WorkloadsVSInsertionFile Include="%(___WorkloadsVSInsertionFile.ActualPath)" />
       <WorkloadsVSInsertionFile
         Include="
-          $(DownloadDirectory)**\Workloads.VSDrop*.zip" />
+          $(DownloadDirectory)*\workloads-vs\**\*.zip"/>
 
       <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
