@@ -337,6 +337,9 @@
     <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
+
+    <!-- Build error: https://github.com/dotnet/runtime/issues/73792 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Configuration.ConfigurationManager/tests/System.Configuration.ConfigurationManager.Tests.csprojj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
