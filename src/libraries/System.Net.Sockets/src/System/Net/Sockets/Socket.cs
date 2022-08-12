@@ -2167,7 +2167,7 @@ namespace System.Net.Sockets
         /// does not block and the connection has failed, or if OutOfBandInline is not set and out-of-band data is available.
         /// Otherwise, it returns <see langword="false"/>.
         /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> was negative or greater thanTimeSpan.FromMicroseconds(int.MaxValue).</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> was negative or greater than TimeSpan.FromMicroseconds(int.MaxValue).</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(TimeSpan timeout, SelectMode mode) =>
@@ -2217,7 +2217,7 @@ namespace System.Net.Sockets
         /// <param name="checkRead">An <see cref="IList"/> of <see cref="Socket"/> instances to check for readability.</param>
         /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
         /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
-        /// <param name="timeout">The timeout value. A value equal to <see cref="Timeout.InfiniteTimeSpan"/> microseconds indicates an infinite timeout.</param>
+        /// <param name="timeout">The timeout value. A value equal to <see cref="Timeout.InfiniteTimeSpan"/> indicates an infinite timeout.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="timeout"/> was negative or greater than TimeSpan.FromMicroseconds(int.MaxValue).</exception>
