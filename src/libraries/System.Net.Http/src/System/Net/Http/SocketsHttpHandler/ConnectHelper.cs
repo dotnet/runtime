@@ -88,7 +88,12 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                if (request.IsExtendedConnectRequest)
+                {
+                    ex.Data["HTTP2_ENABLED"] = false;
+                }
+                throw ex;
             }
 
             // Handle race condition if cancellation happens after SSL auth completes but before the registration is disposed
