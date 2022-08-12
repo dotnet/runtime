@@ -3941,6 +3941,11 @@ ensure_inited_for_assignable_check (MonoClass *klass)
 	 * MonoClass structure to be initialized, this method will need to do additional work.
 	 */
 
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+		ensure_inited_for_assignable_check (gklass);
+	}
+
 	mono_class_setup_supertypes (klass);
 
 	ERROR_DECL (local_error);
