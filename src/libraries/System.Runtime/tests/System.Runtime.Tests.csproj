@@ -35,6 +35,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs" Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
     <Compile Include="System\ObsoleteAttributeTests.cs" />
