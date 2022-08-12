@@ -867,7 +867,7 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(108, 16, 110, 16, "HiddenLinesInAnAsyncBlock")]
         [InlineData(126, 16, 129, 16, "HiddenLinesJustBeforeANestedAsyncBlock")]
-        [InlineData(149, 20, 101, 12, "RunAsyncWithLineHidden")]
+        [InlineData(149, 20, 101, 12, "RunAsyncWithLineHidden")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod")] // not working
         [InlineData(150, 20, 101, 12, "HiddenLinesAtTheEndOfANestedAsyncBlock")] // not working
