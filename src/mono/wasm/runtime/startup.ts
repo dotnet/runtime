@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init } from "./icu";
@@ -229,6 +229,10 @@ export function abort_startup(reason: any, should_exit: boolean): void {
 // runs in both blazor and non-blazor
 function mono_wasm_pre_init_essential(): void {
     Module.addRunDependency("mono_wasm_pre_init_essential");
+    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD && runtimeHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    }
+
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
     // init_polyfills() is already called from export.ts
@@ -236,10 +240,6 @@ function mono_wasm_pre_init_essential(): void {
     cwraps_internal(INTERNAL);
     cwraps_mono_api(MONO);
     cwraps_binding_api(BINDING);
-
-    if (runtimeHelpers.config.forwardConsoleLogsToWS && !ENVIRONMENT_IS_PTHREAD) {
-        setup_proxy_console("main", globalThis.console, runtimeHelpers.scriptDirectory);
-    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential");
 }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { emscriptenEntrypoint, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, runtimeHelpers } from "./imports";
+import { emscriptenEntrypoint, ENVIRONMENT_IS_NODE, runtimeHelpers } from "./imports";
 import { mono_exit } from "./run";
 import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
 
@@ -20,6 +20,7 @@ export interface DotnetHostBuilder {
 }
 
 class HostBuilder implements DotnetHostBuilder {
+    private instance?: RuntimeAPI;
     private applicationArguments?: string[];
     private virtualWorkingDirectory?: string;
     private moduleConfig: DotnetModuleConfig = {
@@ -42,6 +43,19 @@ class HostBuilder implements DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
                 forwardConsoleLogsToWS: true
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withExitCodeLogging(): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                logExitCode: true
             };
             Object.assign(this.moduleConfig.config!, configInternal);
             return this;
@@ -178,27 +192,6 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withQueryArguments(): DotnetHostBuilder {
-        try {
-            if (ENVIRONMENT_IS_WEB) {
-                const url = new URL(decodeURI(globalThis.window.location.toString()));
-                const urlArguments = [];
-                url.searchParams.forEach((value, key) => {
-                    if (key == "arg") {
-                        urlArguments.push(value);
-                    }
-                });
-            }
-            /*mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            Object.assign(this.moduleConfig, { runtimeOptions });
-            */
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
     async create(): Promise<RuntimeAPI> {
         try {
             if (ENVIRONMENT_IS_NODE) {
@@ -211,7 +204,8 @@ class HostBuilder implements DotnetHostBuilder {
             }
             mono_assert(this.moduleConfig, "Null moduleConfig");
             mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
-            return await emscriptenEntrypoint(this.moduleConfig);
+            this.instance = await emscriptenEntrypoint(this.moduleConfig);
+            return this.instance;
         } catch (err) {
             mono_exit(1, err);
             throw err;
@@ -221,9 +215,11 @@ class HostBuilder implements DotnetHostBuilder {
     async run(): Promise<number> {
         try {
             mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
-            const runtime = await this.create();
+            if (!this.instance) {
+                await this.create();
+            }
             if (this.virtualWorkingDirectory) {
-                const FS = (runtime.Module as any).FS;
+                const FS = (this.instance!.Module as any).FS;
                 const wds = FS.stat(this.virtualWorkingDirectory);
                 mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${this.virtualWorkingDirectory}`);
                 FS.chdir(this.virtualWorkingDirectory);
@@ -239,7 +235,7 @@ class HostBuilder implements DotnetHostBuilder {
                     this.applicationArguments = [];
                 }
             }
-            return runtime.runMainAndExit(this.moduleConfig.config.mainAssemblyName, this.applicationArguments!);
+            return this.instance!.runMainAndExit(this.moduleConfig.config.mainAssemblyName, this.applicationArguments!);
         } catch (err) {
             mono_exit(1, err);
             throw err;

@@ -122,7 +122,11 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     logErrorOnExit(exit_code, reason);
     appendElementOnExit(exit_code);
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        runtimeHelpers.quit(exit_code, reason);
+        if (runtimeHelpers.quit) {
+            runtimeHelpers.quit(exit_code, reason);
+        } else {
+            throw reason;
+        }
     }
 }
 

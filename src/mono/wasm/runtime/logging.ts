@@ -131,7 +131,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     }
                 }
 
-                if (typeof payload === "string")
+                if (typeof payload === "string" && id !== "main")
                     payload = `[${id}] ${payload}`;
 
                 if (asJson) {
