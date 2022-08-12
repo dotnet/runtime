@@ -514,6 +514,46 @@ namespace System
             return -1;
         }
 
+        private static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
+        {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        Unsafe.As<T, byte>(ref value2),
+                        Unsafe.As<T, byte>(ref value3),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        Unsafe.As<T, short>(ref value2),
+                        Unsafe.As<T, short>(ref value3),
+                        span.Length);
+                }
+            }
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value2) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value3))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
@@ -540,6 +580,9 @@ namespace System
 
                 case 3:
                     return IndexOfAnyExcept(span, values[0], values[1], values[2]);
+
+                case 4: // used to search for non whitespaces " \t\r\n"
+                    return IndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
                     for (int i = 0; i < span.Length; i++)
@@ -1164,12 +1207,12 @@ namespace System
                                 span.Length);
 
                         case 4:
-                            return SpanHelpers.IndexOfAny(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                Unsafe.Add(ref valueRef, 3),
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref Unsafe.As<char, short>(ref spanRef),
+                                Unsafe.As<char, short>(ref valueRef),
+                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 1)),
+                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 2)),
+                                Unsafe.As<char, short>(ref Unsafe.Add(ref valueRef, 3)),
                                 span.Length);
 
                         case 5:

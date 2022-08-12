@@ -1553,6 +1553,107 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, IEquatable<T>
+            => IndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, value3, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, IEquatable<T>
+            => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private static int IndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, T value3, int length)
+            where T : struct, IEquatable<T>
+            where N : struct, INegator<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+            Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            N negator = default;
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    T current = Unsafe.Add(ref searchSpace, i);
+                    if (negator.NegateIfNeeded(current.Equals(value0) | current.Equals(value1) | current.Equals(value2) | current.Equals(value3)))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            {
+                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
+                ref T currentSearchSpace = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    current = Vector256.LoadUnsafe(ref currentSearchSpace);
+                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                        | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
+                    if (equals == Vector256<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        continue;
+                    }
+
+                    return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)length % Vector256<T>.Count != 0)
+                {
+                    current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
+                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                        | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
+                    if (equals != Vector256<T>.Zero)
+                    {
+                        return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
+                    }
+                }
+            }
+            else
+            {
+                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
+                ref T currentSearchSpace = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    current = Vector128.LoadUnsafe(ref currentSearchSpace);
+                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                        | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
+                    if (equals == Vector128<T>.Zero)
+                    {
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        continue;
+                    }
+
+                    return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the first vector in the search space.
+                if ((uint)length % Vector128<T>.Count != 0)
+                {
+                    current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
+                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                        | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
+                    if (equals != Vector128<T>.Zero)
+                    {
+                        return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
             => LastIndexOfValueType<T, DontNegate<T>>(ref searchSpace, value, length);
 
