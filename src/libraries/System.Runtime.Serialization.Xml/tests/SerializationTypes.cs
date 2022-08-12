@@ -1347,3 +1347,8 @@ public class Parameter<T> : Parameter
 {
     public T Value { get; set; }
 }
+
+public class XElementWrapper
+{
+    public XElement Value { get; set; }
+}

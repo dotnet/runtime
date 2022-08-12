@@ -1974,9 +1974,9 @@ namespace System.Xml.Serialization
 
             // Special case XElement
             // codegen the same as 'internal XElement : this("default") { }'
-            if (escapedTypeName == "System.Xml.Linq.XElement")
+            if (escapedTypeName == "global::System.Xml.Linq.XElement")
             {
-                string xelemArg = string.IsNullOrEmpty(arg) ? "default" : arg;
+                string xelemArg = string.IsNullOrEmpty(arg) ? "\"default\"" : arg;
                 return $"new {escapedTypeName}({xelemArg})";
             }
 

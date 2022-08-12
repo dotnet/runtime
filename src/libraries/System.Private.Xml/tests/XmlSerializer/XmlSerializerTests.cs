@@ -1981,6 +1981,33 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(!weakRef.IsAlive);
     }
 
+    [Fact]
+    public static void ValidateXElement()
+    {
+        XElement xe = new XElement("Root");
+        XElementWrapper wrapper = new XElementWrapper() { Value = xe };
+
+        XElementWrapper retWrapper = SerializeAndDeserialize<XElementWrapper>(wrapper, null, () => new XmlSerializer(typeof(XElementWrapper)), true);
+
+        // At this point, you could verify a couple of ways.
+        // 1) Look at individual properties and verify they are as expected
+        Assert.NotNull(retWrapper);
+        Assert.NotNull(retWrapper.Value);
+        Assert.Equal("Root", retWrapper.Value.Name);
+
+        // Or 2) Just compare the returned wrapper to the original.
+        // Note, they will not be strictly equal. They are not the same object.
+        // Like identical twins - they look alike, but they are different. Different names and everything.
+        // So these Asserts don't work:
+        //Assert.True(retWrapper == wrapper);
+        //Assert.Equal(wrapper, retWrapper);
+        // But this one does:
+        Assert.Equivalent(wrapper, retWrapper);
+        // And fails if the twins turn out to not be identical or even twins at all:
+        wrapper.Value.Name = "Blah";
+        //Assert.Equivalent(wrapper, retWrapper);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
