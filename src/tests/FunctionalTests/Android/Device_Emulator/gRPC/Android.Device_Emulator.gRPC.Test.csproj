@@ -46,15 +46,15 @@
       ProtoRoot="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Proto\grpc\testing\"
       GrpcServices="Client" />
 
-    <PackageReference Include="Grpc.Auth" Version="2.47.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.47.0" />
-    <PackageReference Include="Grpc.Net.Client.Web" Version="2.47.0" />
+    <PackageReference Include="Grpc.Auth" Version="$(GrpcClientVersion)" />
+    <PackageReference Include="Grpc.Net.Client" Version="$(GrpcClientVersion)" />
+    <PackageReference Include="Grpc.Net.Client.Web" Version="$(GrpcClientVersion)" />
 
-    <PackageReference Include="Google.Protobuf" Version="3.19.4" />
-    <PackageReference Include="Grpc.Core" Version="2.46.3" PrivateAssets="All" />
-    <PackageReference Include="Grpc.Tools" Version="2.48.0-pre1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.3" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
+    <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
+    <PackageReference Include="Grpc.Core" Version="$(GrpcCoreVersion)" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Tools" Version="$(GrpcClientVersion)" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <Target Name="BuildServerDockerImage" AfterTargets="Build" Condition="'$(BuildGrpcServerDockerImage)' == 'true'">
