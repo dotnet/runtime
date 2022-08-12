@@ -374,76 +374,78 @@ namespace ILCompiler
             {
                 foreach (var node in markedNodes)
                 {
-                    TypeDesc type;
-
-                    if (node is CanonicalEETypeNode canonEETypeNode)
+                    TypeDesc type = node switch
                     {
-                        type = canonEETypeNode.Type;
+                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
+                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
+                        _ => null,
+                    };
 
-                        foreach (DefType baseInterface in type.RuntimeInterfaces)
-                        {
-                            // If the interface is implemented on a template type, there might be
-                            // no real upper bound on the number of actual classes implementing it
-                            // due to MakeGenericType.
-                            if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
-                                _disqualifiedInterfaces.Add(baseInterface);
-                        }
-                    }
-
-                    if (node is not ConstructedEETypeNode eetypeNode)
-                        continue;
-
-                    type = eetypeNode.Type;
-
-                    if (type.IsInterface)
+                    if (type != null)
                     {
-                        if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                         {
                             foreach (DefType baseInterface in type.RuntimeInterfaces)
                             {
-                                // If the interface is implemented through IDynamicInterfaceCastable, there might be
-                                // no real upper bound on the number of actual classes implementing it.
+                                // If the interface is implemented on a template type, there might be
+                                // no real upper bound on the number of actual classes implementing it
+                                // due to MakeGenericType.
                                 if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
                                     _disqualifiedInterfaces.Add(baseInterface);
                             }
                         }
-                    }
-                    else
-                    {
-                        //
-                        // We collect this information:
-                        //
-                        // 1. What types got allocated
-                        // 2. What types are the base types of other types
-                        //    This is needed for optimizations. We use this information to effectively
-                        //    seal types that are not base types for any other type.
-                        // 3. What types implement interfaces for which use we can assume whole
-                        //    program view.
-                        //
 
-                        _constructedTypes.Add(type);
-
-                        if (type is not MetadataType { IsAbstract: true })
+                        if (type.IsInterface)
                         {
-                            // Record all interfaces this class implements to _interfaceImplementators
-                            foreach (DefType baseInterface in type.RuntimeInterfaces)
+                            if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
                             {
-                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    RecordImplementation(baseInterface, type);
+                                    // If the interface is implemented through IDynamicInterfaceCastable, there might be
+                                    // no real upper bound on the number of actual classes implementing it.
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                        _disqualifiedInterfaces.Add(baseInterface);
                                 }
                             }
                         }
-
-                        TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                        TypeDesc baseType = canonType.BaseType;
-                        bool added = true;
-                        while (baseType != null && added)
+                        else
                         {
-                            baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            added = _unsealedTypes.Add(baseType);
-                            baseType = baseType.BaseType;
+                            //
+                            // We collect this information:
+                            //
+                            // 1. What types got allocated
+                            // 2. What types are the base types of other types
+                            //    This is needed for optimizations. We use this information to effectively
+                            //    seal types that are not base types for any other type.
+                            // 3. What types implement interfaces for which use we can assume whole
+                            //    program view.
+                            //
+
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                _constructedTypes.Add(type);
+
+                            if (type is not MetadataType { IsAbstract: true })
+                            {
+                                // Record all interfaces this class implements to _interfaceImplementators
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    {
+                                        RecordImplementation(baseInterface, type);
+                                    }
+                                }
+                            }
+
+                            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                            TypeDesc baseType = canonType.BaseType;
+                            bool added = true;
+                            while (baseType != null && added)
+                            {
+                                baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                added = _unsealedTypes.Add(baseType);
+                                baseType = baseType.BaseType;
+                            }
                         }
                     }
                 }
