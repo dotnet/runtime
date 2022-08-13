@@ -23,10 +23,10 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Create_ValidXml_ReturnsEventBookmark()
         {
-            string bookmarkXml = $"<BookmarkList><Bookmark Channel=\"Application\" RecordId=\"2022\" IsCurrent=\"True\"/></BookmarkList>";
+            const string bookmarkXml = "<BookmarkList><Bookmark Channel=\"Application\" RecordId=\"2022\" IsCurrent=\"True\"/></BookmarkList>";
             var createdBookmark = new EventBookmark(bookmarkXml);
 
-            Assert.Equal(bookmarkXml, createdBookmark.BookmarkText);
+            Assert.Equal(bookmarkXml, createdBookmark.BookmarkXml);
         }
     }
 }

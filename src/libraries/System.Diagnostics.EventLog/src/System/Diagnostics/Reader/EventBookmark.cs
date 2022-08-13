@@ -20,17 +20,17 @@ namespace System.Diagnostics.Eventing.Reader
         /// <summary>
         /// Creates a bookmark that identifies an event in a channel.
         /// </summary>
-        /// <param name="bookmarkText">An XML string that represents the bookmark.</param>
-        public EventBookmark(string bookmarkText)
+        /// <param name="bookmarkXml">An XML string that represents the bookmark.</param>
+        public EventBookmark(string bookmarkXml)
         {
-            ArgumentNullException.ThrowIfNull(bookmarkText);
+            ArgumentNullException.ThrowIfNull(bookmarkXml);
 
-            BookmarkText = bookmarkText;
+            BookmarkXml = bookmarkXml;
         }
 
         /// <summary>
         /// Gets the XML string that represents the bookmark.
         /// </summary>
-        public string BookmarkText { get; }
+        public string BookmarkXml { get; }
     }
 }
