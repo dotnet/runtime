@@ -659,7 +659,7 @@ namespace Internal.JitInterface
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
         private List<Object> _handleToObject = new List<Object>();
 
-        private const int handleMultipler = 8;
+        private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
 #if DEBUG
@@ -673,7 +673,7 @@ namespace Internal.JitInterface
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
-                handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+                handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
 #if DEBUG
                 handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
 #endif
@@ -688,7 +688,7 @@ namespace Internal.JitInterface
 #if DEBUG
             handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
 #endif
-            int index = ((int)handle - handleBase) / handleMultipler;
+            int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
 
@@ -736,24 +736,6 @@ namespace Internal.JitInterface
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
-
-#if READYTORUN
-            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
-            {
-                foreach (var region in exceptionRegions)
-                {
-                    if (region.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
-                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
-                            break;
-                        }
-                    }
-                }
-            }
-#endif
 
             return true;
         }
@@ -1731,12 +1713,7 @@ namespace Internal.JitInterface
                 _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
 #endif
 
-#if READYTORUN
-                if (recordToken)
-                {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
-                }
-#else
+#if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #endif
             }
@@ -2376,7 +2353,7 @@ namespace Internal.JitInterface
                     // To maintain backward compatibility, we are doing it for reference types only.
                     // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
-                    // semantics, we can assume that the .ctor triggerred the
+                    // semantics, we can assume that the .ctor triggered the
                     // type initialization.
                     // This does not hold for NULL "this" object. However, the spec does
                     // not require that case to work.
@@ -3410,14 +3387,14 @@ namespace Internal.JitInterface
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
-            // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
+            // Console.WriteLine(Marshal.PtrToStringUTF8((IntPtr)fmt));
             return false;
         }
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szExpr));
 
             return 1;
         }
@@ -3716,7 +3693,7 @@ namespace Internal.JitInterface
 
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
-            // Set the rest of the flags that don't make sense to expose publically.
+            // Set the rest of the flags that don't make sense to expose publicly.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);

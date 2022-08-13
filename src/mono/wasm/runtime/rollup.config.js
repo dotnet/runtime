@@ -15,6 +15,7 @@ const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "7.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
+const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
     compress: {
         defaults: false,// too agressive minification breaks subsequent emcc compilation
@@ -62,19 +63,15 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads }), typescript()];
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock }), typescript()];
+
+const externalDependencies = [
+];
 
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
     output: [
-        {
-            file: nativeBinDir + "/src/cjs/runtime.cjs.iffe.js",
-            name,
-            banner,
-            format,
-            plugins,
-        },
         {
             file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
             name,
@@ -83,6 +80,7 @@ const iffeConfig = {
             plugins,
         }
     ],
+    external: externalDependencies,
     plugins: outputCodePlugins
 };
 const typesConfig = {
@@ -95,8 +93,25 @@ const typesConfig = {
             plugins: [writeOnChangePlugin()],
         }
     ],
+    external: externalDependencies,
     plugins: [dts()],
 };
+const legacyConfig = {
+    input: "./net6-legacy/export-types.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet-legacy.d.ts",
+            banner: banner_dts,
+            plugins: [writeOnChangePlugin()],
+        }
+    ],
+    external: externalDependencies,
+    plugins: [dts()],
+};
+
+
+let diagnosticMockTypesConfig = undefined;
 
 if (isDebug) {
     // export types also into the source code and commit to git
@@ -107,6 +122,27 @@ if (isDebug) {
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
+    legacyConfig.output.push({
+        format: "es",
+        file: "./dotnet-legacy.d.ts",
+        banner: banner_dts,
+        plugins: [alwaysLF(), writeOnChangePlugin()],
+    });
+
+    // export types into the source code and commit to git
+    diagnosticMockTypesConfig = {
+        input: "./diagnostics/mock/export-types.ts",
+        output: [
+            {
+                format: "es",
+                file: "./diagnostics-mock.d.ts",
+                banner: banner_dts,
+                plugins: [alwaysLF(), writeOnChangePlugin()],
+            }
+        ],
+        external: externalDependencies,
+        plugins: [dts()],
+    };
 }
 
 /* Web Workers */
@@ -121,6 +157,7 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
                 plugins
             },
         ],
+        external: externalDependencies,
         plugins: outputCodePlugins,
     };
     return workerConfig;
@@ -131,7 +168,9 @@ const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => make
 const allConfigs = [
     iffeConfig,
     typesConfig,
-].concat(workerConfigs);
+    legacyConfig,
+].concat(workerConfigs)
+    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.

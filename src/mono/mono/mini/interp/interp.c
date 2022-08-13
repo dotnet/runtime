@@ -243,6 +243,10 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
+#ifdef HOST_WASI
+static gboolean debugger_enabled = FALSE;
+#endif
+
 static void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 
@@ -479,7 +483,7 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!(mono_interp_opt & INTERP_OPT_TIERING) || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
 		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
@@ -2119,13 +2123,13 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	context->stack_pointer = (guchar*)sp;
 
-	check_pending_unwind (context);
-
 	if (context->has_resume_state) {
 		/*
 		 * This can happen on wasm where native frames cannot be skipped during EH.
 		 * EH processing will continue when control returns to the interpreter.
 		 */
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			mono_llvm_cpp_throw_exception ();
 		return NULL;
 	}
 	// The return value is at the bottom of the stack
@@ -5374,6 +5378,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			goto call;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_STRING_UNOPT) {
+			// Same as MINT_NEWOBJ_STRING but copy params into right place on stack
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
+			return_offset = ip [1];
+			call_args_offset = ip [1];
+
+			int param_size = ip [3];
+                        if (param_size)
+                                memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+			LOCAL_VAR (call_args_offset, gpointer) = NULL;
+			ip += 4;
+			goto call;
+		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
 			INIT_VTABLE (vtable);
@@ -5472,6 +5489,49 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
 			ip += 4;
+			goto call;
+		}
+		MINT_IN_CASE(MINT_NEWOBJ_SLOW_UNOPT) {
+			call_args_offset = ip [1];
+			guint16 param_size = ip [3];
+			guint16 ret_size = ip [4];
+			gpointer this_ptr;
+
+			// Should only be called in unoptimized code. This opcode moves the params around
+			// to compensate for the lack of use of a proper offset allocator in unoptimized code.
+			gboolean is_vt = ret_size != 0;
+			if (!is_vt)
+				ret_size = MINT_STACK_SLOT_SIZE;
+
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+			MonoClass *newobj_class = cmethod->method->klass;
+
+			// We allocate space on the stack for return value and for this pointer, that is passed to ctor
+			if (param_size)
+				memmove (locals + call_args_offset + ret_size + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+
+			if (is_vt) {
+				this_ptr = locals + call_args_offset;
+				memset (this_ptr, 0, ret_size);
+				call_args_offset += ret_size;
+			} else {
+				// FIXME push/pop LMF
+				MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
+				if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
+					MonoException *exc = interp_error_convert_to_exception (frame, error, ip);
+					g_assert (exc);
+					THROW_EX (exc, ip);
+				}
+				error_init_reuse (error);
+				this_ptr = mono_object_new_checked (newobj_class, error);
+				mono_interp_error_cleanup (error); // FIXME: do not swallow the error
+				LOCAL_VAR (call_args_offset, gpointer) = this_ptr; // return value
+				call_args_offset += MINT_STACK_SLOT_SIZE;
+			}
+			LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
+			return_offset = call_args_offset; // unused, prevent warning
+			ip += 5;
 			goto call;
 		}
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
@@ -6736,6 +6796,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
 			/* Just a placeholder for a breakpoint */
+#if HOST_WASI
+			if (debugger_enabled)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
@@ -7071,10 +7135,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem;
+			if (len > 0) {
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
-			if (frame->imethod->init_locals)
-				memset (mem, 0, len);
+				if (frame->imethod->init_locals)
+					memset (mem, 0, len);
+			} else {
+				mem = NULL;
+			}
 			LOCAL_VAR (ip [1], gpointer) = mem;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -7412,7 +7481,7 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 /*
  * interp_run_finally:
  *
- *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the finally clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  * Return TRUE if the finally clause threw an exception.
  */
@@ -7456,7 +7525,7 @@ interp_run_finally (StackFrameInfo *frame, int clause_index)
 /*
  * interp_run_filter:
  *
- *   Run the filter clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the filter clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  */
 // Do not inline in case order of frame addresses matters.
@@ -8128,4 +8197,8 @@ mono_ee_interp_init (const char *opts)
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
+
+#ifdef HOST_WASI
+	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
+#endif
 }

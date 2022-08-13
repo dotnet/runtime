@@ -6,22 +6,22 @@
 ** Source:      CriticalSectionFunctions/test3/test3.c
 **
 ** Purpose:     Create two threads to exercise TryEnterCriticalSection
-**              and EnterCriticalSection.  TryEnterCriticalSection acquires 
-**              and holds a CRITICAL_SECTION object.  Another call to 
-**              TryEnterCriticalSection is made from a different thread, at 
+**              and EnterCriticalSection.  TryEnterCriticalSection acquires
+**              and holds a CRITICAL_SECTION object.  Another call to
+**              TryEnterCriticalSection is made from a different thread, at
 **              this time, to establish a call to TryEnterCriticalSection
-**              will return immediatly and to establish 
+**              will return immediately and to establish
 **              TryEnterCriticalSection returns the proper value when it
-**              attempts to lock a CRITICAL_SECTION that is already owned 
-**              by another thread.  The CRITICAL_SECTION object is then 
-**              released and held by a call to EnterCriticalSection.  A new 
-**              thread is invoked and attempts to acquire the held 
-**              CRITICAL_SECTION with a call to TryEnterCriticalSection.  
-**              TryEnterCriticalSection returns immediatly and returns
-**              with the value that states the CRITICAL_SECTION object is 
-**              held by another thread.  This establishes 
-**              TryEnterCriticalSection behaves the same way with 
-**              CriticalSections locked by TryEnterCriticalSection and 
+**              attempts to lock a CRITICAL_SECTION that is already owned
+**              by another thread.  The CRITICAL_SECTION object is then
+**              released and held by a call to EnterCriticalSection.  A new
+**              thread is invoked and attempts to acquire the held
+**              CRITICAL_SECTION with a call to TryEnterCriticalSection.
+**              TryEnterCriticalSection returns immediately and returns
+**              with the value that states the CRITICAL_SECTION object is
+**              held by another thread.  This establishes
+**              TryEnterCriticalSection behaves the same way with
+**              CriticalSections locked by TryEnterCriticalSection and
 **              EnterCriticalSection.
 **
 **
@@ -29,9 +29,9 @@
 #include <palsuite.h>
 
 #define NUM_THREADS 2
-                             
-HANDLE hThread_CriticalSectionFunctions_test3[NUM_THREADS]; 
-HANDLE hEvent_CriticalSectionFunctions_test3[NUM_THREADS]; 
+
+HANDLE hThread_CriticalSectionFunctions_test3[NUM_THREADS];
+HANDLE hEvent_CriticalSectionFunctions_test3[NUM_THREADS];
 BOOL bRet_CriticalSectionFunctions_test3 = FAIL;
 
 DWORD PALAPI Thread_CriticalSectionFunctions_test3(LPVOID lpParam)
@@ -41,28 +41,28 @@ DWORD PALAPI Thread_CriticalSectionFunctions_test3(LPVOID lpParam)
     if (0 == TryEnterCriticalSection(&CriticalSection))
     {
         dwRet = WaitForMultipleObjects(NUM_THREADS, hEvent_CriticalSectionFunctions_test3, TRUE, 10000);
-        if ((WAIT_OBJECT_0 > dwRet) || 
+        if ((WAIT_OBJECT_0 > dwRet) ||
             ((WAIT_OBJECT_0 + NUM_THREADS - 1) < dwRet))
         {
 #if 0
             if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[1]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up.\nGetLastError returned '%d'.\n", 
+                      "during clean up.\nGetLastError returned '%d'.\n",
                       hThread_CriticalSectionFunctions_test3[1], GetLastError());
             }
-#endif 
+#endif
             Trace("PALSUITE ERROR: WaitForMultipleObjects(%d, %p, %d, %d) call"
                   "returned an unexpected value, '%d'.\nGetLastError returned "
-                  "%d.\n", NUM_THREADS, hEvent_CriticalSectionFunctions_test3, TRUE, 10000, dwRet, 
+                  "%d.\n", NUM_THREADS, hEvent_CriticalSectionFunctions_test3, TRUE, 10000, dwRet,
                   GetLastError());
         }
-        else 
-        {   
-            bRet_CriticalSectionFunctions_test3 = PASS;         
+        else
+        {
+            bRet_CriticalSectionFunctions_test3 = PASS;
         }
     }
-    else 
+    else
     {
         /* signal thread 0 */
         if (0 == SetEvent(hEvent_CriticalSectionFunctions_test3[0]))
@@ -74,55 +74,55 @@ DWORD PALAPI Thread_CriticalSectionFunctions_test3(LPVOID lpParam)
             if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[0]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up\nGetLastError returned '%d'.\n", 
+                      "during clean up\nGetLastError returned '%d'.\n",
                       hThread_CriticalSectionFunctions_test3[0], GetLastError());
             }
             if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[0]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up\nGetLastError returned '%d'.\n", 
+                      "during clean up\nGetLastError returned '%d'.\n",
                       hEvent_CriticalSectionFunctions_test3[0], GetLastError());
             }
             if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[1]))
         {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up\nGetLastError returned '%d'.\n", 
+                      "during clean up\nGetLastError returned '%d'.\n",
                       hEvent_CriticalSectionFunctions_test3[1], GetLastError());
         }
             DeleteCriticalSection(&CriticalSection);
             Fail("");
         }
 
-        /* wait to be signaled */        
+        /* wait to be signaled */
         dwRet = WaitForSingleObject(hEvent_CriticalSectionFunctions_test3[1], 10000);
         if (WAIT_OBJECT_0 != dwRet)
         {
             Trace("PALSUITE ERROR: WaitForSingleObject(%p,%d) should have "
                  "returned\nWAIT_OBJECT_0 ('%d'), instead it returned "
-                 "('%d').\nGetLastError returned '%d'.\n", 
+                 "('%d').\nGetLastError returned '%d'.\n",
                  hEvent_CriticalSectionFunctions_test3[0], 10000, WAIT_OBJECT_0, dwRet, GetLastError());
             if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[0]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up.\nGetLastError returned '%d'.\n", 
+                      "during clean up.\nGetLastError returned '%d'.\n",
                       hThread_CriticalSectionFunctions_test3[0], GetLastError());
             }
             if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[0]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up.\nGetLastError returned '%d'.\n", 
+                      "during clean up.\nGetLastError returned '%d'.\n",
                       hEvent_CriticalSectionFunctions_test3[0], GetLastError());
             }
             if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[1]))
             {
                 Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) "
-                      "during clean up.\nGetLastError returned '%d.'\n", 
+                      "during clean up.\nGetLastError returned '%d.'\n",
                       hEvent_CriticalSectionFunctions_test3[1], GetLastError());
             }
             DeleteCriticalSection(&CriticalSection);
             Fail("");
         }
-        LeaveCriticalSection(&CriticalSection);    
+        LeaveCriticalSection(&CriticalSection);
     }
     return FAIL;
 }
@@ -149,7 +149,7 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
 
     /* thread 1 event */
     hEvent_CriticalSectionFunctions_test3[1] = CreateEvent(NULL, TRUE, FALSE, NULL);
-    
+
     if (hEvent_CriticalSectionFunctions_test3[1] == NULL)
     {
         Trace("PALSUITE ERROR: CreateEvent call #1 failed.  GetLastError "
@@ -178,7 +178,7 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
         if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[0]))
         {
             Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) during "
-                  "clean up.\nGetLastError returned '%d'.\n", hEvent_CriticalSectionFunctions_test3[0], 
+                  "clean up.\nGetLastError returned '%d'.\n", hEvent_CriticalSectionFunctions_test3[0],
                   GetLastError());
         }
         if (0 == CloseHandle(hEvent_CriticalSectionFunctions_test3[1]))
@@ -191,14 +191,14 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
         Fail("");
     }
 
-    
+
     /* wait for thread 0 to be signaled */
     dwRet = WaitForSingleObject(hEvent_CriticalSectionFunctions_test3[0], 10000);
     if (WAIT_OBJECT_0 != dwRet)
-    {   
+    {
         Trace("PALSUITE ERROR: WaitForSingleObject(%p,%d) should have "
              "returned\nWAIT_OBJECT_0 ('%d'), instead it returned "
-             "('%d').\nGetLastError returned '%d'.\n", hEvent_CriticalSectionFunctions_test3[0], 10000, 
+             "('%d').\nGetLastError returned '%d'.\n", hEvent_CriticalSectionFunctions_test3[0], 10000,
              WAIT_OBJECT_0, dwRet, GetLastError());
         if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[0]))
         {
@@ -220,10 +220,10 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
         }
         Fail("");
     }
-    
-    /* 
-     * Attempting to enter CRITICAL_SECTION object owned by the 
-     * created thread and locked with TryEnterCriticalSection 
+
+    /*
+     * Attempting to enter CRITICAL_SECTION object owned by the
+     * created thread and locked with TryEnterCriticalSection
      */
     if (0 == TryEnterCriticalSection(&CriticalSection))
     {
@@ -236,7 +236,7 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
             goto done;
         }
     }
-    else 
+    else
     {
         Trace("PALSUITE_ERROR: TryEnterCriticalSection was able to grab a"
              " CRITICAL_SECTION object\nwhich was already owned.\n");
@@ -301,14 +301,14 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
         DeleteCriticalSection(&CriticalSection);
         Fail("");
     }
-    
+
     dwRet = WaitForMultipleObjects(NUM_THREADS, hThread_CriticalSectionFunctions_test3, TRUE, 10000);
-    if ((WAIT_OBJECT_0 > dwRet) || 
+    if ((WAIT_OBJECT_0 > dwRet) ||
         ((WAIT_OBJECT_0 + NUM_THREADS - 1) < dwRet))
     {
         Trace("PALSUITE ERROR: WaitForMultipleObjects(%d, %p, %d, %d) call "
              "returned an unexpected value, '%d'.\nGetLastError returned "
-             "%d.\n", NUM_THREADS, hThread_CriticalSectionFunctions_test3, TRUE, 10000, dwRet, 
+             "%d.\n", NUM_THREADS, hThread_CriticalSectionFunctions_test3, TRUE, 10000, dwRet,
              GetLastError());
         LeaveCriticalSection(&CriticalSection);
         if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[0]))
@@ -338,7 +338,7 @@ PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunction
     DeleteCriticalSection(&CriticalSection);
         Fail("");
     }
-    
+
     LeaveCriticalSection(&CriticalSection);
     if (0 == CloseHandle(hThread_CriticalSectionFunctions_test3[1]))
     {

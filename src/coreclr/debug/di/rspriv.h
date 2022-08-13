@@ -1193,17 +1193,6 @@ public:
     static LONG s_CordbObjectUID;    // Unique ID for each object.
     static LONG s_TotalObjectCount; // total number of outstanding objects.
 
-
-    void ValidateObject()
-    {
-        if( !IsValidObject() )
-        {
-            STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "CordbCommonBase::IsValidObject() failed: %x\n", this);
-            _ASSERTE(!"CordbCommonBase::IsValidObject() failed");
-            FreeBuildDebugBreak();
-        }
-    }
-
     bool IsValidObject()
     {
         return (m_signature == CORDB_COMMON_BASE_SIGNATURE);
@@ -1572,7 +1561,7 @@ _____Neuter_Status_Already_Marked = 0; \
 // 1) it means that we have no synchronization (can't take the Stop-Go lock)
 // 2) none of our backpointers are usable (they may be nulled out at anytime by another thread).
 //    - this also means we absolutely can't send IPC events (since that requires a CordbProcess)
-// 3) The only safe data are blittalbe embedded fields (eg, a pid or stack range)
+// 3) The only safe data are blittable embedded fields (eg, a pid or stack range)
 //
 // Any usage of this macro should clearly specify why this is safe.
 #define OK_IF_NEUTERED(pThis) \
@@ -3291,6 +3280,10 @@ public:
 #endif
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+#endif
+
     //
     // Shim  callbacks to simulate fake attach events.
     //
@@ -3957,7 +3950,7 @@ public:
 
     // The array of entries. (The patchtable is a hash implemented as a single-array)
     // This array includes empty entries.
-    // There is an auxillary bucket structure used to map hash codes to array indices.
+    // There is an auxiliary bucket structure used to map hash codes to array indices.
     // We traverse the array, and we recognize an empty slot
     // if DebuggerControllerPatch::opcode == 0.
     // If we haven't gotten the table, then m_pPatchTable is NULL
@@ -4696,7 +4689,7 @@ public:
 // This lets us reuse the existing hash table scheme to build
 // up instantiated types of arbitrary size.
 //
-// Array types are similar, excpet that they start with a head type
+// Array types are similar, excepet that they start with a head type
 // for the "type constructor", e.g. "_ []" is a type constructor with rank 1
 // and m_elementType = ELEMENT_TYPE_SZARRAY.  These head constructors are
 // stored in the m_sharedtypes table in the appdomain.  The actual instantiations
@@ -9891,7 +9884,7 @@ private:
     // EE object handle pointer. Can be casted to OBJECTHANDLE when go to LS
     // This instance owns the handle object and must call into the VM to release
     // it.
-    // If this is non-null, then we increment code:CordbProces::IncrementOutstandingHandles.
+    // If this is non-null, then we increment code:CordbProcess::IncrementOutstandingHandles.
     // Once it goes null, we should decrement the count.
     // Use AssignHandle, ClearHandle to keep this in sync.
     VMPTR_OBJECTHANDLE  m_vmHandle;
@@ -11214,7 +11207,7 @@ public:
     void NotifyTakeLock(RSLock * pLock);
     void NotifyReleaseLock(RSLock * pLock);
 
-    // Used to map other resources (like thread access) into the lock hierachy.
+    // Used to map other resources (like thread access) into the lock hierarchy.
     // Note this only effects lock leveling checks and doesn't effect HoldsAnyLock().
     void TakeVirtualLock(RSLock::ERSLockLevel level);
     void ReleaseVirtualLock(RSLock::ERSLockLevel level);

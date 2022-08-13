@@ -1152,6 +1152,26 @@ namespace System.Data.SqlTypes
             }
         }
 
+        [CLSCompliant(false)]
+        public int WriteTdsValue(Span<uint> destination)
+        {
+            if (IsNull)
+            {
+                throw new SqlNullValueException();
+            }
+
+            if (destination.Length < 4)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+            destination[0] = _data1;
+            destination[1] = _data2;
+            destination[2] = _data3;
+            destination[3] = _data4;
+            return 4;
+        }
+
         // Implicit conversion from Decimal to SqlDecimal
         public static implicit operator SqlDecimal(decimal x)
         {
@@ -1224,7 +1244,7 @@ namespace System.Data.SqlTypes
             fOpSignPos = y.IsPositive;
 
             //result scale = max(s1,s2)
-            //result precison = max(s1,s2) + max(p1-s1,p2-s2)
+            //result precision = max(s1,s2) + max(p1-s1,p2-s2)
             MyScale = x._bScale;
             OpScale = y._bScale;
 
@@ -1369,7 +1389,7 @@ namespace System.Data.SqlTypes
         //
         //    Result scale and precision(same as in SQL Server Manual and Hydra):
         //        scale = s1 + s2
-        //        precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+        //        precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
         //
         //    Overflow Rules:
         //        If scale is greater than NUMERIC_MAX_PRECISION it is set to
@@ -1428,7 +1448,7 @@ namespace System.Data.SqlTypes
             ResScale = ActualScale;
             ResInteger = (x._bPrec - x._bScale) + (y._bPrec - y._bScale) + 1;
 
-            //result precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+            //result precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
             ResPrec = ResScale + ResInteger;
 
             // Downward adjust res prec,scale if either larger than NUMERIC_MAX_PRECISION
@@ -1624,7 +1644,7 @@ namespace System.Data.SqlTypes
         //    scale is 10, the precision will be reduced to 38, to keep the integral part
         //    untruncated the scale needs be recuded to 2, but since x_cNumeDivScaleMin
         //    is set to 6 currently, resulting scale will be 6.
-        //        OverflowException is throwed only if the actual precision is greater than
+        //        OverflowException is thrown only if the actual precision is greater than
         //    NUMERIC_MAX_PRECISION or actual length is greater than x_cbNumeBuf
         //
         //Algorithm

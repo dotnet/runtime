@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -300,7 +301,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public override async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             // Exception messages direct users to use JsonSourceGenerationMode.Metadata to see a more detailed error.
@@ -325,6 +325,66 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Since this code goes down fast-path, there's no warm up and we hit the reader exception about having no tokens.
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
+        }
+
+        [Fact]
+        public static void PublicContexAndTestClassWithPropertiesWithDifferentAccesibilities()
+        {
+            JsonSerializerOptions options = new()
+            {
+                IncludeFields = true,
+            };
+
+            options.AddContext<PublicContext>();
+
+            PublicClassWithDifferentAccessibilitiesProperties obj = new()
+            {
+                PublicProperty = new(),
+                PublicField = new(),
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"PublicProperty":{},"PublicField":{}}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.NotNull(deserialized.PublicProperty);
+            Assert.NotNull(deserialized.PublicField);
+
+            json = "{}";
+            deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.Null(deserialized.PublicProperty);
+            Assert.Null(deserialized.PublicField);
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonConverter()
+        {
+            JsonConverter obj = JsonMetadataServices.BooleanConverter;
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+            Assert.Equal("{}", json);
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>(json, PublicContext.Default.Options));
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonSerializerOptions()
+        {
+            JsonSerializerOptions obj = new()
+            {
+                DefaultBufferSize = 123,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                IncludeFields = true,
+            };
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+
+            JsonSerializerOptions deserialized = JsonSerializer.Deserialize<JsonSerializerOptions>(json, PublicContext.Default.Options);
+            Assert.Equal(obj.DefaultBufferSize, deserialized.DefaultBufferSize);
+            Assert.Equal(obj.DefaultIgnoreCondition, deserialized.DefaultIgnoreCondition);
+            Assert.Equal(obj.IncludeFields, deserialized.IncludeFields);
+            Assert.Equal(obj.IgnoreReadOnlyFields, deserialized.IgnoreReadOnlyFields);
+            Assert.Equal(obj.MaxDepth, deserialized.MaxDepth);
         }
 
         [JsonSerializable(typeof(ClassWithNewSlotField))]

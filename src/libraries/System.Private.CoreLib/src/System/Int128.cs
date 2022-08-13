@@ -789,6 +789,173 @@ namespace System
             return ulong.TrailingZeroCount(value._lower);
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<Int128>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out Int128 value)
+        {
+            Int128 result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[0]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= Size))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > Size)
+                {
+                    if (source[..^Size].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^Size]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - Size);
+
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Big Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((One << ((Size * 8) - 1)) >> (((Size - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<Int128>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out Int128 value)
+        {
+            Int128 result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[^1]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= Size))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > Size)
+                {
+                    if (source[Size..].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[Size - 1]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Little Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part, then reverse endianness to
+                    // ensure the order is correct. This is more efficient than iterating in reverse
+                    // due to current JIT limitations
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    result <<= ((Size - source.Length) * 8);
+                    result = BinaryPrimitives.ReverseEndianness(result);
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((One << ((Size * 8) - 1)) >> (((Size - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<Int128>.GetShortestBitLength()
         {
@@ -1964,7 +2131,7 @@ namespace System
                 // and so the lower bits are just the upper shifted by the remaining
                 // masked amount
 
-                ulong lower = value._upper >> shiftAmount;
+                ulong lower = (ulong)((long)value._upper >> shiftAmount);
                 ulong upper = (ulong)((long)value._upper >> 63);
 
                 return new Int128(upper, lower);

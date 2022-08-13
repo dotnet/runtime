@@ -51,7 +51,6 @@ namespace System.Diagnostics
         public virtual string Name
         {
             get { return _listenerName ?? ""; }
-
             set { _listenerName = value; }
         }
 

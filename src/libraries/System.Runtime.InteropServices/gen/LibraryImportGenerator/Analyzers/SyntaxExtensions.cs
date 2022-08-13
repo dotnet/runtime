@@ -25,6 +25,35 @@ namespace Microsoft.Interop.Analyzers
             return walker.TypeExpressionLocation;
         }
 
+        public static AttributeData? FindAttributeData(this AttributeSyntax syntax, ISymbol targetSymbol)
+        {
+            AttributeTargetSpecifierSyntax attributeTarget = syntax.FirstAncestorOrSelf<AttributeListSyntax>().Target;
+            if (attributeTarget is not null)
+            {
+                switch (attributeTarget.Identifier.Kind())
+                {
+                    case SyntaxKind.ReturnKeyword:
+                        return ((IMethodSymbol)targetSymbol).GetReturnTypeAttributes().First(attributeSyntaxLocationMatches);
+                    case SyntaxKind.AssemblyKeyword:
+                        return targetSymbol.ContainingAssembly.GetAttributes().First(attributeSyntaxLocationMatches);
+                    case SyntaxKind.ModuleKeyword:
+                        return targetSymbol.ContainingModule.GetAttributes().First(attributeSyntaxLocationMatches);
+                    default:
+                        return null;
+                }
+            }
+            // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
+            // For example, the ContainingSymbol for an AttributeSyntax on a parameter have a ContainingSymbol of the method.
+            // Since this method is internal and the callers don't care about attributes on parameters, we just allow
+            // this method to return null in those cases.
+            return targetSymbol.GetAttributes().FirstOrDefault(attributeSyntaxLocationMatches);
+
+            bool attributeSyntaxLocationMatches(AttributeData attrData)
+            {
+                return attrData.ApplicationSyntaxReference!.SyntaxTree == syntax.SyntaxTree && attrData.ApplicationSyntaxReference.Span == syntax.Span;
+            }
+        }
+
         private sealed class FindTypeLocationWalker : CSharpSyntaxWalker
         {
             public Location? TypeExpressionLocation { get; private set; }

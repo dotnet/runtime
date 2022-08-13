@@ -1596,7 +1596,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request)
+        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request, bool ifNoneFoundThenFindNext = false)
         {
             request.TryResolve(this);
 
@@ -1606,16 +1606,64 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (sourceFile == null)
                 yield break;
 
-            foreach (MethodInfo method in sourceFile.Methods)
+            List<MethodInfo> methodList = FindMethodsContainingLine(sourceFile, request.Line);
+            if (methodList.Count == 0)
+                yield break;
+
+            List<SourceLocation> locations = new List<SourceLocation>();
+            foreach (var method in methodList)
             {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
+                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                {
+                    if (!sequencePoint.IsHidden &&
+                            Match(sequencePoint, request.Line, request.Column) &&
+                            sequencePoint.StartLine - 1 == request.Line &&
+                            (request.Column == 0 || sequencePoint.StartColumn - 1 == request.Column))
+                    {
+                        // Found an exact match
+                        locations.Add(new SourceLocation(method, sequencePoint));
+                    }
+                }
+            }
+            if (locations.Count == 0 && ifNoneFoundThenFindNext)
+            {
+                (MethodInfo method, SequencePoint seqPoint)? closest = null;
+                foreach (var method in methodList)
                 {
                     foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
                     {
-                        if (!sequencePoint.IsHidden && Match(sequencePoint, request.Line, request.Column))
-                            yield return new SourceLocation(method, sequencePoint);
+                        if (!sequencePoint.IsHidden &&
+                                sequencePoint.StartLine > request.Line &&
+                                (closest is null || closest.Value.seqPoint.StartLine > sequencePoint.StartLine))
+                        {
+                            // sequence points in a method are ordered,
+                            // and we found the one right after request.Line
+                            closest = (method, sequencePoint);
+                            // .. and now we can look for it in other methods
+                            break;
+                        }
                     }
                 }
+
+                if (closest is not null)
+                    locations.Add(new SourceLocation(closest.Value.method, closest.Value.seqPoint));
+            }
+
+            foreach (SourceLocation loc in locations)
+                yield return loc;
+
+            static List<MethodInfo> FindMethodsContainingLine(SourceFile sourceFile, int line)
+            {
+                List<MethodInfo> ret = new();
+                foreach (MethodInfo method in sourceFile.Methods)
+                {
+                    if (method.DebugInformation.SequencePointsBlob.IsNil)
+                        continue;
+                    if (!(method.StartLocation.Line <= line && line <= method.EndLocation.Line))
+                        continue;
+                    ret.Add(method);
+                }
+                return ret;
             }
         }
 

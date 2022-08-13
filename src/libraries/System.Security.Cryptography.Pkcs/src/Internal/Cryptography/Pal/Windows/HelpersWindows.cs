@@ -157,7 +157,7 @@ namespace Internal.Cryptography.Pal.Windows
             return hCertContext;
         }
 
-        public static unsafe byte[] GetSubjectKeyIdentifer(this SafeCertContextHandle hCertContext)
+        public static unsafe byte[] GetSubjectKeyIdentifier(this SafeCertContextHandle hCertContext)
         {
             int cbData = 0;
             if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
@@ -251,9 +251,9 @@ namespace Internal.Cryptography.Pal.Windows
             return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.PublicKeyInfo, pki);
         }
 
-        public static AlgorithmIdentifier ToAlgorithmIdentifier(this CRYPT_ALGORITHM_IDENTIFIER cryptAlgorithmIdentifer)
+        public static AlgorithmIdentifier ToAlgorithmIdentifier(this CRYPT_ALGORITHM_IDENTIFIER cryptAlgorithmIdentifier)
         {
-            string oidValue = cryptAlgorithmIdentifer.pszObjId.ToStringAnsi();
+            string oidValue = cryptAlgorithmIdentifier.pszObjId.ToStringAnsi();
             AlgId algId = oidValue.ToAlgId();
 
             int keyLength;
@@ -261,7 +261,7 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 case AlgId.CALG_RC2:
                     {
-                        if (cryptAlgorithmIdentifer.Parameters.cbData == 0)
+                        if (cryptAlgorithmIdentifier.Parameters.cbData == 0)
                         {
                             keyLength = 0;
                         }
@@ -271,7 +271,7 @@ namespace Internal.Cryptography.Pal.Windows
                             unsafe
                             {
                                 int cbSize = sizeof(CRYPT_RC2_CBC_PARAMETERS);
-                                if (!Interop.Crypt32.CryptDecodeObject(CryptDecodeObjectStructType.PKCS_RC2_CBC_PARAMETERS, cryptAlgorithmIdentifer.Parameters.pbData, (int)(cryptAlgorithmIdentifer.Parameters.cbData), &rc2Parameters, ref cbSize))
+                                if (!Interop.Crypt32.CryptDecodeObject(CryptDecodeObjectStructType.PKCS_RC2_CBC_PARAMETERS, cryptAlgorithmIdentifier.Parameters.pbData, (int)(cryptAlgorithmIdentifier.Parameters.cbData), &rc2Parameters, ref cbSize))
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                             }
 
@@ -290,9 +290,9 @@ namespace Internal.Cryptography.Pal.Windows
                 case AlgId.CALG_RC4:
                     {
                         int saltLength = 0;
-                        if (cryptAlgorithmIdentifer.Parameters.cbData != 0)
+                        if (cryptAlgorithmIdentifier.Parameters.cbData != 0)
                         {
-                            using (SafeHandle sh = Interop.Crypt32.CryptDecodeObjectToMemory(CryptDecodeObjectStructType.X509_OCTET_STRING, cryptAlgorithmIdentifer.Parameters.pbData, (int)cryptAlgorithmIdentifer.Parameters.cbData))
+                            using (SafeHandle sh = Interop.Crypt32.CryptDecodeObjectToMemory(CryptDecodeObjectStructType.X509_OCTET_STRING, cryptAlgorithmIdentifier.Parameters.pbData, (int)cryptAlgorithmIdentifier.Parameters.cbData))
                             {
                                 unsafe
                                 {
@@ -328,7 +328,7 @@ namespace Internal.Cryptography.Pal.Windows
             switch (oidValue)
             {
                 case Oids.RsaOaep:
-                    algorithmIdentifier.Parameters = cryptAlgorithmIdentifer.Parameters.ToByteArray();
+                    algorithmIdentifier.Parameters = cryptAlgorithmIdentifier.Parameters.ToByteArray();
                     break;
             }
             return algorithmIdentifier;

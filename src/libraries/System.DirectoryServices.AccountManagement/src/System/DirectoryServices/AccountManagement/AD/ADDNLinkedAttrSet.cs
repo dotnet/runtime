@@ -354,7 +354,7 @@ namespace System.DirectoryServices.AccountManagement
                     // We reached the end of this group's membership.  If we're not processing recursively,
                     // we're done.  Otherwise, go on to the next group to visit.
                     // First create a DE that points to the group we want to expand,  Using that as a search root run
-                    // an ASQ search against  member and start enumerting those results.
+                    // an ASQ search against  member and start enumerating those results.
                     if (_recursive)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info,

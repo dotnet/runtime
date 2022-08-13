@@ -8,6 +8,9 @@ public class Test
 {
     public int foo;
 
+    public override bool Equals(object o) => false;
+    public override int GetHashCode() => 0;
+
     public static bool operator ==(Test t1, Test t2) {
         if (ReferenceEquals(t1, t1))
             return true;
@@ -24,7 +27,7 @@ public class Test
         var t1 = new Test () { foo = 1 };
         var t2 = new Test () { foo = 2 };
         if (t1 == t2)
-            return 0;
+            return 100;
         return 100;
     }
 }

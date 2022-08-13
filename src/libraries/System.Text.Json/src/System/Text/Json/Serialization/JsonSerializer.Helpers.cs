@@ -15,31 +15,42 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type runtimeType)
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType)
         {
-            Debug.Assert(runtimeType != null);
+            Debug.Assert(inputType != null);
 
             options ??= JsonSerializerOptions.Default;
 
-            if (!options.IsLockedInstance || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
+            if (!options.IsInitializedForReflectionSerializer)
             {
                 options.InitializeForReflectionSerializer();
             }
 
-            return options.GetTypeInfoForRootType(runtimeType);
+            // In order to improve performance of polymorphic root-level object serialization,
+            // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.
+            // This lets any derived types take advantage of the cache in GetTypeInfoForRootType themselves.
+            return inputType == JsonTypeInfo.ObjectType
+                ? options.ObjectTypeInfo
+                : options.GetTypeInfoForRootType(inputType);
         }
 
-        private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        private static JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options)
+            => (JsonTypeInfo<T>)GetTypeInfo(options, typeof(T));
+
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
             Debug.Assert(context != null);
-            Debug.Assert(type != null);
+            Debug.Assert(inputType != null);
 
-            JsonTypeInfo? info = context.GetTypeInfo(type);
+            JsonTypeInfo? info = context.GetTypeInfo(inputType);
             if (info is null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type, context);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(inputType, context);
             }
 
+            info.EnsureConfigured();
             return info;
         }
 

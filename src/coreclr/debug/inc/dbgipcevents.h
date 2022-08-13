@@ -153,6 +153,7 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     SIZE_T  m_cbOpcode;                                 // Max size of opcode
     SIZE_T  m_offTraceType;                             // Offset of the trace.type within a patch
     DWORD   m_traceTypeUnmanaged;                       // TRACE_UNMANAGED
+    void   *m_setThreadContextNeededAddr;               // Address of SetThreadContextNeededFlare
 
     DebuggerIPCRuntimeOffsets()
     {
@@ -1332,7 +1333,7 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 //          generic code of some kind)
 // BOOL isInstantiatedGeneric: Indicates if the method is
 //          generic code of some kind.
-// BOOL jsutAfterILThrow: indicates that code just threw a software exception and
+// BOOL justAfterILThrow: indicates that code just threw a software exception and
 //          nativeOffset points to an instruction just after [call IL_Throw].
 //          This is being used to figure out a real offset of the exception origin.
 //          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
@@ -1366,7 +1367,7 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
     // this is the version of the jitted code
     SIZE_T       enCVersion;
 
-    BOOL         jsutAfterILThrow;
+    BOOL         justAfterILThrow;
 };
 
 //
@@ -1929,7 +1930,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            // Module whos metadata is being updated
+            // Module whose metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
             VMPTR_DomainAssembly vmDomainAssembly;
 

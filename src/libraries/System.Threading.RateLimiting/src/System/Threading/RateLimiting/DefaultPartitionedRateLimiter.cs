@@ -34,12 +34,19 @@ namespace System.Threading.RateLimiting
 
         public DefaultPartitionedRateLimiter(Func<TResource, RateLimitPartition<TKey>> partitioner,
             IEqualityComparer<TKey>? equalityComparer = null)
+            : this(partitioner, equalityComparer, TimeSpan.FromMilliseconds(100))
+        {
+        }
+
+        // Extra ctor for testing purposes, primarily used when wanting to test the timer manually
+        private DefaultPartitionedRateLimiter(Func<TResource, RateLimitPartition<TKey>> partitioner,
+            IEqualityComparer<TKey>? equalityComparer, TimeSpan timerInterval)
         {
             _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
             _partitioner = partitioner;
 
             // TODO: Figure out what interval we should use
-            _timer = new TimerAwaitable(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
+            _timer = new TimerAwaitable(timerInterval, timerInterval);
             _timerTask = RunTimer();
         }
 
@@ -58,19 +65,19 @@ namespace System.Threading.RateLimiting
             _timer.Dispose();
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
-            return GetRateLimiter(resource).GetAvailablePermits();
+            return GetRateLimiter(resource).GetStatistics();
         }
 
-        protected override RateLimitLease AcquireCore(TResource resource, int permitCount)
+        protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
         {
-            return GetRateLimiter(resource).Acquire(permitCount);
+            return GetRateLimiter(resource).AttemptAcquire(permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
-            return GetRateLimiter(resource).WaitAndAcquireAsync(permitCount, cancellationToken);
+            return GetRateLimiter(resource).AcquireAsync(permitCount, cancellationToken);
         }
 
         private RateLimiter GetRateLimiter(TResource resource)

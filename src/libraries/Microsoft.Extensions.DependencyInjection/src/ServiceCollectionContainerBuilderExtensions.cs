@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> containing service descriptors.</param>
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
 
+        [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services)
         {
             return BuildServiceProvider(services, ServiceProviderOptions.Default);
@@ -32,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <c>true</c> to perform check verifying that scoped services never gets resolved from root provider; otherwise <c>false</c>.
         /// </param>
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
+        [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services, bool validateScopes)
         {
             return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = validateScopes });
@@ -46,6 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Configures various service provider behaviors.
         /// </param>
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
+        [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services, ServiceProviderOptions options)
         {
             if (services is null)

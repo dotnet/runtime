@@ -2334,6 +2334,27 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "699B3C957C6DD22E9B63DBAE3B5AE62919F0EA3DF304C7DD9E0BBA0E7053605F" +
             "D066A788426159BB937C58E5A110461DC9364CA7CA").HexToByteArray();
 
+        internal const string BigExponentPkcs10Pem =
+            "-----BEGIN CERTIFICATE REQUEST-----\n" +
+            "MIIDETCCAfkCAQAwgYoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9u\n" +
+            "MRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRp\n" +
+            "b24xIDAeBgNVBAsTFy5ORVQgRnJhbWV3b3JrIChDb3JlRlgpMRIwEAYDVQQDEwls\n" +
+            "b2NhbGhvc3QwggEkMA0GCSqGSIb3DQEBAQUAA4IBEQAwggEMAoIBAQCvgcHL2CA/\n" +
+            "YkpTntZggXU3I5Oig31IkOSKGd7TaXMRViCWjWvg09qjiqd3vgLuC2uTtyTo3MEr\n" +
+            "YytPqAu8klvOYk9Mp8xgYwazlAPijJMtJN1Ub/5O9qN/EHcLIhXqjLtb9CfoxNib\n" +
+            "eeszg3UQDF+D5V3ptEZt377uQlOa7zPvGHt3YMOxobIQPC2BRFZKDBA5oJyFz2tZ\n" +
+            "dOtRb8jWYjyUrjpaC7O0x5KVfUMjkVZs8+KlKvsMFCueBoG4lyZxryuC3TkKObk5\n" +
+            "z3GVaGh+SZCmMFDKd2jc1rN4hC8Y/bH22f8Ja69765jc+TDWb8/VA/WNQb/0YhLi\n" +
+            "Tjr8RepCvYhHAgUCAAAEQaA/MD0GCSqGSIb3DQEJDjEwMC4wLAYDVR0RBCUwI4cE\n" +
+            "fwAAAYcQAAAAAAAAAAAAAAAAAAAAAYIJbG9jYWxob3N0MA0GCSqGSIb3DQEBCwUA\n" +
+            "A4IBAQA7yufgLTqChDURDIplGX/xoCfsWso36+KbbnCTpL3Km9qOJE3AWEaqnxht\n" +
+            "LrvfZHS7Cez1o8EfOn5W2dSJw9SuLc9dUqv83+1tRiOvfH0uUqGJvEoL/F65bsFY\n" +
+            "qWspLfbkrcrlIzp+FZhETiP3MlJrcRciZuRXBvkO+rCUWnXURvCmVHx4jdga1vTR\n" +
+            "5/0OiIQIOvUgA9nNOLOhQPLlUs8/vwtMdx5XRcbabybc/Q/rh7n90vRySgneH7TF\n" +
+            "XkOfQ8bjeoZroZSUshDSlGmbPJV8bdIum2Pbrjta5ikZ8Oo98wTH3Z4Lug5wU2Bf\n" +
+            "0GaniEJhWbuTfFjloRBGHck2TKfK\n" +
+            "-----END CERTIFICATE REQUEST-----";
+
         internal static byte[] EmptySubjectCertificate = (
             "308202A73082018FA003020102020103300D06092A864886F70D01010B050030" +
             "1F311D301B06035504031314456D707479205375626A65637420497373756572" +

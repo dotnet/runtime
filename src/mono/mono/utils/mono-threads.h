@@ -634,7 +634,6 @@ void mono_threads_platform_init (void);
 gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
-gboolean mono_threads_platform_stw_defer_initial_suspend (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -876,7 +875,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 	const DWORD _last_error_restore_point = GetLastError ();
 
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
-		/* Only restore if changed to prevent unecessary writes. */ \
+		/* Only restore if changed to prevent unnecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 

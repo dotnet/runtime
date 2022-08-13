@@ -118,16 +118,6 @@
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
-    <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true' and Exists('$(DotNetHostBinDir)')">
-      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)">
-        <IsNative>true</IsNative>
-      </RuntimeFiles>
-      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)">
-        <IsNative>true</IsNative>
-      </RuntimeFiles>
-    </ItemGroup>
-
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
   </Target>
 
@@ -191,6 +181,7 @@
         $(LibrariesNativeArtifactsPath)dotnet.js;
         $(LibrariesNativeArtifactsPath)src\dotnet-crypto-worker.js;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
+        $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
@@ -206,10 +197,6 @@
         $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
-                             Include="$(LibrariesNativeArtifactsPath)src\cjs\*.js"
-                             NativeSubDirectory="src\cjs"
-                             IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
                              NativeSubDirectory="src\es6"

@@ -399,7 +399,7 @@ HRESULT DebuggerRCThread::Init(void)
     if(m_pDCB)
     {
         // We have to ensure that most of the runtime offsets for the out-of-proc DCB are initialized right away. This is
-        // needed to support certian races during an interop attach. Since we can't know whether an interop attach will ever
+        // needed to support certain races during an interop attach. Since we can't know whether an interop attach will ever
         // happen or not, we are forced to do this now. Note: this is really too early, as some data structures haven't been
         // initialized yet!
         hr = EnsureRuntimeOffsetsInit(IPC_TARGET_OUTOFPROC);
@@ -476,7 +476,7 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     // Fill out the struct.
 #ifdef FEATURE_INTEROP_DEBUGGING
     pDebuggerRuntimeOffsets->m_genericHijackFuncAddr = Debugger::GenericHijackFunc;
-    // Set flares - these only exist for interop debugging.
+    // the following 6 flares only exist for interop debugging.
     pDebuggerRuntimeOffsets->m_signalHijackStartedBPAddr = (void*) SignalHijackStartedFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffStartBPAddr = (void*) ExceptionForRuntimeHandoffStartFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffCompleteBPAddr = (void*) ExceptionForRuntimeHandoffCompleteFlare;
@@ -485,6 +485,16 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     pDebuggerRuntimeOffsets->m_notifyRSOfSyncCompleteBPAddr = (void*) NotifyRightSideOfSyncCompleteFlare;
     pDebuggerRuntimeOffsets->m_debuggerWordTLSIndex = g_debuggerWordTLSIndex;
 #endif // FEATURE_INTEROP_DEBUGGING
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#ifdef TARGET_WINDOWS
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = (void*) SetThreadContextNeededFlare;
+#else
+    #error Platform not supported
+#endif
+#else
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = NULL;
+#endif
 
     pDebuggerRuntimeOffsets->m_pPatches = DebuggerController::GetPatchTable();
     pDebuggerRuntimeOffsets->m_pPatchTableValid = (BOOL*)DebuggerController::GetPatchTableValidAddr();
@@ -923,7 +933,7 @@ void DebuggerRCThread::MainLoop()
         if (dwWaitResult == WAIT_OBJECT_0 + DRCT_DEBUGGER_EVENT)
         {
             // If the handle of the right side process is signaled, then we've lost our controlling debugger. We
-            // terminate this process immediatley in such a case.
+            // terminate this process immediately in such a case.
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: terminating this process. Right Side has exited.\n"));
             SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
             EEPOLICY_HANDLE_FATAL_ERROR(0);
@@ -955,7 +965,7 @@ void DebuggerRCThread::MainLoop()
                 // Let's release the lock here since runtime is resumed.
                 debugLockHolderSuspended.Release();
 
-                // This debugger thread shoud not be holding debugger locks anymore
+                // This debugger thread should not be holding debugger locks anymore
                 _ASSERTE(!g_pDebugger->ThreadHoldsLock());
 #ifdef _DEBUG
                 // Always reset the syncSpinCount to 0 on a continue so that we have the maximum number of possible
@@ -1082,7 +1092,7 @@ LWaitTimedOut:
 //     that we are waiting for will trigger the corresponding release.
 //
 //     IMPORTANT!!! READ ME!!!!
-//     This MainLoop is similiar to MainLoop function above but simplified to deal with only
+//     This MainLoop is similar to MainLoop function above but simplified to deal with only
 //     some scenario. So if you change here, you should look at MainLoop to see if same change is
 //     required.
 //---------------------------------------------------------------------------------------
@@ -1143,7 +1153,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         if (dwWaitResult == WAIT_OBJECT_0 + DRCT_DEBUGGER_EVENT)
         {
             // If the handle of the right side process is signaled, then we've lost our controlling debugger. We
-            // terminate this process immediatley in such a case.
+            // terminate this process immediately in such a case.
             LOG((LF_CORDB, LL_INFO1000, "DRCT::THTML: terminating this process. Right Side has exited.\n"));
 
             TerminateProcess(GetCurrentProcess(), 0);
@@ -1453,7 +1463,7 @@ HRESULT inline DebuggerRCThread::EnsureRuntimeOffsetsInit(IpcTarget ipcTarget)
 }
 
 //
-// Call this function to tell the rc thread that we need the runtime offsets re-initialized at the next avaliable time.
+// Call this function to tell the rc thread that we need the runtime offsets re-initialized at the next available time.
 //
 void DebuggerRCThread::NeedRuntimeOffsetsReInit(IpcTarget i)
 {
@@ -1519,7 +1529,7 @@ HRESULT DebuggerRCThread::SendIPCEvent()
                 // or mode-preemptive!
                 // If we're the helper thread, we're only sending events while we're stopped.
                 // Our callers will be mode-cooperative, so call this mode_cooperative to avoid a bunch
-                // of unncessary contract violations.
+                // of unnecessary contract violations.
                 MODE_COOPERATIVE;
             }
             else

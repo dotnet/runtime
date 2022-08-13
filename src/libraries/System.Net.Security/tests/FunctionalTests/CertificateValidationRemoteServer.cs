@@ -108,11 +108,6 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
-            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
-            {
-                throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
-            }
-
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
             // b) the server stapled the response
@@ -124,6 +119,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsDebian10))]
         public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
             // Offline will only work if

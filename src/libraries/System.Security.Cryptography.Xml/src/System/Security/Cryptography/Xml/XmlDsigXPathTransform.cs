@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadStreamInput(Stream stream)
         {
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
             _document = new XmlDocument();
             _document.PreserveWhitespace = true;
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Xml
         private void LoadXmlNodeListInput(XmlNodeList nodeList)
         {
             // Use C14N to get a document
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             CanonicalXml c14n = new CanonicalXml((XmlNodeList)nodeList, resolver, true);
             using (MemoryStream ms = new MemoryStream(c14n.GetBytes()))
             {

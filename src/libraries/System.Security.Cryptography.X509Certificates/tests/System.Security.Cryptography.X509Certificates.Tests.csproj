@@ -35,6 +35,7 @@
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests\AuthorityInformationAccessTests.cs" />
+    <Compile Include="ExtensionsTests\AuthorityKeyIdentifierTests.cs" />
     <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
     <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
     <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
@@ -67,7 +68,9 @@
     <Compile Include="ImportTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
+    <Compile Include="CertificateCreation\CertificateRequestLoadTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
+    <Compile Include="CertificateCreation\CrlBuilderTests.cs" />
     <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
@@ -75,6 +78,7 @@
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
+    <Compile Include="CertificateCreation\X509Sha1SignatureGenerators.cs" />
     <Compile Include="RevocationTests\AiaTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
              Link="CommonTest\System\Security\Cryptography\509Certificates\CertificateAuthority.cs" />

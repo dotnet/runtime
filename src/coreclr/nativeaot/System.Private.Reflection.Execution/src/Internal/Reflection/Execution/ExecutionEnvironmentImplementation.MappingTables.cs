@@ -174,7 +174,7 @@ namespace Internal.Reflection.Execution
         /// Return the metadata handle for a TypeRef if this type was referenced indirectly by other type that pay-for-play has denoted as browsable
         /// (for example, as part of a method signature.)
         ///
-        /// This is only used in "debug" builds to provide better MissingMetadataException diagnostics.
+        /// This is only used in "debug" builds to provide better missing metadata diagnostics.
         ///
         /// Preconditions:
         ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)
@@ -228,7 +228,7 @@ namespace Internal.Reflection.Execution
             }
 
             // For non-dynamic arrays try to look up the array type in the ArrayMap blobs;
-            // attempt to dynamically create a new one if that doesn't succeeed.
+            // attempt to dynamically create a new one if that doesn't succeed.
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, false, -1, out arrayTypeHandle);
         }
 
@@ -397,83 +397,15 @@ namespace Internal.Reflection.Execution
             return MethodInvokerWithMethodInvokeInfo.CreateMethodInvoker(declaringTypeHandle, methodHandle, methodInvokeInfo);
         }
 
-        // Get the pointers necessary to call a dynamic method invocation function
         //
-        // This is either a function pointer to call, or a function pointer and template token.
-        private unsafe void GetDynamicMethodInvokeMethodInfo(NativeFormatModuleInfo module, uint cookie, RuntimeTypeHandle[] argHandles,
-            out IntPtr dynamicInvokeMethod, out IntPtr dynamicInvokeMethodGenericDictionary)
+        // Get the pointer of a dynamic method invocation thunk
+        //
+        private static IntPtr GetDynamicMethodInvoke(NativeFormatModuleInfo module, uint cookie)
         {
-            if ((cookie & 1) == 1)
-            {
-                // If the dynamic invoke method is a generic method, we need to consult the DynamicInvokeTemplateData table to locate
-                // the matching template so that we can instantiate it. The DynamicInvokeTemplateData table starts with a single UINT
-                // with the RVA of the type that hosts all DynamicInvoke methods. The table then follows with list of [Token, FunctionPointer]
-                // pairs. The cookie parameter is an index into this table and points to a single pair.
-                byte* pBlobAsBytes;
-                uint cbBlob;
-                bool success = module.TryFindBlob((int)ReflectionMapBlob.DynamicInvokeTemplateData, out pBlobAsBytes, out cbBlob);
-                Debug.Assert(success && cbBlob > 4);
+            ExternalReferencesTable extRefs = default(ExternalReferencesTable);
+            extRefs.InitializeCommonFixupsTable(module);
 
-                byte* pNativeLayoutInfoBlob;
-                uint cbNativeLayoutInfoBlob;
-                success = module.TryFindBlob((int)ReflectionMapBlob.NativeLayoutInfo, out pNativeLayoutInfoBlob, out cbNativeLayoutInfoBlob);
-                Debug.Assert(success);
-
-                RuntimeTypeHandle declaringTypeHandle;
-                // All methods referred from this blob are contained in the same type. The first UINT in the blob is a reloc to that MethodTable
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    // 32bit relative relocs
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
-                }
-                else
-                {
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)pBlobAsBytes);
-                }
-
-                // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
-                // Now have the type loader build or locate a dictionary for this method
-                uint index = cookie >> 1;
-
-                MethodNameAndSignature nameAndSignature;
-                RuntimeSignature nameAndSigSignature;
-
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, ((uint*)pBlobAsBytes)[index]);
-                }
-                else
-                {
-                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, (uint)((IntPtr*)pBlobAsBytes)[index]);
-                }
-
-                success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(nameAndSigSignature, out nameAndSignature);
-                Debug.Assert(success);
-
-                success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
-                Debug.Assert(success);
-
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    // 32bit relative relocs
-                    int* pRelPtr32 = &((int*)pBlobAsBytes)[index + 1];
-                    dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
-                }
-                else
-                {
-                    dynamicInvokeMethod = ((IntPtr*)pBlobAsBytes)[index + 1];
-                }
-            }
-            else
-            {
-                // Nongeneric DynamicInvoke method. This is used to DynamicInvoke methods that have parameters that
-                // cannot be shared (or if there are no parameters to begin with).
-                ExternalReferencesTable extRefs = default(ExternalReferencesTable);
-                extRefs.InitializeCommonFixupsTable(module);
-
-                dynamicInvokeMethod = extRefs.GetFunctionPointerFromIndex(cookie >> 1);
-                dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
-            }
+            return extRefs.GetFunctionPointerFromIndex(cookie);
         }
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -490,35 +422,6 @@ namespace Internal.Reflection.Execution
                 null);
         }
 #endif
-
-        private static RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
-        {
-            // The DynamicInvoke method is a generic method with arguments that match the arguments of the target method.
-            // Prepare the list of arguments so that we can use it to instantiate the method.
-
-            MethodParametersInfo methodParamsInfo = new MethodParametersInfo(reflectionMethodBase);
-            LowLevelList<RuntimeTypeHandle> dynamicInvokeMethodGenArguments = methodParamsInfo.ParameterTypeHandles;
-
-            // This is either a constructor ("returns" void) or an instance method
-            MethodInfo reflectionMethodInfo = reflectionMethodBase as MethodInfo;
-
-            // Only use the return type if it's not void
-            if (reflectionMethodInfo != null && reflectionMethodInfo.ReturnType != typeof(void))
-                dynamicInvokeMethodGenArguments.Add(methodParamsInfo.ReturnTypeHandle);
-
-            for (int i = 0; i < dynamicInvokeMethodGenArguments.Count; i++)
-            {
-                // We can't instantiate over pointer types, so the DynamicInvoke method compensates for it already.
-                RuntimeTypeHandle type = dynamicInvokeMethodGenArguments[i];
-                while (RuntimeAugments.IsUnmanagedPointerType(type))
-                {
-                    type = RuntimeAugments.GetRelatedParameterTypeHandle(type);
-                }
-                dynamicInvokeMethodGenArguments[i] = type;
-            }
-
-            return dynamicInvokeMethodGenArguments.ToArray();
-        }
 
         private static RuntimeTypeHandle[] GetTypeSequence(ref ExternalReferencesTable extRefs, ref NativeParser parser)
         {
@@ -565,7 +468,7 @@ namespace Internal.Reflection.Execution
         /// <param name="methodSignatureComparer">Helper structure used for comparing signatures</param>
         /// <param name="canonFormKind">Requested canon form</param>
         /// <returns>Constructed method invoke info, null on failure</returns>
-        private unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
+        private static unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
             RuntimeTypeHandle declaringTypeHandle,
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
@@ -609,7 +512,6 @@ namespace Internal.Reflection.Execution
 #endif
 
             IntPtr dynamicInvokeMethod;
-            IntPtr dynamicInvokeMethodGenericDictionary;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) != 0)
             {
 #if FEATURE_UNIVERSAL_GENERICS
@@ -621,14 +523,9 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                RuntimeTypeHandle[] dynInvokeMethodArgs = GetDynamicInvokeInstantiationArguments(methodInfo);
-
-                GetDynamicMethodInvokeMethodInfo(
+                dynamicInvokeMethod = GetDynamicMethodInvoke(
                     methodInvokeMetadata.MappingTableModule,
-                    methodInvokeMetadata.DynamicInvokeCookie,
-                    dynInvokeMethodArgs,
-                    out dynamicInvokeMethod,
-                    out dynamicInvokeMethodGenericDictionary);
+                    methodInvokeMetadata.DynamicInvokeCookie);
             }
 
             IntPtr resolver = IntPtr.Zero;
@@ -643,12 +540,9 @@ namespace Internal.Reflection.Execution
                     return null;
             }
 
-            var methodInvokeInfo = new MethodInvokeInfo
+            var methodInvokeInfo = new MethodInvokeInfo(methodInfo, dynamicInvokeMethod)
             {
                 LdFtnResult = methodInvokeMetadata.MethodEntryPoint,
-                DynamicInvokeMethod = dynamicInvokeMethod,
-                DynamicInvokeGenericDictionary = dynamicInvokeMethodGenericDictionary,
-                MethodInfo = methodInfo,
                 VirtualResolveData = resolver,
             };
             return methodInvokeInfo;
@@ -891,7 +785,7 @@ namespace Internal.Reflection.Execution
 #pragma warning restore 0420
         }
 
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_ExactInstantations()
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_ExactInstantiations()
         {
 #pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
             return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_ExactInstantiations, _computeLdFtnLookupExactInstantiations);
@@ -932,7 +826,7 @@ namespace Internal.Reflection.Execution
             else
             {
                 // Search ExactInstantiationsMap
-                foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantations())
+                foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
                 {
                     int startIndex;
                     int endIndex;
@@ -975,7 +869,7 @@ namespace Internal.Reflection.Execution
         internal bool TryGetMethodForStartAddress(IntPtr methodStartAddress, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
         {
             // Search ExactInstantiationsMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantations())
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
             {
                 int startIndex;
                 int endIndex;

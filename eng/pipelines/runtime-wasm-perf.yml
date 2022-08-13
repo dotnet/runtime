@@ -1,0 +1,29 @@
+# This is a wrapper yml for `perf-wasm-jobs`, which has all the perf related
+# wasm jobs. This file is essentially so we can point the pipeline in azdo
+# UI to this, and thus avoid any scheduled triggers
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+#
+# Evaluate paths
+#
+#- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  #- template: /eng/pipelines/common/evaluate-default-paths.yml
+
+- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+  parameters:
+    runProfile: 'v8'
+    collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+    onlySanityCheck: true
+    #perfForkToUse:
+      #url: https://github.com/radical/performance
+      #branch: fix-build
+    #downloadSpecificBuild:
+      #buildId: '1878694'
+      #pipeline: 'perf-wasm'
+      #branchName: 'refs/pull/72119/head'

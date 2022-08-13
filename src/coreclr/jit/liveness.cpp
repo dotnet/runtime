@@ -87,7 +87,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             }
         }
 
-        if (varTypeIsStruct(varDsc))
+        if (varTypeIsPromotable(varDsc))
         {
             lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
 
@@ -276,7 +276,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_MEMORYBARRIER:
-            // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
+            // Similar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
@@ -614,7 +614,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
     }
 #endif // DEBUG
 
-    /* Record which vars are artifically kept alive for debugging */
+    /* Record which vars are artificially kept alive for debugging */
 
     VarSetOps::Assign(this, block->bbScope, inScope);
 
@@ -623,7 +623,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
 
     VarSetOps::UnionD(this, block->bbVarUse, inScope);
 
-    /* Artifically mark all vars in scope as alive */
+    /* Artificially mark all vars in scope as alive */
 
     VarSetOps::UnionD(this, block->bbLiveIn, inScope);
     VarSetOps::UnionD(this, block->bbLiveOut, inScope);
@@ -879,7 +879,7 @@ void Compiler::fgExtendDbgLifetimes()
     fgUnmarkInScope(fgFirstBB, VarSetOps::Diff(this, fgFirstBB->bbScope, noUnmarkVars));
 
     /*-------------------------------------------------------------------------
-     * As we keep variables artifically alive over their entire scope,
+     * As we keep variables artificially alive over their entire scope,
      * we need to also artificially initialize them if the scope does
      * not exactly match the real lifetimes, or they will contain
      * garbage until they are initialized by the IL code.
@@ -1631,7 +1631,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                 return true;
             }
         }
-        else if (varTypeIsStruct(varDsc.lvType))
+        else if (varTypeIsPromotable(varDsc.lvType))
         {
             if (lvaGetPromotionType(&varDsc) != PROMOTION_TYPE_INDEPENDENT)
             {
@@ -1644,7 +1644,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
+    if (!varTypeIsPromotable(varDsc.TypeGet()) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
         return false;
     }

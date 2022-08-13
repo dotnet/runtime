@@ -362,7 +362,7 @@ namespace System.ComponentModel.Composition
             // Finished implementing the constructor
             proxyCtorIL.Emit(OpCodes.Ret);
 
-            // Implemet the static factory
+            // Implement the static factory
             // public object Create(IDictionary<string, object>)
             // {
             //    return new <ProxyClass>(dictionary);
