@@ -303,7 +303,7 @@ internal sealed class PInvokeTableGenerator
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType.FullName}::{pinvoke.Method}' because '{reason}'.");
+                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
