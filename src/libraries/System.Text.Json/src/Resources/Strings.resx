@@ -282,6 +282,9 @@
   <data name="FormatInt64" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for an Int64.</value>
   </data>
+  <data name="FormatInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int128.</value>
+  </data>
   <data name="FormatSingle" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for a Single.</value>
   </data>
