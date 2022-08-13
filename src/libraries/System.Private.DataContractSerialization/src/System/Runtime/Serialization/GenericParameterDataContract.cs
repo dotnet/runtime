@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class GenericParameterDataContract : DataContract
     {
@@ -18,19 +18,9 @@ namespace System.Runtime.Serialization
             _helper = (base.Helper as GenericParameterDataContractCriticalHelper)!;
         }
 
-        internal int ParameterPosition
-        {
-            get
-            { return _helper.ParameterPosition; }
-        }
+        internal int ParameterPosition => _helper.ParameterPosition;
 
-        public override bool IsBuiltInDataContract
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsBuiltInDataContract => true;
 
         private sealed class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
@@ -42,17 +32,15 @@ namespace System.Runtime.Serialization
                 Type type)
                 : base(type)
             {
-                SetDataContractName(DataContract.GetStableName(type));
+                SetDataContractName(DataContract.GetXmlName(type));
                 _parameterPosition = type.GenericParameterPosition;
             }
 
-            internal int ParameterPosition
-            {
-                get { return _parameterPosition; }
-            }
+            internal int ParameterPosition => _parameterPosition;
         }
 
-        internal DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
             return paramContracts[ParameterPosition];
         }

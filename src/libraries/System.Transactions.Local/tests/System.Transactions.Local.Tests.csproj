@@ -8,6 +8,8 @@
     <Compile Include="AsyncTransactionScopeTests.cs" />
     <Compile Include="IntResourceManager.cs" />
     <Compile Include="TransactionManagerTest.cs" />
+    <Compile Include="OleTxNonWindowsUnsupportedTests.cs" />
+    <Compile Include="OleTxTests.cs" />
     <Compile Include="TransactionScopeTest.cs" />
     <Compile Include="AsyncTest.cs" />
     <Compile Include="EnlistTest.cs" />
@@ -16,5 +18,8 @@
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="TestEnlistments.cs" />
     <Compile Include="TransactionTracingEventListener.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
   </ItemGroup>
 </Project>

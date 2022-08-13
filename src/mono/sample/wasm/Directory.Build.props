@@ -6,6 +6,8 @@
     <TargetOS>browser</TargetOS>
     <TargetArchitecture>wasm</TargetArchitecture>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <!-- Suppress experimental trim warnings. This can be removed when we get a preview6 SDK. -->
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>

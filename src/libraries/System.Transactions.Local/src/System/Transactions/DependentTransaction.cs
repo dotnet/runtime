@@ -61,7 +61,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionDependentCloneComplete(this, "DependentTransaction");
+                etwLog.TransactionDependentCloneComplete(TraceSourceType.TraceSourceLtm, TransactionTraceId, "DependentTransaction");
                 etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }

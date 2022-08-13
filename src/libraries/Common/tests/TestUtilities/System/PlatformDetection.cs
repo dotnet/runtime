@@ -106,6 +106,7 @@ namespace System
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -591,6 +592,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static string GetNodeJSPlatform()
+        {
+            if (!IsNodeJS)
+                return null;
+
+            return Environment.GetEnvironmentVariable("NodeJSPlatform");
         }
 
         private static bool AssemblyConfigurationEquals(string configuration)

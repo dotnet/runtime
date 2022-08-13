@@ -38,11 +38,11 @@ namespace System.Xml.Xsl.Xslt
         public static int V2Opt = 4;
         public static int V2Req = 8;
 
-        public void Load(Compiler compiler, object stylesheet, XmlResolver? xmlResolver)
+        public void Load(Compiler compiler, object stylesheet, XmlResolver? xmlResolver, XmlResolver? origResolver)
         {
             Debug.Assert(compiler != null);
             _compiler = compiler;
-            _xmlResolver = xmlResolver ?? XmlNullResolver.Singleton;
+            _xmlResolver = xmlResolver ?? XmlResolver.ThrowingResolver;
 
             XmlReader? reader = stylesheet as XmlReader;
             if (reader != null)
@@ -57,10 +57,21 @@ namespace System.Xml.Xsl.Xslt
                 string? uri = stylesheet as string;
                 if (uri != null)
                 {
-                    // If xmlResolver == null, then the original uri will be resolved using XmlUrlResolver
-                    XmlResolver origResolver = xmlResolver!;
-                    if (xmlResolver == null || xmlResolver == XmlNullResolver.Singleton)
-                        origResolver = new XmlUrlResolver();
+                    // If the stylesheet has been provided as a string (URI, really), then we'll bounce
+                    // through an XmlResolver to look up its contents. There's a complication here since
+                    // the default resolver provided by our caller is likely a throwing resolver, and
+                    // a throwing resolver would fail even when attempting to read this URL. We need
+                    // to at minimum allow this URL to be read, because the user after all did explicitly
+                    // ask us to do so.
+                    //
+                    // In this case, we'll rely on the 'origResolver' argument, which is the XmlResolver
+                    // which was provided *to our caller* before any default substitution took place.
+                    // If an explicit resolver was specified, we'll honor it. Otherwise we'll substitute
+                    // an XmlUrlResolver for this one read operation. The stored resolver (which is used
+                    // for reads beyond the initial stylesheet read) will use a throwing resolver as its
+                    // default, as shown at the very top of this method.
+
+                    origResolver ??= new XmlUrlResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {
