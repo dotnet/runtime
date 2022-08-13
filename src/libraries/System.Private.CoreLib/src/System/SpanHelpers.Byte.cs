@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -332,8 +333,16 @@ namespace System
             }
         }
 
+        [DoesNotReturn]
+        private static void ThrowMustBeNullTerminatedString()
+        {
+            throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
+        }
+
+        // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+        // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int IndexOfNullByte(ref byte searchSpace)
+        internal static unsafe int IndexOfNullByte(ref byte searchSpace)
         {
             const int length = int.MaxValue;
 
@@ -508,7 +517,8 @@ namespace System
                     }
                 }
             }
-            return -1;
+
+            ThrowMustBeNullTerminatedString();
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)offset;
         Found1:

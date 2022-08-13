@@ -1278,13 +1278,11 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = 0; i < length; i++)
                 {
-                    if (negator.NegateIfNeeded(Unsafe.Add(ref searchSpace, i).Equals(value)))
+                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, i).Equals(value)))
                     {
                         return i;
                     }
@@ -1299,7 +1297,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
@@ -1313,7 +1311,7 @@ namespace System
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref oneVectorAwayFromEnd)));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref oneVectorAwayFromEnd)));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1329,7 +1327,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
@@ -1343,7 +1341,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd)));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd)));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1374,14 +1372,12 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = 0; i < length; i++)
                 {
                     T current = Unsafe.Add(ref searchSpace, i);
-                    if (negator.NegateIfNeeded(current.Equals(value0) | current.Equals(value1)))
+                    if (N.NegateIfNeeded(current.Equals(value0) | current.Equals(value1)))
                     {
                         return i;
                     }
@@ -1397,7 +1393,7 @@ namespace System
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
@@ -1412,7 +1408,7 @@ namespace System
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1429,7 +1425,7 @@ namespace System
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
@@ -1444,7 +1440,7 @@ namespace System
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1471,14 +1467,12 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = 0; i < length; i++)
                 {
                     T current = Unsafe.Add(ref searchSpace, i);
-                    if (negator.NegateIfNeeded(current.Equals(value0) | current.Equals(value1) | current.Equals(value2)))
+                    if (N.NegateIfNeeded(current.Equals(value0) | current.Equals(value1) | current.Equals(value2)))
                     {
                         return i;
                     }
@@ -1494,7 +1488,7 @@ namespace System
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
@@ -1509,7 +1503,7 @@ namespace System
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1526,7 +1520,7 @@ namespace System
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
@@ -1541,7 +1535,7 @@ namespace System
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
@@ -1568,14 +1562,12 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = 0; i < length; i++)
                 {
                     T current = Unsafe.Add(ref searchSpace, i);
-                    if (negator.NegateIfNeeded(current.Equals(value0) | current.Equals(value1) | current.Equals(value2) | current.Equals(value3)))
+                    if (N.NegateIfNeeded(current.Equals(value0) | current.Equals(value1) | current.Equals(value2) | current.Equals(value3)))
                     {
                         return i;
                     }
@@ -1591,7 +1583,7 @@ namespace System
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
                         | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
                     if (equals == Vector256<T>.Zero)
                     {
@@ -1607,7 +1599,7 @@ namespace System
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
                         | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
                     if (equals != Vector256<T>.Zero)
                     {
@@ -1625,7 +1617,7 @@ namespace System
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
                         | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
                     if (equals == Vector128<T>.Zero)
                     {
@@ -1641,7 +1633,7 @@ namespace System
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
                         | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
                     if (equals != Vector128<T>.Zero)
                     {
@@ -1761,13 +1753,11 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = length - 1; i >= 0; i--)
                 {
-                    if (negator.NegateIfNeeded(Unsafe.Add(ref searchSpace, i).Equals(value)))
+                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, i).Equals(value)))
                     {
                         return i;
                     }
@@ -1781,7 +1771,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
@@ -1795,7 +1785,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
-                    equals = negator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
+                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1810,7 +1800,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
@@ -1824,7 +1814,7 @@ namespace System
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
-                    equals = negator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
+                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1851,14 +1841,12 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = length - 1; i >= 0; i--)
                 {
                     T current = Unsafe.Add(ref searchSpace, i);
-                    if (negator.NegateIfNeeded(current.Equals(value0) || current.Equals(value1)))
+                    if (N.NegateIfNeeded(current.Equals(value0) || current.Equals(value1)))
                     {
                         return i;
                     }
@@ -1873,7 +1861,7 @@ namespace System
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
+                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
@@ -1888,7 +1876,7 @@ namespace System
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
+                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1904,7 +1892,7 @@ namespace System
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
+                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
@@ -1919,7 +1907,7 @@ namespace System
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
+                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1946,14 +1934,12 @@ namespace System
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            N negator = default;
-
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 for (int i = length - 1; i >= 0; i--)
                 {
                     T current = Unsafe.Add(ref searchSpace, i);
-                    if (negator.NegateIfNeeded(current.Equals(value0) || current.Equals(value1) || current.Equals(value2)))
+                    if (N.NegateIfNeeded(current.Equals(value0) || current.Equals(value1) || current.Equals(value2)))
                     {
                         return i;
                     }
@@ -1968,7 +1954,7 @@ namespace System
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
+                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
                     if (equals == Vector256<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
@@ -1983,7 +1969,7 @@ namespace System
                 if ((uint)length % Vector256<T>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = negator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
+                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
                     if (equals != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -1999,7 +1985,7 @@ namespace System
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
                     if (equals == Vector128<T>.Zero)
                     {
                         currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
@@ -2014,7 +2000,7 @@ namespace System
                 if ((uint)length % Vector128<T>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = negator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
                     if (equals != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
@@ -2059,23 +2045,23 @@ namespace System
 
         private interface INegator<T> where T : struct, IEquatable<T>
         {
-            bool NegateIfNeeded(bool equals);
-            Vector128<T> NegateIfNeeded(Vector128<T> equals);
-            Vector256<T> NegateIfNeeded(Vector256<T> equals);
+            static abstract bool NegateIfNeeded(bool equals);
+            static abstract Vector128<T> NegateIfNeeded(Vector128<T> equals);
+            static abstract Vector256<T> NegateIfNeeded(Vector256<T> equals);
         }
 
         private readonly struct DontNegate<T> : INegator<T> where T : struct, IEquatable<T>
         {
-            public bool NegateIfNeeded(bool equals) => equals;
-            public Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
-            public Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
+            public static bool NegateIfNeeded(bool equals) => equals;
+            public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
+            public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
         }
 
         private readonly struct Negate<T> : INegator<T> where T : struct, IEquatable<T>
         {
-            public bool NegateIfNeeded(bool equals) => !equals;
-            public Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
-            public Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
+            public static bool NegateIfNeeded(bool equals) => !equals;
+            public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
+            public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
         }
     }
 }

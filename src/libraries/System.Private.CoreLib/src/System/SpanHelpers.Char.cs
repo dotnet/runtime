@@ -421,6 +421,8 @@ namespace System
             return lengthDelta;
         }
 
+        // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+        // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfNullCharacter(ref char searchSpace)
         {
@@ -613,7 +615,8 @@ namespace System
                     }
                 }
             }
-            return -1;
+
+            ThrowMustBeNullTerminatedString();
         Found3:
             return (int)(offset + 3);
         Found2:
