@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
+import { MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig } from "../shared";
 import { pthread_ptr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PromiseController, createPromiseController } from "../../promise-controller";
 import { MonoConfig, mono_assert } from "../../types";
 import Internals from "../shared/emscripten-internals";
+import { runtimeHelpers } from "../../imports";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -94,6 +95,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
+        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
         resolvePromises(pthread_id, thread);
     }
 }
