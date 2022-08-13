@@ -62,6 +62,7 @@ internal static class ReflectionTest
         TestInvokeMethodMetadata.Run();
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
+        TestMethodConsistency.Run();
 
         //
         // Mostly functionality tests
@@ -1620,7 +1621,7 @@ internal static class ReflectionTest
             {
                 message1 = ex.Message;
             }
-            if (!message1.Contains("ReflectionTest.TypeConstructionTest.Gen<ReflectionTest.TypeConstructionTest.Atom>"))
+            if (!message1.Contains("ReflectionTest+TypeConstructionTest+Gen`1[ReflectionTest+TypeConstructionTest+Atom]"))
                 throw new Exception();
 
             string message2 = "";
@@ -1632,7 +1633,7 @@ internal static class ReflectionTest
             {
                 message2 = ex.Message;
             }
-            if (!message2.Contains("ReflectionTest.TypeConstructionTest.Atom[]"))
+            if (!message2.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
                 throw new Exception();
 
             string message3 = "";
@@ -1644,7 +1645,7 @@ internal static class ReflectionTest
             {
                 message3 = ex.Message;
             }
-            if (!message3.Contains("ReflectionTest.TypeConstructionTest.Atom[]"))
+            if (!message3.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
                 throw new Exception();
         }
     }
@@ -2018,6 +2019,25 @@ internal static class ReflectionTest
             }
 
             throw new Exception();
+        }
+    }
+
+    class TestMethodConsistency
+    {
+        class MyGenericType<T>
+        {
+            public static string MyMethod() => typeof(T).Name;
+        }
+
+        struct Atom { }
+
+        public static void Run()
+        {
+            object returned = Grab<Atom>().Invoke(null, null);
+            if ((string)returned != nameof(Atom))
+                throw new Exception();
+
+            static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
         }
     }
 

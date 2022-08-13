@@ -39,12 +39,13 @@ export function set_imports_exports(
     runtimeHelpers.requirePromise = imports.requirePromise;
 }
 
-export const runtimeHelpers: RuntimeHelpers = <any>{
-    javaScriptExports: {},
+const initialRuntimeHelpers: Partial<RuntimeHelpers> =
+{
+    javaScriptExports: {} as any,
     mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
-    max_parallel_downloads: 16,
+    maxParallelDownloads: 16,
     config: {},
     diagnosticTracing: false,
-    fetch: null
 };
+export const runtimeHelpers: RuntimeHelpers = initialRuntimeHelpers as any;

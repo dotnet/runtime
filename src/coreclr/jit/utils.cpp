@@ -115,7 +115,6 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -145,7 +144,6 @@ const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp 
 {
     return getRegName((regNumber)reg);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
