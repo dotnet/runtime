@@ -20,6 +20,7 @@
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -45,6 +46,10 @@
     <MicrosoftCodeAnalysisCSharpVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22373.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisVersion>4.3.0-2.final</MicrosoftCodeAnalysisVersion>
+    <!--
+      TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
+    -->
+    <MicrosoftNetCompilersToolsetVersion>4.4.0-2.22412.11</MicrosoftNetCompilersToolsetVersion>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>7.0.100-rc.1.22402.1</MicrosoftDotNetApiCompatTaskVersion>
