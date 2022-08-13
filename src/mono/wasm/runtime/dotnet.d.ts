@@ -47,7 +47,7 @@ declare interface EmscriptenModule {
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
     ready: Promise<unknown>;
-    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
+    instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
     onRuntimeInitialized?: () => any;
@@ -56,6 +56,8 @@ declare interface EmscriptenModule {
         (error: any): void;
     };
 }
+declare type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
+declare type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 declare type MonoConfig = {
@@ -86,15 +88,40 @@ interface ResourceRequest {
     resolvedUrl?: string;
     hash?: string;
 }
-interface AssetEntry extends ResourceRequest {
-    virtualPath?: string;
-    culture?: string;
-    loadRemote?: boolean;
-    isOptional?: boolean;
-    buffer?: ArrayBuffer;
-    pending?: LoadingResource;
+interface LoadingResource {
+    name: string;
+    url: string;
+    response: Promise<Response>;
 }
-declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm";
+interface AssetEntry extends ResourceRequest {
+    /**
+     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
+     */
+    virtualPath?: string;
+    /**
+     * Culture code
+     */
+    culture?: string;
+    /**
+     * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
+     */
+    loadRemote?: boolean;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean;
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer;
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource;
+}
+declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-crypto" | "js-module-threads";
 declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";
@@ -116,11 +143,6 @@ declare type DotnetModuleConfig = {
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
-interface LoadingResource {
-    name: string;
-    url: string;
-    response: Promise<Response>;
-}
 
 declare type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;

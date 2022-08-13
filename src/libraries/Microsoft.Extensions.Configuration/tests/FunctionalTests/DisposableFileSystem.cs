@@ -14,9 +14,13 @@ namespace Microsoft.Extensions.Configuration.Test
 
         public DisposableFileSystem()
         {
-            RootPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            CreateFolder("");
-            DirectoryInfo = new DirectoryInfo(RootPath);
+#if NETCOREAPP
+            DirectoryInfo = Directory.CreateTempSubdirectory();
+#else
+            DirectoryInfo = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            DirectoryInfo.Create();
+#endif
+            RootPath = DirectoryInfo.FullName;
         }
 
         public string RootPath { get; }

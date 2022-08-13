@@ -5,14 +5,15 @@
 1. Define a `write_at` method. By default it is:
 
 ```
+[JSExport]
 [MethodImpl(MethodImplOptions.NoInlining)]
- public static void StopProfile(){}
+public static void StopProfile(){}
 ```
 
 2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
-await createDotnetRuntime(() => ({
+await createDotnetRuntime({
     onConfigLoaded: () => {
         if (config.enableProfiler) {
             config.aotProfilerOptions = {
@@ -21,12 +22,15 @@ await createDotnetRuntime(() => ({
             }
         }
     },
-}));
+});
 ```
 
 3. Call the `write_at` method at the end of the app, either in C# or in JS. To call the `write_at` method in JS, make use of bindings:
 
-`BINDING.bind_static_method("<[ProjectName] Namespace.Class::StopProfile">)();`
+```
+const exports = await getAssemblyExports("<ProjectName>");
+exports.<Namespace.Class.StopProfile>();
+```
 
 When the `write_at` method is called, the `send_to` method `DumpAotProfileData` stores the profile data into `INTERNAL.aotProfileData`
 

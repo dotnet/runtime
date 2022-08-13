@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool CanHaveMetadata => true;
         internal override bool SupportsCreateObjectDelegate => true;
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
@@ -413,7 +413,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void ReadPropertyValue(
             object obj,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonPropertyInfo jsonPropertyInfo,
             bool useExtensionProperty)
@@ -442,7 +442,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.EndProperty();
         }
 
-        protected static bool ReadAheadPropertyValue(ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
+        protected static bool ReadAheadPropertyValue(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
         {
             // Returning false below will cause the read-ahead functionality to finish the read.
             state.Current.PropertyState = StackFramePropertyState.ReadValue;

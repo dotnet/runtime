@@ -281,8 +281,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 GenAnalysis::EnableGenerationalAwareSession();
 #endif
             }
+
             // Writing an empty file to indicate completion
-            fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
+            WCHAR outputPath[MAX_PATH];
+            LPCWSTR outputPathReplaced = ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
+            fclose(_wfopen(outputPathReplaced, W("w+")));
         }
 
         if (!bPriorityBoosted)

@@ -196,7 +196,6 @@ protected:
     void*     coldCodePtr;
     void*     consPtr;
 
-#ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
 
@@ -204,7 +203,6 @@ protected:
     const char* genInsDisplayName(emitter::instrDesc* id);
 
     static const char* genSizeStr(emitAttr size);
-#endif // DEBUG
 
     void genInitialize();
 
@@ -1050,7 +1048,9 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditional(GenTreeConditional* tree);
+    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
+    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForSelect(GenTreeConditional* tree);
 #endif
     void genIntrinsic(GenTree* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
@@ -1715,9 +1715,8 @@ public:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_ARM64
-    static insCond InsCondForCompareOp(GenTree* tree);
-    static insCond InvertInsCond(insCond cond);
-    static insCflags InsCflagsForCcmp(insCond cond);
+    static insCflags InsCflagsForCcmp(GenCondition cond);
+    static insCond JumpKindToInsCond(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64

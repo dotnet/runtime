@@ -19,6 +19,9 @@ namespace System.Threading.RateLimiting
         private long? _idleSince;
         private bool _disposed;
 
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
+
         private readonly Timer? _renewTimer;
         private readonly FixedWindowRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -81,7 +84,17 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _requestCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            ThrowIfDisposed();
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = _requestCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
         protected override RateLimitLease AttemptAcquireCore(int requestCount)
@@ -100,9 +113,11 @@ namespace System.Threading.RateLimiting
                 // Requests will be allowed if the total served request is less than the max allowed requests (permit limit).
                 if (_requestCount > 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedWindowLease(requestCount);
             }
 
@@ -113,6 +128,7 @@ namespace System.Threading.RateLimiting
                     return lease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedWindowLease(requestCount);
             }
         }
@@ -131,6 +147,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulAcquisition if requestCount is 0 and resources are available
             if (requestCount == 0 && _requestCount > 0)
             {
+                Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
@@ -157,11 +174,16 @@ namespace System.Threading.RateLimiting
                             {
                                 _queueCount += oldestRequest.Count;
                             }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < requestCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(CreateFailedWindowLease(requestCount));
                     }
@@ -204,6 +226,7 @@ namespace System.Threading.RateLimiting
             {
                 if (requestCount == 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     // Edge case where the check before the lock showed 0 available permit counters but when we got the lock, some permits were now available
                     lease = SuccessfulLease;
                     return true;
@@ -216,6 +239,7 @@ namespace System.Threading.RateLimiting
                     _idleSince = null;
                     _requestCount -= requestCount;
                     Debug.Assert(_requestCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = SuccessfulLease;
                     return true;
                 }
@@ -313,6 +337,10 @@ namespace System.Threading.RateLimiting
                             _requestCount += nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref _successfulLeasesCount);
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

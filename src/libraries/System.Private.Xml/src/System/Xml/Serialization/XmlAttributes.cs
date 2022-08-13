@@ -76,6 +76,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlAttributes(ICustomAttributeProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
             object[] attrs = provider.GetCustomAttributes(false);
 
             // most generic <any/> matches everything

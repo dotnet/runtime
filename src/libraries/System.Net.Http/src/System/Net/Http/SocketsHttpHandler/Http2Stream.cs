@@ -108,7 +108,7 @@ namespace System.Net.Http
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
-                    if (_request.IsWebSocketH2Request())
+                    if (_request.IsExtendedConnectRequest)
                     {
                         _requestBodyCancellationSource = new CancellationTokenSource();
                     }
@@ -637,7 +637,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
+                        if (statusCode == 200 && _response.RequestMessage!.IsExtendedConnectRequest)
                         {
                             ConnectProtocolEstablished = true;
                         }

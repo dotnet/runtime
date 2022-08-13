@@ -1,5 +1,6 @@
 parameters:
   alwaysRun: false
+  buildAndRunWasi: false
   extraBuildArgs: ''
   extraHelixArgs: ''
   isExtraPlatformsBuild: false
@@ -44,12 +45,21 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
+          eq(variables['wasmDarcDependenciesChanged'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
       extraStepsParameters:
+        additionalSteps:
+          - ${{ if eq(parameters.buildAndRunWasi, true) }}:
+            - script: >-
+                make -C src/mono/wasi provision-deps all &&
+                make -C src/mono/wasi/sample/console run
+              name: build_wasi
+              displayName: Build Wasi, and run a sample
+
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}

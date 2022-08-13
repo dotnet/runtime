@@ -86,6 +86,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_MkNod)
     DllImportEntry(SystemNative_GetDeviceIdentifiers)
     DllImportEntry(SystemNative_MkFifo)
+    DllImportEntry(SystemNative_MkdTemp)
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)

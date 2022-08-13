@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
@@ -634,8 +633,6 @@ namespace System.Text.Json.Serialization.Metadata
             return new CustomJsonTypeInfo<T>(converter, options);
         }
 
-        private static MethodInfo? s_createJsonTypeInfo;
-
         /// <summary>
         /// Creates a blank <see cref="JsonTypeInfo"/> instance.
         /// </summary>
@@ -673,9 +670,25 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
-            return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
-                .InvokeNoWrapExceptions(null, new object[] { options })!;
+            JsonTypeInfo jsonTypeInfo;
+            JsonConverter converter = DefaultJsonTypeInfoResolver.GetConverterForType(type, options, resolveJsonConverterAttribute: false);
+
+            if (converter.TypeToConvert == type)
+            {
+                // For performance, avoid doing a reflection-based instantiation
+                // if the converter type matches that of the declared type.
+                jsonTypeInfo = converter.CreateCustomJsonTypeInfo(options);
+            }
+            else
+            {
+                Type jsonTypeInfoType = typeof(CustomJsonTypeInfo<>).MakeGenericType(type);
+                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { converter, options })!;
+            }
+
+            Debug.Assert(jsonTypeInfo.Type == type);
+            return jsonTypeInfo;
         }
 
         /// <summary>

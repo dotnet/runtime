@@ -99,24 +99,57 @@ export interface ResourceRequest {
     hash?: string;
 }
 
+export interface LoadingResource {
+    name: string;
+    url: string;
+    response: Promise<Response>;
+}
+
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry extends ResourceRequest {
-    virtualPath?: string, // if specified, overrides the path of the asset in the virtual filesystem and similar data structures once loaded.
+    /**
+     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
+     */
+    virtualPath?: string,
+    /**
+     * Culture code
+     */
     culture?: string,
-    loadRemote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remoteSources.
-    isOptional?: boolean // if true, any failure to load this asset will be ignored.
-    buffer?: ArrayBuffer // if provided, we don't have to fetch it
-    pending?: LoadingResource // if provided, we don't have to start fetching it
+    /**
+     * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
+     */
+    loadRemote?: boolean, // 
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean
+    /**
+     * If provided, runtime doesn't have to fetch the data. 
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource
+}
+
+export interface AssetEntryInternal extends AssetEntry {
+    // this is almost the same as pendingDownload, but it could have multiple values in time, because of re-try download logic
+    pendingDownloadInternal?: LoadingResource
 }
 
 export type AssetBehaviours =
     "resource" // load asset as a managed resource assembly
-    | "assembly" // load asset as a managed assembly 
+    | "assembly" // load asset as a managed assembly
     | "pdb" // load asset as a managed debugging information
     | "heap" // store asset into the native heap
     | "icu" // load asset as an ICU data archive
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
-    | "dotnetwasm"; // the binary of the dotnet runtime
+    | "dotnetwasm" // the binary of the dotnet runtime
+    | "js-module-crypto" // the javascript module for subtle crypto
+    | "js-module-threads" // the javascript module for threads
 
 export type RuntimeHelpers = {
     runtime_interop_module: MonoAssembly;
@@ -128,6 +161,7 @@ export type RuntimeHelpers = {
     mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
+    mono_wasm_symbols_are_ready: boolean;
 
     loaded_files: string[];
     maxParallelDownloads: number;
@@ -159,30 +193,6 @@ export type CoverageProfilerOptions = {
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
-/// Options to configure EventPipe sessions that will be created and started at runtime startup
-export type DiagnosticOptions = {
-    /// An array of sessions to start at runtime startup
-    sessions?: EventPipeSessionOptions[],
-    /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
-    server?: DiagnosticServerOptions,
-}
-
-/// Options to configure the event pipe session
-/// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
-export interface EventPipeSessionOptions {
-    /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
-    /// This is required for some use cases, and may allow some tools to better understand the events.
-    collectRundownEvents?: boolean;
-    /// The providers that will be used by this session.
-    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
-    providers: string;
-}
-
-/// Options to configure the diagnostic server
-export type DiagnosticServerOptions = {
-    connectUrl: string, // websocket URL to connect to.
-    suspend: string | boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
-}
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 
@@ -218,13 +228,6 @@ export type DotnetModuleConfigImports = {
     };
     url?: any;
 }
-
-export interface LoadingResource {
-    name: string;
-    url: string;
-    response: Promise<Response>;
-}
-
 
 // see src\mono\wasm\runtime\rollup.config.js
 // inline this, because the lambda could allocate closure on hot path otherwise
@@ -358,6 +361,9 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
     call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
+
+    // the marshaled signature is: void InstallSynchronizationContext()
+    install_synchronization_context(): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;

@@ -791,10 +791,7 @@ namespace System.Net.Security.Tests
                 serverChain = _certificates.serverChain;
             }
 
-            // TODO: line below is wrong, but it breaks on Mac, it should be
-            // serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73295")]
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
