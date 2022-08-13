@@ -8,6 +8,7 @@ namespace System.Reflection.Context.Tests
 {
     internal class TestCustomReflectionContext : CustomReflectionContext
     {
+        
         private readonly Dictionary<string, object> _properties = new Dictionary<string, object>
         {
             { "text", "abc" },
@@ -110,6 +111,18 @@ namespace System.Reflection.Context.Tests
                 yield return CreateProperty(numberType, "number2", null, (a, b) => { });
                 yield return CreateProperty(numberType, "number3", _ => 42, null);
             }
+
+            if (type.BaseType == typeof(TestObject))
+            {
+                Type numberType = MapType(typeof(int).GetTypeInfo());
+                yield return CreateProperty(numberType, "number", _ => 42, (a, b) => { },
+                    new Attribute[] { new TestPropertyAttribute() },
+                    new Attribute[] { new TestGetterSetterAttribute() },
+                    new Attribute[] { new TestGetterSetterAttribute() });
+
+                yield return CreateProperty(numberType, "number2", null, (a, b) => { });
+                yield return CreateProperty(numberType, "number3", _ => 42, null);
+            }
         }
     }
 
@@ -146,6 +159,14 @@ namespace System.Reflection.Context.Tests
             set { }
         }
 
+    }
+
+    internal class SecondTestObject : TestObject
+    {
+        public SecondTestObject(string a) : base(a)
+        {
+
+        }
     }
 
     internal class TestAttribute : Attribute

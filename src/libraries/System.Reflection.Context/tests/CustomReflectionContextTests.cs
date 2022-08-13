@@ -35,6 +35,7 @@ namespace System.Reflection.Context.Tests
         {
             var customReflectionContext = new TestCustomReflectionContext();
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
+            
 
             TypeInfo customTypeInfo = customReflectionContext.MapType(typeInfo);
             MemberInfo customMemberInfo = customTypeInfo.GetDeclaredMethod("GetMessage");
@@ -50,6 +51,7 @@ namespace System.Reflection.Context.Tests
         {
             var customReflectionContext = new TestCustomReflectionContext();
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
+            var memberInfo = typeInfo.GetMember("GetMessage")[0];
 
             TypeInfo customTypeInfo = customReflectionContext.MapType(typeInfo);
             ConstructorInfo ctor = customTypeInfo.GetConstructor(new Type[] { typeof(string) });
