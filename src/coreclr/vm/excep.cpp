@@ -6533,6 +6533,31 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
+struct HandleManagedFaultParam
+{
+    EXCEPTION_RECORD *pExceptionRecord;
+    CONTEXT *pContext;
+};
+
+LONG FixContextForFaultingExceptionFrame(EXCEPTION_POINTERS* ep, LPVOID pv)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HandleManagedFaultParam *pParam = (HandleManagedFaultParam *) pv;
+
+    // don't copy param args as have already supplied them on the throw
+    memcpy((void*) ep->ExceptionRecord,
+           (void*) pParam->pExceptionRecord,
+           offsetof(EXCEPTION_RECORD, ExceptionInformation)
+          );
+
+    ReplaceExceptionContextRecord(ep->ContextRecord, pParam->pContext);
+
+    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
@@ -6548,8 +6573,26 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
 
-    RaiseException(pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
-        pExceptionRecord->NumberParameters, pExceptionRecord->ExceptionInformation);
+    HandleManagedFaultParam param;
+    param.pExceptionRecord = pExceptionRecord;
+    param.pContext = pContext;
+
+    PAL_TRY(HandleManagedFaultParam *, pParam, &param)
+    {
+        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+
+        EXCEPTION_RECORD *pRecord = pParam->pExceptionRecord;
+
+        RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
+            pRecord->NumberParameters, pRecord->ExceptionInformation);
+    }
+    PAL_EXCEPT_FILTER (FixContextForFaultingExceptionFrame)
+    {
+    }
+    PAL_ENDTRY
+
+    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
