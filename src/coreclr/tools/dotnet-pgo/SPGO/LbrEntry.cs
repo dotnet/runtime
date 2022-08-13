@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public Span<LbrEntry32> Entries(int totalSize)
         {
             IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData32, byte>(ref this), ref Unsafe.As<LbrEntry32, byte>(ref _entries));
-            return MemoryMarshal.CreateSpan(ref _entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry32));
+            return MemoryMarshal.CreateSpan(ref Unsafe.AsRef<LbrEntry32>(Unsafe.AsPointer(ref _entries)), (totalSize - (int)entriesOffset) / sizeof(LbrEntry32));
         }
     }
 
@@ -74,7 +74,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public Span<LbrEntry64> Entries(int totalSize)
         {
             IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData64, byte>(ref this), ref Unsafe.As<LbrEntry64, byte>(ref _entries));
-            return MemoryMarshal.CreateSpan(ref _entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry64));
+            return MemoryMarshal.CreateSpan(ref Unsafe.AsRef<LbrEntry64>(Unsafe.AsPointer(ref _entries)), (totalSize - (int)entriesOffset) / sizeof(LbrEntry64));
         }
     }
 }
