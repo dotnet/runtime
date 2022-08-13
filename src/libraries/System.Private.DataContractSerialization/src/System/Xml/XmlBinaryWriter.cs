@@ -807,28 +807,8 @@ namespace System.Xml
 
         public override void WriteDateTimeText(DateTime dt)
         {
-            WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, ToBinary(dt));
+            WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, dt.ToBinary());
         }
-        private static long ToBinary(DateTime dt)
-        {
-            long temp = 0;
-            switch (dt.Kind)
-            {
-                case DateTimeKind.Local:
-                    temp |= -9223372036854775808L; // 0x8000000000000000
-                    temp |= dt.ToUniversalTime().Ticks;
-                    break;
-                case DateTimeKind.Utc:
-                    temp |= 0x4000000000000000L;
-                    temp |= dt.Ticks;
-                    break;
-                case DateTimeKind.Unspecified:
-                    temp = dt.Ticks;
-                    break;
-            }
-            return temp;
-        }
-
 
         public override void WriteUniqueIdText(UniqueId value)
         {
@@ -906,7 +886,7 @@ namespace System.Xml
             WriteArrayInfo(XmlBinaryNodeType.DateTimeTextWithEndElement, count);
             for (int i = 0; i < count; i++)
             {
-                WriteInt64(ToBinary(array[offset + i]));
+                WriteInt64(array[offset + i].ToBinary());
             }
         }
 
@@ -1185,7 +1165,6 @@ namespace System.Xml
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            // WriteEndArray();
         }
 
         private unsafe void UnsafeWriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
@@ -1193,7 +1172,6 @@ namespace System.Xml
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            // WriteEndArray();
         }
 
         private static void CheckArray(Array array, int offset, int count)
@@ -1212,6 +1190,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1226,6 +1209,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1240,6 +1228,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1254,6 +1247,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1268,6 +1266,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1282,6 +1285,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1296,6 +1304,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1310,6 +1323,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1324,6 +1342,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1338,6 +1361,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1352,6 +1380,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1366,6 +1399,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1380,6 +1418,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1394,6 +1437,11 @@ namespace System.Xml
 
         public override unsafe void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
@@ -1409,26 +1457,34 @@ namespace System.Xml
         // DateTime
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }
@@ -1436,26 +1492,34 @@ namespace System.Xml
         // Guid
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }
@@ -1463,26 +1527,34 @@ namespace System.Xml
         // TimeSpan
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
+            if (Signing)
+            {
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
             {
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    // WriteEndArray();
                 }
             }
         }

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -153,6 +152,120 @@ namespace Wasm.Build.Tests
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [BuildAndRun(host: RunHost.None)]
+        public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
+        {
+            // Build a library containing icalls with overloaded parameters.
+
+            string code =
+            """
+            using System;
+            using System.Runtime.CompilerServices;
+
+            public static class Interop
+            {
+                public enum Numbers { A, B, C, D }
+
+                [MethodImplAttribute(MethodImplOptions.InternalCall)]
+                internal static extern void Square(Numbers x);
+
+                [MethodImplAttribute(MethodImplOptions.InternalCall)]
+                internal static extern void Square(Numbers x, Numbers y);
+
+                public static void Main()
+                {
+                    // Noop
+                }
+            }
+            """;
+
+            var libraryBuildArgs = ExpandBuildArgs(
+                buildArgs with { ProjectName = $"icall_enum_library_{buildArgs.Config}_{id}" }
+            );
+
+            (string libraryDir, string output) = BuildProject(
+                libraryBuildArgs,
+                id: id + "library",
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                    },
+                    Publish: false,
+                    DotnetWasmFromRuntimePack: false,
+                    AssertAppBundle: false
+                )
+            );
+
+            // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h bellow.
+
+            string projectCode =
+            """
+            <Project>
+                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
+                <Target Name="Build">
+                  <PropertyGroup>
+                    <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
+                    <WasmInterpToNativeTablePath>wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+                    <WasmRuntimeICallTablePath>runtime-icall-table.h</WasmRuntimeICallTablePath>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <WasmPInvokeModule Include="libSystem.Native" />
+                    ###WasmPInvokeModule###
+                  </ItemGroup>
+
+                  <ManagedToNativeGenerator
+                    Assemblies="@(WasmPInvokeAssembly)"
+                    PInvokeModules="@(WasmPInvokeModule)"
+                    PInvokeOutputPath="$(WasmPInvokeTablePath)"
+                    RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
+                    InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+                    <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+                  </ManagedToNativeGenerator>
+                </Target>
+            </Project>
+            """;
+
+            string AddAssembly(string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(libraryDir, "bin", buildArgs.Config, DefaultTargetFramework, "browser-wasm", name + ".dll")}\" />";
+
+            string icallTable =
+            """
+            [
+             { "klass":"Interop", "icalls": [{} 	,{ "name": "Square(Numbers)", "func": "ves_abc", "handles": false }
+            	,{ "name": "Add(Numbers,Numbers)", "func": "ves_def", "handles": false }
+            ]}
+            ]
+            
+            """;
+
+            projectCode = projectCode
+                .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
+                .Replace("###WasmAppBuilder###", Path.Combine(s_buildEnv.WorkloadPacksDir, "Microsoft.NET.Runtime.WebAssembly.Sdk", s_buildEnv.WorkloadPacksVersion, "tasks", DefaultTargetFramework, "WasmAppBuilder.dll"));
+
+            buildArgs = buildArgs with { ProjectName = $"icall_enum_{buildArgs.Config}_{id}", ProjectFileContents = projectCode };
+
+            _projectDir = null;
+
+            (_, output) = BuildProject(
+                buildArgs,
+                id: id + "tasks",
+                new BuildProjectOptions(
+                    InitProject: () =>
+                    {
+                        File.WriteAllText(Path.Combine(_projectDir!, "runtime-icall-table.h"), icallTable);
+                    },
+                    Publish: buildArgs.AOT,
+                    DotnetWasmFromRuntimePack: false,
+                    UseCache: false,
+                    AssertAppBundle: false
+                )
+            );
+
+            Assert.DoesNotMatch(".*warning.*Numbers", output);
         }
 
         [Theory]
