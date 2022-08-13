@@ -6533,60 +6533,6 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-struct SavedExceptionInfo
-{
-    EXCEPTION_RECORD m_ExceptionRecord;
-    CONTEXT m_ExceptionContext;
-    CrstStatic m_Crst;
-
-    void SaveExceptionRecord(EXCEPTION_RECORD *pExceptionRecord)
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t erSize = offsetof(EXCEPTION_RECORD, ExceptionInformation) +
-            pExceptionRecord->NumberParameters * sizeof(pExceptionRecord->ExceptionInformation[0]);
-        memcpy(&m_ExceptionRecord, pExceptionRecord, erSize);
-
-    }
-
-    void SaveContext(CONTEXT *pContext)
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef CONTEXT_EXTENDED_REGISTERS
-
-        size_t contextSize = offsetof(CONTEXT, ExtendedRegisters);
-        if ((pContext->ContextFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
-            contextSize += sizeof(pContext->ExtendedRegisters);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#else // !CONTEXT_EXTENDED_REGISTERS
-
-        size_t contextSize = sizeof(CONTEXT);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#endif // !CONTEXT_EXTENDED_REGISTERS
-    }
-
-    DEBUG_NOINLINE void Enter()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Enter();
-    }
-
-    DEBUG_NOINLINE void Leave()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Leave();
-    }
-
-    void Init()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Crst.Init(CrstSavedExceptionInfo, CRST_UNSAFE_ANYMODE);
-    }
-};
-
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
@@ -6602,9 +6548,8 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
 
-    SEHException exception(pExceptionRecord);
-    OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
-    RaiseTheExceptionInternalOnly(managedException, FALSE);
+    RaiseException(pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
+        pExceptionRecord->NumberParameters, pExceptionRecord->ExceptionInformation);
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7439,18 +7384,9 @@ public:
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {
     //
-    // HandleManagedFault will take a Crst that causes an unbalanced
-    // notrigger scope, and this contract will whack the thread's
-    // ClrDebugState to what it was on entry in the dtor, which causes
-    // us to assert when we finally release the Crst later on.
+    // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
+    // static contracts, but currently this is all WRAPPER_NO_CONTRACT.
     //
-//    CONTRACTL
-//    {
-//        NOTHROW;
-//        GC_NOTRIGGER;
-//        MODE_ANY;
-//    }
-//    CONTRACTL_END;
 
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -7574,7 +7510,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         if (currentStackBase != stopPoint)
         {
             CantAllocHolder caHolder;
-            STRESS_LOG2(LF_EH, LL_INFO100, "In CLRVectoredExceptionHandler: mismatch of cached and current stack-base indicating use of Fibers, return with EXCEPTION_CONTINUE_SEARCH: current = %p; cache = %p\n",
+            STRESS_LOG2(LF_EH, LL_INFO100, "CLRVectoredExceptionShim: mismatch of cached and current stack-base "
+                "indicating use of Fibers, return with EXCEPTION_CONTINUE_SEARCH: current = %p; cache = %p\n",
                 currentStackBase, stopPoint);
             return EXCEPTION_CONTINUE_SEARCH;
         }
@@ -10581,7 +10518,6 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
 
 // Given an exception code, this method returns a BOOL to indicate if the
 // code belongs to a corrupting exception or not.
-/* static */
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
 {
     CONTRACTL
