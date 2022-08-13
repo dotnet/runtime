@@ -60,6 +60,9 @@ namespace Wasm.Build.Tests
             if (!Directory.Exists(sdkForWorkloadPath))
                 throw new Exception($"Could not find SDK_FOR_WORKLOAD_TESTING_PATH={sdkForWorkloadPath}");
 
+            if (!Path.IsPathRooted(sdkForWorkloadPath))
+                sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
+
             EnvVars = new Dictionary<string, string>();
             bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
             if (workloadInstalled)
@@ -71,7 +74,7 @@ namespace Wasm.Build.Tests
                 WorkloadPacksDir = Path.Combine(sdkForWorkloadPath, "packs");
                 WorkloadPacksVersion = workloadPacksVersion;
 
-                RuntimePackDir = Path.Combine(sdkForWorkloadPath, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", WorkloadPacksVersion);
+                RuntimePackDir = Path.Combine(WorkloadPacksDir, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", WorkloadPacksVersion);
                 DirectoryBuildPropsContents = s_directoryBuildPropsForWorkloads;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForWorkloads;
 
