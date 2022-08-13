@@ -555,7 +555,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
-                _allowedReadLineBytes = (int)Math.Min(int.MaxValue, _pool.Settings._maxResponseHeadersLength * 1024L);
+                _allowedReadLineBytes = _pool.Settings.MaxResponseHeadersByteLength;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -1550,7 +1550,7 @@ namespace System.Net.Http
             }
 
             string message = readingHeader
-                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L)
+                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength)
                 : SR.net_http_chunk_too_large;
 
             throw new HttpRequestException(message);
@@ -1651,7 +1651,7 @@ namespace System.Net.Http
         {
             if (_allowedReadLineBytes < 0)
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L));
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
             }
         }
 
