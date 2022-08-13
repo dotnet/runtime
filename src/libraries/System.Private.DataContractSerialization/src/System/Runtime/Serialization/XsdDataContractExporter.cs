@@ -62,7 +62,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void Export(ICollection<Assembly> assemblies)
         {
             ArgumentNullException.ThrowIfNull(assemblies);
@@ -90,7 +89,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void Export(ICollection<Type> types)
         {
             ArgumentNullException.ThrowIfNull(types);
@@ -115,7 +113,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void Export(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -134,7 +131,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -149,7 +145,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public XmlSchemaType? GetSchemaType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -164,7 +159,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public XmlQualifiedName? GetRootElementName(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -193,7 +187,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static void CheckAndAddType(Type type)
         {
             type = GetSurrogatedType(type);
@@ -202,14 +195,12 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static void AddType(Type type)
         {
             DataContractSet.Add(type);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void Export()
         {
             AddKnownTypes();
@@ -218,7 +209,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddKnownTypes()
         {
             if (Options != null)
@@ -239,7 +229,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public bool CanExport(ICollection<Assembly> assemblies)
         {
             ArgumentNullException.ThrowIfNull(assemblies);
@@ -272,7 +261,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public bool CanExport(ICollection<Type> types)
         {
             ArgumentNullException.ThrowIfNull(types);
@@ -302,7 +290,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public bool CanExport(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);

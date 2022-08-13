@@ -90,7 +90,6 @@ namespace System.Runtime.Serialization
         internal DataContract MemberTypeContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             { return _helper.MemberTypeContract; }
         }
@@ -98,7 +97,6 @@ namespace System.Runtime.Serialization
         internal PrimitiveDataContract? MemberPrimitiveContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 return _helper.MemberPrimitiveContract;
@@ -212,7 +210,6 @@ namespace System.Runtime.Serialization
             internal DataContract MemberTypeContract
             {
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 get
                 {
                     if (_memberTypeContract == null)
@@ -252,7 +249,6 @@ namespace System.Runtime.Serialization
             internal PrimitiveDataContract? MemberPrimitiveContract
             {
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 get
                 {
                     if (_memberPrimitiveContract == PrimitiveDataContract.NullContract)

@@ -19,7 +19,6 @@ namespace System.Runtime.Serialization
         private const string NsSeparator = ":";
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, out XmlNamespaceManager namespaces)
         {
             return CreateFromDataContractSerializer(type, pathToMember, null, out namespaces);
@@ -27,7 +26,6 @@ namespace System.Runtime.Serialization
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -56,7 +54,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static DataContract ProcessDataContract(DataContract contract, ExportContext context, MemberInfo memberNode)
         {
             if (contract is ClassDataContract)
@@ -67,7 +64,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
         {
             string prefix = context.SetNamespace(contract.Namespace!.Value);

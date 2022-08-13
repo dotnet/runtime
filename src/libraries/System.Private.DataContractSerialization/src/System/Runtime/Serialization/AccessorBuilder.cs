@@ -27,7 +27,6 @@ namespace System.Runtime.Serialization
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "The call to MakeGenericMethod is safe due to the fact that we are preserving the constructors of type which is what Make() is doing.")]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public static Func<object> GetMakeNewInstanceFunc(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type type)
@@ -67,9 +66,7 @@ namespace System.Runtime.Serialization
                 // Only JIT if dynamic code is supported.
                 if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                 {
-#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported
                     var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(declaringType, propertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                     return createGetterGeneric(propInfo);
                 }
                 else
@@ -124,9 +121,7 @@ namespace System.Runtime.Serialization
                     // Only JIT if dynamic code is supported.
                     if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                     {
-#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported
                         var createSetterGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                         return createSetterGeneric(propInfo);
                     }
                     else

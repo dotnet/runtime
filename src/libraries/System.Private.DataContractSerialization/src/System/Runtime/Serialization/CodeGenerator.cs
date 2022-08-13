@@ -121,7 +121,6 @@ namespace System.Runtime.Serialization
             InitILGeneration(methodName, argTypes);
         }
 
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
             MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
@@ -133,7 +132,6 @@ namespace System.Runtime.Serialization
             _delegateType = delegateType;
         }
 
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void BeginMethod(Type returnType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
             _dynamicMethod = new DynamicMethod(methodName, returnType, argTypes, SerializationModule, allowPrivateMemberAccess);

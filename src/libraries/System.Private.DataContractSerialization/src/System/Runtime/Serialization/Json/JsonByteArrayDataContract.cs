@@ -13,14 +13,12 @@ namespace System.Runtime.Serialization.Json
     internal sealed class JsonByteArrayDataContract : JsonDataContract
     {
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public JsonByteArrayDataContract(ByteArrayDataContract traditionalByteArrayDataContract)
             : base(traditionalByteArrayDataContract)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             if (context == null)
