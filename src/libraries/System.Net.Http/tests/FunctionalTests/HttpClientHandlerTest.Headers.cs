@@ -589,22 +589,5 @@ namespace System.Net.Http.Functional.Tests
                 });
             });
         }
-
-        [Fact]
-        public async Task SendAsync_HighMaxResponseHeadersLengthValueSet_DoesNotOverflow()
-        {
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-            {
-                using var handler = CreateHttpClientHandler();
-                handler.MaxResponseHeadersLength = int.MaxValue / 800; // Since the setting is in KB, we should be capping it to int.MaxValue internally
-
-                using var client = CreateHttpClient(handler);
-                await client.GetAsync(uri);
-            },
-            async server =>
-            {
-                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", "Bar") });
-            });
-        }
     }
 }
