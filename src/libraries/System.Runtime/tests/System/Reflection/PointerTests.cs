@@ -29,6 +29,8 @@ namespace System.Reflection.Tests
         {
             return Pointer.Box((byte*)expected, typeof(byte*));
         }
+
+        public static void MethodWithVoidPointer(void* vp) { }
     }
 
     unsafe delegate void MethodDelegate(byte* ptr, int expected);
@@ -218,6 +220,25 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Method");
             method.Invoke(obj, new object[] { (IntPtr)value, value });
+        }
+
+        public static IEnumerable<object[]> PointersUInt =>
+            new[]
+            {
+                new object[] { UIntPtr.Zero },
+                new object[] { 0 },
+                new object[] { 1 },
+                new object[] { uint.MinValue },
+                new object[] { uint.MaxValue },
+            };
+
+        [Theory]
+        [MemberData(nameof(PointersUInt))]
+        public void UIntPtrMethodParameter(uint value)
+        {
+            var obj = new PointerHolder();
+            MethodInfo method = typeof(PointerHolder).GetMethod(nameof(PointerHolder.MethodWithVoidPointer));
+            method.Invoke(obj, new object[] { (UIntPtr)value });
         }
 
         [Theory]
