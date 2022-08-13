@@ -470,6 +470,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Speech\tests\System.Speech.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.DirectoryServices\tests\System.DirectoryServices.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.DirectoryServices.AccountManagement\tests\System.DirectoryServices.AccountManagement.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
 
     <!-- Uses something weird for testing ("Stashbox"), doesn't work without Ref.Emit at all -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.External.Tests\Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
