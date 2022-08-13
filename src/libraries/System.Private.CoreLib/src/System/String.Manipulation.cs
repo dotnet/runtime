@@ -1833,7 +1833,6 @@ namespace System
 
             if (length == 0)
             {
-                Debug.Assert(startIndex == Length);
                 return Empty;
             }
 
