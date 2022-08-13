@@ -425,28 +425,28 @@
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.net6.win-x64"
+          "any": "Microsoft.NETCore.App.Runtime.win-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-x86" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.net6.win-x86"
+          "any": "Microsoft.NETCore.App.Runtime.win-x86"
       }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-arm" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.net6.win-arm"
+          "any": "Microsoft.NETCore.App.Runtime.win-arm"
       }
     },
     "Microsoft.NETCore.App.Runtime.net6.win-arm64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.net6.win-arm64"
+          "any": "Microsoft.NETCore.App.Runtime.win-arm64"
       }
     }
   }
