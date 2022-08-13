@@ -116,14 +116,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-      <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
-      <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
-      <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
-
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(_PackageVersion).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
-                      BuildArgs="@(_DefaultPropsForNuGetBuild -> '-p:%(Identity)', ' ')"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
                       Descriptor="Ref pack"/>
 
       <!-- AOT Cross compiler -->
@@ -131,10 +126,11 @@
       <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
       <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
       <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
+      <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
 
       <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-                      BuildArgs="@(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ')"
+                      Properties="@(_PropsForAOTCrossBuild,';')"
                       Descriptor="AOT Cross compiler"/>
     </ItemGroup>
   </Target>
@@ -143,7 +139,13 @@
     <Message Importance="High" Text="
 ** Building %(_NuGetsToBuild.Descriptor) **
       " />
-    <Exec Command="dotnet build -bl -restore -v:q --nologo -t:Pack %(_NuGetsToBuild.BuildArgs) %(_NuGetsToBuild.Project)" />
+
+    <MSBuild Projects="%(_NuGetsToBuild.Project)"
+             Properties="%(_NuGetsToBuild.Properties)"
+             Targets="Restore" />
+    <MSBuild Projects="%(_NuGetsToBuild.Project)"
+             Properties="%(_NuGetsToBuild.Properties)"
+             Targets="Pack" />
   </Target>
 
   <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
@@ -158,7 +160,7 @@
       <_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
-      <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm$(_PackageVersion).nupkg</_DefaultRuntimePackNuGetPath>
+      <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm.$(_PackageVersion).nupkg</_DefaultRuntimePackNuGetPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -175,13 +177,13 @@
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.%(_BuildVariants.Identity).browser-wasm.$(_PackageVersion).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
-                      BuildArgs="@(_DefaultPropsForNuGetBuild -> '-p:%(Identity)', ' ') /p:MonoWasmBuildVariant=%(_BuildVariants.Identity)"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant=%(_BuildVariants.Identity)"
                       Descriptor="runtime pack for %(_BuildVariants.Identity)" />
 
       <!-- add for non-threaded runtime also -->
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.browser-wasm.$(_PackageVersion).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
-                      BuildArgs="@(_DefaultPropsForNuGetBuild -> '-p:%(Identity)', ' ')"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Descriptor="single threaded runtime pack"
                       Condition="'$(_DefaultBuildVariant)' != '.'" />
