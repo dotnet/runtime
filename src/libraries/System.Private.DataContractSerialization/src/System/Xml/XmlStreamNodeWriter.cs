@@ -13,7 +13,6 @@ namespace System.Xml
 {
     internal abstract class XmlStreamNodeWriter : XmlNodeWriter
     {
-        private Stream _stream = null!; // initialized by SetOutput
         private readonly byte[] _buffer;
         private int _offset;
         private bool _ownsStream;
@@ -25,15 +24,21 @@ namespace System.Xml
         protected XmlStreamNodeWriter()
         {
             _buffer = new byte[bufferLength];
+            OutputStream = null!; // Always initialized by SetOutput()
         }
 
         protected void SetOutput(Stream stream, bool ownsStream, Encoding? encoding)
         {
-            _stream = stream;
+            OutputStream = stream;
             _ownsStream = ownsStream;
             _offset = 0;
-            _encoding = encoding;
+
+            if (encoding != null)
+                _encoding = encoding;
         }
+
+        // Getting/Setting the Stream exists for fragmenting
+        public Stream OutputStream { get; set; }
 
         // StreamBuffer/BufferOffset exists only for the BinaryWriter to fix up nodes
         public byte[] StreamBuffer
@@ -55,7 +60,7 @@ namespace System.Xml
         {
             get
             {
-                return (int)_stream.Position + _offset;
+                return (int)OutputStream.Position + _offset;
             }
         }
 
@@ -216,7 +221,7 @@ namespace System.Xml
             else
             {
                 FlushBuffer();
-                _stream.Write(byteBuffer, byteOffset, byteCount);
+                OutputStream.Write(byteBuffer, byteOffset, byteCount);
             }
         }
 
@@ -228,14 +233,14 @@ namespace System.Xml
             {
                 for (int i = 0; i < bufferLength; i++)
                     buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, bufferLength);
+                OutputStream.Write(buffer, 0, bufferLength);
                 bytes += bufferLength;
                 byteCount -= bufferLength;
             }
             {
                 for (int i = 0; i < byteCount; i++)
                     buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, byteCount);
+                OutputStream.Write(buffer, 0, byteCount);
             }
         }
 
@@ -273,7 +278,7 @@ namespace System.Xml
             else
             {
                 FlushBuffer();
-                _stream.Write(chars, charOffset, charCount);
+                OutputStream.Write(chars, charOffset, charCount);
             }
         }
 
@@ -420,7 +425,7 @@ namespace System.Xml
         {
             if (_offset != 0)
             {
-                _stream.Write(_buffer, 0, _offset);
+                OutputStream.Write(_buffer, 0, _offset);
                 _offset = 0;
             }
         }
@@ -429,7 +434,7 @@ namespace System.Xml
         {
             if (_offset != 0)
             {
-                var task = _stream.WriteAsync(_buffer, 0, _offset);
+                var task = OutputStream.WriteAsync(_buffer, 0, _offset);
                 _offset = 0;
                 return task;
             }
@@ -440,24 +445,24 @@ namespace System.Xml
         public override void Flush()
         {
             FlushBuffer();
-            _stream.Flush();
+            OutputStream.Flush();
         }
 
         public override async Task FlushAsync()
         {
             await FlushBufferAsync().ConfigureAwait(false);
-            await _stream.FlushAsync().ConfigureAwait(false);
+            await OutputStream.FlushAsync().ConfigureAwait(false);
         }
 
         public override void Close()
         {
-            if (_stream != null)
+            if (OutputStream != null)
             {
                 if (_ownsStream)
                 {
-                    _stream.Dispose();
+                    OutputStream.Dispose();
                 }
-                _stream = null!;
+                OutputStream = null!;
             }
         }
     }

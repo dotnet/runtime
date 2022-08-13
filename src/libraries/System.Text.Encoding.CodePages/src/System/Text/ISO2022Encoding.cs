@@ -1803,8 +1803,7 @@ namespace System.Text
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our encoder?
@@ -1838,8 +1837,7 @@ namespace System.Text
                 bytesLeftOver = new byte[4];
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

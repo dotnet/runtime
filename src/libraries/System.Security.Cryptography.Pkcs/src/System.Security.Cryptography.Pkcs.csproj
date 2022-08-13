@@ -415,6 +415,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</Link>
     </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>

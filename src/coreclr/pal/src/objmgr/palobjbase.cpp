@@ -67,7 +67,7 @@ CPalObjectBase::Initialize(
         {
             ERROR("Unable to allocate immutable data\n");
             palError = ERROR_OUTOFMEMORY;
-            goto IntializeExit;
+            goto InitializeExit;
         }
     }
 
@@ -77,7 +77,7 @@ CPalObjectBase::Initialize(
         if (NO_ERROR != palError)
         {
             ERROR("Unable to initialize local data lock!\n");
-            goto IntializeExit;
+            goto InitializeExit;
         }
 
         m_pvLocalData = InternalMalloc(m_pot->GetProcessLocalDataSize());
@@ -89,7 +89,7 @@ CPalObjectBase::Initialize(
         {
             ERROR("Unable to allocate local data\n");
             palError = ERROR_OUTOFMEMORY;
-            goto IntializeExit;
+            goto InitializeExit;
         }
     }
 
@@ -98,7 +98,7 @@ CPalObjectBase::Initialize(
         palError = m_oa.sObjectName.CopyString(&poa->sObjectName);
     }
 
-IntializeExit:
+InitializeExit:
 
     LOGEXIT("CPalObjectBase::Initialize returns %d\n", palError);
 

@@ -247,12 +247,12 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     unsigned    lengthOut;
     unsigned    index;
     bool        match;
-    bool        subsitutionRequired;
+    bool        substitutionRequired;
     const char* pChar;
 
-    lengthOut           = 1;
-    subsitutionRequired = false;
-    pChar               = nameIn;
+    lengthOut            = 1;
+    substitutionRequired = false;
+    pChar                = nameIn;
     while (*pChar != '\0')
     {
         match = false;
@@ -268,7 +268,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         }
         if (match)
         {
-            subsitutionRequired = true;
+            substitutionRequired = true;
             lengthOut += (unsigned)strlen(map[index].sub);
         }
         else
@@ -278,7 +278,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         pChar++;
     }
 
-    if (subsitutionRequired)
+    if (substitutionRequired)
     {
         char* newName = getAllocator(CMK_DebugOnly).allocate<char>(lengthOut);
         char* pDest;
@@ -402,6 +402,22 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
         fgDumpTree(fgxFile, arr);
         fprintf(fgxFile, ".Length");
     }
+    else if (tree->OperIs(GT_MDARR_LENGTH))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLength(%u)", dim);
+    }
+    else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLowerBound(%u)", dim);
+    }
     else
     {
         fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
@@ -451,20 +467,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
 
 #ifdef DEBUG
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        dumpFunction =
-            JitConfig.NgenDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
-    }
-    else
-    {
-        dumpFunction =
-            JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
-    }
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+    filename     = JitConfig.JitDumpFgFile();
+    pathname     = JitConfig.JitDumpFgDir();
 
     prePhasePattern  = JitConfig.JitDumpFgPrePhase();
     postPhasePattern = JitConfig.JitDumpFgPhase();
@@ -712,9 +717,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_NgenDumpFg             Same as COMPlus_JitDumpFg, but for ngen compiles.
-//      COMPlus_NgenDumpFgDir          Same as COMPlus_JitDumpFgDir, but for ngen compiles.
-//      COMPlus_NgenDumpFgFile         Same as COMPlus_JitDumpFgFile, but for ngen compiles.
 //      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
@@ -983,7 +985,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
+            if (block->bbFlags & BBF_HAS_NEWOBJ)
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
@@ -3482,7 +3484,7 @@ void Compiler::fgDebugCheckBlockLinks()
     }
 }
 
-// UniquenessCheckWalker keeps data that is neccesary to check
+// UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has it is own unique id and they do not repeat.
 class UniquenessCheckWalker
 {

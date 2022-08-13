@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal sealed class AesManagedTransform : BasicSymmetricCipher, ILiteSymmetricCipher
     {
-        public const int BlockSizeBytes = 16; // 128 bits
+        private const int BlockSizeBytes = AesImplementation.BlockSizeBytes;
         private const int BlockSizeInts = BlockSizeBytes / 4;
 
         private readonly bool _encrypting;
@@ -30,13 +30,7 @@ namespace System.Security.Cryptography
             : base(iv: null, BlockSizeBytes, BlockSizeBytes)
         {
             Debug.Assert(BitConverter.IsLittleEndian, "The logic of casting Span<int> to Span<byte> below assumes little endian");
-
-            if (iv.IsEmpty)
-                throw new CryptographicException(SR.Cryptography_MissingIV);
-
-            // we only support the standard AES block size
-            if (iv.Length != BlockSizeBytes)
-                throw new CryptographicException(SR.Cryptography_InvalidIVSize);
+            Debug.Assert(iv.Length == BlockSizeBytes);
 
             _encrypting = encrypting;
             _Nr = GetNumberOfRounds(key);
@@ -331,7 +325,7 @@ namespace System.Security.Cryptography
             return (BlockSizeBytes > key.Length ? BlockSizeBytes : key.Length) switch
             {
                 16 => 10, // 128 bits
-                24 => 12, // 192 bits
+                // 24 => 12, // 192 bits is not supported by SubtleCrypto, so the managed implementation doesn't support it either
                 32 => 14, // 256 bits
                 _ => throw new CryptographicException(SR.Cryptography_InvalidKeySize)
             };

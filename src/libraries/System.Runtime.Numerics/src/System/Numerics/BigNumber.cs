@@ -288,6 +288,22 @@ namespace System.Numerics
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
 
         private static readonly uint[] s_uint32PowersOfTen = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+        internal enum ParsingStatus
+        {
+            OK,
+            Failed,
+            Overflow
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowOverflowOrFormatException(ParsingStatus status) => throw GetException(status);
+
+        private static Exception GetException(ParsingStatus status)
+        {
+            return status == ParsingStatus.Failed
+                ? new FormatException(SR.Overflow_ParseBigInteger)
+                : new OverflowException(SR.Overflow_ParseBigInteger);
+        }
 
         private struct BigNumberBuffer
         {
@@ -325,18 +341,18 @@ namespace System.Numerics
             return true;
         }
 
-        internal static bool TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static ParsingStatus TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (value == null)
             {
                 result = default;
-                return false;
+                return ParsingStatus.Failed;
             }
 
             return TryParseBigInteger(value.AsSpan(), style, info, out result);
         }
 
-        internal static bool TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
             {
@@ -347,7 +363,7 @@ namespace System.Numerics
             if (!FormatProvider.TryStringToBigInteger(value, style, info, bigNumber.digits, out bigNumber.precision, out bigNumber.scale, out bigNumber.sign))
             {
                 result = default;
-                return false;
+                return ParsingStatus.Failed;
             }
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
@@ -373,19 +389,22 @@ namespace System.Numerics
             {
                 throw e;
             }
-            if (!TryParseBigInteger(value, style, info, out BigInteger result))
+
+            ParsingStatus status = TryParseBigInteger(value, style, info, out BigInteger result);
+            if (status != ParsingStatus.OK)
             {
-                throw new FormatException(SR.Overflow_ParseBigInteger);
+                ThrowOverflowOrFormatException(status);
             }
+
             return result;
         }
 
-        private static bool HexNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static ParsingStatus HexNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
             if (number.digits == null || number.digits.Length == 0)
             {
                 result = default;
-                return false;
+                return ParsingStatus.Failed;
             }
 
             const int DigitsPerBlock = 8;
@@ -480,7 +499,7 @@ namespace System.Numerics
                 }
 
                 result = new BigInteger(sign, bits);
-                return true;
+                return ParsingStatus.OK;
             }
             finally
             {
@@ -499,7 +518,7 @@ namespace System.Numerics
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
         private static int s_naiveThreshold = 20000;
-        private static bool NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static ParsingStatus NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;
 
@@ -510,10 +529,17 @@ namespace System.Numerics
             const uint TenPowMaxPartial = 1000000000;
 
             int[]? arrayFromPoolForResultBuffer = null;
+
+            if (numberScale == int.MaxValue)
+            {
+                result = default;
+                return ParsingStatus.Overflow;
+            }
+
             if (numberScale < 0)
             {
                 result = default;
-                return false;
+                return ParsingStatus.Failed;
             }
 
             try
@@ -535,7 +561,7 @@ namespace System.Numerics
                 }
             }
 
-            bool Naive(ref BigNumberBuffer number, out BigInteger result)
+            ParsingStatus Naive(ref BigNumberBuffer number, out BigInteger result)
             {
                 Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
                 Span<uint> currentBuffer = stackBuffer;
@@ -547,7 +573,7 @@ namespace System.Numerics
                     if (!ProcessChunk(digitsChunk.Span, ref currentBuffer))
                     {
                         result = default;
-                        return false;
+                        return ParsingStatus.Failed;
                     }
                 }
 
@@ -557,7 +583,7 @@ namespace System.Numerics
                 }
 
                 result = NumberBufferToBigInteger(currentBuffer, number.sign);
-                return true;
+                return ParsingStatus.OK;
 
                 bool ProcessChunk(ReadOnlySpan<char> chunkDigits, ref Span<uint> currentBuffer)
                 {
@@ -619,7 +645,7 @@ namespace System.Numerics
                 }
             }
 
-            bool DivideAndConquer(ref BigNumberBuffer number, out BigInteger result)
+            ParsingStatus DivideAndConquer(ref BigNumberBuffer number, out BigInteger result)
             {
                 Span<uint> currentBuffer;
                 int[]? arrayFromPoolForMultiplier = null;
@@ -674,7 +700,7 @@ namespace System.Numerics
                             if (digitChar != '0')
                             {
                                 result = default;
-                                return false;
+                                return ParsingStatus.Failed;
                             }
                         }
                     }
@@ -696,7 +722,7 @@ namespace System.Numerics
                         // |  A + B * multiplier   |  C + D * multiplier   |
                         for (int i = 0; i < bufferSize; i += blockSize * 2)
                         {
-                            Span<uint> curBufffer = buffer.Slice(i);
+                            Span<uint> curBuffer = buffer.Slice(i);
                             Span<uint> curNewBuffer = newBuffer.Slice(i);
 
                             int len = Math.Min(bufferSize - i, blockSize * 2);
@@ -707,14 +733,14 @@ namespace System.Numerics
                                 Debug.Assert(blockSize == lowerLen);
                                 Debug.Assert(blockSize == multiplier.Length);
                                 Debug.Assert(multiplier.Length == lowerLen);
-                                BigIntegerCalculator.Multiply(multiplier, curBufffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
+                                BigIntegerCalculator.Multiply(multiplier, curBuffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
                             }
 
                             long carry = 0;
                             int j = 0;
                             for (; j < lowerLen; j++)
                             {
-                                long digit = (curBufffer[j] + carry) + curNewBuffer[j];
+                                long digit = (curBuffer[j] + carry) + curNewBuffer[j];
                                 curNewBuffer[j] = unchecked((uint)digit);
                                 carry = digit >> 32;
                             }
@@ -776,7 +802,7 @@ namespace System.Numerics
                         ArrayPool<int>.Shared.Return(arrayFromPoolForMultiplier);
                     }
                 }
-                return true;
+                return ParsingStatus.OK;
             }
 
             BigInteger NumberBufferToBigInteger(Span<uint> currentBuffer, bool signa)
@@ -854,7 +880,6 @@ namespace System.Numerics
             }
         }
 
-        // This function is consistent with VM\COMNumber.cpp!COMNumber::ParseFormatSpecifier
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             digits = -1;
@@ -867,22 +892,23 @@ namespace System.Numerics
             char ch = format[i];
             if (char.IsAsciiLetter(ch))
             {
+                // The digits value must be >= 0 && <= 999_999_999,
+                // but it can begin with any number of 0s, and thus we may need to check more than 9
+                // digits.  Further, for compat, we need to stop when we hit a null char.
                 i++;
-                int n = -1;
-
-                if (i < format.Length && char.IsAsciiDigit(format[i]))
+                int n = 0;
+                while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                 {
-                    n = format[i++] - '0';
-                    while (i < format.Length && char.IsAsciiDigit(format[i]))
+                    // Check if we are about to overflow past our limit of 9 digits
+                    if (n >= 100_000_000)
                     {
-                        int temp = n * 10 + (format[i++] - '0');
-                        if (temp < n)
-                        {
-                            throw new FormatException(SR.Argument_BadFormatSpecifier);
-                        }
-                        n = temp;
+                        throw new FormatException(SR.Argument_BadFormatSpecifier);
                     }
+                    n = ((n * 10) + format[i++] - '0');
                 }
+
+                // If we're at the end of the digits rather than having stopped because we hit something
+                // other than a digit or overflowed, return the standard format info.
                 if (i >= format.Length || format[i] == '\0')
                 {
                     digits = n;

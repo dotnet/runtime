@@ -29,7 +29,6 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
     <Compile Include="System\Diagnostics\InstanceData.cs" />
     <Compile Include="System\Diagnostics\InstanceDataCollection.cs" />
     <Compile Include="System\Diagnostics\InstanceDataCollectionCollection.cs" />
-    <Compile Include="System\Diagnostics\PerfCounterSection.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounter.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -41,7 +40,6 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
     <Compile Include="System\Diagnostics\PerformanceCounterType.cs" />
     <Compile Include="System\Diagnostics\PerformanceDataRegistryKey.cs" />
     <Compile Include="System\Diagnostics\SharedPerformanceCounter.cs" />
-    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
     <Compile Include="System\Diagnostics\TraceInternal.cs" />
     <Compile Include="misc\EnvironmentHelpers.cs" />
     <Compile Include="System\Diagnostics\PerformanceData\CounterSet.cs" />

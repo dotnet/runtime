@@ -34,7 +34,7 @@ namespace Internal.Reflection.Execution
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
         partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
-        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaBytes(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
         partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
@@ -53,13 +53,13 @@ namespace Internal.Reflection.Execution
                 return result.Value;
         }
 
-        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
+        public sealed override bool Bind(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
         {
             bool? result = null;
             exception = null;
             bindResult = default(AssemblyBindResult);
 
-            BindEcmaByteArray(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
+            BindEcmaBytes(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
 
             // If the Ecma assembly binder isn't linked in, simply throw PlatformNotSupportedException
             if (!result.HasValue)

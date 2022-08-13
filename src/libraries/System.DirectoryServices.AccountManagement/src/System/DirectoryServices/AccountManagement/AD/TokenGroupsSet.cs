@@ -125,8 +125,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if (!_disposed)
                 {
-                    if (_current != null)
-                        _current.Dispose();
+                    _current?.Dispose();
 
                     _disposed = true;
                 }

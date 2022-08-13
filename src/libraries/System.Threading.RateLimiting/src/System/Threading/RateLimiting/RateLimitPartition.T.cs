@@ -4,7 +4,7 @@
 namespace System.Threading.RateLimiting
 {
     /// <summary>
-    /// Type returned by <see cref="RateLimitPartition.Create"/> methods to be used by <see cref="PartitionedRateLimiter.Create"/> to know what partitions are configured.
+    /// Type returned by <see cref="RateLimitPartition.Get"/> methods to be used by <see cref="PartitionedRateLimiter.Create"/> to know what partitions are configured.
     /// </summary>
     /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
     public struct RateLimitPartition<TKey>

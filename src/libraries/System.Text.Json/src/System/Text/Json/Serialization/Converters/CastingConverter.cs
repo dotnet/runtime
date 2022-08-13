@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Text.Json.Reflection;
+
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
@@ -15,9 +18,13 @@ namespace System.Text.Json.Serialization.Converters
 
         public override bool HandleNull => _sourceConverter.HandleNull;
         internal override ConverterStrategy ConverterStrategy => _sourceConverter.ConverterStrategy;
+        internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
         internal CastingConverter(JsonConverter<TSource> sourceConverter) : base(initialize: false)
         {
+            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(typeof(TSource)));
+            Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
+
             _sourceConverter = sourceConverter;
             Initialize();
 
@@ -25,7 +32,10 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = sourceConverter.IsInternalConverterForNumberType;
             RequiresReadAhead = sourceConverter.RequiresReadAhead;
             CanUseDirectReadOrWrite = sourceConverter.CanUseDirectReadOrWrite;
+            CanBePolymorphic = sourceConverter.CanBePolymorphic;
         }
+
+        internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             => CastOnRead(_sourceConverter.Read(ref reader, typeToConvert, options));
@@ -33,7 +43,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             => _sourceConverter.Write(writer, CastOnWrite(value), options);
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
             bool result = _sourceConverter.OnTryRead(ref reader, typeToConvert, options, ref state, out TSource? sourceValue);
             value = CastOnRead(sourceValue);
@@ -91,6 +101,11 @@ namespace System.Text.Json.Serialization.Converters
 
         private static TSource CastOnWrite(T source)
         {
+            if (default(TSource) is not null && default(T) is null && source is null)
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(TSource));
+            }
+
             return (TSource)(object?)source!;
         }
     }

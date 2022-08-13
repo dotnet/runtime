@@ -1720,10 +1720,7 @@ namespace System.Xml.Serialization
                         {
                             string specifiedMemberName = $"{member.Mapping.Name}Specified";
                             MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
-                            if (specifiedMethodInfo != null)
-                            {
-                                specifiedMethodInfo.Invoke(o, new object[] { true });
-                            }
+                            specifiedMethodInfo?.Invoke(o, new object[] { true });
                         }
                     }
 

@@ -752,7 +752,6 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 						int offset_of_first_child_field, MonoMarshalNative string_encoding)
 {
 	MonoMarshalType *info;
-	int i;
 
 	if (m_class_get_parent (klass))
 		mono_marshal_shared_emit_struct_conv_full (mb, m_class_get_parent (klass), to_object, mono_marshal_shared_offset_of_first_nonstatic_field (klass), string_encoding);
@@ -790,7 +789,7 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 		}
 	}
 
-	for (i = 0; i < info->num_fields; i++) {
+	for (guint32 i = 0; i < info->num_fields; i++) {
 		MonoMarshalNative ntype;
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -31,10 +32,7 @@ namespace System.Runtime.Serialization.Json
                 enumValue = Enum.ToObject(TraditionalDataContract.UnderlyingType, jsonReader.ReadElementContentAsLong());
             }
 
-            if (context != null)
-            {
-                context.AddNewObject(enumValue);
-            }
+            context?.AddNewObject(enumValue);
             return enumValue;
         }
 

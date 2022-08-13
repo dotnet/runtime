@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation
     {
+        internal const int BlockSizeBytes = 16; // 128 bits
+
+        // SubtleCrypto doesn't support AES-192. http://crbug.com/533699
+        internal static readonly KeySizes[] s_legalKeySizes = { new KeySizes(128, 256, 128) };
+
         private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
@@ -19,11 +23,17 @@ namespace System.Security.Cryptography
             bool encrypting)
         {
             ValidateCipherMode(cipherMode);
+            if (iv is null)
+                throw new CryptographicException(SR.Cryptography_MissingIV);
 
-            Debug.Assert(blockSize == AesManagedTransform.BlockSizeBytes);
+            Debug.Assert(blockSize == BlockSizeBytes);
             Debug.Assert(paddingSize == blockSize);
 
-            return UniversalCryptoTransform.Create(paddingMode, new AesManagedTransform(key, iv, encrypting), encrypting);
+            BasicSymmetricCipher cipher = Interop.BrowserCrypto.CanUseSubtleCrypto ?
+                new AesSubtleCryptoTransform(key, iv, encrypting) :
+                new AesManagedTransform(key, iv, encrypting);
+
+            return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -37,10 +47,12 @@ namespace System.Security.Cryptography
         {
             ValidateCipherMode(cipherMode);
 
-            Debug.Assert(blockSize == AesManagedTransform.BlockSizeBytes);
+            Debug.Assert(blockSize == BlockSizeBytes);
             Debug.Assert(paddingSize == blockSize);
 
-            return new AesManagedTransform(key, iv, encrypting);
+            return Interop.BrowserCrypto.CanUseSubtleCrypto ?
+                new AesSubtleCryptoTransform(key, iv, encrypting) :
+                new AesManagedTransform(key, iv, encrypting);
         }
 
         private static void ValidateCipherMode(CipherMode cipherMode)

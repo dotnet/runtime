@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
         protected Aes()
         {
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
-            LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
+            LegalKeySizesValue = AesImplementation.s_legalKeySizes.CloneKeySizesArray();
 
             BlockSizeValue = 128;
             FeedbackSizeValue = 8;
@@ -24,6 +24,7 @@ namespace System.Security.Cryptography
             return new AesImplementation();
         }
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new Aes? Create(string algorithmName)
         {
@@ -31,6 +32,5 @@ namespace System.Security.Cryptography
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };
-        private static readonly KeySizes[] s_legalKeySizes = { new KeySizes(128, 256, 64) };
     }
 }

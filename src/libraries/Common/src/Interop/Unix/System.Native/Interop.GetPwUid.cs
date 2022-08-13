@@ -67,7 +67,7 @@ internal static partial class Interop
             if (error == 0)
             {
                 Debug.Assert(passwd.Name != null);
-                username = Marshal.PtrToStringAnsi((IntPtr)passwd.Name);
+                username = Marshal.PtrToStringUTF8((IntPtr)passwd.Name);
                 return true;
             }
 

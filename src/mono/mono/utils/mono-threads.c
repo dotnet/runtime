@@ -310,7 +310,6 @@ dump_threads (void)
 gboolean
 mono_threads_wait_pending_operations (void)
 {
-	int i;
 	size_t c = pending_suspends;
 
 	/* Wait threads to park */
@@ -318,7 +317,7 @@ mono_threads_wait_pending_operations (void)
 	if (pending_suspends) {
 		MonoStopwatch suspension_time;
 		mono_stopwatch_start (&suspension_time);
-		for (i = 0; i < pending_suspends; ++i) {
+		for (gsize i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			mono_atomic_inc_i32 (&waits_done);
 			if (mono_os_sem_timedwait (&suspend_semaphore, sleepAbortDuration, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS)
@@ -327,7 +326,7 @@ mono_threads_wait_pending_operations (void)
 
 			dump_threads ();
 
-			g_async_safe_printf ("WAITING for %d threads, got %d suspended\n", (int)pending_suspends, i);
+			g_async_safe_printf ("WAITING for %d threads, got %zu suspended\n", (int)pending_suspends, i);
 			g_error ("suspend_thread suspend took %d ms, which is more than the allowed %d ms", (int)mono_stopwatch_elapsed_ms (&suspension_time), sleepAbortDuration);
 		}
 		mono_stopwatch_stop (&suspension_time);
@@ -1104,8 +1103,6 @@ begin_suspend_peek_and_preempt (MonoThreadInfo *info);
 MonoThreadBeginSuspendResult
 mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
-	if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL && mono_threads_platform_stw_defer_initial_suspend (info))
-		return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
 	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
 		return begin_suspend_peek_and_preempt (info);
 	else
@@ -1619,7 +1616,9 @@ mono_thread_info_is_async_context (void)
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#ifndef HOST_WASI
 	guint8 *current = (guint8 *)&stsize;
+#endif	
 	mono_threads_platform_get_stack_bounds (staddr, stsize);
 	if (!*staddr)
 		return;
@@ -1664,7 +1663,7 @@ sleep_interrupt (gpointer data)
 }
 
 static guint32
-sleep_interruptable (guint32 ms, gboolean *alerted)
+sleep_interruptible (guint32 ms, gboolean *alerted)
 {
 	gint64 now = 0, end = 0;
 
@@ -1726,7 +1725,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 	}
 
 	if (alerted)
-		return sleep_interruptable (ms, alerted);
+		return sleep_interruptible (ms, alerted);
 
 	MONO_ENTER_GC_SAFE;
 
@@ -2111,20 +2110,19 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 {
 	MonoOSEventWaitRet res;
 	MonoOSEvent *thread_events [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS];
-	gint i;
 
 	g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS);
 	if (background_change_event)
 		g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS - 1);
 
-	for (i = 0; i < nhandles; ++i)
+	for (gsize i = 0; i < nhandles; ++i)
 		thread_events [i] = &thread_handles [i]->event;
 
 	if (background_change_event)
 		thread_events [nhandles ++] = background_change_event;
 
 	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout, alertable);
-	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && res <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
+	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && GINT_TO_UINT(res) <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
 		return (MonoThreadInfoWaitRet)(MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0));
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
 		return MONO_THREAD_INFO_WAIT_RET_ALERTED;
@@ -2177,11 +2175,3 @@ mono_thread_info_get_tools_data (void)
 
 	return info ? info->tools_data : NULL;
 }
-
-#ifndef HOST_WASM
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	return FALSE;
-}
-#endif

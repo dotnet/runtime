@@ -2,22 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
+using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Default JsonTypeInfo resolver.
+    /// Defines the default, reflection-based JSON contract resolver used by System.Text.Json.
     /// </summary>
+    /// <remarks>
+    /// The contract resolver used by <see cref="JsonSerializerOptions.Default"/>.
+    /// </remarks>
     public partial class DefaultJsonTypeInfoResolver : IJsonTypeInfoResolver
     {
         private bool _mutable;
 
         /// <summary>
-        /// Constructs DefaultJsonTypeInfoResolver.
+        /// Creates a mutable <see cref="DefaultJsonTypeInfoResolver"/> instance.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -35,7 +38,21 @@ namespace System.Text.Json.Serialization.Metadata
             s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Resolves a JSON contract for a given <paramref name="type"/> and <paramref name="options"/> configuration.
+        /// </summary>
+        /// <param name="type">The type for which to resolve a JSON contract.</param>
+        /// <param name="options">A <see cref="JsonSerializerOptions"/> instance used to determine contract configuration.</param>
+        /// <returns>A <see cref="JsonTypeInfo"/> defining a reflection-derived JSON contract for <paramref name="type"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The base implementation of this method will produce a reflection-derived contract
+        /// and apply any callbacks from the <see cref="Modifiers"/> list.
+        /// </remarks>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
         {
             if (type == null)
@@ -64,38 +81,39 @@ namespace System.Text.Json.Serialization.Metadata
             return typeInfo;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        private JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
-        {
-            MethodInfo methodInfo = typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-#if NETCOREAPP
-            return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(null, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, new[] { options }, null)!;
-#else
-            try
-            {
-                return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(null, new[] { options })!;
-            }
-            catch (TargetInvocationException ex)
-            {
-                // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
-                // therefore we need to unwrap TargetInvocationException for better user experience
-                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                throw null!;
-            }
-#endif
-        }
-
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>(JsonSerializerOptions options) => new ReflectionJsonTypeInfo<T>(options);
+        private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            JsonTypeInfo jsonTypeInfo;
+            JsonConverter converter = GetConverterForType(type, options);
+
+            if (converter.TypeToConvert == type)
+            {
+                // For performance, avoid doing a reflection-based instantiation
+                // if the converter type matches that of the declared type.
+                jsonTypeInfo = converter.CreateReflectionJsonTypeInfo(options);
+            }
+            else
+            {
+                Type jsonTypeInfoType = typeof(ReflectionJsonTypeInfo<>).MakeGenericType(type);
+                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { converter, options })!;
+            }
+
+            Debug.Assert(jsonTypeInfo.Type == type);
+            return jsonTypeInfo;
+        }
 
         /// <summary>
-        /// List of JsonTypeInfo modifiers. Modifying callbacks are called consecutively after initial resolution
-        /// and cannot be changed after GetTypeInfo is called.
+        /// Gets a list of user-defined callbacks that can be used to modify the initial contract.
         /// </summary>
+        /// <remarks>
+        /// The modifier list will be rendered immutable after the first <see cref="GetTypeInfo(Type, JsonSerializerOptions)"/> invocation.
+        ///
+        /// Modifier callbacks are called consecutively in the order in which they are specified in the list.
+        /// </remarks>
         public IList<Action<JsonTypeInfo>> Modifiers => _modifiers ??= new ModifierCollection(this);
         private ModifierCollection? _modifiers;
 
@@ -108,7 +126,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsLockedInstance => !_resolver._mutable;
+            protected override bool IsImmutable => !_resolver._mutable;
             protected override void VerifyMutable()
             {
                 if (!_resolver._mutable)
@@ -118,7 +136,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal static DefaultJsonTypeInfoResolver? DefaultInstance => s_defaultInstance;
+        internal static bool IsDefaultInstanceRooted => s_defaultInstance is not null;
         private static DefaultJsonTypeInfoResolver? s_defaultInstance;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

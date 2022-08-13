@@ -62,7 +62,6 @@ typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);
 //-----------------------------------------------------------------------------
 class CompressDebugInfo
 {
-public:
     // Compress incoming data and write it to the provided NibbleWriter.
     static void CompressBoundaries(
         IN ULONG32                       cMap,
@@ -76,18 +75,29 @@ public:
         IN OUT NibbleWriter * pBuffer
     );
 
-    // Stores the result into SBuffer (used by NGen), or in LoaderHeap (used by JIT)
+    static void CompressRichDebugInfo(
+        IN ULONG32                           cInlineTree,
+        IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+        IN ULONG32                           cRichOffsetMappings,
+        IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+        IN OUT NibbleWriter*                 pWriter);
+
+public:
+    // Stores the result in LoaderHeap
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
         IN PatchpointInfo * patchpointInfo,
-        IN OUT SBuffer    * pDebugInfoBuffer,
+        IN ICorDebugInfo::InlineTreeNode * pInlineTree,
+        IN ULONG            iInlineTree,
+        IN ICorDebugInfo::RichOffsetMapping * pRichOffsetMappings,
+        IN ULONG            iRichOffsetMappings,
+        IN BOOL             writeFlagByte,
         IN LoaderHeap     * pLoaderHeap
     );
 
-public:
     // Uncompress data supplied by Compress functions.
     static void RestoreBoundariesAndVars(
         IN FP_IDS_NEW fpNew, IN void * pNewData,
@@ -104,6 +114,15 @@ public:
         IN PTR_BYTE pDebugInfo
     );
 #endif
+
+    static void RestoreRichDebugInfo(
+        IN FP_IDS_NEW                          fpNew,
+        IN void*                               pNewData,
+        IN PTR_BYTE                            pDebugInfo,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);
@@ -125,6 +144,14 @@ public:
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo ** ppVars);
+
+    static BOOL GetRichDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);

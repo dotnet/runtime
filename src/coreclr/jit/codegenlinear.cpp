@@ -424,10 +424,12 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-
-        bool addPreciseMappings =
-            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
+
+        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
+
+        INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
+        INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
@@ -445,12 +447,12 @@ void CodeGen::genCodeForBBlist()
                     firstMapping = false;
                 }
 
-#ifdef DEBUG
-                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                if (addRichMappings && ilOffset->gtStmtDI.IsValid())
                 {
-                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                    genAddRichIPMappingHere(ilOffset->gtStmtDI);
                 }
 
+#ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -1626,6 +1628,12 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             GenTreeCast* cast = tree->AsCast();
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
+        }
+        else if (tree->OperIsCmpCompare() || tree->OperIs(GT_AND))
+        {
+            // Compares and ANDs may be contained in a conditional chain.
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
         }
 #endif
         else if (tree->OperIsLocalRead())

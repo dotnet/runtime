@@ -15,7 +15,7 @@ namespace System.Numerics
 
         public static void Pow(uint value, uint power, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
@@ -200,7 +200,7 @@ namespace System.Numerics
         public static void Pow(uint value, uint power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power,
@@ -245,7 +245,7 @@ namespace System.Numerics
         public static void Pow(uint value, ReadOnlySpan<uint> power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -42,6 +43,33 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor(s_iv, s_iv));
             }
+        }
+
+        // Browser's SubtleCrypto doesn't support AES-192
+        [Fact]
+        public static void Aes_InvalidKeySize_192_Browser()
+        {
+            byte[] key192 = new byte[192 / 8];
+            using (Aes aes = Aes.Create())
+            {
+                Assert.False(aes.ValidKeySize(192));
+                Assert.Throws<CryptographicException>(() => aes.Key = key192);
+                Assert.Throws<CryptographicException>(() => aes.KeySize = 192);
+                Assert.Throws<ArgumentException>(() => aes.CreateEncryptor(key192, s_iv));
+                Assert.Throws<ArgumentException>(() => aes.CreateDecryptor(key192, s_iv));
+            }
+        }
+
+        [Fact]
+        public static void EnsureSubtleCryptoIsUsed()
+        {
+            bool canUseSubtleCrypto = (bool)Type.GetType("Interop+BrowserCrypto, System.Security.Cryptography")
+                .GetField("CanUseSubtleCrypto", BindingFlags.NonPublic | BindingFlags.Static)
+                .GetValue(null);
+
+            bool expectedCanUseSubtleCrypto = Environment.GetEnvironmentVariable("TEST_EXPECT_SUBTLE_CRYPTO") == "true";
+
+            Assert.Equal(expectedCanUseSubtleCrypto, canUseSubtleCrypto);
         }
     }
 }

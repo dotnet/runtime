@@ -120,7 +120,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return false;
             }
 
-            // if any of the lazy memebers create accessors in a delay-loaded fashion, we simply compare the creators
+            // if any of the lazy members create accessors in a delay-loaded fashion, we simply compare the creators
             if ((_accessorsCreator != null) || (other._accessorsCreator != null))
             {
                 return object.Equals(_accessorsCreator, other._accessorsCreator);

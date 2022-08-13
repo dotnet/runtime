@@ -70,6 +70,7 @@ namespace System
         private DelegateData data;
 
         private bool method_is_virtual;
+        private bool bound;
         #endregion
 
         [RequiresUnreferencedCode("The target method might be removed")]

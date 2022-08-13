@@ -80,7 +80,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
@@ -97,11 +96,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
 
-                using var handler = new SocketsHttpHandler
-                {
-                    ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); }
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                using var handler = TestHelper.CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); };
 
                 using var client = new HttpClient(handler);
 
@@ -118,14 +114,14 @@ namespace System.Net.Http.Functional.Tests
                             cert,
                             clientCertificateRequired: true,
                             enabledSslProtocols: SslProtocols.Tls12,
-                            checkCertificateRevocation: false).WaitAsync(TimeSpan.FromSeconds(10));
+                            checkCertificateRevocation: false).WaitAsync(TestHelper.PassingTestTimeout);
                     }
                 }
 
-                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TimeSpan.FromSeconds(10));
+                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TestHelper.PassingTestTimeout);
                 await server.WriteAsync(Encoding.ASCII.GetBytes(GetResponseHeaders()));
 
-                using HttpResponseMessage response = await clientTask.WaitAsync(TimeSpan.FromSeconds(10));
+                using HttpResponseMessage response = await clientTask.WaitAsync(TestHelper.PassingTestTimeout);
                 using Stream clientStream = response.Content.ReadAsStream();
                 Assert.False(sawZeroByteRead.Task.IsCompleted);
 
@@ -133,14 +129,14 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 // The zero-byte read should block until data is actually available
-                await sawZeroByteRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await sawZeroByteRead.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 byte[] data = "Hello"u8.ToArray();
                 await WriteAsync(server, data);
                 await server.FlushAsync();
 
-                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TestHelper.PassingTestTimeout));
 
                 // Now that data is available, a zero-byte read should complete synchronously
                 zeroByteReadTask = StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None);
@@ -151,7 +147,7 @@ namespace System.Net.Http.Functional.Tests
                 int read = 0;
                 while (read < data.Length)
                 {
-                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TestHelper.PassingTestTimeout);
                 }
 
                 Assert.Equal(data.Length, read);
@@ -226,7 +222,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
         {
             var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

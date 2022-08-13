@@ -97,15 +97,8 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            if (_certHandle != null)
-            {
-                _certHandle.Dispose();
-            }
-
-            if (_certKeyHandle != null)
-            {
-                _certKeyHandle.Dispose();
-            }
+            _certHandle?.Dispose();
+            _certKeyHandle?.Dispose();
 
             _isInvalid = true;
             return true;

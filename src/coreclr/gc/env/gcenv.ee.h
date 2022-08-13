@@ -20,7 +20,7 @@ public:
     static void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
 
     //
-    // Callbacks issues during GC that the execution engine can do its own bookeeping
+    // Callbacks issues during GC that the execution engine can do its own bookkeeping
     //
 
     // start of GC call back - single threaded

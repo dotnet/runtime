@@ -40,9 +40,9 @@ namespace System.Reflection.Runtime.General
                 return RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(assemblyRef.ToRuntimeAssemblyName());
         }
 
-        public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
+        public sealed override Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
         {
-            if (rawAssembly == null)
+            if (rawAssembly.IsEmpty)
                 throw new ArgumentNullException(nameof(rawAssembly));
 
             return RuntimeAssemblyInfo.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
@@ -391,7 +391,7 @@ namespace System.Reflection.Runtime.General
 
                 Type fieldType = field.FieldType;
                 if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_TypeRefPrimitve);  // This check exists for compatibility (why such an ad-hoc restriction?)
+                    throw new ArgumentException(SR.Arg_TypeRefPrimitive);  // This check exists for compatibility (why such an ad-hoc restriction?)
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
 
@@ -404,6 +404,35 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo GetEnumInfo(Type type) => type.CastToRuntimeTypeInfo().EnumInfo;
+        public sealed override EnumInfo GetEnumInfo(Type type)
+        {
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+
+            EnumInfo? info = runtimeType.GenericCache as EnumInfo;
+            if (info != null)
+                return info;
+
+            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle);
+            runtimeType.GenericCache = info;
+            return info;
+        }
+
+        public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
+        {
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+
+            DynamicInvokeInfo? info = runtimeType.GenericCache as DynamicInvokeInfo;
+            if (info != null)
+                return info;
+
+            RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
+
+            MethodInvoker methodInvoker = invokeMethod.MethodInvoker;
+            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
+
+            info = new DynamicInvokeInfo(invokeMethod, invokeThunk);
+            runtimeType.GenericCache = info;
+            return info;
+        }
     }
 }

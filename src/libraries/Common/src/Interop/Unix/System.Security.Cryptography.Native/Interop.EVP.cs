@@ -19,11 +19,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestReset")]
         internal static partial int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
 
-        internal static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt) =>
-            EvpDigestUpdate(ctx, ref MemoryMarshal.GetReference(d), cnt);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
-        private static partial int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ref byte d, int cnt);
+        internal static partial int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
         internal static partial int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);

@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Pkcs
             Span<byte> authSafeSpan = default;
             byte[]? rentedMac = null;
             Span<byte> macSpan = default;
-            Span<byte> salt = stackalloc byte[0];
+            scoped Span<byte> salt = default;
 
             try
             {

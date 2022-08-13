@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Static class containing a variety of helper methods.
-    internal static class TarHelpers
+    internal static partial class TarHelpers
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
@@ -22,8 +22,19 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
-        internal const UnixFileMode DefaultMode = // 644 in octal
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+        // Default mode for TarEntry created for a file-type.
+        private const UnixFileMode DefaultFileMode =
+            UnixFileMode.UserRead | UnixFileMode.UserWrite |
+            UnixFileMode.GroupRead |
+            UnixFileMode.OtherRead;
+
+        // Default mode for TarEntry created for a directory-type.
+        private const UnixFileMode DefaultDirectoryMode =
+            DefaultFileMode |
+            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+        internal static int GetDefaultMode(TarEntryType type)
+            => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
@@ -197,6 +208,26 @@ namespace System.Formats.Tar
             }
             baseTenLong = 0;
             return false;
+        }
+
+        // When writing an entry that came from an archive of a different format, if its entry type happens to
+        // be an incompatible regular file entry type, convert it to the compatible one.
+        // No change for all other entry types.
+        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType)
+        {
+            if (format is TarEntryFormat.V7)
+            {
+                if (entryType is TarEntryType.RegularFile)
+                {
+                    return TarEntryType.V7RegularFile;
+                }
+            }
+            else if (entryType is TarEntryType.V7RegularFile)
+            {
+                return TarEntryType.RegularFile;
+            }
+
+            return entryType;
         }
 
         // Receives a byte array that represents an ASCII string containing a number in octal base.

@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -71,7 +70,7 @@ namespace ILCompiler.Dataflow
                     decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 case MetadataType type:
-                    var ecmaType = type as EcmaType;
+                    var ecmaType = type.GetTypeDefinition() as EcmaType;
                     if (ecmaType == null)
                         return false;
                     decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
@@ -135,7 +134,7 @@ namespace ILCompiler.Dataflow
         /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
         /// </summary>
         /// <param name="method">
-        ///	MethodDesc that is either an overriding member or an overriden/virtual member
+        ///	MethodDesc that is either an overriding member or an overridden/virtual member
         /// </param>
         internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, false);
@@ -187,7 +186,7 @@ namespace ILCompiler.Dataflow
         /// <summary>
         /// Determines if member requires (and thus any usage of such method should be warned about).
         /// </summary>
-        /// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods 
+        /// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods
         /// and .ctors are reported as requires when the declaring type has Requires on it.</remarks>
         internal static bool DoesMemberRequire(this TypeSystemEntity member, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
@@ -200,5 +199,9 @@ namespace ILCompiler.Dataflow
                 _ => false
             };
         }
+
+        internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
+        internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
+        internal const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
     }
 }

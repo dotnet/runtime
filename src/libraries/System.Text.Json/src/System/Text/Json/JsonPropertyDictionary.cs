@@ -156,9 +156,9 @@ namespace System.Text.Json
             }
         }
 
-        public ICollection<string> Keys => GetKeyCollection();
+        public IList<string> Keys => GetKeyCollection();
 
-        public ICollection<T> Values => GetValueCollection();
+        public IList<T> Values => GetValueCollection();
 
         public bool TryGetValue(string propertyName, [MaybeNullWhen(false)] out T value)
         {

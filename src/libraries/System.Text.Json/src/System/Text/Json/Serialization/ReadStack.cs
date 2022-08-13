@@ -93,12 +93,6 @@ namespace System.Text.Json
             }
         }
 
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
-        {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            Initialize(jsonTypeInfo, supportContinuation);
-        }
-
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
@@ -108,11 +102,11 @@ namespace System.Text.Json
                 PreserveReferences = true;
             }
 
-            SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
             Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            SupportContinuation = supportContinuation;
         }
 
         public void Push()
