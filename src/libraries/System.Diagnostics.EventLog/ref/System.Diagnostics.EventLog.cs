@@ -179,10 +179,9 @@ namespace System.Diagnostics
 }
 namespace System.Diagnostics.Eventing.Reader
 {
-    public sealed class EventBookmark
+    public partial class EventBookmark
     {
-        public EventBookmark(string bookmarkText) { }
-        public string BookmarkText { get { throw null; } }
+        internal EventBookmark() { }
     }
     public sealed partial class EventKeyword
     {
