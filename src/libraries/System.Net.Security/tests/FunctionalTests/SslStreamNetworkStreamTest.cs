@@ -861,6 +861,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             // macOS ignores CertificateAuthority
@@ -878,8 +879,6 @@ namespace System.Net.Security.Tests
                 store.Close();
             }
 
-            _output.WriteLine("Certificates added to {0}", storeName);
-
             // make sure we can build chain. There may be some race conditions after certs being added to the store.
             int retries = 10;
             int delay = 100;
@@ -891,7 +890,6 @@ namespace System.Net.Security.Tests
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.DisableCertificateDownloads = true;
                     bool chainStatus = chain.Build(clientCertificate);
-                    _output.WriteLine("round {0}: chain.Build: finished as {1} with {2} certificates {3}", retries, chainStatus, chain.ChainElements.Count, DateTime.Now);
                     if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
                     {
                         break;
@@ -901,38 +899,6 @@ namespace System.Net.Security.Tests
                 Thread.Sleep(delay);
                 delay *= 2;
                 retries--;
-            }
-
-            if (retries == 0)
-            {
-                using (var chain = new X509Chain())
-                {
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.Build(clientCertificate);
-                    foreach (X509ChainElement element in chain.ChainElements)
-                    {
-                        _output.WriteLine($"{element.Certificate.Subject} length {element.ChainElementStatus.Length}");
-                        foreach (X509ChainStatus status in element.ChainElementStatus)
-                        {
-                            _output.WriteLine($"  Status:  {status.Status}: {status.StatusInformation}");
-                        }
-                    }
-
-                    foreach (X509ChainStatus status in chain.ChainStatus)
-                    {
-                        _output.WriteLine($"   ChainStatus: {status.Status} {status.StatusInformation}.");
-                    }
-                }
-
-                using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
-                {
-                    store.Open(OpenFlags.ReadWrite);
-                    foreach (X509Certificate2 cert in store.Certificates)
-                    {
-                        _output.WriteLine(cert.Subject);
-                    }
-                    store.Close();
-                }
             }
 
             Assert.NotEqual(0, retries);
