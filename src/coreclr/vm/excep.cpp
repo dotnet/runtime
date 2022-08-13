@@ -6533,59 +6533,7 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-struct SavedExceptionInfo
-{
-    EXCEPTION_RECORD m_ExceptionRecord;
-    CONTEXT m_ExceptionContext;
-    CrstStatic m_Crst;
-
-    void SaveExceptionRecord(EXCEPTION_RECORD *pExceptionRecord)
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t erSize = offsetof(EXCEPTION_RECORD, ExceptionInformation) +
-            pExceptionRecord->NumberParameters * sizeof(pExceptionRecord->ExceptionInformation[0]);
-        memcpy(&m_ExceptionRecord, pExceptionRecord, erSize);
-
-    }
-
-    void SaveContext(CONTEXT *pContext)
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef CONTEXT_EXTENDED_REGISTERS
-
-        size_t contextSize = offsetof(CONTEXT, ExtendedRegisters);
-        if ((pContext->ContextFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
-            contextSize += sizeof(pContext->ExtendedRegisters);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#else // !CONTEXT_EXTENDED_REGISTERS
-
-        size_t contextSize = sizeof(CONTEXT);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#endif // !CONTEXT_EXTENDED_REGISTERS
-    }
-
-    DEBUG_NOINLINE void Enter()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Enter();
-    }
-
-    DEBUG_NOINLINE void Leave()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Leave();
-    }
-
-    void Init()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Crst.Init(CrstSavedExceptionInfo, CRST_UNSAFE_ANYMODE);
-    }
-};
+static BOOL IsProcessCorruptedStateException(EXCEPTION_RECORD *pExceptionRecord);
 
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
@@ -6601,6 +6549,12 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     *frame->GetGSCookiePtr() = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
+
+    if (IsProcessCorruptedStateException(pExceptionRecord))
+    {
+        RaiseException(pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
+            pExceptionRecord->NumberParameters, pExceptionRecord->ExceptionInformation);
+    }
 
     SEHException exception(pExceptionRecord);
     OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
@@ -7438,19 +7392,13 @@ public:
 
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    //
-    // HandleManagedFault will take a Crst that causes an unbalanced
-    // notrigger scope, and this contract will whack the thread's
-    // ClrDebugState to what it was on entry in the dtor, which causes
-    // us to assert when we finally release the Crst later on.
-    //
-//    CONTRACTL
-//    {
-//        NOTHROW;
-//        GC_NOTRIGGER;
-//        MODE_ANY;
-//    }
-//    CONTRACTL_END;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -10579,10 +10527,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
     return fFoundTracker ? pEHTracker : NULL;
 }
 
-// Given an exception code, this method returns a BOOL to indicate if the
-// code belongs to a corrupting exception or not.
-/* static */
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
+static BOOL IsProcessCorruptedStateExceptionCode(DWORD dwExceptionCode)
 {
     CONTRACTL
     {
@@ -10595,8 +10540,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     switch (dwExceptionCode)
     {
     case STATUS_ACCESS_VIOLATION:
-        if (throwable != NULL && CoreLibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
-            return FALSE;
+        // NOTE: It is the caller's responsibility to check that this is not a NullReferenceException
         break;
     case STATUS_STACK_OVERFLOW:
     case EXCEPTION_ILLEGAL_INSTRUCTION:
@@ -10614,6 +10558,44 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
         return FALSE;
 
     return TRUE;
+}
+
+// Given an exception record, this method returns a BOOL to indicate if the
+// code belongs to a corrupting exception or not.
+static BOOL IsProcessCorruptedStateException(EXCEPTION_RECORD *pExceptionRecord)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (pExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION &&
+        MapWin32FaultToCOMPlusException(pExceptionRecord) == kNullReferenceException)
+        return FALSE;
+
+    return IsProcessCorruptedStateExceptionCode(pExceptionRecord->ExceptionCode);
+}
+
+// Given an exception code and an exception, this method returns a BOOL to indicate if the
+// code belongs to a corrupting exception or not.
+BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (dwExceptionCode == STATUS_ACCESS_VIOLATION && throwable != NULL &&
+        CoreLibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
+        return FALSE;
+
+    return IsProcessCorruptedStateExceptionCode(dwExceptionCode);
 }
 
 #ifndef DACCESS_COMPILE
