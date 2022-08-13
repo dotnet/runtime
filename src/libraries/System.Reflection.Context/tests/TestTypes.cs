@@ -111,18 +111,6 @@ namespace System.Reflection.Context.Tests
                 yield return CreateProperty(numberType, "number2", null, (a, b) => { });
                 yield return CreateProperty(numberType, "number3", _ => 42, null);
             }
-
-            if (type.BaseType == typeof(TestObject))
-            {
-                Type numberType = MapType(typeof(int).GetTypeInfo());
-                yield return CreateProperty(numberType, "number", _ => 42, (a, b) => { },
-                    new Attribute[] { new TestPropertyAttribute() },
-                    new Attribute[] { new TestGetterSetterAttribute() },
-                    new Attribute[] { new TestGetterSetterAttribute() });
-
-                yield return CreateProperty(numberType, "number2", null, (a, b) => { });
-                yield return CreateProperty(numberType, "number3", _ => 42, null);
-            }
         }
     }
 
