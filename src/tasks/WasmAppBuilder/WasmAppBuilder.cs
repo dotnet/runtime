@@ -317,7 +317,7 @@ public class WasmAppBuilder : Task
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
         config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
         if (IncludeThreadsWorker)
-                config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
+            config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 
         if (RemoteSources?.Length > 0)
         {
@@ -326,10 +326,14 @@ public class WasmAppBuilder : Task
                     config.RemoteSources.Add(source.ItemSpec);
         }
 
-        if (PThreadPoolSize < -1) {
+        if (PThreadPoolSize < -1)
+        {
             throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
-        } else
+        }
+        else
+        {
             config.Extra["pthreadPoolSize"] = PThreadPoolSize;
+        }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
         {
