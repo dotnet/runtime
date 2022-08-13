@@ -615,7 +615,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(float)value;
             else
                 result = value;
             return true;
@@ -667,7 +667,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(double)value;
             else
                 result = value;
             return true;
