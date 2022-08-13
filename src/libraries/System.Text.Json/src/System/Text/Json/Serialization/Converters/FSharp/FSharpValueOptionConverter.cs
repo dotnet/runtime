@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TValueOption value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TValueOption value)
         {
             // `null` values deserialize as `ValueNone`
             if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)

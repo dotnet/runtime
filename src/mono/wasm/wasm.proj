@@ -388,5 +388,4 @@
 
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
-
 </Project>

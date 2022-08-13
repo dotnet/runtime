@@ -30,7 +30,16 @@ namespace Sample
         {
             var comp = new ExpensiveComputation(n);
             comp.Start();
+            #pragma warning disable CS4014
+            WaitForCompletion(comp);
             _demo = new Demo(UpdateProgress, comp);
+        }
+
+        public static async Task WaitForCompletion (ExpensiveComputation comp) {
+            Console.WriteLine($"WaitForCompletion started on thread {Thread.CurrentThread.ManagedThreadId}");
+            await comp.Completion;
+            Console.WriteLine($"WaitForCompletion completed on thread {Thread.CurrentThread.ManagedThreadId}");
+            UpdateProgress("✌︎");
         }
 
         [JSExport]
@@ -135,16 +144,12 @@ public class Demo
 
     public bool Progress()
     {
-        _animation.Step($"{_expensiveComputation.CallCounter} calls");
-        if (_expensiveComputation.Completion.IsCompleted)
+        if (!_expensiveComputation.Completion.IsCompleted)
         {
-            _updateProgress("✌︎");
-            return true;
+            _animation.Step($"{_expensiveComputation.CallCounter} calls");
         }
-        else
-        {
-            return false;
-        }
+
+        return _expensiveComputation.Completion.IsCompleted;
     }
 
     public int Result => _expensiveComputation.Completion.Result;

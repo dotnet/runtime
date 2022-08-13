@@ -8,6 +8,18 @@ The mechanism for executing .NET code in a WASI runtime environment is equivalen
 
 ## How to build the runtime
 
+### 1. Build the WASM runtime
+
+To build the wasi runtime we need the file `wasm_m2n_invoke.g.h` which is generated when compiling wasm runtime
+
+```
+make -C src/mono/wasm provision-wasm
+export EMDK_PATH=[path_printed_by_provision_wasm]
+./build.sh mono+libs -os browser
+```
+
+### 2. Build the WASI runtime
+
 Currently this can only be built in Linux or WSL (tested on Windows 11). Simply run `make` in this directory. It will automatically download and use [WASI SDK](https://github.com/WebAssembly/wasi-sdk).
 
 The resulting libraries are placed in `(repo_root)/artifacts/bin/mono/Wasi.Release`.
@@ -47,6 +59,32 @@ You'll need to update these paths to match the location where you extracted the 
 Finally, you can build and run the sample:
 
 ```
-cd samples/console
+cd sample/console
 make run
+```
+
+### 4. Debug it
+
+Also, you can build and debug the sample:
+
+```
+cd sample/console
+make debug
+```
+
+Using Visual Studio code, add a breakpoint on Program.cs line 17.
+Download the Mono Debug extension and configure a launch.json like this:
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach",
+            "type": "mono",
+            "request": "attach",
+            "address": "localhost",
+            "port": 64000
+        }
+    ]
+}
 ```

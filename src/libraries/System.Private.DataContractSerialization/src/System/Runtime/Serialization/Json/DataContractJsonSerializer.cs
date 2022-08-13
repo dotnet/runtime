@@ -10,10 +10,12 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Text;
 using System.Xml;
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -32,7 +34,7 @@ namespace System.Runtime.Serialization.Json
         private XmlDictionaryString? _rootName;
         private bool _rootNameRequiresMapping;
         private Type _rootType;
-
+        private ISerializationSurrogateProvider? _serializationSurrogateProvider;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type)
@@ -90,6 +92,12 @@ namespace System.Runtime.Serialization.Json
         {
             EmitTypeInformation emitTypeInformation = alwaysEmitTypeInformation ? EmitTypeInformation.Always : EmitTypeInformation.AsNeeded;
             Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
+        }
+
+        internal ISerializationSurrogateProvider? SerializationSurrogateProvider
+        {
+            get { return _serializationSurrogateProvider; }
+            set { _serializationSurrogateProvider = value; }
         }
 
         public bool IgnoreExtensionDataObject
@@ -191,6 +199,19 @@ namespace System.Runtime.Serialization.Json
             {
                 return _rootName ?? JsonGlobals.rootDictionaryString;
             }
+        }
+
+        // These Get/Set methods mirror the extensions that were added to DCS in the early days of Core, which allowed
+        // using a slimmed-down surrogate on both NetFx and Core via type-forwarding mechanisms. That's why these are
+        // a pair of methods instead of making the property itself public.
+        public ISerializationSurrogateProvider? GetSerializationSurrogateProvider()
+        {
+            return SerializationSurrogateProvider;
+        }
+
+        public void SetSerializationSurrogateProvider(ISerializationSurrogateProvider? provider)
+        {
+            SerializationSurrogateProvider = provider;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -450,6 +471,11 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = RootContract;
             Type declaredType = contract.UnderlyingType;
             Type graphType = (graph == null) ? declaredType : graph.GetType();
+
+            if (_serializationSurrogateProvider != null)
+            {
+                graph = DataContractSerializer.SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
+            }
 
             if (graph == null)
             {

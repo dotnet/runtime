@@ -4,8 +4,11 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -58,20 +61,20 @@ namespace System.Runtime.Serialization.Json
             List<Type> knownTypesList = new List<Type>();
             if (context != null)
             {
-                List<XmlQualifiedName> stableNames = new List<XmlQualifiedName>();
-                Dictionary<XmlQualifiedName, DataContract>[] entries = context.scopedKnownTypes.dataContractDictionaries;
+                List<XmlQualifiedName> xmlNames = new List<XmlQualifiedName>();
+                DataContractDictionary[] entries = context.scopedKnownTypes.dataContractDictionaries;
                 if (entries != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
-                        Dictionary<XmlQualifiedName, DataContract> entry = entries[i];
+                        DataContractDictionary entry = entries[i];
                         if (entry != null)
                         {
                             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in entry)
                             {
-                                if (!stableNames.Contains(pair.Key))
+                                if (!xmlNames.Contains(pair.Key))
                                 {
-                                    stableNames.Add(pair.Key);
+                                    xmlNames.Add(pair.Key);
                                     knownTypesList.Add(pair.Value.UnderlyingType);
                                 }
                             }
