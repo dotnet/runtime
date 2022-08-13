@@ -30,7 +30,6 @@ namespace System.Runtime.Serialization
             s_getCollectionSetItemDelegateMethod ??= typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract)
         {
             Debug.Assert(context != null);
@@ -62,7 +61,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
         {
             object? resultCollection = context.GetCollectionMember();
@@ -85,14 +83,12 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
         {
             return ReflectionReadCollectionCore(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private object ReflectionReadCollectionCore(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
         {
             bool isArray = (collectionContract.Kind == CollectionKind.Array);
@@ -118,7 +114,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private CollectionReadItemDelegate GetCollectionReadItemDelegate(CollectionDataContract collectionContract)
         {
             CollectionReadItemDelegate collectionReadItemDelegate;
@@ -141,7 +136,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private object ReadCollectionItems(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract, object resultCollection, bool isReadOnlyCollection)
         {
             string itemName = GetCollectionContractItemName(collectionContract);
@@ -188,17 +182,14 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected abstract void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract, ref object obj);
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected abstract object? ReflectionReadDictionaryItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract);
         protected abstract string GetCollectionContractItemName(CollectionDataContract collectionContract);
         protected abstract string GetCollectionContractNamespace(CollectionDataContract collectionContract);
         protected abstract string GetClassContractNamespace(ClassDataContract classContract);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected virtual bool ReflectionReadSpecialCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, object? resultCollection)
         {
             return false;
@@ -217,7 +208,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected void ReflectionReadMember(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract, ref object obj, int memberIndex, DataMember[] members)
         {
             DataMember dataMember = members[memberIndex];
@@ -241,7 +231,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected object? ReflectionReadValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns, PrimitiveDataContract? primitiveContractForOriginalType = null)
         {
             object? value;
@@ -269,7 +258,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private object? ReadItemOfPrimitiveType(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns, PrimitiveDataContract? primitiveContract, int nullables)
         {
             object? value;
@@ -324,7 +312,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static object ReadISerializable(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract)
         {
             object obj;
@@ -337,7 +324,6 @@ namespace System.Runtime.Serialization
 
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private CollectionReadItemDelegate GetReflectionReadValueDelegate(Type type)
         {
             int nullables = 0;
@@ -375,7 +361,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private object? ReflectionReadValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember dataMember, string ns)
         {
             Type type = dataMember.MemberType;
@@ -385,7 +370,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private object? ReflectionInternalDeserialize(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract? collectionContract, Type type, string name, string ns)
         {
             return context.InternalDeserialize(xmlReader, DataContract.GetId(type.TypeHandle), type.TypeHandle, name, ns);
@@ -474,7 +458,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static object ReflectionCreateCollection(CollectionDataContract collectionContract)
         {
             if (IsArrayLikeCollection(collectionContract))
@@ -522,7 +505,6 @@ namespace System.Runtime.Serialization
             return ((KeyValue<K, V>)o).Value;
         }
 
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static CollectionSetItemDelegate GetCollectionSetItemDelegate<T>(CollectionDataContract collectionContract, object resultCollectionObject, bool isReadOnlyCollection)
         {
             if (isReadOnlyCollection && collectionContract.Kind == CollectionKind.Array)
@@ -622,7 +604,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
         {
             resultArray = null;

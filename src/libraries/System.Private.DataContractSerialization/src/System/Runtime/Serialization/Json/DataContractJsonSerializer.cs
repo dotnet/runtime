@@ -35,49 +35,42 @@ namespace System.Runtime.Serialization.Json
 
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type)
             : this(type, (IEnumerable<Type>?)null)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, string? rootName)
             : this(type, rootName, null)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName)
             : this(type, rootName, null)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, IEnumerable<Type>? knownTypes)
             : this(type, null, knownTypes, int.MaxValue, false, false)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, string? rootName, IEnumerable<Type>? knownTypes)
             : this(type, new DataContractJsonSerializerSettings() { RootName = rootName, KnownTypes = knownTypes })
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName, IEnumerable<Type>? knownTypes)
             : this(type, rootName, knownTypes, int.MaxValue, false, false)
         {
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings? settings)
         {
             settings ??= new DataContractJsonSerializerSettings();
@@ -88,7 +81,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal DataContractJsonSerializer(Type type,
             XmlDictionaryString? rootName,
             IEnumerable<Type>? knownTypes,
@@ -127,7 +119,6 @@ namespace System.Runtime.Serialization.Json
         internal override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (this.knownDataContracts == null && this.knownTypeList != null)
@@ -183,7 +174,6 @@ namespace System.Runtime.Serialization.Json
         private DataContract RootContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_rootContract == null)
@@ -204,7 +194,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override bool IsStartObject(XmlReader reader)
         {
             // No need to pass in DateTimeFormat to JsonReaderDelegator: no DateTimes will be read in IsStartObject
@@ -212,7 +201,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override bool IsStartObject(XmlDictionaryReader reader)
         {
             // No need to pass in DateTimeFormat to JsonReaderDelegator: no DateTimes will be read in IsStartObject
@@ -220,7 +208,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadObject(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
@@ -229,35 +216,30 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadObject(XmlReader reader)
         {
             return ReadObjectHandleExceptions(new JsonReaderDelegator(reader, this.DateTimeFormat), true);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadObject(XmlReader reader, bool verifyObjectName)
         {
             return ReadObjectHandleExceptions(new JsonReaderDelegator(reader, this.DateTimeFormat), verifyObjectName);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadObject(XmlDictionaryReader reader)
         {
             return ReadObjectHandleExceptions(new JsonReaderDelegator(reader, this.DateTimeFormat), true); // verifyObjectName
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadObject(XmlDictionaryReader reader, bool verifyObjectName)
         {
             return ReadObjectHandleExceptions(new JsonReaderDelegator(reader, this.DateTimeFormat), verifyObjectName);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteEndObject(XmlWriter writer)
         {
             // No need to pass in DateTimeFormat to JsonWriterDelegator: no DateTimes will be written in end object
@@ -265,7 +247,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteEndObject(XmlDictionaryWriter writer)
         {
             // No need to pass in DateTimeFormat to JsonWriterDelegator: no DateTimes will be written in end object
@@ -273,7 +254,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteObject(Stream stream, object? graph)
         {
             ArgumentNullException.ThrowIfNull(stream);
@@ -284,35 +264,30 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteObject(XmlWriter writer, object? graph)
         {
             WriteObjectHandleExceptions(new JsonWriterDelegator(writer, this.DateTimeFormat), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteObject(XmlDictionaryWriter writer, object? graph)
         {
             WriteObjectHandleExceptions(new JsonWriterDelegator(writer, this.DateTimeFormat), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteObjectContent(XmlWriter writer, object? graph)
         {
             WriteObjectContentHandleExceptions(new JsonWriterDelegator(writer, this.DateTimeFormat), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteObjectContent(XmlDictionaryWriter writer, object? graph)
         {
             WriteObjectContentHandleExceptions(new JsonWriterDelegator(writer, this.DateTimeFormat), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteStartObject(XmlWriter writer, object? graph)
         {
             // No need to pass in DateTimeFormat to JsonWriterDelegator: no DateTimes will be written in start object
@@ -320,7 +295,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteStartObject(XmlDictionaryWriter writer, object? graph)
         {
             // No need to pass in DateTimeFormat to JsonWriterDelegator: no DateTimes will be written in start object
@@ -384,7 +358,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static object? ReadJsonValue(DataContract contract, XmlReaderDelegator reader, XmlObjectSerializerReadContextComplexJson? context)
         {
             return JsonDataContract.GetJsonDataContract(contract).ReadJsonValue(reader, context);
@@ -396,7 +369,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static void WriteJsonValue(JsonDataContract contract, XmlWriterDelegator writer, object graph, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             contract.WriteJsonValue(writer, graph, context, declaredTypeHandle);
@@ -413,7 +385,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override bool InternalIsStartObject(XmlReaderDelegator reader)
         {
             if (IsRootElement(reader, RootContract, RootName, XmlDictionaryString.Empty))
@@ -425,7 +396,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override object? InternalReadObject(XmlReaderDelegator xmlReader, bool verifyObjectName)
         {
             if (MaxItemsInObjectGraph == 0)
@@ -456,14 +426,12 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override void InternalWriteEndObject(XmlWriterDelegator writer)
         {
             writer.WriteEndElement();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override void InternalWriteObject(XmlWriterDelegator writer, object? graph)
         {
             InternalWriteStartObject(writer, graph);
@@ -472,7 +440,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override void InternalWriteObjectContent(XmlWriterDelegator writer, object? graph)
         {
             if (MaxItemsInObjectGraph == 0)
@@ -521,7 +488,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal override void InternalWriteStartObject(XmlWriterDelegator writer, object? graph)
         {
             if (_rootNameRequiresMapping)
@@ -536,7 +502,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddCollectionItemTypeToKnownTypes(Type knownType)
         {
             Type? itemType;
@@ -554,7 +519,6 @@ namespace System.Runtime.Serialization.Json
 
         [MemberNotNull(nameof(_rootType))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
@@ -595,7 +559,6 @@ namespace System.Runtime.Serialization.Json
 
         [MemberNotNull(nameof(_rootType))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void Initialize(Type type,
             XmlDictionaryString? rootName,
             IEnumerable<Type>? knownTypes,
@@ -624,7 +587,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static DataContract GetDataContract(DataContract declaredTypeContract, Type declaredType, Type objectType)
         {
             DataContract contract = DataContractSerializer.GetDataContract(declaredTypeContract, declaredType, objectType);

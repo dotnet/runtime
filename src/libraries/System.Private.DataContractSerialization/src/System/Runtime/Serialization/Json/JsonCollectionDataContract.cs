@@ -15,7 +15,6 @@ namespace System.Runtime.Serialization.Json
         private readonly JsonCollectionDataContractCriticalHelper _helper;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public JsonCollectionDataContract(CollectionDataContract traditionalDataContract)
             : base(new JsonCollectionDataContractCriticalHelper(traditionalDataContract))
         {
@@ -25,7 +24,6 @@ namespace System.Runtime.Serialization.Json
         internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -56,7 +54,6 @@ namespace System.Runtime.Serialization.Json
         internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_helper.JsonFormatGetOnlyReaderDelegate == null)
@@ -93,7 +90,6 @@ namespace System.Runtime.Serialization.Json
         internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -124,7 +120,6 @@ namespace System.Runtime.Serialization.Json
         private CollectionDataContract TraditionalCollectionDataContract => _helper.TraditionalCollectionDataContract;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             Debug.Assert(context != null);
@@ -146,7 +141,6 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             Debug.Assert(context != null);
@@ -163,7 +157,6 @@ namespace System.Runtime.Serialization.Json
             private readonly CollectionDataContract _traditionalCollectionDataContract;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             public JsonCollectionDataContractCriticalHelper(CollectionDataContract traditionalDataContract)
                 : base(traditionalDataContract)
             {

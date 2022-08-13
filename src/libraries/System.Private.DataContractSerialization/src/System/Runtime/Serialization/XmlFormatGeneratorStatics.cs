@@ -206,7 +206,6 @@ namespace System.Runtime.Serialization
         internal static ConstructorInfo HashtableCtor
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (s_hashtableCtor == null)
@@ -760,7 +759,6 @@ namespace System.Runtime.Serialization
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
                 Justification = "The call to MakeGenericMethod is safe due to the fact that XmlObjectSerializerWriteContext.GetDefaultValue is not annotated.")]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static object? GetDefaultValue(Type type)
         {
             return GetDefaultValueMethod.MakeGenericMethod(type).Invoke(null, Array.Empty<object>());

@@ -32,7 +32,6 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal DataContractSet(DataContractSet dataContractSet)
         {
             ArgumentNullException.ThrowIfNull(dataContractSet);
@@ -66,7 +65,6 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void Add(Type type)
         {
             DataContract dataContract = GetDataContract(type);
@@ -81,14 +79,12 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void Add(DataContract dataContract)
         {
             Add(dataContract.StableName, dataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void Add(XmlQualifiedName name, DataContract dataContract)
         {
             if (dataContract.IsBuiltInDataContract)
@@ -97,7 +93,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
             DataContract? dataContractInSet;
@@ -134,7 +129,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddClassDataContract(ClassDataContract classDataContract)
         {
             if (classDataContract.BaseContract != null)
@@ -168,7 +162,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddCollectionDataContract(CollectionDataContract collectionDataContract)
         {
             if (collectionDataContract.IsDictionary)
@@ -186,14 +179,12 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddXmlDataContract(XmlDataContract xmlDataContract)
         {
             AddKnownDataContracts(xmlDataContract.KnownDataContracts);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void AddKnownDataContracts(DataContractDictionary? knownDataContracts)
         {
             if (knownDataContracts != null)
@@ -206,7 +197,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE
@@ -237,7 +227,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
             Type dataMemberType = dataMember.MemberType;
@@ -263,7 +252,6 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)
