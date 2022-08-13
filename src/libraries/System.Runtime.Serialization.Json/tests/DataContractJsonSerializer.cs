@@ -139,26 +139,30 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DoubleAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2, "-1.2"), -1.2);
-        Assert.StrictEqual(0, SerializeAndDeserialize<double>(0, "0"));
+        Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2, "-1.2"));
+        Assert.StrictEqual(0.0, SerializeAndDeserialize<double>(0.0, "0"));
+        Assert.StrictEqual(0.0, SerializeAndDeserialize<double>(-0.0, "-0"));
+        Assert.Equal("-0", SerializeAndDeserialize<double>(-0.0, "-0").ToString());
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3, "2.3"));
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"), double.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"), double.MaxValue);
+        Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"));
+        Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"));
     }
 
     [Fact]
     public static void DCJS_FloatAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2, "-1.2"), (float)-1.2);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0, "0"), (float)0);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3, "2.3"), (float)2.3);
+        Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2, "-1.2"));
+        Assert.StrictEqual((float)0.0, SerializeAndDeserialize<float>((float)0.0, "0"));
+        Assert.StrictEqual((float)0.0, SerializeAndDeserialize<float>((float)-0.0, "-0"));
+        Assert.Equal("-0", SerializeAndDeserialize<float>((float)-0.0, "-0").ToString());
+        Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3, "2.3"));
     }
 
     [Fact]
     public static void DCJS_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue, "-3.4028235E+38"), float.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue, "3.4028235E+38"), float.MaxValue);
+        Assert.StrictEqual(float.MinValue, SerializeAndDeserialize<float>(float.MinValue, "-3.4028235E+38"));
+        Assert.StrictEqual(float.MaxValue, SerializeAndDeserialize<float>(float.MaxValue, "3.4028235E+38"));
     }
 
     [Fact]
