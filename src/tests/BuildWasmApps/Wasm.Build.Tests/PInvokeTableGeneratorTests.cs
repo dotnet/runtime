@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -202,7 +200,7 @@ namespace Wasm.Build.Tests
                 )
             );
 
-            // Build a project with ManagedToNativeGenerator task reading icals from the above library and runtime-icall-table.h bellow.
+            // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h bellow.
 
             string projectCode =
             """
@@ -219,11 +217,6 @@ namespace Wasm.Build.Tests
                     <WasmPInvokeModule Include="libSystem.Native" />
                     ###WasmPInvokeModule###
                   </ItemGroup>
-
-                  <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
-                  <MSBuild Projects="$(CoreLibProject)" Targets="GetTargetPath">
-                    <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
-                  </MSBuild>
 
                   <ManagedToNativeGenerator
                     Assemblies="@(WasmPInvokeAssembly)"

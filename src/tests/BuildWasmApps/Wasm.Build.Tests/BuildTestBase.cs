@@ -359,7 +359,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
+            sb.Append($" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
