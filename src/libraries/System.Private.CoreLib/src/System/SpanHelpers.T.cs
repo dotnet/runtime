@@ -2002,15 +2002,6 @@ namespace System
 
                     offset -= 1;
                 }
-
-
-                for (int i = length - 1; i >= 0; i--)
-                {
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, i).Equals(value)))
-                    {
-                        return i;
-                    }
-                }
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
             {
