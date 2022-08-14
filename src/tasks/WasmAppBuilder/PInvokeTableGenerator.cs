@@ -19,7 +19,7 @@ internal sealed class PInvokeTableGenerator
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
-    public IEnumerable<string> GenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath)
+    public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -69,10 +69,10 @@ internal sealed class PInvokeTableGenerator
             {
                 CollectPInvokesForMethod(method);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogMessage(MessageImportance.Low, $"Could not get pinvoke, or callbacks for method {method.Name}: {ex}");
-                continue;
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                        $"Could not get pinvoke, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
             }
         }
 
@@ -88,10 +88,10 @@ internal sealed class PInvokeTableGenerator
                 string? signature = SignatureMapper.MethodToSignature(method);
                 if (signature == null)
                 {
-                    throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
-                Log.LogMessage(MessageImportance.Normal, $"[pinvoke] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
                 signatures.Add(signature);
             }
 
@@ -101,6 +101,7 @@ internal sealed class PInvokeTableGenerator
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
+
                         callbacks.Add(new PInvokeCallback(method));
                 }
                 catch
@@ -301,7 +302,9 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
-            Log.LogWarning($"Skipping the following DllImport because '{reason}'. {Environment.NewLine}  {pinvoke.Method}");
+            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method}' because '{reason}'.");
+
             pinvoke.Skip = true;
             return null;
         }

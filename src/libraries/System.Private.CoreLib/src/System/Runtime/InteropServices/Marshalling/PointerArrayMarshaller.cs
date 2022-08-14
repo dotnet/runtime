@@ -167,11 +167,13 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns a reference to the marshalled array.
             /// </summary>
+            /// <returns>A pinnable reference to the unmanaged marshalled array.</returns>
             public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
 
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
+            /// <returns>A pointer to the beginning of the unmanaged value.</returns>
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
 
             /// <summary>
