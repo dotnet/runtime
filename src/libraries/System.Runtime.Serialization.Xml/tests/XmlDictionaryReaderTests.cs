@@ -167,6 +167,10 @@ namespace System.Runtime.Serialization.Xml.Tests
         [Fact]
         public static void BinaryXml_ReadPrimitiveTypes()
         {
+            float f = 1.23456788f;
+            ReadOnlySpan<byte> floatBytes = new byte[] { 0x52, 0x06, 0x9e, 0x3f };
+            Guid guid = new Guid(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+
             AssertReadContentFromBinary<long>(long.MaxValue, XmlBinaryNodeType.Int64TextWithEndElement, new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f });
 
             AssertReadContentFromBinary((byte)0x78, XmlBinaryNodeType.Int8Text, new byte[] { 0x78 });
@@ -185,21 +189,16 @@ namespace System.Runtime.Serialization.Xml.Tests
             AssertReadContentFromBinary((long)0x12345678, XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
             AssertReadContentFromBinary(unchecked((long)0xfffffffff2345678), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0xf2 });
 
-            decimal decMax = decimal.MaxValue;
-            float f = 1.23f;
-            double d = 1.0 / 3.0;
-            Guid guid = new Guid(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
-
-            // Remarks: Of these types only timespan handles BigEndian/LittleEndian so for other types compare against bare bytes
-            AssertReadContentFromBinary(decMax, XmlBinaryNodeType.DecimalText, MemoryMarshal.AsBytes(new ReadOnlySpan<decimal>(in decMax)));
-            AssertReadContentFromBinary(f, XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+            AssertReadContentFromBinary(f, XmlBinaryNodeType.FloatText, floatBytes);
+            AssertReadContentFromBinary(8.20788039913184E-304, XmlBinaryNodeType.DoubleText, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 });
             AssertReadContentFromBinary(guid, XmlBinaryNodeType.GuidText, guid.ToByteArray());
             AssertReadContentFromBinary(new TimeSpan(0x0807060504030201), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
+            AssertReadContentFromBinary(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b), XmlBinaryNodeType.DecimalText
+                , new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
 
             // Double can be represented as float or inte as long as no detail is lost
-            AssertReadContentFromBinary((double)f, XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
             AssertReadContentFromBinary((double)0x0100, XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
-            AssertReadContentFromBinary((double)d, XmlBinaryNodeType.DoubleText, MemoryMarshal.AsBytes(new ReadOnlySpan<double>(in d)));
+            AssertReadContentFromBinary((double)f, XmlBinaryNodeType.FloatText, floatBytes);
         }
 
         [Fact]
