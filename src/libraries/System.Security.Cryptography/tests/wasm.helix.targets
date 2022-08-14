@@ -21,8 +21,8 @@
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
 
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --web-server-use-cop&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --web-server-use-cop&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --web-server-use-cop&quot; &amp; set &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --web-server-use-cop&quot; &amp;&amp; export &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
       </HelixWorkItem>
 
       <_CryptoHelixItem Include="@(HelixWorkItem)"

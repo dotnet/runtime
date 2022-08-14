@@ -481,7 +481,7 @@ namespace Tests.Integration
             }
         }
 
-        public class ImportOnOverridenPropertyWithSameContract : ImportOnVirtualProperty
+        public class ImportOnOverriddenPropertyWithSameContract : ImportOnVirtualProperty
         {
             [Import("VirtualImport")]
             public override int VirtualImport
@@ -503,12 +503,12 @@ namespace Tests.Integration
             var container = ContainerFactory.Create();
             container.AddAndComposeExportedValue<int>("VirtualImport", 21);
 
-            var import = new ImportOnOverridenPropertyWithSameContract();
+            var import = new ImportOnOverriddenPropertyWithSameContract();
 
             container.SatisfyImportsOnce(import);
 
             // Import will get set twice because there are 2 imports on the same property.
-            // We would really like to either elminate it getting set twice or error in this case
+            // We would really like to either eliminate it getting set twice or error in this case
             // but we figure it is a rare enough corner case that it doesn't warrented the run time cost
             // and can be covered by an FxCop rule.
 
@@ -516,7 +516,7 @@ namespace Tests.Integration
             Assert.Equal(21, import.VirtualImport);
         }
 
-        public class ImportOnOverridenPropertyWithDifferentContract : ImportOnVirtualProperty
+        public class ImportOnOverriddenPropertyWithDifferentContract : ImportOnVirtualProperty
         {
             [Import("OverriddenImport")]
             public override int VirtualImport
@@ -535,12 +535,12 @@ namespace Tests.Integration
             container.AddAndComposeExportedValue<int>("VirtualImport", 21);
             container.AddAndComposeExportedValue<int>("OverriddenImport", 42);
 
-            var import = new ImportOnOverridenPropertyWithSameContract();
+            var import = new ImportOnOverriddenPropertyWithSameContract();
 
             container.SatisfyImportsOnce(import);
 
             // Import will get set twice because there are 2 imports on the same property.
-            // We would really like to either elminate it getting set twice or error in this case
+            // We would really like to either eliminate it getting set twice or error in this case
             // but we figure it is a rare enough corner case that it doesn't warrented the run time cost
             // and can be covered by an FxCop rule.
 
@@ -821,7 +821,7 @@ namespace Tests.Integration
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
-        public void InheritedExport_InterfaceHiearchy()
+        public void InheritedExport_InterfaceHierarchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));
 

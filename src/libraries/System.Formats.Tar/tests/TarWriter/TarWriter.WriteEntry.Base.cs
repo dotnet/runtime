@@ -22,11 +22,9 @@ namespace System.Formats.Tar.Tests
 
         protected async Task WriteEntry_Null_Throws_Async_Internal(TarEntryFormat format)
         {
-            MemoryStream archiveStream = new MemoryStream();
-            await using (archiveStream)
+            await using (MemoryStream archiveStream = new MemoryStream())
             {
-                TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false);
-                await using (writer)
+                await using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false))
                 {
                     await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEntryAsync(null));
                 }

@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Xml
         {
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
             document.Load(xmlReader);
             _containingDocument = document;
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Xml
             _encryptedDataList = document.SelectNodes("//enc:EncryptedData", _nsm);
         }
 
-        // Replace the encrytped XML element with the decrypted data for signature verification
+        // Replace the encrypted XML element with the decrypted data for signature verification
         private void ReplaceEncryptedData(XmlElement encryptedDataElement, byte[] decrypted)
         {
             XmlNode parent = encryptedDataElement.ParentNode;

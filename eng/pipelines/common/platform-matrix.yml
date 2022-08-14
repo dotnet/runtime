@@ -397,7 +397,7 @@ jobs:
       platform: Browser_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
+        image: ubuntu-18.04-webassembly-20220531132048-00a561c
         registry: mcr
       jobParameters:
         hostedOs: Linux
@@ -422,7 +422,7 @@ jobs:
       platform: Browser_wasm_firefox
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
+        image: ubuntu-18.04-webassembly-20220531132048-00a561c
         registry: mcr
       jobParameters:
         hostedOs: Linux

@@ -310,10 +310,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObject()
         {
-            if (_binaryObject == null)
-            {
-                _binaryObject = new BinaryObject();
-            }
+            _binaryObject ??= new BinaryObject();
             _binaryObject.Read(this);
 
             ObjectMap? objectMap = (ObjectMap?)ObjectMapIdTable[_binaryObject._mapId];
@@ -602,10 +599,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObjectString(BinaryHeaderEnum binaryHeaderEnum)
         {
-            if (_objectString == null)
-            {
-                _objectString = new BinaryObjectString();
-            }
+            _objectString ??= new BinaryObjectString();
 
             if (binaryHeaderEnum == BinaryHeaderEnum.ObjectString)
             {
@@ -613,10 +607,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else
             {
-                if (_crossAppDomainString == null)
-                {
-                    _crossAppDomainString = new BinaryCrossAppDomainString();
-                }
+                _crossAppDomainString ??= new BinaryCrossAppDomainString();
                 _crossAppDomainString.Read(this);
                 _objectString._value = _objectReader.CrossAppDomainArray(_crossAppDomainString._value) as string;
                 if (_objectString._value == null)
@@ -679,10 +670,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadMemberPrimitiveTyped()
         {
-            if (_memberPrimitiveTyped == null)
-            {
-                _memberPrimitiveTyped = new MemberPrimitiveTyped();
-            }
+            _memberPrimitiveTyped ??= new MemberPrimitiveTyped();
             _memberPrimitiveTyped.Read(this);
 
             PRs._objectTypeEnum = InternalObjectTypeE.Object; //Get rid of
@@ -881,10 +869,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 Array array = (Array)pr._newObj;
                 int arrayOffset = 0;
-                if (_byteBuffer == null)
-                {
-                    _byteBuffer = new byte[ChunkSize];
-                }
+                _byteBuffer ??= new byte[ChunkSize];
 
                 while (arrayOffset < array.Length)
                 {
@@ -914,10 +899,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void ReadMemberPrimitiveUnTyped()
         {
             ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
-            if (memberPrimitiveUnTyped == null)
-            {
-                memberPrimitiveUnTyped = new MemberPrimitiveUnTyped();
-            }
+            memberPrimitiveUnTyped ??= new MemberPrimitiveUnTyped();
             memberPrimitiveUnTyped.Set((InternalPrimitiveTypeE)_expectedTypeInformation!);
             memberPrimitiveUnTyped.Read(this);
 
@@ -946,10 +928,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadMemberReference()
         {
-            if (_memberReference == null)
-            {
-                _memberReference = new MemberReference();
-            }
+            _memberReference ??= new MemberReference();
             _memberReference.Read(this);
 
             ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
@@ -977,10 +956,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObjectNull(BinaryHeaderEnum binaryHeaderEnum)
         {
-            if (_objectNull == null)
-            {
-                _objectNull = new ObjectNull();
-            }
+            _objectNull ??= new ObjectNull();
             _objectNull.Read(this, binaryHeaderEnum);
 
             ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
@@ -1009,10 +985,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadMessageEnd()
         {
-            if (_messageEnd == null)
-            {
-                _messageEnd = new MessageEnd();
-            }
+            _messageEnd ??= new MessageEnd();
             _messageEnd.Read(this);
 
             if (!_stack.IsEmpty())
@@ -1062,10 +1035,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void PutOp(ObjectProgress op)
         {
-            if (_opPool == null)
-            {
-                _opPool = new SerStack("opPool");
-            }
+            _opPool ??= new SerStack("opPool");
             _opPool.Push(op);
         }
     }

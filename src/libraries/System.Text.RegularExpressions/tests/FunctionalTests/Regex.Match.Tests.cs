@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] cases = Match_MemberData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { engine, cases[i].Pattern, cases[i].Input, cases[i].Options, regexes[i], cases[i].Beginning, cases[i].Length, cases[i].ExpectedSuccess, cases[i].ExpectedValue };
@@ -547,8 +547,8 @@ namespace System.Text.RegularExpressions.Tests
 
             // Expressions containing Nothing (subexpressions that never match).
             // (Lookarounds aren't supported by NonBacktracking, but optimizer reduces (?!) to Nothing, which is supported.)
-            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
-            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("cat(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("(?<!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
@@ -590,6 +590,15 @@ namespace System.Text.RegularExpressions.Tests
             }
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
+            foreach (string aOptional in new[] { "(a|)", "(|a)", "(a?)", "(a??)" })
+            {
+                yield return (@$"^{aOptional}{{0,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
+                yield return (@$"^{aOptional}{{0,2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
+                yield return (@$"^{aOptional}{{1,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
+                yield return (@$"^{aOptional}{{1,2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
+                yield return (@$"^{aOptional}{{1,2}}?b", "aaab", RegexOptions.None, 0, 4, false, "");
+                yield return (@$"^{aOptional}{{2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
+            }
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
                 yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
@@ -619,9 +628,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.None, 0, 11, true, "--- ");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
+                yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
             }
 
-            // Character Class Substraction
+            // Character Class Subtraction
 
             // No Negation
             yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -1967,7 +1977,7 @@ namespace System.Text.RegularExpressions.Tests
                 // b1 is semantically identical to \b except for \u200c and \u200d
                 yield return new object[] { engine, $@"{b1}\w+{b1}", "one two three", 3 };
                 yield return new object[] { engine, $@"{b1}\w+{b1}", "on\u200ce two three", 4 };
-                // contrast between using \W = [^\w] vs negative lookaround !\w 
+                // contrast between using \W = [^\w] vs negative lookaround !\w
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
@@ -1998,12 +2008,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/71808")]
-                return;
-            }
-
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
@@ -2057,12 +2061,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/71808")]
-                return;
-            }
-
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
@@ -2161,7 +2159,7 @@ namespace System.Text.RegularExpressions.Tests
                 // Whitespace
                 yield return new object[] { engine, @"\s+", RegexOptions.None, "===== \n\t\v\r ====", new (int, int, string)[] { (5, 6, " \n\t\v\r ") } };
 
-                // Unicode character classes, the input string uses the first element of each character class 
+                // Unicode character classes, the input string uses the first element of each character class
                 yield return new object[] {
                         engine,
                         @"\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Mn}\p{Mc}\p{Me}\p{Nd}\p{Nl}", RegexOptions.None,
@@ -2197,8 +2195,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "(?i:[\0-ac-\uFFFF])", RegexOptions.None, "b", new (int, int, string)[] { (0, 1, "b") } };
                 yield return new object[] { engine, "(?i:[\0-PR-\uFFFF])", RegexOptions.None, "Q", new (int, int, string)[] { (0, 1, "Q") } };
                 yield return new object[] { engine, "(?i:[\0-pr-\uFFFF])", RegexOptions.None, "q", new (int, int, string)[] { (0, 1, "q") } };
-                yield return new object[] { engine, "(?i:[^a])", RegexOptions.None, "aAaA", null };             // this correponds to not{a,A}
-                yield return new object[] { engine, "(?i:[\0-\uFFFF-[A]])", RegexOptions.None, "aAaA", null };  // this correponds to not{a,A}
+                yield return new object[] { engine, "(?i:[^a])", RegexOptions.None, "aAaA", null };             // this corresponds to not{a,A}
+                yield return new object[] { engine, "(?i:[\0-\uFFFF-[A]])", RegexOptions.None, "aAaA", null };  // this corresponds to not{a,A}
                 yield return new object[] { engine, "(?i:[^Q])", RegexOptions.None, "q", null };
                 yield return new object[] { engine, "(?i:[^b])", RegexOptions.None, "b", null };
 

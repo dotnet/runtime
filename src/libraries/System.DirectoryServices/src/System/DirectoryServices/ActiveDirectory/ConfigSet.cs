@@ -621,10 +621,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the adam instance passing on  the
@@ -666,11 +663,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    // call dispose on search result collection
-                    resCol.Dispose();
-                }
+                // call dispose on search result collection
+                resCol?.Dispose();
             }
             return sites;
         }
@@ -739,11 +733,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    // call dispose on search result collection
-                    resCol.Dispose();
-                }
+                // call dispose on search result collection
+                resCol?.Dispose();
             }
             return appNCs;
         }

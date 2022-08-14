@@ -41,6 +41,7 @@
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="PointerTests.cs" />
+    <Compile Include="TypeTests.Constraints.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">

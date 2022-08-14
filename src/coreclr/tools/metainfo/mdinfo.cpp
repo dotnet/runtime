@@ -2529,7 +2529,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
 {
     ULONG       cbCur = 0;
     ULONG       cb;
-    // 428793: Prefix complained correctly about unitialized data.
+    // 428793: Prefix complained correctly about uninitialized data.
     ULONG       ulData = (ULONG) IMAGE_CEE_CS_CALLCONV_MAX;
     ULONG       ulArgs;
     HRESULT     hr = NOERROR;
@@ -2608,7 +2608,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
         {
             ULONG       ulDataTemp;
 
-            // Handle the sentinal for varargs because it isn't counted in the args.
+            // Handle the sentinel for varargs because it isn't counted in the args.
             CorSigUncompressData(&pbSigBlob[cbCur], &ulDataTemp);
             ++i;
 

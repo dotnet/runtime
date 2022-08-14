@@ -77,12 +77,12 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual 
-        /// method that is not overriding any method on a base type. 
-        /// Given that such methods can never be overridden in any derived type, we can 
-        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables, 
+        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
+        /// method that is not overriding any method on a base type.
+        /// Given that such methods can never be overridden in any derived type, we can
+        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables,
         /// and storing them in a separate table on the side. This is especially beneficial for all array types,
-        /// since all of their collection interface methods are sealed and implemented on the System.Array and 
+        /// since all of their collection interface methods are sealed and implemented on the System.Array and
         /// System.Array&lt;T&gt; base types, and therefore we can minimize the vtable sizes of all derived array types.
         /// </summary>
         public static bool CanMethodBeInSealedVTable(this MethodDesc method)
@@ -91,7 +91,7 @@ namespace ILCompiler
 
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
-            // Inteface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
+            // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
             if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
                 return true;

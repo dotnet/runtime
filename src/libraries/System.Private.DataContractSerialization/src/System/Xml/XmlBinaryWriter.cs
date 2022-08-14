@@ -746,27 +746,7 @@ namespace System.Xml
             => WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
 
         public override void WriteDateTimeText(DateTime dt)
-            => WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, ToBinary(dt));
-
-        private static long ToBinary(DateTime dt)
-        {
-            long temp = 0;
-            switch (dt.Kind)
-            {
-                case DateTimeKind.Local:
-                    temp |= -9223372036854775808L; // 0x8000000000000000
-                    temp |= dt.ToUniversalTime().Ticks;
-                    break;
-                case DateTimeKind.Utc:
-                    temp |= 0x4000000000000000L;
-                    temp |= dt.Ticks;
-                    break;
-                case DateTimeKind.Unspecified:
-                    temp = dt.Ticks;
-                    break;
-            }
-            return temp;
-        }
+            => WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, dt.ToBinary());
 
 
         public override void WriteUniqueIdText(UniqueId value)
@@ -839,18 +819,26 @@ namespace System.Xml
             WriteArrayInfo(XmlBinaryNodeType.DateTimeTextWithEndElement, items.Length);
             foreach (DateTime dateTime in items)
             {
-                WriteInt64(ToBinary(dateTime));
+                WriteInt64(dateTime.ToBinary());
             }
         }
 
         public void WriteGuidArray(ReadOnlySpan<Guid> items)
         {
-            WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, items.Length);
-            foreach (ref readonly Guid guid in items)
+            if (BitConverter.IsLittleEndian)
             {
-                Span<byte> bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset, 16);
-                guid.TryWriteBytes(bytes);
-                Advance(16);
+                WriteArray(XmlBinaryNodeType.GuidTextWithEndElement, items.Length, MemoryMarshal.AsBytes(items));
+            }
+            else
+            {
+
+                WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, items.Length);
+                foreach (ref readonly Guid guid in items)
+                {
+                    Span<byte> bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset, 16);
+                    guid.TryWriteBytes(bytes);
+                    Advance(16);
+                }
             }
         }
 
@@ -1143,181 +1131,290 @@ namespace System.Xml
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                }
             }
         }
 
         // DateTime
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteDateTimeArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
+                    _writer.WriteDateTimeArray(array.AsSpan(offset, count));
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteDateTimeArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
+                    _writer.WriteDateTimeArray(array.AsSpan(offset, count));
+                }
             }
         }
 
         // Guid
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                if (BitConverter.IsLittleEndian)
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    _writer.WriteArray(XmlBinaryNodeType.GuidTextWithEndElement, count, bytes);
-                }
-                else
-                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array.AsSpan(offset, count));
                 }
             }
@@ -1325,35 +1422,53 @@ namespace System.Xml
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteGuidArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
+                    _writer.WriteGuidArray(array.AsSpan(offset, count));
+                }
             }
         }
 
         // TimeSpan
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
+                    _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
+                }
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
-            CheckArray(array, offset, count);
-            if (count > 0)
+            if (Signing)
             {
-                WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                base.WriteArray(prefix, localName, namespaceUri, array, offset, count);
+            }
+            else
+            {
+                CheckArray(array, offset, count);
+                if (count > 0)
+                {
+                    WriteStartArray(prefix, localName, namespaceUri, count);
+                    _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
+                }
             }
         }
     }

@@ -847,10 +847,7 @@ namespace System.Xml.Serialization
                 if (membersScope != null)
                 {
                     choiceAccessor.Name = choiceIdentifier.Name = member.ChoiceIdentifier.MemberName = membersScope.AddUnique(member.ChoiceIdentifier.MemberName, choiceIdentifier);
-                    if (members != null)
-                    {
-                        members.Add(choiceAccessor.Name, choiceIdentifier);
-                    }
+                    members?.Add(choiceAccessor.Name, choiceIdentifier);
                 }
             }
             return member;

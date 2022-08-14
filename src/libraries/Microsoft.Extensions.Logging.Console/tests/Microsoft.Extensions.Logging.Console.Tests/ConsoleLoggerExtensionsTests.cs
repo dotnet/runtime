@@ -271,6 +271,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73436", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -562,6 +563,44 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 data.Add(ConsoleFormatterNames.Systemd);
                 data.Add(ConsoleFormatterNames.Json);
                 return data;
+            }
+        }
+
+        /// <summary>
+        /// Tests to ensure the suppression of IL3050 on ConsoleLoggerExtensions.AddConsole is valid.
+        /// </summary>
+        [Theory]
+        [InlineData(typeof(JsonConsoleFormatterOptions))]
+        [InlineData(typeof(ConsoleFormatterOptions))]
+        [InlineData(typeof(SimpleConsoleFormatterOptions))]
+        [InlineData(typeof(ConsoleLoggerOptions))]
+        public void EnsureFormatterOptions_OnlyHaveSimpleProperties(Type type)
+        {
+            VerifyHasOnlySimpleProperties(type);
+        }
+
+        private static void VerifyHasOnlySimpleProperties(Type type)
+        {
+            foreach (PropertyInfo prop in type.GetProperties())
+            {
+                if (type == typeof(JsonConsoleFormatterOptions) && prop.Name == "JsonWriterOptions")
+                {
+                    VerifyHasOnlySimpleProperties(prop.PropertyType);
+                    continue;
+                }
+
+                if (type == typeof(JsonWriterOptions) && prop.Name == "Encoder")
+                {
+                    // skip JsonWriterOptions.Encoder, since that can't be set through IConfiguration
+                    continue;
+                }
+
+                // verify only "simple" types are used in the Options classes, there can't be any generic collections
+                // or else NativeAOT would break
+                Assert.True(prop.PropertyType == typeof(string) ||
+                    prop.PropertyType == typeof(bool) ||
+                    prop.PropertyType == typeof(int) ||
+                    prop.PropertyType.IsEnum, $"ConsoleOptions property '{type.Name}.{prop.Name}' must be a simple type in order for NativeAOT to work");
             }
         }
     }

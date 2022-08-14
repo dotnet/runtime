@@ -25,13 +25,25 @@ namespace DependencyLogViewer
 
             InitializeComponent();
 
-            this.Text = "Graph Pid:" + _graph.PID + " Id:" + _graph.ID + " Node:" + _node.ToString();
-            this.nodeTitle.Text = _node.ToString();
+            this.Text = $"Graph Pid: {_graph.PID}, ID: {_graph.ID}, Node: {_node.ToString}";
+            this.nodeTitle.Text = $"Current Node: {_node}";
 
             lock (GraphCollection.Singleton)
             {
-                this.dependentsListBox.DataSource = _node.Dependents.ToArray();
-                this.dependeesListBox.DataSource = _node.Dependencies.ToArray();
+                List<BoxDisplay> sourceNodes = new ();
+                foreach (var pair in _node.Sources)
+                {
+                    sourceNodes.Add(new BoxDisplay(pair.Key, pair.Value));
+                }
+
+                List<BoxDisplay> targetNodes = new ();
+                foreach (var pair in _node.Targets)
+                {
+                    targetNodes.Add(new BoxDisplay(pair.Key, pair.Value));
+                }
+
+                this.dependentsListBox.DataSource = sourceNodes;
+                this.dependeesListBox.DataSource = targetNodes;
             }
         }
 
@@ -40,9 +52,9 @@ namespace DependencyLogViewer
             if (listbox.SelectedItem == null)
                 return;
 
-            KeyValuePair<Node, string> pair = (KeyValuePair<Node, string>)listbox.SelectedItem;
+            BoxDisplay selected = (BoxDisplay)listbox.SelectedItem;
 
-            NodeForm nodeForm = new NodeForm(graph, pair.Key);
+            NodeForm nodeForm = new NodeForm(graph, selected.node);
             nodeForm.Show();
         }
 
@@ -54,6 +66,28 @@ namespace DependencyLogViewer
         private void exploreDependent_Click(object sender, EventArgs e)
         {
             ExploreSelectedItem(_graph, dependentsListBox);
+        }
+
+        private void infoButton_LinkClicked(object sender, EventArgs e)
+        {
+            string dMessage = "Dependent nodes depend on the current node. The current node depends on the dependees.";
+            MessageBox.Show(dMessage);
+        }
+    }
+    public class BoxDisplay
+    {
+        public Node node;
+        public List<string> reason;
+
+        public BoxDisplay(Node node, List<string> reason)
+        {
+            this.node = node;
+            this.reason = reason;
+        }
+
+        public override string ToString()
+        {
+            return $"Index: {node.Index}, Name: {node.Name}, {reason.Count} Reason(s): {String.Join(", ", reason.ToArray())}";
         }
     }
 }

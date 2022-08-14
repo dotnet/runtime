@@ -12,12 +12,12 @@ function wasm_exit(exit_code, reason) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
-function saveProfile(aot_profile_data) {
-    if (!aot_profile_data) {
-        throw new Error("aot_profile_data not set")
+function saveProfile(aotProfileData) {
+    if (!aotProfileData) {
+        throw new Error("aotProfileData not set")
     }
     const a = document.createElement('a');
-    const blob = new Blob([aot_profile_data]);
+    const blob = new Blob([aotProfileData]);
     a.href = URL.createObjectURL(blob);
     a.download = "data.aotprofile";
     // Append anchor to body.
@@ -27,31 +27,33 @@ function saveProfile(aot_profile_data) {
     // Remove anchor from body
     document.body.removeChild(a);
 }
-
+let enableProfiler = false
 try {
-    const { MONO, BINDING, INTERNAL } = await createDotnetRuntime(({ MONO }) => ({
+    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
-        onConfigLoaded: () => {
-            if (MONO.config.enable_profiler) {
-                MONO.config.aot_profiler_options = {
-                    write_at: "Sample.Test::StopProfile",
-                    send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+        onConfigLoaded: (config) => {
+            if (config.enableProfiler) {
+                enableProfiler = true;
+                config.aotProfilerOptions = {
+                    writeAt: "Sample.Test::StopProfile",
+                    sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
                 }
             }
-        },
-    }));
+        }
+    });
     console.log("not ready yet")
-    const testMeaning = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning");
-    const stopProfile = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile");
+    const exports = await getAssemblyExports("Wasm.BrowserProfile.Sample");
+    const testMeaning = exports.Sample.Test.TestMeaning;
+    const stopProfile = exports.Sample.Test.StopProfile;
     console.log("ready");
     const ret = testMeaning();
     document.getElementById("out").innerHTML = ret;
     console.debug(`ret: ${ret}`);
 
-    if (MONO.config.enable_profiler) {
+    if (enableProfiler) {
         stopProfile();
-        saveProfile(INTERNAL.aot_profile_data);
+        saveProfile(INTERNAL.aotProfileData);
     }
 
     let exit_code = ret == 42 ? 0 : 1;

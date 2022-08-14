@@ -11,14 +11,14 @@
 #include "debugger-engine.h"
 
 static bool
-debugger_avaliable (void);
+debugger_available (void);
 
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable }
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_available }
 };
 
 static bool
-debugger_avaliable (void)
+debugger_available (void)
 {
 	return true;
 }
@@ -28,8 +28,11 @@ MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
 	debugger_agent_add_function_pointers (&fn_table);
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM) && !defined(HOST_WASI)
 	mini_wasm_debugger_add_function_pointers (&fn_table);
+#endif
+#if defined(HOST_WASI)
+	mini_wasi_debugger_add_function_pointers (&fn_table);
 #endif
 	return &fn_table;
 }

@@ -47,12 +47,6 @@ namespace LibraryImportGenerator.IntegrationTests
             [return: MarshalUsing(typeof(IntGuaranteedUnmarshal))]
             public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ExceptionOnUnmarshal))] out int ret);
 
-            [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(ExceptionOnUnmarshal))]
-            public static class ExceptionOnUnmarshal
-            {
-                public static int ConvertToManaged(int unmanaged) => throw new Exception();
-            }
-
             [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(IntGuaranteedUnmarshal))]
             public static unsafe class IntGuaranteedUnmarshal
             {
@@ -90,6 +84,28 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_int_ref")]
             [return: MarshalUsing(typeof(IntWrapperMarshallerStateful))]
             public static partial IntWrapper DoubleIntRef([MarshalUsing(typeof(IntWrapperMarshallerStateful))] IntWrapper pInt);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+            [return: MarshalUsing(typeof(IntGuaranteedUnmarshal))]
+            public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ExceptionOnUnmarshal))] out int ret);
+
+            [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(IntGuaranteedUnmarshal.Marshaller))]
+            public static class IntGuaranteedUnmarshal
+            {
+                public unsafe struct Marshaller
+                {
+                    public static bool ToManagedFinallyCalled = false;
+                    public int ToManagedFinally()
+                    {
+                        ToManagedFinallyCalled = true;
+                        return 0;
+                    }
+
+                    public void FromUnmanaged(int value) { }
+
+                    public void Free() {}
+                }
+            }
         }
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_replace_ref_ushort")]
@@ -137,6 +153,10 @@ namespace LibraryImportGenerator.IntegrationTests
             NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedFinallyCalled = false;
             Assert.Throws<Exception>(() => NativeExportsNE.Stateless.GuaranteedUnmarshal(out _));
             Assert.True(NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedFinallyCalled);
+
+            NativeExportsNE.Stateful.IntGuaranteedUnmarshal.Marshaller.ToManagedFinallyCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Stateful.GuaranteedUnmarshal(out _));
+            Assert.True(NativeExportsNE.Stateful.IntGuaranteedUnmarshal.Marshaller.ToManagedFinallyCalled);
         }
 
         [Fact]
@@ -154,18 +174,6 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Equal(!boolStruct.b1, boolStructNegated.b1);
             Assert.Equal(!boolStruct.b2, boolStructNegated.b2);
             Assert.Equal(!boolStruct.b3, boolStructNegated.b3);
-        }
-
-        [Fact]
-        public void ManagedTypeGetPinnableReferenceMarshalling()
-        {
-            int originalValue = 42;
-            var wrapper = new IntWrapper { i = originalValue };
-
-            var retVal = NativeExportsNE.Stateless.DoubleIntRef(wrapper);
-
-            Assert.Equal(originalValue * 2, wrapper.i);
-            Assert.Equal(originalValue * 2, retVal.i);
         }
 
         [Fact]
@@ -231,7 +239,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NonBlittableStructPinnableMarshalerPassByRef()
+        public void NonBlittableStructPinnableMarshallerPassByRef()
         {
             string str = "Hello world!";
             string expected = ReverseChars(str);

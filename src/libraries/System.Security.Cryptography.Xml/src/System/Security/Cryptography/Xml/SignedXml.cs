@@ -775,7 +775,7 @@ namespace System.Security.Cryptography.Xml
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
             {
                 string baseUri = _containingDocument?.BaseURI;
-                XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                XmlResolver resolver = (_bResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
                 XmlDocument doc = Utils.PreProcessElementInput(SignedInfo.GetXml(), resolver, baseUri);
 
                 // Add non default namespaces in scope

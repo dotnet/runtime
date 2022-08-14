@@ -6,9 +6,6 @@
 #include "mono/component/event_pipe.h"
 #include "mono/component/event_pipe-wasm.h"
 #include "mono/metadata/components.h"
-#ifdef HOST_WASM
-#include <emscripten/emscripten.h>
-#endif
 
 static EventPipeSessionID _dummy_session_id;
 
@@ -520,16 +517,16 @@ mono_component_event_pipe_init (void)
 	return component_event_pipe_stub_init ();
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id)
@@ -551,5 +548,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 {
 	g_assert_not_reached ();
 }
-
-#endif /* HOST_WASM */
+#endif /* HOST_WASM && !HOST_WASI */

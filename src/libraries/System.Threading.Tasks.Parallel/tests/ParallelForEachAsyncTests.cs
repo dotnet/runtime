@@ -124,7 +124,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2)]
         [InlineData(4)]
         [InlineData(128)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50566", TestPlatforms.Android)]
         public async Task Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync(int dop)
         {
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
@@ -141,7 +140,7 @@ namespace System.Threading.Tasks.Tests
             int activeWorkers = 0;
             var block = new TaskCompletionSource();
 
-            const int MaxSchedulerLimit = 2;
+            int MaxSchedulerLimit = Math.Min(2, Environment.ProcessorCount);
 
             Task t = Parallel.ForEachAsync(IterateUntilSet(box), new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new MaxConcurrencyLevelPassthroughTaskScheduler(MaxSchedulerLimit) }, async (item, cancellationToken) =>
             {

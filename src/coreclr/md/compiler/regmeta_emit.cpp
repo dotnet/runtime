@@ -362,7 +362,7 @@ HRESULT RegMeta::UnmarkAll()
                       IsTdNestedFamORAssem(pRec->GetFlags()) )
             {
                 // This nested class would potentially be visible outside, either
-                // directly or through inheritence.  If the enclosing class is
+                // directly or through inheritance.  If the enclosing class is
                 // marked, this nested class must be marked.
                 //
                 IfFailGo(m_pStgdb->m_MiniMd.FindNestedClassHelper(TokenFromRid(i, mdtTypeDef), &ulEncloser));
@@ -920,7 +920,7 @@ HRESULT RegMeta::RefToDefOptimization()
 
             // Look for a member with the same def.  Might not be found if it is
             // inherited from a base class.
-            //<TODO>@future: this should support inheritence checking.
+            //<TODO>@future: this should support inheritance checking.
             // Look for a member with the same name and signature.</TODO>
             hr = ImportHelper::FindMember(pMiniMd, tkParent, szName, pvSig, cbSig, &mfdef);
             if (hr != S_OK)
@@ -1076,7 +1076,7 @@ HRESULT RegMeta::_DefineMethodSemantics(    // S_OK or error.
     USHORT      usAttr,                     // [IN] CorMethodSemanticsAttr.
     mdMethodDef md,                         // [IN] Method.
     mdToken     tkAssoc,                    // [IN] Association.
-    BOOL        bClear)                     // [IN] Specifies whether to delete the exisiting entries.
+    BOOL        bClear)                     // [IN] Specifies whether to delete the existing entries.
 {
     HRESULT             hr          = S_OK;
     MethodSemanticsRec *pRecord     = NULL;
@@ -1141,7 +1141,7 @@ ErrExit:
 // Turn the specified internal flags on.
 //*******************************************************************************
 HRESULT RegMeta::_TurnInternalFlagsOn(  // S_OK or error.
-    mdToken     tkObj,                  // [IN] Target object whose internal flags are targetted.
+    mdToken     tkObj,                  // [IN] Target object whose internal flags are targeted.
     DWORD       flags)                  // [IN] Specifies flags to be turned on.
 {
     HRESULT     hr;
@@ -1242,7 +1242,7 @@ HRESULT RegMeta::_SetImplements(        // S_OK or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && rTk);
     _ASSERTE(!m_bSaveOptimized && "Cannot change records after PreSave() and before Save().");
 
-    // Clear all exising InterfaceImpl records by setting the parent to Nil.
+    // Clear all existing InterfaceImpl records by setting the parent to Nil.
     if (bClear)
     {
         IfFailGo(m_pStgdb->m_MiniMd.GetInterfaceImplsForTypeDef(

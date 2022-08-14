@@ -14,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out float value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = slot.SingleValue;
         }
 
         /// <summary>
@@ -24,7 +29,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(float value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.Single;
+            slot.SingleValue = value;
         }
 
         /// <summary>
@@ -34,7 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out float? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = slot.SingleValue;
         }
 
         /// <summary>
@@ -44,7 +55,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(float? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.Single;
+                slot.SingleValue = value.Value;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
     }
 }

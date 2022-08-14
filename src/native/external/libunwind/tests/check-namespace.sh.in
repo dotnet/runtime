@@ -107,6 +107,7 @@ check_local_unw_abi () {
     match _UL${plat}_get_fpreg
     match _UL${plat}_get_proc_info
     match _UL${plat}_get_proc_info_by_ip
+    match _UL${plat}_get_proc_info_in_range
     match _UL${plat}_get_proc_name
     match _UL${plat}_get_reg
     match _UL${plat}_get_save_loc
@@ -234,6 +235,7 @@ check_generic_unw_abi () {
     match _U${plat}_get_fpreg
     match _U${plat}_get_proc_info
     match _U${plat}_get_proc_info_by_ip
+    match _U${plat}_get_proc_info_in_range
     match _U${plat}_get_proc_name
     match _U${plat}_get_reg
     match _U${plat}_get_save_loc

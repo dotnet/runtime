@@ -277,7 +277,7 @@ HRESULT CordbAppDomain::EnumerateThreads(ICorDebugThreadEnum **ppThreads)
         RSInitHolder<CordbHashTableEnum> pEnum;
         GetProcess()->BuildThreadEnum(this, NULL, pEnum.GetAddr());
 
-        // This builds up auxillary list. don't need pEnum after this.
+        // This builds up auxiliary list. don't need pEnum after this.
         hr = pThreadEnum->Init(pEnum, this);
         IfFailThrow(hr);
 

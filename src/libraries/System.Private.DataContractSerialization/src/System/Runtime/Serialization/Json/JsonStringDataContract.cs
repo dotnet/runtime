@@ -3,10 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
-using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
+using System.Text;
 
 namespace System.Runtime.Serialization.Json
 {

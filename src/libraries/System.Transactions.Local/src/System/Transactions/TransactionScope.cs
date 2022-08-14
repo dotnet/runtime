@@ -809,10 +809,7 @@ namespace System.Transactions
             }
             finally
             {
-                if (null != _scopeTimer)
-                {
-                    _scopeTimer.Dispose();
-                }
+                _scopeTimer?.Dispose();
 
                 if (null != _committableTransaction)
                 {
@@ -824,10 +821,7 @@ namespace System.Transactions
                     _expectedCurrent.Dispose();
                 }
 
-                if (null != _dependentTransaction)
-                {
-                    _dependentTransaction.Dispose();
-                }
+                _dependentTransaction?.Dispose();
             }
         }
 
@@ -860,7 +854,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.TransactionScopeInternalError("TransactionScopeTimerObjectInvalid");
+                    etwLog.InternalError("TransactionScopeTimerObjectInvalid");
                 }
 
                 throw TransactionException.Create(TraceSourceType.TraceSourceBase, SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);

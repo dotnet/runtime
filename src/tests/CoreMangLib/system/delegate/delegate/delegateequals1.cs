@@ -50,7 +50,7 @@ namespace DelegateTest
         public bool PosTest1()
         {
             bool retVal = true;
-            //Type,target, method, and invocation list 
+            //Type,target, method, and invocation list
             TestLibrary.TestFramework.BeginScenario("PosTest1: Use one delegate object to instance the other delegate object,then use equals method to compare");
 
             try
@@ -97,7 +97,7 @@ namespace DelegateTest
                 TestClass tcInstance = new TestClass(2);
                 delctor.starkWork = new booldelegate(tcInstance.StartWork_Bool);
                 booldelegate workDelegate = new booldelegate(tcInstance.StartWork_Bool);
-                
+
                 if (GetCompareResult(workDelegate, (booldelegate)delctor.starkWork))
                 {
                     if (!workDelegate.Equals((booldelegate)delctor.starkWork))
@@ -113,7 +113,7 @@ namespace DelegateTest
                 }
                 workDelegate();
                 ((booldelegate)delctor.starkWork)();
-                
+
             }
             catch (Exception e)
             {
@@ -179,7 +179,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("010", "Equals method return error ");
                     retVal = false;
                 }
-               
+
                 workDelegate();
                 ((booldelegate)delctor.starkWork)();
 
@@ -205,7 +205,7 @@ namespace DelegateTest
                 DelegateEquals delctor = new DelegateEquals();
                 booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
                 booldelegate workDelegate1 = new booldelegate(TestClass1.Completed_Bool);
-              
+
                 if (workDelegate.Equals(workDelegate1))
                 {
                     TestLibrary.TestFramework.LogError("014", "Equals method return error ");
@@ -256,12 +256,12 @@ namespace DelegateTest
 
             return retVal;
         }
-        //compare delegate's Type,target, method, and invocation list 
+        //compare delegate's Type,target, method, and invocation list
         //two delegates have common  Type,target, method, and invocation list
         //return true.otherwise return false
         private bool GetCompareResult(booldelegate del1, booldelegate del2)
         {
-           
+
             if (!del1.GetType().Equals(del2.GetType()))
             {
                 return false;
@@ -270,13 +270,13 @@ namespace DelegateTest
             {
                 return false;
             }
-           
+
             return true;
         }
 
 
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         private int id;

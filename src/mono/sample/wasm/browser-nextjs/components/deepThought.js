@@ -34,9 +34,9 @@ async function dotnetMeaning() {
     if (!dotnetRuntimePromise) {
         dotnetRuntimePromise = createRuntime();
     }
-    const { BINDING } = await dotnetRuntimePromise;
-    meaningFunction = BINDING.bind_static_method("[Wasm.Browser.NextJs.Sample] Sample.Test:Main");
-    return meaningFunction();
+    const { getAssemblyExports } = await dotnetRuntimePromise;
+    const exports = await getAssemblyExports("Wasm.Browser.NextJs.Sample.dll");
+    return exports.Sample.Test.Main();
 }
 
 export default function DeepThought() {
