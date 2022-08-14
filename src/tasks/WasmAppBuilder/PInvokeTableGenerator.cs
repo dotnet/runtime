@@ -102,8 +102,9 @@ internal sealed class PInvokeTableGenerator
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
-
+                    {
                         callbacks.Add(new PInvokeCallback(method));
+                    }
                 }
                 catch
                 {
@@ -303,8 +304,10 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
+            // Don't use method.ToString() or any of it's parameters, or return type
+            // because at least one of those are unsupported, and will throw
             Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method}' because '{reason}'.");
+                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
@@ -343,11 +346,17 @@ internal sealed class PInvokeTableGenerator
         foreach (var cb in callbacks)
         {
             MethodInfo method = cb.Method;
-            bool isVoid = method.ReturnType.FullName == "System.Void";
-
             if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
                 continue;
 
+            if (TryIsMethodGetParametersUnsupported(method, out string? reason))
+            {
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                        $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
+                continue;
+            }
+
+            bool isVoid = method.ReturnType.FullName == "System.Void";
             if (!isVoid && !IsBlittable(method.ReturnType))
                 Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
 
