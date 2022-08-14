@@ -8,7 +8,6 @@ if (!is_node) throw new Error(`This file only supports nodejs`);
 
 const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
     .withDiagnosticTracing(false)
-    .withApplicationArguments("dotnet", "is", "great!")
     .create();
 
 setModuleImports("main.mjs", {
@@ -24,4 +23,4 @@ const exports = await getAssemblyExports(config.mainAssemblyName);
 const text = exports.MyClass.Greeting();
 console.log(text);
 
-await runMainAndExit(config.mainAssemblyName, applicationArguments);
+await runMainAndExit(config.mainAssemblyName, ["dotnet", "is", "great!"]);

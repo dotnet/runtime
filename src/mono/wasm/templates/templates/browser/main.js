@@ -8,7 +8,6 @@ if (!is_browser) throw new Error(`Expected to be running in a browser`);
 
 const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
     .withDiagnosticTracing(false)
-    .withApplicationArguments("dotnet", "is", "great!")
     .create();
 
 setModuleImports("main.js", {
@@ -25,4 +24,4 @@ const text = exports.MyClass.Greeting();
 console.log(text);
 
 document.getElementById("out").innerHTML = `${text}`;
-await runMainAndExit(config.mainAssemblyName, applicationArguments);
+await runMainAndExit(config.mainAssemblyName, ["dotnet", "is", "great!"]);
