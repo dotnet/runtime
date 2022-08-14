@@ -121,14 +121,45 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None)]
-        public void UnmanagedStructsAreNotConsideredBlittable(BuildArgs buildArgs, string id)
+        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
+                        (BuildArgs buildArgs, string id)
+        {
+            (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
+                withDisabledRuntimeMarshallingAttribute: false,
+                expectSuccess: false,
+                buildArgs,
+                id
+            );
+
+            Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.V8)]
+        public void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
+                        (BuildArgs buildArgs, RunHost host, string id)
+        {
+            (buildArgs, _) = SingleProjectForDisabledRuntimeMarshallingTest(
+                withDisabledRuntimeMarshallingAttribute: true,
+                expectSuccess: true,
+                buildArgs,
+                id
+            );
+
+            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running 5", output);
+        }
+
+        private (BuildArgs buildArgs ,string output) SingleProjectForDisabledRuntimeMarshallingTest(bool withDisabledRuntimeMarshallingAttribute, bool expectSuccess, BuildArgs buildArgs, string id)
         {
             string code =
             """
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
-
+            """
+            + (withDisabledRuntimeMarshallingAttribute ? "[assembly: DisableRuntimeMarshalling]" : "")
+            + """
             public class Test
             {
                 public static int Main()
@@ -163,87 +194,45 @@ namespace Wasm.Build.Tests
                     },
                     Publish: buildArgs.AOT,
                     DotnetWasmFromRuntimePack: false,
-                    ExpectSuccess: false
+                    ExpectSuccess: expectSuccess
                 )
             );
 
-            Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+            return (buildArgs, output);
         }
 
+        public static IEnumerable<object?[]> SeparateAssemblyWithDisableMarshallingAttributeTestData(string config)
+            => ConfigWithAOTData(aot: false, config: config).Multiply(
+                    new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ false, /*expectSuccess*/ false },
+                    new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ false, /*expectSuccess*/ false },
+                    new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ true, /*expectSuccess*/ true },
+                    new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
+                ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays();
+
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome)]
-        public void UnmanagedStructsAreConsideredBlittable(BuildArgs buildArgs, RunHost host, string id)
-        {
-            string code = 
-            """
-            using System;
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-
-            [assembly: DisableRuntimeMarshalling]
-
-            public class Test
-            {
-                public static int Main()
-                {
-                    var x = new S { Value = 5 };
-
-                    Console.WriteLine("Main running " + x.Value);
-                    return 42;
-                }
-
-                public struct S { public int Value; }
-
-                [UnmanagedCallersOnly]
-                public static void M(S myStruct) { }
-            }
-            """;
-
-            buildArgs = ExpandBuildArgs(
-                buildArgs with { ProjectName = $"blittable_{buildArgs.Config}_{id}" },
-                extraProperties: buildArgs.AOT
-                    ? string.Empty
-                    : "<WasmBuildNative>true</WasmBuildNative>"
-            );
-
-            (_, string output) = BuildProject(
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Release")]
+        public void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+                        (BuildArgs buildArgs, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, RunHost host, string id)
+            => SeparateAssembliesForDisableRuntimeMarshallingTest(
+                libraryHasAttribute: libraryHasAttribute,
+                appHasAttribute: appHasAttribute,
+                expectSuccess: expectSuccess,
                 buildArgs,
-                id: id,
-                new BuildProjectOptions(
-                    InitProject: () =>
-                    {
-                        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-                    },
-                    Publish: buildArgs.AOT,
-                    DotnetWasmFromRuntimePack: false
-                )
+                host,
+                id
             );
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-            Assert.Contains("Main running 5", output);
-        }
-
-        [Theory]
-        [BuildAndRun(host: RunHost.Chrome)]
-        public void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly(BuildArgs buildArgs, RunHost host, string id)
+        private void SeparateAssembliesForDisableRuntimeMarshallingTest
+                        (bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
-            """
-            using System;
-
-            public struct S { public int Value; }
-
-            class Program
-            {
-                public static void Main()
-                {
-                    // Noop
-                }
-            }
-            """;
+                (libraryHasAttribute ? "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]" : "")
+                + "public struct S { public int Value; }";
 
             var libraryBuildArgs = ExpandBuildArgs(
-                buildArgs with { ProjectName = $"blittable_different_library_{buildArgs.Config}_{id}" }
+                buildArgs with { ProjectName = $"blittable_different_library_{buildArgs.Config}_{id}" },
+                extraProperties: "<OutputType>Library</OutputType><RuntimeIdentifier />"
             );
 
             (string libraryDir, string output) = BuildProject(
@@ -260,14 +249,14 @@ namespace Wasm.Build.Tests
                 )
             );
 
-
             code =
             """
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
-
-            [assembly: DisableRuntimeMarshalling]
+            """
+            + (appHasAttribute ? "[assembly: DisableRuntimeMarshalling]" : "")
+            + """
 
             public class Test
             {
@@ -303,12 +292,20 @@ namespace Wasm.Build.Tests
                         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
                     },
                     Publish: buildArgs.AOT,
-                    DotnetWasmFromRuntimePack: false
+                    DotnetWasmFromRuntimePack: false,
+                    ExpectSuccess: expectSuccess
                 )
             );
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-            Assert.Contains("Main running 5", output);
+            if (expectSuccess)
+            {
+                output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+                Assert.Contains("Main running 5", output);
+            }
+            else
+            {
+                Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+            }
         }
 
         [Theory]
