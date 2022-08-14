@@ -135,7 +135,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
                         (BuildArgs buildArgs, RunHost host, string id)
         {
@@ -207,7 +207,7 @@ namespace Wasm.Build.Tests
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ false, /*expectSuccess*/ false },
                     new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ true, /*expectSuccess*/ true },
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
-                ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays();
+                ).WithRunHosts(RunHost.Chrome).UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
