@@ -53,7 +53,7 @@ namespace System.Numerics
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0;
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -734,13 +734,9 @@ namespace System.Numerics
 
         /// <summary>
         /// Accumulates the CRC (Cyclic redundancy check) checksum.
-        ///
-        /// Uses following Hardware Intrinsics, if supported:
-        /// * uint32_t __crc32b (uint32_t a, uint8_t b)
-        /// * uint32_t __crc32cb (uint32_t a, uint8_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
-        /// <param name="data">The checksum data</param>
+        /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, byte data)
@@ -762,13 +758,9 @@ namespace System.Numerics
 
         /// <summary>
         /// Accumulates the CRC (Cyclic redundancy check) checksum.
-        ///
-        /// Uses following Hardware Intrinsics, if supported:
-        /// * unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
-        /// * uint32_t __crc32ch (uint32_t a, uint16_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
-        /// <param name="data">The checksum data</param>
+        /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, ushort data)
@@ -790,13 +782,9 @@ namespace System.Numerics
 
         /// <summary>
         /// Accumulates the CRC (Cyclic redundancy check) checksum.
-        ///
-        /// Uses following Hardware Intrinsics, if supported:
-        /// * unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
-        /// * uint32_t __crc32ch (uint32_t a, uint32_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
-        /// <param name="data">The checksum data</param>
+        /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, uint data)
@@ -818,13 +806,9 @@ namespace System.Numerics
 
         /// <summary>
         /// Accumulates the CRC (Cyclic redundancy check) checksum.
-        ///
-        /// Uses following Hardware Intrinsics, if supported:
-        /// * unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
-        /// * uint32_t __crc32cd (uint32_t a, uint64_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
-        /// <param name="data">The checksum data</param>
+        /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, ulong data)
