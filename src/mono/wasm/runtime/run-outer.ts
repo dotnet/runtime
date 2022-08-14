@@ -231,6 +231,12 @@ class HostBuilder implements DotnetHostBuilder {
                 mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
                 this.instance = await emscriptenEntrypoint(this.moduleConfig);
             }
+            if (this.virtualWorkingDirectory) {
+                const FS = (this.instance!.Module as any).FS;
+                const wds = FS.stat(this.virtualWorkingDirectory);
+                mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${this.virtualWorkingDirectory}`);
+                FS.chdir(this.virtualWorkingDirectory);
+            }
             return this.instance;
         } catch (err) {
             mono_exit(1, err);
@@ -243,12 +249,6 @@ class HostBuilder implements DotnetHostBuilder {
             mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
             if (!this.instance) {
                 await this.create();
-            }
-            if (this.virtualWorkingDirectory) {
-                const FS = (this.instance!.Module as any).FS;
-                const wds = FS.stat(this.virtualWorkingDirectory);
-                mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${this.virtualWorkingDirectory}`);
-                FS.chdir(this.virtualWorkingDirectory);
             }
             mono_assert(this.moduleConfig.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
             if (!this.applicationArguments) {
