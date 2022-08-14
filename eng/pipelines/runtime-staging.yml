@@ -76,10 +76,10 @@ jobs:
     platforms:
       - Browser_wasm_win
     nameSuffix: _AOT
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    #runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
     shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+    alwaysRun: true
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
