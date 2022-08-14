@@ -344,11 +344,9 @@ internal sealed class PInvokeTableGenerator
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
         bool hasSkips = false;
-        foreach (var cb in callbacks)
+        foreach (PInvokeCallback cb in callbacks)
         {
             MethodInfo method = cb.Method;
-            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
-                continue;
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
             {
@@ -358,6 +356,9 @@ internal sealed class PInvokeTableGenerator
                         $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
                 continue;
             }
+
+            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
+                continue;
 
             bool isVoid = method.ReturnType.FullName == "System.Void";
             if (!isVoid && !IsBlittable(method.ReturnType))
