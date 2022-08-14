@@ -14,7 +14,7 @@ using Microsoft.Build.Utilities;
 internal sealed class PInvokeTableGenerator
 {
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
-    private Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new ();
+    private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
 
     private TaskLoggingHelper Log { get; set; }
 
@@ -46,7 +46,7 @@ internal sealed class PInvokeTableGenerator
             using (var w = File.CreateText(tmpFileName))
             {
                 EmitPInvokeTable(w, modules, pinvokes);
-                EmitNativeToInterp(w, callbacks);
+                EmitNativeToInterp(w, ref callbacks);
             }
 
             if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
@@ -328,7 +328,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -343,6 +343,7 @@ internal sealed class PInvokeTableGenerator
         // Arguments to interp entry functions in the runtime
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
+        bool hasSkips = false;
         foreach (var cb in callbacks)
         {
             MethodInfo method = cb.Method;
@@ -351,6 +352,8 @@ internal sealed class PInvokeTableGenerator
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
             {
+                cb.Skip = true;
+                hasSkips = true;
                 Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
                         $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
                 continue;
@@ -366,6 +369,9 @@ internal sealed class PInvokeTableGenerator
                     Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
             }
         }
+
+        if (hasSkips)
+            callbacks = callbacks.SkipWhile(cb => cb.Skip).ToList();
 
         var callbackNames = new HashSet<string>();
 
@@ -544,6 +550,8 @@ internal sealed class PInvokeCallback
     {
         Method = method;
     }
+
+    public bool Skip { get; set; }
 
     public MethodInfo Method;
     public string? EntryName;
