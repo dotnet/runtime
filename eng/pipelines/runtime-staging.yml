@@ -61,14 +61,14 @@ jobs:
 #
 # WebAssembly legs - library tests, Wasm.Build.Tests, and debugger tests
 #
-- template: /eng/pipelines/common/templates/wasm-library-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_win
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
-    scenarios:
-      - WasmTestOnBrowser
+#- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #shouldContinueOnError: forceFalse
+    #alwaysRun: ${{ variables.isRollingBuild }}
+    #scenarios:
+      #- WasmTestOnBrowser
 
 # AOT Library tests
 - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -88,22 +88,22 @@ jobs:
     shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-      - Browser_wasm_win
-    shouldContinueOnError: forceFalse
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+      #- Browser_wasm_win
+    #shouldContinueOnError: forceFalse
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_firefox
-    browser: firefox
-    # ff tests are unstable currently
-    shouldContinueOnError: true
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_firefox
+    #browser: firefox
+    ## ff tests are unstable currently
+    #shouldContinueOnError: true
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
 #
 # Build the whole product using Mono
