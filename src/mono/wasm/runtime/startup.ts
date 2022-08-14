@@ -28,6 +28,7 @@ import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start
 import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 
 let config: MonoConfig = undefined as any;
 let configLoaded = false;
@@ -40,6 +41,9 @@ export const afterPreRun = createPromiseController<void>();
 export const beforeOnRuntimeInitialized = createPromiseController<void>();
 export const afterOnRuntimeInitialized = createPromiseController<void>();
 export const afterPostRun = createPromiseController<void>();
+
+// default size if MonoConfig.pthreadPoolSize is undefined
+const MONO_PTHREAD_POOL_SIZE = 4;
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
@@ -149,6 +153,9 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     await afterInstantiateWasm.promise;
     await afterPreInit.promise;
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
+    if (MonoWasmThreads) {
+        await instantiateWasmPThreadWorkerPool();
+    }
     try {
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
@@ -246,6 +253,10 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
     init_crypto();
+
+    if (MonoWasmThreads) {
+        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
+    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }

@@ -72,7 +72,8 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Could not get pinvoke, or callbacks for method '{method.Name}' because '{ex.Message}'");
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                        $"Could not get pinvoke, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
             }
         }
 
@@ -302,7 +303,8 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
-            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Skipping pinvoke '{pinvoke.Method}' because '{reason}'.");
+            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
