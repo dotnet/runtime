@@ -79,6 +79,8 @@ namespace System.Net
                         chain.ChainPolicy = chainPolicy;
                     }
 
+                    // First certificate is peer's certificate.
+                    // Any any additional intermediate CAs to ExtraStore.
                     for (int i = 1; i < chainSize; i++)
                     {
                         IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
