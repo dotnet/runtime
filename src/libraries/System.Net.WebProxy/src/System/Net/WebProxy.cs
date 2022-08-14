@@ -32,7 +32,7 @@ namespace System.Net
             if (BypassList != null)
             {
                 _bypassList = new ChangeTrackingArrayList(BypassList);
-                UpdateRegexList();
+                UpdateRegexList(); // prompt creation of the Regex instances so that any exceptions are propagated
             }
         }
 
@@ -71,7 +71,9 @@ namespace System.Net
             get
             {
                 if (_bypassList == null)
+                {
                     return Array.Empty<string>();
+                }
 
                 var bypassList = new string[_bypassList.Count];
                 _bypassList.CopyTo(bypassList);
@@ -80,7 +82,7 @@ namespace System.Net
             set
             {
                 _bypassList = value != null ? new ChangeTrackingArrayList(value) : null;
-                UpdateRegexList();
+                UpdateRegexList(); // prompt creation of the Regex instances so that any exceptions are propagated
             }
         }
 
@@ -123,12 +125,29 @@ namespace System.Net
             return proxyUri;
         }
 
-
-        /// <summary>Replaces calls to UpdateRegexList which took a 'canThrow' flag, set to false, so we just swallow any exception.</summary>
-        private void UpdateRegexListIfBypassListIsChanged()
+        private void UpdateRegexList()
         {
-            ChangeTrackingArrayList? bypassList = _bypassList;
-            if (bypassList != null && bypassList.IsChanged)
+            Regex[]? regexBypassList = null;
+            if (_bypassList is ChangeTrackingArrayList bypassList)
+            {
+                bypassList.IsChanged = false;
+                if (bypassList.Count > 0)
+                {
+                    regexBypassList = new Regex[bypassList.Count];
+                    for (int i = 0; i < regexBypassList.Length; i++)
+                    {
+                        regexBypassList[i] = new Regex((string)bypassList[i]!, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    }
+                }
+            }
+
+            _regexBypassList = regexBypassList;
+        }
+
+        private bool IsMatchInBypassList(Uri input)
+        {
+            // Update our list of Regex instances if the ArrayList has changed.
+            if (_bypassList is ChangeTrackingArrayList bypassList && bypassList.IsChanged)
             {
                 try
                 {
@@ -139,33 +158,8 @@ namespace System.Net
                     _regexBypassList = null;
                 }
             }
-        }
 
-        private void UpdateRegexList()
-        {
-            ChangeTrackingArrayList? bypassList = _bypassList;
-
-            Regex[]? regexBypassList = null;
-            if (bypassList != null)
-            {
-                bypassList.ResetIsChanged();
-                if (bypassList.Count > 0)
-                {
-                    regexBypassList = new Regex[bypassList.Count];
-                    for (int i = 0; i < bypassList.Count; i++)
-                    {
-                        regexBypassList[i] = new Regex((string)bypassList[i]!, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                    }
-                }
-            }
-            _regexBypassList = regexBypassList;
-        }
-
-        private bool IsMatchInBypassList(Uri input)
-        {
-            UpdateRegexListIfBypassListIsChanged();
-
-            if (_regexBypassList is Regex[] bypassList)
+            if (_regexBypassList is Regex[] regexBypassList)
             {
                 bool isDefaultPort = input.IsDefaultPort;
                 int lengthRequired = input.Scheme.Length + 3 + input.Host.Length;
@@ -182,7 +176,7 @@ namespace System.Net
                 Debug.Assert(formatted);
                 url = url.Slice(0, charsWritten);
 
-                foreach (Regex r in bypassList)
+                foreach (Regex r in regexBypassList)
                 {
                     if (r.IsMatch(url))
                     {
@@ -221,21 +215,16 @@ namespace System.Net
 
         private sealed class ChangeTrackingArrayList : ArrayList
         {
-            public ChangeTrackingArrayList()
-            {
-            }
+            public ChangeTrackingArrayList() { }
 
-            public ChangeTrackingArrayList(ICollection c) : base(c)
-            {
-            }
+            public ChangeTrackingArrayList(ICollection c) : base(c) { }
 
-            public ChangeTrackingArrayList(int capacity) : base(capacity)
-            {
-            }
+            public bool IsChanged { get; set; }
 
-            public bool IsChanged { get; private set; }
-
-            public void ResetIsChanged() => IsChanged = false;
+            // Override the methods that can add, remove, or change the regexes in the bypass list.
+            // Methods that only read (like CopyTo, BinarySearch, etc.) and methods that reorder
+            // the collection but that don't change the overall list of regexes (e.g. Sort) do not
+            // need to be overridden.
 
             public override object? this[int index]
             {
@@ -299,36 +288,6 @@ namespace System.Net
             {
                 IsChanged = true;
                 base.Clear();
-            }
-
-            public override void Sort()
-            {
-                IsChanged = true;
-                base.Sort();
-            }
-
-            public override void Sort(IComparer? comparer)
-            {
-                IsChanged = true;
-                base.Sort(comparer);
-            }
-
-            public override void Sort(int index, int count, IComparer? comparer)
-            {
-                IsChanged = true;
-                base.Sort(index, count, comparer);
-            }
-
-            public override void Reverse()
-            {
-                IsChanged = true;
-                base.Reverse();
-            }
-
-            public override void Reverse(int index, int count)
-            {
-                IsChanged = true;
-                base.Reverse(index, count);
             }
         }
     }

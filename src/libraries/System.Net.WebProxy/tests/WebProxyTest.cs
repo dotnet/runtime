@@ -133,24 +133,44 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void WebProxy_BypassUrl_AddedDirectlyToList_IsBypassed()
+        public static void WebProxy_BypassUrl_BypassArrayListChangedDirectly_IsBypassedAsExpected()
         {
-            var p = new WebProxy("http://microsoft.com", false);
-            Assert.Equal(new Uri("http://microsoft.com"), p.GetProxy(new Uri("http://bing.com")));
+            var p = new WebProxy("http://microsoft.com", BypassOnLocal: false);
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+
             p.BypassArrayList.Add("bing");
-            Assert.Equal(new Uri("http://bing.com"), p.GetProxy(new Uri("http://bing.com")));
-        }
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
 
-        [Fact]
-        public static void WebProxy_BypassRegexList_ShouldNotRefreshBetweenCalls()
-        {
-            var p = new WebProxy("http://microsoft.com", false, new string[] { "foobar" });
+            p.BypassArrayList.Remove("bing");
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
 
-            //not sure what the policy is for reflexion in unit tests...
-            object regexList1 = typeof(WebProxy).GetField("_regexBypassList", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).GetValue(p);
-            _ = p.GetProxy(new Uri("http://bing.com"));
-            object regexList2 = typeof(WebProxy).GetField("_regexBypassList", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).GetValue(p);
-            Assert.True(regexList1 != null && regexList1 == regexList2);
+            p.BypassArrayList.AddRange(new[] { "dot.net" });
+            Assert.True(p.IsBypassed(new Uri("http://dot.net")));
+
+            p.BypassArrayList.InsertRange(0, new[] { "bing" });
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
+
+            p.BypassArrayList.SetRange(0, new[] { "example", "microsoft" });
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+            Assert.True(p.IsBypassed(new Uri("http://microsoft.com")));
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.False(p.IsBypassed(new Uri("http://dot.net")));
+
+            p.BypassArrayList.Clear();
+            Assert.False(p.IsBypassed(new Uri("http://example.com")));
+            Assert.False(p.IsBypassed(new Uri("http://microsoft.com")));
+
+            p.BypassArrayList.Insert(0, "bing");
+            p.BypassArrayList.Insert(1, "example");
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+
+            p.BypassArrayList.RemoveAt(0);
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+
+            p.BypassArrayList.RemoveRange(0, 1);
+            Assert.False(p.IsBypassed(new Uri("http://example.com")));
         }
 
         [Fact]
