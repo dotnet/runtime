@@ -39,6 +39,20 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        public void Equals_DifferentObjectDifferentType_ReturnsFalse()
+        {
+            TestObject differentObjectDifferentType = new TestObject("a");
+            Assert.False(_inheritedMethodInfo.Equals(differentObjectDifferentType));
+        }
+
+        [Fact]
+        public void Equals_Null_ReturnsFalse()
+        {
+            Assert.False(_inheritedMethodInfo.Equals(null));
+        }
+
+
+        [Fact]
         public void GetCustomAttributes_WithType_ReturnsVirtualAttribute()
         {
             object[] attributes = _inheritedMethodInfo.GetCustomAttributes(typeof(TestGetterSetterAttribute), true);

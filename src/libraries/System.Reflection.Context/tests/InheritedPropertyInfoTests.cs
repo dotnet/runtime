@@ -43,6 +43,13 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        public void GetProperty_NonNullGetter_ReturnsInheritedMethodInfo()
+        {
+            PropertyInfo property = _customTypeInfo.GetProperty("number2");
+            Assert.Equal("InheritedMethodInfo", property.GetSetMethod().GetType().Name);
+        }
+
+        [Fact]
         public void GetProperty_NullSetter_ReturnsNull()
         {
             PropertyInfo nullSetter = _customTypeInfo.GetProperty("number3");
@@ -61,6 +68,19 @@ namespace System.Reflection.Context.Tests
         {
             PropertyInfo differentObjectSameType = _customTypeInfoToCheckForEquality.GetProperty("number");
             Assert.True(_propertyInfo.Equals(differentObjectSameType));
+        }
+
+        [Fact]
+        public void Equals_DifferentObjectDifferentType_ReturnsFalse()
+        {
+            TestObject differentObjectDifferentType = new TestObject("a");
+            Assert.False(_propertyInfo.Equals(differentObjectDifferentType));
+        }
+
+        [Fact]
+        public void Equals_Null_ReturnsFalse()
+        {
+            Assert.False(_propertyInfo.Equals(null));
         }
     }
 }
