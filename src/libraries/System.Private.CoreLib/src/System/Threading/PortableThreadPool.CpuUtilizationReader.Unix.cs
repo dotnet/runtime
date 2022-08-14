@@ -9,7 +9,7 @@ namespace System.Threading
         {
             private Interop.Sys.ProcessCpuInformation _cpuInfo;
 
-            public int CurrentUtilization =>
+            public double CurrentUtilization =>
                 Interop.Sys.GetCpuUtilization(ref _cpuInfo) / Environment.ProcessorCount;
         }
     }

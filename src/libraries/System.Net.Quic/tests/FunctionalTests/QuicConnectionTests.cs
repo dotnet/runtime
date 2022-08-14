@@ -70,11 +70,7 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standartize on exceptions.
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                    await Assert.ThrowsAsync<QuicException>(() => connectTask);
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Which exception is correct?
@@ -107,12 +103,7 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-
-                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standardize on exceptions.
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                    await Assert.ThrowsAsync<QuicException>(() => connectTask);
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?

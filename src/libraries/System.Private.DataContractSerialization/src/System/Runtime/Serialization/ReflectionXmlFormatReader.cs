@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.Schema;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.Serialization.DataContracts;
+using System.Security;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Runtime.Serialization
 {
@@ -101,7 +102,7 @@ namespace System.Runtime.Serialization
 
         protected override string GetClassContractNamespace(ClassDataContract classContract)
         {
-            return classContract.StableName!.Namespace;
+            return classContract.XmlName!.Namespace;
         }
 
         protected override string GetCollectionContractItemName(CollectionDataContract collectionContract)
@@ -111,7 +112,7 @@ namespace System.Runtime.Serialization
 
         protected override string GetCollectionContractNamespace(CollectionDataContract collectionContract)
         {
-            return collectionContract.StableName.Namespace;
+            return collectionContract.XmlName.Namespace;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -135,7 +136,7 @@ namespace System.Runtime.Serialization
 
         private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
         {
-            int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
+            int memberCount = (contract.BaseClassContract == null) ? 0 : GetRequiredMembers(contract.BaseClassContract, requiredMembers);
             List<DataMember> members = contract.Members!;
             for (int i = 0; i < members.Count; i++, memberCount++)
             {

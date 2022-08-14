@@ -504,22 +504,11 @@ namespace System.Diagnostics.Tests
                     throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
                 }
 
-                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
-                {
-                    SecurityIdentifier sid;
-                    if (Interop.ProcessTokenToSid(handle, out sid))
-                    {
-                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                        int indexOfDomain = actualUserName.IndexOf('\\');
-                        if (indexOfDomain != -1)
-                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
 
-                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.Equal(username, Helpers.GetProcessUserName(p));
+                bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.True(isProfileLoaded);
 
-                        Assert.Equal(username, actualUserName);
-                        Assert.True(isProfileLoaded);
-                    }
-                }
             }
             finally
             {

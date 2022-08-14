@@ -51,7 +51,7 @@ namespace System.Net.NetworkInformation
             var networkInterfaceInfo = (Interop.Sys.NetworkInterfaceInfo*)networkInterfacesPtr;
             for (int i = 0; i < interfaceCount; i++, networkInterfaceInfo++)
             {
-                var name = Marshal.PtrToStringAnsi((IntPtr)networkInterfaceInfo->Name);
+                var name = Marshal.PtrToStringUTF8((IntPtr)networkInterfaceInfo->Name);
                 networkInterfaces[i] = new AndroidNetworkInterface(name!, networkInterfaceInfo);
             }
 

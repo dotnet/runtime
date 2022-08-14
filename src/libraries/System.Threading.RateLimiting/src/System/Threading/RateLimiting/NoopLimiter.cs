@@ -10,18 +10,34 @@ namespace System.Threading.RateLimiting
     {
         private static readonly RateLimitLease _lease = new NoopLease();
 
-        private NoopLimiter() { }
+        private long _totalSuccessfulLeases;
 
-        public static NoopLimiter Instance { get; } = new NoopLimiter();
+        public NoopLimiter() { }
 
         public override TimeSpan? IdleDuration => null;
 
-        public override int GetAvailablePermits() => int.MaxValue;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = long.MaxValue,
+                CurrentQueuedCount = 0,
+                TotalFailedLeases = 0,
+                TotalSuccessfulLeases = Interlocked.Read(ref _totalSuccessfulLeases)
+            };
+        }
 
-        protected override RateLimitLease AcquireCore(int permitCount) => _lease;
+        protected override RateLimitLease AttemptAcquireCore(int permitCount)
+        {
+            Interlocked.Increment(ref _totalSuccessfulLeases);
+            return _lease;
+        }
 
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
-            => new ValueTask<RateLimitLease>(_lease);
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _totalSuccessfulLeases);
+            return new ValueTask<RateLimitLease>(_lease);
+        }
 
         private sealed class NoopLease : RateLimitLease
         {

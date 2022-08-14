@@ -210,10 +210,18 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
 //
 /* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
 {
+    // No extra type information is needed for scalar/special HW Intrinsic.
+    //
+    unsigned simdSize = 0;
+    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
+    {
+        return false;
+    }
+
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
     // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give themm a unique value number them, and don't add an extra argument.
+    // give them a unique value number, and don't add an extra argument.
     //
     if (numArgs == -1)
     {
@@ -375,8 +383,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             NamedIntrinsic ni = intrinsicInfo.id;
 
 #if defined(TARGET_XARCH)
-            // on AVX1-only CPUs we only support NI_Vector256_Create intrinsic in Vector256
-            if (isLimitedVector256Isa && (ni != NI_Vector256_Create))
+            // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
+            if (isLimitedVector256Isa && !AvxOnlyCompatible(ni))
             {
                 return NI_Illegal;
             }
@@ -775,6 +783,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (!mustExpand && info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;

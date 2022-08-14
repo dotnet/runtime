@@ -211,13 +211,14 @@ namespace System.Xml
             if (_stream == null)
                 return false;
 
+            DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
+
             // The data could be coming from an untrusted source, so we use a standard
             // "multiply by 2" growth algorithm to avoid overly large memory utilization.
             // Constant value of 256 comes from MemoryStream implementation.
 
             do
             {
-                DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
                 int newOffsetMax = _offset + count;
                 if (newOffsetMax <= _offsetMax)
                     return true;
@@ -378,7 +379,25 @@ namespace System.Xml
             => ReadRawBytes<double>();
 
         public decimal ReadDecimal()
-            => ReadRawBytes<decimal>();
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return ReadRawBytes<decimal>();
+            }
+            else
+            {
+                byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out int offset);
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12))
+                };
+                return new decimal(span);
+            }
+        }
 
         public UniqueId ReadUniqueId()
         {
@@ -597,6 +616,13 @@ namespace System.Xml
             char[] chars = GetCharBuffer(length);
             int charCount = GetEscapedChars(offset, length, chars);
             return new string(chars, 0, charCount);
+        }
+
+        public string GetEscapedString(int offset, int length, XmlNameTable nameTable)
+        {
+            char[] chars = GetCharBuffer(length);
+            int charCount = GetEscapedChars(offset, length, chars);
+            return nameTable.Add(chars, 0, charCount);
         }
 
         private int GetLessThanCharEntity(int offset, int length)
@@ -942,7 +968,25 @@ namespace System.Xml
             => ReadRawBytes<double>(offset);
 
         public decimal GetDecimal(int offset)
-            => ReadRawBytes<decimal>(offset);
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return ReadRawBytes<decimal>(offset);
+            }
+            else
+            {
+                ReadOnlySpan<byte> bytes = _buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12))
+                };
+
+                return new decimal(span);
+            }
+        }
 
         public UniqueId GetUniqueId(int offset)
             => new UniqueId(_buffer, offset);
@@ -1001,9 +1045,11 @@ namespace System.Xml
             {
                 keyDictionary = _dictionary!;
             }
+
             XmlDictionaryString? s;
             if (!keyDictionary.TryLookup(key >> 1, out s))
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
+
             return s;
         }
 
@@ -1034,6 +1080,7 @@ namespace System.Xml
                     XmlExceptionHelper.ThrowXmlDictionaryStringIDUndefinedStatic(_reader, staticKey);
                 }
             }
+
             return key;
         }
 

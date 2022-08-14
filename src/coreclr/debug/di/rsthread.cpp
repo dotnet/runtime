@@ -3007,7 +3007,7 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 // pRead is optional. This makes sense when '0' is a valid default value.
 // 1) On success (block exists in LS, we can read it),
 //    return value of data in the slot, *pRead = true
-// 2) On failure to read block (block doens't exist yet, any other failure)
+// 2) On failure to read block (block doesn't exist yet, any other failure)
 //    return value == 0 (assumed default, *pRead = false
 REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T offset)
 {

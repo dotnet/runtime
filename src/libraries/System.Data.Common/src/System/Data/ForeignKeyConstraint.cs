@@ -693,7 +693,7 @@ namespace System.Data
             else
             {
                 iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param
-                // to be backward compatable, otherwise meay cause new exception
+                // to be backward compatible, otherwise meay cause new exception
             }
 
             if (iDest < 0)

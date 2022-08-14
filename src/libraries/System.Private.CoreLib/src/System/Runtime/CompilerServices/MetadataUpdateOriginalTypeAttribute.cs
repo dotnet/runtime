@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices;
                 AllowMultiple=false, Inherited=false)]
 public class MetadataUpdateOriginalTypeAttribute : Attribute
 {
-    /// <summary> This attribute is emited by Roslyn when a type that is marked with (or derives
+    /// <summary> This attribute is emitted by Roslyn when a type that is marked with (or derives
     /// from a type that is marked with) <see
     /// cref="System.Runtime.CompilerServices.CreateNewOnMetadataUpdateAttribute" /> is updated
     /// during a hot reload session.  The <see cref="OriginalType" /> points to the original version

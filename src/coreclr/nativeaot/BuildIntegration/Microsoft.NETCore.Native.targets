@@ -39,8 +39,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up the defaults for the compatibility mode -->
   <PropertyGroup>
-    <_BuildingInCompatibleMode Condition="$(TrimmerDefaultAction) == '' and $(IlcGenerateStackTraceData) == '' and $(IlcDisableReflection) == ''">true</_BuildingInCompatibleMode>
-
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
     <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
   </PropertyGroup>
@@ -222,6 +220,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--appcontextswitch:%(Identity)=%(Value)')" />
+      <IlcArg Include="--appcontextswitch:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />
       <IlcArg Include="@(DirectPInvoke->'--directpinvoke:%(Identity)')" />
       <IlcArg Include="@(DirectPInvokeList->'--directpinvokelist:%(Identity)')" />
       <IlcArg Include="@(_TrimmerFeatureSettings->'--feature:%(Identity)=%(Value)')" />
@@ -265,8 +264,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Inputs="@(IlcCompileInput);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
-    <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating native code" Importance="high" />
 
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
@@ -343,6 +341,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
+
+    <!-- remove executable flag -->
+    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Shared'" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'"

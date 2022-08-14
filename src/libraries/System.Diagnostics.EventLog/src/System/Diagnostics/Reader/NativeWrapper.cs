@@ -787,7 +787,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public static void EvtRenderBufferWithContextSystem(EventLogHandle contextHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtRenderFlags flag, SystemProperties systemProperties, int SYSTEM_PROPERTY_COUNT)
+        public static void EvtRenderBufferWithContextSystem(EventLogHandle contextHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtRenderFlags flag, SystemProperties systemProperties)
         {
             IntPtr buffer = IntPtr.Zero;
             IntPtr pointer = IntPtr.Zero;
@@ -809,9 +809,6 @@ namespace System.Diagnostics.Eventing.Reader
                 int win32Error = Marshal.GetLastWin32Error();
                 if (!status)
                     EventLogException.Throw(win32Error);
-
-                if (propCount != SYSTEM_PROPERTY_COUNT)
-                    throw new InvalidOperationException("We do not have " + SYSTEM_PROPERTY_COUNT + " variants given for the UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues flag. (System Properties)");
 
                 pointer = buffer;
                 // Read each Variant structure
@@ -873,6 +870,9 @@ namespace System.Diagnostics.Eventing.Reader
                             break;
                         case (int)UnsafeNativeMethods.EvtSystemPropertyId.EvtSystemVersion:
                             systemProperties.Version = (byte?)ConvertToObject(varVal, UnsafeNativeMethods.EvtVariantType.EvtVarTypeByte);
+                            break;
+                        default:
+                            Debug.Fail($"Do not understand EVT_SYSTEM_PROPERTY_ID {i}.  A new case is needed.");
                             break;
                     }
                     pointer = new IntPtr(((long)pointer + Marshal.SizeOf(varVal)));
