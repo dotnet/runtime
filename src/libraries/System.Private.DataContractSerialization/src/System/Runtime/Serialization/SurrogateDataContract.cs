@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class SurrogateDataContract : DataContract
     {
@@ -20,13 +20,10 @@ namespace System.Runtime.Serialization
             _helper = (base.Helper as SurrogateDataContractCriticalHelper)!;
         }
 
-        internal ISerializationSurrogate SerializationSurrogate
-        {
-            get { return _helper.SerializationSurrogate; }
-        }
+        internal ISerializationSurrogate SerializationSurrogate => _helper.SerializationSurrogate;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
+        internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             Debug.Assert(context != null);
 
@@ -62,7 +59,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
+        internal override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             Debug.Assert(context != null);
 
@@ -95,14 +92,11 @@ namespace System.Runtime.Serialization
             {
                 this.serializationSurrogate = serializationSurrogate;
                 string name, ns;
-                DataContract.GetDefaultStableName(DataContract.GetClrTypeFullName(type), out name, out ns);
+                DataContract.GetDefaultXmlName(DataContract.GetClrTypeFullName(type), out name, out ns);
                 SetDataContractName(CreateQualifiedName(name, ns));
             }
 
-            internal ISerializationSurrogate SerializationSurrogate
-            {
-                get { return serializationSurrogate; }
-            }
+            internal ISerializationSurrogate SerializationSurrogate => serializationSurrogate;
         }
     }
 }

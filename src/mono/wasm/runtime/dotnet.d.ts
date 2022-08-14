@@ -121,6 +121,7 @@ declare type MonoConfig = {
     environmentVariables?: {
         [i: string]: string;
     };
+    pthreadPoolSize?: number;
 };
 interface ResourceRequest {
     name: string;

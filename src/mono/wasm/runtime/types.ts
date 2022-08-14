@@ -114,8 +114,9 @@ export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    waitForDebugger?: number
+    waitForDebugger?: number,
     appendElementOnExit?: boolean
+    pthreadPoolSize?: number, // initial number of workers to add to the emscripten pthread pool
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
@@ -365,8 +366,9 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: Function,
-    threadInitTLS: Function
+    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    threadInitTLS: () => void,
+    allocateUnusedWorker: () => void,
 }
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable

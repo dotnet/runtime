@@ -345,7 +345,7 @@ namespace System.Xml.Xsl.XsltOld
             _builder = null;
             _actionStack = new HWStack(StackIncrement);
             _output = _rootAction.Output;
-            _resolver = resolver ?? XmlNullResolver.Singleton;
+            _resolver = resolver ?? XmlResolver.ThrowingResolver;
             _args = args ?? new XsltArgumentList();
             _debugger = debugger;
             if (_debugger != null)

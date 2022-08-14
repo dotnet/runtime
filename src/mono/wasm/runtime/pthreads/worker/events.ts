@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import type { pthread_ptr, PThreadInfo, MonoThreadMessage } from "../shared";
+import type { pthread_ptr } from "../shared/types";
+import type { PThreadInfo, MonoThreadMessage } from "../shared";
 
 /// Identification of the current thread executing on a worker
 export interface PThreadSelf extends PThreadInfo {
