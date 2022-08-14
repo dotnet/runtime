@@ -259,7 +259,7 @@
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
-LPCWSTR ReplacePid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength);
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
 
 class ThreadStressLog;
 
