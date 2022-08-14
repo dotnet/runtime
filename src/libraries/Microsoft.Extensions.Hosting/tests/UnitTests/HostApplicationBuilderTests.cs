@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void DirectSetttingsOverrideConfigurationSetting()
+        public void DirectSettingsOverrideConfigurationSetting()
         {
             using var config = new ConfigurationManager();
 
@@ -369,7 +369,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Environments.Development, builder.Environment.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), builder.Environment.ContentRootPath);
 
-            using IHost host = builder.Build(); 
+            using IHost host = builder.Build();
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal("MyProjectReference", env.ApplicationName);

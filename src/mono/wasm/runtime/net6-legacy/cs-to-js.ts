@@ -1,16 +1,16 @@
 import { _are_promises_supported } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
-import { runtimeHelpers } from "../imports";
 import { wrap_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { createPromiseController } from "../promise-controller";
-import { WasmRoot, mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
+import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
-import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish } from "../types";
+import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
+import { legacyHelpers } from "./imports";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 
@@ -101,8 +101,8 @@ export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
-    const unbox_buffer = runtimeHelpers._unbox_buffer;
-    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref(root.address, unbox_buffer, runtimeHelpers._unbox_buffer_size);
+    const unbox_buffer = legacyHelpers._unbox_buffer;
+    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref(root.address, unbox_buffer, legacyHelpers._unbox_buffer_size);
     switch (type) {
         case MarshalType.INT:
             return getI32(unbox_buffer);

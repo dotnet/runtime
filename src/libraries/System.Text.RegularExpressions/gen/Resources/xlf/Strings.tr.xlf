@@ -104,12 +104,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeMessage">
         <source>The GeneratedRegexAttribute is malformed</source>
-        <target state="new">The GeneratedRegexAttribute is malformed</target>
+        <target state="translated">GeneratedRegexAttribute hatalı biçimlendirilmiş</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeTitle">
         <source>Invalid GeneratedRegexAttribute usage</source>
-        <target state="new">Invalid GeneratedRegexAttribute usage</target>
+        <target state="translated">Geçersiz GeneratedRegexAttribute kullanımı</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -124,12 +124,12 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
-        <target state="new">The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
+        <target state="translated">Normal ifade oluşturucu, bir iç sınırlama nedeniyle, belirtilen normal ifade için tam bir kaynak uygulaması oluşturamadı. Daha fazla ayrıntı için, oluşturulan kaynaktaki açıklamaya bakın.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>Regex generator limitation reached.</source>
-        <target state="new">Regex generator limitation reached.</target>
+        <target state="translated">Normal ifade oluşturucu sınırına ulaşıldı.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -154,7 +154,7 @@
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
         <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
-        <target state="new">Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</target>
+        <target state="translated">Aynı yönteme birden çok RegexGeneratorAttributes uygulandı, ancak yalnızca bir tanesine izin veriliyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -199,7 +199,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="new">GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</target>
+        <target state="translated">GeneratedRegexAttribute yöntemi kısmi ve parametresiz olmalı, genel amaçlı veya soyut olmamalı ve Normal İfade döndürmelidir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">Normal ifade uygulamasını derleme zamanında oluşturmak için “RegexGeneratorAttribute” kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="new">Convert to 'GeneratedRegexAttribute'.</target>
+        <target state="translated">'GeneratedRegexAttribute' özniteliğine dönüştürün.</target>
         <note />
       </trans-unit>
     </body>

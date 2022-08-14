@@ -845,7 +845,7 @@ namespace DebuggerTests
 
             var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             var sourceToGet = JObject.FromObject(new
             {
@@ -978,10 +978,10 @@ namespace DebuggerTests
         [Theory]
         [InlineData(
             "DebugWithDeletedPdb",
-            1146)]
+            1148)]
         [InlineData(
             "DebugWithoutDebugSymbols",
-            1158)]
+            1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
             var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
@@ -1020,6 +1020,23 @@ namespace DebuggerTests
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", -1, -1,
                 method_name_call_stack
+            );
+        }
+
+        [Fact]
+        public async Task InspectLocalRecursiveFieldValue()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] InspectIntPtr:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1258, 8,
+                $"InspectIntPtr.Run",
+                locals_fn: async (locals) =>
+                {
+                    await CheckValueType(locals, "myInt", "System.IntPtr");
+                    await CheckValueType(locals, "myInt2", "System.IntPtr");
+                }
             );
         }
     }

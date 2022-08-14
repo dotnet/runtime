@@ -10,7 +10,7 @@ int sem_destroy(int x) { return 0; }
 int sem_post(int x) { return 0; }
 int sem_wait(int x) { return 0; }
 int sem_trywait(int x) { return 0; }
-int sem_timedwait (int *sem, const struct timespec *abs_timeout) { assert(0); return 0; }
+int sem_timedwait (int *sem, void *abs_timeout) { assert(0); return 0; }
 
 int __errno_location() { return 0; }
 

@@ -46,7 +46,6 @@ namespace System.Net.Http
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
             private bool _responseHeadersReceived;
-            private bool _webSocketEstablished;
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
@@ -109,7 +108,7 @@ namespace System.Net.Http
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
-                    if (_request.IsWebSocketH2Request())
+                    if (_request.IsExtendedConnectRequest)
                     {
                         _requestBodyCancellationSource = new CancellationTokenSource();
                     }
@@ -157,6 +156,8 @@ namespace System.Net.Http
             public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
             public Http2Connection Connection => _connection;
+
+            public bool ConnectProtocolEstablished { get; private set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -636,9 +637,9 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
+                        if (statusCode == 200 && _response.RequestMessage!.IsExtendedConnectRequest)
                         {
-                            _webSocketEstablished = true;
+                            ConnectProtocolEstablished = true;
                         }
 
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
@@ -1041,7 +1042,7 @@ namespace System.Net.Http
                     MoveTrailersToResponseMessage(_response);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
-                else if (_webSocketEstablished)
+                else if (ConnectProtocolEstablished)
                 {
                     responseContent.SetStream(new Http2ReadWriteStream(this));
                 }

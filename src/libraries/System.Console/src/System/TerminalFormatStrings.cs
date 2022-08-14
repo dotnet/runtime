@@ -231,11 +231,14 @@ internal sealed class TerminalFormatStrings
 
     private void AddPrefixKey(TermInfo.Database db, string extendedNamePrefix, ConsoleKey key)
     {
-        AddKey(db, extendedNamePrefix + "3", key, shift: false, alt: true,  control: false);
-        AddKey(db, extendedNamePrefix + "4", key, shift: true,  alt: true,  control: false);
-        AddKey(db, extendedNamePrefix + "5", key, shift: false, alt: false, control: true);
-        AddKey(db, extendedNamePrefix + "6", key, shift: true,  alt: false, control: true);
-        AddKey(db, extendedNamePrefix + "7", key, shift: false, alt: false, control: true);
+        if (db.HasExtendedStrings) // avoid string concatenation in case when there are no Extended Strings (typical scenario)
+        {
+            AddKey(db, extendedNamePrefix + "3", key, shift: false, alt: true,  control: false);
+            AddKey(db, extendedNamePrefix + "4", key, shift: true,  alt: true,  control: false);
+            AddKey(db, extendedNamePrefix + "5", key, shift: false, alt: false, control: true);
+            AddKey(db, extendedNamePrefix + "6", key, shift: true,  alt: false, control: true);
+            AddKey(db, extendedNamePrefix + "7", key, shift: false, alt: false, control: true);
+        }
     }
 
     private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)

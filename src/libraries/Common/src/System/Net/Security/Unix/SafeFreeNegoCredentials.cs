@@ -21,7 +21,7 @@ namespace System.Net.Security
             get { return _credential; }
         }
 
-        // Property represents which protocol is specfied (Negotiate, Ntlm or Kerberos).
+        // Property represents which protocol is specified (Negotiate, Ntlm or Kerberos).
         public Interop.NetSecurityNative.PackageType PackageType
         {
             get { return _packageType; }

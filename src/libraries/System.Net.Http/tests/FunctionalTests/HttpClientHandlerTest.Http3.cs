@@ -1557,6 +1557,135 @@ namespace System.Net.Http.Functional.Tests
             await connection.DisposeAsync();
         }
 
+        [Fact]
+        public async Task ServerSendsTrailingHeaders_Success()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                await using Http3LoopbackStream requestStream = await connection.AcceptRequestStreamAsync();
+
+                await requestStream.ReadRequestDataAsync();
+                await requestStream.SendResponseAsync(isFinal: false);
+                await requestStream.SendResponseHeadersAsync(null, new[] { new HttpHeaderData("MyHeader", "MyValue") });
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+
+                (string key, IEnumerable<string> value) = Assert.Single(response.TrailingHeaders);
+                Assert.Equal("MyHeader", key);
+                Assert.Equal("MyValue", Assert.Single(value));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ServerClosesOutboundControlStream_ClientClosesConnection(bool graceful)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                // wait for incoming request
+                await using Http3LoopbackStream requestStream = await connection.AcceptRequestStreamAsync();
+
+                // abort the control stream
+                if (graceful)
+                {
+                    await connection.OutboundControlStream.SendResponseBodyAsync(Array.Empty<byte>(), isFinal: true);
+                }
+                else
+                {
+                    connection.OutboundControlStream.Abort(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                }
+
+                // wait for client task before tearing down the requestStream and connection
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        [Fact]
+        public async Task ServerClosesInboundControlStream_ClientClosesConnection()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                // wait for incoming request
+                (Http3LoopbackStream controlStream, Http3LoopbackStream requestStream) = await connection.AcceptControlAndRequestStreamAsync();
+
+                await using (controlStream)
+                await using (requestStream)
+                {
+                    controlStream.Abort(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                    // wait for client task before tearing down the requestStream and connection
+                    await semaphore.WaitAsync();
+                }
+
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
         private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);

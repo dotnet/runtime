@@ -34,6 +34,7 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
+          eq(variables['wasmDarcDependenciesChanged'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true))

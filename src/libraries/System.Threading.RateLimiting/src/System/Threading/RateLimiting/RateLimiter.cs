@@ -11,10 +11,10 @@ namespace System.Threading.RateLimiting
     public abstract class RateLimiter : IAsyncDisposable, IDisposable
     {
         /// <summary>
-        /// An estimated count of available permits.
+        /// Gets a snapshot of the <see cref="RateLimiter"/> statistics if available.
         /// </summary>
-        /// <returns></returns>
-        public abstract int GetAvailablePermits();
+        /// <returns>An instance of <see cref="RateLimiterStatistics"/> containing a snapshot of the <see cref="RateLimiter"/> statistics.</returns>
+        public abstract RateLimiterStatistics? GetStatistics();
 
         /// <summary>
         /// Specifies how long the <see cref="RateLimiter"/> has had all permits available. Used by RateLimiter managers that may want to
@@ -34,22 +34,22 @@ namespace System.Threading.RateLimiting
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns>A successful or failed lease.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public RateLimitLease Acquire(int permitCount = 1)
+        public RateLimitLease AttemptAcquire(int permitCount = 1)
         {
             if (permitCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(permitCount));
             }
 
-            return AcquireCore(permitCount);
+            return AttemptAcquireCore(permitCount);
         }
 
         /// <summary>
-        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="Acquire"/>.
+        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="AttemptAcquire"/>.
         /// </summary>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns></returns>
-        protected abstract RateLimitLease AcquireCore(int permitCount);
+        protected abstract RateLimitLease AttemptAcquireCore(int permitCount);
 
         /// <summary>
         /// Wait until the requested permits are available or permits can no longer be acquired.
@@ -61,7 +61,7 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAndAcquireAsync(int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> AcquireAsync(int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -73,16 +73,16 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAndAcquireAsyncCore(permitCount, cancellationToken);
+            return AcquireAsyncCore(permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
+        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="AcquireAsync"/>.
         /// </summary>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.

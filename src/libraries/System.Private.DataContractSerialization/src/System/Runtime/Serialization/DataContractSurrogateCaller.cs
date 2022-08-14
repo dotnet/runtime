@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.CodeDom;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization
 {
@@ -39,6 +39,32 @@ namespace System.Runtime.Serialization
             if (DataContract.GetBuiltInDataContract(objType) != null)
                 return obj;
             return surrogateProvider.GetDeserializedObject(obj, memberType);
+        }
+
+        internal static object? GetCustomDataToExport(ISerializationSurrogateProvider2 surrogateProvider, MemberInfo memberInfo, Type dataContractType)
+        {
+            return surrogateProvider.GetCustomDataToExport(memberInfo, dataContractType);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static object? GetCustomDataToExport(ISerializationSurrogateProvider2 surrogateProvider, Type clrType, Type dataContractType)
+        {
+            if (DataContract.GetBuiltInDataContract(clrType) != null)
+                return null;
+            return surrogateProvider.GetCustomDataToExport(clrType, dataContractType);
+        }
+
+        internal static void GetKnownCustomDataTypes(ISerializationSurrogateProvider2 surrogateProvider, Collection<Type> customDataTypes)
+        {
+            surrogateProvider.GetKnownCustomDataTypes(customDataTypes);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static Type? GetReferencedTypeOnImport(ISerializationSurrogateProvider2 surrogateProvider, string typeName, string typeNamespace, object? customData)
+        {
+            if (DataContract.GetBuiltInDataContract(typeName, typeNamespace) != null)
+                return null;
+            return surrogateProvider.GetReferencedTypeOnImport(typeName, typeNamespace, customData);
         }
     }
 }

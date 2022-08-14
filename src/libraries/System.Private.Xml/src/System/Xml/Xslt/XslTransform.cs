@@ -246,7 +246,7 @@ namespace System.Xml.Xsl
 
             Compiler compiler = new Compiler();
             NavigatorInput input = new NavigatorInput(stylesheet);
-            compiler.Compile(input, resolver ?? XmlNullResolver.Singleton);
+            compiler.Compile(input, resolver ?? XmlResolver.ThrowingResolver);
 
             Debug.Assert(compiler.CompiledStylesheet != null);
             Debug.Assert(compiler.QueryStore != null);
@@ -264,7 +264,7 @@ namespace System.Xml.Xsl
             }
             else
             {
-                return XmlNullResolver.Singleton;
+                return XmlResolver.ThrowingResolver;
             }
         }
     }
