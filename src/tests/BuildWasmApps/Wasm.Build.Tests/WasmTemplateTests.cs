@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -52,6 +53,23 @@ namespace Wasm.Build.Tests
             mainJsContent = mainJsContent
                 .Replace(".create()", ".withConsoleForwarding().create()")
                 .Replace("[\"dotnet\", \"is\", \"great!\"]", "(await import(/* webpackIgnore: true */\"process\")).argv.slice(2)");
+
+            File.WriteAllText(mainJsPath, mainJsContent);
+        }
+
+        private void UpdateMainJsEnvironmentVariables(params (string key, string value)[] variables)
+        {
+            string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
+            string mainJsContent = File.ReadAllText(mainJsPath);
+
+            StringBuilder js = new();
+            foreach (var variable in variables)
+            {
+                js.Append($".withEnvironmentVariable(\"{variable.key}\", \"{variable.value}\")");
+            }
+
+            mainJsContent = mainJsContent
+                .Replace(".create()", js.ToString() + ".create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
@@ -228,9 +246,15 @@ namespace Wasm.Build.Tests
             UpdateConsoleMainJs();
 
             if (aot)
+            {
+                // FIXME: pass envvars via the environment, once that is supported
+                UpdateMainJsEnvironmentVariables(("MONO_LOG_MASK", "aot"), ("MONO_LOG_LEVEL", "debug"));
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+            }
             else if (relinking)
+            {
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
+            }
 
             var buildArgs = new BuildArgs(projectName, config, aot, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -257,10 +281,7 @@ namespace Wasm.Build.Tests
                 AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
             }
 
-            // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
-            if (aot)
-                runArgs += $" --setenv=MONO_LOG_MASK=aot --setenv=MONO_LOG_LEVEL=debug";
             runArgs += " x y z";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
