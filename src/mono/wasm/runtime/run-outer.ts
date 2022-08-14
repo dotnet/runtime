@@ -17,6 +17,7 @@ export interface DotnetHostBuilder {
     withDiagnosticTracing(enabled: boolean): DotnetHostBuilder
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -211,6 +212,21 @@ class HostBuilder implements DotnetHostBuilder {
         try {
             this.moduleConfig.config!.mainAssemblyName = mainAssemblyName;
             return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+    
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder {
+        try {
+            if (typeof globalThis.URLSearchParams != "undefined") {
+                const params = new URLSearchParams(window.location.search);
+                const values = params.getAll("arg");
+                return this.withApplicationArguments(...values);
+            }
+            
+            throw new Error("URLSearchParams is supported");
         } catch (err) {
             mono_exit(1, err);
             throw err;

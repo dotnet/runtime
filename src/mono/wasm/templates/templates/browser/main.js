@@ -8,6 +8,7 @@ if (!is_browser) throw new Error(`Expected to be running in a browser`);
 
 const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
     .withDiagnosticTracing(false)
+    .withApplicationArgumentsFromQuery()
     .create();
 
 setModuleImports("main.js", {
