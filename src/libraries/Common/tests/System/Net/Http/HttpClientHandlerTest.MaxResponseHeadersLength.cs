@@ -49,18 +49,10 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
-            if (PlatformDetection.IsNetFramework && UseVersion.Major > 1)
-            {
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
                 using HttpClient client = CreateHttpClient(handler);
-#if !NETFRAMEWORK
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-#endif
 
                 handler.MaxResponseHeadersLength = 1;
                 (await client.GetStreamAsync(uri)).Dispose();
@@ -74,20 +66,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            if (PlatformDetection.IsNetFramework && UseVersion.Major > 1)
-            {
-                return;
-            }
-
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient(handler);
-#if !NETFRAMEWORK
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-#endif
 
                 Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
                 if (!IsWinHttpHandler)
@@ -109,11 +93,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
         public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
         {
-            if (PlatformDetection.IsNetFramework && UseVersion.Major > 1)
-            {
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -124,9 +103,6 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using HttpClient client = CreateHttpClient(handler);
-#if !NETFRAMEWORK
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-#endif
 
                 if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
                 {
