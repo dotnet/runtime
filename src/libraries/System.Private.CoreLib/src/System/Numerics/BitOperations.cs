@@ -915,6 +915,9 @@ namespace System.Numerics
 
                 return crc;
             }
+        }
+
+        /// <summary>
         /// Reset the lowest significant bit in the given value
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
