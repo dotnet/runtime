@@ -4652,7 +4652,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 				if (arg == NULL) {
 					result = NULL;
 				} else {
-					g_assert (arg->vtable->klass == mono_defaults.int_class);
+					g_assert (arg->vtable->klass == mono_defaults.int_class || arg->vtable->klass == mono_defaults.uint_class);
 					result = ((MonoIntPtr*)arg)->m_value;
 				}
 				break;

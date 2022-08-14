@@ -46,6 +46,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true'">
     <!-- don't warn on usage of BinaryFormatter from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
+    <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
     <!-- allow nullable annotated files to be incorporated into tests without warning -->
     <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
   </PropertyGroup>

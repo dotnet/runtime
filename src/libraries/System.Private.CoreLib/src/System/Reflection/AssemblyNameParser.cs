@@ -73,7 +73,7 @@ namespace System.Reflection
             return new AssemblyNameParser(name).Parse();
         }
 
-        private void RecordNewSeenOrThrow(ref AttributeKind seenAttributes, AttributeKind newAttribute)
+        private void RecordNewSeenOrThrow(scoped ref AttributeKind seenAttributes, AttributeKind newAttribute)
         {
             if ((seenAttributes & newAttribute) != 0)
             {

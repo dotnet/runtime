@@ -127,6 +127,7 @@ namespace System.Xml
             _attributeIndex = -1;
             _rootElement = false;
             _readingElement = false;
+            _signing = false;
             MoveToNode(s_initialNode);
         }
 
@@ -191,6 +192,7 @@ namespace System.Xml
 
             return true;
         }
+
         protected XmlCommentNode MoveToComment()
         {
             _commentNode ??= new XmlCommentNode(_bufferReader);
@@ -229,6 +231,7 @@ namespace System.Xml
             MoveToNode(_whitespaceTextNode);
             return _whitespaceTextNode;
         }
+
         protected XmlElementNode ElementNode
         {
             get
@@ -341,6 +344,7 @@ namespace System.Xml
         {
             return AddAttribute(QNameType.Normal, true);
         }
+
         protected XmlAttributeNode AddXmlnsAttribute(Namespace ns)
         {
             if (!ns.Prefix.IsEmpty && ns.Uri.IsEmpty)
@@ -385,6 +389,7 @@ namespace System.Xml
                 }
             }
         }
+
         protected bool OutsideRootElement
         {
             get
@@ -392,6 +397,7 @@ namespace System.Xml
                 return _depth == 0;
             }
         }
+
         public override bool CanReadBinaryContent
         {
             get { return true; }
@@ -610,7 +616,6 @@ namespace System.Xml
             return null;
         }
 
-
         public override string GetAttribute(int index)
         {
             return GetAttributeNode(index).ValueAsString;
@@ -639,6 +644,7 @@ namespace System.Xml
                 return null;
             return attributeNode.ValueAsString;
         }
+
         public sealed override bool IsEmptyElement
         {
             get
@@ -781,17 +787,19 @@ namespace System.Xml
             }
         }
 
-
         public override void MoveToAttribute(int index)
         {
             MoveToNode(GetAttributeNode(index));
+            _attributeIndex = index;
         }
+
         public override bool MoveToAttribute(string name)
         {
             XmlNode? attributeNode = GetAttributeNode(name);
             if (attributeNode == null)
                 return false;
             MoveToNode(attributeNode);
+            _attributeIndex = _attributeStart;
             return true;
         }
 
@@ -801,6 +809,7 @@ namespace System.Xml
             if (attributeNode == null)
                 return false;
             MoveToNode(attributeNode);
+            _attributeIndex = _attributeStart;
             return true;
         }
 
@@ -902,7 +911,7 @@ namespace System.Xml
             {
                 if (_nameTable == null)
                 {
-                    _nameTable = new NameTable();
+                    _nameTable = new QuotaNameTable(this, _quotas.MaxNameTableCharCount);
                     _nameTable.Add(xml);
                     _nameTable.Add(xmlns);
                     _nameTable.Add(xmlnsNamespace);
@@ -953,6 +962,13 @@ namespace System.Xml
             }
         }
 
+        public override char QuoteChar
+        {
+            get
+            {
+                return _node.QuoteChar;
+            }
+        }
 
         public override bool IsLocalName(string localName)
         {
@@ -1192,6 +1208,36 @@ namespace System.Xml
                 return s;
             }
         }
+
+        public override string ReadElementString()
+        {
+            MoveToStartElement();
+            if (IsEmptyElement)
+            {
+                Read();
+                return string.Empty;
+            }
+            else
+            {
+                Read();
+                string s = ReadString();
+                ReadEndElement();
+                return s;
+            }
+        }
+
+        public override string ReadElementString(string name)
+        {
+            MoveToStartElement(name);
+            return ReadElementString();
+        }
+
+        public override string ReadElementString(string localName, string namespaceUri)
+        {
+            MoveToStartElement(localName, namespaceUri);
+            return ReadElementString();
+        }
+
         public override void ReadStartElement()
         {
             if (_node.NodeType != XmlNodeType.Element)
@@ -2065,7 +2111,6 @@ namespace System.Xml
                 _depthDelta = depthDelta;
                 _isEmptyElement = false;
                 _quoteChar = '"';
-
                 _qnameType = QNameType.Normal;
             }
 
@@ -2249,6 +2294,7 @@ namespace System.Xml
                     return this.Namespace.Prefix == localName && ns.Value == xmlnsNamespace;
                 }
             }
+
             public bool IsPrefixAndLocalName(string prefix, string localName)
             {
                 if (_qnameType == QNameType.Normal)
@@ -2539,6 +2585,7 @@ namespace System.Xml
             {
             }
         }
+
         protected sealed class XmlEndOfFileNode : XmlNode
         {
             public XmlEndOfFileNode(XmlBufferReader bufferReader)
@@ -2911,6 +2958,7 @@ namespace System.Xml
                     return XmlNamespace;
                 return null;
             }
+
             public Namespace? LookupNamespace(string prefix)
             {
                 PrefixHandleType shortPrefix;
@@ -3060,6 +3108,7 @@ namespace System.Xml
                 }
                 return false;
             }
+
             public StringHandle Uri
             {
                 get
@@ -3078,6 +3127,57 @@ namespace System.Xml
                 {
                     _outerUri = value;
                 }
+            }
+        }
+
+        private sealed class QuotaNameTable : XmlNameTable
+        {
+            private readonly XmlDictionaryReader _reader;
+            private readonly XmlNameTable _nameTable;
+            private readonly int _maxCharCount;
+            private int _charCount;
+
+            public QuotaNameTable(XmlDictionaryReader reader, int maxCharCount)
+            {
+                _reader = reader;
+                _nameTable = new NameTable();
+                _maxCharCount = maxCharCount;
+                _charCount = 0;
+            }
+
+            public override string? Get(char[] chars, int offset, int count)
+            {
+                return _nameTable.Get(chars, offset, count);
+            }
+
+            public override string? Get(string value)
+            {
+                return _nameTable.Get(value);
+            }
+
+            private void Add(int charCount)
+            {
+                if (charCount > _maxCharCount - _charCount)
+                    XmlExceptionHelper.ThrowMaxNameTableCharCountExceeded(_reader, _maxCharCount);
+                _charCount += charCount;
+            }
+
+            public override string Add(char[] chars, int offset, int count)
+            {
+                string? s = _nameTable.Get(chars, offset, count);
+                if (s != null)
+                    return s;
+                Add(count);
+                return _nameTable.Add(chars, offset, count);
+            }
+
+            public override string Add(string value)
+            {
+                string? s = _nameTable.Get(value);
+                if (s != null)
+                    return s;
+                Add(value.Length);
+                return _nameTable.Add(value);
             }
         }
     }

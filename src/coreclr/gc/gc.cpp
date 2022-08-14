@@ -23961,7 +23961,7 @@ uint8_t* mark_queue_t::get_next_marked()
     return nullptr;
 }
 
-mark_queue_t::~mark_queue_t()
+void mark_queue_t::verify_empty()
 {
     for (size_t slot_index = 0; slot_index < slot_count; slot_index++)
     {
@@ -26043,6 +26043,11 @@ void gc_heap::verify_region_to_generation_map()
             generation *gen = hp->generation_of (gen_number);
             for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
             {
+                if (heap_segment_read_only_p (region))
+                {
+                    // the region to generation map doesn't cover read only segments
+                    continue;
+                }
                 size_t region_index_start = get_basic_region_index_for_address (get_region_start (region));
                 size_t region_index_end = get_basic_region_index_for_address (heap_segment_reserved (region));
                 int gen_num = min (gen_number, soh_gen2);
@@ -26766,6 +26771,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
 
     finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
+
+    mark_queue.verify_empty();
 
     dprintf(2,("---- End of mark phase ----"));
 }

@@ -61,6 +61,8 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -69,6 +71,8 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Channels" />
   </ItemGroup>
   <ItemGroup>
     <AnalyzerReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" />
