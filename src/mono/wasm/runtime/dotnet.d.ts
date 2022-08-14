@@ -81,6 +81,7 @@ declare type MonoConfig = {
     coverageProfilerOptions?: CoverageProfilerOptions;
     ignorePdbLoadErrors?: boolean;
     waitForDebugger?: number;
+    pthreadPoolSize?: number;
 };
 interface ResourceRequest {
     name: string;
