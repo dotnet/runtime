@@ -121,6 +121,9 @@ declare type MonoConfig = {
     environmentVariables?: {
         [i: string]: string;
     };
+    /**
+     * initial number of workers to add to the emscripten pthread pool
+     */
     pthreadPoolSize?: number;
 };
 interface ResourceRequest {

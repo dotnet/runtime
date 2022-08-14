@@ -108,6 +108,10 @@ export type MonoConfig = {
     environmentVariables?: {
         [i: string]: string;
     },
+    /**
+     * initial number of workers to add to the emscripten pthread pool
+     */
+    pthreadPoolSize?: number,
 };
 
 export type MonoConfigInternal = MonoConfig & {
@@ -116,7 +120,6 @@ export type MonoConfigInternal = MonoConfig & {
     coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    pthreadPoolSize?: number, // initial number of workers to add to the emscripten pthread pool
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
