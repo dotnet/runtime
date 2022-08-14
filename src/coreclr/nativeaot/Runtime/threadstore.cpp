@@ -173,14 +173,13 @@ void ThreadStore::DetachCurrentThread(bool shutdownStarted)
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
-
-        // the rest of cleanup is not necessary if we are shutting down.
-        if (shutdownStarted)
-        {
-            return;
-        }
-
         pDetachingThread->Detach();
+    }
+
+    // the rest of cleanup is not necessary if we are shutting down.
+    if (shutdownStarted)
+    {
+        return;
     }
 
     pDetachingThread->Destroy();
