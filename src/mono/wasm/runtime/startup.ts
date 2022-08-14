@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init } from "./icu";
@@ -25,7 +25,7 @@ import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legac
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download_with_retries, wait_for_all_assets } from "./assets";
 import { BINDING, MONO } from "./net6-legacy/imports";
-import { readSymbolMapFile, setup_proxy_console } from "./logging";
+import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 
 let config: MonoConfigInternal = undefined as any;
@@ -229,9 +229,6 @@ export function abort_startup(reason: any, should_exit: boolean): void {
 // runs in both blazor and non-blazor
 function mono_wasm_pre_init_essential(): void {
     Module.addRunDependency("mono_wasm_pre_init_essential");
-    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD && runtimeHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
-    }
 
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
