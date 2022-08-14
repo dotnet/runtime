@@ -46,9 +46,13 @@ namespace System.Net.Security
             : base(IntPtr.Zero)
         {
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
+            bool added = false;
+            credential.DangerousAddRef(ref added);
+            if (!added)
+            {
+                throw new ObjectDisposedException(nameof(SafeFreeNegoCredentials));
+            }
             _credential = credential;
-            bool ignore = false;
-            _credential.DangerousAddRef(ref ignore);
             _context = new SafeGssContextHandle();
         }
 
@@ -102,14 +106,14 @@ namespace System.Net.Security
                     _acceptorCredential.Dispose();
                     _acceptorCredential = null;
                 }
-
-                if (_credential != null)
-                {
-                    _credential.DangerousRelease();
-                    _credential = null;
-                }
             }
             base.Dispose(disposing);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _credential?.DangerousRelease();
+            return true;
         }
     }
 }

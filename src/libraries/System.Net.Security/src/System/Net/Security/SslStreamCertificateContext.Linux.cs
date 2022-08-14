@@ -45,7 +45,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (KeyHandle== null)
+            if (KeyHandle == null)
             {
                 using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)target.GetECDsaPrivateKey())
                 {
@@ -54,11 +54,11 @@ namespace System.Net.Security
                         KeyHandle = ecdsa.DuplicateKeyHandle();
                     }
                 }
-            }
 
-            if (KeyHandle== null)
-            {
-                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                if (KeyHandle== null)
+                {
+                    throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                }
             }
 
             CertificateHandle = Interop.Crypto.X509UpRef(target.Handle);
@@ -66,12 +66,6 @@ namespace System.Net.Security
 
         internal static SslStreamCertificateContext Create(X509Certificate2 target) =>
             Create(target, null, offline: false, trust: null, noOcspFetch: true);
-
-        ~SslStreamCertificateContext()
-        {
-            CertificateHandle?.Dispose();
-            KeyHandle?.Dispose();
-        }
 
         internal bool OcspStaplingAvailable => _ocspUrls is not null;
 
