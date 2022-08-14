@@ -20,7 +20,8 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private void updateProgramCS() {
+        private void updateProgramCS()
+        {
             string programText = """
             Console.WriteLine("Hello, Console!");
 
@@ -34,6 +35,27 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
+        private void UpdateBrowserMainJs()
+        {
+            string mainJsPath = Path.Combine(_projectDir!, "main.js");
+            string mainJsContent = File.ReadAllText(mainJsPath);
+
+            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+            File.WriteAllText(mainJsPath, mainJsContent);
+        }
+
+        private void UpdateConsoleMainJs()
+        {
+            string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
+            string mainJsContent = File.ReadAllText(mainJsPath);
+
+            mainJsContent = mainJsContent
+                .Replace(".create()", ".withConsoleForwarding().create()")
+                .Replace("[\"dotnet\", \"is\", \"great!\"]", "(await import(/* webpackIgnore: true */\"process\")).argv.slice(2)");
+
+            File.WriteAllText(mainJsPath, mainJsContent);
+        }
+
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
@@ -42,6 +64,8 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+            UpdateBrowserMainJs();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -90,6 +114,8 @@ namespace Wasm.Build.Tests
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+            UpdateConsoleMainJs();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -145,6 +171,7 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             updateProgramCS();
+            UpdateConsoleMainJs();
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
@@ -198,6 +225,7 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             updateProgramCS();
+            UpdateConsoleMainJs();
 
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
@@ -286,6 +314,8 @@ namespace Wasm.Build.Tests
 
             // var buildArgs = new BuildArgs(projectName, config, false, id, null);
             // buildArgs = ExpandBuildArgs(buildArgs);
+
+            UpdateBrowserMainJs();
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
