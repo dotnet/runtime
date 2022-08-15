@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { dotnet_browser_can_use_subtle_crypto_impl, dotnet_browser_simple_digest_hash, dotnet_browser_sign, dotnet_browser_encrypt_decrypt, dotnet_browser_derive_bits } from "./subtle-crypto";
 import { mono_wasm_fire_debugger_agent_message, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";

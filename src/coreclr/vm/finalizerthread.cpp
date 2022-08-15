@@ -284,8 +284,8 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
             // Writing an empty file to indicate completion
             WCHAR outputPath[MAX_PATH];
-            LPCWSTR outputPathReplaced = ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
-            fclose(_wfopen(outputPathReplaced, W("w+")));
+            ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
+            fclose(_wfopen(outputPath, W("w+")));
         }
 
         if (!bPriorityBoosted)

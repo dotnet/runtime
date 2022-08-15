@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return $"Getting embedded descriptor file from {_module.ToString()}";
+            return $"Embedded descriptor from {_module.ToString()}";
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

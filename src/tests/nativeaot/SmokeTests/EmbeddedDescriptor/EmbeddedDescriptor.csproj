@@ -11,5 +11,7 @@
     <EmbeddedResource Include="ILLink.Descriptors.xml">
       <LogicalName>ILLink.Descriptors.xml</LogicalName>
     </EmbeddedResource>
+
+    <TrimmerRootDescriptor Include="NonEmbedded.ILLink.Descriptor.xml" />
   </ItemGroup>
 </Project>

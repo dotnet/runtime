@@ -95,7 +95,6 @@ internal sealed class DtcProxyShimFactory
                 pImportWhereabouts.GetWhereabouts(whereaboutsSize, tmpWhereabouts, out uint pcbUsed);
                 Debug.Assert(pcbUsed == tmpWhereabouts.Length);
             });
-            whereabouts = tmpWhereabouts;
 
             // Now we need to create the internal resource manager.
             var rmFactory = (IResourceManagerFactory2)localDispenser;
@@ -117,6 +116,7 @@ internal sealed class DtcProxyShimFactory
 
             resourceManagerShim = rmShim;
             _transactionDispenser = localDispenser;
+            whereabouts = tmpWhereabouts;
         }
     }
 

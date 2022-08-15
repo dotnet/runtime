@@ -306,7 +306,7 @@ Returns the value of a runtime property specified by its name.
 
 Trying to get a property which doesn't exist is an error and will return an appropriate error code.
 
-We're proposing a fix in `hostpolicy` which will make sure that there are no duplicates possible after initialization (see [dotnet/core-setup#5529](https://github.com/dotnet/core-setup/issues/5529)). With that `hostfxr_get_runtime_property_value` will work always (as there can only be one value).
+We're proposing a fix in `hostpolicy` which will make sure that there are no duplicates possible after initialization (see [dotnet/runtime#3514](https://github.com/dotnet/runtime/issues/3514)). With that `hostfxr_get_runtime_property_value` will work always (as there can only be one value).
 
 
 ``` C
