@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.IO.Compression.Tests;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO.Compression.Tests;
 using Xunit;
 
 namespace System.IO.Compression
@@ -66,7 +66,7 @@ namespace System.IO.Compression
             ArrayPool<byte>.Shared.Return(rentedBuffer);
 
             // use 3 buffers-full so that we can prime the stream with the first buffer-full,
-            // test that CopyTo successfully flushes this at the beginning of the operation, 
+            // test that CopyTo successfully flushes this at the beginning of the operation,
             // then populates the second buffer-full and reads its entirety despite every
             // payload being 0 length before it reads the final buffer-full.
             int minCompressedSize = 3 * actualBufferSize;
@@ -91,7 +91,7 @@ namespace System.IO.Compression
                 using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
                 using (Stream decompressedData = new DerivedMemoryStream())
                 {
-                    // read one byte in order to fill the inflater bufffer before copy
+                    // read one byte in order to fill the inflater buffer before copy
                     Assert.Equal(3, gz.ReadByte());
 
                     gz.CopyTo(decompressedData, copyToBufferSizeRequested);
@@ -102,7 +102,7 @@ namespace System.IO.Compression
                 using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
                 using (Stream decompressedData = new DerivedMemoryStream())
                 {
-                    // read one byte in order to fill the inflater bufffer before copy
+                    // read one byte in order to fill the inflater buffer before copy
                     Assert.Equal(3, gz.ReadByte());
 
                     await gz.CopyToAsync(decompressedData, copyToBufferSizeRequested);
@@ -160,9 +160,9 @@ namespace System.IO.Compression
             bool isCopy = scenario == TestScenario.Copy || scenario == TestScenario.CopyAsync;
 
             using (MemoryStream correctDecompressedOutput = new MemoryStream())
-            // For copy scenarios use a derived MemoryStream to avoid MemoryStream's Copy optimization 
+            // For copy scenarios use a derived MemoryStream to avoid MemoryStream's Copy optimization
             // that turns the Copy into a single Write passing the backing buffer
-            using (MemoryStream compressedStream = isCopy ? new DerivedMemoryStream() : new MemoryStream())  
+            using (MemoryStream compressedStream = isCopy ? new DerivedMemoryStream() : new MemoryStream())
             using (MemoryStream decompressorOutput = new MemoryStream())
             {
                 for (int i = 0; i < streamCount; i++)
@@ -274,6 +274,8 @@ namespace System.IO.Compression
             }
         }
 
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Fact]
         public void StreamCorruption_IsDetected()
         {

@@ -865,13 +865,10 @@ namespace System.Xml
             }
 
             // construct the name of the xmlns attribute
-            string attrName;
-            if (prefix == null)
-                prefix = string.Empty;
-            if (prefix.Length == 0)
-                attrName = "xmlns";
-            else
-                attrName = $"xmlns:{prefix}";
+            prefix ??= string.Empty;
+            string attrName = prefix.Length == 0 ?
+                "xmlns" :
+                $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;

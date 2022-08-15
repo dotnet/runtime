@@ -197,7 +197,7 @@ class Program
             {
                 if (verbose)
                 {
-                    Console.WriteLine($"[tieringtest] ran {total} test iterations sucessfully");
+                    Console.WriteLine($"[tieringtest] ran {total} test iterations successfully");
                 }
             }
         }

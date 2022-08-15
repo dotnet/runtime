@@ -41,7 +41,7 @@ namespace System.Data.Odbc
         private int _row = -1;
         private int _column = -1;
 
-        // used to track position in field for sucessive reads in case of Sequential Access
+        // used to track position in field for successive reads in case of Sequential Access
         private long _sequentialBytesRead;
 
         private static int s_objectTypeCount; // Bid counter
@@ -186,7 +186,7 @@ namespace System.Data.Odbc
 
         // HasRows
         //
-        // Use to detect wheter there are one ore more rows in the result without going through Read
+        // Use to detect whether there are one ore more rows in the result without going through Read
         // May be called at any time
         // Basically it calls Read and sets a flag so that the actual Read call will be skipped once
         //
@@ -361,9 +361,9 @@ namespace System.Data.Odbc
                     Connection.Close();
                 }
             }
-            else if (null != wrapper)
+            else
             {
-                wrapper.Dispose();
+                wrapper?.Dispose();
             }
 
             _command = null;
@@ -402,11 +402,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._typename == null)
-                {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
-                }
-                return info._typename;
+                return info._typename ??= GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -421,11 +417,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._type == null)
-                {
-                    info._type = GetSqlType(i)._type;
-                }
-                return info._type;
+                return info._type ??= GetSqlType(i)._type;
             }
             throw ADP.DataReaderNoData();
         }
@@ -435,15 +427,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._name == null)
-                {
-                    info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
-                    if (null == info._name)
-                    { // MDAC 66681
-                        info._name = "";
-                    }
-                }
-                return info._name;
+                return info._name ??= GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW) ?? "";
             }
             throw ADP.DataReaderNoData();
         }
@@ -1267,7 +1251,7 @@ namespace System.Data.Odbc
                         // SQLBU 266054:
                         // If cbLengthOrIndicator is SQL_NO_TOTAL (-4), this call returns -4 or -2, depending on the type (GetChars=>-2, GetBytes=>-4).
                         // This is the Orcas RTM and SP1 behavior, changing this would be a breaking change.
-                        // SQL_NO_TOTAL means that the driver does not know what is the remained lenght of the data, so we cannot really guess the value here.
+                        // SQL_NO_TOTAL means that the driver does not know what is the remained length of the data, so we cannot really guess the value here.
                         // Reason: while returning different negative values depending on the type seems inconsistent,
                         // this is what we did in Orcas RTM and SP1 and user code might rely on this behavior => changing it would be a breaking change.
                         if (isCharsBuffer)
@@ -2378,10 +2362,7 @@ namespace System.Data.Odbc
                                     _metadata[ordinal].isNullable = false;
                                     _metadata[ordinal].baseTableName = qualifiedTableName.Table;
 
-                                    if (_metadata[ordinal].baseColumnName == null)
-                                    {
-                                        _metadata[ordinal].baseColumnName = columnname;
-                                    }
+                                    _metadata[ordinal].baseColumnName ??= columnname;
                                 }
                                 else
                                 {
@@ -2453,10 +2434,7 @@ namespace System.Data.Odbc
                         if (ordinal != -1)
                         {
                             _metadata[ordinal].isRowVersion = true;
-                            if (_metadata[ordinal].baseColumnName == null)
-                            {
-                                _metadata[ordinal].baseColumnName = columnname;
-                            }
+                            _metadata[ordinal].baseColumnName ??= columnname;
                         }
                     }
                     // Unbind the column
@@ -2656,14 +2634,8 @@ namespace System.Data.Odbc
                         // test test test - we don't know if this is nulalble or not so why do we want to set it to a value?
                         _metadata[indexordinal].isNullable = false;
                         _metadata[indexordinal].isUnique = true;
-                        if (_metadata[indexordinal].baseTableName == null)
-                        {
-                            _metadata[indexordinal].baseTableName = qualifiedTableName.Table;
-                        }
-                        if (_metadata[indexordinal].baseColumnName == null)
-                        {
-                            _metadata[indexordinal].baseColumnName = columnname;
-                        }
+                        _metadata[indexordinal].baseTableName ??= qualifiedTableName.Table;
+                        _metadata[indexordinal].baseColumnName ??= columnname;
                     }
                 }
                 // Unbind the columns

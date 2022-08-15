@@ -61,7 +61,7 @@ class PEAssembly;
 class PEImage;
 
 #ifndef DACCESS_COMPILE
-ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, AllocMemTracker *pamTracker);
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker);
 #endif
 
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
@@ -88,7 +88,6 @@ private:
     PTR_ModuleBase m_pNativeManifestModule;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
-    IMAGE_DATA_DIRECTORY *m_pComponentAssemblyMvids;
     uint32_t m_componentAssemblyCount;
     uint32_t m_manifestAssemblyCount;
     SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;

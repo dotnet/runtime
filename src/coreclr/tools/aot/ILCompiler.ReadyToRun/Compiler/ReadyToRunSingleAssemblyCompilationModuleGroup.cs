@@ -43,13 +43,16 @@ namespace ILCompiler
             return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
         }
 
-        public sealed override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
+        public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)
         {
             if (_profileGuidedCompileRestrictionSet)
-                throw new InternalCompilerErrorException("Called ApplyProfilerGuidedCompilationRestriction twice.");
+                throw new InternalCompilerErrorException("Called ApplyProfileGuidedOptimizationData twice.");
 
             _profileGuidedCompileRestrictionSet = true;
-            _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
+            if (partial)
+                _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
+
+            base.ApplyProfileGuidedOptimizationData(profileGuidedCompileRestriction, partial);
         }
 
         public override ReadyToRunFlags GetReadyToRunFlags()

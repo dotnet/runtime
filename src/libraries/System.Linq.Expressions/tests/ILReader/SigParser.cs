@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Tests
         protected virtual void NotifyEndParam() { }
 
         // sentinel indication the location of the "..." in the method signature
-        protected virtual void NotifySentinal() { }
+        protected virtual void NotifySentinel() { }
 
         // number of generic parameters in this method signature (if any)
         protected virtual void NotifyGenericParamCount(sig_count count) { }
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions.Tests
             if (!ParseRetType())
                 return false;
 
-            bool fEncounteredSentinal = false;
+            bool fEncounteredSentinel = false;
 
             for (sig_count i = 0; i < param_count; i++)
             {
@@ -365,11 +365,11 @@ namespace System.Linq.Expressions.Tests
 
                 if (pb[pbCur] == ELEMENT_TYPE_SENTINEL)
                 {
-                    if (fEncounteredSentinal)
+                    if (fEncounteredSentinel)
                         return false;
 
-                    fEncounteredSentinal = true;
-                    NotifySentinal();
+                    fEncounteredSentinel = true;
+                    NotifySentinel();
                     pbCur++;
                 }
 

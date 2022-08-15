@@ -145,7 +145,7 @@ issue should go away.   This only has to be one once per machine (until you upda
 
 ### Alternative: Turn off use of precompiled code ###
 
-If you don't have the abiltiy to update the .NET Runtime (to add crossgen), or if the above procedure did not work
+If you don't have the ability to update the .NET Runtime (to add crossgen), or if the above procedure did not work
 for some reason, there is another approach to getting framework symbols.   You can tell the runtime to simply
 not use the precompiled framework code.   The code will be Just in time compiled and the special crossgen tool
 is not needed.   This works, but will increase startup time for your code by something like a second or two.  If you
@@ -275,5 +275,5 @@ dotnet-trace collect --process-id <PID>
 The resulting trace can be viewed in [PerfView](https://aka.ms/perfview) on Windows. Alternatively on Linux/macOS, it can be viewed on [SpeedScope](https://speedscope.app) if you convert the trace format to speedscope by passing `--format speedscope` argument when collecting the trace.
 
 ## More Information ##
-To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md).
+To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/main/documentation/dotnet-trace-instructions.md).
 

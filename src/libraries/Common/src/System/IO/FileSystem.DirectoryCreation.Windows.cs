@@ -88,7 +88,7 @@ namespace System.IO
                     string name = stackDir[stackDir.Count - 1];
                     stackDir.RemoveAt(stackDir.Count - 1);
 
-                    r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
+                    r = Interop.Kernel32.CreateDirectory(name, &secAttrs);
                     if (!r && (firstError == 0))
                     {
                         int currentError = Marshal.GetLastWin32Error();

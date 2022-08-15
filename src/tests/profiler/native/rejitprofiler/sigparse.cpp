@@ -90,7 +90,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
     if (!ParseRetType())
         return false;
 
-    bool fEncounteredSentinal = false;
+    bool fEncounteredSentinel = false;
 
     for (sig_count i = 0; i < param_count; i++)
     {
@@ -99,11 +99,11 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 
         if (*pbCur == ELEMENT_TYPE_SENTINEL)
         {
-                if (fEncounteredSentinal)
+                if (fEncounteredSentinel)
                     return false;
 
-                fEncounteredSentinal = true;
-                NotifySentinal();
+                fEncounteredSentinel = true;
+                NotifySentinel();
                 pbCur++;
         }
 

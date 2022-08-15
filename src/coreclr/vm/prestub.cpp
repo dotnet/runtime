@@ -438,58 +438,49 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+#ifdef FEATURE_READYTORUN
+    pCode = GetPrecompiledR2RCode(pConfig);
     if (pCode != NULL)
     {
-    #ifdef FEATURE_CODE_VERSIONING
-        pConfig->SetGeneratedOrLoadedNewCode();
-    #endif
-    }
-#ifdef FEATURE_READYTORUN
-    else
-    {
-        pCode = GetPrecompiledR2RCode(pConfig);
-        if (pCode != NULL)
+        LOG_USING_R2R_CODE(this);
+
+#ifdef FEATURE_TIERED_COMPILATION
+        // Finalize the optimization tier before SetNativeCode() is called
+        bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
+        if (pConfig->SetNativeCode(pCode, &pCode))
         {
-            LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-            // Finalize the optimization tier before SetNativeCode() is called
-            bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
-#endif
-
-            if (pConfig->SetNativeCode(pCode, &pCode))
-            {
 #ifdef FEATURE_CODE_VERSIONING
-                pConfig->SetGeneratedOrLoadedNewCode();
+            pConfig->SetGeneratedOrLoadedNewCode();
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-                if (shouldCountCalls)
-                {
-                    _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
-                    pConfig->SetShouldCountCalls();
-                }
+            if (shouldCountCalls)
+            {
+                _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                pConfig->SetShouldCountCalls();
+            }
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
-                // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
-                // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
-                // of R2R code are also recorded.
-                if (pConfig->NeedsMulticoreJitNotification())
-                {
-                    _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
-                    _ASSERTE(!pConfig->IsForMulticoreJit());
+            // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+            // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+            // of R2R code are also recorded.
+            if (pConfig->NeedsMulticoreJitNotification())
+            {
+                _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+                _ASSERTE(!pConfig->IsForMulticoreJit());
 
-                    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                    if (mcJitManager.IsRecorderActive())
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
                     {
-                        if (MulticoreJitManager::IsMethodSupported(this))
-                        {
-                            mcJitManager.RecordMethodJitOrLoad(this);
-                        }
+                        mcJitManager.RecordMethodJitOrLoad(this);
                     }
                 }
-#endif
             }
+#endif
         }
     }
 #endif // FEATURE_READYTORUN
@@ -503,32 +494,38 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = NULL;
 #ifdef FEATURE_READYTORUN
-    Module * pModule = GetLoaderModule();
+    ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
+    Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
     {
-        pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+        pAlreadyExaminedInfos[0] = pModule->GetReadyToRunInfo();
+        pCode = pAlreadyExaminedInfos[0]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 
     //  Generics may be located in several places
     if (pCode == NULL && HasClassOrMethodInstantiation())
     {
-        Module* pDefiningModule = GetModule();
-        // Lookup in the defining module of the generic (which is where in inputbubble scenarios
-        // the methods may be placed.
-        if (pDefiningModule != pModule && pDefiningModule->IsReadyToRun())
+        // Generics have an alternative location that is looked up which is based on the first generic
+        // argument that the crossgen2 compiler will consider as requiring the cross module compilation logic to kick in.
+        pAlreadyExaminedInfos[1] = ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(this);
+
+        if (pAlreadyExaminedInfos[1] != NULL &&  pAlreadyExaminedInfos[1] != pAlreadyExaminedInfos[0])
         {
-            pCode = pDefiningModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+            pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
 
-        // Lookup in the entry point assembly for a R2R entrypoint (generics with large version bubble enabled)
-        if (pCode == NULL && (SystemDomain::System()->DefaultDomain()->GetRootAssembly() != NULL))
+        if (pCode == NULL)
         {
-            pModule = SystemDomain::System()->DefaultDomain()->GetRootAssembly()->GetModule();
-            _ASSERT(pModule != NULL);
-
-            if (pModule->IsReadyToRun() && pModule->IsInSameVersionBubble(GetModule()))
+            // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
+            // A linked list of these are formed as those modules are loaded, and this restricted set of modules
+            // is examined for all generic method lookups
+            ReadyToRunInfo* pUnrelatedInfo = ReadyToRunInfo::GetUnrelatedR2RModules();
+            for (;pUnrelatedInfo != NULL && pCode == NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
             {
-                pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[0]) continue;
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
+
+                pCode = pUnrelatedInfo->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
             }
         }
     }

@@ -237,12 +237,6 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
                 return NULL;
             }
         }
-
-        // Opportunistically request the server present a stapled OCSP response.
-        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
-        {
-            ERR_clear_error();
-        }
     }
 
     return ctx;
@@ -365,7 +359,18 @@ void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     ERR_clear_error();
-    return SSL_new(ctx);
+    SSL* ret = SSL_new(ctx);
+
+    if (ret != NULL)
+    {
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_ctrl(ret, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
+        }
+    }
+
+    return ret;
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)

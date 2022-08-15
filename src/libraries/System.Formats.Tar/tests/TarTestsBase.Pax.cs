@@ -85,34 +85,44 @@ namespace System.Formats.Tar.Tests
             VerifyPosixFifo(fifo);
         }
 
-        private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+        private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
-        private double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
-            ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+        private decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
+            ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
-            Assert.True(ea.TryGetValue(fieldName, out string value), $"Extended attributes did not contain field '{fieldName}'");
+            Assert.Contains(fieldName, ea);
+            return GetDateTimeOffsetFromTimestampString(ea[fieldName]);
+        }
 
-            // As regular header fields, timestamps are saved as integer numbers that fit in 12 bytes
-            // But as extended attributes, they should always be saved as doubles with decimal precision
-            Assert.Contains(".", value);
-
-            Assert.True(double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid double.");
+        protected DateTimeOffset GetDateTimeOffsetFromTimestampString(string strNumber)
+        {
+            Assert.True(decimal.TryParse(strNumber, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch));
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
         protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
-            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture);
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
         protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
         {
             DateTimeOffset converted = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, fieldName);
             AssertExtensions.GreaterThanOrEqualTo(converted, minimumTime);
+        }
+
+        protected void VerifyExtendedAttributeTimestamps(PaxTarEntry pax)
+        {
+            Assert.NotNull(pax.ExtendedAttributes);
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 3); // Expect to at least collect mtime, ctime and atime
+
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
     }
 }

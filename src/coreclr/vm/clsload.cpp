@@ -118,50 +118,31 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
     Module *pLoaderModule = NULL;
 
-    if (pDefinitionModule != NULL && pDefinitionModule->IsCollectible())
-        goto ComputeCollectibleLoaderModule;
+    if (pDefinitionModule)
+    {
+        if (pDefinitionModule->IsCollectible())
+            goto ComputeCollectibleLoaderModule;
+        pLoaderModule = pDefinitionModule;
+    }
 
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
-
-        // System.__Canon does not contribute to logical loader module
-        if (classArg == TypeHandle(g_pCanonMethodTableClass))
-            continue;
-
-        CorElementType ety = classArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
-            continue;
-
         Module* pModule = classArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if ((pLoaderModule == NULL) && (pModule != pDefinitionModule))
+        if (pLoaderModule == NULL)
             pLoaderModule = pModule;
     }
 
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
-
-        // System.__Canon does not contribute to logical loader module
-        if (methodArg == TypeHandle(g_pCanonMethodTableClass))
-            continue;
-
-        CorElementType ety = methodArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
-            continue;
-
         Module *pModule = methodArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if ((pLoaderModule == NULL) && (pModule != pDefinitionModule))
+        if (pLoaderModule == NULL)
             pLoaderModule = pModule;
-    }
-
-    if (pLoaderModule == NULL)
-    {
-        pLoaderModule = pDefinitionModule;
     }
 
     if (pLoaderModule == NULL)
@@ -294,11 +275,22 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     return TRUE;
 }
 
-// External class loader entry point: load a type by name
 /*static*/
 TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                LPCUTF8 nameSpace,
                                                LPCUTF8 name,
+                                               NotFoundAction fNotFound,
+                                               ClassLoader::LoadTypesFlag fLoadTypes,
+                                               ClassLoadLevel level)
+{
+    WRAPPER_NO_CONTRACT;
+    NameHandle nameHandle(nameSpace, name);
+    return LoadTypeByNameThrowing(pAssembly, &nameHandle, fNotFound, fLoadTypes, level);
+}
+
+/*static*/
+TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
+                                               NameHandle *pNameHandle,
                                                NotFoundAction fNotFound,
                                                ClassLoader::LoadTypesFlag fLoadTypes,
                                                ClassLoadLevel level)
@@ -313,6 +305,7 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
 
         PRECONDITION(CheckPointer(pAssembly));
+        PRECONDITION(pNameHandle != NULL);
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         POSTCONDITION(CheckPointer(RETVAL,
                      (fNotFound == ThrowIfNotFound && fLoadTypes == LoadTypes )? NULL_NOT_OK : NULL_OK));
@@ -324,13 +317,14 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
     }
     CONTRACT_END
 
-    NameHandle nameHandle(nameSpace, name);
-    if (fLoadTypes == DontLoadTypes)
-        nameHandle.SetTokenNotToLoad(tdAllTypes);
-    if (fNotFound == ThrowIfNotFound)
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&nameHandle, level);
+    if (fLoadTypes == ClassLoader::DontLoadTypes)
+        pNameHandle->SetTokenNotToLoad(tdAllTypes);
+
+    ClassLoader* classLoader = pAssembly->GetLoader();
+    if (fNotFound == ClassLoader::ThrowIfNotFound)
+        RETURN classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
     else
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowing(&nameHandle, level);
+        RETURN classLoader->LoadTypeHandleThrowing(pNameHandle, level);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1796,15 +1790,13 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
     StackSString nameSpace(SString::Utf8, pszNameSpace);
     nameSpace.LowerCase();
 
-    StackScratchBuffer nameSpaceBuffer;
-    pszNameSpace = nameSpace.GetUTF8(nameSpaceBuffer);
+    pszNameSpace = nameSpace.GetUTF8();
 
 
     StackSString name(SString::Utf8, pszName);
     name.LowerCase();
 
-    StackScratchBuffer nameBuffer;
-    pszName = name.GetUTF8(nameBuffer);
+    pszName = name.GetUTF8();
 
 
    size_t iNSLength = strlen(pszNameSpace);
@@ -3030,7 +3022,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
             }
 
-            // We do allow parametrized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
+            // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
             // but there is not a good reason for restricting them in the runtime.
 
             BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ParamTypeDesc))));

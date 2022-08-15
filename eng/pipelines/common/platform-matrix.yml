@@ -207,7 +207,7 @@ jobs:
       platform: Linux_bionic_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -236,7 +236,7 @@ jobs:
       platform: Linux_bionic_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -356,6 +356,33 @@ jobs:
         crossrootfsDir: '/crossrootfs/s390x'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux PPC64le
+
+- ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: ppc64le
+      targetRid: linux-ppc64le
+      platform: Linux_ppc64le
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: ubuntu-18.04-cross-ppc64le-20220531132048-b9de666
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        crossrootfsDir: '/crossrootfs/ppc64le'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
@@ -370,7 +397,7 @@ jobs:
       platform: Browser_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
+        image: ubuntu-18.04-webassembly-20220531132048-00a561c
         registry: mcr
       jobParameters:
         hostedOs: Linux
@@ -395,7 +422,7 @@ jobs:
       platform: Browser_wasm_firefox
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
+        image: ubuntu-18.04-webassembly-20220531132048-00a561c
         registry: mcr
       jobParameters:
         hostedOs: Linux
@@ -467,7 +494,7 @@ jobs:
       platform: Android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -492,7 +519,7 @@ jobs:
       platform: Android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -517,7 +544,7 @@ jobs:
       platform: Android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -542,7 +569,7 @@ jobs:
       platform: Android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
+        image: ubuntu-18.04-android-20220628174908-5789942
         registry: mcr
       jobParameters:
         runtimeFlavor: mono

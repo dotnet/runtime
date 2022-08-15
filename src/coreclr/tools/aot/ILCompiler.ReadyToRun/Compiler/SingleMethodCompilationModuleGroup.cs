@@ -29,12 +29,6 @@ namespace ILCompiler
             return (method == _method) || (method == _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
-        {
-            // Profiler guided restrictions are ignored for single method compilation
-            return;
-        }
-
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.

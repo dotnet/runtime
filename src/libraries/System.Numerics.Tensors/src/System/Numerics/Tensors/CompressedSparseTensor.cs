@@ -32,7 +32,7 @@ namespace System.Numerics.Tensors
         private const int defaultCapacity = 64;
 
         /// <summary>
-        /// Constructs a new CompressedSparseTensor of the specifed dimensions and stride ordering.
+        /// Constructs a new CompressedSparseTensor of the specified dimensions and stride ordering.
         /// </summary>
         /// <param name="dimensions">An span of integers that represent the size of each dimension of the CompressedSparseTensor to create.</param>
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
@@ -40,7 +40,7 @@ namespace System.Numerics.Tensors
         { }
 
         /// <summary>
-        /// Constructs a new CompressedSparseTensor of the specifed dimensions, initial capacity, and stride ordering.
+        /// Constructs a new CompressedSparseTensor of the specified dimensions, initial capacity, and stride ordering.
         /// </summary>
         /// <param name="dimensions">An span of integers that represent the size of each dimension of the CompressedSparseTensor to create.</param>
         /// <param name="capacity">The number of non-zero values this tensor can store without resizing.</param>
@@ -58,7 +58,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Constructs a new CompressedSparseTensor of the specifed dimensions, wrapping existing backing memory for the contents.
+        /// Constructs a new CompressedSparseTensor of the specified dimensions, wrapping existing backing memory for the contents.
         /// Growing this CompressedSparseTensor will re-allocate the backing memory.
         /// </summary>
         /// <param name="values">Memory storing non-zero values to construct this tensor with.</param>
@@ -155,7 +155,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Gets the value at the specied index, where index is lineraized as a dot product between indices and strides.
+        /// Gets the value at the specified index, where index is lineraized as a dot product between indices and strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <returns>The value at the specified position in this Tensor.</returns>
@@ -177,7 +177,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Sets the value at the specied index, where index is a linearized version of n-dimension indices using strides.
+        /// Sets the value at the specified index, where index is a linearized version of n-dimension indices using strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
@@ -480,9 +480,9 @@ namespace System.Numerics.Tensors
         {
             // Create a copy of the backing storage, eliminating any unused space.
             var newValues = values.Slice(0, nonZeroCount).ToArray();
-            var newIndicies = indices.Slice(0, nonZeroCount).ToArray();
+            var newIndices = indices.Slice(0, nonZeroCount).ToArray();
 
-            return new CompressedSparseTensor<T>(newValues, compressedCounts.ToArray(), newIndicies, nonZeroCount, dimensions, IsReversedStride);
+            return new CompressedSparseTensor<T>(newValues, compressedCounts.ToArray(), newIndices, nonZeroCount, dimensions, IsReversedStride);
         }
 
         /// <summary>

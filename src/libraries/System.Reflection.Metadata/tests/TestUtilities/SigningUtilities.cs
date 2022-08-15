@@ -11,6 +11,9 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     internal static class SigningUtilities
     {
+        public static bool SupportsSigning { get; } =
+            System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(RSA.Create());
+
         public static byte[] CalculateRsaSignature(IEnumerable<Blob> content, byte[] privateKey)
         {
             var hash = CalculateSha1(content);

@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml
         {
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
             doc.Load(xmlReader);
             _containingDocument = doc;
@@ -179,10 +179,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (type == typeof(XmlNodeList) || type.IsSubclassOf(typeof(XmlNodeList)))
             {
-                if (_inputNodeList == null)
-                {
-                    _inputNodeList = Utils.AllDescendantNodes(_containingDocument, true);
-                }
+                _inputNodeList ??= Utils.AllDescendantNodes(_containingDocument, true);
                 return (XmlNodeList)GetOutput();
             }
             else if (type == typeof(XmlDocument) || type.IsSubclassOf(typeof(XmlDocument)))

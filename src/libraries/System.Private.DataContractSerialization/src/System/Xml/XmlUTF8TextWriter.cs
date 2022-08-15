@@ -14,7 +14,7 @@ namespace System.Xml
 
     internal sealed class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
-        private XmlUTF8NodeWriter? _writer;
+        private XmlUTF8NodeWriter _writer = null!;  // initialized in SetOutput
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
@@ -26,12 +26,18 @@ namespace System.Xml
                 stream = new EncodingStreamWrapper(stream, encoding, true);
             }
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter();
-            }
+            _writer ??= new XmlUTF8NodeWriter();
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
+        }
+
+        public override bool CanFragment
+        {
+            get
+            {
+                // Fragmenting only works for utf8
+                return _writer.Encoding == null;
+            }
         }
 
         protected override XmlSigningNodeWriter CreateSigningNodeWriter()
@@ -97,14 +103,15 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        private byte[] GetCharEntityBuffer()
+        public Encoding? Encoding
         {
-            if (_entityChars == null)
+            get
             {
-                _entityChars = new byte[maxEntityLength];
+                return _encoding;
             }
-            return _entityChars;
         }
+
+        private byte[] GetCharEntityBuffer() => _entityChars ??= new byte[maxEntityLength];
 
         private char[] GetCharBuffer(int charCount)
         {
@@ -696,7 +703,7 @@ namespace System.Xml
         {
             int offset;
             byte[] buffer = GetBuffer(XmlConverter.MaxUInt64Chars, out offset);
-            Advance(XmlConverter.ToChars((double)value, buffer, offset));
+            Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteGuidText(Guid value)

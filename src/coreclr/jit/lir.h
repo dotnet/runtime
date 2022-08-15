@@ -27,7 +27,7 @@ public:
         {
             None = 0x00,
 
-            Mark = 0x01, // An aribtrary "mark" bit that can be used in place of
+            Mark = 0x01, // An arbitrary "mark" bit that can be used in place of
                          // a more expensive data structure when processing a set
                          // of LIR nodes. See for example `LIR::GetTreeRange`.
 
@@ -226,7 +226,7 @@ public:
     // LIR::Range:
     //
     // Represents a contiguous range of LIR nodes. Provides a variety of
-    // variety of utilites that modify the LIR contained in the range. Unlike
+    // variety of utilities that modify the LIR contained in the range. Unlike
     // `ReadOnlyRange`, values of this type may be edited.
     //
     // Because it is not a final class, it is possible to slice values of this

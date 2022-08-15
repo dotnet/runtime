@@ -21,7 +21,6 @@ class ThreadStore
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
-    CLREventStatic      m_SuspendCompleteEvent;
     ReaderWriterLock    m_Lock;
 
 private:
@@ -49,7 +48,7 @@ public:
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
-    static void             DetachCurrentThread();
+    static void             DetachCurrentThread(bool shutdownStarted);
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
     void                    InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort);
@@ -64,7 +63,6 @@ public:
     void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
-    void        WaitForSuspendComplete();
 };
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 

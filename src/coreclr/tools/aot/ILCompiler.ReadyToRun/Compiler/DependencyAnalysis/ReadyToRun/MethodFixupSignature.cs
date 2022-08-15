@@ -54,7 +54,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 !Method.HasInstantiation &&
                 Method.GetCanonMethodTarget(CanonicalFormKind.Specific) is var canonMethod &&
                 !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
-                factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod))
+                factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
+                factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
                 list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
                 list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");

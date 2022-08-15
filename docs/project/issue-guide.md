@@ -10,7 +10,7 @@ As noted above, we don't close issues just because we don't plan to address them
 2. Cross cutting work better suited for another team.  Sometimes the line between the framework, languages and runtime blurs.  For some issues, we may feel that the work is better suited for the runtime team, language team or other partner.  In these cases, we'll close the issue and open it with the partner team.  If they end up not deciding to take on the issue, we can reconsider it here.
 3. Nebulous and Large open issues.  Large open issues are sometimes better suited for [User Voice](http://visualstudio.uservoice.com/forums/121579-visual-studio/category/31481--net), especially when the work will cross the boundaries of the framework, language and runtime.  A good example of this is the SIMD support we recently added to CoreFx.  This started as a [User Voice request](https://visualstudio.uservoice.com/forums/121579-visual-studio-2015/suggestions/2212443-c-and-simd), and eventually turned into work for both the core libraries and runtime.
 
-Sometimes after debate, we'll decide an issue isn't a good fit for CoreFx.  In that case, we'll also close it.  Because of this, we ask that you don't start working on an issue until it's tagged with [up-for-grabs](https://github.com/dotnet/runtime/labels/up-for-grabs) or [api-approved](https://github.com/dotnet/runtime/labels/api-approved).  Both you and the team will be unhappy if you spend time and effort working on a change we'll ultimately be unable to take. We try to avoid that.
+Sometimes after debate, we'll decide an issue isn't a good fit for the .NET runtime codebase.  In that case, we'll also close it.  Because of this, we ask that you don't start working on an issue until it's tagged with [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted) or [api-approved](https://github.com/dotnet/runtime/labels/api-approved).  Both you and the team will be unhappy if you spend time and effort working on a change we'll ultimately be unable to take. We try to avoid that.
 
 ### Labels
 We use GitHub [labels](https://github.com/dotnet/runtime/labels) on our issues in order to classify them.  We have the following categories per issue:
@@ -25,7 +25,7 @@ We use GitHub [labels](https://github.com/dotnet/runtime/labels) on our issues i
   * [question](https://github.com/dotnet/runtime/labels/question): Questions about the product, source code, etc.
 * **Other**:
   * [easy](https://github.com/dotnet/runtime/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3Aeasy%20no%3Aassignee) - Good for starting contributors.
-  * [up-for-grabs](https://github.com/dotnet/runtime/labels/up-for-grabs): Small sections of work which we believe are well scoped.  These sorts of issues are a good place to start if you are new.  Anyone is free to work on these issues.
+  * [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted): Small sections of work which we believe are well scoped.  These sorts of issues are a good place to start if you are new.  Anyone is free to work on these issues.
   * [needs more info](https://github.com/dotnet/runtime/labels/needs%20more%20info): Issues which need more information to be actionable.  Usually this will be because we can't reproduce a reported bug.  We'll close these issues after a little bit if we haven't gotten actionable information, but we welcome folks who have acquired more information to reopen the issue.
  * [wishlist](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Awishlist) - Issues on top of our backlog we won't likely get to. Warning: Might not be easy.
 
@@ -50,7 +50,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 
 1. Each issue has exactly one **area-&#42;** label
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
-1. Use **up-for-grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
+1. Use **help wanted** as much as possible, ideally notes about next steps / complexity of the issue / acceptance criteria
 1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
 1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, **test enhancement**, **question**, **documentation**, etc.)
 1. Don't be afraid to say no, or close issues - just explain why and be polite
@@ -64,8 +64,8 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
     * Motivation: Issues with multiple areas have loose responsibility (everyone blames the other side) and issues are double counted in reports.
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
     * Motivation: Observation is that contributors are less likely to grab assigned issues, no matter what the repo rules say.
-1. Use **up-for-grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
-    * Note: Per http://up-for-grabs.net, such issues should be no longer than few nights' worth of work. They should be actionable (i.e. no misterious CI failures or UWP issues that can't be tested in the open).
+1. Use **help wanted** as much as possible, ideally with a quick note about next steps / complexity of the issue
+    * Note: Per http://up-for-grabs.net, such issues should be no longer than few nights' worth of work. They should be actionable (i.e. no mysterious CI failures or UWP issues that can't be tested in the open).
 1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
     * Motivation: Helps communicate desire/timeline to community. Can spark further priority/impact discussion.
 1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, **test enhancement**, **question**, **documentation**, etc.)

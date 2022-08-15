@@ -40,7 +40,7 @@
 }
 
 #define move_field(dst, src, cls, fld) \
-    move(dst, (SIZE_T)(src) + FIELD_OFFSET(cls, fld))
+    move(dst, (SIZE_T)(src) + offsetof(cls, fld))
 
 static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUserContext, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead)
 {
@@ -321,7 +321,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
             }
 
             if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindInfoHeader.FunctionEntry.UnwindData !=
-                    pHeader + FIELD_OFFSET(FakeStubUnwindInfoHeader, UnwindInfo))
+                    pHeader + offsetof(FakeStubUnwindInfoHeader, UnwindInfo))
             {
                 _ASSERTE(1 == pass);
                 return STATUS_UNSUCCESSFUL;
@@ -340,7 +340,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
             } else {
                 // the unwindData is an RVA to the .xdata record which contains the function length
                 DWORD xdataHeader=0;
-                if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindData != pHeader + FIELD_OFFSET(FakeStubUnwindInfoHeader, UnwindInfo))
+                if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindData != pHeader + offsetof(FakeStubUnwindInfoHeader, UnwindInfo))
                 {
                     _ASSERTE(1 == pass);
                     return STATUS_UNSUCCESSFUL;

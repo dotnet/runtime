@@ -558,6 +558,9 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
 // Frame pointer relative offset of a local containing a pointer to the windows style context of a location
 // where a hardware exception occurred.
 int g_hardware_exception_context_locvar_offset = 0;
+// Frame pointer relative offset of a local containing a pointer to the windows style context of a location
+// where an activation signal interrupted the thread.
+int g_inject_activation_context_locvar_offset = 0;
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
@@ -575,6 +578,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     {
         CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
         memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
+
+        return TRUE;
+    }
+
+    // Check if the PC is the return address from the InvokeActivationHandler.
+    // If that's the case, extract its local variable containing a pointer to the windows style context of the activation
+    // injection location and return that. This skips the signal handler trampoline that the libunwind
+    // cannot cross on some systems.
+    if ((void*)curPc == g_InvokeActivationHandlerReturnAddress)
+    {
+        CONTEXT* activationContext = (CONTEXT*)(CONTEXTGetFP(context) + g_inject_activation_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), activationContext, sizeof(CONTEXT));
 
         return TRUE;
     }

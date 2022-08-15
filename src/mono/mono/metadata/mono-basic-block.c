@@ -252,7 +252,7 @@ bb_split (MonoSimpleBasicBlock *first, MonoSimpleBasicBlock *hint, MonoSimpleBas
 		do {
 			if (bb_idx_is_contained (first, target))
 				break;
-			if (first->start > target)
+			if (GINT_TO_UINT(first->start )> target)
 				first = first->left;
 			else
 				first = first->right;
@@ -353,7 +353,7 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 			return;
 		}
 
-		while (current && cli_addr >= current->end)
+		while (current && cli_addr >= GINT_TO_UINT(current->end))
 			current = current->next;
 		g_assert (current);
 
@@ -469,13 +469,12 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 static void
 bb_formation_eh_pass (MonoMethodHeader *header, MonoSimpleBasicBlock *bb, MonoSimpleBasicBlock **root, MonoMethod *method, MonoError *error)
 {
-	int i;
-	int end = header->code_size;
+	guint32 end = header->code_size;
 
 	error_init (error);
 
 	/*We must split at all points to verify for targets in the middle of an instruction*/
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = header->clauses + i;
 		MonoSimpleBasicBlock *try_block, *handler;
 

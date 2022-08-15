@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         internal static ArraySegment<byte> RentAsn1StringBytes(IntPtr asn1)
         {
-            return RentDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
+            return RentDynamicBuffer(GetAsn1StringBytes, asn1);
         }
 
         private static ArraySegment<byte> RentDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -71,10 +72,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return (obj) =>
-                    {
-                        return propInfo.GetValue(obj);
-                    };
+                    return propInfo.GetValue;
                 }
             }
             else if (memberInfo is FieldInfo fieldInfo)

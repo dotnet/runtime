@@ -216,10 +216,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 
@@ -233,10 +230,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

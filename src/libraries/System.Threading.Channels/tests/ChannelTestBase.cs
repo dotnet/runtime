@@ -29,7 +29,7 @@ namespace System.Threading.Channels.Tests
             from b3 in new[] { false, true }
             select new object[] { b1, b2, b3 };
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void ValidateDebuggerAttributes()
         {
             Channel<int> c = CreateChannel();
@@ -328,7 +328,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async Task WaitToWriteAsync_ManyConcurrent_SatisifedByReaders()
+        public async Task WaitToWriteAsync_ManyConcurrent_SatisfiedByReaders()
         {
             if (RequiresSingleReader || RequiresSingleWriter)
             {

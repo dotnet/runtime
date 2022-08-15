@@ -106,7 +106,7 @@ namespace System.Tests
         private class SomeCustomConstantAttribute : CustomConstantAttribute
         {
             public static object Do(object o) => o;
-          
+
             public override object Value => "SomeValue";
         }
 
@@ -458,7 +458,7 @@ namespace System.Tests
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new ClassG().M<string, object>())).Body).Method;
             var m2 = new Action(new ClassG().M<string, object>).Method;
             Assert.True(m1.Equals(m2));
-            Assert.True(m1.GetHashCode().Equals(m2.GetHashCode()));
+            Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
@@ -468,7 +468,7 @@ namespace System.Tests
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new StructG().M<string, object>())).Body).Method;
             var m2 = new Action(new StructG().M<string, object>).Method;
             Assert.True(m1.Equals(m2));
-            Assert.True(m1.GetHashCode().Equals(m2.GetHashCode()));
+            Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
@@ -913,7 +913,7 @@ namespace System.Tests
         [Fact]
         public static void CreateDelegate4_Method_CaseMismatch()
         {
-            // instance method, case mismatch, do not igore case
+            // instance method, case mismatch, do not ignore case
             ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => Delegate.CreateDelegate(typeof(E), new B(), "ExecutE", false));
             // Error binding to target method
             Assert.Null(ex.InnerException);

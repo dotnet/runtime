@@ -44,7 +44,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private ModuleToken GetModuleToken(NodeFactory factory)
         {
-            return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(_method.GetTypicalMethodDefinition()).Value);
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(_method))
+                return new ModuleToken(_method.Module, _method.Handle);
+            else
+                return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(_method.GetTypicalMethodDefinition()).Value);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

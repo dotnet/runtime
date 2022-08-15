@@ -146,7 +146,7 @@ frame_data_allocator_add_frag (FrameDataAllocator *stack, int size)
 	FrameDataFragment *new_frag;
 
 	// FIXME:
-	int frag_size = 4096;
+	guint frag_size = 4096;
 	if (size + sizeof (FrameDataFragment) > frag_size)
 		frag_size = size + sizeof (FrameDataFragment);
 	new_frag = frame_data_frag_new (frag_size);
@@ -242,6 +242,10 @@ int mono_interp_opt = INTERP_OPT_DEFAULT;
 static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
+
+#ifdef HOST_WASI
+static gboolean debugger_enabled = FALSE;
+#endif
 
 static void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
@@ -479,7 +483,7 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!(mono_interp_opt & INTERP_OPT_TIERING) || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
 		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
@@ -2119,13 +2123,13 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	context->stack_pointer = (guchar*)sp;
 
-	check_pending_unwind (context);
-
 	if (context->has_resume_state) {
 		/*
 		 * This can happen on wasm where native frames cannot be skipped during EH.
 		 * EH processing will continue when control returns to the interpreter.
 		 */
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			mono_llvm_cpp_throw_exception ();
 		return NULL;
 	}
 	// The return value is at the bottom of the stack
@@ -2585,7 +2589,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	if (sig->param_count) {
 		cinfo->arginfo = g_new0 (guint8, sig->param_count);
 
-		for (int i = 0; i < rmethod->param_count; ++i) {
+		for (guint i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
 			int mt = mint_type (t);
 			if (m_type_is_byref (sig->params [i])) {
@@ -2622,7 +2626,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	cinfo = (JitCallInfo*)rmethod->jit_call_info;
 
 	/*
-	 * Convert the arguments on the interpeter stack to the format expected by the gsharedvt_out wrapper.
+	 * Convert the arguments on the interpreter stack to the format expected by the gsharedvt_out wrapper.
 	 */
 	gpointer args [32];
 	int pindex = 0;
@@ -2634,7 +2638,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	/* return address */
 	if (cinfo->ret_mt != -1)
 		args [pindex ++] = ret_sp;
-	for (int i = 0; i < rmethod->param_count; ++i) {
+	for (guint i = 0; i < rmethod->param_count; ++i) {
 		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
 		if (cinfo->arginfo [i] == JIT_ARG_BYVAL)
 			args [pindex ++] = sval->data.p;
@@ -3342,10 +3346,8 @@ static long opcode_counts[MINT_LASTOP];
 	if (tracing > 1) { \
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		char *disasm = mono_interp_dis_mintop ((gint32)(ip - frame->imethod->code), TRUE, ip + 1, *ip); \
-		g_print ("(%p) %s -> %s\n", mono_thread_internal_current (), mn, disasm); \
+		g_print ("(%p) %s -> IL_%04x: %-10s\n", mono_thread_internal_current (), mn, (gint32)(ip - frame->imethod->code), mono_interp_opname (*ip)); \
 		g_free (mn); \
-		g_free (disasm); \
 	}
 #else
 #define DUMP_INSTR()
@@ -3503,7 +3505,7 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	return slow;
 }
 
-/* Save the state of the interpeter main loop into FRAME */
+/* Save the state of the interpreter main loop into FRAME */
 #define SAVE_INTERP_STATE(frame) do { \
 	frame->state.ip = ip;  \
 	} while (0)
@@ -5376,6 +5378,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			goto call;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_STRING_UNOPT) {
+			// Same as MINT_NEWOBJ_STRING but copy params into right place on stack
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
+			return_offset = ip [1];
+			call_args_offset = ip [1];
+
+			int param_size = ip [3];
+                        if (param_size)
+                                memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+			LOCAL_VAR (call_args_offset, gpointer) = NULL;
+			ip += 4;
+			goto call;
+		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
 			INIT_VTABLE (vtable);
@@ -5474,6 +5489,49 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
 			ip += 4;
+			goto call;
+		}
+		MINT_IN_CASE(MINT_NEWOBJ_SLOW_UNOPT) {
+			call_args_offset = ip [1];
+			guint16 param_size = ip [3];
+			guint16 ret_size = ip [4];
+			gpointer this_ptr;
+
+			// Should only be called in unoptimized code. This opcode moves the params around
+			// to compensate for the lack of use of a proper offset allocator in unoptimized code.
+			gboolean is_vt = ret_size != 0;
+			if (!is_vt)
+				ret_size = MINT_STACK_SLOT_SIZE;
+
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+			MonoClass *newobj_class = cmethod->method->klass;
+
+			// We allocate space on the stack for return value and for this pointer, that is passed to ctor
+			if (param_size)
+				memmove (locals + call_args_offset + ret_size + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+
+			if (is_vt) {
+				this_ptr = locals + call_args_offset;
+				memset (this_ptr, 0, ret_size);
+				call_args_offset += ret_size;
+			} else {
+				// FIXME push/pop LMF
+				MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
+				if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
+					MonoException *exc = interp_error_convert_to_exception (frame, error, ip);
+					g_assert (exc);
+					THROW_EX (exc, ip);
+				}
+				error_init_reuse (error);
+				this_ptr = mono_object_new_checked (newobj_class, error);
+				mono_interp_error_cleanup (error); // FIXME: do not swallow the error
+				LOCAL_VAR (call_args_offset, gpointer) = this_ptr; // return value
+				call_args_offset += MINT_STACK_SLOT_SIZE;
+			}
+			LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
+			return_offset = call_args_offset; // unused, prevent warning
+			ip += 5;
 			goto call;
 		}
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
@@ -6044,7 +6102,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			/* No bounds, one direction */
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);
 			NULL_CHECK (ao);
-			gint32 index = LOCAL_VAR (ip [3], gint32);
+			guint32 index = LOCAL_VAR (ip [3], guint32);
 			if (index >= ao->max_length)
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 			guint16 size = ip [4];
@@ -6093,7 +6151,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #define LDELEM(datatype,elemtype) do { \
 	MonoArray *o = LOCAL_VAR (ip [2], MonoArray*); \
 	NULL_CHECK (o); \
-	gint32 aindex = LOCAL_VAR (ip [3], gint32); \
+	guint32 aindex = LOCAL_VAR (ip [3], guint32); \
 	if (aindex >= mono_array_length_internal (o)) \
 		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 	LOCAL_VAR (ip [1], datatype) = mono_array_get_fast (o, elemtype, aindex); \
@@ -6134,7 +6192,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define STELEM(datatype, elemtype) do { \
 	MonoArray *o; \
-	gint32 aindex; \
+	guint32 aindex; \
 	STELEM_PROLOG(o, aindex); \
 	mono_array_set_fast (o, elemtype, aindex, LOCAL_VAR (ip [3], datatype)); \
 	ip += 4; \
@@ -6150,7 +6208,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
-			gint32 aindex;
+			guint32 aindex;
 			STELEM_PROLOG(o, aindex);
 			MonoObject *ref = LOCAL_VAR (ip [3], MonoObject*);
 
@@ -6168,7 +6226,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
-			gint32 aindex = LOCAL_VAR (ip [2], gint32);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
 			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
@@ -6738,6 +6796,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
 			/* Just a placeholder for a breakpoint */
+#if HOST_WASI
+			if (debugger_enabled)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
@@ -7073,10 +7135,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem;
+			if (len > 0) {
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
-			if (frame->imethod->init_locals)
-				memset (mem, 0, len);
+				if (frame->imethod->init_locals)
+					memset (mem, 0, len);
+			} else {
+				mem = NULL;
+			}
 			LOCAL_VAR (ip [1], gpointer) = mem;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -7370,7 +7437,7 @@ interp_parse_options (const char *options)
 /*
  * interp_set_resume_state:
  *
- *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
+ *   Set the state the interpreter will continue to execute from after execution returns to the interpreter.
  * If INTERP_FRAME is NULL, that means the exception is caught in an AOTed frame and the interpreter needs to
  * unwind back to AOT code.
  */
@@ -7414,7 +7481,7 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 /*
  * interp_run_finally:
  *
- *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the finally clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  * Return TRUE if the finally clause threw an exception.
  */
@@ -7458,7 +7525,7 @@ interp_run_finally (StackFrameInfo *frame, int clause_index)
 /*
  * interp_run_filter:
  *
- *   Run the filter clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the filter clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  */
 // Do not inline in case order of frame addresses matters.
@@ -8055,7 +8122,7 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 	}
 
 	if (copy_jit_info_data.jit_info_array) {
-		for (size_t i = 0; i < copy_jit_info_data.next; ++i)
+		for (int i = 0; i < copy_jit_info_data.next; ++i)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
@@ -8130,4 +8197,8 @@ mono_ee_interp_init (const char *opts)
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
+
+#ifdef HOST_WASI
+	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
+#endif
 }

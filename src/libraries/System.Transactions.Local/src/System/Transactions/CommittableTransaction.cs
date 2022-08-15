@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Threading;
 
+#pragma warning disable CS1591
+
 namespace System.Transactions
 {
     [UnsupportedOSPlatform("browser")]
@@ -37,7 +39,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCreated(this, "CommittableTransaction");
+                etwLog.TransactionCreated(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
             }
         }
 
@@ -47,13 +49,10 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionCommit(this, "CommittableTransaction");
+                etwLog.TransactionCommit(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(CommittableTransaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -84,13 +83,10 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionCommit(this, "CommittableTransaction");
+                etwLog.TransactionCommit(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(CommittableTransaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -119,7 +115,6 @@ namespace System.Transactions
             {
                 etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
-
         }
 
         internal override void InternalDispose()

@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Generator
     public partial class RegexGenerator
     {
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
-        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer, string generatedClassName)
+        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
         {
             // Emit the namespace.
             RegexType? parent = regexMethod.DeclaringType;
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("/// </code>");
             writer.WriteLine("/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
-            writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{generatedClassName}.{regexMethod.GeneratedName}.Instance;");
+            writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{regexMethod.GeneratedName}.Instance;");
 
             // Unwind all scopes
             while (writer.Indent != 0)
@@ -75,7 +75,8 @@ namespace System.Text.RegularExpressions.Generator
         {
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
-            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"[{s_generatedCodeAttribute}]");
+            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
@@ -94,10 +95,15 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
         private static void EmitRegexDerivedImplementation(
-            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation)
+            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation, bool allowUnsafe)
         {
             writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MethodName} method.</summary>");
-            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"[{s_generatedCodeAttribute}]");
+            if (allowUnsafe)
+            {
+                writer.WriteLine($"[SkipLocalsInit]");
+            }
+            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.WriteLine($"    internal static readonly {rm.GeneratedName} Instance = new();");
@@ -342,7 +348,7 @@ namespace System.Text.RegularExpressions.Generator
             bool needsTryFind = false, needsTryMatch = false;
             RegexNode root = rm.Tree.Root.Child(0);
 
-            // We can alway emit our most general purpose scan loop, but there are common situations we can easily check
+            // We can always emit our most general purpose scan loop, but there are common situations we can easily check
             // for where we can emit simpler/better code instead.
             if (root.Kind is RegexNodeKind.Empty)
             {
@@ -1365,7 +1371,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
                                 Debug.Assert(numChars != 0);
-                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {
@@ -1793,7 +1799,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (postYesDoneLabel != originalDoneLabel)
+                if (postYesDoneLabel != originalDoneLabel || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -1815,7 +1821,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (postNoDoneLabel != originalDoneLabel)
+                    if (postNoDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -1825,7 +1831,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (postYesDoneLabel != originalDoneLabel)
+                    if (postYesDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
@@ -3303,7 +3309,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine("// If the iteration successfully matched zero-length input, record that an empty iteration was seen.");
                         using (EmitBlock(writer, $"if (pos == {startingPos})"))
                         {
-                            writer.WriteLine($"{sawEmpty} = 1 /* true */;");
+                            writer.WriteLine($"{sawEmpty} = 1; // true");
                         }
                         writer.WriteLine();
                     }
@@ -3349,9 +3355,16 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
                             // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
-                            writer.WriteLine($"// If the lazy loop has matched any iterations, backtrack into the last one.");
                             using (EmitBlock(writer, $"if ({iterationCount} > 0)"))
                             {
+                                writer.WriteLine($"// The lazy loop matched at least one iteration; backtrack into the last one.");
+                                if (iterationMayBeEmpty)
+                                {
+                                    // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                                    // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                                    // false prior to backtracking / undoing that iteration.
+                                    writer.WriteLine($"{sawEmpty} = 0; // false");
+                                }
                                 Goto(doneLabel);
                             }
                             writer.WriteLine();
@@ -3411,6 +3424,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         FinishEmitBlock clause;
 
+                        writer.WriteLine();
                         if (maxIterations == int.MaxValue)
                         {
                             // If the last iteration matched empty, backtrack.
@@ -3434,6 +3448,13 @@ namespace System.Text.RegularExpressions.Generator
 
                         using (clause)
                         {
+                            if (iterationMayBeEmpty)
+                            {
+                                // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                                // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                                // false prior to backtracking / undoing that iteration.
+                                writer.WriteLine($"{sawEmpty} = 0; // false");
+                            }
                             Goto(doneLabel);
                         }
                     }
@@ -4506,9 +4527,7 @@ namespace System.Text.RegularExpressions.Generator
                 // (In the future, we could possibly extend the rm.Analysis to produce a known
                 // lower-bound and compare against that rather than always using 128 as the
                 // pivot point.)
-                return negate ?
-                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitContainsNoAscii();
             }
 
             if (analysis.AllAsciiContained)
@@ -4516,9 +4535,7 @@ namespace System.Text.RegularExpressions.Generator
                 // We determined that every ASCII character is in the class, for example
                 // if the class were the negated example from case 1 above:
                 // [^\p{IsGreek}\p{IsGreekExtended}].
-                return negate ?
-                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitAllAsciiContained();
             }
 
             // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
@@ -4547,6 +4564,15 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
             });
+
+            // There's a chance that the class contains either no ASCII characters or all of them,
+            // and the analysis could not find it (for example if the class has a subtraction).
+            // We optimize away the bit vector in these trivial cases.
+            switch (bitVectorString)
+            {
+                case "\0\0\0\0\0\0\0\0": return EmitContainsNoAscii();
+                case "\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffff": return EmitAllAsciiContained();
+            }
 
             // We determined that the character class may contain ASCII, so we
             // output the lookup against the lookup table.
@@ -4577,6 +4603,20 @@ namespace System.Text.RegularExpressions.Generator
             return negate ?
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+
+            string EmitContainsNoAscii()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
+
+            string EmitAllAsciiContained()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
         }
 
         /// <summary>
@@ -4676,7 +4716,7 @@ namespace System.Text.RegularExpressions.Generator
             };
         }
 
-        /// <summary>Gets an identifer to describe a capture group.</summary>
+        /// <summary>Gets an identifier to describe a capture group.</summary>
         private static string DescribeCapture(int capNum, RegexMethod rm)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.

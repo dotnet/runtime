@@ -1257,7 +1257,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 
     // We don't want to be calling JIT_InitClass at all for perf reasons
     // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Gloabl Class <Module>
+    // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
     pMT->CheckRestore();
@@ -2124,7 +2124,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // to a given type.
         if (pMT->IsICastable())
         {
-            // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
+            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
             GCPROTECT_BEGIN(exception);
 
@@ -2776,7 +2776,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
-        // we allow enums and their primitive type to be interchangable
+        // we allow enums and their primitive type to be interchangeable
         result = objRef->GetData();
     }
     else if (pMT1->IsEquivalentTo(pMT2))
@@ -2810,7 +2810,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 
     MethodTable* pMT2 = obj->GetMethodTable();
 
-    // we allow enums and their primitive type to be interchangable.
+    // we allow enums and their primitive type to be interchangeable.
     // if suspension is requested, defer to the framed helper.
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -2832,7 +2832,6 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     FCALL_CONTRACT;
 
     TypeHandle clsHnd(type);
-
     // <TODO>@TODO right now we check for precisely the correct type.
     // do we want to allow inheritance?  (watch out since value
     // classes inherit from object but do not normal object layout).</TODO>
@@ -2841,6 +2840,16 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     }
 
     return(typedByRef.data);
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+    TypeHandle clsHnd(type);
+    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
 }
 HCIMPLEND
 
@@ -2855,7 +2864,7 @@ HCIMPLEND
 // JIT_GenericHandle and its cache
 //
 // Perform a "polytypic" operation related to shared generic code at runtime, possibly filling in an entry in
-// either a generic dictionary cache assocaited with a descriptor or placing an entry in the global
+// either a generic dictionary cache associated with a descriptor or placing an entry in the global
 // JitGenericHandle cache.
 //
 // A polytypic operation is one such as
@@ -2885,7 +2894,7 @@ HCIMPLEND
 //         !SharedByGenericMethodInstantiations but will be SharedByGenericClassInstantiations). Let's say
 //         this code is C<repr>::m().
 //     * the type D will be a descendent of type C. In particular D<exact> will relate to some type C<exact'>
-//         where C<repr> is the represntative instantiation of C<exact>'
+//         where C<repr> is the representative instantiation of C<exact>'
 //     * the relevant dictionary will be the one attached to C<exact'>.
 //
 // The JitGenericHandleCache is a global data structure shared across all application domains. It is only
@@ -3028,7 +3037,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
+        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
         // could put it in a "ifdef _DEBUG" block
         CrstHolder lock(&g_pJitGenericHandleCacheCrst);
         EEHashTableIteration iter;
@@ -4727,7 +4736,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 HCIMPLEND
 
 /*********************************************************************/
-// This is called by the JIT after every instruction in fully interuptable
+// This is called by the JIT after every instruction in fully interruptible
 // code to make certain our GC tracking is OK
 HCIMPL0(VOID, JIT_StressGC_NOP)
 {
@@ -4789,8 +4798,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     if (obj != 0) {
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
-            _ASSERTE(!"Bad Method Table");
-            FreeBuildDebugBreak();
+            _ASSERTE_ALL_BUILDS(!"Bad Method Table");
         }
     }
     return obj;
@@ -5085,33 +5093,69 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
 
     // Find context for the original method
+    CONTEXT *pFrameContext = NULL;
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = 0;
+    DWORD contextFlags = CONTEXT_FULL;
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        xStateCompactionMask = XSTATE_MASK_CET_U;
+        contextFlags |= CONTEXT_XSTATE;
+    }
+
+    // The initialize call should fail but return contextSize
+    BOOL success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+    PVOID pBuffer = _alloca(contextSize);
+    success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
+        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+    _ASSERTE(success);
+#else // TARGET_WINDOWS && TARGET_AMD64
     CONTEXT frameContext;
     frameContext.ContextFlags = CONTEXT_FULL;
-    RtlCaptureContext(&frameContext);
+    pFrameContext = &frameContext;
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+    // Find context for the original method
+    RtlCaptureContext(pFrameContext);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
+        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+        SetSSP(pFrameContext, _rdsspq());
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
     // Walk back to the original method frame
-    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
     // Remember original method FP and SP because new method will inherit them.
-    UINT_PTR currentSP = GetSP(&frameContext);
-    UINT_PTR currentFP = GetFP(&frameContext);
+    UINT_PTR currentSP = GetSP(pFrameContext);
+    UINT_PTR currentFP = GetFP(pFrameContext);
 
     // We expect to be back at the right IP
-    if ((UINT_PTR)ip != GetIP(&frameContext))
+    if ((UINT_PTR)ip != GetIP(pFrameContext))
     {
         // Should be fatal
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+            " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
     // Now unwind back to the original method caller frame.
-    EECodeInfo callerCodeInfo(GetIP(&frameContext));
-    frameContext.ContextFlags = CONTEXT_FULL;
+    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
     ULONG_PTR establisherFrame = 0;
     PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
-        &frameContext, &handlerData, &establisherFrame, NULL);
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
+        pFrameContext, &handlerData, &establisherFrame, NULL);
 
     // Now, set FP and SP back to the values they had just before this helper was called,
     // since the new method must have access to the original method frame.
@@ -5124,13 +5168,19 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // method sees the "expected" SP misalgnment on entry.
     _ASSERTE(currentSP % 16 == 0);
     currentSP -= 8;
-#endif
 
-    SetSP(&frameContext, currentSP);
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pFrameContext);
+    if (ssp != 0)
+    {
+        SetSSP(pFrameContext, ssp - 8);
+    }
+#endif // TARGET_WINDOWS
 
-#if defined(TARGET_AMD64)
-    frameContext.Rbp = currentFP;
-#endif
+    pFrameContext->Rbp = currentFP;
+#endif // TARGET_AMD64
+
+    SetSP(pFrameContext, currentSP);
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
@@ -5138,10 +5188,10 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
 
     // Install new entry point as IP
-    SetIP(&frameContext, osrMethodCode);
+    SetIP(pFrameContext, osrMethodCode);
 
     // Transition!
-    ClrRestoreNonvolatileContext(&frameContext);
+    ClrRestoreNonvolatileContext(pFrameContext);
 }
 
 // Jit helper invoked at a partial compilation patchpoint.

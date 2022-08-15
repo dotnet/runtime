@@ -18,6 +18,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
         READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+        READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -75,7 +76,7 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunVirtualFunctionOverrideFlags : uint
     {
         None = 0x00,
-        VirtualFunctionOverriden = 0x01,
+        VirtualFunctionOverridden = 0x01,
     }
 
     [Flags]
@@ -173,7 +174,7 @@ namespace Internal.ReadyToRunConstants
 
     //
     // Intrinsics and helpers
-    // Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // Keep in sync with https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
 
     [Flags]
@@ -254,6 +255,7 @@ namespace Internal.ReadyToRunConstants
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        IsInstanceOfException       = 0x69,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -291,7 +293,7 @@ namespace Internal.ReadyToRunConstants
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
 
-        // Personality rountines
+        // Personality routines
         PersonalityRoutine          = 0xF0,
         PersonalityRoutineFilterFunclet = 0xF1,
 

@@ -32,7 +32,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
+#include "metadata/marshal-shared.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
@@ -41,8 +41,10 @@ MONO_PRAGMA_WARNING_POP()
 #include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
+#include "mono/metadata/marshal-noilgen.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
@@ -126,6 +128,66 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
 static gboolean type_is_blittable (MonoType *type);
+
+static IlgenCallbacksToMono ilgenCallbacksToMono = {
+	&mono_get_object_type,
+	&mono_marshal_get_ptr_to_string_conv,
+	&mono_class_is_subclass_of_internal,
+	&mono_class_native_size,
+	&mono_class_try_get_handleref_class,
+	&mono_class_try_get_safehandle_class,
+	&mono_class_try_get_stringbuilder_class,
+	&mono_defaults,
+	&mono_marshal_boolean_conv_in_get_local_type,
+	&mono_marshal_boolean_managed_conv_in_get_conv_arg_class,
+	&mono_marshal_get_ptr_to_stringbuilder_conv,
+	&mono_marshal_get_string_encoding,
+	&mono_marshal_get_string_to_ptr_conv,
+	&mono_marshal_get_stringbuilder_to_ptr_conv,
+	&mono_marshal_load_type_info,
+	&mono_marshal_shared_conv_to_icall,
+	&mono_marshal_shared_emit_marshal_custom_get_instance,
+	&mono_marshal_shared_emit_struct_conv,
+	&mono_marshal_shared_emit_struct_conv_full,
+	&mono_marshal_shared_get_method_nofail,
+	&mono_marshal_shared_get_sh_dangerous_add_ref,
+	&mono_marshal_shared_get_sh_dangerous_release,
+	&mono_marshal_shared_init_safe_handle,
+	&mono_marshal_shared_is_in,
+	&mono_marshal_shared_is_out,
+	&mono_marshal_shared_mb_emit_exception_marshal_directive,
+	&mono_mb_add_local,
+	&mono_mb_emit_add_to_local,
+	&mono_mb_emit_auto_layout_exception,
+	&mono_mb_emit_branch,
+	&mono_mb_emit_branch_label,
+	&mono_mb_emit_byte,
+	&mono_mb_emit_exception,
+	&mono_mb_emit_exception_full,
+	&mono_mb_emit_icall_id,
+	&mono_mb_emit_icon,
+	&mono_mb_emit_ldarg,
+	&mono_mb_emit_ldarg_addr,
+	&mono_mb_emit_ldflda,
+	&mono_mb_emit_ldloc,
+	&mono_mb_emit_ldloc_addr,
+	&mono_mb_emit_managed_call,
+	&mono_mb_emit_op,
+	&mono_mb_emit_stloc,
+	&mono_mb_get_label,
+	&mono_mb_patch_branch,
+	&mono_pinvoke_is_unicode,
+	&mono_reflection_type_from_name_checked,
+	&mono_memory_barrier,
+	&mono_marshal_need_free,
+	&mono_get_int_type
+};
+
+IlgenCallbacksToMono*
+mono_marshal_get_mono_callbacks_for_ilgen (void)
+{
+	return &ilgenCallbacksToMono;
+}
 
 static MonoImage*
 get_method_image (MonoMethod *method)
@@ -600,7 +662,7 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
 	const size_t len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (data, (gint32)MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, (gint32)MIN (len, GINT_TO_UINT(max_len)), error);
 }
 
 gpointer
@@ -765,7 +827,7 @@ mono_string_builder_new (int starting_string_length, MonoError *error)
 	mono_error_assert_ok (error);
 
 	MonoArrayHandle chunkChars = MONO_HANDLE_NEW_GET (MonoArray, sb, chunkChars);
-	g_assert (MONO_HANDLE_GETVAL (chunkChars, max_length) >= initial_len);
+	g_assert (MONO_HANDLE_GETVAL (chunkChars, max_length) >= GINT_TO_UINT(initial_len));
 
 	return sb;
 }
@@ -784,9 +846,9 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 
 	do {
 		MONO_HANDLE_GET (chunkChars, chunk, chunkChars);
-		const int maxLength = MONO_HANDLE_GETVAL (chunkChars, max_length);
+		const guint32 maxLength = MONO_HANDLE_GETVAL (chunkChars, max_length);
 		g_assert (maxLength >= 0);
-		const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
+		const guint32 chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 		g_assert (chunkOffset >= 0);
 		if (maxLength > 0 && chunkOffset < string_len) {
 			// Check that we will not overrun our boundaries.
@@ -828,9 +890,9 @@ mono_string_utf8len_to_builder (MonoStringBuilderHandle sb, const char *text, gs
 	GError *gerror = NULL;
 	glong copied;
 	gunichar2* ut = g_utf8_to_utf16 (text, (glong)len, NULL, &copied, &gerror);
-	int capacity = mono_string_builder_capacity (sb);
+	guint capacity = mono_string_builder_capacity (sb);
 
-	if (copied > capacity)
+	if (GLONG_TO_ULONG(copied) > capacity)
 		copied = capacity;
 
 	if (!gerror) {
@@ -917,7 +979,7 @@ mono_string_builder_to_utf8_impl (MonoStringBuilderHandle sb, MonoError *error)
 	}
 
 	len = mono_string_builder_capacity (sb) + 1;
-	res = (char *)mono_marshal_alloc (MAX (byte_count + 1, len), error);
+	res = (char *)mono_marshal_alloc (MAX (GLONG_TO_ULONG(byte_count) + 1, len), error);
 	if (!is_ok (error)) {
 		res = NULL;
 		goto exit;
@@ -978,7 +1040,7 @@ mono_string_builder_to_utf16_impl (MonoStringBuilderHandle sb, MonoError *error)
 			const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 			g_assert (chunkOffset >= 0);
 			g_assertf ((chunkOffset + chunkLength) >= chunkLength, "integer overflow");
-			g_assertf ((chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
+			g_assertf (GINT_TO_UINT(chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
 			memcpy (str + chunkOffset, MONO_HANDLE_RAW (chunkChars)->vector, chunkLength * sizeof (gunichar2));
 		}
 		MONO_HANDLE_GET (chunk, chunk, chunkPrevious);
@@ -1111,8 +1173,8 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 
 	char *s = mono_string_handle_to_utf8 (src, error);
 	return_if_nok (error);
-	size_t len = MIN (size, strlen (s));
-	len -= (len >= size);
+	size_t len = MIN (GINT_TO_UINT(size), strlen (s));
+	len -= (len >= GINT_TO_UINT(size));
 	memcpy (dst, s, len);
 	dst [len] = 0;
 	g_free (s);
@@ -1467,7 +1529,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 }
 
 /*
- * Return the hash table pointed to by VAR, lazily creating it if neccesary.
+ * Return the hash table pointed to by VAR, lazily creating it if necessary.
  */
 static GHashTable*
 get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
@@ -3155,12 +3217,13 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
 
-	
+
 
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-	return mono_emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
+	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
 } 
 
 static void
@@ -3246,9 +3309,8 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		return;
 	}
 
-	mono_array_size_t i;
 	MonoCustomAttrEntry *attr = NULL;
-	for (i = 0; i < cinfo->num_attrs; ++i) {
+	for (int i = 0; i < cinfo->num_attrs; ++i) {
 		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
 		if (ctor_class == attr_class) {
 			attr = &cinfo->attrs [i];
@@ -3262,7 +3324,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
 		if (named_args)
 		{
-			for (i = 0; i < mono_array_length_internal(named_args); ++i) {
+			for (mono_array_size_t i = 0; i < mono_array_length_internal(named_args); ++i) {
 				CattrNamedArg *info = &arginfo[i];
 				g_assert(info->field);
 				if (strcmp(info->field->name, "CallConvs") != 0)
@@ -3284,7 +3346,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		mono_custom_attrs_free(cinfo);
 }
 
-static void 
+static void
 mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
 {
 	g_assert (cmod_type->type == MONO_TYPE_CLASS);
@@ -3326,9 +3388,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		return;
 	}
 
-	mono_array_size_t i;
 	MonoCustomAttrEntry *attr = NULL;
-	for (i = 0; i < cinfo->num_attrs; ++i) {
+	for (int i = 0; i < cinfo->num_attrs; ++i) {
 		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
 		if (ctor_class == attr_class) {
 			attr = &cinfo->attrs [i];
@@ -3339,7 +3400,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 	if (attr != NULL) {
 		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
-		for (i = 0; i < decoded_args->named_args_num; ++i) {
+		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
 				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
@@ -3621,7 +3682,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
-	
+
 	return res;
 }
 
@@ -5332,7 +5393,6 @@ void
 mono_struct_delete_old (MonoClass *klass, char *ptr)
 {
 	MonoMarshalType *info;
-	int i;
 
 	info = mono_marshal_load_type_info (klass);
 
@@ -5342,7 +5402,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 	if (m_class_is_blittable (klass))
 		return;
 
-	for (i = 0; i < info->num_fields; i++) {
+	for (guint32 i = 0; i < info->num_fields; i++) {
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
 		char *cpos;
@@ -6040,7 +6100,7 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
  * Windows kernel32 APIs, which are DllImport-able under MS.NET,
  * although not exported by kernel32.
  *
- * We map the appropiate kernel32 entries to these functions using
+ * We map the appropriate kernel32 entries to these functions using
  * dllmaps declared in the global etc/mono/config.
  */
 
@@ -6263,7 +6323,6 @@ get_marshal_cb (void)
 		mono_marshal_noilgen_init_lightweight ();
 #endif
 	}
-	
 	return &marshal_lightweight_cb;
 }
 

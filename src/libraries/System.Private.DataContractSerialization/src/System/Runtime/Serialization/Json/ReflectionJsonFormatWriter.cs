@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -27,8 +28,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
         {
-            JsonWriterDelegator? jsonWriter = xmlWriter as JsonWriterDelegator;
-            if (jsonWriter == null)
+            if (xmlWriter is not JsonWriterDelegator jsonWriter)
             {
                 throw new ArgumentException(nameof(xmlWriter));
             }
@@ -146,7 +146,7 @@ namespace System.Runtime.Serialization.Json
 
             XmlDictionaryString? itemNamespace = null;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     ReflectionWriteArrayAttribute(jsonWriter);
@@ -199,8 +199,8 @@ namespace System.Runtime.Serialization.Json
         {
             Debug.Assert(memberNames != null);
 
-            int memberCount = (classContract.BaseContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, memberNames);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseClassContract, derivedMostClassContract, childElementIndex, memberNames);
 
             childElementIndex += memberCount;
 
@@ -239,10 +239,7 @@ namespace System.Runtime.Serialization.Json
 
                 if (shouldWriteValue)
                 {
-                    if (memberValue == null)
-                    {
-                        memberValue = ReflectionGetMemberValue(obj, member);
-                    }
+                    memberValue ??= ReflectionGetMemberValue(obj, member);
                     bool requiresNameAttribute = DataContractJsonSerializer.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
                     if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))

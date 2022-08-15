@@ -28,7 +28,7 @@ namespace System.Composition.Hosting.Core
         /// <summary>
         /// Constant value provided so that subclasses can avoid creating additional duplicate values.
         /// </summary>
-        protected static readonly Func<IEnumerable<CompositionDependency>> NoDependencies = () => Enumerable.Empty<CompositionDependency>();
+        protected static readonly Func<IEnumerable<CompositionDependency>> NoDependencies = Enumerable.Empty<CompositionDependency>;
 
         /// <summary>
         /// Promise export descriptors for the specified export key.

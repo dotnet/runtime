@@ -159,8 +159,19 @@ namespace System.Diagnostics
             TraceInternal.Fail(message, detailMessage);
         }
 
+        /// <summary>
+        ///  Occurs when a <see cref="TraceSource"/> needs to be refreshed from configuration.
+        /// </summary>
+        public static event EventHandler? Refreshing;
+
+        internal static void OnRefreshing()
+        {
+            Refreshing?.Invoke(null, EventArgs.Empty);
+        }
+
         public static void Refresh()
         {
+            OnRefreshing();
             Switch.RefreshAll();
             TraceSource.RefreshAll();
             TraceInternal.Refresh();

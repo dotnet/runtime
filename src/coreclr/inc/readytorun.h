@@ -15,8 +15,8 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MAJOR_VERSION 0x0007
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
@@ -61,6 +61,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_EMBEDDED_MSIL               = 0x00000010,   // MSIL is embedded in the composite R2R executable
     READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
     READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
+    READYTORUN_FLAG_UNRELATED_R2R_CODE          = 0x00000080,   // This R2R module has code in it that would not be naturally encoded into this module
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -165,7 +166,7 @@ enum ReadyToRunTypeLayoutFlags
 enum ReadyToRunVirtualFunctionOverrideFlags
 {
     READYTORUN_VIRTUAL_OVERRIDE_None = 0x00,
-    READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden = 0x01,
+    READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverridden = 0x01,
 };
 
 enum class ReadyToRunCrossModuleInlineFlags : uint32_t
@@ -328,6 +329,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
+    READYTORUN_HELPER_IsInstanceOfException     = 0x69,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,
@@ -366,7 +368,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifdef FEATURE_EH_FUNCLETS
-    // Personality rountines
+    // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif
@@ -400,6 +402,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    // Array helpers for use with native ints
+    READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
+    READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
 };
 
 #include "readytoruninstructionset.h"

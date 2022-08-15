@@ -336,7 +336,7 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 
         INT32 size = *(INT32*)args[i];
         ARG_SLOT value = size;
-        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
+        memcpyNoGCRefs(indexes + i, ArgSlotEndiannessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
     return AllocateArrayEx(th, indexes, argCnt);
@@ -1480,7 +1480,7 @@ FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pT
     OBJECTREF obj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
     MethodTable *pEnumMT = typeHandle.AsMethodTable();
-    obj = pEnumMT->Box(ArgSlotEndianessFixup ((ARG_SLOT*)&value,
+    obj = pEnumMT->Box(ArgSlotEndiannessFixup ((ARG_SLOT*)&value,
                                              pEnumMT->GetNumInstanceFieldBytes()));
 
     HELPER_METHOD_FRAME_END();
@@ -1901,32 +1901,9 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
 //*************************************************************************************************
 //*************************************************************************************************
 
-FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBaseObject *target) {
+FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
     FCALL_CONTRACT;
 
-    VALIDATEOBJECT(target);
-    TypeHandle th = target->GetType();
-    _ASSERTE(th.IsEnum());
-
-    OBJECTREF result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodTable *pMT = CoreLibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
-    result = pMT->GetManagedClassObject();
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(result);
-}
-FCIMPLEND
-
-FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(pRefThis);
-    if (pRefThis == NULL)
-        FCThrowArgumentNull(NULL);
-
-    MethodTable* pMT = pRefThis->GetMethodTable();
     _ASSERTE(pMT->IsEnum());
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
@@ -2129,7 +2106,7 @@ FCIMPL2_IV(Object*, ReflectionEnum::InternalBoxEnum, ReflectClassBaseObject* tar
     MethodTable* pMT = target->GetType().AsMethodTable();
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    ret = pMT->Box(ArgSlotEndianessFixup((ARG_SLOT*)&value, pMT->GetNumInstanceFieldBytes()));
+    ret = pMT->Box(ArgSlotEndiannessFixup((ARG_SLOT*)&value, pMT->GetNumInstanceFieldBytes()));
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(ret);

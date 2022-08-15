@@ -61,7 +61,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial Status InitiateCredWithPassword(
             out Status minorStatus,
-            [MarshalAs(UnmanagedType.Bool)] bool isNtlm,
+            PackageType packageType,
             SafeGssNameHandle desiredName,
             string password,
             int passwordLen,
@@ -77,7 +77,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
+            PackageType packageType,
             SafeGssNameHandle? targetName,
             uint reqFlags,
             ref byte inputBytes,
@@ -91,7 +91,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
+            PackageType packageType,
             IntPtr cbt,
             int cbtSize,
             SafeGssNameHandle? targetName,
@@ -106,7 +106,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            bool isNtlmOnly,
+            PackageType packageType,
             SafeGssNameHandle? targetName,
             uint reqFlags,
             ReadOnlySpan<byte> inputBytes,
@@ -118,7 +118,7 @@ internal static partial class Interop
                 out minorStatus,
                 initiatorCredHandle,
                 ref contextHandle,
-                isNtlmOnly,
+                packageType,
                 targetName,
                 reqFlags,
                 ref MemoryMarshal.GetReference(inputBytes),
@@ -132,7 +132,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            bool isNtlmOnly,
+            PackageType packageType,
             IntPtr cbt,
             int cbtSize,
             SafeGssNameHandle? targetName,
@@ -146,7 +146,7 @@ internal static partial class Interop
                 out minorStatus,
                 initiatorCredHandle,
                 ref contextHandle,
-                isNtlmOnly,
+                packageType,
                 cbt,
                 cbtSize,
                 targetName,
@@ -204,46 +204,86 @@ internal static partial class Interop
         private static unsafe partial Status Wrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            [MarshalAs(UnmanagedType.Bool)] bool isEncrypt,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isEncrypt,
             byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
-        private static partial Status Unwrap(
+        private static unsafe partial Status Unwrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
+            [MarshalAs(UnmanagedType.Bool)] out bool isEncrypt,
+            byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetMic")]
+        private static unsafe partial Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            ref GssBuffer outBuffer);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_VerifyMic")]
+        private static unsafe partial Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            byte* tokenBytes,
+            int tokenLength);
 
         internal static unsafe Status WrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            bool isEncrypt,
+            ref bool isEncrypt,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
             fixed (byte* inputBytesPtr = inputBytes)
             {
-                return Wrap(out minorStatus, contextHandle, isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+                return Wrap(out minorStatus, contextHandle, ref isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
             }
         }
 
-        internal static Status UnwrapBuffer(
+        internal static unsafe Status UnwrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
-            int count,
+            out bool isEncrypt,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
-            Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
-            Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return Unwrap(out minorStatus, contextHandle, out isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
+        }
 
-            return Unwrap(out minorStatus, contextHandle, inputBytes, offset, count, ref outBuffer);
+        internal static unsafe Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer outBuffer)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return GetMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
+        }
+
+        internal static unsafe Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ReadOnlySpan<byte> tokenBytes)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            fixed (byte* tokenBytesPtr = tokenBytes)
+            {
+                return VerifyMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, tokenBytesPtr, tokenBytes.Length);
+            }
         }
     }
 }

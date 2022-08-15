@@ -5,6 +5,13 @@
     <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
+  <ItemGroup>
+    <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
+    <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+  </ItemGroup>
+
   <Target Name="ProvisionSdkForWorkloadTesting"
           DependsOnTargets="_ProvisionSdkWithNoWorkload"
           Condition="!Exists($(SdkWithNoWorkloadStampPath)) or !Exists($(SdkWithWorkloadStampPath))">
@@ -97,36 +104,112 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
+          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Target Name="_InstallWorkload"
-          Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="$(SdkWithWorkload_WorkloadStampPath)">
-
-    <ItemGroup>
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="Configuration=$(Configuration)" />
-      <_PropsForAOTCrossBuild Include="TargetOS=Browser" />
-      <_PropsForAOTCrossBuild Include="TargetArchitecture=wasm" />
-      <_PropsForAOTCrossBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
-
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-    </ItemGroup>
-
-    <Exec Command="dotnet build -bl -restore -t:Pack @(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ') Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-          WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
-
-    <ItemGroup>
-      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
-    </ItemGroup>
-
+  <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild">
     <PropertyGroup>
       <_PackageVersion>$(PackageVersion)</_PackageVersion>
       <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(_PackageVersion).nupkg</_AOTCrossNuGetPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(_PackageVersion).nupkg"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
+                      Descriptor="Ref pack"/>
+
+      <!-- AOT Cross compiler -->
+      <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
+      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
+      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
+      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
+      <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
+
+      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+                      Properties="@(_PropsForAOTCrossBuild,';')"
+                      Descriptor="AOT Cross compiler"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project);%(_NuGetsToBuild.Dependencies)" Outputs="%(_NuGetsToBuild.Identity)">
+    <Message Importance="High" Text="
+** Building %(_NuGetsToBuild.Descriptor) **
+      " />
+
+    <MSBuild Projects="%(_NuGetsToBuild.Project)"
+             Properties="%(_NuGetsToBuild.Properties)"
+             Targets="Restore" />
+    <MSBuild Projects="%(_NuGetsToBuild.Project)"
+             Properties="%(_NuGetsToBuild.Properties)"
+             Targets="Pack" />
+  </Target>
+
+  <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
+       build the other nugets with the *same runtime* but different names.
+  -->
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
+    <PropertyGroup>
+      <_PackageVersion>$(PackageVersion)</_PackageVersion>
+      <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
+
+      <_DefaultBuildVariant Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
+
+      <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm.$(_PackageVersion).nupkg</_DefaultRuntimePackNuGetPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono*$(_PackageVersion).nupkg" />
+    </ItemGroup>
+
+    <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 3 and @(_RuntimePackNugetAvailable -> Count()) != 1"
+           Text="Multiple runtime pack nugets found. Expected to find either one or three in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
+
+    <ItemGroup>
+      <_BuildVariants Include="multithread" Condition="'$(_DefaultBuildVariant)' != '.multithread.'" />
+      <_BuildVariants Include="perftrace"   Condition="'$(_DefaultBuildVariant)' != '.perftrace.'" />
+
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.%(_BuildVariants.Identity).browser-wasm.$(_PackageVersion).nupkg"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant=%(_BuildVariants.Identity)"
+                      Descriptor="runtime pack for %(_BuildVariants.Identity)" />
+
+      <!-- add for non-threaded runtime also -->
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.browser-wasm.$(_PackageVersion).nupkg"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
+                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
+                      Descriptor="single threaded runtime pack"
+                      Condition="'$(_DefaultBuildVariant)' != '.'" />
+    </ItemGroup>
+
+    <Message
+        Condition="@(_RuntimePackNugetAvailable -> Count()) == 1"
+        Importance="High"
+        Text="
+      ********************
+
+      Note: Could not find the expected three runtime packs in $(LibrariesShippingPackagesDir). Found @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)', ', ') .
+            To support local builds, the same runtime pack will be built with the other variant names.
+            To disable this behavior, pass `-p:WasmSkipMissingRuntimePackBuild=true` .
+
+      *******************" />
+  </Target>
+
+  <Target Name="_InstallWorkload"
+          Inputs="@(AvailableNuGetsInArtifacts)"
+          Outputs="$(SdkWithWorkload_WorkloadStampPath)">
+    <ItemGroup>
+      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
+    </ItemGroup>
+
+    <PropertyGroup>
     </PropertyGroup>
 
     <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
@@ -135,7 +218,7 @@
     <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
@@ -148,7 +231,7 @@
           Outputs="$(SdkWithNoWorkload_WorkloadStampPath)">
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"

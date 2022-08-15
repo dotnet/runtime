@@ -150,7 +150,7 @@ namespace System.Reflection
             BindingFlags invokeAttr
         )
         {
-            Debug.Assert(!parameters.IsEmpty);
+            Debug.Assert(parameters.Length > 0);
 
             ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -159,6 +159,40 @@ namespace System.Reflection
                 bool isValueType = false;
                 object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
+
+                // Convert a Type.Missing to the default value.
+                if (ReferenceEquals(arg, Type.Missing))
+                {
+                    paramInfos ??= GetParametersNoCopy();
+                    ParameterInfo paramInfo = paramInfos[i];
+
+                    if (paramInfo.DefaultValue == DBNull.Value)
+                    {
+                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                    }
+
+                    arg = paramInfo.DefaultValue;
+
+                    if (sigType.IsNullableOfT)
+                    {
+                        copyBackArg = ParameterCopyBackAction.CopyNullable;
+
+                        if (arg is not null)
+                        {
+                            // For nullable Enum types, the ParameterInfo.DefaultValue returns a raw value which
+                            // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                            Type argumentType = sigType.GetGenericArguments()[0];
+                            if (argumentType.IsEnum)
+                            {
+                                arg = Enum.ToObject(argumentType, arg);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        copyBackArg = ParameterCopyBackAction.Copy;
+                    }
+                }
 
                 if (arg is null)
                 {
@@ -183,32 +217,10 @@ namespace System.Reflection
                         // Fast path when the value's type matches the signature type of a byref parameter.
                         copyBackArg = ParameterCopyBackAction.Copy;
                     }
-                    else if (!ReferenceEquals(arg, Type.Missing))
+                    else
                     {
                         // Slow path that supports type conversions.
                         isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                    }
-                    else
-                    {
-                        // Convert Type.Missing to the default value.
-                        paramInfos ??= GetParametersNoCopy();
-                        ParameterInfo paramInfo = paramInfos[i];
-
-                        if (paramInfo.DefaultValue == DBNull.Value)
-                        {
-                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                        }
-
-                        arg = paramInfo.DefaultValue;
-                        if (ReferenceEquals(arg?.GetType(), sigType))
-                        {
-                            // Fast path when the default value's type matches the signature type.
-                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                        }
-                        else
-                        {
-                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                        }
                     }
                 }
 
@@ -230,17 +242,17 @@ namespace System.Reflection
                     Debug.Assert(arg != null);
                     Debug.Assert(
                         arg.GetType() == sigType ||
-                        (sigType.IsPointer && arg.GetType() == typeof(IntPtr)) ||
+                        (sigType.IsPointer && (arg.GetType() == typeof(IntPtr) || arg.GetType() == typeof(UIntPtr))) ||
                         (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
                         ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
 #endif
-                    ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
-                    *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
+                    ByReference valueTypeRef = ByReference.Create(ref copyOfParameters[i]!.GetRawData());
+                    *(ByReference*)(byrefParameters + i) = valueTypeRef;
                 }
                 else
                 {
-                    ByReference<object?> objRef = new(ref copyOfParameters[i]);
-                    *(ByReference<object?>*)(byrefParameters + i) = objRef;
+                    ByReference objRef = ByReference.Create(ref copyOfParameters[i]);
+                    *(ByReference*)(byrefParameters + i) = objRef;
                 }
             }
         }
@@ -273,11 +285,11 @@ namespace System.Reflection
         [StructLayout(LayoutKind.Sequential)]
         private protected ref struct StackAllocatedByRefs
         {
-            internal ByReference<byte> _arg0;
+            internal ref byte _arg0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ByReference<byte> _arg1;
-            private ByReference<byte> _arg2;
-            private ByReference<byte> _arg3;
+            private ref byte _arg1;
+            private ref byte _arg2;
+            private ref byte _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 #endif
