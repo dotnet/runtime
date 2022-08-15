@@ -1,7 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
-
     <!-- Define the name of the runtime specific compiler package to import -->
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</OSIdentifier>
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</OSIdentifier>
@@ -26,38 +25,34 @@
 
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
     <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
-
   </PropertyGroup>
 
   <PropertyGroup>
-
     <!-- If the NativeAOT toolchain is being consumed via package, runtime-specific properties must be set before compilation can proceed -->
     <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
     <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
-
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- If called via package instead of the SDK, update the runtime package version to match the build package -->
+    <_PackageReferenceExceptILCompiler Include="@(PackageReference)" Exclude="Microsoft.DotNet.ILCompiler" />
+    <_ILCompilerPackageReference Include="@(PackageReference)" Exclude="@(_PackageReferenceExceptILCompiler)" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" Condition="@(_ILCompilerPackageReference->'%(Identity)')=='Microsoft.DotNet.ILCompiler'">
+        <ILCompilerPackVersion>@(_ILCompilerPackageReference->'%(Version)')</ILCompilerPackVersion>
+    </KnownILCompilerPack>
+  </ItemGroup>
+
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
-    <!-- This targets file is imported by the SDK when the AotRuntimePackageLoadedViaSDK property is set. SDK resolves runtime package paths differently-->
-    <Error Condition="'@(ResolvedILCompilerPack)' == '' AND '$(AotRuntimePackageLoadedViaSDK)' == 'true'" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
-    <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PackageDefinitions)' == '' AND '$(AotRuntimePackageLoadedViaSDK)' != 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true' and $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+    <Error Condition="'@(ResolvedILCompilerPack)' == ''" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
-
-    <!-- This targets file is imported by the SDK when the AotRuntimePackageLoadedViaSDK property is set. Use the SDK runtime package resolve property to set  down stream properties -->
-    <PropertyGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' == 'true'">
-      <RuntimePackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
-      <IlcHostPackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
-      <IlcPath>>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcPath>
-    </PropertyGroup>
-
-    <!-- Use the non-SDK runtime package resolve property to set down stream properties if there is an explicit reference in the project -->
-    <PropertyGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true'">
-      <RuntimePackagePath Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'">%(PackageDefinitions.ResolvedPath)</RuntimePackagePath>
-      <IlcHostPackagePath Condition="'%(PackageDefinitions.Name)' == '$(IlcHostPackageName)'">%(PackageDefinitions.ResolvedPath)</IlcHostPackagePath>
+    <PropertyGroup>
+      <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(IlcHostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(RuntimeIlcPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
     </PropertyGroup>
 
   </Target>
