@@ -370,8 +370,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+            Assert.Matches("warning\\sWASM0001.*Skipping.*Test::SomerFunction1.*because.*function\\spointer", output);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
