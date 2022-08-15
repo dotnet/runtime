@@ -510,6 +510,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setDebuggerProperty":
+                    {
+                        foreach (KeyValuePair<string, JToken> property in args)
+                        {
+                            switch (property.Key)
+                            {
+                                case "JustMyCodeStepping":
+                                    SetJustMyCode(id, (bool) property.Value, token);
+                                break;
+                                default:
+                                    logger.LogDebug($"DotnetDebugger.setDebuggerProperty failed for {property.Key} with value {property.Value}");
+                                break;
+                            }
+                        }
+                        return true;
+                    }
                 case "DotnetDebugger.setNextIP":
                     {
                         var loc = SourceLocation.Parse(args?["location"] as JObject);
@@ -556,22 +572,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
-                case "DotnetDebugger.justMyCode":
-                    {
-                        try
-                        {
-                            SetJustMyCode(id, args, token);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogDebug($"DotnetDebugger.justMyCode failed for {id} with args {args}: {ex}");
-                            SendResponse(id,
-                                Result.Exception(new ArgumentException(
-                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
-                                token);
-                        }
-                        return true;
-                    }
             }
 
             return false;
@@ -589,12 +589,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return applyUpdates;
         }
 
-        private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
+        private void SetJustMyCode(MessageId id, bool isEnabled, CancellationToken token)
         {
-            var isEnabled = args["enabled"]?.Value<bool>();
-            if (isEnabled == null)
-                throw new ArgumentException();
-            JustMyCode = isEnabled.Value;
+            JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
         internal async Task<Result> GetMethodLocation(MessageId id, JObject args, CancellationToken token)
