@@ -55,7 +55,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
         {
-            int end = new ReadOnlySpan<byte>(buffer, length).IndexOf(0);
+            int end = new ReadOnlySpan<byte>(buffer, length).IndexOf((byte)0);
             if (end >= 0)
             {
                 length = end;
