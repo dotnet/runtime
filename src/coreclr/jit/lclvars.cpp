@@ -3174,7 +3174,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
         return;
     }
 
-    if (clsHnd != NO_CLASS_HANDLE && !isExact && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
     {
         CORINFO_CLASS_HANDLE exactClass;
         if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)

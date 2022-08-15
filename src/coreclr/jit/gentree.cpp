@@ -17773,7 +17773,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
-    if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())
     {
         CORINFO_CLASS_HANDLE exactClass;
         if (info.compCompHnd->getExactClasses(objClass, 1, &exactClass) == 1)
