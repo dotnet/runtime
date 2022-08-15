@@ -2008,7 +2008,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(rets.xelement);
         Assert.NotNull(rets.xelement.Name);
         Assert.Equal("Test", rets.xelement.Name);
-        //Assert.Equivalent(rets, xstruct);
     }
 
     [Fact]

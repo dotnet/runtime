@@ -1971,7 +1971,6 @@ namespace System.Xml.Serialization
         {
             if (!useReflection && !ctorInaccessible)
                 return $"new {escapedTypeName}({arg})";
-
             return GetStringForCreateInstance(GetStringForTypeof(escapedTypeName, useReflection), cast && !useReflection ? escapedTypeName : null, ctorInaccessible, arg);
         }
 
