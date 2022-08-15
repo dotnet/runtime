@@ -91,7 +91,6 @@ CONFIG_INTEGER(JitEmitPrintRefRegs, W("JitEmitPrintRefRegs"), 0)
 CONFIG_INTEGER(JitEnableDevirtualization, W("JitEnableDevirtualization"), 1) // Enable devirtualization in importer
 CONFIG_INTEGER(JitEnableLateDevirtualization, W("JitEnableLateDevirtualization"), 1) // Enable devirtualization after
                                                                                      // inlining
-CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
 CONFIG_INTEGER(JitExpensiveDebugCheckLevel, W("JitExpensiveDebugCheckLevel"), 0) // Level indicates how much checking
                                                                                  // beyond the default to do in debug
                                                                                  // builds (currently 1-2)
@@ -565,6 +564,9 @@ CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute r
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 #endif // debug
+
+// Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
+CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
