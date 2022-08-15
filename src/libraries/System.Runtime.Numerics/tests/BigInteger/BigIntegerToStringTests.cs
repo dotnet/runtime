@@ -439,6 +439,42 @@ namespace System.Numerics.Tests
             RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerAndViceVersaData()
+        {
+            yield return new object[] { "1E+1000", "1E+1000" };
+            yield return new object[] { "1E+1001", "1E+1001" };
+            yield return new object[] { "1E+10001", "1E+10001" };
+            yield return new object[] { "1E+100001", "1E+100001" };
+            yield return new object[] { "1E+99999", "1E+99999" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerAndViceVersaData))]
+        public static void RunFormatScientificNotationToBigIntegerAndViceVersa(string testingValue, string expectedResult)
+        {
+            BigInteger parsedValue;
+            string actualResult;
+
+            parsedValue = BigInteger.Parse(testingValue, NumberStyles.AllowExponent);
+            actualResult = parsedValue.ToString("E0");
+
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerThrowsExceptionData()
+        {
+            yield return new object[] { "1E+1000000000" };
+            yield return new object[] { "1E+2147483647" };
+            yield return new object[] { "1E+21474836492" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerThrowsExceptionData))]
+        public static void RunFormatScientificNotationToBigIntegerThrowsException(string testingValue)
+        {
+            Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
+        }
+        
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {

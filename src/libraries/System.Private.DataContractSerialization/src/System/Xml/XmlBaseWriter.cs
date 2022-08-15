@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal abstract class XmlBaseWriter : XmlDictionaryWriter
+    internal abstract class XmlBaseWriter : XmlDictionaryWriter, IFragmentCapableXmlDictionaryWriter
     {
         private XmlNodeWriter _writer = null!; // initialized in SetOutput
         private readonly NamespaceManager _nsMgr;
@@ -29,6 +29,10 @@ namespace System.Xml
         private int _trailByteCount;
         private XmlStreamNodeWriter _nodeWriter = null!; // initialized in SetOutput
         private XmlSigningNodeWriter? _signingWriter;
+        private XmlUTF8NodeWriter? _textFragmentWriter;
+        private XmlNodeWriter? _oldWriter;
+        private Stream? _oldStream;
+        private int _oldNamespaceBoundary;
         private bool _inList;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
@@ -57,6 +61,8 @@ namespace System.Xml
             }
             _attributeLocalName = null;
             _attributeValue = null;
+            _oldWriter = null;
+            _oldStream = null;
         }
 
         public override void Flush()
@@ -98,6 +104,9 @@ namespace System.Xml
                 _attributeLocalName = null;
                 _nodeWriter.Close();
                 _signingWriter?.Close();
+                _textFragmentWriter?.Close();
+                _oldWriter = null;
+                _oldStream = null;
             }
         }
 
@@ -431,7 +440,7 @@ namespace System.Xml
             {
                 text = string.Empty;
             }
-            else if (text.Contains("--") || text.StartsWith('-'))
+            else if (text.Contains("--") || text.EndsWith('-'))
             {
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlInvalidCommentChars, nameof(text)));
             }
@@ -926,6 +935,18 @@ namespace System.Xml
             _documentState = DocumentState.End;
         }
 
+        protected int NamespaceBoundary
+        {
+            get
+            {
+                return _nsMgr.NamespaceBoundary;
+            }
+            set
+            {
+                _nsMgr.NamespaceBoundary = value;
+            }
+        }
+
         public override void WriteEntityRef(string name)
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteEntityRef")));
@@ -1148,6 +1169,10 @@ namespace System.Xml
             else if (value is Array)
             {
                 WriteValue((Array)value);
+            }
+            else if (value is IStreamProvider)
+            {
+                WriteValue((IStreamProvider)value);
             }
             else
             {
@@ -1426,19 +1451,8 @@ namespace System.Xml
             }
         }
 
-        public override void WriteBinHex(byte[] buffer, int offset, int count)
+        private static void EnsureBufferBounds(byte[] buffer, int offset, int count)
         {
-            if (IsClosed)
-                ThrowClosed();
-
-            WriteRaw(BinHexEncoding.GetString(buffer, offset, count));
-        }
-
-        public override void WriteBase64(byte[] buffer, int offset, int count)
-        {
-            if (IsClosed)
-                ThrowClosed();
-
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
@@ -1449,6 +1463,24 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
             if (count > buffer.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+        }
+
+        public override void WriteBinHex(byte[] buffer, int offset, int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            EnsureBufferBounds(buffer, offset, count);
+
+            WriteRaw(BinHexEncoding.GetString(buffer, offset, count));
+        }
+
+        public override void WriteBase64(byte[] buffer, int offset, int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            EnsureBufferBounds(buffer, offset, count);
 
             if (count > 0)
             {
@@ -1473,6 +1505,7 @@ namespace System.Xml
                         WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
                         WriteAttributeText(XmlConverter.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
                     }
+
                     if (!_isXmlnsAttribute)
                     {
                         StartContent();
@@ -1480,6 +1513,7 @@ namespace System.Xml
                         EndContent();
                     }
                     _trailByteCount = (totalByteCount - actualByteCount);
+
                     if (_trailByteCount > 0)
                     {
                         int trailOffset = offset + count - _trailByteCount;
@@ -1500,16 +1534,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
 
-            ArgumentNullException.ThrowIfNull(buffer);
-
-            // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (offset < 0)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
-
-            if (count < 0)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
-            if (count > buffer.Length - offset)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+            EnsureBufferBounds(buffer, offset, count);
 
             return WriteBase64AsyncImpl(buffer, offset, count);
         }
@@ -1602,6 +1627,125 @@ namespace System.Xml
         }
 
         protected abstract XmlSigningNodeWriter CreateSigningNodeWriter();
+
+        public virtual bool CanFragment
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public void StartFragment(Stream stream, bool generateSelfContainedTextFragment)
+        {
+            if (!CanFragment)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+
+            if (IsClosed)
+                ThrowClosed();
+
+            ArgumentNullException.ThrowIfNull(stream);
+
+            if (_oldStream != null || _oldWriter != null)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException());
+            if (WriteState == WriteState.Attribute)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "StartFragment", WriteState.ToString())));
+
+            FlushElement();
+            _writer.Flush();
+
+            _oldNamespaceBoundary = NamespaceBoundary;
+
+            XmlStreamNodeWriter? fragmentWriter = null;
+            if (generateSelfContainedTextFragment)
+            {
+                this.NamespaceBoundary = _depth + 1;
+                _textFragmentWriter ??= new XmlUTF8NodeWriter();
+                _textFragmentWriter.SetOutput(stream, false, Encoding.UTF8);
+                fragmentWriter = _textFragmentWriter;
+            }
+
+            if (Signing)
+            {
+                if (fragmentWriter != null)
+                {
+                    _oldWriter = _signingWriter!.NodeWriter;
+                    _signingWriter.NodeWriter = fragmentWriter;
+                }
+                else
+                {
+                    _oldStream = ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).OutputStream;
+                    ((XmlStreamNodeWriter)_signingWriter.NodeWriter).OutputStream = stream;
+                }
+            }
+            else
+            {
+                if (fragmentWriter != null)
+                {
+                    _oldWriter = _writer;
+                    _writer = fragmentWriter;
+                }
+                else
+                {
+                    _oldStream = _nodeWriter.OutputStream;
+                    _nodeWriter.OutputStream = stream;
+                }
+            }
+        }
+
+        public void EndFragment()
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            if (_oldStream == null && _oldWriter == null)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException());
+            if (WriteState == WriteState.Attribute)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "EndFragment", WriteState.ToString())));
+
+            FlushElement();
+            _writer.Flush();
+
+            if (Signing)
+            {
+                if (_oldWriter != null)
+                    _signingWriter!.NodeWriter = _oldWriter;
+                else
+                    ((XmlStreamNodeWriter)_signingWriter!.NodeWriter).OutputStream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
+            }
+            else
+            {
+                if (_oldWriter != null)
+                    _writer = _oldWriter;
+                else
+                    _nodeWriter.OutputStream = _oldStream!; // Checked above. _oldStream can't be null if _oldWriter is.
+            }
+            NamespaceBoundary = _oldNamespaceBoundary;
+            _oldWriter = null;
+            _oldStream = null;
+        }
+
+        public void WriteFragment(byte[] buffer, int offset, int count)
+        {
+            if (!CanFragment)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+
+            if (IsClosed)
+                ThrowClosed();
+
+            EnsureBufferBounds(buffer, offset, count);
+
+            if (WriteState == WriteState.Attribute)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteFragment", WriteState.ToString())));
+
+            if (_writer != _nodeWriter)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException());
+
+            FlushElement();
+            FlushBase64();
+            _nodeWriter.Flush();
+            _nodeWriter.OutputStream.Write(buffer, offset, count);
+        }
 
         private void FlushBase64()
         {
@@ -1802,6 +1946,7 @@ namespace System.Xml
             private int _attributeCount;
             private XmlSpace _space;
             private string? _lang;
+            private int _namespaceBoundary;
             private int _nsTop;
             private readonly Namespace _defaultNamespace;
 
@@ -1843,7 +1988,27 @@ namespace System.Xml
                 _attributeCount = 0;
                 _space = XmlSpace.None;
                 _lang = null;
+                _namespaceBoundary = 0;
                 _lastNameSpace = null;
+            }
+
+            public int NamespaceBoundary
+            {
+                get
+                {
+                    return _namespaceBoundary;
+                }
+                set
+                {
+                    int i;
+                    for (i = 0; i < _nsCount; i++)
+                        if (_namespaces![i].Depth >= value)
+                            break;
+
+                    _nsTop = i;
+                    _namespaceBoundary = value;
+                    _lastNameSpace = null;
+                }
             }
 
             public void Close()

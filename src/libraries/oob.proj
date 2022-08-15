@@ -44,7 +44,7 @@
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
       <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
-      
+
       <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
       <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
                                      @(SharedFrameworkAssembly)" />

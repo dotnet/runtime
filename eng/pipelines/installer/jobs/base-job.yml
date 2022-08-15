@@ -329,7 +329,7 @@ jobs:
   - ${{ if ne(parameters.container, '') }}:
     # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
     # Clean up the build dirs ourselves in another Docker container to avoid failures.
-    # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
+    # Using hosted agents is tracked by https://github.com/dotnet/runtime/issues/3416
     - script: |
         set -x
         docker run --rm \
