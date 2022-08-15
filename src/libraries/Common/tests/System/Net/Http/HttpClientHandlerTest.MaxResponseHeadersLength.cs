@@ -23,6 +23,50 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
 
         [Theory]
+        [InlineData(null)]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(64)]
+        [InlineData(256)]
+        [InlineData(1024)]
+        [InlineData(10240)]
+        public async Task Http3Test(int? maxResponseHeadersLength)
+        {
+            if (UseVersion.Major != 3) return;
+
+            var requestCts = new CancellationTokenSource();
+            var controlStreamEstablishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+
+                if (maxResponseHeadersLength.HasValue)
+                {
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
+
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(uri, requestCts.Token));
+
+                await controlStreamEstablishedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    requestCts.Cancel();
+
+                    var http3Connection = (Http3LoopbackConnection)connection;
+
+                    await http3Connection.EnsureControlStreamAcceptedAsync().WaitAsync(TestHelper.PassingTestTimeout);
+
+                    controlStreamEstablishedTcs.SetResult();
+                });
+            });
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(-1)]
         public void InvalidValue_ThrowsException(int invalidValue)

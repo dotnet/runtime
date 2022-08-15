@@ -118,7 +118,7 @@ namespace System.Net.Test.Common
             throw new NotImplementedException();
         }
 
-        private Task EnsureControlStreamAcceptedAsync()
+        public Task EnsureControlStreamAcceptedAsync()
         {
             if (_inboundControlStream != null)
             {
