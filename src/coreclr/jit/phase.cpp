@@ -175,7 +175,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_IBCINSTR,
         PHASE_INDXCALL,
         PHASE_POST_IMPORT,
-        // morph init
+        PHASE_MORPH_INIT,
         PHASE_MORPH_INLINE,
         PHASE_ALLOCATE_OBJECTS,
         // add internal

@@ -4461,6 +4461,8 @@ public:
 
     PhaseStatus fgTransformPatchpoints();
 
+    PhaseStatus fgMorphInit();
+
     PhaseStatus fgInline();
 
     PhaseStatus fgRemoveEmptyTry();

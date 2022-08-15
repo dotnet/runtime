@@ -652,6 +652,11 @@ private:
 //
 PhaseStatus Compiler::fgInline()
 {
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+#endif // DEBUG
+
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
         return PhaseStatus::MODIFIED_NOTHING;
