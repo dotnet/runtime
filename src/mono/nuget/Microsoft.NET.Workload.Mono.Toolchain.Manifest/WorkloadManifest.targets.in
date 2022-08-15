@@ -91,37 +91,9 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
-      <MonoRuntimePackRids Include="
-        linux-x64;
-        win-x64;
-        osx-x64;
-        osx-arm64;
-        maccatalyst-x64;
-        maccatalyst-arm64;
-        browser-wasm;
-        ios-arm64;
-        ios-arm;
-        iossimulator-arm64;
-        iossimulator-x64;
-        iossimulator-x86;
-        tvos-arm64;
-        tvossimulator-arm64;
-        tvossimulator-x64;
-        android-arm64;
-        android-arm;
-        android-x64;
-        android-x86;
-        " />
-
-      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
-      <KnownRuntimePack Include="Microsoft.NETCore.App"
-                        TargetFramework="net6.0"
-                        RuntimeFrameworkName="Microsoft.NETCore.App"
-                        LatestRuntimeFrameworkVersion="$(_MonoWorkloadRuntimePackPackageVersion)"
-                        RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
-                        RuntimePackRuntimeIdentifiers="@(MonoRuntimePackRids, '%3B')"
-                        RuntimePackLabels="Mono"
-                        />
+      <KnownRuntimePack Update="@(KnownRuntimePack)">
+        <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">**FromWorkload**</LatestRuntimeFrameworkVersion>
+      </KnownRuntimePack>
     </ItemGroup>
 
     <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
