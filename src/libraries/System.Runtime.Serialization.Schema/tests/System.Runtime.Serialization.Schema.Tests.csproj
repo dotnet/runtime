@@ -11,6 +11,8 @@
     <Compile Include="System\Runtime\Serialization\Schema\DataContracts.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\Import\ImportOptionsTests.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\SchemaUtils.cs" />
+
+    <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
   </ItemGroup>
 
   <ItemGroup>
