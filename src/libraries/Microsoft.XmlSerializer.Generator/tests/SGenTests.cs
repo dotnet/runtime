@@ -41,7 +41,6 @@ namespace Microsoft.XmlSerializer.Generator.Tests
             // Compare the generated CodeFiles from the LKG with the live built shared framework one.
             // Not comparing byte per byte as the generated output isn't deterministic.
             Assert.Equal(LineEndingsHelper.Normalize(File.ReadAllText(LKGCodeFile)).Length, File.ReadAllText(CodeFile).Length);
-            //Assert.True(false, (File.ReadAllText(LKGCodeFile)));
         }
     }
 }

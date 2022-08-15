@@ -1989,23 +1989,42 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
         XElementWrapper retWrapper = SerializeAndDeserialize<XElementWrapper>(wrapper, null, () => new XmlSerializer(typeof(XElementWrapper)), true);
 
-        // At this point, you could verify a couple of ways.
-        // 1) Look at individual properties and verify they are as expected
         Assert.NotNull(retWrapper);
         Assert.NotNull(retWrapper.Value);
         Assert.Equal("Root", retWrapper.Value.Name);
-
-        // Or 2) Just compare the returned wrapper to the original.
-        // Note, they will not be strictly equal. They are not the same object.
-        // Like identical twins - they look alike, but they are different. Different names and everything.
-        // So these Asserts don't work:
-        //Assert.True(retWrapper == wrapper);
-        //Assert.Equal(wrapper, retWrapper);
-        // But this one does:
         Assert.Equivalent(wrapper, retWrapper);
-        // And fails if the twins turn out to not be identical or even twins at all:
-        wrapper.Value.Name = "Blah";
-        //Assert.Equivalent(wrapper, retWrapper);
+    }
+
+    [Fact]
+    public static void ValidateXElementStruct()
+    {
+
+        XElement ele = new XElement("Test");
+        XElementStruct xstruct;
+        xstruct.xelement = ele;
+
+        XElementStruct rets = SerializeAndDeserialize<XElementStruct>(xstruct, null, () => new XmlSerializer(typeof(XElementStruct)), true);
+
+        Assert.NotNull(rets.xelement);
+        Assert.NotNull(rets.xelement.Name);
+        Assert.Equal("Test", rets.xelement.Name);
+        //Assert.Equivalent(rets, xstruct);
+    }
+
+    [Fact]
+    public static void ValidateXElementArray()
+    {
+        XElementArrayWrapper xarray = new XElementArrayWrapper
+        {
+            xelements = new XElement[] { new XElement("Root"), new XElement("Member") }
+        };
+
+        XElementArrayWrapper retarray = SerializeAndDeserialize<XElementArrayWrapper>(xarray, null, () => new XmlSerializer(typeof(XElementArrayWrapper)), true);
+
+        Assert.NotNull(retarray);
+        Assert.True(retarray.xelements.Length == 2);
+        Assert.Equal("Root", retarray.xelements[0].Name);
+        Assert.Equal("Member", retarray.xelements[1].Name);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

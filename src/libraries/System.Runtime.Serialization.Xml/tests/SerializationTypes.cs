@@ -1352,3 +1352,13 @@ public class XElementWrapper
 {
     public XElement Value { get; set; }
 }
+
+public struct XElementStruct
+{
+    public XElement xelement;
+}
+
+public class XElementArrayWrapper
+{
+    public XElement[] xelements;
+}
