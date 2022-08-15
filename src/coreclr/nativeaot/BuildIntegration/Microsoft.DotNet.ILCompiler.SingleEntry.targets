@@ -51,8 +51,8 @@
 
     <PropertyGroup>
       <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(IlcHostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
-      <RuntimePackagePath Condition="'@(ResolvedILCompilerPack2)' == '$(RuntimeIlcPackageName)'">@(ResolvedILCompilerPack2->'%(PackageDirectory)')</RuntimePackagePath>
-      <RuntimePackagePath Condition="'@(ResolvedILCompilerPack2)' != '$(RuntimeIlcPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(RuntimeIlcPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' != '$(RuntimeIlcPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
     </PropertyGroup>
 
   </Target>
