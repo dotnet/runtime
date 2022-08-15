@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpClient client = CreateHttpClient(handler);
 
-                Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri)).WaitAsync(TestHelper.PassingTestTimeout);
                 if (!IsWinHttpHandler)
                 {
                     Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
@@ -81,7 +81,16 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                HttpHeaderData[] headers = new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) };
+
+                try
+                {
+                    await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
             });
         }
 
@@ -106,11 +115,11 @@ namespace System.Net.Http.Functional.Tests
 
                 if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
                 {
-                    await client.GetAsync(uri);
+                    await client.GetAsync(uri).WaitAsync(TestHelper.PassingTestTimeout);
                 }
                 else
                 {
-                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri)).WaitAsync(TestHelper.PassingTestTimeout);
                     if (!IsWinHttpHandler)
                     {
                         Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
@@ -125,7 +134,14 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
-                await server.HandleRequestAsync(headers: headers);
+                try
+                {
+                    await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
             });
         }
     }
