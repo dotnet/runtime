@@ -1,4 +1,4 @@
-## Node application
+## Browser application
 
 ## Build
 
@@ -15,11 +15,11 @@ After building the application, the result is in the `bin/$(Configuration)/net7.
 You can build the applcation from Visual Studio or by dotnet cli
 
 ```
-dotnet run -c Debug/Release -r browser-wasm -h=nodejs
+dotnet run -c Debug/Release -r browser-wasm
 ```
 
 Or you can start any static file server from the AppBundle directory
 
 ```
-node bin/$(Configuration)/net7.0/browser-wasm/AppBundle/main.mjs
+dotnet serve -d:bin/$(Configuration)/net7.0/browser-wasm/AppBundle
 ```
