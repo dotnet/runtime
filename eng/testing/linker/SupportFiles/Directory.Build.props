@@ -3,7 +3,6 @@
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <TrimMode>full</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
