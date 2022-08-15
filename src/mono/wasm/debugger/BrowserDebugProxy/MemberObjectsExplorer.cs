@@ -71,6 +71,10 @@ namespace BrowserDebugProxy
                 FieldAttributes.Public => "result",
                 _ => "internal"
             };
+
+            if (!isOwn && typeInfo.Info.NonUserCode && getObjectOptions.HasFlag(GetObjectCommandOptions.JustMyCode))
+                fieldValue["__section"] = "private";
+
             if (field.IsBackingField)
             {
                 fieldValue["__isBackingField"] = true;

@@ -748,6 +748,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (JustMyCode)
+                getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try
             {
                 switch (objectId.Scheme)
