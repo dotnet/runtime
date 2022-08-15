@@ -102,8 +102,8 @@ namespace System.Xml
         private void WriteTextNodeRaw<T>(XmlBinaryNodeType nodeType, T value)
             where T : unmanaged
         {
-            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
-            byte[] buffer = GetBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
+            // GetTextNodeBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
+            byte[] buffer = GetTextNodeBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
 
             DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
