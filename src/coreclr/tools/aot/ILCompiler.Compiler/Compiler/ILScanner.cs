@@ -367,6 +367,8 @@ namespace ILCompiler
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
+            private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -381,7 +383,32 @@ namespace ILCompiler
 
                     if (type != null)
                     {
-                        if (!type.IsInterface)
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            foreach (DefType baseInterface in type.RuntimeInterfaces)
+                            {
+                                // If the interface is implemented on a template type, there might be
+                                // no real upper bound on the number of actual classes implementing it
+                                // due to MakeGenericType.
+                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    _disqualifiedInterfaces.Add(baseInterface);
+                            }
+                        }
+
+                        if (type.IsInterface)
+                        {
+                            if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                            {
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    // If the interface is implemented through IDynamicInterfaceCastable, there might be
+                                    // no real upper bound on the number of actual classes implementing it.
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                        _disqualifiedInterfaces.Add(baseInterface);
+                                }
+                            }
+                        }
+                        else
                         {
                             //
                             // We collect this information:
@@ -390,15 +417,28 @@ namespace ILCompiler
                             // 2. What types are the base types of other types
                             //    This is needed for optimizations. We use this information to effectively
                             //    seal types that are not base types for any other type.
+                            // 3. What types implement interfaces for which use we can assume whole
+                            //    program view.
                             //
 
                             if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
                                 _constructedTypes.Add(type);
 
+                            if (type is not MetadataType { IsAbstract: true })
+                            {
+                                // Record all interfaces this class implements to _interfaceImplementators
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    {
+                                        RecordImplementation(baseInterface, type);
+                                    }
+                                }
+                            }
+
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                             _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
-                            bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
                             while (baseType != null && added)
@@ -410,6 +450,61 @@ namespace ILCompiler
                         }
                     }
                 }
+            }
+
+            private static bool CanAssumeWholeProgramViewOnInterfaceUse(DefType interfaceType)
+            {
+                if (!interfaceType.HasInstantiation)
+                {
+                    return true;
+                }
+
+                foreach (GenericParameterDesc genericParam in interfaceType.GetTypeDefinition().Instantiation)
+                {
+                    if (genericParam.Variance != GenericVariance.None)
+                    {
+                        // If the interface has any variance, this gets complicated.
+                        // Skip for now.
+                        return false;
+                    }
+                }
+
+                if (((CompilerTypeSystemContext)interfaceType.Context).IsGenericArrayInterfaceType(interfaceType))
+                {
+                    // Interfaces implemented by arrays also behave covariantly on arrays even though
+                    // they're not actually variant. Skip for now.
+                    return false;
+                }
+
+                if (interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != interfaceType
+                    || interfaceType.Context.SupportsUniversalCanon)
+                {
+                    // If the interface has a canonical form, we might not have a full view of all implementers.
+                    // E.g. if we have:
+                    // class Fooer<T> : IFooable<T> { }
+                    // class Doer<T> : IFooable<T> { }
+                    // And we instantiated Fooer<string>, but not Doer<string>. But we do have code for Doer<__Canon>.
+                    // We might think we can devirtualize IFooable<string> to Fooer<string>, but someone could
+                    // typeof(Doer<>).MakeGenericType(typeof(string)) and break our whole program view.
+                    // This is only a problem if canonical form of the interface exists.
+                    return false;
+                }
+
+                return true;
+            }
+
+            private void RecordImplementation(TypeDesc type, TypeDesc implType)
+            {
+                Debug.Assert(!implType.IsInterface);
+
+                HashSet<TypeDesc> implList;
+                if (!_interfaceImplementators.TryGetValue(type, out implList))
+                {
+                    implList = new();
+                    _interfaceImplementators[type] = implList;
+                }
+                implList.Add(implType);
             }
 
             public override bool IsEffectivelySealed(TypeDesc type)
@@ -456,6 +551,24 @@ namespace ILCompiler
             }
 
             public override bool CanConstructType(TypeDesc type) => _constructedTypes.Contains(type);
+
+            public override TypeDesc[] GetImplementingClasses(TypeDesc type)
+            {
+                if (_disqualifiedInterfaces.Contains(type))
+                    return null;
+
+                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                {
+                    var types = new TypeDesc[implementations.Count];
+                    int index = 0;
+                    foreach (TypeDesc implementation in implementations)
+                    {
+                        types[index++] = implementation;
+                    }
+                    return types;
+                }
+                return null;
+            }
         }
 
         private class ScannedInliningPolicy : IInliningPolicy
