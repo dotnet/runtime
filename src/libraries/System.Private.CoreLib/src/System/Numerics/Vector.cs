@@ -896,7 +896,7 @@ namespace System.Numerics
             where T : struct => LessThanOrEqual(left, right).As<T, nuint>() != Vector<nuint>.Zero;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> LoadUnsafe<T>(ref T source, nint elementOffset)
+        internal static Vector<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
             where T : struct
         {
             source = ref Unsafe.Add(ref source, elementOffset);
@@ -1667,7 +1667,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nint elementOffset)
+        internal static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nuint elementOffset)
             where T : struct
         {
             destination = ref Unsafe.Add(ref destination, elementOffset);

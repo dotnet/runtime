@@ -994,7 +994,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            nint remainingLength = (nint)(uint)(Length - firstIndex);
+            nuint remainingLength = (uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -1006,9 +1006,9 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUshort(), (nint)(uint)copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUshort(), (nint)(uint)copyLength);
-            nint i = 0;
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
+            nuint i = 0;
 
             if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
             {
@@ -1019,7 +1019,7 @@ namespace System
                 Vector<ushort> equals;
                 Vector<ushort> results;
 
-                nint lengthToExamine = remainingLength - Vector<ushort>.Count;
+                nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
 
                 if (lengthToExamine > 0)
                 {
@@ -1030,7 +1030,7 @@ namespace System
                         results = Vector.ConditionalSelect(equals, newChars, original);
                         results.StoreUnsafe(ref pDst, i);
 
-                        i += Vector<ushort>.Count;
+                        i += (nuint)Vector<ushort>.Count;
                     }
                     while (i < lengthToExamine);
                 }
@@ -1043,11 +1043,11 @@ namespace System
                 // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
                 // additional check which would introduce a branch here.
 
-                i = (nint)(uint)Length - Vector<ushort>.Count;
-                original = Vector.LoadUnsafe(ref GetRawStringDataAsUshort(), i);
+                i = (nuint)((uint)Length - Vector<ushort>.Count);
+                original = Vector.LoadUnsafe(ref GetRawStringDataAsUInt16(), i);
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
-                results.StoreUnsafe(ref result.GetRawStringDataAsUshort(), i);
+                results.StoreUnsafe(ref result.GetRawStringDataAsUInt16(), i);
             }
             else
             {
