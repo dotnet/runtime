@@ -7,7 +7,7 @@ using System.Net.Quic;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.Quic")]
-    internal sealed partial class NetEventSource : EventSource
+    internal sealed partial class NetEventSource
     {
         static partial void AdditionalCustomizedToString(object value, ref string? result)
         {

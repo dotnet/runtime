@@ -8,7 +8,7 @@ using System.Diagnostics.Tracing;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http", LocalizationResources = "FxResources.System.Net.Http.SR")]
-    internal sealed partial class NetEventSource : EventSource
+    internal sealed partial class NetEventSource
     {
         private const int UriBaseAddressId = NextAvailableEventId;
         private const int ContentNullId = UriBaseAddressId + 1;
