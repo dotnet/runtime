@@ -48,10 +48,6 @@ namespace System.Net.Security
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
             bool added = false;
             credential.DangerousAddRef(ref added);
-            if (!added)
-            {
-                throw new ObjectDisposedException(nameof(SafeFreeNegoCredentials));
-            }
             _credential = credential;
             _context = new SafeGssContextHandle();
         }

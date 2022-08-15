@@ -36,7 +36,6 @@ namespace System.Net.Security
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
-
             using (RSAOpenSsl? rsa = (RSAOpenSsl?)target.GetRSAPrivateKey())
             {
                 if (rsa != null)
