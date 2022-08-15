@@ -7541,6 +7541,8 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
         blkNode = gtNewObjNode(layout, addr);
     }
 
+    blkNode->SetIndirExceptionFlags(this);
+
     return blkNode;
 }
 
