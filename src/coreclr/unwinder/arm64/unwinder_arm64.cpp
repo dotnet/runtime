@@ -231,7 +231,7 @@ Return Value:
         // Restore X0-X17, and D0-D7
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, X);
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __GNUC__
@@ -242,20 +242,20 @@ Return Value:
             SourceAddress += sizeof(ULONG_PTR);
         }
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, VfpState);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, VfpState);
         VfpStateAddress = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
         if (VfpStateAddress != 0) {
 
-            SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpcr);
+            SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, Fpcr);
             Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-            SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpsr);
+            SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, Fpsr);
             Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             if (Fpcr != (ULONG)-1 && Fpsr != (ULONG)-1) {
 
                 ContextRecord->Fpcr = Fpcr;
                 ContextRecord->Fpsr = Fpsr;
 
-                SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, V);
+                SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, V);
                 for (RegIndex = 0; RegIndex < 32; RegIndex++) {
                     UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
                     ContextRecord->V[RegIndex].Low = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -269,19 +269,19 @@ Return Value:
         // Restore R11, R12, SP, LR, PC, and the status registers
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Spsr);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Spsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Sp);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Lr);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Fp);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Pc);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
         //
@@ -311,7 +311,7 @@ Return Value:
         // Restore X0-X28, and D0-D31
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X0);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, X0);
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __GNUC__
@@ -322,7 +322,7 @@ Return Value:
             SourceAddress += sizeof(ULONG_PTR);
         }
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, V);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, V);
         for (RegIndex = 0; RegIndex < 32; RegIndex++) {
             UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
             ContextRecord->V[RegIndex].Low = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -334,32 +334,32 @@ Return Value:
         // Restore SP, LR, PC, and the status registers
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Cpsr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Cpsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fp);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Lr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Sp);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Pc);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpcr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fpcr);
         ContextRecord->Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpsr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fpsr);
         ContextRecord->Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
         //
         // Inherit the unwound-to-call flag from this context
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, ContextFlags);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, ContextFlags);
         ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
         ContextRecord->ContextFlags |=
                         MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
@@ -614,7 +614,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -670,7 +670,7 @@ Return Value:
     ULONG UnwindWords;
 
     //
-    // Unless a special frame is enountered, assume that any unwinding
+    // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
     // appropriately (it will be cleared again if the special cases apply).
     //
@@ -1040,7 +1040,7 @@ ExecuteCodes:
                         ContextRecord,
                         8 * (NextCode & 0x3f),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -1056,7 +1056,7 @@ ExecuteCodes:
                         ContextRecord,
                         -8 * ((NextCode & 0x3f) + 1),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -1250,7 +1250,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     FunctionEntry - Supplies the address of the function table entry for the
         specified function. If appropriate, this should have already been
@@ -1563,9 +1563,31 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     if (FAILED(GetFunctionEntry(pContext->Pc, &Rfe, sizeof(Rfe))))
         return FALSE;
 
+    DWORD64 ControlPcRva = pContext->Pc - ImageBase;
+
+    //  Long branch pdata
+    if ((Rfe.UnwindData & 3) == 3)
+    {
+        if ((Rfe.UnwindData & 4) == 0)
+        {
+            Rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3));
+            Rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((Rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = Rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((Rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
+
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &Rfe,
                                         pContext,
                                         &DummyEstablisherFrame,
@@ -1576,7 +1598,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &Rfe,
                                     pContext,
@@ -1637,9 +1659,30 @@ RtlVirtualUnwind(
     ARM64_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
 
+    DWORD64 ControlPcRva = ControlPc - ImageBase;
+
+    //  Long branch pdata
+    if ((rfe.UnwindData & 3) == 3)
+    {
+        if ((rfe.UnwindData & 4) == 0)
+        {
+            rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3));
+            rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &rfe,
                                         ContextRecord,
                                         EstablisherFrame,
@@ -1650,7 +1693,7 @@ RtlVirtualUnwind(
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &rfe,
                                     ContextRecord,

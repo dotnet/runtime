@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include "gcenv.h"
 #include "holder.h"
+#include "UnixSignals.h"
+#include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "cgroupcpu.h"
 
@@ -544,9 +546,13 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
 {
-    // sched_yield yields to another thread in the current process. This implementation
-    // won't work well for cross-process synchronization.
-    return sched_yield() == 0;
+    // sched_yield yields to another thread in the current process.
+    sched_yield();
+
+    // The return value of sched_yield indicates the success of the call and does not tell whether a context switch happened.
+    // On Linux sched_yield is documented as never failing.
+    // Since we do not know if there was a context switch, we will just return `false`.
+    return false;
 }
 
 extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
@@ -734,6 +740,9 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     case PAGE_EXECUTE_READWRITE:
         prot = PROT_READ | PROT_WRITE | PROT_EXEC;
         break;
+    case PAGE_READONLY:
+        prot = PROT_READ;
+        break;
     default:
         ASSERT(false);
         break;
@@ -812,7 +821,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
-    return mprotect(pAddress, size, unixProtect) == 0;
+    // mprotect expects the address to be page-aligned
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+
+    return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
@@ -935,12 +948,76 @@ extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void*
     return 0;
 }
 
-typedef uint32_t (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
+static PalHijackCallback g_pHijackCallback;
+static struct sigaction g_previousActivationHandler;
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
+static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // UNIXTODO: Implement PalHijack
-    return E_FAIL;
+    // Only accept activations from the current process
+    if (g_pHijackCallback != NULL && (siginfo->si_pid == getpid()
+#ifdef HOST_OSX
+        // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+        || siginfo->si_pid == 0
+#endif
+        ))
+    {
+        // Make sure that errno is not modified 
+        int savedErrNo = errno;
+        g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
+        errno = savedErrNo;
+    }
+    else
+    {
+        // Call the original handler when it is not ignored or default (terminate).
+        if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            if (g_previousActivationHandler.sa_handler != SIG_IGN &&
+                g_previousActivationHandler.sa_handler != SIG_DFL)
+            {
+                _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
+                g_previousActivationHandler.sa_handler(code);
+            }
+        }
+    }
+}
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
+{
+    ASSERT(g_pHijackCallback == NULL);
+    g_pHijackCallback = callback;
+
+    return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
+}
+
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
+{
+    ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
+    int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+    // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
+    // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
+    // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return;
+    }
+#endif
+
+    if ((status != 0) && (status != EAGAIN))
+    {
+        // Failure to send the signal is fatal. There are only two cases when sending
+        // the signal can fail. First, if the signal ID is invalid and second,
+        // if the thread doesn't exist anymore.
+        abort();
+    }
 }
 
 extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
@@ -961,10 +1038,6 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
 
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
@@ -1123,6 +1196,7 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
+#if !__has_builtin(__cpuid)
 REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1133,7 +1207,9 @@ REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
         : "0"(function_id)
         );
 }
+#endif
 
+#if !__has_builtin(__cpuidex)
 REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1144,6 +1220,7 @@ REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunctio
         : "0"(function_id), "2"(subFunction_id)
         );
 }
+#endif
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 {

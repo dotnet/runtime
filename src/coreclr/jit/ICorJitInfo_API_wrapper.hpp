@@ -967,6 +967,17 @@ void WrapICorJitInfo::setVars(
     API_LEAVE(setVars);
 }
 
+void WrapICorJitInfo::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    API_ENTER(reportRichMappings);
+    wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    API_LEAVE(reportRichMappings);
+}
+
 void* WrapICorJitInfo::allocateArray(
           size_t cBytes)
 {
@@ -1001,6 +1012,17 @@ CorInfoTypeWithMod WrapICorJitInfo::getArgType(
     API_ENTER(getArgType);
     CorInfoTypeWithMod temp = wrapHnd->getArgType(sig, args, vcTypeRet);
     API_LEAVE(getArgType);
+    return temp;
+}
+
+int WrapICorJitInfo::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    API_ENTER(getExactClasses);
+    int temp = wrapHnd->getExactClasses(baseType, maxExactClasses, exactClsRet);
+    API_LEAVE(getExactClasses);
     return temp;
 }
 

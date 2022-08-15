@@ -14,13 +14,13 @@
    however thread safe */
 
 /* The log has a very simple structure, and it meant to be dumped from a NTSD
-   extention (eg. strike). There is no memory allocation system calls etc to purtub things */
+   extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
 // WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/stresslog.h
-// Parser: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/stressLogDump.cpp
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
+// Parser: https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/stressLogDump.cpp
 // ******************************************************************************
 
 /*************************************************************************************/
@@ -61,8 +61,8 @@
 
 /*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
     in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
-     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on 
-    how many arguments are getting passed in and using va_args would require parsing the format 
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
     string during the GC
 */
 #define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
@@ -259,6 +259,8 @@
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
+
 class ThreadStressLog;
 
 struct StressLogMsg;
@@ -357,13 +359,13 @@ public:
 
 #ifdef MEMORY_MAPPED_STRESSLOG
 
-    // 
-    // Intentionally avoid unmapping the file during destructor to avoid a race 
+    //
+    // Intentionally avoid unmapping the file during destructor to avoid a race
     // condition between additional logging in other thread and the destructor.
-    // 
+    //
     // The operating system will make sure the file get unmapped during process shutdown
-    // 
-    LPVOID hMapView; 
+    //
+    LPVOID hMapView;
     static void* AllocMemoryMapped(size_t n);
 
     struct StressLogHeader
@@ -542,7 +544,7 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 #endif
 
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste
+// And make sure the timeStamp field is naturally aligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
     static const size_t formatOffsetBits = 26;

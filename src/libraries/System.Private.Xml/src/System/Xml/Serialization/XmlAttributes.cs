@@ -76,6 +76,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlAttributes(ICustomAttributeProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
             object[] attrs = provider.GetCustomAttributes(false);
 
             // most generic <any/> matches everything
@@ -95,9 +96,8 @@ namespace System.Xml.Serialization
                 {
                     _xmlArrayItems.Add((XmlArrayItemAttribute)attrs[i]);
                 }
-                else if (attrs[i] is XmlAnyElementAttribute)
+                else if (attrs[i] is XmlAnyElementAttribute any)
                 {
-                    XmlAnyElementAttribute any = (XmlAnyElementAttribute)attrs[i];
                     if ((any.Name == null || any.Name.Length == 0) && any.GetNamespaceSpecified() && any.Namespace == null)
                     {
                         // ignore duplicate wildcards

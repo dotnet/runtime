@@ -573,7 +573,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			memcpy (&new_ctx->regs [MONO_PPC_FIRST_SAVED_GREG], lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (host_mgreg_t) * MONO_SAVED_GREGS);
 			/* the calling IP is in the parent frame */
 			sframe = (MonoPPCStackFrame*)sframe->sp;
-			/* we substract 4, so that the IP points into the call instruction */
+			/* we subtract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
 		} else {
 			regs [ppc_lr] = ctx->sc_ir;
@@ -589,7 +589,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			if (!success)
 				return FALSE;
 
-			/* we substract 4, so that the IP points into the call instruction */
+			/* we subtract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);
 			MONO_CONTEXT_SET_BP (new_ctx, cfa);
 
@@ -680,8 +680,13 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 *   ucontext struct
 	 *   ...
 	 * 224 is the size of the red zone
+	 * 512 is the size of the red zone for ppc64
 	 */
+#ifdef TARGET_POWERPC64
+	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 512;
+#else
 	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 224;
+#endif
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (void**)(UCONTEXT_REG_Rn(uc, 1) & ~15);
@@ -779,7 +784,11 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 
 	/* Allocate a stack frame below the red zone */
 	/* Similar to mono_arch_handle_altstack_exception () */
+#ifdef TARGET_POWERPC64
+	frame_size = 512;
+#else
 	frame_size = 224;
+#endif
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (host_mgreg_t)(UCONTEXT_REG_Rn(uc, 1) & ~15);

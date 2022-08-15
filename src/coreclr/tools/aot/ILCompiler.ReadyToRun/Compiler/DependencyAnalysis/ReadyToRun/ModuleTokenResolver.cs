@@ -27,11 +27,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly ConcurrentDictionary<EcmaType, ModuleToken> _typeToRefTokens = new ConcurrentDictionary<EcmaType, ModuleToken>();
 
-        private readonly ConcurrentDictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new ConcurrentDictionary<FieldDesc, ModuleToken>();
-
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        private Func<EcmaModule, int> _moduleIndexLookup;
+        private Func<IEcmaModule, int> _moduleIndexLookup;
+
+        private MutableModule _manifestMutableModule;
 
         public CompilerTypeSystemContext CompilerContext { get; }
 
@@ -41,12 +41,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             CompilerContext = typeSystemContext;
         }
 
-        public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
+        public void SetModuleIndexLookup(Func<IEcmaModule, int> moduleIndexLookup)
         {
             _moduleIndexLookup = moduleIndexLookup;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
+        public void InitManifestMutableModule(MutableModule mutableModule)
+        {
+            _manifestMutableModule = mutableModule;
+        }
+
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.VersionsWithType(type))
             {
@@ -65,6 +70,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return token;
             }
 
+            // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
+            if (allowDynamicallyCreatedReference)
+            {
+                var handle = _manifestMutableModule.TryGetExistingEntityHandle(type);
+
+                if (handle.HasValue)
+                {
+                    return new ModuleToken(_manifestMutableModule, handle.Value);
+                }
+            }
+
             // Reverse lookup failed
             if (throwIfNotFound)
             {
@@ -76,50 +92,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
-                method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                if (_compilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
+                {
+                    return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                }
+
+                // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
+                if (allowDynamicallyCreatedReference)
+                {
+                    var handle = _manifestMutableModule.TryGetExistingEntityHandle(ecmaMethod);
+                    if (handle.HasValue)
+                    {
+                        return new ModuleToken(_manifestMutableModule, handle.Value);
+                    }
+                }
             }
 
             // Reverse lookup failed
             if (throwIfNotFound)
             {
                 throw new NotImplementedException(method.ToString());
-            }
-            else
-            {
-                return default(ModuleToken);
-            }
-        }
-
-        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
-        {
-            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
-            {
-                return new ModuleToken(ecmaField.Module, ecmaField.Handle);
-            }
-
-            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            FieldDesc canonField = field;
-            if (owningCanonType != field.OwningType)
-            {
-                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
-            }
-
-            ModuleToken token;
-            if (_fieldToRefTokens.TryGetValue(canonField, out token))
-            {
-                return token;
-            }
-
-            if (throwIfNotFound)
-            {
-                throw new NotImplementedException(field.ToString());
             }
             else
             {
@@ -156,35 +154,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EntityHandle owningTypeHandle = memberRef.Parent;
             AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
             memberRef.DecodeFieldSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
-        }
-
-        public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
-        {
-            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field.OwningType is EcmaType)
-            {
-                // We don't need to store handles within the current compilation group
-                // as we can read them directly from the ECMA objects.
-                return;
-            }
-
-            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            FieldDesc canonField = field;
-            if (owningCanonType != field.OwningType)
-            {
-                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
-            }
-
-            SetModuleTokenForTypeSystemEntity(_fieldToRefTokens, canonField, token);
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForFieldReference(owningCanonType, token);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
         }
 
         // Add TypeSystemEntity -> ModuleToken mapping to a ConcurrentDictionary. Using CompareTo sort the token used, so it will
@@ -238,7 +207,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public int GetModuleIndex(EcmaModule module)
+        public int GetModuleIndex(IEcmaModule module)
         {
             return _moduleIndexLookup(module);
         }
@@ -258,9 +227,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ModuleTokenResolver _resolver;
 
-            EcmaModule _contextModule;
+            IEcmaModule _contextModule;
 
-            public TokenResolverProvider(ModuleTokenResolver resolver, EcmaModule contextModule)
+            public TokenResolverProvider(ModuleTokenResolver resolver, IEcmaModule contextModule)
             {
                 _resolver = resolver;
                 _contextModule = contextModule;

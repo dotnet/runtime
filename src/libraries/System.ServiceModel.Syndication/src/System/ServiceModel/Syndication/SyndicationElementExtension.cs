@@ -67,10 +67,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
             }
 
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
-            }
+            dataContractSerializer ??= new DataContractSerializer(dataContractExtension.GetType());
             _outerName = outerName;
             _outerNamespace = outerNamespace;
             _extensionData = dataContractExtension;
@@ -84,10 +81,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
 
-            if (serializer == null)
-            {
-                serializer = new XmlSerializer(xmlSerializerExtension.GetType());
-            }
+            serializer ??= new XmlSerializer(xmlSerializerExtension.GetType());
             _extensionData = xmlSerializerExtension;
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, serializer);
         }

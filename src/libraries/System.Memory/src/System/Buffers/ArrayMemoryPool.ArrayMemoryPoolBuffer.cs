@@ -19,10 +19,7 @@ namespace System.Buffers
                 get
                 {
                     T[]? array = _array;
-                    if (array == null)
-                    {
-                        ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
-                    }
+                    ObjectDisposedException.ThrowIf(array is null, this);
 
                     return new Memory<T>(array);
                 }

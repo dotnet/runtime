@@ -15,7 +15,6 @@ namespace System.Net.NetworkInformation
         private readonly string _id;
         private readonly string _description;
         private readonly byte[] _physicalAddress;
-        private readonly uint _addressLength;
         private readonly NetworkInterfaceType _type;
         private readonly OperationalStatus _operStatus;
         private readonly long _speed;
@@ -85,7 +84,6 @@ namespace System.Net.NetworkInformation
             AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
 
-            ref readonly Interop.IpHlpApi.FIXED_INFO fixedInfo = ref HostInformationPal.FixedInfo;
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
@@ -110,14 +108,12 @@ namespace System.Net.NetworkInformation
                     if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                     {
                         // Linked list of interfaces.
-                        IntPtr ptr = buffer;
-                        while (ptr != IntPtr.Zero)
+                        Interop.IpHlpApi.IpAdapterAddresses* adapterAddresses = (Interop.IpHlpApi.IpAdapterAddresses*)buffer;
+                        while (adapterAddresses != null)
                         {
                             // Traverse the list, marshal in the native structures, and create new NetworkInterfaces.
-                            Interop.IpHlpApi.IpAdapterAddresses adapterAddresses = Marshal.PtrToStructure<Interop.IpHlpApi.IpAdapterAddresses>(ptr);
-                            interfaceList.Add(new SystemNetworkInterface(in fixedInfo, in adapterAddresses));
-
-                            ptr = adapterAddresses.next;
+                            interfaceList.Add(new SystemNetworkInterface(in *adapterAddresses));
+                            adapterAddresses = adapterAddresses->next;
                         }
                     }
                 }
@@ -142,16 +138,15 @@ namespace System.Net.NetworkInformation
             return interfaceList.ToArray();
         }
 
-        internal SystemNetworkInterface(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        internal SystemNetworkInterface(in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             // Store the common API information.
             _id = ipAdapterAddresses.AdapterName;
-            _name = ipAdapterAddresses.friendlyName;
-            _description = ipAdapterAddresses.description;
+            _name = ipAdapterAddresses.FriendlyName;
+            _description = ipAdapterAddresses.Description;
             _index = ipAdapterAddresses.index;
 
-            _physicalAddress = ipAdapterAddresses.address;
-            _addressLength = ipAdapterAddresses.addressLength;
+            _physicalAddress = ipAdapterAddresses.Address;
 
             _type = ipAdapterAddresses.type;
             _operStatus = ipAdapterAddresses.operStatus;
@@ -161,7 +156,7 @@ namespace System.Net.NetworkInformation
             _ipv6Index = ipAdapterAddresses.ipv6Index;
 
             _adapterFlags = ipAdapterAddresses.flags;
-            _interfaceProperties = new SystemIPInterfaceProperties(fixedInfo, ipAdapterAddresses);
+            _interfaceProperties = new SystemIPInterfaceProperties(ipAdapterAddresses);
         }
 
         public override string Id { get { return _id; } }
@@ -172,12 +167,7 @@ namespace System.Net.NetworkInformation
 
         public override PhysicalAddress GetPhysicalAddress()
         {
-            byte[] newAddr = new byte[_addressLength];
-
-            // Buffer.BlockCopy only supports int while addressLength is uint (see IpAdapterAddresses).
-            // Will throw OverflowException if addressLength > Int32.MaxValue.
-            Buffer.BlockCopy(_physicalAddress, 0, newAddr, 0, checked((int)_addressLength));
-            return new PhysicalAddress(newAddr);
+            return new PhysicalAddress(_physicalAddress);
         }
 
         public override NetworkInterfaceType NetworkInterfaceType { get { return _type; } }

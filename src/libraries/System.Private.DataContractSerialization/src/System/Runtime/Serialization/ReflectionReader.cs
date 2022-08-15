@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -26,17 +27,8 @@ namespace System.Runtime.Serialization
         private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
         private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
-        private static MethodInfo CollectionSetItemDelegateMethod
-        {
-            get
-            {
-                if (s_getCollectionSetItemDelegateMethod == null)
-                {
-                    s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
-                }
-                return s_getCollectionSetItemDelegateMethod!;
-            }
-        }
+        private static MethodInfo CollectionSetItemDelegateMethod =>
+            s_getCollectionSetItemDelegateMethod ??= typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract)
@@ -206,7 +198,7 @@ namespace System.Runtime.Serialization
 
         protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
-            int memberCount = (classContract.BaseContract == null) ? 0 : ReflectionGetMembers(classContract.BaseContract, members);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 : ReflectionGetMembers(classContract.BaseClassContract, members);
             int childElementIndex = memberCount;
             for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
             {
@@ -231,7 +223,7 @@ namespace System.Runtime.Serialization
             else
             {
                 context.ResetCollectionMemberInfo();
-                var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.StableName.Namespace);
+                var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.XmlName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 Debug.Assert(memberInfo != null);
 
@@ -386,8 +378,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnDeserializing(context, classContract.BaseContract, obj);
+            if (classContract.BaseClassContract != null)
+                InvokeOnDeserializing(context, classContract.BaseClassContract, obj);
             if (classContract.OnDeserializing != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -397,8 +389,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnDeserialized(context, classContract.BaseContract, obj);
+            if (classContract.BaseClassContract != null)
+                InvokeOnDeserialized(context, classContract.BaseClassContract, obj);
             if (classContract.OnDeserialized != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -435,11 +427,6 @@ namespace System.Runtime.Serialization
             {
                 obj = MemoryStreamAdapter.GetMemoryStream((MemoryStreamAdapter)obj);
             }
-            else if (obj is IKeyValuePairAdapter)
-            {
-                obj = classContract.GetKeyValuePairMethodInfo!.Invoke(obj, Array.Empty<object>())!;
-            }
-
             return obj;
         }
 
@@ -621,7 +608,7 @@ namespace System.Runtime.Serialization
             if (primitiveContract == null)
                 return false;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     {

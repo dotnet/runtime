@@ -213,8 +213,7 @@ void HandleTerminationRequest(int terminationExitCode)
     {
         SetLatchedExitCode(terminationExitCode);
 
-        DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableDumpOnSigTerm);
-        ForceEEShutdown(enabled == 1 ? SCA_TerminateProcessWhenShutdownComplete : SCA_ExitProcessWhenShutdownComplete);
+        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
     }
 }
 #endif
@@ -222,8 +221,6 @@ void HandleTerminationRequest(int terminationExitCode)
 void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
-
-    InitSavedExceptionInfo();
 
     CLRAddVectoredHandlers();
 
@@ -672,7 +669,7 @@ UINT_PTR ExceptionTracker::CallCatchHandler(CONTEXT* pContextRecord, bool* pfAbo
     else
     {
         // Since the exception has been intercepted and we could resuming execution at any
-        // user-specified arbitary location, reset the EH clause index and EstablisherFrame
+        // user-specified arbitrary location, reset the EH clause index and EstablisherFrame
         //  we may have saved for addressing any potential ThreadAbort raise.
         //
         // This is done since the saved EH clause index is related to the catch block executed,
@@ -787,7 +784,11 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
+#ifdef TARGET_UNIX
+        uAbortAddr = NULL;
+#else
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
+#endif
     }
 
     if (uAbortAddr)
@@ -907,7 +908,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
             EEPolicy::HandleStackOverflow();
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }
     }
@@ -952,14 +953,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // begin Early Processing
     //
     {
-#ifndef USE_REDIRECT_FOR_GCSTRESS
-        if (IsGcMarker(pContextRecord, pExceptionRecord))
-        {
-            returnDisposition = ExceptionContinueExecution;
-            goto lExit;
-        }
-#endif // !USE_REDIRECT_FOR_GCSTRESS
-
         EH_LOG((LL_INFO100, "..................................................................................\n"));
         EH_LOG((LL_INFO100, "ProcessCLRException enter, sp = 0x%p, ControlPc = 0x%p\n", MemoryStackFp, pDispatcherContext->ControlPc));
         DebugLogExceptionRecord(pExceptionRecord);
@@ -2690,7 +2683,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                 // the unwind phase). If we do not switch to COOP mode for such a frame, we could remain in preemp mode.
                 // Upon returning back from ProcessOSExceptionNotification in ProcessCLRException, when we attempt to
                 // switch to COOP mode to update the LastUnwoundEstablisherFrame, we could get blocked due to an
-                // active GC, prior to peforming the update.
+                // active GC, prior to performing the update.
                 //
                 // In this case, if the GC stackwalk encounters the current frame and attempts to check if it has been
                 // unwound by an exception, then while it has been unwound (especially since it had no termination handlers)
@@ -2896,7 +2889,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
                         EH_LOG((LL_INFO100, "  calling filter\n"));
 
-                        // @todo : If user code throws a StackOveflowException and we have plenty of stack,
+                        // @todo : If user code throws a StackOverflowException and we have plenty of stack,
                         // we probably don't want to be so strict in not calling handlers.
                         if (! IsStackOverflowException())
                         {
@@ -3175,7 +3168,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             EH_LOG((LL_INFO100, "  found finally/fault at 0x%p\n", dwHandlerStartPC));
                             _ASSERTE(fTermHandler);
 
-                            // @todo : If user code throws a StackOveflowException and we have plenty of stack,
+                            // @todo : If user code throws a StackOverflowException and we have plenty of stack,
                             // we probably don't want to be so strict in not calling handlers.
                             if (!IsStackOverflowException())
                             {
@@ -4570,7 +4563,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // the exception to be thrown
         *ex.GetContextRecord() = *frameContext;
 
-        // Move the exception address to the first managed frame on the stack except for the hardware exceptions 
+        // Move the exception address to the first managed frame on the stack except for the hardware exceptions
         // stemming from from a native code out of the well known runtime helpers
         if (!ex.IsExternal)
         {
@@ -4857,7 +4850,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Pointer to the context member represeting the register
+    Pointer to the context member represetting the register
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4875,7 +4868,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetRegisterValueByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4897,7 +4890,7 @@ Parameters:
     bool hasOpSizePrefix :  true if the instruction has op size prefix (0x66)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit, bool hasOpSizePrefix)
 {
@@ -5144,7 +5137,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
     BYTE code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;
@@ -5487,7 +5480,7 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     // mark this entry as free
     EH_LOG((LL_INFO100, "TrackerAllocator: freeing tracker 0x%p, thread = 0x%p\n", pTracker, pTracker->m_pThread));
     CONSISTENCY_CHECK(pTracker->IsValid());
-    FastInterlockExchangePointer(&(pTracker->m_pThread), NULL);
+    InterlockedExchangeT(&(pTracker->m_pThread), NULL);
 }
 
 #ifndef TARGET_UNIX
@@ -5739,39 +5732,6 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
 }
 
 
-EXTERN_C VOID FixContextForFaultingExceptionFrame (
-        EXCEPTION_RECORD* pExceptionRecord,
-        CONTEXT *pContextRecord);
-
-EXTERN_C EXCEPTION_DISPOSITION
-FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
-        BIT64_ARG(IN     ULONG64             MemoryStackFp)
-    NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
-                  IN OUT PCONTEXT            pContextRecord,
-                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                 )
-{
-    CONTEXT* pNewContext = NULL;
-
-    if (FirstCallToHandler(pDispatcherContext, &pNewContext))
-    {
-        //
-        // We've pushed a Frame, but it is not initialized yet, so we
-        // must not be in preemptive mode
-        //
-        CONSISTENCY_CHECK(GetThread()->PreemptiveGCDisabled());
-
-        FixContextForFaultingExceptionFrame(pExceptionRecord, pNewContext);
-    }
-
-    FixupDispatcherContext(pDispatcherContext, pNewContext, pContextRecord);
-
-    // Returning ExceptionCollidedUnwind will cause the OS to take our new context record
-    // and dispatcher context and restart the exception dispatching on this call frame,
-    // which is exactly the behavior we want in order to restore our thread's unwindability
-    // (which was broken when we whacked the IP to get control over the thread)
-    return ExceptionCollidedUnwind;
-}
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -5935,7 +5895,7 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
         if (fIsSO)
         {
             // We don't have stack to do full-version EnablePreemptiveGC.
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         }
         else
         {
@@ -6020,7 +5980,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
             CleanUpForSecondPass(pThread, true, (void*)MemoryStackFp, (void*)MemoryStackFp);
         }
 
-        FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+        InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         // We'll let the SO infrastructure handle this exception... at that point, we
         // know that we'll have enough stack to do it.
         return ExceptionContinueSearch;

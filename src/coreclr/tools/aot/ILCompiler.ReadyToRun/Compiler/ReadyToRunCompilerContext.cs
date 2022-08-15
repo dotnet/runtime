@@ -137,6 +137,22 @@ namespace ILCompiler
         {
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
         }
+
+        TypeDesc _asyncStateMachineBox;
+        public TypeDesc AsyncStateMachineBoxType
+        {
+            get
+            {
+                if (_asyncStateMachineBox == null)
+                {
+                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices", "AsyncTaskMethodBuilder`1").GetNestedType("AsyncStateMachineBox`1");
+                    if (_asyncStateMachineBox == null)
+                        throw new Exception();
+                }
+
+                return _asyncStateMachineBox;
+            }
+        }
     }
 
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
@@ -239,7 +255,8 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM64)
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
+                type.Instantiation[0].IsPrimitiveNumeric)
             {
                 return type.InstanceFieldSize.AsInt switch
                 {

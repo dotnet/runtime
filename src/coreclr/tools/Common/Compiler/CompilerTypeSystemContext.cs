@@ -200,7 +200,8 @@ namespace ILCompiler
                     throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
+                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else
                 {
@@ -243,7 +244,7 @@ namespace ILCompiler
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
@@ -327,7 +328,7 @@ namespace ILCompiler
             string pdbFileName = null;
             BlobContentId pdbContentId = default;
 
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;
@@ -342,7 +343,7 @@ namespace ILCompiler
                     if (!File.Exists(candidatePath))
                         continue;
                 }
-                
+
                 pdbFileName = candidatePath;
                 pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
                 break;

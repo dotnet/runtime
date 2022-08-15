@@ -33,11 +33,8 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            if (_type is MetadataType mdType
-                && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-            }
+            if(_type is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
 
             DefType closestDefType = _type.GetClosestDefType();
 
@@ -85,11 +82,13 @@ namespace ILCompiler.DependencyAnalysis
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             // Keep track of the default constructor map dependency for this type if it has a default constructor
+            // We only do this for reflection blocked types because dataflow analysis is responsible for
+            // generating default constructors for Activator.CreateInstance in other cases.
             MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null)
+            if (defaultCtor != null && factory.MetadataManager.IsReflectionBlocked(defaultCtor))
             {
                 dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor), 
+                    factory.CanonicalEntrypoint(defaultCtor),
                     "DefaultConstructorNode"));
             }
 
@@ -99,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+        }
+
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
         }
 
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)

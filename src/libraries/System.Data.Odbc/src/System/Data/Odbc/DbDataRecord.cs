@@ -115,10 +115,7 @@ namespace System.Data.Odbc
                 //  retrieve all the value in between so they can go back to values they've skipped
                 for (int c = 0; c < i; c++)
                 {
-                    if (values[c] == null)
-                    {
-                        values[c] = _record.GetValue(c);
-                    }
+                    values[c] ??= _record.GetValue(c);
                 }
             }
             return values[i];
@@ -126,17 +123,14 @@ namespace System.Data.Odbc
 
         internal DbSchemaInfo GetSchema(int i)
         {
-            if (_schema == null)
-            {
-                _schema = new DbSchemaInfo[Count];
-            }
+            _schema ??= new DbSchemaInfo[Count];
 
             return _schema[i] ??= new DbSchemaInfo();
         }
 
         internal void FlushValues()
         {
-            //Set all objects to null (to explcitly release them)
+            //Set all objects to null (to explicitly release them)
             //Note: SchemaInfo remains the same for all rows - no need to reget those...
             int count = _values.Length;
             for (int i = 0; i < count; ++i)

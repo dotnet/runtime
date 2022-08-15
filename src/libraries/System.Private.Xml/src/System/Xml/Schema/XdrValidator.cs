@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Text;
+using System.Collections;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Text;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
 #pragma warning disable 618
     internal sealed class XdrValidator : BaseValidator
     {
@@ -361,10 +361,7 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
             }
             if (xdrSchema != null && xdrSchema.ErrorCount == 0)
             {
@@ -641,17 +638,14 @@ namespace System.Xml.Schema
             // Note: It used to be true that we only called this if _fValidate was true,
             // but due to the fact that you can now dynamically type somethign as an ID
             // that is no longer true.
-            if (_IDs == null)
-            {
-                _IDs = new Hashtable();
-            }
+            _IDs ??= new Hashtable();
 
             _IDs.Add(name, node);
         }
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private void Push(XmlQualifiedName elementName)

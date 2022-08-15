@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,13 +12,14 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal sealed class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter
+    internal sealed class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter, IXmlTextWriterInitializer
     {
         private readonly XmlDictionaryWriter _coreWriter;
         private Task? _lastTask;
 
         public XmlDictionaryAsyncCheckWriter(XmlDictionaryWriter writer)
         {
+            Debug.Assert(writer is IXmlTextWriterInitializer);
             _coreWriter = writer;
         }
 
@@ -693,6 +695,15 @@ namespace System.Xml
         {
             CheckAsync();
             CoreWriter.Dispose();
+        }
+
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
+        {
+            if (CoreWriter is IXmlTextWriterInitializer initializer)
+            {
+                CheckAsync();
+                initializer.SetOutput(stream, encoding, ownsStream);
+            }
         }
     }
 }

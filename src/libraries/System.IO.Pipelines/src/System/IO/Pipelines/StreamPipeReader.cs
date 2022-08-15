@@ -77,11 +77,7 @@ namespace System.IO.Pipelines
             {
                 lock (_lock)
                 {
-                    if (_internalTokenSource == null)
-                    {
-                        _internalTokenSource = new CancellationTokenSource();
-                    }
-                    return _internalTokenSource;
+                    return _internalTokenSource ??= new CancellationTokenSource();
                 }
             }
         }
@@ -155,7 +151,6 @@ namespace System.IO.Pipelines
             while (returnStart != returnEnd)
             {
                 BufferSegment next = returnStart.NextSegment!;
-                returnStart.ResetMemory();
                 ReturnSegmentUnsynchronized(returnStart);
                 returnStart = next;
             }
@@ -196,7 +191,7 @@ namespace System.IO.Pipelines
                 BufferSegment returnSegment = segment;
                 segment = segment.NextSegment;
 
-                returnSegment.ResetMemory();
+                returnSegment.Reset();
             }
 
             return !LeaveOpen;
@@ -627,6 +622,8 @@ namespace System.IO.Pipelines
         {
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
+
+            segment.Reset();
 
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {

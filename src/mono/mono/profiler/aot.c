@@ -115,7 +115,7 @@ match_option (const char *arg, const char *opt_name, const char **rval)
 		if (!end)
 			return !strcmp (arg, opt_name);
 
-		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > strlen (opt_name) + 1)
+		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > GSIZE_TO_SSIZE(strlen (opt_name)) + 1)
 			return FALSE;
 		*rval = end + 1;
 		return TRUE;
@@ -526,12 +526,12 @@ add_type (MonoProfiler *prof, MonoType *type)
 static int
 add_ginst (MonoProfiler *prof, MonoGenericInst *inst)
 {
-	int i, id;
+	int id;
 	int *ids;
 
 	// FIXME: Cache
 	ids = g_malloc0 (inst->type_argc * sizeof (int));
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		ids [i] = add_type (prof, t);
 		if (ids [i] == -1) {
@@ -542,7 +542,7 @@ add_ginst (MonoProfiler *prof, MonoGenericInst *inst)
 	id = prof->id ++;
 	emit_record (prof, AOTPROF_RECORD_GINST, id);
 	emit_int32 (prof, inst->type_argc);
-	for (i = 0; i < inst->type_argc; ++i)
+	for (guint i = 0; i < inst->type_argc; ++i)
 		emit_int32 (prof, ids [i]);
 	g_free (ids);
 
@@ -631,7 +631,6 @@ prof_save (MonoProfiler *prof, FILE* file)
 	if (already_shutdown)
 		return;
 
-	int mindex;
 	char magic [32];
 
 	prof->buf_len = 4096;
@@ -645,7 +644,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);
 	mono_os_mutex_lock (&prof->mutex);
-	for (mindex = 0; mindex < prof->methods->len; ++mindex) {
+	for (guint mindex = 0; mindex < prof->methods->len; ++mindex) {
 	    MonoMethod *m = (MonoMethod*)g_ptr_array_index (prof->methods, mindex);
 
 		if (!mono_method_get_token (m))

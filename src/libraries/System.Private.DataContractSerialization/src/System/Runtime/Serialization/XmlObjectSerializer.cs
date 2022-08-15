@@ -1,19 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.DataContracts;
+using System.Security;
+using System.Text;
+using System.Xml;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Xml;
-    using System.Runtime.CompilerServices;
-    using System.Text;
-    using System.Security;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Diagnostics.CodeAnalysis;
-
     public abstract class XmlObjectSerializer
     {
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -220,7 +222,7 @@ namespace System.Runtime.Serialization
             if (name == null)
                 return false;
 
-            if (contract.IsBuiltInDataContract || !contract.CanContainReferences)
+            if (contract.IsBuiltInDataContract || !contract.CanContainReferences || contract.IsISerializable)
             {
                 return false;
             }
@@ -378,12 +380,12 @@ namespace System.Runtime.Serialization
 
                 ClassDataContract? classContract = contract as ClassDataContract;
                 if (classContract != null)
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 while (classContract != null)
                 {
                     if (reader.IsStartElement(classContract.TopLevelElementName!, classContract.TopLevelElementNamespace!))
                         return true;
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 }
                 if (classContract == null)
                 {
@@ -426,7 +428,7 @@ namespace System.Runtime.Serialization
 
         internal virtual Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? null : graph.GetType();
+            return graph?.GetType();
         }
 
         internal virtual Type? GetDeserializeType()
@@ -435,17 +437,6 @@ namespace System.Runtime.Serialization
         }
 
         private static IFormatterConverter? s_formatterConverter;
-        internal static IFormatterConverter FormatterConverter
-        {
-            get
-            {
-                if (s_formatterConverter == null)
-                {
-                    s_formatterConverter = new FormatterConverter();
-                }
-
-                return s_formatterConverter;
-            }
-        }
+        internal static IFormatterConverter FormatterConverter => s_formatterConverter ??= new FormatterConverter();
     }
 }

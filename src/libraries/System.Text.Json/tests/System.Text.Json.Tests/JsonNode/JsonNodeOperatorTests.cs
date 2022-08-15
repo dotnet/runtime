@@ -87,6 +87,7 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void ExplicitOperators_FromValues()
         {
             Assert.Equal(1, (short)(JsonNode)(short)1);

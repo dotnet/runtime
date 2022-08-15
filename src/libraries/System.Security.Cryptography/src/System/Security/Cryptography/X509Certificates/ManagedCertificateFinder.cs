@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                 (keyIdentifier, cert) =>
                 {
                     X509Extension? ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
-                    Span<byte> certKeyId = stackalloc byte[0];
+                    scoped Span<byte> certKeyId;
 
                     if (ext != null)
                     {

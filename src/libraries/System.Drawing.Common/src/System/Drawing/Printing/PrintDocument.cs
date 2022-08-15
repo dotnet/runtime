@@ -47,9 +47,7 @@ namespace System.Drawing.Printing
             get { return _defaultPageSettings; }
             set
             {
-                if (value == null)
-                    value = new PageSettings();
-                _defaultPageSettings = value;
+                _defaultPageSettings = value ?? new PageSettings();
                 _userSetPageSettings = true;
             }
         }
@@ -64,14 +62,8 @@ namespace System.Drawing.Printing
         ]
         public string DocumentName
         {
-            get { return _documentName; }
-
-            set
-            {
-                if (value == null)
-                    value = "";
-                _documentName = value;
-            }
+            get => _documentName;
+            set => _documentName = value ?? "";
         }
 
         // If true, positions the origin of the graphics object
@@ -105,18 +97,8 @@ namespace System.Drawing.Printing
         ]
         public PrintController PrintController
         {
-            get
-            {
-                if (_printController == null)
-                {
-                    _printController = new StandardPrintController();
-                }
-                return _printController;
-            }
-            set
-            {
-                _printController = value;
-            }
+            get => _printController ??= new StandardPrintController();
+            set => _printController = value;
         }
 
         /// <summary>
@@ -132,8 +114,7 @@ namespace System.Drawing.Printing
             get { return _printerSettings; }
             set
             {
-                if (value == null)
-                    value = new PrinterSettings();
+                value ??= new PrinterSettings();
                 _printerSettings = value;
                 // reset the PageSettings that match the PrinterSettings only if we have created the defaultPageSettings..
                 if (!_userSetPageSettings)

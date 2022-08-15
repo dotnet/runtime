@@ -20,7 +20,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentNullException"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -47,7 +47,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentException"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -74,7 +74,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentException"/> of type <typeparamref name="T"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -110,7 +110,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="AggregateException"/> with a base exception <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -142,7 +142,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="format">
         ///     A <see cref="String"/> containing format information for when the assertion fails.
@@ -165,7 +165,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -196,7 +196,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given async delegate throws an <see cref="Exception"/> of type <typeparam name="T".
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Func{}"/> to execute.
+        ///     The delegate of type <see cref="Func{}"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -224,11 +224,11 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        ///     Asserts that the given async delegate throws an <see cref="Exception"/> of type <typeparam name="T" /> and <see cref="Exception.InnerException"/> 
+        ///     Asserts that the given async delegate throws an <see cref="Exception"/> of type <typeparam name="T" /> and <see cref="Exception.InnerException"/>
         ///     returns an <see cref="Exception"/> of type <typeparam name="TInner" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -397,7 +397,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Tests whether the expected object is equal to the actual object  and 
+        /// Tests whether the expected object is equal to the actual object  and
         /// throws an exception if it is not.
         /// </summary>
         /// <param name="notExpected">Expected object.</param>
@@ -415,7 +415,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Tests whether the expected object is equal to the actual object  and 
+        /// Tests whether the expected object is equal to the actual object  and
         /// throws an exception if it is not.
         /// </summary>
         /// <param name="notExpected">Expected object.</param>
@@ -427,7 +427,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Tests whether the expected object is equal to the actual object  and 
+        /// Tests whether the expected object is equal to the actual object  and
         /// throws an exception if it is not.
         /// </summary>
         /// <param name="notExpected">Expected object that we do not want it to be.</param>
@@ -446,7 +446,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Tests whether the expected object is equal to the actual object  and 
+        /// Tests whether the expected object is equal to the actual object  and
         /// throws an exception if it is not.
         /// </summary>
         /// <param name="notExpected">Expected object that we do not want it to be.</param>
@@ -533,7 +533,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Tests whether the two enumerables are the same length and contain the same objects (using Object.Equals()) (but not necessarily 
+        /// Tests whether the two enumerables are the same length and contain the same objects (using Object.Equals()) (but not necessarily
         /// in the same order) and throws an exception if it is not.
         /// </summary>
         /// <param name="expected">Expected enumerable.</param>
@@ -545,7 +545,7 @@ namespace CoreFXTestLibrary
         }
 
         /// <summary>
-        /// Iterates through an IEnumerable to generate an array of elements. The rational for using this instead of 
+        /// Iterates through an IEnumerable to generate an array of elements. The rational for using this instead of
         /// System.Linq.ToArray is that this will not require a dependency on System.Linq.dll
         /// </summary>
         private static T[] CopyToArray<T>(IEnumerable<T> source)
@@ -720,7 +720,7 @@ namespace CoreFXTestLibrary
         /// TODO: Modify HandleFail to take in parameters
         internal static void HandleFail(string assertionName, string message)
         {
-            // change this to use AssertFailedException 
+            // change this to use AssertFailedException
             Logger.LogInformation(assertionName + ":" + message);
             throw new AssertTestException(assertionName + ": " + message);
         }
@@ -799,13 +799,13 @@ namespace CoreFXTestLibrary
     public enum AssertThrowsOptions
     {
         /// <summary>
-        ///     Specifies that <see cref="Assert.Throws{T}"/> should require an exact type 
+        ///     Specifies that <see cref="Assert.Throws{T}"/> should require an exact type
         ///     match when comparing the specified exception type with the throw exception.
         /// </summary>
         None = 0,
 
         /// <summary>
-        ///     Specifies that <see cref="Assert.Throws{T}"/> should not require an exact type 
+        ///     Specifies that <see cref="Assert.Throws{T}"/> should not require an exact type
         ///     match when comparing the specified exception type with the thrown exception.
         /// </summary>
         AllowDerived = 1,

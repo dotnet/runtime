@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 
 namespace System.Runtime.Serialization
@@ -95,7 +96,7 @@ namespace System.Runtime.Serialization
             if (primitiveContract == null)
                 return false;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     xmlWriter.WriteBooleanArray((bool[])obj, collectionItemName, itemNamespace);
@@ -131,8 +132,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? emptyStringArray)
         {
-            int memberCount = (classContract.BaseContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, emptyStringArray);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseClassContract, derivedMostClassContract, childElementIndex, emptyStringArray);
 
             childElementIndex += memberCount;
 
@@ -173,10 +174,7 @@ namespace System.Runtime.Serialization
                 if (shouldWriteValue)
                 {
                     bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                    if (memberValue == null)
-                    {
-                        memberValue = ReflectionGetMemberValue(obj, member);
-                    }
+                    memberValue ??= ReflectionGetMemberValue(obj, member);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
 
                     if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
@@ -233,11 +231,11 @@ namespace System.Runtime.Serialization
 
             // Check for conflict with derived type members
             string? name = member.Name;
-            string? ns = classContract.StableName.Namespace;
+            string? ns = classContract.XmlName.Namespace;
             ClassDataContract? currentContract = derivedMostClassContract;
             while (currentContract != null && currentContract != classContract)
             {
-                if (ns == currentContract.StableName.Namespace)
+                if (ns == currentContract.XmlName.Namespace)
                 {
                     List<DataMember> members = currentContract.Members!;
                     for (int j = 0; j < members.Count; j++)
@@ -246,7 +244,7 @@ namespace System.Runtime.Serialization
                             return CheckIfConflictingMembersHaveDifferentTypes(members[j]);
                     }
                 }
-                currentContract = currentContract.BaseContract;
+                currentContract = currentContract.BaseClassContract;
             }
 
             return false;

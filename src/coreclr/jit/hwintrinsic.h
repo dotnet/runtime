@@ -147,7 +147,11 @@ enum HWIntrinsicFlag : unsigned int
     // Returns Per-Element Mask
     // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
     // this output can be used as a per-element mask
-    HW_Flag_ReturnsPerElementMask = 0x20000
+    HW_Flag_ReturnsPerElementMask = 0x20000,
+
+    // AvxOnlyCompatible
+    // the intrinsic can be used on hardware with AVX but not AVX2 support
+    HW_Flag_AvxOnlyCompatible = 0x40000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -658,6 +662,14 @@ struct HWIntrinsicInfo
 #endif
     }
 
+#if defined(TARGET_XARCH)
+    static bool AvxOnlyCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_AvxOnlyCompatible) != 0;
+    }
+#endif
+
     static bool BaseTypeFromFirstArg(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -865,6 +877,11 @@ private:
             else
             {
                 baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
             }
         }
     }

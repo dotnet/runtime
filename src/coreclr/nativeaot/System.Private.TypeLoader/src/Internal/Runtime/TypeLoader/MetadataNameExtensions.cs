@@ -11,7 +11,7 @@ using global::Internal.Metadata.NativeFormat;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal static class MetadataNameExtentions
+    internal static class MetadataNameExtensions
     {
         public static string GetFullName(this Handle handle, MetadataReader reader)
         {

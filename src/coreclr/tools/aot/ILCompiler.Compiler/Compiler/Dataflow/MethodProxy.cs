@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using ILCompiler;
 using ILCompiler.Dataflow;
@@ -11,7 +12,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-    readonly partial struct MethodProxy
+    readonly partial struct MethodProxy : IEquatable<MethodProxy>
     {
         public MethodProxy(MethodDesc method) => Method = method;
 
@@ -61,5 +62,13 @@ namespace ILLink.Shared.TypeSystemProxy
         internal partial bool ReturnsVoid() => Method.Signature.ReturnType.IsVoid;
 
         public override string ToString() => Method.ToString();
+
+        public ReferenceKind ParameterReferenceKind(int index) => Method.ParameterReferenceKind(Method.Signature.IsStatic ? index : index + 1);
+
+        public bool Equals(MethodProxy other) => Method.Equals(other.Method);
+
+        public override bool Equals(object? obj) => obj is MethodProxy other && Equals(other);
+
+        public override int GetHashCode() => Method.GetHashCode();
     }
 }

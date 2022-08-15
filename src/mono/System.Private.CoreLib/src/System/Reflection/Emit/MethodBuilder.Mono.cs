@@ -161,7 +161,12 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return type; }
+            get
+            {
+                if (type.is_hidden_global_type)
+                    return null;
+                return type;
+            }
         }
 
         public override string Name
@@ -334,8 +339,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(nameof(position));
 
             ParameterBuilder pb = new ParameterBuilder(this, position, attributes, strParamName);
-            if (pinfo == null)
-                pinfo = new ParameterBuilder[parameters.Length + 1];
+            pinfo ??= new ParameterBuilder[parameters.Length + 1];
             pinfo[position] = pb;
             return pb;
         }

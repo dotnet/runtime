@@ -116,10 +116,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (newParentEntry != null)
-                    {
-                        newParentEntry.Dispose();
-                    }
+                    newParentEntry?.Dispose();
                 }
 
                 // remove stale cached directory entries
@@ -196,11 +193,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedPartitions == null)
-                {
-                    cachedPartitions = new ReadOnlyStringCollection(GetPartitions());
-                }
-                return cachedPartitions;
+                return cachedPartitions ??= new ReadOnlyStringCollection(GetPartitions());
             }
         }
 
@@ -270,15 +263,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (rootDSE != null)
-                {
-                    rootDSE.Dispose();
-                }
-
-                if (serverNtdsaEntry != null)
-                {
-                    serverNtdsaEntry.Dispose();
-                }
+                rootDSE?.Dispose();
+                serverNtdsaEntry?.Dispose();
             }
             return partitionList;
         }
@@ -613,7 +599,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     exception = ExceptionHelper.CreateSyncAllException(temp, true);
                     if (exception == null)
                     {
-                        // this is the special case that we ingore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
+                        // this is the special case that we ignore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
                         return true;
                     }
                 }
@@ -763,11 +749,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (unmanagedGuid != (IntPtr)0)
                     Marshal.FreeHGlobal(unmanagedGuid);
 
-                if (adamServer != null)
-                    adamServer.Dispose();
-
-                if (dcServer != null)
-                    dcServer.Dispose();
+                adamServer?.Dispose();
+                dcServer?.Dispose();
             }
         }
 
@@ -805,9 +788,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (srchResults != null)
-                        srchResults.Dispose();
-
+                    srchResults?.Dispose();
                     de.Dispose();
                 }
             }
@@ -850,9 +831,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (results != null)
-                        results.Dispose();
-
+                    results?.Dispose();
                     de.Dispose();
                 }
             }

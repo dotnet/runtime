@@ -30,7 +30,7 @@ endif ()
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     # This variable can be set and used by the coreclr and installer builds.
     # Libraries doesn't need it, but not using it makes the build fail.  So
-    # just check and igore the variable.
+    # just check and ignore the variable.
 endif()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -120,18 +120,6 @@ check_c_source_compiles(
     }
     "
     HAVE_FLOCK64)
-
-check_c_source_compiles(
-    "
-    #include <sys/types.h>
-    #include <ifaddrs.h>
-    int main(void)
-    {
-        struct ifaddrs ia;
-        return 0;
-    }
-    "
-    HAVE_IFADDRS)
 
 check_symbol_exists(
     O_CLOEXEC
@@ -1040,18 +1028,6 @@ else ()
         GSS_SPNEGO_MECHANISM
         "gssapi/gssapi.h"
         HAVE_GSS_SPNEGO_MECHANISM)
-endif ()
-
-if (HAVE_GSSFW_HEADERS)
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "GSS/GSS.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-else ()
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "gssapi/gssapi_krb5.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)

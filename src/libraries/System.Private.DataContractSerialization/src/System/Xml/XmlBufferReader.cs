@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Buffers.Binary;
 
 namespace System.Xml
 {
@@ -72,10 +73,7 @@ namespace System.Xml
 
         public void SetBuffer(Stream stream, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
-            if (_streamBuffer == null)
-            {
-                _streamBuffer = new byte[128];
-            }
+            _streamBuffer ??= new byte[128];
             SetBuffer(stream, _streamBuffer, 0, 0, dictionary, session);
             _windowOffset = 0;
             _windowOffsetMax = _streamBuffer.Length;
@@ -213,13 +211,14 @@ namespace System.Xml
             if (_stream == null)
                 return false;
 
+            DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
+
             // The data could be coming from an untrusted source, so we use a standard
             // "multiply by 2" growth algorithm to avoid overly large memory utilization.
             // Constant value of 256 comes from MemoryStream implementation.
 
             do
             {
-                DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
                 int newOffsetMax = _offset + count;
                 if (newOffsetMax <= _offsetMax)
                     return true;
@@ -430,16 +429,19 @@ namespace System.Xml
             return value;
         }
 
-        public unsafe decimal ReadDecimal()
+        public decimal ReadDecimal()
         {
-            int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out offset);
-            decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
-            Advance(ValueHandleLength.Decimal);
-            return value;
+            byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out int offset);
+            ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+            ReadOnlySpan<int> span = stackalloc int[4]
+            {
+                BinaryPrimitives.ReadInt32LittleEndian(bytes),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4)),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8)),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12))
+            };
+
+            return new decimal(span);
         }
 
         public UniqueId ReadUniqueId()
@@ -681,6 +683,13 @@ namespace System.Xml
             char[] chars = GetCharBuffer(length);
             int charCount = GetEscapedChars(offset, length, chars);
             return new string(chars, 0, charCount);
+        }
+
+        public string GetEscapedString(int offset, int length, XmlNameTable nameTable)
+        {
+            char[] chars = GetCharBuffer(length);
+            int charCount = GetEscapedChars(offset, length, chars);
+            return nameTable.Add(chars, 0, charCount);
         }
 
         private int GetLessThanCharEntity(int offset, int length)
@@ -1062,14 +1071,18 @@ namespace System.Xml
             return value;
         }
 
-        public unsafe decimal GetDecimal(int offset)
+        public decimal GetDecimal(int offset)
         {
-            byte[] buffer = _buffer;
-            decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
-            return value;
+            ReadOnlySpan<byte> bytes = _buffer.AsSpan(offset, sizeof(decimal));
+            ReadOnlySpan<int> span = stackalloc int[4]
+            {
+                BinaryPrimitives.ReadInt32LittleEndian(bytes),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4)),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8)),
+                BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12))
+            };
+
+            return new decimal(span);
         }
 
         public UniqueId GetUniqueId(int offset)
@@ -1079,8 +1092,7 @@ namespace System.Xml
 
         public Guid GetGuid(int offset)
         {
-            if (_guid == null)
-                _guid = new byte[16];
+            _guid ??= new byte[16];
             System.Buffer.BlockCopy(_buffer, offset, _guid, 0, _guid.Length);
             return new Guid(_guid);
         }
@@ -1136,9 +1148,11 @@ namespace System.Xml
             {
                 keyDictionary = _dictionary!;
             }
+
             XmlDictionaryString? s;
             if (!keyDictionary.TryLookup(key >> 1, out s))
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
+
             return s;
         }
 
@@ -1169,6 +1183,7 @@ namespace System.Xml
                     XmlExceptionHelper.ThrowXmlDictionaryStringIDUndefinedStatic(_reader, staticKey);
                 }
             }
+
             return key;
         }
 
@@ -1287,10 +1302,7 @@ namespace System.Xml
 
         private void ReadList(ValueHandle value)
         {
-            if (_listValue == null)
-            {
-                _listValue = new ValueHandle(this);
-            }
+            _listValue ??= new ValueHandle(this);
             int count = 0;
             int offset = this.Offset;
             while (true)

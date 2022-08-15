@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Xml.XPath;
+using System.Xml.Xsl.XsltOld;
+using System.Xml.Xsl.XsltOld.Debugger;
+
 namespace System.Xml.Xsl
 {
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.XsltOld;
-    using System.Xml.Xsl.XsltOld.Debugger;
-
     public sealed class XslTransform
     {
         private XmlResolver? _documentResolver;
@@ -229,10 +229,7 @@ namespace System.Xml.Xsl
             }
             finally
             {
-                if (fs != null)
-                {
-                    fs.Dispose();
-                }
+                fs?.Dispose();
             }
         }
 
@@ -249,7 +246,7 @@ namespace System.Xml.Xsl
 
             Compiler compiler = new Compiler();
             NavigatorInput input = new NavigatorInput(stylesheet);
-            compiler.Compile(input, resolver ?? XmlNullResolver.Singleton);
+            compiler.Compile(input, resolver ?? XmlResolver.ThrowingResolver);
 
             Debug.Assert(compiler.CompiledStylesheet != null);
             Debug.Assert(compiler.QueryStore != null);
@@ -267,7 +264,7 @@ namespace System.Xml.Xsl
             }
             else
             {
-                return XmlNullResolver.Singleton;
+                return XmlResolver.ThrowingResolver;
             }
         }
     }
