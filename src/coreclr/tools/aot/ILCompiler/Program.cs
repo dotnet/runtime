@@ -74,6 +74,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
 
+        private IReadOnlyList<string> _linkTrimFilePaths = Array.Empty<string>();
+
         private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
 
         private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
@@ -201,6 +203,7 @@ namespace ILCompiler
                 syntax.DefineOption("resilient", ref _resilient, "Ignore unresolved types, methods, and assemblies. Defaults to false");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOptionList("descriptor", ref _linkTrimFilePaths, "ILLinkTrim.Descriptor file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
@@ -345,7 +348,7 @@ namespace ILCompiler
                 // + the original command line arguments
                 // + a rsp file that should work to directly run out of the zip file
 
-                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
+                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist", "--descriptor" });
             }
 
             if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
@@ -693,6 +696,13 @@ namespace ILCompiler
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
+                }
+
+                foreach (var linkTrimFilePath in _linkTrimFilePaths)
+                {
+                    if (!File.Exists(linkTrimFilePath))
+                        throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
+                    compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
             }
 

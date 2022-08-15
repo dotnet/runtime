@@ -297,6 +297,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         Result resp = await SendCommand(id, method, args, token);
 
+                        if (!resp.IsOk)
+                        {
+                            SendResponse(id, resp, token);
+                            return true;
+                        }
+
                         context.DebugId = resp.Value["DebugId"]?.ToString();
 
                         if (await IsRuntimeAlreadyReadyAlready(id, token))

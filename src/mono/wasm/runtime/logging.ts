@@ -106,6 +106,8 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
+export let consoleWebSocket: WebSocket;
+
 export function setup_proxy_console(id: string, console: Console, origin: string): void {
     // this need to be copy, in order to keep reference to original methods
     const originalConsole = {
@@ -129,7 +131,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     }
                 }
 
-                if (typeof payload === "string")
+                if (typeof payload === "string" && id !== "main")
                     payload = `[${id}] ${payload}`;
 
                 if (asJson) {
@@ -156,7 +158,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
 
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
-    const consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("open", () => {
         originalConsole.log(`browser: [${id}] Console websocket connected.`);
     });
