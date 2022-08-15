@@ -35,12 +35,6 @@ namespace System.IO
                     lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
                 };
 
-                // Every call to CreateDirectory uses EnsureExtendedPrefix on the supplied path, which
-                // creates a new string if the prefix was missing.  Since we're making at least one and
-                // potentially multiple calls to CreateDirectory, we lift out that prefixing so that the
-                // string that's created can be shared across all calls rather than having a temporary in each.
-                fullPath = PathInternal.EnsureExtendedPrefix(fullPath);
-
                 // We know the directory doesn't exist.  Before doing more work to parse the path into
                 // subdirectories and checking each one for existence, try to just create the directory.
                 // If it works, which is a common case when the parent directory already exists, we're done.
