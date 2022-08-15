@@ -997,6 +997,8 @@ namespace ILCompiler
 
             preinitManager.LogStatistics(logger);
 
+            preinitManager.CheckPreInitializedAttribute(logger);
+
             return 0;
         }
 

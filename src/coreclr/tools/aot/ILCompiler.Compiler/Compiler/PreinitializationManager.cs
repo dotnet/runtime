@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -8,12 +9,13 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     /// <summary>
-    /// Manages policies around static constructors (.cctors) and static data initialization. 
+    /// Manages policies around static constructors (.cctors) and static data initialization.
     /// </summary>
     public class PreinitializationManager
     {
         private readonly bool _supportsLazyCctors;
         private readonly bool _enableInterpreter;
+        private readonly ConcurrentDictionary<string, string> _preinitRequiredMessages = new();
 
         public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, bool enableInterpreter)
         {
@@ -76,28 +78,46 @@ namespace ILCompiler
         private static bool HasEagerConstructorAttribute(TypeDesc type)
         {
             MetadataType mdType = type as MetadataType;
-            return mdType != null && 
+            return mdType != null &&
                 mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute");
         }
 
         public bool IsPreinitialized(MetadataType type)
         {
+            bool isPreinitRequired = type.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute");
+
             // If the cctor interpreter is not enabled, no type is preinitialized.
             if (!_enableInterpreter)
+            {
+                if (isPreinitRequired && type.HasStaticConstructor)
+                    _preinitRequiredMessages[type.GetFullName()] = "Preinitialization disabled";
                 return false;
+            }
 
             if (!type.HasStaticConstructor)
+            {
                 return false;
-            
+            }
+
             // The cctor on the Module type is the module constructor. That's special.
             if (type.IsModuleType)
+            {
                 return false;
+            }
 
             // Generic definitions cannot be preinitialized
             if (type.IsGenericDefinition)
+            {
+                if (isPreinitRequired)
+                    _preinitRequiredMessages[type.GetFullName()] = "Generic type";
                 return false;
+            }
 
-            return GetPreinitializationInfo(type).IsPreinitialized;
+            TypePreinit.PreinitializationInfo preinitializationInfo = GetPreinitializationInfo(type);
+            bool isPreinitialized = preinitializationInfo.IsPreinitialized;
+            if (!isPreinitialized && isPreinitRequired)
+                _preinitRequiredMessages[type.GetFullName()] = preinitializationInfo.FailureReason;
+            return isPreinitialized;
         }
 
         public void LogStatistics(Logger logger)
@@ -125,6 +145,14 @@ namespace ILCompiler
                 }
 
                 logger.LogMessage($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+            }
+        }
+
+        public void CheckPreInitializedAttribute(Logger logger)
+        {
+            foreach (var item in _preinitRequiredMessages)
+            {
+                logger.LogMessage($"Failed to preinitialize {item.Key} due to: {item.Value}");
             }
         }
 
