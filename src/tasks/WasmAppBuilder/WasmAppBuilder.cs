@@ -75,6 +75,8 @@ public class WasmAppBuilder : Task
 
     private sealed class WasmAppConfig
     {
+        [JsonPropertyName("mainAssemblyName")]
+        public string? MainAssemblyName { get; set; }
         [JsonPropertyName("assemblyRootFolder")]
         public string AssemblyRootFolder { get; set; } = "managed";
         [JsonPropertyName("debugLevel")]
@@ -181,7 +183,10 @@ public class WasmAppBuilder : Task
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ();
+        var config = new WasmAppConfig ()
+        {
+            MainAssemblyName = MainAssemblyName,
+        };
 
         // Create app
         var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
