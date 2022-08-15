@@ -11,6 +11,7 @@ using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
@@ -24,8 +25,11 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
-                .Where(static c => c is not null);
+                .ForAttributeWithMetadataName(
+                    context,
+                    Parser.JsonSerializableAttributeFullName,
+                    (node, _) => node is ClassDeclarationSyntax,
+                    (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
                 context.CompilationProvider.Combine(classDeclarations.Collect());
