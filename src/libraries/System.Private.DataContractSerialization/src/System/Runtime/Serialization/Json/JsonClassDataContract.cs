@@ -15,6 +15,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonClassDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonClassDataContract(ClassDataContract traditionalDataContract)
             : base(new JsonClassDataContractCriticalHelper(traditionalDataContract))
@@ -24,6 +25,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassReaderDelegate JsonFormatReaderDelegate
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -54,6 +56,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassWriterDelegate JsonFormatWriterDelegate
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -88,6 +91,7 @@ namespace System.Runtime.Serialization.Json
 
         private ClassDataContract TraditionalClassDataContract => _helper.TraditionalClassDataContract;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
@@ -97,6 +101,7 @@ namespace System.Runtime.Serialization.Json
             return o;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -113,6 +118,7 @@ namespace System.Runtime.Serialization.Json
             private readonly ClassDataContract _traditionalClassDataContract;
             private readonly string _typeName;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonClassDataContractCriticalHelper(ClassDataContract traditionalDataContract)
                 : base(traditionalDataContract)
