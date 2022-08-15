@@ -1365,6 +1365,9 @@ void Compiler::fgInitBlockVarSets()
 //------------------------------------------------------------------------
 // fgPostImportationCleanups: clean up flow graph after importation
 //
+// Returns:
+//   suitable phase status
+//
 // Notes:
 //
 //  Find and remove any basic blocks that are useless (e.g. they have not been
@@ -1414,9 +1417,34 @@ void Compiler::fgInitBlockVarSets()
 //  from OSR method entry, and flow always enters the try blocks at the
 //  first block of the try.
 //
-void Compiler::fgPostImportationCleanup()
+PhaseStatus Compiler::fgPostImportationCleanup()
 {
-    JITDUMP("\n*************** In fgPostImportationCleanup\n");
+    // Bail, if this is a failed inline
+    //
+    if (compDonotInline())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (compIsForInlining())
+    {
+        // Update type of return spill temp if we have gathered
+        // better info when importing the inlinee, and the return
+        // spill temp is single def.
+        if (fgNeedReturnSpillTemp())
+        {
+            CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
+            if (retExprClassHnd != nullptr)
+            {
+                LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
+
+                if (returnSpillVarDsc->lvSingleDef)
+                {
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                }
+            }
+        }
+    }
 
     BasicBlock* cur;
     BasicBlock* nxt;
@@ -1462,7 +1490,7 @@ void Compiler::fgPostImportationCleanup()
     //
     if ((removedBlks == 0) && !(opts.IsOSR() && fgOSREntryBB->hasTryIndex()))
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Update all references in the exception handler table.
@@ -1662,6 +1690,8 @@ void Compiler::fgPostImportationCleanup()
     // If this is OSR, and the OSR entry was mid-try or in a nested try entry,
     // add the appropriate step block logic.
     //
+    unsigned addedBlocks = 0;
+
     if (opts.IsOSR())
     {
         BasicBlock* const osrEntry        = fgOSREntryBB;
@@ -1700,8 +1730,8 @@ void Compiler::fgPostImportationCleanup()
 
                 // Helper method to add flow
                 //
-                auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget](BasicBlock* fromBlock,
-                                                                                  BasicBlock* toBlock) {
+                auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock,
+                                                                                                BasicBlock* toBlock) {
 
                     // We may have previously though this try entry was unreachable, but now we're going to
                     // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
@@ -1716,6 +1746,7 @@ void Compiler::fgPostImportationCleanup()
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
                     fromBlock->bbFlags |= BBF_INTERNAL;
                     newBlock->bbFlags &= ~BBF_DONT_REMOVE;
+                    addedBlocks++;
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
                     GenTree* const compareEntryStateToZero =
@@ -1807,13 +1838,23 @@ void Compiler::fgPostImportationCleanup()
         }
     }
 
-    // Renumber the basic blocks
-    JITDUMP("\nRenumbering the basic blocks for fgPostImporterCleanup\n");
-    fgRenumberBlocks();
+    // Did we alter any flow or EH?
+    //
+    const bool madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
+
+    // Renumber the basic blocks if so.
+    //
+    if (madeChanges)
+    {
+        JITDUMP("\nRenumbering the basic blocks for fgPostImportationCleanup\n");
+        fgRenumberBlocks();
+    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();
 #endif // DEBUG
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------

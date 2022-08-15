@@ -5222,7 +5222,7 @@ public:
 
     unsigned fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting = nullptr);
 
-    void fgPostImportationCleanup();
+    PhaseStatus fgPostImportationCleanup();
 
     void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);

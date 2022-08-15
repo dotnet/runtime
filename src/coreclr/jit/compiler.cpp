@@ -4361,37 +4361,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // PostImportPhase: cleanup inlinees
+    // Cleanup un-imported BBs, cleanup un-imported or
+    // partially imported try regions, add OSR step blocks.
     //
-    auto postImportPhase = [this]() {
-
-        // If this is a viable inline candidate
-        if (compIsForInlining() && !compDonotInline())
-        {
-            // Filter out unimported BBs in the inlinee
-            //
-            fgPostImportationCleanup();
-
-            // Update type of return spill temp if we have gathered
-            // better info when importing the inlinee, and the return
-            // spill temp is single def.
-            if (fgNeedReturnSpillTemp())
-            {
-                CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
-                if (retExprClassHnd != nullptr)
-                {
-                    LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
-
-                    if (returnSpillVarDsc->lvSingleDef)
-                    {
-                        lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
-                                       impInlineInfo->retExprClassHndIsExact);
-                    }
-                }
-            }
-        }
-    };
-    DoPhase(this, PHASE_POST_IMPORT, postImportPhase);
+    DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
@@ -4505,11 +4478,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_X86)
-
-        // Update flow graph after importation.
-        // Removes un-imported blocks, trims EH, and ensures correct OSR entry flow.
-        //
-        fgPostImportationCleanup();
     };
     DoPhase(this, PHASE_MORPH_INIT, morphInitPhase);
 
