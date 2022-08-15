@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal sealed partial class NetEventSource
     {
-        private const int EnumerateSecurityPackagesId = NextAvailableEventId + 1;
+        private const int EnumerateSecurityPackagesId = NextAvailableEventId;
         private const int SspiPackageNotFoundId = EnumerateSecurityPackagesId + 1;
         private const int AcquireDefaultCredentialId = SspiPackageNotFoundId + 1;
         private const int AcquireCredentialsHandleId = AcquireDefaultCredentialId + 1;

@@ -18,7 +18,7 @@ namespace System.Net
         // More events are defined in NetEventSource.Security.Windows.cs
         private const int LocatingPrivateKeyId = OperationReturnedSomethingId + 1;
 #else
-        private const int LocatingPrivateKeyId = NextAvailableEventId + 1;
+        private const int LocatingPrivateKeyId = NextAvailableEventId;
 #endif
         private const int CertIsType2Id = LocatingPrivateKeyId + 1;
         private const int FoundCertInStoreId = CertIsType2Id + 1;
