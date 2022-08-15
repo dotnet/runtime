@@ -1019,10 +1019,10 @@ namespace System
                 Vector<ushort> equals;
                 Vector<ushort> results;
 
-                nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
-
-                if ((nint)lengthToExamine > 0)
+                if (remainingLength > (nuint)Vector<ushort>.Count)
                 {
+                    nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
+
                     do
                     {
                         original = Vector.LoadUnsafe(ref pSrc, i);
