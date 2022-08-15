@@ -229,11 +229,11 @@ def main(main_args):
         if len(partition_results) > 0:
             f.write("# Run summaries per partition\n")
             f.write("|Partition|# Programs generated|# Examples found|# Examples with known errors|Run time|Degree of parallelism|\n")
-            f.write("|---|---|---|---|---|\n")
+            f.write("|---|---|---|---|---|---|\n")
             for partition_name, results in sorted(partition_results.items(), key=lambda p: p[0]):
                 summary = results['summary']
                 if summary is not None:
-                    # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalRunTime":"00:00:47.0918613"}
+                    # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalProgramsWithKnownErrors":11,"TotalRunTime":"00:00:47.0918613"}
                     f.write("|{}|{}|{}|{}|{}|{}|\n".format(partition_name, summary['TotalProgramsGenerated'], len(results['examples']), summary['TotalProgramsWithKnownErrors'], summary['TotalRunTime'], summary['DegreeOfParallelism']))
 
     print("##vso[task.uploadsummary]{}".format(md_path))
