@@ -343,6 +343,36 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running", output);
         }
 
+        [Theory]
+        [BuildAndRun(host: RunHost.None)]
+        public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(BuildArgs buildArgs, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public class Test
+                {
+                    public static int Main()
+                    {
+                        Console.WriteLine("Main running");
+                        return 42;
+                    }
+
+                    [UnmanagedCallersOnly]
+                    public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
+                }
+                """;
+
+            (_, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"cb_fnptr_{buildArgs.Config}" },
+                id
+            );
+
+            Assert.Matches("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
+        }
+
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)

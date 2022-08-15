@@ -14,7 +14,7 @@ using Microsoft.Build.Utilities;
 internal sealed class PInvokeTableGenerator
 {
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
-    private Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new ();
+    private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
 
     private TaskLoggingHelper Log { get; set; }
 
@@ -46,7 +46,7 @@ internal sealed class PInvokeTableGenerator
             using (var w = File.CreateText(tmpFileName))
             {
                 EmitPInvokeTable(w, modules, pinvokes);
-                EmitNativeToInterp(w, callbacks);
+                EmitNativeToInterp(w, ref callbacks);
             }
 
             if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
@@ -69,6 +69,8 @@ internal sealed class PInvokeTableGenerator
             try
             {
                 CollectPInvokesForMethod(method);
+                if (DoesMethodHaveCallbacks(method))
+                    callbacks.Add(new PInvokeCallback(method));
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
@@ -95,21 +97,57 @@ internal sealed class PInvokeTableGenerator
                 Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
                 signatures.Add(signature);
             }
+        }
 
+        bool DoesMethodHaveCallbacks(MethodInfo method)
+        {
+            if (!MethodHasCallbackAttributes(method))
+                return false;
+
+            if (TryIsMethodGetParametersUnsupported(method, out string? reason))
+            {
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                        $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
+                return false;
+            }
+
+            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
+                return true;
+
+            // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are
+            // blittable
+            bool isVoid = method.ReturnType.FullName == "System.Void";
+            if (!isVoid && !IsBlittable(method.ReturnType))
+                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
+
+            foreach (var p in method.GetParameters())
+            {
+                if (!IsBlittable(p.ParameterType))
+                    Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
+            }
+
+            return true;
+        }
+
+        static bool MethodHasCallbackAttributes(MethodInfo method)
+        {
             foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(method))
             {
                 try
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
-
-                        callbacks.Add(new PInvokeCallback(method));
+                    {
+                        return true;
+                    }
                 }
                 catch
                 {
                     // Assembly not found, ignore
                 }
             }
+
+            return false;
         }
     }
 
@@ -303,8 +341,10 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
+            // Don't use method.ToString() or any of it's parameters, or return type
+            // because at least one of those are unsupported, and will throw
             Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method}' because '{reason}'.");
+                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
@@ -325,7 +365,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    private static void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -340,26 +380,7 @@ internal sealed class PInvokeTableGenerator
         // Arguments to interp entry functions in the runtime
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
-        foreach (var cb in callbacks)
-        {
-            MethodInfo method = cb.Method;
-            bool isVoid = method.ReturnType.FullName == "System.Void";
-
-            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
-                continue;
-
-            if (!isVoid && !IsBlittable(method.ReturnType))
-                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
-
-            foreach (var p in method.GetParameters())
-            {
-                if (!IsBlittable(p.ParameterType))
-                    Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
-            }
-        }
-
         var callbackNames = new HashSet<string>();
-
         foreach (var cb in callbacks)
         {
             var sb = new StringBuilder();
