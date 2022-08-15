@@ -202,7 +202,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock
+    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock COMCallWrapper
 End
 
 Crst ExecuteManRangeLock
