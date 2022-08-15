@@ -72,6 +72,15 @@ namespace ILLink.RoslynAnalyzer
 			if (checkAssociatedSymbol && member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (requiresAttribute))
 				return true;
 
+			// When using instance fields suppress the warning if the constructor has already the Requires annotation
+			if (member is IFieldSymbol field && !field.IsStatic) {
+				foreach (var constructor in field.ContainingType.InstanceConstructors) {
+					if (!constructor.HasAttribute (requiresAttribute))
+						return false;
+				}
+				return true;
+			}
+
 			return false;
 		}
 	}

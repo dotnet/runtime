@@ -25,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresOnBaseButNotOnDerived ();
 			TestRequiresOnDerivedButNotOnBase ();
 			TestRequiresOnBaseAndDerived ();
+			TestInstanceFieldSuppression ();
 			TestSuppressionsOnClass ();
 			TestStaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ();
 			TestStaticConstructorCalls ();
@@ -244,6 +245,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			ClassWithInstanceField instance = new ClassWithInstanceField ();
 			var _ = instance.field;
+		}
+
+		public class ClassWithInstanceFieldWhichInitsDangerousClass
+		{
+			private ClassWithRequires _instanceField = new ClassWithRequires ();
+
+			[RequiresUnreferencedCode ("Calling the constructor is dangerous")]
+			[RequiresDynamicCode ("Calling the constructor is dangerous")]
+			public ClassWithInstanceFieldWhichInitsDangerousClass () { }
+		}
+
+		[ExpectedWarning ("IL2026", "Calling the constructor is dangerous")]
+		[ExpectedWarning ("IL3050", "Calling the constructor is dangerous", ProducedBy = ProducedBy.Analyzer)]
+		static void TestInstanceFieldSuppression ()
+		{
+			_ = new ClassWithInstanceFieldWhichInitsDangerousClass ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByMethodCall2--")]
