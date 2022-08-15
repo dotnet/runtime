@@ -50,7 +50,7 @@ internal static partial class Interop
     /// </summary>
     internal static void ThrowIOExceptionForLastError()
     {
-        ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path: null, isDirectory: false);
+        ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path: null, isDirError: false);
     }
 
     /// <summary>
