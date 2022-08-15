@@ -86,6 +86,10 @@
              Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs"
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs"
+             Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\ParamsArray.cs"
+             Link="Common\System\ParamsArray.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />

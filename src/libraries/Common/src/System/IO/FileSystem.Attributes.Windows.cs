@@ -13,15 +13,15 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        public static bool DirectoryExists(string? fullPath)
+        public static bool DirectoryExists(string fullPath)
         {
             return DirectoryExists(fullPath, out _);
         }
 
-        private static bool DirectoryExists(string? path, out int lastError)
+        private static bool DirectoryExists(string fullPath, out int lastError)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
+            lastError = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
             return
                 (lastError == 0) &&
@@ -44,19 +44,19 @@ namespace System.IO
         /// Returns 0 on success, otherwise a Win32 error code.  Note that
         /// classes should use -1 as the uninitialized state for dataInitialized.
         /// </summary>
-        /// <param name="path">The file path from which the file attribute information will be filled.</param>
+        /// <param name="fullPath">The file path from which the file attribute information will be filled.</param>
         /// <param name="data">A struct that will contain the attribute information.</param>
         /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
-        internal static int FillAttributeInfo(string? path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
+        internal static int FillAttributeInfo(string? fullPath, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
 
             // Neither GetFileAttributes or FindFirstFile like trailing separators
-            path = PathInternal.TrimEndingDirectorySeparator(path);
+            fullPath = PathInternal.TrimEndingDirectorySeparator(fullPath);
 
             using (DisableMediaInsertionPrompt.Create())
             {
-                if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+                if (!Interop.Kernel32.GetFileAttributesEx(fullPath, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     errorCode = Marshal.GetLastWin32Error();
 
@@ -64,7 +64,7 @@ namespace System.IO
                     {
                         // Assert so we can track down other cases (if any) to add to our test suite
                         Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION || errorCode == Interop.Errors.ERROR_SEM_TIMEOUT,
-                            $"Unexpected error code getting attributes {errorCode} from path {path}");
+                            $"Unexpected error code getting attributes {errorCode} from path {fullPath}");
 
                         // Files that are marked for deletion will not let you GetFileAttributes,
                         // ERROR_ACCESS_DENIED is given back without filling out the data struct.
@@ -80,7 +80,7 @@ namespace System.IO
                         // cases that we know we don't want to retry on.
 
                         Interop.Kernel32.WIN32_FIND_DATA findData = default;
-                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path!, ref findData))
+                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(fullPath!, ref findData))
                         {
                             if (handle.IsInvalid)
                             {

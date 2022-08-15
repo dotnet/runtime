@@ -29,8 +29,10 @@ namespace System.IO
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
-            _name = fileName ?? Path.GetFileName(originalPath);
+            _name = fileName;
         }
+
+        public override string Name => _name ??= Path.GetFileName(OriginalPath);
 
         public long Length
         {
@@ -156,7 +158,7 @@ namespace System.IO
 
             FullPath = fullDestFileName;
             OriginalPath = destFileName;
-            _name = Path.GetFileName(fullDestFileName);
+            _name = null;
 
             // Flush any cached information about the file.
             Invalidate();
