@@ -700,7 +700,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader)
         {
             object propValue = GetValueAsObject(obj)!;
@@ -748,11 +748,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+        internal abstract bool ReadJsonAndSetMember(object obj, scoped ref ReadStack state, ref Utf8JsonReader reader);
 
-        internal abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+        internal abstract bool ReadJsonAsObject(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value);
 
-        internal bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal bool ReadJsonExtensionDataValue(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             Debug.Assert(this == state.Current.JsonTypeInfo.ExtensionDataProperty);
 

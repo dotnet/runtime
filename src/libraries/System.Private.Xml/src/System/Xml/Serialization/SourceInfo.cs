@@ -103,7 +103,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    ILG.Load(varA);
+                    ILG.LoadAddress(varA);
                     ILG.Load(varIA);
                     MethodInfo get_Item = varType.GetMethod(
                         "get_Item",
