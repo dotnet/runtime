@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(IntPtr.Zero, chain.ChainContext);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
         public static void TestResetMethod()
         {
             using (var sampleCert = new X509Certificate2(TestData.DssCer))
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // Android doesn't support an empty custom root
                 X509ChainStatusFlags flags = X509ChainStatusFlags.UntrustedRoot;
-                if (!SignatureSupport.SupportsRsaSha1Signatures)
+                if (!SignatureSupport.SupportsX509Sha1Signatures)
                 {
                     flags |= X509ChainStatusFlags.NotSignatureValid;
                 }
@@ -563,7 +563,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
         public static void BuildChain_WithCertificatePolicy_Match()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))
