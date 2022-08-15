@@ -36,12 +36,13 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateBrowserMainJs()
+        private void UpdateBrowserMainJs(string methodNameToCatchReplaceWith = "create")
         {
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+            mainJsContent = mainJsContent.Replace($".{methodNameToCatchReplaceWith}()", $".withConsoleForwarding().withElementOnExit().withExitCodeLogging().{methodNameToCatchReplaceWith}()");
+            
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
@@ -350,6 +351,51 @@ namespace Wasm.Build.Tests
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
+
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        public async Task XunitBrowser()
+        {
+            string config = "Debug";
+            string id = $"browser_{config}_{Path.GetRandomFileName().Replace(".", string.Empty)}";
+            CreateWasmTemplateProject(id, "wasmxunitbrowser");
+
+            UpdateBrowserMainJs("run");
+
+
+            string programPath = Path.Combine(_projectDir!, "Program.cs");
+            string programContent = File.ReadAllText(programPath);
+
+            programContent = programContent.Replace(
+                    "[Fact]",
+                    """
+                    [Fact]
+                    public static void FailedTest()
+                    {
+                        Assert.Fail("JustFailed");
+                    }
+
+                    [Fact]
+                    """
+                );
+
+            File.WriteAllText(programPath, programContent);
+
+            new DotNetCommand(s_buildEnv, _testOutput)
+                    .WithWorkingDirectory(_projectDir!)
+                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
+                    .EnsureSuccessful();
+
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+
+            await using var runner = new BrowserRunner();
+            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            string output = string.Join(Environment.NewLine, runner.OutputLines);
+            Assert.Contains("[FAIL] TestClass.FailedTest", output);
+            Assert.Contains("Assert.Fail(): JustFailed", output);
+            Assert.Contains("Failed: 1", output);
         }
     }
 }
