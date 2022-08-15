@@ -6533,27 +6533,45 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-struct HandleManagedFaultParam
-{
-    EXCEPTION_RECORD *pExceptionRecord;
-    CONTEXT *pContext;
-};
-
-LONG FixContextForFaultingExceptionFrame(EXCEPTION_POINTERS* ep, LPVOID pv)
+static void FixContextForFaultingExceptionFrame(
+    EXCEPTION_POINTERS* ep,
+    EXCEPTION_RECORD* pOriginalExceptionRecord,
+    CONTEXT* pOriginalExceptionContext)
 {
     WRAPPER_NO_CONTRACT;
 
-    HandleManagedFaultParam *pParam = (HandleManagedFaultParam *) pv;
-
     // don't copy param args as have already supplied them on the throw
     memcpy((void*) ep->ExceptionRecord,
-           (void*) pParam->pExceptionRecord,
+           (void*) pOriginalExceptionRecord,
            offsetof(EXCEPTION_RECORD, ExceptionInformation)
           );
 
-    ReplaceExceptionContextRecord(ep->ContextRecord, pParam->pContext);
+    ReplaceExceptionContextRecord(ep->ContextRecord, pOriginalExceptionContext);
 
     GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+}
+
+struct HandleManagedFaultFilterParam
+{
+    // It's possible for our filter to be called more than once if some other first-pass
+    // handler lets an exception out.  We need to make sure we only fix the context for
+    // the first exception we see.  This flag takes care of that.
+    BOOL fFilterExecuted;
+    EXCEPTION_RECORD *pOriginalExceptionRecord;
+    CONTEXT *pOriginalExceptionContext;
+};
+
+static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HandleManagedFaultFilterParam *pParam = (HandleManagedFaultFilterParam *) pv;
+
+    if (!pParam->fFilterExecuted)
+    {
+        FixContextForFaultingExceptionFrame(ep, pParam->pOriginalExceptionRecord, pParam->pOriginalExceptionContext);
+        pParam->fFilterExecuted = TRUE;
+    }
 
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -6573,26 +6591,24 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
 
-    HandleManagedFaultParam param;
-    param.pExceptionRecord = pExceptionRecord;
-    param.pContext = pContext;
+    HandleManagedFaultFilterParam param;
+    param.fFilterExecuted = FALSE;
+    param.pOriginalExceptionRecord = pExceptionRecord;
+    param.pOriginalExceptionContext = pContext;
 
-    PAL_TRY(HandleManagedFaultParam *, pParam, &param)
+    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
     {
         GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
 
-        EXCEPTION_RECORD *pRecord = pParam->pExceptionRecord;
+        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
 
         RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
             pRecord->NumberParameters, pRecord->ExceptionInformation);
     }
-    PAL_EXCEPT_FILTER (FixContextForFaultingExceptionFrame)
+    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
     {
     }
     PAL_ENDTRY
-
-    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
