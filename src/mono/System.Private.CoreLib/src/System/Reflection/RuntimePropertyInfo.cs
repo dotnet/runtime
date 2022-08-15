@@ -95,7 +95,7 @@ namespace System.Reflection
             }
         }
 
-        // Copied from https://github.com/dotnet/coreclr/blob/7a24a538cd265993e5864179f51781398c28ecdf/src/System.Private.CoreLib/src/System/RtType.cs#L2022
+        // Copied from https://github.com/dotnet/runtime/blob/2594ec1bfb3d8a82815691a80cc4a23b5a281b2e/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L2058
         private static BindingFlags FilterPreCalculate(bool isPublic, bool isInherited, bool isStatic)
         {
             BindingFlags bindingFlags = isPublic ? BindingFlags.Public : BindingFlags.NonPublic;
