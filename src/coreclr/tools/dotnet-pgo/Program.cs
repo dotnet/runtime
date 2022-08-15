@@ -1299,7 +1299,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     bool matched = false;
                     bool mismatch = false;
                     bool mismatchHandled = false;
-                    foreach (var debugEntry in ecmaModule.PEReader.ReadDebugDirectory())
+                    foreach (DebugDirectoryEntry debugEntry in ecmaModule.PEReader.SafeReadDebugDirectory())
                     {
                         if (debugEntry.Type == DebugDirectoryEntryType.CodeView)
                         {
