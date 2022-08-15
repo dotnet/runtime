@@ -221,7 +221,9 @@ namespace Wasm.Build.Tests
             // App arguments
             if (envVars != null)
             {
-                var setenv = string.Join(' ', envVars.Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
+                var setenv = string.Join(' ', envVars
+                                                .Where(ev => ev.Key != "PATH")
+                                                .Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
                 args.Append($" {setenv}");
             }
 
