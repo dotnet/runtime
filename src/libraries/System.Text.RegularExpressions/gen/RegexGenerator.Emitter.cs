@@ -424,7 +424,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the body of the TryFindNextPossibleStartingPosition.</summary>
         private static void EmitTryFindNextPossibleStartingPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
-            RegexOptions options = (RegexOptions)rm.Options;
+            RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
             bool rtl = (options & RegexOptions.RightToLeft) != 0;
 
@@ -755,7 +755,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(prefixMatcher is not null);
                 ReadOnlySpan<TrieNodeWithLinks> trie = prefixMatcher.Trie;
 
-                // Let's not emit a label for a state's
+                // Let's not emit a label for a state's fallback if the suffix link is not used.
                 BitArray isSuffixLinkUsed = new BitArray(trie.Length);
                 foreach (ref readonly TrieNodeWithLinks node in trie)
                 {

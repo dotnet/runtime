@@ -334,8 +334,6 @@ namespace System.Text.RegularExpressions
                 return nodes;
             }
 
-            // We handle the case of the set length being 1 separately,
-            // we don't need to increase the branching depth.
             if (setLength == 1)
             {
                 return Add(nodes, set[0], isFinal, out canContinue);
