@@ -1021,7 +1021,7 @@ namespace System
 
                 nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
 
-                if (lengthToExamine > 0)
+                if ((nint)lengthToExamine > 0)
                 {
                     do
                     {
@@ -1043,7 +1043,7 @@ namespace System
                 // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
                 // additional check which would introduce a branch here.
 
-                i = (nuint)((uint)Length - Vector<ushort>.Count);
+                i = (uint)(Length - Vector<ushort>.Count);
                 original = Vector.LoadUnsafe(ref GetRawStringDataAsUInt16(), i);
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
