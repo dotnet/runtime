@@ -1,11 +1,6 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
-const dllName = "Wasm.Console.V8.Sample.dll";
-const app_args = Array.from(arguments);
-
-async function main() {
-    const { runMainAndExit } = await createDotnetRuntime();
-    await runMainAndExit(dllName, app_args);
-}
-
-main();
+dotnet
+    .withDiagnosticTracing(false)
+    .withApplicationArguments(...arguments)
+    .run()
