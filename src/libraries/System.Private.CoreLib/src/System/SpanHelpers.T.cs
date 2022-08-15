@@ -1323,7 +1323,7 @@ namespace System
                 {
                     length -= 8;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 0) == value)) return (int)offset;
+                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
@@ -1339,7 +1339,7 @@ namespace System
                 {
                     length -= 4;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 0) == value)) return (int)offset;
+                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
@@ -1970,7 +1970,7 @@ namespace System
                 {
                     length -= 8;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 0) == value)) return (int)offset - 0;
+                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
                     if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
@@ -2083,13 +2083,62 @@ namespace System
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
-                for (int i = length - 1; i >= 0; i--)
+                nuint offset = (nuint)length - 1;
+                T lookUp;
+
+                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
                 {
-                    T current = Unsafe.Add(ref searchSpace, i);
-                    if (N.NegateIfNeeded(current == value0 || current == value1))
+                    while (length >= 8)
                     {
-                        return i;
+                        length -= 8;
+
+                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        lookUp = current;
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                        lookUp = Unsafe.Add(ref current, -1);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
+                        lookUp = Unsafe.Add(ref current, -2);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
+                        lookUp = Unsafe.Add(ref current, -3);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
+                        lookUp = Unsafe.Add(ref current, -4);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 4;
+                        lookUp = Unsafe.Add(ref current, -5);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 5;
+                        lookUp = Unsafe.Add(ref current, -6);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 6;
+                        lookUp = Unsafe.Add(ref current, -7);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 7;
+
+                        offset -= 8;
                     }
+                }
+
+                while (length >= 4)
+                {
+                    length -= 4;
+
+                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    lookUp = current;
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                    lookUp = Unsafe.Add(ref current, -1);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
+                    lookUp = Unsafe.Add(ref current, -2);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
+                    lookUp = Unsafe.Add(ref current, -3);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
+
+                    offset -= 4;
+                }
+
+                while (length > 0)
+                {
+                    length -= 1;
+
+                    lookUp = Unsafe.Add(ref searchSpace, offset);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+
+                    offset -= 1;
                 }
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
@@ -2176,13 +2225,62 @@ namespace System
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
-                for (int i = length - 1; i >= 0; i--)
+                nuint offset = (nuint)length - 1;
+                T lookUp;
+
+                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
                 {
-                    T current = Unsafe.Add(ref searchSpace, i);
-                    if (N.NegateIfNeeded(current == value0 || current == value1 || current == value2))
+                    while (length >= 8)
                     {
-                        return i;
+                        length -= 8;
+
+                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        lookUp = current;
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                        lookUp = Unsafe.Add(ref current, -1);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
+                        lookUp = Unsafe.Add(ref current, -2);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
+                        lookUp = Unsafe.Add(ref current, -3);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
+                        lookUp = Unsafe.Add(ref current, -4);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 4;
+                        lookUp = Unsafe.Add(ref current, -5);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 5;
+                        lookUp = Unsafe.Add(ref current, -6);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 6;
+                        lookUp = Unsafe.Add(ref current, -7);
+                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 7;
+
+                        offset -= 8;
                     }
+                }
+
+                while (length >= 4)
+                {
+                    length -= 4;
+
+                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    lookUp = current;
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                    lookUp = Unsafe.Add(ref current, -1);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
+                    lookUp = Unsafe.Add(ref current, -2);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
+                    lookUp = Unsafe.Add(ref current, -3);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
+
+                    offset -= 4;
+                }
+
+                while (length > 0)
+                {
+                    length -= 1;
+
+                    lookUp = Unsafe.Add(ref searchSpace, offset);
+                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+
+                    offset -= 1;
                 }
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
