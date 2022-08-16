@@ -1045,6 +1045,8 @@ namespace DebuggerTests
         [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, false)]
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, true)]
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
         public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
         {
             await SetJustMyCode(jmc);
@@ -1062,11 +1064,11 @@ namespace DebuggerTests
                         await CheckProps(this_props, new
                         {
                             myField = TNumber(0),
-                        }, "this_props", num_fields: 1);
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 2);
                     }
                     else
                     {
-                        Console.WriteLine(this_props);
                         await CheckProps(this_props, new
                         {
                             propA = TNumber(10),
@@ -1078,7 +1080,8 @@ namespace DebuggerTests
                             G = TGetter("G"),
                             H = TGetter("H"),
                             myField = TNumber(0),
-                        }, "this_props", num_fields: 9);
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 10);
                     }
                 }
             );
