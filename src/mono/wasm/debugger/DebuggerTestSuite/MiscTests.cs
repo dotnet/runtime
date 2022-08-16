@@ -845,7 +845,7 @@ namespace DebuggerTests
 
             var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             var sourceToGet = JObject.FromObject(new
             {
@@ -978,10 +978,10 @@ namespace DebuggerTests
         [Theory]
         [InlineData(
             "DebugWithDeletedPdb",
-            1146)]
+            1148)]
         [InlineData(
             "DebugWithoutDebugSymbols",
-            1158)]
+            1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
             var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
@@ -1030,12 +1030,59 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1256, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1258, 8,
                 $"InspectIntPtr.Run",
                 locals_fn: async (locals) =>
                 {
                     await CheckValueType(locals, "myInt", "System.IntPtr");
                     await CheckValueType(locals, "myInt2", "System.IntPtr");
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, true)]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
+        {
+            await SetJustMyCode(jmc);
+            var expression = "{{ invoke_static_method('[debugger-test] " + class_name + ":Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", line, 8,
+                $"{class_name}.CallMethod",
+                locals_fn: async (locals) =>
+                {
+                    var this_props = await GetObjectOnLocals(locals, "this");
+                    if (jmc)
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 2);
+                    }
+                    else
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            propA = TNumber(10),
+                            propB = TNumber(20),
+                            propC = TNumber(30),
+                            d = TNumber(40),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                            G = TGetter("G"),
+                            H = TGetter("H"),
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 10);
+                    }
                 }
             );
         }

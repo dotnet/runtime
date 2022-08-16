@@ -27,6 +27,8 @@ extern "C"
 {
 #endif // __cplusplus
 
+#include <cstddef>
+
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
    struct _LIST_ENTRY *Blink;
@@ -130,7 +132,7 @@ typedef struct _LIST_ENTRY {
 
 #define CONTAINING_RECORD(address, type, field) ((type *)( \
                                                   (PCHAR)(address) - \
-                                                  (ULONG_PTR)(&((type *)0)->field)))
+                                                  (ULONG_PTR)offsetof(type, field)))
 
 #ifdef __cplusplus
 }

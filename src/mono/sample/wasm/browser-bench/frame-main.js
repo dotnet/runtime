@@ -30,7 +30,7 @@ try {
         mute = true;
     }
 
-    const runtime = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -38,16 +38,16 @@ try {
                 console.error(...arguments);
             }
         },
-        onConfigLoaded: () => {
+        onConfigLoaded: (config) => {
             if (window.parent != window) {
                 window.parent.resolveAppStartEvent("onConfigLoaded");
             }
-            // Module.config.diagnosticTracing = true;
+            // config.diagnosticTracing = true;
         },
         onAbort: (error) => {
             wasm_exit(1, error);
         },
-    }));
+    });
 
     if (window.parent != window) {
         window.parent.resolveAppStartEvent("onDotnetReady");

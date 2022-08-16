@@ -45,6 +45,7 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
+      - src/mono/wasm/debugger/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*

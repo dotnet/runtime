@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
         internal sealed override object? ReadCoreAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             return ReadCore(ref reader, options, ref state);
         }
@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization
         internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             try
             {

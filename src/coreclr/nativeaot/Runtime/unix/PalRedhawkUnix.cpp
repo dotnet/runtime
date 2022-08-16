@@ -1039,10 +1039,6 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in PalRedhawk.h

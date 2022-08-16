@@ -5790,6 +5790,22 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += tree->AsStoreDynBlk()->gtDynamicSize->GetCostSz();
             break;
 
+        case GT_SELECT:
+            level  = gtSetEvalOrder(tree->AsConditional()->gtCond);
+            costEx = tree->AsConditional()->gtCond->GetCostEx();
+            costSz = tree->AsConditional()->gtCond->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp1);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp1->GetCostEx();
+            costSz += tree->AsConditional()->gtOp1->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp2);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp2->GetCostEx();
+            costSz += tree->AsConditional()->gtOp2->GetCostSz();
+            break;
+
         default:
             JITDUMP("unexpected operator in this tree:\n");
             DISPTREE(tree);
@@ -6178,6 +6194,27 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                     *pUse = &arg.LateNodeRef();
                     return true;
                 }
+            }
+            return false;
+        }
+
+        case GT_SELECT:
+        {
+            GenTreeConditional* const conditional = this->AsConditional();
+            if (operand == conditional->gtCond)
+            {
+                *pUse = &conditional->gtCond;
+                return true;
+            }
+            if (operand == conditional->gtOp1)
+            {
+                *pUse = &conditional->gtOp1;
+                return true;
+            }
+            if (operand == conditional->gtOp2)
+            {
+                *pUse = &conditional->gtOp2;
+                return true;
             }
             return false;
         }
@@ -7504,6 +7541,8 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
         blkNode = gtNewObjNode(layout, addr);
     }
 
+    blkNode->SetIndirExceptionFlags(this);
+
     return blkNode;
 }
 
@@ -8710,6 +8749,13 @@ GenTree* Compiler::gtCloneExpr(
                                    gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
+        case GT_SELECT:
+            copy = new (this, oper)
+                GenTreeConditional(oper, tree->TypeGet(),
+                                   gtCloneExpr(tree->AsConditional()->gtCond, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp1, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp2, addFlags, deepVarNum, deepVarVal));
+            break;
         default:
 #ifdef DEBUG
             gtDispTree(tree);
@@ -9369,6 +9415,12 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             AdvanceCall<CALL_ARGS>();
             return;
 
+        case GT_SELECT:
+            m_edge = &m_node->AsConditional()->gtCond;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
+            return;
+
         // Binary nodes
         default:
             assert(m_node->OperIsBinary());
@@ -9499,6 +9551,29 @@ void GenTreeUseEdgeIterator::AdvancePhi()
         m_edge                      = &currentUse->NodeRef();
         m_statePtr                  = currentUse->GetNext();
     }
+}
+
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceConditional: produces the next operand of a conditional node and advances the state.
+//
+void GenTreeUseEdgeIterator::AdvanceConditional()
+{
+    GenTreeConditional* const conditional = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &conditional->gtOp1;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &conditional->gtOp2;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -10372,6 +10447,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_GT:
             case GT_TEST_EQ:
             case GT_TEST_NE:
+            case GT_SELECT:
                 if (tree->gtFlags & GTF_RELOP_NAN_UN)
                 {
                     printf("N");
@@ -12014,6 +12090,17 @@ void Compiler::gtDispTree(GenTree*     tree,
                     gtDispChild(tree->AsStoreDynBlk()->Data(), indentStack, IIArc, nullptr, topOnly);
                 }
                 gtDispChild(tree->AsStoreDynBlk()->gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
+            }
+            break;
+
+        case GT_SELECT:
+            gtDispCommonEndLine(tree);
+
+            if (!topOnly)
+            {
+                gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
             }
             break;
 
@@ -16719,14 +16806,6 @@ bool GenTree::isContained() const
         assert(!isMarkedContained);
     }
 
-    // these actually produce a register (the flags reg, we just don't model it)
-    // and are a separate instruction from the branch that consumes the result.
-    // They can only produce a result if the child is a SIMD equality comparison.
-    else if (OperIsCompare())
-    {
-        assert(isMarkedContained == false);
-    }
-
     // if it's contained it can't be unused.
     if (isMarkedContained)
     {
@@ -17691,6 +17770,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         default:
         {
             break;
+        }
+    }
+
+    if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())
+    {
+        CORINFO_CLASS_HANDLE exactClass;
+        if (info.compCompHnd->getExactClasses(objClass, 1, &exactClass) == 1)
+        {
+            *pIsExact = true;
+            objClass  = exactClass;
         }
     }
 
