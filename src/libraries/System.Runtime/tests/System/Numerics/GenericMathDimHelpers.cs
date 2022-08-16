@@ -60,9 +60,9 @@ namespace System.Numerics.Tests
         static BinaryNumberDimHelper INumberBase<BinaryNumberDimHelper>.Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
         static BinaryNumberDimHelper ISpanParsable<BinaryNumberDimHelper>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
         static BinaryNumberDimHelper IParsable<BinaryNumberDimHelper>.Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
-        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToChecked<TOther>(BinaryNumberDimHelper value, out TOther? result) where TOther : default => throw new NotImplementedException();
-        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToSaturating<TOther>(BinaryNumberDimHelper value, out TOther? result) where TOther : default => throw new NotImplementedException();
-        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToTruncating<TOther>(BinaryNumberDimHelper value, out TOther? result) where TOther : default => throw new NotImplementedException();
+        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToChecked<TOther>(BinaryNumberDimHelper value, out TOther result) where TOther : default => throw new NotImplementedException();
+        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToSaturating<TOther>(BinaryNumberDimHelper value, out TOther result) where TOther : default => throw new NotImplementedException();
+        static bool INumberBase<BinaryNumberDimHelper>.TryConvertToTruncating<TOther>(BinaryNumberDimHelper value, out TOther result) where TOther : default => throw new NotImplementedException();
         static bool INumberBase<BinaryNumberDimHelper>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BinaryNumberDimHelper result) => throw new NotImplementedException();
         static bool INumberBase<BinaryNumberDimHelper>.TryParse(string? s, NumberStyles style, IFormatProvider? provider, out BinaryNumberDimHelper result) => throw new NotImplementedException();
         static bool ISpanParsable<BinaryNumberDimHelper>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BinaryNumberDimHelper result) => throw new NotImplementedException();
