@@ -92,7 +92,7 @@ namespace System.Formats.Tar
                     }
                     else if (overwriteMetadata || pendingModes.ContainsKey(fullPath))
                     {
-                            pendingModes[fullPath] = mode.Value;
+                        pendingModes[fullPath] = mode.Value;
                     }
                 }
                 return;
@@ -113,18 +113,23 @@ namespace System.Formats.Tar
                 mode = ExtractPermissions;
             }
 
+            // Create missing parents with ExtractPermissions and add them to be set to
+            // DefaultDirectoryMode if they are not present in the archive later.
             string parentDir = Path.GetDirectoryName(fullPath)!;
             string rootDir = Path.GetPathRoot(parentDir)!;
-            bool hasMissingParents = false;
+            Stack<string>? missingParents = null;
             for (string dir = parentDir; dir != rootDir && !Directory.Exists(dir); dir = Path.GetDirectoryName(dir)!)
             {
                 pendingModes.Add(dir, DefaultDirectoryMode);
-                hasMissingParents = true;
+                missingParents ??= new Stack<string>();
+                missingParents.Push(dir);
             }
-
-            if (hasMissingParents)
+            if (missingParents is not null)
             {
-                Directory.CreateDirectory(parentDir, ExtractPermissions);
+                while (missingParents.TryPop(out string? dir))
+                {
+                    Directory.CreateDirectory(dir, ExtractPermissions);
+                }
             }
 
             Directory.CreateDirectory(fullPath, mode.Value);
