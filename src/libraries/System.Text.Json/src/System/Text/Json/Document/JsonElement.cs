@@ -1246,7 +1246,7 @@ namespace System.Text.Json
         ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   The value cannot be represented as a <see cref="Guid"/>.
+        ///   The value cannot be represented as the given type.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
@@ -1273,7 +1273,7 @@ namespace System.Text.Json
         ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   The value cannot be represented as a <see cref="Guid"/>.
+        ///   The value cannot be represented as the given type.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
