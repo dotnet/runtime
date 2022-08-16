@@ -122,7 +122,7 @@ namespace System.IO.Ports.Tests
             dataSize = QueryDosDevice(name, buffer, buffer.Length);
             while (dataSize <= 0)
             {
-                int lastError = Marshal.GetLastPInvokeError();
+                int lastError = Marshal.GetLastWin32Error();
                 if (lastError == ERROR_INSUFFICIENT_BUFFER || lastError == ERROR_MORE_DATA)
                 {
                     buffer = new char[buffer.Length * 2];
