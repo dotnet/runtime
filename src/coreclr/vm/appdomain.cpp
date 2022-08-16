@@ -4177,7 +4177,8 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
 
-    if (m_aDynamicEntries != 0) {
+    if (m_aDynamicEntries != 0)
+    {
         memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
     }
 
