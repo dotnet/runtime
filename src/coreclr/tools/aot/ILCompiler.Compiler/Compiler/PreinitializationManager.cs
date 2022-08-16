@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -15,7 +14,6 @@ namespace ILCompiler
     {
         private readonly bool _supportsLazyCctors;
         private readonly bool _enableInterpreter;
-        private readonly ConcurrentDictionary<string, string> _preinitRequiredMessages = new();
 
         public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, bool enableInterpreter)
         {
@@ -84,40 +82,22 @@ namespace ILCompiler
 
         public bool IsPreinitialized(MetadataType type)
         {
-            bool isPreinitRequired = type.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute");
-
             // If the cctor interpreter is not enabled, no type is preinitialized.
             if (!_enableInterpreter)
-            {
-                if (isPreinitRequired && type.HasStaticConstructor)
-                    _preinitRequiredMessages[type.GetFullName()] = "Preinitialization disabled";
                 return false;
-            }
 
             if (!type.HasStaticConstructor)
-            {
                 return false;
-            }
 
             // The cctor on the Module type is the module constructor. That's special.
             if (type.IsModuleType)
-            {
                 return false;
-            }
 
             // Generic definitions cannot be preinitialized
             if (type.IsGenericDefinition)
-            {
-                if (isPreinitRequired)
-                    _preinitRequiredMessages[type.GetFullName()] = "Generic type";
                 return false;
-            }
 
-            TypePreinit.PreinitializationInfo preinitializationInfo = GetPreinitializationInfo(type);
-            bool isPreinitialized = preinitializationInfo.IsPreinitialized;
-            if (!isPreinitialized && isPreinitRequired)
-                _preinitRequiredMessages[type.GetFullName()] = preinitializationInfo.FailureReason;
-            return isPreinitialized;
+            return GetPreinitializationInfo(type).IsPreinitialized;
         }
 
         public void LogStatistics(Logger logger)
@@ -128,9 +108,9 @@ namespace ILCompiler
             int totalEligibleTypes = 0;
             int totalPreinitializedTypes = 0;
 
-            if (logger.IsVerbose)
+            foreach (var item in LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>.Enumerator.Get(_preinitHashTable))
             {
-                foreach (var item in LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>.Enumerator.Get(_preinitHashTable))
+                if (logger.IsVerbose)
                 {
                     totalEligibleTypes++;
                     if (item.IsPreinitialized)
@@ -144,15 +124,15 @@ namespace ILCompiler
                     }
                 }
 
-                logger.LogMessage($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+                if (!item.IsPreinitialized && item.Type.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute"))
+                {
+                    logger.LogMessage($"Failed to preinitialize {item.Type.GetFullName()} due to: {item.FailureReason}");
+                }
             }
-        }
 
-        public void CheckPreInitializedAttribute(Logger logger)
-        {
-            foreach (var item in _preinitRequiredMessages)
+            if (logger.IsVerbose)
             {
-                logger.LogMessage($"Failed to preinitialize {item.Key} due to: {item.Value}");
+                logger.LogMessage($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
             }
         }
 
