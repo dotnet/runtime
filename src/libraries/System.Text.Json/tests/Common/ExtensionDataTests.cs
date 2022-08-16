@@ -767,6 +767,9 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(JsonValueKind.Number, ((JsonElement)roundTripObj.MyOverflow["test1"]).ValueKind);
                 Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt32());
                 Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt64());
+#if NET7_0_OR_GREATER
+                Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt128());
+#endif
 
                 Assert.Equal(JsonValueKind.String, ((JsonElement)roundTripObj.MyOverflow["test2"]).ValueKind);
                 Assert.Equal("text", ((JsonElement)roundTripObj.MyOverflow["test2"]).GetString());

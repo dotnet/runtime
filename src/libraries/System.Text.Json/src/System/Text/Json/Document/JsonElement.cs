@@ -817,6 +817,110 @@ namespace System.Text.Json
             return value;
         }
 
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Attempts to represent the current JSON number as a <see cref="Int128"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not parse the contents of a JSON string value.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the number can be represented as a <see cref="Int128"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Number"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetInt128(out Int128 value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the current JSON number as a <see cref="Int128"/>.
+        /// </summary>
+        /// <returns>The current JSON number as a <see cref="Int128"/>.</returns>
+        /// <remarks>
+        ///   This method does not parse the contents of a JSON string value.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Number"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="Int128"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public Int128 GetInt128()
+        {
+            if (!TryGetInt128(out Int128 value))
+            {
+                ThrowHelper.ThrowFormatException();
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON number as a <see cref="UInt128"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not parse the contents of a JSON string value.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the number can be represented as a <see cref="UInt128"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Number"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        [CLSCompliant(false)]
+        public bool TryGetUInt128(out UInt128 value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the current JSON number as a <see cref="UInt128"/>.
+        /// </summary>
+        /// <returns>The current JSON number as a <see cref="UInt128"/>.</returns>
+        /// <remarks>
+        ///   This method does not parse the contents of a JSON string value.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Number"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="UInt128"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        [CLSCompliant(false)]
+        public UInt128 GetUInt128()
+        {
+            if (!TryGetUInt128(out UInt128 value))
+            {
+                ThrowHelper.ThrowFormatException();
+            }
+
+            return value;
+        }
+#endif
+
         /// <summary>
         ///   Attempts to represent the current JSON number as a <see cref="double"/>.
         /// </summary>

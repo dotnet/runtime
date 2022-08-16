@@ -591,6 +591,42 @@ namespace System.Text.Json
             return false;
         }
 
+#if NET7_0_OR_GREATER
+        internal bool TryGetValue(int index, out Int128 value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/73842")]
+            // TODO: Once Utf8Parser has UInt128 overload this implementation should be replaced
+            string valueAsString = JsonReaderHelper.TranscodeHelper(segment);
+            return Int128.TryParse(valueAsString, out value);
+        }
+
+        internal bool TryGetValue(int index, out UInt128 value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/73842")]
+            // TODO: Once Utf8Parser has UInt128 overload this implementation should be replaced
+            string valueAsString = JsonReaderHelper.TranscodeHelper(segment);
+            return UInt128.TryParse(valueAsString, out value);
+        }
+#endif
+
         internal bool TryGetValue(int index, out double value)
         {
             CheckNotDisposed();

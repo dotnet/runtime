@@ -23,10 +23,12 @@ namespace System.Text.Json
     }
     public readonly partial struct JsonElement
     {
-        // public System.Int128 GetInt128() { throw null; }
-        // public bool TryGetInt128(out System.Int128 value) { throw null; }
-        // public System.UInt128 GetUInt128() { throw null; }
-        // public bool TryGetUInt128(out System.UInt128 value) { throw null; }
+        public System.Int128 GetInt128() { throw null; }
+        public bool TryGetInt128(out System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.UInt128 GetUInt128() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt128(out System.UInt128 value) { throw null; }
     }
 }
 namespace System.Text.Json.Serialization.Metadata

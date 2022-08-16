@@ -844,11 +844,20 @@ namespace System.Text.Json.Tests
                 Assert.True(root.TryGetInt64(out long longVal));
                 Assert.Equal(value, longVal);
 
+#if NET7_0_OR_GREATER
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(value, int128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
                 Assert.Equal(value, root.GetInt32());
                 Assert.Equal(value, root.GetInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Equal(value, root.GetInt128());
+#endif
 
                 if (value >= 0)
                 {
@@ -856,6 +865,11 @@ namespace System.Text.Json.Tests
                     ushort expectedUShort = (ushort)value;
                     uint expectedUInt = (uint)value;
                     ulong expectedULong = (ulong)value;
+
+#if NET7_0_OR_GREATER
+                    UInt128 expectedUInt128 = (UInt128)value;
+#endif
+
 
                     Assert.True(root.TryGetByte(out byte byteVal));
                     Assert.Equal(expectedByte, byteVal);
@@ -869,8 +883,17 @@ namespace System.Text.Json.Tests
                     Assert.True(root.TryGetUInt64(out ulong ulongVal));
                     Assert.Equal(expectedULong, ulongVal);
 
+#if NET7_0_OR_GREATER
+                    Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
+                    Assert.Equal(expectedUInt128, uint128Val);
+#endif
+
                     Assert.Equal(expectedUInt, root.GetUInt32());
                     Assert.Equal(expectedULong, root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Equal(expectedUInt128, root.GetUInt128());
+#endif
                 }
                 else
                 {
@@ -886,8 +909,17 @@ namespace System.Text.Json.Tests
                     Assert.False(root.TryGetUInt64(out ulong ulongValue));
                     Assert.Equal(0UL, ulongValue);
 
+#if NET7_0_OR_GREATER
+                    Assert.False(root.TryGetUInt128(out UInt128 uint128Value));
+                    Assert.Equal(0UL, uint128Value);
+#endif
+
                     Assert.Throws<FormatException>(() => root.GetUInt32());
                     Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
                 }
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
@@ -947,11 +979,20 @@ namespace System.Text.Json.Tests
                 Assert.True(root.TryGetInt64(out long longVal));
                 Assert.Equal(value, longVal);
 
+#if NET7_0_OR_GREATER
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(value, int128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
                 Assert.Equal(value, root.GetInt32());
                 Assert.Equal(value, root.GetInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Equal(value, root.GetInt128());
+#endif
 
                 if (value >= 0)
                 {
@@ -959,6 +1000,10 @@ namespace System.Text.Json.Tests
                     ushort expectedUShort = (ushort)value;
                     uint expectedUInt = (uint)value;
                     ulong expectedULong = (ulong)value;
+
+#if NET7_0_OR_GREATER
+                    UInt128 expectedUInt128 = (UInt128)value;
+#endif
 
                     Assert.True(root.TryGetUInt16(out ushort ushortVal));
                     Assert.Equal(expectedUShort, ushortVal);
@@ -969,8 +1014,17 @@ namespace System.Text.Json.Tests
                     Assert.True(root.TryGetUInt64(out ulong ulongVal));
                     Assert.Equal(expectedULong, ulongVal);
 
+#if NET7_0_OR_GREATER
+                    Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
+                    Assert.Equal(expectedUInt128, uint128Val);
+#endif
+
                     Assert.Equal(expectedUInt, root.GetUInt32());
                     Assert.Equal(expectedULong, root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Equal(expectedUInt128, root.GetUInt128());
+#endif
                 }
                 else
                 {
@@ -983,8 +1037,17 @@ namespace System.Text.Json.Tests
                     Assert.False(root.TryGetUInt64(out ulong ulongValue));
                     Assert.Equal(0UL, ulongValue);
 
+#if NET7_0_OR_GREATER
+                    Assert.False(root.TryGetUInt128(out UInt128 uint128Value));
+                    Assert.Equal(0UL, uint128Value);
+#endif
+
                     Assert.Throws<FormatException>(() => root.GetUInt32());
                     Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
                 }
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
@@ -1047,16 +1110,29 @@ namespace System.Text.Json.Tests
                 Assert.True(root.TryGetInt64(out long longVal));
                 Assert.Equal(value, longVal);
 
+#if NET7_0_OR_GREATER
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(value, int128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
                 Assert.Equal(value, root.GetInt32());
                 Assert.Equal(value, root.GetInt64());
 
+#if NET7_0_OR_GREATER
+                Assert.Equal(value, root.GetInt128());
+#endif
+
                 if (value >= 0)
                 {
                     uint expectedUInt = (uint)value;
                     ulong expectedULong = (ulong)value;
+
+#if NET7_0_OR_GREATER
+                    UInt128 expectedUInt128 = (UInt128)value;
+#endif
 
                     Assert.True(root.TryGetUInt32(out uint uintVal));
                     Assert.Equal(expectedUInt, uintVal);
@@ -1064,8 +1140,17 @@ namespace System.Text.Json.Tests
                     Assert.True(root.TryGetUInt64(out ulong ulongVal));
                     Assert.Equal(expectedULong, ulongVal);
 
+#if NET7_0_OR_GREATER
+                    Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
+                    Assert.Equal(expectedUInt128, uint128Val);
+#endif
+
                     Assert.Equal(expectedUInt, root.GetUInt32());
                     Assert.Equal(expectedULong, root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Equal(expectedUInt128, root.GetUInt128());
+#endif
                 }
                 else
                 {
@@ -1075,8 +1160,17 @@ namespace System.Text.Json.Tests
                     Assert.False(root.TryGetUInt64(out ulong ulongValue));
                     Assert.Equal(0UL, ulongValue);
 
+#if NET7_0_OR_GREATER
+                    Assert.False(root.TryGetUInt128(out UInt128 uint128Value));
+                    Assert.Equal(0UL, uint128Value);
+#endif
+
                     Assert.Throws<FormatException>(() => root.GetUInt32());
                     Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
                 }
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
@@ -1141,11 +1235,20 @@ namespace System.Text.Json.Tests
                 Assert.True(root.TryGetInt64(out long longVal));
                 Assert.Equal(value, longVal);
 
+#if NET7_0_OR_GREATER
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(value, int128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
                 Assert.Throws<FormatException>(() => root.GetInt32());
                 Assert.Equal(value, root.GetInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Equal(value, root.GetInt128());
+#endif
 
                 if (value >= 0)
                 {
@@ -1179,8 +1282,18 @@ namespace System.Text.Json.Tests
                     Assert.False(root.TryGetUInt64(out ulong ulongValue));
                     Assert.Equal(0UL, ulongValue);
 
+#if NET7_0_OR_GREATER
+
+                    Assert.False(root.TryGetUInt128(out UInt128 uint128Value));
+                    Assert.Equal(0UL, uint128Value);
+#endif
+
                     Assert.Throws<FormatException>(() => root.GetUInt32());
                     Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                    Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
                 }
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
@@ -1244,6 +1357,11 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetInt64(out long longVal));
                 Assert.Equal(0L, longVal);
 
+#if NET7_0_OR_GREATER
+                Assert.False(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(0L, longVal);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
@@ -1251,10 +1369,21 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetUInt32());
                 Assert.Throws<FormatException>(() => root.GetInt64());
 
+#if NET7_0_OR_GREATER
+                Assert.Throws<FormatException>(() => root.GetInt128());
+#endif
+
                 Assert.True(root.TryGetUInt64(out ulong ulongVal));
                 Assert.Equal(value, ulongVal);
 
                 Assert.Equal(value, root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
+                Assert.Equal(value, uint128Val);
+
+                Assert.Equal(value, root.GetUInt128());
+#endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
@@ -1321,6 +1450,14 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetUInt64(out ulong ulongVal));
                 Assert.Equal(0UL, ulongVal);
 
+#if NET7_0_OR_GREATER
+                Assert.False(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(0L, int128Val);
+
+                Assert.False(root.TryGetUInt128(out UInt128 uint128Val));
+                Assert.Equal(0UL, uint128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
@@ -1328,6 +1465,11 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetUInt32());
                 Assert.Throws<FormatException>(() => root.GetInt64());
                 Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<FormatException>(() => root.GetInt128());
+                Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
@@ -1377,6 +1519,12 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<InvalidOperationException>(() => root.GetInt128());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt128());
+#endif
+
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1460,6 +1608,12 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<InvalidOperationException>(() => root.GetInt128());
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt128());
+#endif
+
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1541,6 +1695,14 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetUInt64(out ulong ulongVal));
                 Assert.Equal(0UL, ulongVal);
 
+#if NET7_0_OR_GREATER
+                Assert.False(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(0L, int128Val);
+
+                Assert.False(root.TryGetUInt128(out UInt128 uint128Val));
+                Assert.Equal(0UL, uint128Val);
+#endif
+
                 Assert.Equal(expectedFloat, root.GetSingle());
                 Assert.Equal(expectedDouble, root.GetDouble());
                 Assert.Equal(expectedDecimal, root.GetDecimal());
@@ -1552,6 +1714,11 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetUInt32());
                 Assert.Throws<FormatException>(() => root.GetInt64());
                 Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<FormatException>(() => root.GetInt128());
+                Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
@@ -1622,6 +1789,14 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetUInt64(out ulong ulongVal));
                 Assert.Equal(0UL, ulongVal);
 
+#if NET7_0_OR_GREATER
+                Assert.False(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(0L, int128Val);
+
+                Assert.False(root.TryGetUInt128(out UInt128 uint128Val));
+                Assert.Equal(0UL, uint128Val);
+#endif
+
                 if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Throws<FormatException>(() => root.GetSingle());
@@ -1642,6 +1817,11 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetUInt32());
                 Assert.Throws<FormatException>(() => root.GetInt64());
                 Assert.Throws<FormatException>(() => root.GetUInt64());
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<FormatException>(() => root.GetInt128());
+                Assert.Throws<FormatException>(() => root.GetUInt128());
+#endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
@@ -1707,6 +1887,14 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.TryGetInt64(out long _));
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
                 Assert.Throws<InvalidOperationException>(() => root.TryGetUInt64(out ulong _));
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<InvalidOperationException>(() => root.GetInt128());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetInt128(out Int128 _));
+                Assert.Throws<InvalidOperationException>(() => root.GetUInt128());
+                Assert.Throws<InvalidOperationException>(() => root.TryGetUInt128(out UInt128 _));
+#endif
+
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
                 Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
@@ -1754,6 +1942,15 @@ namespace System.Text.Json.Tests
                 Assert.Throws<ObjectDisposedException>(() => root.TryGetInt64(out long _));
                 Assert.Throws<ObjectDisposedException>(() => root.GetUInt64());
                 Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt64(out ulong _));
+
+#if NET7_0_OR_GREATER
+                Assert.Throws<ObjectDisposedException>(() => root.GetInt128());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt128(out Int128 _));
+                Assert.Throws<ObjectDisposedException>(() => root.GetUInt128());
+                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt128(out UInt128 _));
+#endif
+
+
                 Assert.Throws<ObjectDisposedException>(() => root.GetString());
                 const string ThrowsAnyway = "throws-anyway";
                 Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway));
@@ -1812,6 +2009,14 @@ namespace System.Text.Json.Tests
             Assert.Throws<InvalidOperationException>(() => root.TryGetInt64(out long _));
             Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
             Assert.Throws<InvalidOperationException>(() => root.TryGetUInt64(out ulong _));
+
+#if NET7_0_OR_GREATER
+            Assert.Throws<InvalidOperationException>(() => root.GetInt128());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetInt128(out Int128 _));
+            Assert.Throws<InvalidOperationException>(() => root.GetUInt128());
+            Assert.Throws<InvalidOperationException>(() => root.TryGetUInt128(out UInt128 _));
+#endif
+
             Assert.Throws<InvalidOperationException>(() => root.GetString());
             const string ThrowsAnyway = "throws-anyway";
             Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
