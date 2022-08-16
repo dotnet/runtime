@@ -231,7 +231,7 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
 // Returns:
-//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//   True, if a new basic block was allocated.
 //
 // Notes:
 //   This should be called before adding on-entry initialization code to
@@ -249,12 +249,12 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 //
 //   Can be called at any time, and can be called multiple times.
 //
-void Compiler::fgEnsureFirstBBisScratch()
+bool Compiler::fgEnsureFirstBBisScratch()
 {
     // Have we already allocated a scratch block?
     if (fgFirstBBisScratch())
     {
-        return;
+        return false;
     }
 
     assert(fgFirstBBScratch == nullptr);
@@ -303,6 +303,8 @@ void Compiler::fgEnsureFirstBBisScratch()
         printf("New scratch " FMT_BB "\n", block->bbNum);
     }
 #endif
+
+    return true;
 }
 
 //------------------------------------------------------------------------

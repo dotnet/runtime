@@ -178,7 +178,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MORPH_INIT,
         PHASE_MORPH_INLINE,
         PHASE_ALLOCATE_OBJECTS,
-        // add internal
+        PHASE_MORPH_ADD_INTERNAL,
         PHASE_EMPTY_TRY,
         PHASE_EMPTY_FINALLY,
         PHASE_MERGE_FINALLY_CHAINS,

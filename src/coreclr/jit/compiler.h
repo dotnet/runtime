@@ -2220,7 +2220,7 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
-    void fgCreateFiltersForGenericExceptions();
+    bool fgCreateFiltersForGenericExceptions();
 
     void fgCheckForLoopsInHandlers();
 
@@ -4339,7 +4339,7 @@ public:
     }
 
     BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
-    void fgEnsureFirstBBisScratch();
+    bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
 
@@ -4524,7 +4524,7 @@ public:
     // The number of separate return points in the method.
     unsigned fgReturnCount;
 
-    void fgAddInternal();
+    PhaseStatus fgAddInternal();
 
     enum class FoldResult
     {
