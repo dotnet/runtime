@@ -217,10 +217,6 @@ namespace BrowserDebugProxy
             if (getCommandOptions.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
                 fields = fields.Where(field => field.IsNotPrivate).ToList();
 
-            var typeInfo = await sdbHelper.GetTypeInfo(containerTypeId, token);
-            if (typeInfo.Info.IsNonUserCode && getCommandOptions.HasFlag(GetObjectCommandOptions.JustMyCode))
-                return fieldValues;
-
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(id.Value);
             commandParamsWriter.Write(fields.Count);
@@ -229,6 +225,8 @@ namespace BrowserDebugProxy
             MonoBinaryReader retDebuggerCmdReader = id.IsValueType
                                                     ? await sdbHelper.SendDebuggerAgentCommand(CmdType.GetValues, commandParamsWriter, token) :
                                                     await sdbHelper.SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
+
+            var typeInfo = await sdbHelper.GetTypeInfo(containerTypeId, token);
 
             int numFieldsRead = 0;
             foreach (FieldTypeClass field in fields)
@@ -574,9 +572,15 @@ namespace BrowserDebugProxy
                 string typeName = await sdbHelper.GetTypeName(typeId, token);
                 // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
+                var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
+
+                if (typeInfo.Info.IsNonUserCode && getCommandType.HasFlag(GetObjectCommandOptions.JustMyCode))
+                    break;
+
                 IReadOnlyList<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
                 if (!includeStatic)
                     thisTypeFields = thisTypeFields.Where(f => !f.Attributes.HasFlag(FieldAttributes.Static)).ToList();
+
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await ExpandFieldValues(
@@ -593,11 +597,6 @@ namespace BrowserDebugProxy
                 // skip loading properties if not necessary
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
-
-                var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
-
-                if (typeInfo.Info.IsNonUserCode && getCommandType.HasFlag(GetObjectCommandOptions.JustMyCode))
-                    break;
 
                 allMembers = await ExpandPropertyValues(
                     sdbHelper,
