@@ -49,7 +49,7 @@
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.4.0-1.22358.14</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.4.0-2.22412.11</MicrosoftNetCompilersToolsetVersion>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>7.0.100-rc.1.22402.1</MicrosoftDotNetApiCompatTaskVersion>
@@ -73,12 +73,12 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>7.0.0-rc.1.22407.4</MicrosoftNETCoreAppRuntimewinx64Version>
-    <MicrosoftNETCoreDotNetHostVersion>7.0.0-rc.1.22381.5</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>7.0.0-rc.1.22381.5</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreAppRuntimewinx64Version>7.0.0-rc.1.22414.6</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreDotNetHostVersion>7.0.0-rc.1.22414.6</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>7.0.0-rc.1.22414.6</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>7.0.0-rc.1.22407.4</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>7.0.0-rc.1.22414.6</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22411.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22411.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22411.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>
@@ -113,11 +113,11 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemServiceModelPrimitivesVersion>4.9.0</SystemServiceModelPrimitivesVersion>
-    <SystemTextJsonVersion>7.0.0-rc.1.22407.4</SystemTextJsonVersion>
+    <SystemTextJsonVersion>7.0.0-rc.1.22414.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>7.0.0-rc.1.22407.4</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>7.0.0-rc.1.22414.6</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.22409.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.22409.1</SystemComponentModelTypeConverterTestDataVersion>
@@ -171,7 +171,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220721.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22412.3</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22412.4</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22408.1</MicrosoftNETCoreRuntimeICUTransportVersion>

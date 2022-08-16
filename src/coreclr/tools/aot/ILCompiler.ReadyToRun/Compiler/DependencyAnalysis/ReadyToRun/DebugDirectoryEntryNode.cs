@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using System.IO;
 using System.Collections.Immutable;
@@ -250,7 +251,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             }
 
-            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
+            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.SafeReadDebugDirectory();
             Debug.Assert(entries != null && _debugEntryIndex < entries.Length);
 
             DebugDirectoryEntry sourceDebugEntry = entries[_debugEntryIndex];
