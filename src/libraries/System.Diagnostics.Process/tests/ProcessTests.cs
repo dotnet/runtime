@@ -23,9 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        // -rwxr-xr-x (755 octal)
         const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
                                                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+                                                   UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         private class FinalizingProcess : Process
         {
