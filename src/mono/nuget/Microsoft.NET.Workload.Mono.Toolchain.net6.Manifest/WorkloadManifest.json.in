@@ -5,13 +5,13 @@
   },
   "workloads": {
     "wasm-tools-net6": {
-      "description": ".NET WebAssembly build tools",
+      "description": ".NET WebAssembly build tools for net6.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk.net6",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling-net6", "microsoft-net-sdk-emscripten-net6-net6" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net6", "microsoft-net-sdk-emscripten-net6" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android-net6": {
