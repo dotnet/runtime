@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace System.Net.Security
     {
         private const bool TrimRootCertificate = true;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
+        internal readonly SafeX509Handle CertificateHandle;
+        internal readonly SafeEvpPKeyHandle KeyHandle;
 
         private bool _staplingForbidden;
         private byte[]? _ocspResponse;
@@ -32,6 +35,32 @@ namespace System.Net.Security
             IntermediateCertificates = intermediates;
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
+
+            using (RSAOpenSsl? rsa = (RSAOpenSsl?)target.GetRSAPrivateKey())
+            {
+                if (rsa != null)
+                {
+                    KeyHandle = rsa.DuplicateKeyHandle();
+                }
+            }
+
+            if (KeyHandle == null)
+            {
+                using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)target.GetECDsaPrivateKey())
+                {
+                    if (ecdsa != null)
+                    {
+                        KeyHandle = ecdsa.DuplicateKeyHandle();
+                    }
+                }
+
+                if (KeyHandle== null)
+                {
+                    throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                }
+            }
+
+            CertificateHandle = Interop.Crypto.X509UpRef(target.Handle);
         }
 
         internal static SslStreamCertificateContext Create(X509Certificate2 target) =>
