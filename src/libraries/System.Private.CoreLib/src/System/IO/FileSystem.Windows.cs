@@ -289,7 +289,7 @@ namespace System.IO
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
-                if (isDirectory && errorCode == Interop.Errors.ERROR_ACCESS_DENIED && ignoreAccessDenied)
+                if (ignoreAccessDenied && errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     return;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
@@ -574,15 +574,20 @@ namespace System.IO
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
             try
             {
-                bool success = Interop.Kernel32.DeviceIoControl(
-                    handle,
-                    dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
-                    lpInBuffer: IntPtr.Zero,
-                    nInBufferSize: 0,
-                    lpOutBuffer: buffer,
-                    nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
-                    out _,
-                    IntPtr.Zero);
+                bool success;
+
+                fixed (byte* pBuffer = buffer)
+                {
+                    success = Interop.Kernel32.DeviceIoControl(
+                        handle,
+                        dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
+                        lpInBuffer: null,
+                        nInBufferSize: 0,
+                        lpOutBuffer: pBuffer,
+                        nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+                        out _,
+                        IntPtr.Zero);
+                }
 
                 if (!success)
                 {

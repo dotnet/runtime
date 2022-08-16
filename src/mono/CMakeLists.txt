@@ -247,13 +247,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN)
+  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
+  add_definitions(-DGEN_PINVOKE)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_COMPONENTS 1)
+  set(STATIC_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
     wasi/mono-wasi-driver/driver.c
@@ -664,14 +665,21 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
+if(HOST_OSX OR HOST_MACCAT OR HOST_IOS OR HOST_TVOS)
+  # FIXME: Handle errors
+  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if((HOST_MACCAT OR HOST_IOS OR HOST_TVOS) AND "${CMAKE_SHARED_LINKER_FLAGS}" MATCHES "${brew_prefix}/opt/icu4c/lib")
+    message(FATAL_ERROR "Linker flags contain the Homebrew version of ICU which conflicts with the iOS/tvOS/MacCatalyst version: ${CMAKE_SHARED_LINKER_FLAGS}")
+  endif()
+endif()
+
 set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
-  # FIXME: Handle errors
-  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
   set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
+  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
   pkg_check_modules(ICU icu-uc)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")

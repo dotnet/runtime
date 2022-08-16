@@ -10,8 +10,12 @@
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
-    <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
+
+  <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
+    <Warning Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' != 'true'" Text="This sample requires perftracing or threading" />
+  </Target>
 
   <PropertyGroup>
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug')">true</MonoDiagnosticsMock>
@@ -20,25 +24,19 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
-    <WasmExtraConfig Condition="true" Include="environmentVariables" Value='
+    <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
+    <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' != 'true'" Include="environmentVariables" Value='
 {
   "MONO_LOG_LEVEL": "warning",
-  "MONO_LOG_MASK": "all"
-}' />
-    <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
-    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' != 'true'" Include="diagnosticOptions" Value='
-{
-  "server": { "suspend": true, "connectUrl": "ws://localhost:8088/diagnostics" }
+  "MONO_LOG_MASK": "all",
+  "DOTNET_DiagnosticPorts": "ws://localhost:8088/diagnostics,suspend"
 }' />
     <!-- this option requires compiling the runtime with /p:MonoDiagnosticsMock=true and also building this project with the same property-->
-    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' == 'true'" Include="diagnosticOptions" Value='
+    <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' == 'true'" Include="environmentVariables" Value='
 {
-  "server": { "suspend": false, "connectUrl": "mock:./mock.js" }
-}' />
-    <!-- this option will create an EventPipe session at startup, that will dump its data into the Emscripten VFS -->
-    <WasmExtraConfig Condition="false" Include="diagnosticOptions" Value='
-{
-  "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
+  "MONO_LOG_LEVEL": "warning",
+  "MONO_LOG_MASK": "all",
+  "DOTNET_DiagnosticPorts": "mock:./mock.js,suspend"
 }' />
   </ItemGroup>
 

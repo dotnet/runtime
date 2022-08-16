@@ -1,7 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
-import { VoidPtr } from "./types/emscripten";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
@@ -261,6 +264,18 @@ export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
     const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
+}
+
+export function getEnv(name: string): string | null {
+    let charPtr: CharPtr = <any>0;
+    try {
+        charPtr = cwraps.mono_wasm_getenv(name);
+        if (<any>charPtr === 0)
+            return null;
+        else return Module.UTF8ToString(charPtr);
+    } finally {
+        if (charPtr) Module._free(<any>charPtr);
+    }
 }
 
 const BuiltinAtomics = globalThis.Atomics;

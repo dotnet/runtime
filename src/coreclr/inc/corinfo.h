@@ -2790,6 +2790,15 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
+    // Obtains a list of exact classes for a given base type. Returns 0 if the number of 
+    // the exact classes is greater than maxExactClasses or if more types might be loaded
+    // in future.
+    virtual int getExactClasses(
+                CORINFO_CLASS_HANDLE  baseType,            /* IN */
+                int                   maxExactClasses,     /* IN */
+                CORINFO_CLASS_HANDLE* exactClsRet          /* OUT */
+                ) = 0;
+
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
     virtual CORINFO_CLASS_HANDLE getArgClass (
             CORINFO_SIG_INFO*           sig,            /* IN */
@@ -3243,10 +3252,5 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
-
-/**********************************************************************************/
-#ifdef TARGET_64BIT
-#define USE_PER_FRAME_PINVOKE_INIT
-#endif
 
 #endif // _COR_INFO_H_

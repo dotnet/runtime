@@ -189,7 +189,7 @@ declare type MONOType = {
     /**
      * @deprecated Please use runMainAndExit instead
      */
-    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<void>;
+    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<number>;
     /**
      * @deprecated Please use config.assets instead
      */
@@ -304,4 +304,4 @@ declare type MONOType = {
     getF64: (offset: MemOffset) => number;
 };
 
-export { BINDINGType, MONOType };
+export { BINDINGType, MONOType, MonoArray, MonoObject, MonoString };

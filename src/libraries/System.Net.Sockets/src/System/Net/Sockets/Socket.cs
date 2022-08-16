@@ -2155,7 +2155,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Determines the status of the <see cref="Socket"/>.</summary>
-        /// <param name="timeout">The time to wait for a response.</param>
+        /// <param name="timeout">The time to wait for a response. <see cref="Timeout.InfiniteTimeSpan"/> indicates an infinite timeout.</param>
         /// <param name="mode">One of the <see cref="SelectMode"/> values.</param>
         /// <returns>
         /// The status of the <see cref="Socket"/> based on the polling mode value passed in the <paramref name="mode"/> parameter.
@@ -2167,7 +2167,7 @@ namespace System.Net.Sockets
         /// does not block and the connection has failed, or if OutOfBandInline is not set and out-of-band data is available.
         /// Otherwise, it returns <see langword="false"/>.
         /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than -1 milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> was negative or greater than TimeSpan.FromMicroseconds(int.MaxValue).</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(TimeSpan timeout, SelectMode mode) =>
@@ -2217,10 +2217,10 @@ namespace System.Net.Sockets
         /// <param name="checkRead">An <see cref="IList"/> of <see cref="Socket"/> instances to check for readability.</param>
         /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
         /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
-        /// <param name="timeout">The timeout value. A value equal to -1 microseconds indicates an infinite timeout.</param>
+        /// <param name="timeout">The timeout value. A value equal to <see cref="Timeout.InfiniteTimeSpan"/> indicates an infinite timeout.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="timeout"/> was less than -1 microseconds or greater than <see cref="int.MaxValue"/> microseconds</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="timeout"/> was negative or greater than TimeSpan.FromMicroseconds(int.MaxValue).</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) =>
@@ -2228,8 +2228,18 @@ namespace System.Net.Sockets
 
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {
+            if (timeout == Timeout.InfiniteTimeSpan)
+            {
+                return -1;
+            }
+
+            if (timeout < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
             long totalMicroseconds = (long)timeout.TotalMicroseconds;
-            if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
+
+            if (totalMicroseconds > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout));
             }
@@ -2248,11 +2258,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state) =>
             TaskToApm.Begin(ConnectAsync(addresses, port), requestCallback, state);
 
-        public void EndConnect(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            TaskToApm.End(asyncResult);
-        }
+        public void EndConnect(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(DisconnectAsync(reuseSocket).AsTask(), callback, state);
@@ -2278,12 +2284,7 @@ namespace System.Net.Sockets
             _localEndPoint = null;
         }
 
-        public void EndDisconnect(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            TaskToApm.End(asyncResult);
-        }
-
+        public void EndDisconnect(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
@@ -2331,12 +2332,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndSend(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndSend(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public int EndSend(IAsyncResult asyncResult, out SocketError errorCode) =>
             EndSendReceive(asyncResult, out errorCode);
@@ -2360,13 +2356,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
-        public void EndSendFile(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(asyncResult);
-
-            TaskToApm.End(asyncResult);
-        }
+        public void EndSendFile(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
@@ -2378,11 +2368,7 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndSendTo(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndSendTo(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
@@ -2428,21 +2414,16 @@ namespace System.Net.Sockets
             return TaskToApm.Begin(t, callback, state);
         }
 
-        public int EndReceive(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public int EndReceive(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
         public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode) =>
             EndSendReceive(asyncResult, out errorCode);
 
-        private int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
+        private static int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            ThrowIfDisposed();
-
             if (TaskToApm.GetTask(asyncResult) is not Task<int> ti)
             {
+                ArgumentNullException.ThrowIfNull(asyncResult);
                 throw new ArgumentException(null, nameof(asyncResult));
             }
 
@@ -2485,7 +2466,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2522,8 +2502,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            ThrowIfDisposed();
-
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2541,11 +2519,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(AcceptAsync(), callback, state);
 
-        public Socket EndAccept(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-            return TaskToApm.End<Socket>(asyncResult);
-        }
+        public Socket EndAccept(IAsyncResult asyncResult) => TaskToApm.End<Socket>(asyncResult);
 
         // This method provides support for legacy BeginAccept methods that take a "receiveSize" argument and
         // allow data to be received as part of the accept operation.
@@ -2599,7 +2573,6 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
             Socket s;
             (s, buffer, bytesTransferred) = TaskToApm.End<(Socket, byte[], int)>(asyncResult);
             return s;

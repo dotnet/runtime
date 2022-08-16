@@ -185,7 +185,7 @@ void DeleteDbiMemory(void* p)
     }
     else
     {
-        ::delete (BYTE*)p;
+        ::delete [] (BYTE*)p;
     }
 }
 

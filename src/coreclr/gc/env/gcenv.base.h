@@ -45,6 +45,10 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -186,26 +190,15 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#ifdef __llvm__
-#define HAS_IA32_PAUSE __has_builtin(__builtin_ia32_pause)
-#define HAS_IA32_MFENCE __has_builtin(__builtin_ia32_mfence)
-#else
-#define HAS_IA32_PAUSE 0
-#define HAS_IA32_MFENCE 0
-#endif
-
-// Only clang defines __has_builtin, so we first test for a GCC define
-// before using __has_builtin.
-
 #if defined(__i386__) || defined(__x86_64__)
 
-#if (__GNUC__ > 4 && __GNUC_MINOR > 7) || HAS_IA32_PAUSE
+#if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8
  // gcc added this intrinsic by 4.7.1
  #define YieldProcessor __builtin_ia32_pause
 #endif // __has_builtin(__builtin_ia32_pause)
 
-#if defined(__GNUC__) || HAS_IA32_MFENCE
+#if __has_builtin(__builtin_ia32_mfence)
  // clang has had this intrinsic since at least 3.0
  // gcc has had this intrinsic since forever
  #define MemoryBarrier __builtin_ia32_mfence

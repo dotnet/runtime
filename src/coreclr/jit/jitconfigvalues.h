@@ -251,7 +251,11 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
 
-#endif // defined(DEBUG)
+#else  // defined(DEBUG)
+
+// JitDisasm is supported in Release too
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
+#endif // !defined(DEBUG)
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 
@@ -560,6 +564,9 @@ CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute r
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 #endif // debug
+
+// Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
+CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph

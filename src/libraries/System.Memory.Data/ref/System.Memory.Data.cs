@@ -6,6 +6,7 @@
 
 namespace System
 {
+    [System.Text.Json.Serialization.JsonConverter(typeof(BinaryDataConverter))]
     public partial class BinaryData
     {
         public BinaryData(byte[] data) { }
@@ -36,5 +37,11 @@ namespace System
         public T? ToObjectFromJson<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo) { throw null; }
         public System.IO.Stream ToStream() { throw null; }
         public override string ToString() { throw null; }
+    }
+
+    internal sealed class BinaryDataConverter : System.Text.Json.Serialization.JsonConverter<BinaryData>
+    {
+        public sealed override BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+        public sealed override void Write(System.Text.Json.Utf8JsonWriter writer, BinaryData value, System.Text.Json.JsonSerializerOptions options) { }
     }
 }
