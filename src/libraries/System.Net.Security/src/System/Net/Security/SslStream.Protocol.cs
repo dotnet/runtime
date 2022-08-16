@@ -687,11 +687,11 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        private static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
+            SafeFreeCredentials? cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
 
-            if (sslAuthenticationOptions.CertificateContext != null)
+            if (sslAuthenticationOptions.CertificateContext != null && cred != null)
             {
                 //
                 // Since the SafeFreeCredentials can be cached and reused, it may happen on long running processes that some cert on
@@ -869,6 +869,8 @@ namespace System.Net.Security
 
         internal SecurityStatusPal Renegotiate(out byte[]? output)
         {
+            Debug.Assert(_securityContext != null);
+
             return SslStreamPal.Renegotiate(
                                       ref _credentialsHandle!,
                                       ref _securityContext,

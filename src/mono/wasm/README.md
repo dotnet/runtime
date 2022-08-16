@@ -163,7 +163,7 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 * console Hello world sample
 
-`dotnet build /t:RunSample console-v8-es6/Wasm.Console.V8.Sample.csproj`
+`dotnet build /t:RunSample console-v8/Wasm.Console.V8.Sample.csproj`
 
 * browser TestMeaning sample
 

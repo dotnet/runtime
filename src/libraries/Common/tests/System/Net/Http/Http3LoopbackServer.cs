@@ -23,7 +23,7 @@ namespace System.Net.Test.Common
         {
             options ??= new Http3Options();
 
-            _cert = Configuration.Certificates.GetServerCertificate();
+            _cert = options.Certificate ?? Configuration.Certificates.GetServerCertificate();
 
             var listenerOptions = new QuicListenerOptions()
             {
@@ -130,6 +130,7 @@ namespace System.Net.Test.Common
             {
                 http3Options.Address = options.Address;
                 http3Options.UseSsl = options.UseSsl;
+                http3Options.Certificate = options.Certificate;
                 http3Options.SslProtocols = options.SslProtocols;
                 http3Options.ListenBacklog = options.ListenBacklog;
             }

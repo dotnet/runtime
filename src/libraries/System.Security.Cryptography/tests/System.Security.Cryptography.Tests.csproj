@@ -14,8 +14,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
-
     <WasmXHarnessMonoArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=TEST_EXPECT_SUBTLE_CRYPTO=true</WasmXHarnessMonoArgs>
     <WasmXHarnessArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
   </PropertyGroup>

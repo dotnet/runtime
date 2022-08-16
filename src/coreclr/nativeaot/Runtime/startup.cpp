@@ -66,6 +66,9 @@ static bool InitGSCookie();
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
 //-----------------------------------------------------------------------------
+typedef size_t GSCookie;
+
+#ifdef FEATURE_READONLY_GS_COOKIE
 
 #ifdef __APPLE__
 #define READONLY_ATTR_ARGS section("__DATA,__const")
@@ -74,14 +77,15 @@ static bool InitGSCookie();
 #endif
 #define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
 
-// Guard-stack cookie for preventing against stack buffer overruns
-typedef size_t GSCookie;
-
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
 extern "C" volatile READONLY_ATTR const GSCookie __security_cookie = 0;
+#else
+extern "C" volatile GSCookie __security_cookie = 0;
+#endif // FEATURE_READONLY_GS_COOKIE
+
 #endif // TARGET_UNIX
 
 static bool InitDLL(HANDLE hPalInstance)
@@ -312,11 +316,13 @@ bool InitGSCookie()
 {
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     // The GS cookie is stored in a read only data segment    
     if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
     }
+#endif
 
     // REVIEW: Need something better for PAL...
     GSCookie val = (GSCookie)PalGetTickCount64();
@@ -328,7 +334,11 @@ bool InitGSCookie()
 
     *pGSCookiePtr = val;
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     return PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READONLY);
+#else
+    return true;
+#endif
 }
 #endif // TARGET_UNIX
 
@@ -431,12 +441,7 @@ void RuntimeThreadShutdown(void* thread)
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 #endif
 
-    if (g_processShutdownHasStarted)
-    {
-        return;
-    }
-
-    ThreadStore::DetachCurrentThread();
+    ThreadStore::DetachCurrentThread(g_processShutdownHasStarted);
 }
 
 extern "C" bool RhInitialize()

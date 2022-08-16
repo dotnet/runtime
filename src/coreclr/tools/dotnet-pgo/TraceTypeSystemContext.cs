@@ -364,7 +364,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             string pdbFileName = null;
             BlobContentId pdbContentId = default;
 
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;

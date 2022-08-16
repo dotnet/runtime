@@ -30,7 +30,7 @@ try {
         mute = true;
     }
 
-    const runtime = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -47,7 +47,7 @@ try {
         onAbort: (error) => {
             wasm_exit(1, error);
         },
-    }));
+    });
 
     if (window.parent != window) {
         window.parent.resolveAppStartEvent("onDotnetReady");

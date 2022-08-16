@@ -53,6 +53,7 @@ namespace ILCompiler
         private bool _noPreinitStatics;
         private bool _emitStackTraceData;
         private string _mapFileName;
+        private string _mstatFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
         private string _reflectionData;
@@ -73,6 +74,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
         private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
+
+        private IReadOnlyList<string> _linkTrimFilePaths = Array.Empty<string>();
 
         private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
 
@@ -201,7 +204,9 @@ namespace ILCompiler
                 syntax.DefineOption("resilient", ref _resilient, "Ignore unresolved types, methods, and assemblies. Defaults to false");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOptionList("descriptor", ref _linkTrimFilePaths, "ILLinkTrim.Descriptor file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+                syntax.DefineOption("mstat", ref _mstatFileName, "Generate an mstat file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
@@ -345,7 +350,7 @@ namespace ILCompiler
                 // + the original command line arguments
                 // + a rsp file that should work to directly run out of the zip file
 
-                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
+                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist", "--descriptor" });
             }
 
             if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
@@ -694,6 +699,13 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
                 }
+
+                foreach (var linkTrimFilePath in _linkTrimFilePaths)
+                {
+                    if (!File.Exists(linkTrimFilePath))
+                        throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
+                    compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
+                }
             }
 
             _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
@@ -925,9 +937,15 @@ namespace ILCompiler
 
             ICompilation compilation = builder.ToCompilation();
 
-            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
+            List<ObjectDumper> dumpers = new List<ObjectDumper>();
 
-            CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
+            if (_mapFileName != null)
+                dumpers.Add(new XmlObjectDumper(_mapFileName));
+
+            if (_mstatFileName != null)
+                dumpers.Add(new MstatObjectDumper(_mstatFileName, typeSystemContext));
+
+            CompilationResults compilationResults = compilation.Compile(_outputFilePath, ObjectDumper.Compose(dumpers));
             if (_exportsFile != null)
             {
                 ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, _exportsFile);

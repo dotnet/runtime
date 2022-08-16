@@ -26,16 +26,16 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 # About new API
 The signature is
 ```
-function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotNetExports>
+function createDotnetRuntime(module: DotnetModuleConfig): Promise<DotNetExports>
 ```
 
 Simplest intended usage looks like this in ES6:
 ```
 import createDotnetRuntime from './dotnet.js'
 
-await createDotnetRuntime(() => ({
+await createDotnetRuntime({
     configSrc: "./mono-config.json",
-}));
+});
 ```
 
 For more complex scenario with using APIs see `src\mono\sample\wasm`

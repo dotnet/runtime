@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnablePreviewFeatures>True</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
     <IsPackable>true</IsPackable>
     <!-- Disabling baseline validation since this is a brand new package.
        Once this package has shipped a stable version, the following line
@@ -29,10 +27,6 @@
     <Compile Include="System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs" />
     <Compile Include="System\Security\Cryptography\Cose\KnownHeaders.cs" />
     <Compile Include="System\Security\Cryptography\Cose\SigStructureContext.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
