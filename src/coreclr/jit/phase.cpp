@@ -196,7 +196,7 @@ void Phase::PostPhase(PhaseStatus status)
         //
         PHASE_MORPH_GLOBAL,
         PHASE_GS_COOKIE,
-        // compute edge weights
+        PHASE_COMPUTE_EDGE_WEIGHTS,
         // create funclets
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,

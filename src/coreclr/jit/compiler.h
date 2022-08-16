@@ -5303,10 +5303,10 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    void     fgComputeBlockAndEdgeWeights();
-    weight_t fgComputeMissingBlockWeights();
-    void fgComputeCalledCount(weight_t returnWeight);
-    void fgComputeEdgeWeights();
+    PhaseStatus fgComputeBlockAndEdgeWeights();
+    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
+    bool fgComputeCalledCount(weight_t returnWeight);
+    PhaseStatus fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
 
