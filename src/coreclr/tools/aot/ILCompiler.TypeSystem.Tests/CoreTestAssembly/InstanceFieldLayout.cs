@@ -9,40 +9,40 @@ using System.Runtime.Intrinsics;
 
 namespace ContainsGCPointers
 {
-    struct NoPointers
+    public struct NoPointers
     {
         public int int1;
         public byte byte1;
         public char char1;
     }
 
-    struct StillNoPointers
+    public struct StillNoPointers
     {
         public NoPointers noPointers1;
         public bool bool1;
     }
 
-    class ClassNoPointers
+    public class ClassNoPointers
     {
         public char char1;
     }
 
-    struct HasPointers
+    public struct HasPointers
     {
         public string string1;
     }
 
-    struct FieldHasPointers
+    public struct FieldHasPointers
     {
         public HasPointers hasPointers1;
     }
 
-    class ClassHasPointers
+    public class ClassHasPointers
     {
         public ClassHasPointers classHasPointers1;
     }
 
-    class BaseClassHasPointers : ClassHasPointers
+    public class BaseClassHasPointers : ClassHasPointers
     {
     }
 
@@ -51,7 +51,7 @@ namespace ContainsGCPointers
         public int[] intArrayField;
     }
 
-    class ClassHasArrayOfClassType
+    public class ClassHasArrayOfClassType
     {
         public ClassNoPointers[] classTypeArray;
     }
@@ -124,7 +124,7 @@ namespace Explicit
 namespace Sequential
 {
     [StructLayout(LayoutKind.Sequential)]
-    class Class1
+    public class Class1
     {
         public int MyInt;
         public bool MyBool;
@@ -135,13 +135,13 @@ namespace Sequential
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    class Class2 : Class1
+    public class Class2 : Class1
     {
         public int MyInt2;
     }
 
     // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
-    struct Struct0
+    public struct Struct0
     {
         public bool b1;
         public bool b2;
@@ -151,7 +151,7 @@ namespace Sequential
     }
 
     // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
-    struct Struct1
+    public struct Struct1
     {
         public Struct0 MyStruct0;
         public bool MyBool;
@@ -176,25 +176,25 @@ namespace Sequential
 namespace Auto
 {
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithBool
+    public struct StructWithBool
     {
         public bool MyStructBool;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithIntChar
+    public struct StructWithIntChar
     {
         public char MyStructChar;
         public int MyStructInt;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithChar
+    public struct StructWithChar
     {
         public char MyStructChar;
     }
 
-    class ClassContainingStructs
+    public class ClassContainingStructs
     {
         public static int MyStaticInt;
 
@@ -211,7 +211,7 @@ namespace Auto
         public StructWithChar MyStructWithChar;
     }
 
-    class BaseClass7BytesRemaining
+    public class BaseClass7BytesRemaining
     {
         public bool MyBool1;
         public double MyDouble1;
@@ -220,20 +220,20 @@ namespace Auto
         public string MyString1;
     }
 
-    class BaseClass4BytesRemaining
+    public class BaseClass4BytesRemaining
     {
         public long MyLong1;
         public uint MyUint1;
     }
 
-    class BaseClass3BytesRemaining
+    public class BaseClass3BytesRemaining
     {
         public int MyInt1;
         public string MyString1;
         public bool MyBool1;
     }
 
-    class OptimizePartial : BaseClass7BytesRemaining
+    public class OptimizePartial : BaseClass7BytesRemaining
     {
         public bool OptBool;
         public char OptChar;
@@ -241,7 +241,7 @@ namespace Auto
         public string NoOptString;
     }
 
-    class Optimize7Bools : BaseClass7BytesRemaining
+    public class Optimize7Bools : BaseClass7BytesRemaining
     {
         public bool OptBool1;
         public bool OptBool2;
@@ -254,7 +254,7 @@ namespace Auto
         public string NoOptString;
     }
 
-    class OptimizeAlignedFields : BaseClass7BytesRemaining
+    public class OptimizeAlignedFields : BaseClass7BytesRemaining
     {
         public bool OptBool1;
         public bool OptBool2;
@@ -265,7 +265,7 @@ namespace Auto
         public string NoOptString;
     }
 
-    class OptimizeLargestField : BaseClass4BytesRemaining
+    public class OptimizeLargestField : BaseClass4BytesRemaining
     {
         public bool NoOptBool;
         public char NoOptChar;
@@ -273,38 +273,38 @@ namespace Auto
         public string NoOptString;
     }
 
-    class NoOptimizeMisaligned : BaseClass3BytesRemaining
+    public class NoOptimizeMisaligned : BaseClass3BytesRemaining
     {
         public char NoOptChar;
         public int NoOptInt;
         public string NoOptString;
     }
 
-    class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
+    public class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
     {
         public char NoOptChar;
     }
 
     [StructLayout(LayoutKind.Auto, Pack = 1)]
-    struct MinPacking<T>
+    public struct MinPacking<T>
     {
         public byte _byte;
         public T _value;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    struct int8x16x2
+    public struct int8x16x2
     {
         public Vector128<byte> _0;
         public Vector128<byte> _1;
     }
 
-    struct Wrapper_int8x16x2
+    public struct Wrapper_int8x16x2
     {
         public int8x16x2 fld;
     }
 
-    struct Wrapper_int8x16x2_2
+    public struct Wrapper_int8x16x2_2
     {
         public bool fld1;
         public int8x16x2 fld2;
