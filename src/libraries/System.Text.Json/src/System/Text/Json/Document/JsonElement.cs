@@ -1159,8 +1159,10 @@ namespace System.Text.Json
         /// <summary>
         ///   Attempts to represent the current JSON string as the given type.
         /// </summary>
-        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <typeparam name="TState">The type of the parser state.</typeparam>
+        /// <typeparam name="TResult">The type with which to represent the JSON string.</typeparam>
         /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="state">The state for the parser.</param>
         /// <param name="value">Receives the value.</param>
         /// <remarks>
         ///   This method does not create a representation of values other than JSON strings.
@@ -1175,18 +1177,20 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public bool TryGetValue<T>(Utf8Parser<T> parser, [NotNullWhen(true)] out T? value)
+        public bool TryGetValue<TState, TResult>(Utf8Parser<TState, TResult> parser, TState state, [NotNullWhen(true)] out TResult? value)
         {
             CheckValidInstance();
 
-            return _parent.TryGetValue(_idx, parser, decode: true, out value);
+            return _parent.TryGetValue(_idx, parser, state, decode: true, out value);
         }
 
         /// <summary>
         ///   Attempts to represent the current JSON string as the given type.
         /// </summary>
-        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <typeparam name="TState">The type of the parser state.</typeparam>
+        /// <typeparam name="TResult">The type with which to represent the JSON string.</typeparam>
         /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="state">The state for the parser.</param>
         /// <param name="decode">Indicates whether the UTF8 JSON string should be decoded.</param>
         /// <param name="value">Receives the value.</param>
         /// <remarks>
@@ -1202,18 +1206,20 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public bool TryGetValue<T>(Utf8Parser<T> parser, bool decode, [NotNullWhen(true)] out T? value)
+        public bool TryGetValue<TState, TResult>(Utf8Parser<TState, TResult> parser, TState state, bool decode, [NotNullWhen(true)] out TResult? value)
         {
             CheckValidInstance();
 
-            return _parent.TryGetValue(_idx, parser, decode, out value);
+            return _parent.TryGetValue(_idx, parser, state, decode, out value);
         }
 
         /// <summary>
         ///   Attempts to represent the current JSON string as the given type.
         /// </summary>
-        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <typeparam name="TState">The type of the parser state.</typeparam>
+        /// <typeparam name="TResult">The type with which to represent the JSON string.</typeparam>
         /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="state">The state for the parser.</param>
         /// <param name="value">Receives the value.</param>
         /// <remarks>
         ///   This method does not create a representation of values other than JSON strings.
@@ -1228,16 +1234,20 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public bool TryGetValue<T>(Parser<T> parser, [NotNullWhen(true)] out T? value)
+        public bool TryGetValue<TState, TResult>(Parser<TState, TResult> parser, TState state, [NotNullWhen(true)] out TResult? value)
         {
             CheckValidInstance();
 
-            return _parent.TryGetValue(_idx, parser, out value);
+            return _parent.TryGetValue(_idx, parser, state, out value);
         }
 
         /// <summary>
         ///   Gets the value of the element as the given type.
         /// </summary>
+        /// <typeparam name="TState">The type of the parser state.</typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="parser">The parser for the result.</param>
+        /// <param name="state">The state for the parser.</param>
         /// <remarks>
         ///   This method does not create a representation of values other than JSON strings.
         /// </remarks>
@@ -1252,9 +1262,9 @@ namespace System.Text.Json
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
         /// <seealso cref="ToString"/>
-        public T GetValue<T>(Utf8Parser<T> parser)
+        public TResult GetValue<TState, TResult>(Utf8Parser<TState, TResult> parser, TState state)
         {
-            if (!TryGetValue(parser, out T? value))
+            if (!TryGetValue(parser, state, out TResult? value))
             {
                 ThrowHelper.ThrowFormatException();
             }
@@ -1265,6 +1275,10 @@ namespace System.Text.Json
         /// <summary>
         ///   Gets the value of the element as the given type.
         /// </summary>
+        /// <typeparam name="TState">The type of the parser state.</typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="parser">The parser for the result.</param>
+        /// <param name="state">The state for the parser.</param>
         /// <remarks>
         ///   This method does not create a representation of values other than JSON strings.
         /// </remarks>
@@ -1279,9 +1293,9 @@ namespace System.Text.Json
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
         /// <seealso cref="ToString"/>
-        public T GetValue<T>(Parser<T> parser)
+        public TResult GetValue<TState, TResult>(Parser<TState, TResult> parser, TState state)
         {
-            if (!TryGetValue(parser, out T? value))
+            if (!TryGetValue(parser, state, out TResult? value))
             {
                 ThrowHelper.ThrowFormatException();
             }
@@ -1607,8 +1621,10 @@ namespace System.Text.Json
     /// <summary>
     /// A delegate to a method that attempts to represent a JSON string as a given type.
     /// </summary>
+    /// <typeparam name="TState">The type of the state for the parser.</typeparam>
     /// <typeparam name="TResult">The type of the resulting value.</typeparam>
     /// <param name="span">The UTF8-encoded JSON string. This may be encoded or decoded depending on context.</param>
+    /// <param name="state">The state for the parser.</param>
     /// <param name="value">The resulting value.</param>
     /// <remarks>
     ///   This method does not create a representation of values other than JSON strings.
@@ -1617,13 +1633,15 @@ namespace System.Text.Json
     ///   <see langword="true"/> if the string can be represented as the given type,
     ///   <see langword="false"/> otherwise.
     /// </returns>
-    public delegate bool Utf8Parser<TResult>(ReadOnlySpan<byte> span, [NotNullWhen(true)] out TResult? value);
+    public delegate bool Utf8Parser<TState, TResult>(ReadOnlySpan<byte> span, TState state, [NotNullWhen(true)] out TResult? value);
 
     /// <summary>
     /// A delegate to a method that attempts to represent a JSON string as a given type.
     /// </summary>
+    /// <typeparam name="TState">The type of the state for the parser.</typeparam>
     /// <typeparam name="TResult">The type of the resulting value.</typeparam>
     /// <param name="span">The JSON string. This will always be in its decoded form.</param>
+    /// <param name="state">The state for the parser.</param>
     /// <param name="value">The resulting value.</param>
     /// <remarks>
     ///   This method does not create a representation of values other than JSON strings.
@@ -1632,5 +1650,5 @@ namespace System.Text.Json
     ///   <see langword="true"/> if the string can be represented as the given type,
     ///   <see langword="false"/> otherwise.
     /// </returns>
-    public delegate bool Parser<TResult>(ReadOnlySpan<char> span, [NotNullWhen(true)] out TResult? value);
+    public delegate bool Parser<TState, TResult>(ReadOnlySpan<char> span, TState state, [NotNullWhen(true)] out TResult? value);
 }

@@ -657,7 +657,7 @@ namespace System.Text.Json
             return false;
         }
 
-        internal bool TryGetValue<T>(int index, Utf8Parser<T> parser, bool decode, [NotNullWhen(true)] out T? value)
+        internal bool TryGetValue<TState, TResult>(int index, Utf8Parser<TState, TResult> parser, TState state, bool decode, [NotNullWhen(true)] out TResult? value)
         {
             CheckNotDisposed();
 
@@ -680,7 +680,7 @@ namespace System.Text.Json
                 Debug.Assert(written > 0);
                 sourceUnescaped = sourceUnescaped.Slice(0, written);
                 bool success = false;
-                if (parser(sourceUnescaped, out T? tmpUnescaped))
+                if (parser(sourceUnescaped, state, out TResult? tmpUnescaped))
                 {
                     value = tmpUnescaped;
                     success = true;
@@ -700,7 +700,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (parser(segment, out T? tmp))
+                if (parser(segment, state, out TResult? tmp))
                 {
                     value = tmp;
                     return true;
@@ -711,7 +711,7 @@ namespace System.Text.Json
             return false;
         }
 
-        internal bool TryGetValue<T>(int index, Parser<T> parser, [NotNullWhen(true)] out T? value)
+        internal bool TryGetValue<TState, TResult>(int index, Parser<TState, TResult> parser, TState state, [NotNullWhen(true)] out TResult? value)
         {
             CheckNotDisposed();
 
@@ -734,7 +734,7 @@ namespace System.Text.Json
                 Debug.Assert(written > 0);
                 sourceUnescaped = sourceUnescaped.Slice(0, written);
 
-                bool success = TryGetValue(sourceUnescaped, parser, out value);
+                bool success = TryGetValue(sourceUnescaped, parser, state, out value);
 
                 if (sourceArray != null)
                 {
@@ -745,10 +745,10 @@ namespace System.Text.Json
                 return success;
             }
 
-            return TryGetValue(segment, parser, out value);
+            return TryGetValue(segment, parser, state, out value);
         }
 
-        internal bool TryGetValue<T>(ReadOnlySpan<byte> decodedUtf8String, Parser<T> parser, [NotNullWhen(true)] out T? value)
+        internal bool TryGetValue<TState, TResult>(ReadOnlySpan<byte> decodedUtf8String, Parser<TState, TResult> parser, TState state, [NotNullWhen(true)] out TResult? value)
         {
             char[]? sourceTranscodedArray = null;
             int length = checked(decodedUtf8String.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
@@ -760,7 +760,7 @@ namespace System.Text.Json
             sourceTranscoded = sourceTranscoded.Slice(0, writtenTranscoded);
 
             bool success = false;
-            if (parser(sourceTranscoded, out T? tmp))
+            if (parser(sourceTranscoded, state, out TResult? tmp))
             {
                 value = tmp;
                 success = true;
