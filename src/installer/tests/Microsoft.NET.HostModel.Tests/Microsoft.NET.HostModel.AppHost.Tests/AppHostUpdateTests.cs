@@ -173,14 +173,13 @@ namespace Microsoft.NET.HostModel.Tests
             string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
             string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-            const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+            // strip all permissions from this AppHost template binary
+            File.SetUnixFileMode(sourceAppHostMock, UnixFileMode.None);
+
+            // -rwxr-xr-x
+            const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
                 UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
                 UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
-
-            File.SetUnixFileMode(sourceAppHostMock, ExecutablePermissions);
-            File.GetUnixFileMode(sourceAppHostMock) // match installed permissions: -rwxr-xr-x
-                .Should()
-                .Be(ExecutablePermissions);
 
             HostWriter.CreateAppHost(
                 sourceAppHostMock,
@@ -188,9 +187,11 @@ namespace Microsoft.NET.HostModel.Tests
                 appBinaryFilePath,
                 windowsGraphicalUserInterface: true);
 
+            // assert that the generated app has executable permissions
+            // despite different permissions on the template binary.
             File.GetUnixFileMode(destinationFilePath)
                 .Should()
-                .Be(ExecutablePermissions);
+                .Be(expectedPermissions);
         }
 
         [Fact]
