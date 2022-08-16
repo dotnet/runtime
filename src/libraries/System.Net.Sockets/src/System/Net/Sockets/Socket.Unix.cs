@@ -6,6 +6,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
+using System.Reflection;
+using System.Collections;
 
 namespace System.Net.Sockets
 {
@@ -166,7 +168,7 @@ namespace System.Net.Sockets
         }
 
 #pragma warning disable CA1822
-        private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
+        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
             if (acceptSocket != null && acceptSocket._handle.HasShutdownSend)
             {
@@ -179,7 +181,7 @@ namespace System.Net.Sockets
             }
 
             handle = null;
-            return acceptSocket ?? new Socket(_addressFamily, _socketType, _protocolType);
+            return acceptSocket;
         }
 #pragma warning restore CA1822
 
@@ -265,6 +267,47 @@ namespace System.Net.Sockets
             _multiBufferSendEventArgs = source._multiBufferSendEventArgs;
             _pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
             _singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
+#if DEBUG
+            // Try to detect if a property gets added that we're not copying correctly.
+            foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                object? origValue = pi.GetValue(source);
+                object? cloneValue = pi.GetValue(this);
+
+                if (origValue is IEnumerable origEnumerable)
+                {
+                    IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
+                    Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
+
+                    IEnumerator e1 = origEnumerable.GetEnumerator();
+                    try
+                    {
+                        IEnumerator e2 = cloneEnumerable.GetEnumerator();
+                        try
+                        {
+                            while (e1.MoveNext())
+                            {
+                                Debug.Assert(e2.MoveNext(), $"{pi.Name}. Cloned enumerator too short.");
+                                Debug.Assert(Equals(e1.Current, e2.Current), $"{pi.Name}. Cloned enumerator's values don't match.");
+                            }
+                            Debug.Assert(!e2.MoveNext(), $"{pi.Name}. Cloned enumerator too long.");
+                        }
+                        finally
+                        {
+                            (e2 as IDisposable)?.Dispose();
+                        }
+                    }
+                    finally
+                    {
+                        (e1 as IDisposable)?.Dispose();
+                    }
+                }
+                else
+                {
+                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+            }
+#endif
             return this;
         }
     }
