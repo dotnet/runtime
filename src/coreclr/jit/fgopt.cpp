@@ -2820,7 +2820,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
-    BasicBlock* bPrev = block->bbPrev;
+    bool        madeChanges = false;
+    BasicBlock* bPrev       = block->bbPrev;
 
     switch (block->bbJumpKind)
     {
@@ -2959,6 +2960,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                             gtSetStmtInfo(nopStmt);
                         }
 
+                        madeChanges = true;
+
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -3017,13 +3020,15 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             /* Remove the block */
             compCurBB = block;
             fgRemoveBlock(block, /* unreachable */ false);
-            return true;
+            madeChanges = true;
+            break;
 
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
     }
-    return false;
+
+    return madeChanges;
 }
 
 //-------------------------------------------------------------
@@ -5917,12 +5922,28 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-------------------------------------------------------------
+// fgUpdateFlowGraphPhase: run flow graph optimization as a
+//   phase, with no tail duplication
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::fgUpdateFlowGraphPhase()
+{
+    constexpr bool doTailDup   = false;
+    constexpr bool isPhase     = true;
+    const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-------------------------------------------------------------
 // fgUpdateFlowGraph: Removes any empty blocks, unreachable blocks, and redundant jumps.
 // Most of those appear after dead store removal and folding of conditionals.
 // Also, compact consecutive basic blocks.
 //
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
+//    isPhase - true if being run as the only thing in a phase
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -5930,10 +5951,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 {
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && !isPhase)
     {
         printf("\n*************** In fgUpdateFlowGraph()");
     }
@@ -5944,7 +5965,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
     noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && !isPhase)
     {
         printf("\nBefore updating the flow graph:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -6412,32 +6433,32 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
     } while (change);
 
 #ifdef DEBUG
-    if (verbose && modified)
+    if (!isPhase)
     {
-        printf("\nAfter updating the flow graph:\n");
-        fgDispBasicBlocks(verboseTrees);
-        fgDispHandlerTab();
-    }
-
-    if (compRationalIRForm)
-    {
-        for (BasicBlock* const block : Blocks())
+        if (verbose && modified)
         {
-            LIR::AsRange(block).CheckLIR(this);
+            printf("\nAfter updating the flow graph:\n");
+            fgDispBasicBlocks(verboseTrees);
+            fgDispHandlerTab();
         }
-    }
 
-    fgVerifyHandlerTab();
-    // Make sure that the predecessor lists are accurate
-    fgDebugCheckBBlist();
-    fgDebugCheckUpdate();
+        if (compRationalIRForm)
+        {
+            for (BasicBlock* const block : Blocks())
+            {
+                LIR::AsRange(block).CheckLIR(this);
+            }
+        }
+
+        fgVerifyHandlerTab();
+        // Make sure that the predecessor lists are accurate
+        fgDebugCheckBBlist();
+        fgDebugCheckUpdate();
+    }
 #endif // DEBUG
 
     return modified;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //-------------------------------------------------------------
 // fgGetCodeEstimate: Compute a code size estimate for the block, including all statements

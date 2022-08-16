@@ -5318,7 +5318,8 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
+    PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgFindOperOrder();
 

@@ -183,10 +183,10 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_EMPTY_FINALLY,
         PHASE_MERGE_FINALLY_CHAINS,
         PHASE_CLONE_FINALLY,
-        // finally flags
-        // compute preds
+        PHASE_UPDATE_FINALLY_FLAGS,
+        PHASE_COMPUTE_PREDS,
         PHASE_MERGE_THROWS,
-        // early fg update
+        PHASE_EARLY_UPDATE_FLOW_GRAPH,
         // promote structs
         // mark addr exposed locals
         PHASE_FWD_SUB,
@@ -221,7 +221,7 @@ void Phase::PostPhase(PhaseStatus status)
         // cse
         // assertion prop
         // range check
-        // update flow
+        PHASE_OPT_UPDATE_FLOW_GRAPH,
         // edge weights 2
         PHASE_INSERT_GC_POLLS,
         PHASE_OPTIMIZE_LAYOUT,

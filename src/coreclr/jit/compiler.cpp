@@ -4531,11 +4531,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Run an early flow graph simplification pass
         //
-        auto earlyUpdateFlowGraphPhase = [this]() {
-            constexpr bool doTailDup = false;
-            fgUpdateFlowGraph(doTailDup);
-        };
-        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
     }
 
     // Promote struct locals
@@ -4830,11 +4826,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
-                auto optUpdateFlowGraphPhase = [this]() {
-                    constexpr bool doTailDup = false;
-                    fgUpdateFlowGraph(doTailDup);
-                };
-                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
+                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
                 // Recompute the edge weight if we have modified the flow graph
                 //
