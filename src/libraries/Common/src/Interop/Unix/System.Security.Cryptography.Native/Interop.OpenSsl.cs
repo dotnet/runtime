@@ -394,7 +394,7 @@ internal static partial class Interop
                     if (cacheSslContext && !string.IsNullOrEmpty(punyCode))
                     {
                         sslCtxHandle.TrySetSession(sslHandle, punyCode);
-                        bool ignored = false;   // DangerousAddRef will throw on failure
+                        bool ignored = false;
                         sslCtxHandle.DangerousAddRef(ref ignored);
                         sslHandle.SslContextHandle = sslCtxHandle;
                     }
