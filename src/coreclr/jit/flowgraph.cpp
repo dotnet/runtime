@@ -3299,17 +3299,21 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
 }
 
-/*****************************************************************************
- *
- * Every funclet will have a prolog. That prolog will be inserted as the first instructions
- * in the first block of the funclet. If the prolog is also the head block of a loop, we
- * would end up with the prolog instructions being executed more than once.
- * Check for this by searching the predecessor list for loops, and create a new prolog header
- * block when needed. We detect a loop by looking for any predecessor that isn't in the
- * handler's try region, since the only way to get into a handler is via that try region.
- */
-
-void Compiler::fgCreateFuncletPrologBlocks()
+//------------------------------------------------------------------------
+// fgCreateFuncletPrologBlocks: create prolog blocks for funclets if needed
+//
+// Returns:
+//   true if any changes were made
+//
+// Notes:
+//   Every funclet will have a prolog. That prolog will be inserted as the first instructions
+//   in the first block of the funclet. If the prolog is also the head block of a loop, we
+//   would end up with the prolog instructions being executed more than once.
+//   Check for this by searching the predecessor list for loops, and create a new prolog header
+//   block when needed. We detect a loop by looking for any predecessor that isn't in the
+//   handler's try region, since the only way to get into a handler is via that try region.
+//
+bool Compiler::fgCreateFuncletPrologBlocks()
 {
     noway_assert(fgComputePredsDone);
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
@@ -3363,26 +3367,24 @@ void Compiler::fgCreateFuncletPrologBlocks()
         fgDebugCheckBBlist();
 #endif // DEBUG
     }
+
+    return prologBlocksCreated;
 }
 
-/*****************************************************************************
- *
- *  Function to create funclets out of all EH catch/finally/fault blocks.
- *  We only move filter and handler blocks, not try blocks.
- */
-
-void Compiler::fgCreateFunclets()
+//------------------------------------------------------------------------
+// fgCreateFunclets: create funclets for EH catch/finally/fault blocks.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    We only move filter and handler blocks, not try blocks.
+//
+PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgCreateFunclets()\n");
-    }
-#endif
-
-    fgCreateFuncletPrologBlocks();
+    bool madeChanges = fgCreateFuncletPrologBlocks();
 
     unsigned           XTnum;
     EHblkDsc*          HBtab;
@@ -3429,6 +3431,7 @@ void Compiler::fgCreateFunclets()
         HBtab->ebdFuncIndex          = funcIdx;
         funcIdx++;
         fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+        madeChanges = true;
     }
 
     // We better have populated all of them by now
@@ -3441,17 +3444,7 @@ void Compiler::fgCreateFunclets()
 
     fgFuncletsCreated = true;
 
-#if DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter fgCreateFunclets()");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist();
-#endif // DEBUG
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
