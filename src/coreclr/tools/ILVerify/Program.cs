@@ -469,7 +469,7 @@ namespace ILVerify
                 new("input-file-path", "Input file(s)") { Arity = ArgumentArity.OneOrMore };
             public Option<string[]> Reference { get; } =
                 new(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly");
-            public Option<FileInfo> ReferenceeFile { get; } =
+            public Option<FileInfo> ReferenceFile { get; } =
                 new Option<FileInfo>(new[] { "--reference-file" }, "Same as --reference, but the reference(s) are declared line by line in the specified file.").ExistingOnly();
             public Option<string> SystemModule { get; } =
                 new(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)");
