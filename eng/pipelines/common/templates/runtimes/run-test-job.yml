@@ -231,7 +231,7 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+      ${{ if eq(parameters.archType, 'arm64') }}:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200

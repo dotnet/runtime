@@ -55,10 +55,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public LbrOptionFlags Options;
         private LbrEntry32 _entries;
 
-        public Span<LbrEntry32> Entries(int totalSize)
+        public static Span<LbrEntry32> Entries(ref LbrTraceEventData32 data, int totalSize)
         {
-            IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData32, byte>(ref this), ref Unsafe.As<LbrEntry32, byte>(ref _entries));
-            return MemoryMarshal.CreateSpan(ref _entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry32));
+            IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData32, byte>(ref data), ref Unsafe.As<LbrEntry32, byte>(ref data._entries));
+            return MemoryMarshal.CreateSpan(ref data._entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry32));
         }
     }
 
@@ -71,10 +71,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public LbrOptionFlags Options;
         private LbrEntry64 _entries;
 
-        public Span<LbrEntry64> Entries(int totalSize)
+        public static Span<LbrEntry64> Entries(ref LbrTraceEventData64 data, int totalSize)
         {
-            IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData64, byte>(ref this), ref Unsafe.As<LbrEntry64, byte>(ref _entries));
-            return MemoryMarshal.CreateSpan(ref _entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry64));
+            IntPtr entriesOffset = Unsafe.ByteOffset(ref Unsafe.As<LbrTraceEventData64, byte>(ref data), ref Unsafe.As<LbrEntry64, byte>(ref data._entries));
+            return MemoryMarshal.CreateSpan(ref data._entries, (totalSize - (int)entriesOffset) / sizeof(LbrEntry64));
         }
     }
 }

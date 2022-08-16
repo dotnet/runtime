@@ -15,7 +15,7 @@ namespace System.Threading.RateLimiting.Tests
         // Creates a DefaultPartitionedRateLimiter with the timer effectively disabled
         internal static PartitionedRateLimiter<TResource> CreatePartitionedLimiterWithoutTimer<TResource, TKey>(Func<TResource, RateLimitPartition<TKey>> partitioner)
         {
-            var limiterType = Assembly.GetAssembly(typeof(PartitionedRateLimiter<>)).GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2");
+            var limiterType = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
             Assert.NotNull(limiterType);
 
             var genericLimiterType = limiterType.MakeGenericType(typeof(TResource), typeof(TKey));
@@ -30,10 +30,17 @@ namespace System.Threading.RateLimiting.Tests
         // Gets and runs the Heartbeat function on the DefaultPartitionedRateLimiter
         internal static Task RunTimerFunc<T>(PartitionedRateLimiter<T> limiter)
         {
-            var innerTimer = limiter.GetType().GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
+            // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
+            var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
+            var limiterType = limiter.GetType();
+            Assert.Equal(limiterTypeDef, limiterType.GetGenericTypeDefinition());
+            if (string.Empty.Length > 0)
+                limiterType = limiterTypeDef;
+
+            var innerTimer = limiterType.GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(innerTimer);
 
-            var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
+            var timerLoopMethod = limiterType.GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(timerLoopMethod);
 
             return (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
@@ -42,20 +49,20 @@ namespace System.Threading.RateLimiting.Tests
 
     internal sealed class NotImplementedPartitionedRateLimiter<T> : PartitionedRateLimiter<T>
     {
-        public override int GetAvailablePermits(T resource) => throw new NotImplementedException();
+        public override RateLimiterStatistics? GetStatistics(T resource) => throw new NotImplementedException();
         protected override RateLimitLease AttemptAcquireCore(T resource, int permitCount) => throw new NotImplementedException();
         protected override ValueTask<RateLimitLease> AcquireAsyncCore(T resource, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 
     internal sealed class TrackingRateLimiter : RateLimiter
     {
-        private int _getAvailablePermitsCallCount;
+        private int _getStatisticsCallCount;
         private int _acquireCallCount;
         private int _waitAsyncCallCount;
         private int _disposeCallCount;
         private int _disposeAsyncCallCount;
 
-        public int GetAvailablePermitsCallCount => _getAvailablePermitsCallCount;
+        public int GetStatisticsCallCount => _getStatisticsCallCount;
         public int AcquireCallCount => _acquireCallCount;
         public int AcquireAsyncCallCount => _waitAsyncCallCount;
         public int DisposeCallCount => _disposeCallCount;
@@ -63,10 +70,10 @@ namespace System.Threading.RateLimiting.Tests
 
         public override TimeSpan? IdleDuration => null;
 
-        public override int GetAvailablePermits()
+        public override RateLimiterStatistics? GetStatistics()
         {
-            Interlocked.Increment(ref _getAvailablePermitsCallCount);
-            return 1;
+            Interlocked.Increment(ref _getStatisticsCallCount);
+            return null;
         }
 
         protected override RateLimitLease AttemptAcquireCore(int permitCount)
@@ -142,7 +149,7 @@ namespace System.Threading.RateLimiting.Tests
     {
         public override TimeSpan? IdleDuration => throw new NotImplementedException();
 
-        public override int GetAvailablePermits() => throw new NotImplementedException();
+        public override RateLimiterStatistics? GetStatistics() => throw new NotImplementedException();
         protected override RateLimitLease AttemptAcquireCore(int permitCount) => throw new NotImplementedException();
         protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
@@ -152,8 +159,8 @@ namespace System.Threading.RateLimiting.Tests
         public Func<TimeSpan?> IdleDurationImpl { get; set; } = () => null;
         public override TimeSpan? IdleDuration => IdleDurationImpl();
 
-        public Func<int> GetAvailablePermitsImpl { get; set; } = () => throw new NotImplementedException();
-        public override int GetAvailablePermits() => GetAvailablePermitsImpl();
+        public Func<RateLimiterStatistics?> GetStatisticsImpl{ get; set; } = () => throw new NotImplementedException();
+        public override RateLimiterStatistics? GetStatistics() => GetStatisticsImpl();
 
         public Func<int, RateLimitLease> AttemptAcquireCoreImpl { get; set; } = _ => new Lease();
         protected override RateLimitLease AttemptAcquireCore(int permitCount) => AttemptAcquireCoreImpl(permitCount);
@@ -182,8 +189,8 @@ namespace System.Threading.RateLimiting.Tests
         public Func<TimeSpan?> IdleDurationImpl { get; set; } = () => null;
         public override TimeSpan? IdleDuration => IdleDurationImpl();
 
-        public Func<int> GetAvailablePermitsImpl { get; set; } = () => throw new NotImplementedException();
-        public override int GetAvailablePermits() => GetAvailablePermitsImpl();
+        public Func<RateLimiterStatistics?> GetStatisticsImpl { get; set; } = () => throw new NotImplementedException();
+        public override RateLimiterStatistics? GetStatistics() => GetStatisticsImpl();
 
         public Func<int, RateLimitLease> AttemptAcquireCoreImpl { get; set; } = _ => new Lease();
         protected override RateLimitLease AttemptAcquireCore(int permitCount) => AttemptAcquireCoreImpl(permitCount);

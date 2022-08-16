@@ -84,7 +84,11 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsFunctionPointer)
                         return;
 
-                    dependencies.Add(factory.MaximallyConstructableType(type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Reflection invoke");
+                    TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    else
+                        dependencies.Add(factory.MaximallyConstructableType(canonType), "Reflection invoke");
                 }
             }
 

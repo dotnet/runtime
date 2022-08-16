@@ -1740,11 +1740,18 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
+#endif
     compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
-        printf("; Assembly listing for method %s\n", compiler->info.compFullName);
+#ifdef DEBUG
+        const char* fullName = compiler->info.compFullName;
+#else
+        const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
+#endif
+
+        printf("; Assembly listing for method %s\n", fullName);
 
         printf("; Emitting ");
 
@@ -1880,7 +1887,30 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+            const char* pgoKind;
+            switch (compiler->fgPgoSource)
+            {
+                case ICorJitInfo::PgoSource::Static:
+                    pgoKind = "Static";
+                    break;
+                case ICorJitInfo::PgoSource::Dynamic:
+                    pgoKind = "Dynamic";
+                    break;
+                case ICorJitInfo::PgoSource::Blend:
+                    pgoKind = "Blend";
+                    break;
+                case ICorJitInfo::PgoSource::Text:
+                    pgoKind = "Textual";
+                    break;
+                case ICorJitInfo::PgoSource::Sampling:
+                    pgoKind = "Sample-based";
+                    break;
+                default:
+                    pgoKind = "Unknown";
+                    break;
+            }
+
+            printf("; with %s PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n", pgoKind,
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
@@ -1905,7 +1935,6 @@ void CodeGen::genGenerateMachineCode()
             printf("; invoked as altjit\n");
         }
     }
-#endif // DEBUG
 
     // We compute the final frame layout before code generation. This is because LSRA
     // has already computed exactly the maximum concurrent number of spill temps of each type that are
@@ -2056,6 +2085,11 @@ void CodeGen::genEmitMachineCode()
     {
         printf("*************** After end code gen, before unwindEmit()\n");
         GetEmitter()->emitDispIGlist(true);
+    }
+#else
+    if (compiler->opts.disAsm)
+    {
+        printf("\n; Total bytes of code %d\n\n", codeSize);
     }
 #endif
 
@@ -3361,7 +3395,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (varTypeIsStruct(varDsc) &&
+                if (varTypeIsPromotable(varDsc) &&
                     (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
                 {
                     assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);

@@ -312,6 +312,12 @@
   <data name="InvalidDataMemberName" xml:space="preserve">
     <value>Member '{0}' in type '{1}' cannot have DataMemberAttribute attribute Name set to null or empty string.</value>
   </data>
+  <data name="InvalidDataNode" xml:space="preserve">
+    <value>'{0}' is an invalid data node when deserializing extension data.</value>
+  </data>
+  <data name="InvalidEnumBaseType" xml:space="preserve">
+    <value>Type '{0}' in namespace '{1}' is not a valid base type for enum '{2}' in namespace '{3}'.</value>
+  </data>
   <data name="InvalidEnumMemberValue" xml:space="preserve">
     <value>'{0}' in type '{1}' cannot have EnumMemberAttribute attribute Value set to null or empty string.</value>
   </data>
@@ -624,6 +630,9 @@
   <data name="XmlBadBOM" xml:space="preserve">
     <value>Unrecognized Byte Order Mark.</value>
   </data>
+  <data name="XmlMaxNameTableCharCountExceeded" xml:space="preserve">
+    <value>The maximum nametable character count quota ({0}) has been exceeded while reading XML data. The nametable is a data structure used to store strings encountered during XML processing - long XML documents with non-repeating element names, attribute names and attribute values may trigger this quota. This quota may be increased by changing the MaxNameTableCharCount property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
   <data name="XmlBase64DataExpected" xml:space="preserve">
     <value>Base64 encoded data expected. Found {0}.</value>
   </data>
@@ -785,6 +794,9 @@
   </data>
   <data name="XmlMaxArrayLengthExceeded" xml:space="preserve">
     <value>The maximum array length quota ({0}) has been exceeded while reading XML data. This quota may be increased by changing the MaxArrayLength property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
+  <data name="XmlMaxArrayLengthOrMaxItemsQuotaExceeded" xml:space="preserve">
+    <value>The maximum array length quota ({0}) or the maximum items in object graph quota has been exceeded while reading XML data. These quotas may be increased by changing the MaxArrayLength property on XmlDictionaryReaderQuotas or the MaxItemsInObjectGraph setting.</value>
   </data>
   <data name="XmlMaxBytesPerReadExceeded" xml:space="preserve">
     <value>The 'maximum bytes per Read operation' quota ({0}) has been exceeded while reading XML data. Long element start tags (consisting of the element name, attribute names and attribute values) may trigger this quota. This quota may be increased by changing the MaxBytesPerRead property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
@@ -1059,6 +1071,9 @@
   <data name="DupTypeContractInDataContractSet" xml:space="preserve">
     <value>DataContract for type '{0}' cannot be added to DataContractSet since type '{1}' with the same data contract name '{2}' in namespace '{3}' is already present and the contracts are not equivalent.</value>
   </data>
+  <data name="GenericTypeNameMismatch" xml:space="preserve">
+    <value>DataContract name '{0}' from namespace '{1}' does not match the generic name '{2}' from namespace '{3}'.</value>
+  </data>
   <data name="GenericTypeNotExportable" xml:space="preserve">
     <value>Type '{0}' cannot be exported as a schema type because it is an open generic type. You can only export a generic type if all its generic parameter types are actual types.</value>
   </data>
@@ -1155,10 +1170,235 @@
   <data name="MustBeGreaterThanZero" xml:space="preserve">
     <value>'{0}' must be greater than 0.</value>
   </data>
+  <data name="ReadOnlyClassDeserialization" xml:space="preserve">
+    <value>{0} The class cannot be deserialized.</value>
+  </data>
   <data name="ReadOnlyCollectionDeserialization" xml:space="preserve">
     <value>Collection type '{0}' cannot be deserialized since it</value>
   </data>
   <data name="UnknownNullType" xml:space="preserve">
     <value>Unknown Type for null value</value>
+  </data>
+  <data name="AmbiguousReferencedTypes1" xml:space="preserve">
+    <value>List of referenced types contains more than one type with same data contract name. Need to exclude all but one of the following types. Only matching types can be valid references: {0}</value>
+  </data>
+  <data name="AmbiguousReferencedTypes3" xml:space="preserve">
+    <value>List of referenced types contains more than one type with data contract name '{0}' in namespace '{1}'. Need to exclude all but one of the following types. Only matching types can be valid references: {2}</value>
+  </data>
+  <data name="AmbiguousReferencedCollectionTypes1" xml:space="preserve">
+    <value>List of referenced collection types contains more than one type with same data contract name. Include only one of the following types. Only matching types can be valid references: {0}</value>
+  </data>
+  <data name="AmbiguousReferencedCollectionTypes3" xml:space="preserve">
+    <value>List of referenced collection types contains more than one type with data contract name '{0}' in namespace '{1}'. Include only one of the following types. Only matching types can be valid references: {2}</value>
+  </data>
+  <data name="ReferencedCollectionTypesCannotContainNull" xml:space="preserve">
+    <value>ReferencedCollectionTypes specified via ImportOptions must contain valid types. Cannot contain null.</value>
+  </data>
+  <data name="ReferencedTypeMatchingMessage" xml:space="preserve">
+    <value>(matching)</value>
+  </data>
+  <data name="ReferencedTypeNotMatchingMessage" xml:space="preserve">
+    <value>(not matching)</value>
+  </data>
+  <data name="ReferencedTypesCannotContainNull" xml:space="preserve">
+    <value>ReferencedTypes specified via ImportOptions must contain valid types. Cannot contain null.</value>
+  </data>
+  <data name="SurrogatesWithGetOnlyCollectionsNotSupported" xml:space="preserve">
+    <value>Using surrogates with get-only collection properties is not supported.  Consider removing the surrogate associated with '{0}' or adding a setter to '{1}.{2}'.</value>
+  </data>
+  <data name="AbstractElementNotSupported" xml:space="preserve">
+    <value>The element cannot have 'abstract' set to 'true'.</value>
+  </data>
+  <data name="AbstractTypeNotSupported" xml:space="preserve">
+    <value>The type cannot have 'abstract' set to 'true'.</value>
+  </data>
+  <data name="AnnotationAttributeNotFound" xml:space="preserve">
+    <value>Invalid '{0}' annotation in type '{1}' from namespace '{2}'. Attribute '{3}' not present.</value>
+  </data>
+  <data name="AnonymousTypeNotSupported" xml:space="preserve">
+    <value>Anonymous type in element '{0}' from namespace '{1}' is not supported.</value>
+  </data>
+  <data name="AnyAttributeNotSupported" xml:space="preserve">
+    <value>'anyAttribute' is not supported.</value>
+  </data>
+  <data name="ArrayItemFormMustBe" xml:space="preserve">
+    <value>Form for element '{0}' must be qualified.</value>
+  </data>
+  <data name="ArrayTypeCannotBeImported" xml:space="preserve">
+    <value>Array type '{0}' in namespace '{1}' cannot be imported. {2}</value>
+  </data>
+  <data name="BaseTypeNotISerializable" xml:space="preserve">
+    <value>One of its base types, '{0}' from namespace '{1}' is not ISerializable.</value>
+  </data>
+  <data name="CannotComputeUniqueName" xml:space="preserve">
+    <value>A unique name cannot be computed for '{0}' because there are already Int32.MaxValue types of with the same name.</value>
+  </data>
+  <data name="CannotHaveDuplicateAttributeNames" xml:space="preserve">
+    <value>The type contains two attributes with the same name '{0}'. Multiple attributes with the same name in one type are not supported.</value>
+  </data>
+  <data name="CannotHaveDuplicateElementNames" xml:space="preserve">
+    <value>The type contains two elements with the same name '{0}'. Multiple elements with the same name in one type are not supported because members marked with DataMemberAttribute attribute must have unique names.</value>
+  </data>
+  <data name="CannotImportInvalidSchemas" xml:space="preserve">
+    <value>Cannot import invalid schemas. Compilation on the XmlSchemaSet failed.</value>
+  </data>
+  <data name="CannotImportNullDataContractName" xml:space="preserve">
+    <value>Cannot import type for null XmlQualifiedName specified via parameter.</value>
+  </data>
+  <data name="CannotImportNullSchema" xml:space="preserve">
+    <value>Cannot import null XmlSchema contained in XmlSchemaSet specified via parameter.</value>
+  </data>
+  <data name="ComplexTypeRestrictionNotSupported" xml:space="preserve">
+    <value>An internal error has occurred. Could not load serialization schema. Consider providing schema with namespace '{0}'.</value>
+  </data>
+  <data name="DefaultOnElementNotSupported" xml:space="preserve">
+    <value>Default value on element '{0}' is not supported.</value>
+  </data>
+  <data name="DerivedTypeNotISerializable" xml:space="preserve">
+    <value>It is not ISerializable but its base type '{0}' in namespace '{1}' is ISerializable.</value>
+  </data>
+  <data name="ElementMaxOccursMustBe" xml:space="preserve">
+    <value>'maxOccurs' on element '{0}' must be 1.</value>
+  </data>
+  <data name="ElementMinOccursMustBe" xml:space="preserve">
+    <value>'minOccurs' on element '{0}' must be 0 or 1.</value>
+  </data>
+  <data name="ElementRefOnLocalElementNotSupported" xml:space="preserve">
+    <value>Ref to element '{0}' in '{1}' namespace is not supported.</value>
+  </data>
+  <data name="EnumEnumerationFacetsMustHaveValue" xml:space="preserve">
+    <value>Enumeration facets without 'value' are not supported.</value>
+  </data>
+  <data name="EnumListInAnonymousTypeNotSupported" xml:space="preserve">
+    <value>Anonymous type with &lt;list&gt; cannot be used to create Flags enumeration because it is not a valid enum type.</value>
+  </data>
+  <data name="EnumListMustContainAnonymousType" xml:space="preserve">
+    <value>Simple type list must contain an anonymous type specifying enumeration facets.</value>
+  </data>
+  <data name="EnumOnlyEnumerationFacetsSupported" xml:space="preserve">
+    <value>Facets other than enumeration facets are not supported.</value>
+  </data>
+  <data name="EnumRestrictionInvalid" xml:space="preserve">
+    <value>Anonymous type with &lt;restriction&gt; cannot be used to create Flags enumeration because it is not a valid enum type.</value>
+  </data>
+  <data name="EnumTypeCannotBeImported" xml:space="preserve">
+    <value>Enum type '{0}' in namespace '{1}' cannot be imported. {2}</value>
+  </data>
+  <data name="EnumUnionInAnonymousTypeNotSupported" xml:space="preserve">
+    <value>Anonymous type with &lt;union&gt;. cannot be used to create Flags enumeration because it is not a valid enum type.</value>
+  </data>
+  <data name="FixedOnElementNotSupported" xml:space="preserve">
+    <value>Fixed value on element '{0}' is not supported.</value>
+  </data>
+  <data name="FormMustBeQualified" xml:space="preserve">
+    <value>Form on element '{0}' must be qualified.</value>
+  </data>
+  <data name="GenericAnnotationAttributeNotFound" xml:space="preserve">
+    <value>Annotation for generic type '{0}' did not have attribute '{1}'.</value>
+  </data>
+  <data name="GenericAnnotationForNestedLevelMustBeIncreasing" xml:space="preserve">
+    <value>Nested level on annotation elements '{0}' from namespace '{1}' for generic type '{2}' must be in increasing order.</value>
+  </data>
+  <data name="GenericAnnotationHasInvalidAttributeValue" xml:space="preserve">
+    <value>Annotation element '{0}' from namespace '{1}' for generic type '{2}' has an invalid value '{3}' for attribute '{4}'. Expecting value to be of type '{5}'.</value>
+  </data>
+  <data name="GenericAnnotationHasInvalidElement" xml:space="preserve">
+    <value>Annotation for generic type '{2}' has an invalid element '{0}' from namespace '{1}'.</value>
+  </data>
+  <data name="InvalidAnnotationExpectingText" xml:space="preserve">
+    <value>Annotation '{0}' from namespace '{1}' has an invalid element '{2}' from namespace '{3}'. Expecting text.</value>
+  </data>
+  <data name="InvalidClassDerivation" xml:space="preserve">
+    <value>Type '{0}' in namespace '{1}' cannot be used as the base type of a data contract type, because it itself does not have a data contract. Consider marking type '{0}' with the DataContractAttribute attribute.</value>
+  </data>
+  <data name="InvalidEmitDefaultAnnotation" xml:space="preserve">
+    <value>Annotation for element {0} in type {1} from namespace {2} specifies EmitDefaultValue as 'true'. This requires the element to be either nillable or the element's type must be a value type.</value>
+  </data>
+  <data name="InvalidISerializableDerivation" xml:space="preserve">
+    <value>Cannot import type '{0}' in namespace '{1}' as its base type because derived type is ISerializable but the base type is not ISerializable.</value>
+  </data>
+  <data name="InvalidKeyValueType" xml:space="preserve">
+    <value>It is an invalid dictionary type. Element '{0}' must reference a complex type containing a sequence with two required elements. Either fix the schema or remove the IsDictionary annotation.</value>
+  </data>
+  <data name="InvalidKeyValueTypeNamespace" xml:space="preserve">
+    <value>It is an invalid dictionary type since element '{0}' references a type from a different namespace '{1}'. Either fix the schema or remove the IsDictionary annotation.</value>
+  </data>
+  <data name="IsDictionaryFormattedIncorrectly" xml:space="preserve">
+    <value>'{0}' is an invalid value for IsDictionary annotation. {1}</value>
+  </data>
+  <data name="IsValueTypeFormattedIncorrectly" xml:space="preserve">
+    <value>'{0}' is an invalid value for IsValueType annotation. {1}</value>
+  </data>
+  <data name="ISerializableContainsMoreThanOneItems" xml:space="preserve">
+    <value>Its root sequence contains more than one particle.</value>
+  </data>
+  <data name="ISerializableDerivedContainsOneOrMoreItems" xml:space="preserve">
+    <value>Derived ISerializable types cannot contain any particles.</value>
+  </data>
+  <data name="ISerializableDoesNotContainAny" xml:space="preserve">
+    <value>It does not contain root sequence with a wildcard element &lt;any&gt;.</value>
+  </data>
+  <data name="ISerializableMustRefFactoryTypeAttribute" xml:space="preserve">
+    <value>It does not reference attribute '{0}' from namespace '{1}'. </value>
+  </data>
+  <data name="ISerializableTypeCannotBeImported" xml:space="preserve">
+    <value>ISerializable type '{0}' in namespace '{1}' cannot be imported. '{2}'</value>
+  </data>
+  <data name="ISerializableWildcardMaxOccursMustBe" xml:space="preserve">
+    <value>'maxOccurs' on the wildcard element must be '{0}'.</value>
+  </data>
+  <data name="ISerializableWildcardMinOccursMustBe" xml:space="preserve">
+    <value>'minOccurs' on the wildcard element must be '{0}'.</value>
+  </data>
+  <data name="ISerializableWildcardNamespaceInvalid" xml:space="preserve">
+    <value>Namespace on the wildcard element must be '{0}'.</value>
+  </data>
+  <data name="ISerializableWildcardProcessContentsInvalid" xml:space="preserve">
+    <value>ProcessContents on the wildcard element must be '{0}'.</value>
+  </data>
+  <data name="MixedContentNotSupported" xml:space="preserve">
+    <value>Complex type with mixed content is not supported.</value>
+  </data>
+  <data name="MustContainOnlyLocalElements" xml:space="preserve">
+    <value>The root sequence must contain only local elements. Group ref, choice, any and nested sequences are not supported.</value>
+  </data>
+  <data name="RedefineNotSupported" xml:space="preserve">
+    <value>Redefine is not supported.</value>
+  </data>
+  <data name="RootParticleMustBeSequence" xml:space="preserve">
+    <value>The root particle must be a sequence.</value>
+  </data>
+  <data name="RootSequenceMaxOccursMustBe" xml:space="preserve">
+    <value>'maxOccurs' on the root sequence must be 1.</value>
+  </data>
+  <data name="RootSequenceMustBeRequired" xml:space="preserve">
+    <value>'minOccurs' on the root sequence must be 1.</value>
+  </data>
+  <data name="SimpleContentNotSupported" xml:space="preserve">
+    <value>Complex types with simple content extension are not supported.</value>
+  </data>
+  <data name="SimpleTypeRestrictionDoesNotSpecifyBase" xml:space="preserve">
+    <value>Simple type restriction must specify a base type.</value>
+  </data>
+  <data name="SimpleTypeUnionNotSupported" xml:space="preserve">
+    <value>Simple types with &lt;union&gt; content are not supported.</value>
+  </data>
+  <data name="SpecifiedTypeNotFoundInSchema" xml:space="preserve">
+    <value>Invalid type specified. Type with name '{0}' not found in schema with namespace '{1}'.</value>
+  </data>
+  <data name="SubstitutionGroupOnElementNotSupported" xml:space="preserve">
+    <value>Substitution group on element '{0}' is not supported.</value>
+  </data>
+  <data name="TopLevelElementRepresentsDifferentType" xml:space="preserve">
+    <value>The global element found in the schema with same name references a different type '{0}' in namespace '{1}'. Data contract types must have the same name as their root element name. Consider removing the global element or changing its type.</value>
+  </data>
+  <data name="TypeCannotBeImported" xml:space="preserve">
+    <value>Type '{0}' in namespace '{1}' cannot be imported. {2}</value>
+  </data>
+  <data name="TypeCannotBeImportedHowToFix" xml:space="preserve">
+    <value>{0} Either change the schema so that the types can map to data contract types or use ImportXmlType or use a different serializer.</value>
+  </data>
+  <data name="TypeShouldNotContainAttributes" xml:space="preserve">
+    <value>Attributes must be optional and from namespace '{0}'.</value>
   </data>
 </root>

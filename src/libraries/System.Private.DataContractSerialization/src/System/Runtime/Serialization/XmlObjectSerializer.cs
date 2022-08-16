@@ -7,10 +7,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Text;
 using System.Xml;
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -220,7 +222,7 @@ namespace System.Runtime.Serialization
             if (name == null)
                 return false;
 
-            if (contract.IsBuiltInDataContract || !contract.CanContainReferences)
+            if (contract.IsBuiltInDataContract || !contract.CanContainReferences || contract.IsISerializable)
             {
                 return false;
             }
@@ -378,12 +380,12 @@ namespace System.Runtime.Serialization
 
                 ClassDataContract? classContract = contract as ClassDataContract;
                 if (classContract != null)
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 while (classContract != null)
                 {
                     if (reader.IsStartElement(classContract.TopLevelElementName!, classContract.TopLevelElementNamespace!))
                         return true;
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 }
                 if (classContract == null)
                 {

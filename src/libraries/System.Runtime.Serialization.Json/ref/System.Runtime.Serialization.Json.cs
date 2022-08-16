@@ -46,6 +46,8 @@ namespace System.Runtime.Serialization.Json
         public int MaxItemsInObjectGraph { get { throw null; } }
         public bool SerializeReadOnlyTypes { get { throw null; } }
         public bool UseSimpleDictionaryFormat { get { throw null; } }
+        public System.Runtime.Serialization.ISerializationSurrogateProvider? GetSerializationSurrogateProvider() { throw null; }
+        public void SetSerializationSurrogateProvider(System.Runtime.Serialization.ISerializationSurrogateProvider? provider) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]

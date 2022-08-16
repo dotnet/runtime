@@ -16,11 +16,6 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
   </ItemGroup>

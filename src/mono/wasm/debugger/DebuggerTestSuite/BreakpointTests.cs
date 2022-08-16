@@ -39,9 +39,9 @@ namespace DebuggerTests
         public async Task CreateJSBreakpoint()
         {
             // Test that js breakpoints get set correctly
-            // 13 24
-            // 14 24
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
+            // 13 4
+            // 14 4
+            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 4);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -50,9 +50,9 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(24, (int)loc["columnNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 24);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 4);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -61,14 +61,14 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(14, (int)loc2["lineNumber"]);
-            Assert.Equal(24, (int)loc2["columnNumber"]);
+            Assert.Equal(4, (int)loc2["columnNumber"]);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateJS0Breakpoint()
         {
-            // 13 24
-            // 14 24
+            // 13 4
+            // 14 4
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -78,7 +78,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(24, (int)loc["columnNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
             var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 0);
 
@@ -89,7 +89,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(14, (int)loc2["lineNumber"]);
-            Assert.Equal(24, (int)loc2["columnNumber"]);
+            Assert.Equal(4, (int)loc2["columnNumber"]);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -510,7 +510,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
@@ -592,10 +592,10 @@ namespace DebuggerTests
         [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8, "DebuggerAttribute.RunNonUserCode")]
         [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8, "DebuggerAttribute.RunStepThroughWithNonUserCode")]
         [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8, "DebuggerAttribute.RunStepThroughWithNonUserCode")]
-        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
-        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
-        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1065, 4, "IExtendIDefaultInterface.NonUserCodeDefaultMethod")]
-        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1114, 4, "DefaultInterfaceMethod.EvaluateNonUserCodeAttr")]
+        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1110, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
+        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1110, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
+        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1067, 4, "IExtendIDefaultInterface.NonUserCodeDefaultMethod")]
+        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1116, 4, "DefaultInterfaceMethod.EvaluateNonUserCodeAttr")]
         public async Task StepThroughOrNonUserCodeAttributeStepInNoBp2(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
@@ -785,14 +785,14 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { load_wasm_page_without_assets(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
 
             run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
@@ -822,12 +822,12 @@ namespace DebuggerTests
             );
         }
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1087, 1003, 1001, 1005)]
-        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1088, 1047, 1045, 1049)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1016, 1014, 1018)]
-        [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1124, 1022, 1020, 1024)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1031, 1029, 1033)]
+        [Theory]
+        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1089, 1005, 1003, 1007)]
+        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1090, 1049, 1047, 1051)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1018, 1016, 1020)]
+        [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1126, 1024, 1022, 1026)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1033, 1031, 1035)]
         public async Task BreakInDefaultInterfaceMethod(
             string dimClassName, string dimName, string entryMethod,  string prevFrameInDim, int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine)
         {
@@ -844,7 +844,7 @@ namespace DebuggerTests
 
             // check prev frame in DIM
             Assert.Equal(pauseInDim["callFrames"][1]["functionName"].Value<string>(), prevFrameInDim);
-            Assert.Equal(pauseInDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), evaluateAsPrevFrameLine);
+            CheckLocationLine(pauseInDim["callFrames"][1]["location"], evaluateAsPrevFrameLine);
 
             string funCalledFromDim = "MethodForCallingFromDIM";
             var bpFunCalledFromDim = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", funCalledFromDim, 1);
@@ -858,8 +858,7 @@ namespace DebuggerTests
 
             string prevFrameFromDim = dimName;
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), dimClassName + "." + prevFrameFromDim);
-            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);
-
+            CheckLocationLine(pauseInFunCalledFromDim["callFrames"][1]["location"], dimAsPrevFrameLine);
 
             async Task CheckDefaultMethod(JObject pause_location, string methodName)
             {
