@@ -657,6 +657,128 @@ namespace System.Text.Json
             return false;
         }
 
+        internal bool TryGetValue<T>(int index, Utf8Parser<T> parser, bool decode, [NotNullWhen(true)] out T? value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren && decode)
+            {
+                byte[]? sourceArray = null;
+                int length = checked(segment.Length * JsonConstants.MaxExpansionFactorWhileEscaping);
+                Span<byte> sourceUnescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                (sourceArray = ArrayPool<byte>.Shared.Rent(length));
+                JsonReaderHelper.Unescape(segment, sourceUnescaped, out int written);
+                Debug.Assert(written > 0);
+                sourceUnescaped = sourceUnescaped.Slice(0, written);
+                bool success = false;
+                if (parser(sourceUnescaped, out T? tmpUnescaped))
+                {
+                    value = tmpUnescaped;
+                    success = true;
+                }
+                else
+                {
+                    value = default;
+                }
+
+                if (sourceArray != null)
+                {
+                    sourceUnescaped.Slice(0, written).Clear();
+                    ArrayPool<byte>.Shared.Return(sourceArray);
+                }
+
+                return success;
+            }
+            else
+            {
+                if (parser(segment, out T? tmp))
+                {
+                    value = tmp;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        internal bool TryGetValue<T>(int index, Parser<T> parser, [NotNullWhen(true)] out T? value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                byte[]? sourceArray = null;
+                int length = checked(segment.Length * JsonConstants.MaxExpansionFactorWhileEscaping);
+                Span<byte> sourceUnescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                (sourceArray = ArrayPool<byte>.Shared.Rent(length));
+                JsonReaderHelper.Unescape(segment, sourceUnescaped, out int written);
+                Debug.Assert(written > 0);
+                sourceUnescaped = sourceUnescaped.Slice(0, written);
+
+                bool success = TryGetValue(sourceUnescaped, parser, out value);
+
+                if (sourceArray != null)
+                {
+                    sourceUnescaped.Slice(0, written).Clear();
+                    ArrayPool<byte>.Shared.Return(sourceArray);
+                }
+
+                return success;
+            }
+
+            return TryGetValue(segment, parser, out value);
+        }
+
+        internal bool TryGetValue<T>(ReadOnlySpan<byte> decodedUtf8String, Parser<T> parser, [NotNullWhen(true)] out T? value)
+        {
+            char[]? sourceTranscodedArray = null;
+            int length = checked(decodedUtf8String.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
+            Span<char> sourceTranscoded = length <= JsonConstants.StackallocByteThreshold ?
+            stackalloc char[JsonConstants.StackallocByteThreshold] :
+            (sourceTranscodedArray = ArrayPool<char>.Shared.Rent(length));
+            int writtenTranscoded = JsonReaderHelper.TranscodeHelper(decodedUtf8String, sourceTranscoded);
+            Debug.Assert(writtenTranscoded > 0);
+            sourceTranscoded = sourceTranscoded.Slice(0, writtenTranscoded);
+
+            bool success = false;
+            if (parser(sourceTranscoded, out T? tmp))
+            {
+                value = tmp;
+                success = true;
+            }
+            else
+            {
+                value = default;
+            }
+
+            if (sourceTranscodedArray != null)
+            {
+                sourceTranscoded.Slice(0, writtenTranscoded).Clear();
+                ArrayPool<char>.Shared.Return(sourceTranscodedArray);
+            }
+
+            return success;
+        }
+
         internal bool TryGetValue(int index, out DateTime value)
         {
             CheckNotDisposed();

@@ -1156,6 +1156,139 @@ namespace System.Text.Json
             return value;
         }
 
+        /// <summary>
+        ///   Attempts to represent the current JSON string as the given type.
+        /// </summary>
+        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as the given type,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetValue<T>(Utf8Parser<T> parser, [NotNullWhen(true)] out T? value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, parser, decode: true, out value);
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON string as the given type.
+        /// </summary>
+        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="decode">Indicates whether the UTF8 JSON string should be decoded.</param>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as the given type,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetValue<T>(Utf8Parser<T> parser, bool decode, [NotNullWhen(true)] out T? value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, parser, decode, out value);
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON string as the given type.
+        /// </summary>
+        /// <typeparam name="T">The type with which to represent the JSON string.</typeparam>
+        /// <param name="parser">A delegate to the method that parses the JSON string.</param>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as the given type,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetValue<T>(Parser<T> parser, [NotNullWhen(true)] out T? value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, parser, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as the given type.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as the given type.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="Guid"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public T GetValue<T>(Utf8Parser<T> parser)
+        {
+            if (!TryGetValue(parser, out T? value))
+            {
+                ThrowHelper.ThrowFormatException();
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as the given type.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as the given type.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="Guid"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public T GetValue<T>(Parser<T> parser)
+        {
+            if (!TryGetValue(parser, out T? value))
+            {
+                ThrowHelper.ThrowFormatException();
+            }
+
+            return value;
+        }
+
         internal string GetPropertyName()
         {
             CheckValidInstance();
@@ -1470,4 +1603,34 @@ namespace System.Text.Json
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"ValueKind = {ValueKind} : \"{ToString()}\"";
     }
+
+    /// <summary>
+    /// A delegate to a method that attempts to represent a JSON string as a given type.
+    /// </summary>
+    /// <typeparam name="TResult">The type of the resulting value.</typeparam>
+    /// <param name="span">The UTF8-encoded JSON string. This may be encoded or decoded depending on context.</param>
+    /// <param name="value">The resulting value.</param>
+    /// <remarks>
+    ///   This method does not create a representation of values other than JSON strings.
+    /// </remarks>
+    /// <returns>
+    ///   <see langword="true"/> if the string can be represented as the given type,
+    ///   <see langword="false"/> otherwise.
+    /// </returns>
+    public delegate bool Utf8Parser<TResult>(ReadOnlySpan<byte> span, [NotNullWhen(true)] out TResult? value);
+
+    /// <summary>
+    /// A delegate to a method that attempts to represent a JSON string as a given type.
+    /// </summary>
+    /// <typeparam name="TResult">The type of the resulting value.</typeparam>
+    /// <param name="span">The JSON string. This will always be in its decoded form.</param>
+    /// <param name="value">The resulting value.</param>
+    /// <remarks>
+    ///   This method does not create a representation of values other than JSON strings.
+    /// </remarks>
+    /// <returns>
+    ///   <see langword="true"/> if the string can be represented as the given type,
+    ///   <see langword="false"/> otherwise.
+    /// </returns>
+    public delegate bool Parser<TResult>(ReadOnlySpan<char> span, [NotNullWhen(true)] out TResult? value);
 }

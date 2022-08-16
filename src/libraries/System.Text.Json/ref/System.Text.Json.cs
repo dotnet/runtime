@@ -34,6 +34,10 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
     }
+
+    public delegate bool Utf8Parser<TResult>(ReadOnlySpan<byte> span, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TResult? value);
+    public delegate bool Parser<TResult>(ReadOnlySpan<char> span, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TResult? value);
+
     public readonly partial struct JsonElement
     {
         private readonly object _dummy;
@@ -55,6 +59,8 @@ namespace System.Text.Json
         public short GetInt16() { throw null; }
         public int GetInt32() { throw null; }
         public long GetInt64() { throw null; }
+        public T GetValue<T>(System.Text.Json.Parser<T> parser) { throw null; }
+        public T GetValue<T>(System.Text.Json.Utf8Parser<T> parser) { throw null; }
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<byte> utf8PropertyName) { throw null; }
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<char> propertyName) { throw null; }
         public System.Text.Json.JsonElement GetProperty(string propertyName) { throw null; }
@@ -81,6 +87,9 @@ namespace System.Text.Json
         public bool TryGetInt16(out short value) { throw null; }
         public bool TryGetInt32(out int value) { throw null; }
         public bool TryGetInt64(out long value) { throw null; }
+        public bool TryGetValue<T>(System.Text.Json.Parser<T> parser, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value) { throw null; }
+        public bool TryGetValue<T>(System.Text.Json.Utf8Parser<T> parser, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value) { throw null; }
+        public bool TryGetValue<T>(System.Text.Json.Utf8Parser<T> parser, bool decode, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value) { throw null; }
         public bool TryGetProperty(System.ReadOnlySpan<byte> utf8PropertyName, out System.Text.Json.JsonElement value) { throw null; }
         public bool TryGetProperty(System.ReadOnlySpan<char> propertyName, out System.Text.Json.JsonElement value) { throw null; }
         public bool TryGetProperty(string propertyName, out System.Text.Json.JsonElement value) { throw null; }
