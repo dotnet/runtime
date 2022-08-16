@@ -41,6 +41,7 @@ namespace System.Runtime.Serialization
             _importXmlDataType = importXmlDataType;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Import([NotNullIfNotNull("_elements")] out List<XmlQualifiedName>? elementTypeNames)
         {
@@ -169,6 +170,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportKnownTypes(XmlQualifiedName typeName)
         {
@@ -184,6 +186,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool IsObjectContract(DataContract dataContract)
         {
@@ -210,6 +213,7 @@ namespace System.Runtime.Serialization
             return dataContract is PrimitiveDataContract && ((PrimitiveDataContract)dataContract).UnderlyingType == Globals.TypeOfObject;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportKnownTypesForObject()
         {
@@ -350,6 +354,7 @@ namespace System.Runtime.Serialization
             return list;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportAnonymousGlobalElement(XmlSchemaElement element, XmlQualifiedName typeQName, string? ns)
         {
@@ -362,6 +367,7 @@ namespace System.Runtime.Serialization
             return contract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportAnonymousElement(XmlSchemaElement element, XmlQualifiedName typeQName)
         {
@@ -382,6 +388,7 @@ namespace System.Runtime.Serialization
                 return ImportType(element.SchemaType, typeQName, true/*isAnonymous*/);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportType(XmlQualifiedName typeName)
         {
@@ -398,6 +405,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportType(XmlSchemaType type)
         {
@@ -405,6 +413,7 @@ namespace System.Runtime.Serialization
         }
 
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportType(XmlSchemaType type, XmlQualifiedName typeName, bool isAnonymous)
         {
@@ -519,6 +528,7 @@ namespace System.Runtime.Serialization
             throw invalidContractException;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void RemoveFailedContract(XmlQualifiedName typeName)
         {
@@ -537,6 +547,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private bool CheckIfEnum(XmlSchemaSimpleTypeRestriction restriction)
         {
@@ -616,6 +627,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract? ImportType(XmlQualifiedName typeName, XmlSchemaParticle? rootParticle, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlQualifiedName? baseTypeName, XmlSchemaAnnotation? annotation)
         {
@@ -646,6 +658,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private ClassDataContract ImportClass(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaAnnotation? annotation, bool isReference)
         {
@@ -688,6 +701,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportXmlDataType(XmlQualifiedName typeName, XmlSchemaType xsdType, bool isAnonymous)
         {
@@ -720,6 +734,7 @@ namespace System.Runtime.Serialization
             return xmlDataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlDataContract? ImportSpecialXmlDataType(XmlSchemaType xsdType, bool isAnonymous)
         {
@@ -813,6 +828,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private ClassDataContract ImportISerializable(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation)
         {
@@ -888,6 +904,7 @@ namespace System.Runtime.Serialization
             return (rootSequence == null || rootSequence.Items == null || rootSequence.Items.Count == 0);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportBaseContract(XmlQualifiedName baseTypeName, ClassDataContract dataContract)
         {
@@ -932,6 +949,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportClassMember(XmlSchemaElement element, ClassDataContract dataContract)
         {
@@ -1036,6 +1054,7 @@ namespace System.Runtime.Serialization
             return new XmlQualifiedName(nameAttribute.Value, nsAttribute.Value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private CollectionDataContract ImportCollection(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation, bool isReference)
         {
@@ -1121,6 +1140,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static GenericInfo GetGenericInfoForDataMember(DataMember dataMember)
         {
@@ -1155,6 +1175,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private EnumDataContract? ImportFlagsEnum(XmlQualifiedName typeName, XmlSchemaSimpleTypeList list, XmlSchemaAnnotation? annotation)
         {
@@ -1177,6 +1198,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private EnumDataContract ImportEnum(XmlQualifiedName typeName, XmlSchemaSimpleTypeRestriction restriction, bool isFlags, XmlSchemaAnnotation? annotation)
         {
@@ -1207,6 +1229,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportSimpleTypeRestriction(XmlQualifiedName typeName, XmlSchemaSimpleTypeRestriction restriction)
         {
@@ -1222,6 +1245,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportDataContractExtension(XmlSchemaType type, DataContract dataContract)
         {
@@ -1313,6 +1337,7 @@ namespace System.Runtime.Serialization
             return genInfo;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private object? ImportSurrogateData(XmlElement? typeElement, string name, string ns)
         {
@@ -1385,6 +1410,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddDataContract(DataContract dataContract)
         {
