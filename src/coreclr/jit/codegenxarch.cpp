@@ -7965,19 +7965,19 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             }
         }
 
-        bool canStoreWithPush = fieldIsSlot;
-        bool canLoadWithPush  = genIsValidIntReg(argReg);
+        bool canStoreFullSlot = fieldIsSlot;
+        bool canLoadFullSlot  = genIsValidIntReg(argReg);
         if (argReg == REG_NA)
         {
             assert((genTypeSize(fieldNode) <= TARGET_POINTER_SIZE));
             assert(genTypeSize(genActualType(fieldNode)) == genTypeSize(genActualType(fieldType)));
 
             // We can widen local loads if the excess only affects padding bits.
-            canLoadWithPush = (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) || fieldNode->isUsedFromSpillTemp() ||
+            canLoadFullSlot = (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) || fieldNode->isUsedFromSpillTemp() ||
                               (fieldNode->OperIsLocalRead() && (genTypeSize(fieldNode) >= genTypeSize(fieldType)));
         }
 
-        if (canStoreWithPush && canLoadWithPush)
+        if (canStoreFullSlot && canLoadFullSlot)
         {
             assert(m_pushStkArg);
             assert(genTypeSize(fieldNode) <= TARGET_POINTER_SIZE);
@@ -8004,8 +8004,8 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                 else
                 {
                     // Use the smaller "mov" instruction in case we do not need a sign/zero-extending load.
-                    instruction loadIns  = canLoadWithPush ? INS_mov : ins_Load(fieldNode->TypeGet());
-                    emitAttr    loadSize = canLoadWithPush ? EA_PTRSIZE : emitTypeSize(fieldNode);
+                    instruction loadIns  = canLoadFullSlot ? INS_mov : ins_Load(fieldNode->TypeGet());
+                    emitAttr    loadSize = canLoadFullSlot ? EA_PTRSIZE : emitTypeSize(fieldNode);
                     inst_RV_TT(loadIns, loadSize, intTmpReg, fieldNode);
                 }
 
