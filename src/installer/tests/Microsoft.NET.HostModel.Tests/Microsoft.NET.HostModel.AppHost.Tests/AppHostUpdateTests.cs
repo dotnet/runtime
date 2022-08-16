@@ -173,8 +173,8 @@ namespace Microsoft.NET.HostModel.Tests
             string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
             string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-            // strip all permissions from this AppHost template binary
-            File.SetUnixFileMode(sourceAppHostMock, UnixFileMode.None);
+            // strip executable permissions from this AppHost template binary
+            File.SetUnixFileMode(sourceAppHostMock, UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
 
             // -rwxr-xr-x
             const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
