@@ -40,7 +40,7 @@
   <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
   <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
-    <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json, but PublishAot doesn't support this configuration format. If possible, move the configuration to the project file using RuntimeHostConfigurationOption." />
+    <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
     
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
