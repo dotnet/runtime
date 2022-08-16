@@ -529,7 +529,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -538,36 +538,34 @@ namespace System
                         Unsafe.As<T, byte>(ref value),
                         span.Length);
                 }
-
-                if (Unsafe.SizeOf<T>() == sizeof(short))
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
                     return SpanHelpers.IndexOfAnyExceptValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, short>(ref value),
                         span.Length);
                 }
-
-                if (Unsafe.SizeOf<T>() == sizeof(int))
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     return SpanHelpers.IndexOfAnyExceptValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
                 }
-
-                if (Unsafe.SizeOf<T>() == sizeof(long))
+                else
                 {
+                    Debug.Assert(Unsafe.SizeOf<T>() == sizeof(long));
+
                     return SpanHelpers.IndexOfAnyExceptValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
                 }
             }
-
-            return SpanHelpers.IndexOfAnyExcept(
-                ref MemoryMarshal.GetReference(span),
-                value,
-                span.Length);
+            else
+            {
+                return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
+            }
         }
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
@@ -579,9 +577,10 @@ namespace System
         /// The index in the span of the first occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
         /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -601,16 +600,7 @@ namespace System
                 }
             }
 
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
         }
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
@@ -623,9 +613,10 @@ namespace System
         /// The index in the span of the first occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
         /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -647,22 +638,13 @@ namespace System
                 }
             }
 
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value2))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -686,18 +668,7 @@ namespace System
                 }
             }
 
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value2) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value3))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, value3, span.Length);
         }
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
@@ -798,9 +769,10 @@ namespace System
         /// The index in the span of the last occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -816,17 +788,27 @@ namespace System
                         Unsafe.As<T, short>(ref value),
                         span.Length);
                 }
-            }
-
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value))
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    return i;
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+                }
+                else
+                {
+                    Debug.Assert(Unsafe.SizeOf<T>() == sizeof(long));
+
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
                 }
             }
-
-            return -1;
+            else
+            {
+                return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
+            }
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
@@ -838,9 +820,10 @@ namespace System
         /// The index in the span of the last occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
         /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -860,16 +843,7 @@ namespace System
                 }
             }
 
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
@@ -882,9 +856,10 @@ namespace System
         /// The index in the span of the last occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
         /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -904,25 +879,15 @@ namespace System
                         Unsafe.As<T, short>(ref value2),
                         span.Length);
                 }
-                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
             }
 
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value2))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -944,21 +909,9 @@ namespace System
                         Unsafe.As<T, short>(ref value3),
                         span.Length);
                 }
-                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
             }
 
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value2) &&
-                    !EqualityComparer<T>.Default.Equals(span[i], value3))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, value3, span.Length);
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>

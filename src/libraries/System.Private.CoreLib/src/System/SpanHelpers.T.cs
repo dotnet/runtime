@@ -1053,13 +1053,134 @@ namespace System
             return -1; // not found
         }
 
-        public static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, int length)
+        internal static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, int length)
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
 
             for (int i = 0; i < length; i++)
             {
                 if (!EqualityComparer<T>.Default.Equals(Unsafe.Add(ref searchSpace, i), value0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyExcept<T>(ref T searchSpace, T value0, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = length -1; i >= 0; i--)
+            {
+                if (!EqualityComparer<T>.Default.Equals(Unsafe.Add(ref searchSpace, i), value0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = 0; i < length; i++)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0) && !EqualityComparer<T>.Default.Equals(current, value1))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = length - 1; i >= 0; i--)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0) && !EqualityComparer<T>.Default.Equals(current, value1))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, T value2, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = 0; i < length; i++)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0)
+                    && !EqualityComparer<T>.Default.Equals(current, value1)
+                    && !EqualityComparer<T>.Default.Equals(current, value2))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, T value2, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = length - 1; i >= 0; i--)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0)
+                    && !EqualityComparer<T>.Default.Equals(current, value1)
+                    && !EqualityComparer<T>.Default.Equals(current, value2))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = 0; i < length; i++)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0)
+                    && !EqualityComparer<T>.Default.Equals(current, value1)
+                    && !EqualityComparer<T>.Default.Equals(current, value2)
+                    && !EqualityComparer<T>.Default.Equals(current, value3))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyExcept<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length)
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = length - 1; i >= 0; i--)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if (!EqualityComparer<T>.Default.Equals(current, value0)
+                    && !EqualityComparer<T>.Default.Equals(current, value1)
+                    && !EqualityComparer<T>.Default.Equals(current, value2)
+                    && !EqualityComparer<T>.Default.Equals(current, value3))
                 {
                     return i;
                 }
@@ -1176,6 +1297,32 @@ namespace System
                     return result;
             }
             return firstLength.CompareTo(secondLength);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool CanVectorizeAndBenefit<T>(int length) where T : IEquatable<T>?
+        {
+            if (Vector128.IsHardwareAccelerated && RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return length >= Vector128<byte>.Count;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return length >= Vector128<short>.Count;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return length >= Vector128<int>.Count;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return length >= Vector128<long>.Count;
+                }
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
