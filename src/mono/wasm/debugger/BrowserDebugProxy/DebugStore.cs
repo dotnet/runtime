@@ -701,8 +701,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int Token { get; }
         internal string Namespace { get; }
         internal bool IsCompilerGenerated { get; }
-        internal bool NonUserCode { get; }
+        private bool NonUserCode { get; }
         public string FullName { get; }
+        internal bool IsNonUserCode => assembly.pdbMetadataReader == null || NonUserCode;
         public List<MethodInfo> Methods { get; } = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
