@@ -19,7 +19,7 @@ set(NATIVEGLOBALIZATION_SOURCES
   ../pal_timeZoneInfo.c
 )
 
-add_library(System.Globalization.Native-Static
+add_library(System.Globalization.Native
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
 )
@@ -38,9 +38,9 @@ add_compile_options(-Wno-unknown-warning-option)
 
 add_definitions(-D_GNU_SOURCE -g -fPIC -DHOST_64BIT -DHOST_AMD64 -DHOST_UNIX -DPALEXPORT=EXTERN_C -DTARGET_64BIT -DTARGET_AMD64 -DTARGET_LINUX -DTARGET_UNIX -D_FILE_OFFSET_BITS=64 -DSTATIC_ICU -DSTATIC_SHIM_COMPILE)
 
-target_compile_options(System.Globalization.Native-Static PUBLIC -std=gnu99 -Wno-declaration-after-statement -D_GNU_SOURCE -g -fPIC -O0 -g -Wall -fno-omit-frame-pointer -fms-extensions -fwrapv -fstack-protector-strong)
+target_compile_options(System.Globalization.Native PUBLIC -std=gnu99 -Wno-declaration-after-statement -D_GNU_SOURCE -g -fPIC -O0 -g -Wall -fno-omit-frame-pointer -fms-extensions -fwrapv -fstack-protector-strong)
 
-target_include_directories (System.Globalization.Native-Static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../ ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/Common ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories (System.Globalization.Native PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../ ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/Common ${CMAKE_CURRENT_BINARY_DIR})
 
 else()
   message( FATAL_ERROR "Static builds are supported only on Linux" )
