@@ -58,6 +58,12 @@ namespace ILVerify
                 foreach (var reference in options.Reference)
                     Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
             }
+            
+            if (options.ReferenceFile != null)
+            {
+                foreach (var reference in File.ReadAllLines(options.ReferenceFile.FullName))
+                    Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+            }
 
             string[] includePatterns = options.Include;
             if (options.IncludeFile != null)
@@ -463,6 +469,8 @@ namespace ILVerify
                 new("input-file-path", "Input file(s)") { Arity = ArgumentArity.OneOrMore };
             public Option<string[]> Reference { get; } =
                 new(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly");
+            public Option<FileInfo> ReferenceeFile { get; } =
+                new Option<FileInfo>(new[] { "--reference-file" }, "Same as --reference, but the reference(s) are declared line by line in the specified file.").ExistingOnly();
             public Option<string> SystemModule { get; } =
                 new(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)");
             public Option<bool> SanityChecks { get; } =
@@ -531,6 +539,7 @@ namespace ILVerify
             {
                 InputFilePath = res.GetValueForArgument(cmd.InputFilePath);
                 Reference = res.GetValueForOption(cmd.Reference);
+                ReferenceFile = res.GetValueForOption(cmd.ReferenceFile);
                 SystemModule = res.GetValueForOption(cmd.SystemModule);
                 SanityChecks = res.GetValueForOption(cmd.SanityChecks);
                 Include = res.GetValueForOption(cmd.Include);
@@ -546,6 +555,7 @@ namespace ILVerify
 
             public string[] InputFilePath { get; }
             public string[] Reference { get; }
+            public FileInfo ReferenceFile { get; }
             public string SystemModule { get; }
             public bool SanityChecks { get; }
             public string[] Include { get; }
