@@ -920,6 +920,7 @@ namespace System.Threading.Tasks
         /// <param name="result"></param>
         /// <param name="sharedPStateFlags"></param>
         /// <param name="rangeManager"></param>
+        /// <param name="forkJoinContextID"></param>
         /// <param name="fromInclusive">The loop's start index, inclusive.</param>
         /// <param name="toExclusive">The loop's end index, exclusive.</param>
         /// <param name="parallelOptions">A ParallelOptions instance.</param>
@@ -934,6 +935,7 @@ namespace System.Threading.Tasks
             ParallelLoopResult result,
             ParallelLoopStateFlags32 sharedPStateFlags,
             RangeManager rangeManager,
+            int forkJoinContextID,
             int fromInclusive, int toExclusive,
             ParallelOptions parallelOptions,
             Action<int>? body,
@@ -954,16 +956,6 @@ namespace System.Threading.Tasks
                                 // Cause processing to stop
                                 sharedPStateFlags.Cancel();
                             }, state: null);
-
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                                                          forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelFor,
-                                                          fromInclusive, toExclusive);
-            }
 
             try
             {
@@ -1158,6 +1150,7 @@ namespace System.Threading.Tasks
         /// <param name="result"></param>
         /// <param name="sharedPStateFlags"></param>
         /// <param name="rangeManager"></param>
+        /// <param name="forkJoinContextID"></param>
         /// <param name="fromInclusive">The loop's start index, inclusive.</param>
         /// <param name="toExclusive">The loop's end index, exclusive.</param>
         /// <param name="parallelOptions">A ParallelOptions instance.</param>
@@ -1172,6 +1165,7 @@ namespace System.Threading.Tasks
             ParallelLoopResult result,
             ParallelLoopStateFlags64 sharedPStateFlags,
             RangeManager rangeManager,
+            int forkJoinContextID,
             long fromInclusive, long toExclusive,
             ParallelOptions parallelOptions,
             Action<long>? body,
@@ -1192,17 +1186,6 @@ namespace System.Threading.Tasks
                                 // Cause processing to stop
                                 sharedPStateFlags.Cancel();
                             }, state: null);
-
-
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                                                          forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelFor,
-                                                          fromInclusive, toExclusive);
-            }
 
             try
             {
@@ -3110,6 +3093,16 @@ namespace System.Threading.Tasks
 
             ParallelLoopStateFlags sharedPStateFlags = typeof(TIndex) == typeof(int) ? new ParallelLoopStateFlags32() : new ParallelLoopStateFlags64();
 
+            // ETW event for Parallel For begin
+            int forkJoinContextID = 0;
+            if (ParallelEtwProvider.Log.IsEnabled())
+            {
+                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
+                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                                                          forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelFor,
+                                                          //TODO: without long.CreateChecked
+                                                          long.CreateChecked(fromInclusive), long.CreateChecked(toExclusive));
+            }
 
             if (typeof(TIndex) == typeof(int))
             {
@@ -3117,6 +3110,7 @@ namespace System.Threading.Tasks
                     result,
                     (ParallelLoopStateFlags32)sharedPStateFlags,
                     rangeManager,
+                    forkJoinContextID,
                     int.CreateChecked(fromInclusive),
                     int.CreateChecked(toExclusive),
                     parallelOptions,
@@ -3132,6 +3126,7 @@ namespace System.Threading.Tasks
                     result,
                     (ParallelLoopStateFlags64)sharedPStateFlags,
                     rangeManager,
+                    forkJoinContextID,
                     long.CreateChecked(fromInclusive),
                     long.CreateChecked(toExclusive),
                     parallelOptions,
