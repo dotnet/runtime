@@ -28,7 +28,6 @@
     <Compile Include="SerializationTestTypes\SampleTypes.cs" />
     <Compile Include="SerializationTestTypes\SelfRefAndCycles.cs" />
     <Compile Include="XmlSerializerTests.cs" />
-    <Compile Include="Xml\XmlBinaryNodeType.cs" />
     <Compile Include="XsdDataContractExporterTests\SurrogateTests.cs" />
     <Compile Include="XsdDataContractExporterTests\ExporterTypesTests.cs" />
     <Compile Include="XsdDataContractExporterTests\ExporterApiTests.cs" />
