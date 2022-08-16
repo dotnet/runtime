@@ -263,7 +263,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="IlcCompile"
-      Inputs="@(IlcCompileInput);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Inputs="@(IlcCompileInput);@(IlcReference);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Importance="high" />
