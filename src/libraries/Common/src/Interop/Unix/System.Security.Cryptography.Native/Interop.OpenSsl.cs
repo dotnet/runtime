@@ -394,6 +394,9 @@ internal static partial class Interop
                     if (cacheSslContext && !string.IsNullOrEmpty(punyCode))
                     {
                         sslCtxHandle.TrySetSession(sslHandle, punyCode);
+                        bool ignored = false;
+                        sslCtxHandle.DangerousAddRef(ref ignored);
+                        sslHandle.SslContextHandle = sslCtxHandle;
                     }
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
