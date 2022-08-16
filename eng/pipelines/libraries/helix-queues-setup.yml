@@ -39,15 +39,19 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Ubuntu.2204.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-arm64v8-20220504035342-1b9461f
-        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220427172132-97d8652
+        - (Ubuntu.2204.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-arm64v8-20220815162843-3617cfa
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220815162828-3617cfa
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220815161657-51001d5
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220815161656-51001d5
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20220803180115-99b3286
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.313.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-amd64-20210910135845-8a6f4f3
 
     # Linux musl arm64
