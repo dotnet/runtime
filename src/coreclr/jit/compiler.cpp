@@ -4536,15 +4536,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Promote struct locals
     //
-    auto promoteStructsPhase = [this]() {
+    DoPhase(this, PHASE_PROMOTE_STRUCTS, &Compiler::fgPromoteStructs);
 
-        // For x64 and ARM64 we need to mark irregular parameters
-        lvaRefCountState = RCS_EARLY;
-        fgResetImplicitByRefRefCount();
-
-        fgPromoteStructs();
-    };
-    DoPhase(this, PHASE_PROMOTE_STRUCTS, promoteStructsPhase);
+    // Enable early ref counting of locals
+    //
+    lvaRefCountState = RCS_EARLY;
 
     // Figure out what locals are address-taken.
     //

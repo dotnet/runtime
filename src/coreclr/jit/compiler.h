@@ -5899,7 +5899,7 @@ private:
     static fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
 #endif
 
-    void fgPromoteStructs();
+    PhaseStatus fgPromoteStructs();
     void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 

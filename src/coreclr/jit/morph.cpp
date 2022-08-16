@@ -16046,29 +16046,24 @@ void Compiler::fgPostExpandQmarkChecks()
 }
 #endif
 
-/*****************************************************************************
- *
- *  Promoting struct locals
- */
-void Compiler::fgPromoteStructs()
+//------------------------------------------------------------------------
+// fgPromoteStructs: promote structs to collections of per-field locals
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgPromoteStructs()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgPromoteStructs()\n");
-    }
-#endif // DEBUG
-
     if (!opts.OptEnabled(CLFLG_STRUCTPROMOTE))
     {
         JITDUMP("  promotion opt flag not enabled\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (fgNoStructPromotion)
     {
         JITDUMP("  promotion disabled by JitNoStructPromotion\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #if 0
@@ -16091,7 +16086,7 @@ void Compiler::fgPromoteStructs()
     }
     if (methHash < methHashLo || methHash > methHashHi)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
     else
     {
@@ -16105,7 +16100,7 @@ void Compiler::fgPromoteStructs()
     if (info.compIsVarArgs)
     {
         JITDUMP("  promotion disabled because of varargs\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -16124,6 +16119,7 @@ void Compiler::fgPromoteStructs()
     //
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocalsReported = false;
+    bool                   madeChanges           = false;
 
     // Clear the structPromotionHelper, since it is used during inlining, at which point it
     // may be conservative about looking up SIMD info.
@@ -16158,6 +16154,8 @@ void Compiler::fgPromoteStructs()
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
         }
 
+        madeChanges |= promotedVar;
+
         if (!promotedVar && varDsc->lvIsSIMDType() && !varDsc->lvFieldAccessed)
         {
             // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
@@ -16167,12 +16165,14 @@ void Compiler::fgPromoteStructs()
     }
 
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && madeChanges)
     {
         printf("\nlvaTable after fgPromoteStructs\n");
         lvaTableDump();
     }
 #endif // DEBUG
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
@@ -16430,37 +16430,6 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
             JITDUMP("Replacing GT_LCL_FLD of struct with local var V%02u\n", lclNum);
         }
     }
-}
-
-//------------------------------------------------------------------------
-// fgResetImplicitByRefRefCount: Clear the ref count field of all implicit byrefs
-
-void Compiler::fgResetImplicitByRefRefCount()
-{
-#if FEATURE_IMPLICIT_BYREFS
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In fgResetImplicitByRefRefCount()\n");
-    }
-#endif // DEBUG
-
-    for (unsigned lclNum = 0; lclNum < info.compArgsCount; ++lclNum)
-    {
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-        if (varDsc->lvIsImplicitByRef)
-        {
-            // Clear the ref count field; fgMarkAddressTakenLocals will increment it per
-            // appearance of implicit-by-ref param so that call arg morphing can do an
-            // optimization for single-use implicit-by-ref params whose single use is as
-            // an outgoing call argument.
-            varDsc->setLvRefCnt(0, RCS_EARLY);
-            varDsc->setLvRefCntWtd(0, RCS_EARLY);
-        }
-    }
-
-#endif // FEATURE_IMPLICIT_BYREFS
 }
 
 //------------------------------------------------------------------------

@@ -187,7 +187,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_COMPUTE_PREDS,
         PHASE_MERGE_THROWS,
         PHASE_EARLY_UPDATE_FLOW_GRAPH,
-        // promote structs
+        PHASE_PROMOTE_STRUCTS,
         // mark addr exposed locals
         PHASE_FWD_SUB,
         // morph implicit byref
@@ -221,7 +221,7 @@ void Phase::PostPhase(PhaseStatus status)
         // cse
         // assertion prop
         // range check
-        PHASE_OPT_UPDATE_FLOW_GRAPH,
+        // PHASE_OPT_UPDATE_FLOW_GRAPH,
         // edge weights 2
         PHASE_INSERT_GC_POLLS,
         PHASE_OPTIMIZE_LAYOUT,
