@@ -1514,7 +1514,8 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                 // field is not in the same slot. (Note that we store the fields in reverse order.)
                 const bool fieldIsSlot      = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
                 const bool canStoreWithPush = fieldIsSlot;
-                const bool canLoadWithPush  = varTypeIsI(fieldNode);
+                const bool canLoadWithPush  = (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) ||
+                    (fieldNode->OperIsLocalRead() && (genTypeSize(fieldNode) >= genTypeSize(fieldType)));
 
                 if ((!canStoreWithPush || !canLoadWithPush) && (intTemp == nullptr))
                 {
