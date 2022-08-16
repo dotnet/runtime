@@ -171,6 +171,47 @@ namespace Sequential
         public double double1;
         public bool bool2;
     }
+
+    public struct StructByte
+    {
+        public byte fld1;
+    }
+
+    public struct StructStructByte_StructByteAuto
+    {
+        public StructByte fld1;
+        public Auto.StructByte fld2;
+    }
+    public struct StructStructByte_Struct2BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct2Bytes fld2;
+    }
+    public struct StructStructByte_Struct3BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct3Bytes fld2;
+    }
+    public struct StructStructByte_Struct4BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct4Bytes fld2;
+    }
+    public struct StructStructByte_Struct5BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct5Bytes fld2;
+    }
+    public struct StructStructByte_Struct8BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct8Bytes fld2;
+    }
+    public struct StructStructByte_Struct9BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct9Bytes fld2;
+    }
 }
 
 namespace Auto
@@ -308,6 +349,73 @@ namespace Auto
     {
         public bool fld1;
         public int8x16x2 fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct StructByte
+    {
+        public byte fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct2Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct3Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct4Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct5Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct8Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+        public byte fld6;
+        public byte fld7;
+        public byte fld8;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct9Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+        public byte fld6;
+        public byte fld7;
+        public byte fld8;
+        public byte fld9;
     }
 }
 
