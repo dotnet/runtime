@@ -3337,9 +3337,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
 
     size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
     AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
-    if (len && libraryName) {
-        memcpy(copiedName, libraryName, len);
-    }
+    memcpy(copiedName, libraryName, len);
 
     m_unmanagedCache.Add(UnmanagedImageCacheEntry{ copiedName, hMod });
     copiedName.SuppressRelease();
@@ -4179,7 +4177,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
 
-    if (m_aDynamicEntries && m_pDynamicClassTable) {
+    if (m_aDynamicEntries != 0) {
         memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
     }
 
