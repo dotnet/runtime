@@ -294,6 +294,9 @@
   <data name="FormatUInt64" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt64.</value>
   </data>
+  <data name="FormatUInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an UInt128.</value>
+  </data>
   <data name="RequiredDigitNotFoundAfterDecimal" xml:space="preserve">
     <value>'{0}' is invalid within a number, immediately after a decimal point ('.'). Expected a digit ('0'-'9').</value>
   </data>

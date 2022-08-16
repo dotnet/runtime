@@ -10,15 +10,23 @@ namespace System.Text.Json
     {
         public System.Int128 GetInt128() { throw null; }
         public bool TryGetInt128(out System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.UInt128 GetUInt128() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt128(out System.UInt128 value) { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IAsyncDisposable, System.IDisposable
     {
         public void WriteNumberValue(System.Int128 value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumberValue(System.UInt128 value) { }
     }
     public readonly partial struct JsonElement
     {
         // public System.Int128 GetInt128() { throw null; }
         // public bool TryGetInt128(out System.Int128 value) { throw null; }
+        // public System.UInt128 GetUInt128() { throw null; }
+        // public bool TryGetUInt128(out System.UInt128 value) { throw null; }
     }
 }
 namespace System.Text.Json.Serialization.Metadata
@@ -26,5 +34,6 @@ namespace System.Text.Json.Serialization.Metadata
     public static partial class JsonMetadataServices
     {
         // public static System.Text.Json.Serialization.JsonConverter<System.Int128> Int128Converter { get { throw null; } }
+        // public static System.Text.Json.Serialization.JsonConverter<System.UInt128> UInt128Converter { get { throw null; } }
     }
 }

@@ -463,5 +463,40 @@ namespace System.Text.Json
 
             WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
+
+#if NET7_0_OR_GREATER
+        internal void WritePropertyName(UInt128 value)
+        {
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/73842")]
+            // TODO: Once Utf8Formatter has UInt128 overload this implementation should be replaced with similar to UInt64
+
+            string valueAsString = value.ToString("G");
+
+            byte[]? tempArray = null;
+
+            // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
+            Span<byte> utf8 = valueAsString.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
+                // Use a pooled alloc.
+                tempArray = ArrayPool<byte>.Shared.Rent(valueAsString.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
+                // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
+                // and by using a normal alloc we can avoid the Clear().
+                new byte[JsonReaderHelper.GetUtf8ByteCount(valueAsString)];
+
+            try
+            {
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(valueAsString, utf8);
+                utf8 = utf8.Slice(0, actualByteCount);
+                WritePropertyNameUnescaped(utf8);
+            }
+            finally
+            {
+                if (tempArray != null)
+                {
+                    utf8.Clear();
+                    ArrayPool<byte>.Shared.Return(tempArray);
+                }
+            }
+        }
+#endif
     }
 }

@@ -225,6 +225,8 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/74001")]
+            // TODO: Casting to long should not be required (TypeCode.UInt16/TypeCode.Byte)
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
@@ -243,10 +245,10 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteNumberValue(Unsafe.As<T, short>(ref value));
                     break;
                 case TypeCode.UInt16:
-                    writer.WriteNumberValue(Unsafe.As<T, ushort>(ref value));
+                    writer.WriteNumberValue((long)Unsafe.As<T, ushort>(ref value));
                     break;
                 case TypeCode.Byte:
-                    writer.WriteNumberValue(Unsafe.As<T, byte>(ref value));
+                    writer.WriteNumberValue((long)Unsafe.As<T, byte>(ref value));
                     break;
                 case TypeCode.SByte:
                     writer.WriteNumberValue(Unsafe.As<T, sbyte>(ref value));
@@ -312,6 +314,8 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/74001")]
+            // TODO: Casting to long should not be required (TypeCode.UInt16/TypeCode.Byte)
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
@@ -330,10 +334,10 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WritePropertyName(Unsafe.As<T, short>(ref value));
                     break;
                 case TypeCode.UInt16:
-                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
+                    writer.WritePropertyName((long)Unsafe.As<T, ushort>(ref value));
                     break;
                 case TypeCode.Byte:
-                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
+                    writer.WritePropertyName((long)Unsafe.As<T, byte>(ref value));
                     break;
                 case TypeCode.SByte:
                     writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));

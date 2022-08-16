@@ -616,6 +616,9 @@ namespace System.Text.Json
                 case NumericType.UInt64:
                     message = SR.FormatUInt64;
                     break;
+                case NumericType.UInt128:
+                    message = SR.FormatUInt128;
+                    break;
                 case NumericType.Single:
                     message = SR.FormatSingle;
                     break;
@@ -736,6 +739,7 @@ namespace System.Text.Json
         UInt16,
         UInt32,
         UInt64,
+        UInt128,
         Single,
         Double,
         Decimal

@@ -449,7 +449,7 @@ namespace System.Text.Json
 
 #if NET7_0_OR_GREATER
         /// <summary>
-        /// Parses the current JSON token value from the source as a <see cref="long"/>.
+        /// Parses the current JSON token value from the source as a <see cref="Int128"/>.
         /// Returns the value if the entire UTF-8 encoded token value can be successfully parsed to a <see cref="Int128"/>
         /// value.
         /// Throws exceptions otherwise.
@@ -587,6 +587,43 @@ namespace System.Text.Json
             }
             return value;
         }
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        /// Parses the current JSON token value from the source as a <see cref="UInt128"/>.
+        /// Returns the value if the entire UTF-8 encoded token value can be successfully parsed to a <see cref="UInt128"/>
+        /// value.
+        /// Throws exceptions otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <exception cref="FormatException">
+        /// Thrown if the JSON token value is either of incorrect numeric format (for example if it contains a decimal or
+        /// is written in scientific notation) or, it represents a number less than <see cref="UInt128.MinValue"/> or greater
+        /// than <see cref="UInt128.MaxValue"/>.
+        /// </exception>
+        [System.CLSCompliant(false)]
+        public UInt128 GetUInt128()
+        {
+            if (!TryGetUInt128(out UInt128 value))
+            {
+                ThrowHelper.ThrowFormatException(NumericType.UInt64);
+            }
+            return value;
+        }
+
+        internal UInt128 GetUInt128WithQuotes()
+        {
+            ReadOnlySpan<byte> span = GetUnescapedSpan();
+            if (!TryGetUInt128Core(out UInt128 value, span))
+            {
+                ThrowHelper.ThrowFormatException(NumericType.UInt128);
+            }
+            return value;
+        }
+#endif
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="float"/>.
@@ -1177,6 +1214,39 @@ namespace System.Text.Json
             value = 0;
             return false;
         }
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        /// Parses the current JSON token value from the source as a <see cref="UInt128"/>.
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully
+        /// parsed to a <see cref="UInt128"/> value.
+        /// Returns <see langword="false"/> otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt128(out UInt128 value)
+        {
+            if (TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(TokenType);
+            }
+
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            return TryGetUInt128Core(out value, span);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool TryGetUInt128Core(out UInt128 value, ReadOnlySpan<byte> span)
+        {
+            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/73842")]
+            // TODO: Once Utf8Parser has UInt128 overload this implementation should be replaced
+            string valueAsString = JsonReaderHelper.TranscodeHelper(span);
+            return UInt128.TryParse(valueAsString, out value);
+        }
+#endif
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="float"/>.

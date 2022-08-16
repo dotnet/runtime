@@ -46,7 +46,9 @@ namespace System.Text.Json.Serialization.Converters
         {
             if ((JsonNumberHandling.WriteAsString & handling) != 0)
             {
-                writer.WriteNumberValueAsString(value);
+                // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/74001")]
+                // TODO: Casting to ulong should not be required (TypeCode.UInt16/TypeCode.Byte)
+                writer.WriteNumberValueAsString((ulong)value);
             }
             else
             {
