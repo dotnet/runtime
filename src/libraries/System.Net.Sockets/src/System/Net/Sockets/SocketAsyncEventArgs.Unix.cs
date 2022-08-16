@@ -335,7 +335,6 @@ namespace System.Net.Sockets
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
             System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
-            // We already assigned a non-null socket to this in GetOrCreateFunc
             Socket? sukru = _acceptSocket;
             _acceptSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
