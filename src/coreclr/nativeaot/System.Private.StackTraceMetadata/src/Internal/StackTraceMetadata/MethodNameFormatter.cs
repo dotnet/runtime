@@ -185,11 +185,10 @@ namespace Internal.StackTraceMetadata
         /// <param name="methodHandle">Method handle to use for parameter formatting</param>
         private void EmitMethodParameters(MethodHandle methodHandle)
         {
-            bool EnumerateParameters(ref ParameterHandleCollection.Enumerator enumerator, out Parameter parameter)
+            bool TryGetNextParameter(ref ParameterHandleCollection.Enumerator enumerator, out Parameter parameter)
             {
                 bool hasNext = enumerator.MoveNext();
                 parameter = hasNext ? enumerator.Current.GetParameter(_metadataReader) : default;
-
                 return hasNext;
             }
 
@@ -197,10 +196,10 @@ namespace Internal.StackTraceMetadata
             HandleCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
             ParameterHandleCollection.Enumerator parameters = method.Parameters.GetEnumerator();
 
-            bool hasNext = EnumerateParameters(ref parameters, out Parameter parameter);
-            if (hasNext && parameter.Sequence == 0)
+            bool hasParameter = TryGetNextParameter(ref parameters, out Parameter parameter);
+            if (hasParameter && parameter.Sequence == 0)
             {
-                hasNext = EnumerateParameters(ref parameters, out parameter);
+                hasParameter = TryGetNextParameter(ref parameters, out parameter);
             }
 
             _outputBuilder.Append('(');
@@ -215,10 +214,10 @@ namespace Internal.StackTraceMetadata
 
                 EmitTypeName(type, namespaceQualified: false);
 
-                if (++typeIndex == parameter.Sequence && hasNext)
+                if (++typeIndex == parameter.Sequence && hasParameter)
                 {
                     string name = parameter.Name.GetConstantStringValue(_metadataReader).Value;
-                    hasNext = EnumerateParameters(ref parameters, out parameter);
+                    hasParameter = TryGetNextParameter(ref parameters, out parameter);
 
                     if (!string.IsNullOrEmpty(name))
                     {
