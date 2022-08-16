@@ -101,7 +101,7 @@
     <SystemIOPipesAccessControlVersion>5.0.0</SystemIOPipesAccessControlVersion>
     <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
-    <SystemReflectionMetadataVersion>6.0.0</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataVersion>7.0.0-rc.1.22414.6</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>4.7.1</SystemReflectionMetadataLoadContextVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
