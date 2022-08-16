@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Xml
@@ -1250,10 +1251,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (bool* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1276,10 +1274,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (short* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1302,10 +1297,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (int* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1328,10 +1320,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (long* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1354,10 +1343,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (float* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1380,10 +1366,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (double* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1406,10 +1389,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (decimal* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1433,9 +1413,11 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.DateTime, out _, out _);
+            foreach (ref DateTime item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadDateTime();
+                item = BufferReader.ReadDateTime();
             }
             SkipArrayElements(actual);
             return actual;
@@ -1460,9 +1442,18 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            if (BitConverter.IsLittleEndian)
             {
-                array[offset + i] = BufferReader.ReadGuid();
+                BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
+            }
+            else
+            {
+                // Try to read in whole array, but don't fail if not possible
+                BufferReader.GetBuffer(actual * ValueHandleLength.Guid, out _, out _);
+                foreach (ref Guid item in array.AsSpan(offset, actual))
+                {
+                    item = BufferReader.ReadGuid();
+                }
             }
             SkipArrayElements(actual);
             return actual;
@@ -1487,9 +1478,11 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.TimeSpan, out _, out _);
+            foreach (ref TimeSpan item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadTimeSpan();
+                item = BufferReader.ReadTimeSpan();
             }
             SkipArrayElements(actual);
             return actual;

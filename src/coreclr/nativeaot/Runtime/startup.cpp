@@ -441,12 +441,7 @@ void RuntimeThreadShutdown(void* thread)
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 #endif
 
-    if (g_processShutdownHasStarted)
-    {
-        return;
-    }
-
-    ThreadStore::DetachCurrentThread();
+    ThreadStore::DetachCurrentThread(g_processShutdownHasStarted);
 }
 
 extern "C" bool RhInitialize()

@@ -26,7 +26,7 @@ void emitDispInsHelp(
 void emitDispLargeJmp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispInst(instruction ins);
-void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false);
+void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL12(ssize_t imm, insOpts opt);
