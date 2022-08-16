@@ -222,14 +222,6 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e680411c22e33f45821f4ae64365a2970b2430a6</Sha>
     </Dependency>
-    <Dependency Name="System.Collections.Immutable" Version="7.0.0-rc.1.22414.6">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>e680411c22e33f45821f4ae64365a2970b2430a6</Sha>
-    </Dependency>
-    <Dependency Name="System.Reflection.Metadata" Version="7.0.0-rc.1.22414.6">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>e680411c22e33f45821f4ae64365a2970b2430a6</Sha>
-    </Dependency>
     <Dependency Name="System.Text.Json" Version="7.0.0-rc.1.22414.6">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e680411c22e33f45821f4ae64365a2970b2430a6</Sha>
