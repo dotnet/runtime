@@ -186,6 +186,13 @@ class SequentialTest
     static Sequential.Struct1 _fld4;
     static Sequential.ClassDoubleBool _fld5 = new Sequential.ClassDoubleBool();
     static Sequential.ClassBoolDoubleBool _fld6 = new Sequential.ClassBoolDoubleBool();
+    static Sequential.StructStructByte_StructByteAuto _fld7;
+    static Sequential.StructStructByte_Struct2BytesAuto _fld8;
+    static Sequential.StructStructByte_Struct3BytesAuto _fld9;
+    static Sequential.StructStructByte_Struct4BytesAuto _fld10;
+    static Sequential.StructStructByte_Struct5BytesAuto _fld11;
+    static Sequential.StructStructByte_Struct8BytesAuto _fld12;
+    static Sequential.StructStructByte_Struct9BytesAuto _fld13;
 
     public static void Test()
     {
@@ -217,6 +224,14 @@ class SequentialTest
         _fld6.bool1 = false;
         _fld6.bool2 = true;
         _fld6.double1 = 2.0;
+
+        _fld7.fld2 = default(Auto.StructByte);
+        _fld8.fld2 = default(Auto.Struct2Bytes);
+        _fld9.fld2 = default(Auto.Struct3Bytes);
+        _fld10.fld2 = default(Auto.Struct4Bytes);
+        _fld11.fld2 = default(Auto.Struct5Bytes);
+        _fld12.fld2 = default(Auto.Struct8Bytes);
+        _fld13.fld2 = default(Auto.Struct9Bytes);
     }
 }
 

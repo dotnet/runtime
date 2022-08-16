@@ -469,6 +469,7 @@ namespace Internal.TypeSystem
 
                 if (IsByValueClass(fieldType))
                 {
+                    // Valuetypes which are not primitives or enums
                     instanceValueClassFieldCount++;
                 }
                 else if (fieldType.IsGCPointer)
@@ -522,12 +523,17 @@ namespace Internal.TypeSystem
 
                 if (IsByValueClass(fieldType))
                 {
+                    // This block handles valuetypes which are not primitives or enums, it only has a meaningful effect, if the
+                    // type has an alignment greater than pointer size.
                     largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
                     instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
                 }
                 else
                 {
-                    // non-value-type fields always require pointer alignment
+                    // non-value-type (and primitive type) fields will add an alignment requirement of pointer size
+                    // This alignment requirement will not be significant in the final alignment calculation unlesss the
+                    // type is greater than the size of a single pointer.
+                    //
                     // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
                     // but that is explicitly handled when we calculate the final alignment for the type.
 
@@ -542,6 +548,7 @@ namespace Internal.TypeSystem
                     }
                     else
                     {
+                        Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum || fieldType.IsByRef);
                         int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
                         instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
 
