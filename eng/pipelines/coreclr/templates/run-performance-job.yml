@@ -79,7 +79,8 @@ jobs:
         pip3 install azure.storage.queue==12.0.0 &&
         sudo apt-get update &&
         sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - &&
+        sudo apt-get -y remove nodejs &&
+        curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&
         sudo apt-get -y install nodejs &&
         npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
         $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore &&
