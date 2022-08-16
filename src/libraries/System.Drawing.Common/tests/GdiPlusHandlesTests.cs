@@ -47,7 +47,7 @@ namespace System.Drawing.Tests
         {
             if (handleCount == 0)
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
 
                 if (error != 0)
                     throw new XunitException($"GetGuiResources failed with win32 error: {error}");

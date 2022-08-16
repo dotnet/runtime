@@ -28,7 +28,7 @@ internal static partial class Interop
             int cchCount = Crypt32.CertGetNameString(certContext, certNameType, certNameFlags, strType, null, 0);
             if (cchCount == 0)
             {
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
 
             Span<char> buffer = cchCount <= 256 ? stackalloc char[cchCount] : new char[cchCount];
@@ -36,7 +36,7 @@ internal static partial class Interop
             {
                 if (Crypt32.CertGetNameString(certContext, certNameType, certNameFlags, strType, ptr, cchCount) == 0)
                 {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
 
                 Debug.Assert(buffer[cchCount - 1] == '\0');
@@ -107,11 +107,11 @@ internal static partial class Interop
         {
             int cb = 0;
             if (!Interop.crypt32.CryptEncodeObject(Interop.Crypt32.CertEncodingType.All, lpszStructType, decoded, null, ref cb))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             byte[] encoded = new byte[cb];
             if (!Interop.crypt32.CryptEncodeObject(Interop.Crypt32.CertEncodingType.All, lpszStructType, decoded, encoded, ref cb))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             return encoded;
         }
@@ -120,11 +120,11 @@ internal static partial class Interop
         {
             int cb = 0;
             if (!Interop.Crypt32.CryptEncodeObject(Interop.Crypt32.CertEncodingType.All, lpszStructType, decoded, null, ref cb))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             byte[] encoded = new byte[cb];
             if (!Interop.Crypt32.CryptEncodeObject(Interop.Crypt32.CertEncodingType.All, lpszStructType, decoded, encoded, ref cb))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             return encoded;
         }
@@ -133,7 +133,7 @@ internal static partial class Interop
         {
             if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
             {
-                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                 chainEngineHandle.Dispose();
                 throw e;
             }

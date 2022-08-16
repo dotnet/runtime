@@ -231,7 +231,7 @@ namespace System.IO.Tests
                 uint deviceIndex = 0;
                 while (SetupDiEnumDeviceInfo(deviceInfoSet, deviceIndex++, ref deviceInfoData))
                 {
-                    if (Marshal.GetLastWin32Error() == ERROR_NO_MORE_ITEMS)
+                    if (Marshal.GetLastPInvokeError() == ERROR_NO_MORE_ITEMS)
                     {
                         break;
                     }
