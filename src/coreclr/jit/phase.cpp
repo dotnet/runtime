@@ -188,7 +188,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MERGE_THROWS,
         PHASE_EARLY_UPDATE_FLOW_GRAPH,
         PHASE_PROMOTE_STRUCTS,
-        // mark addr exposed locals
+        PHASE_STR_ADRLCL,
         PHASE_FWD_SUB,
         // morph implicit byref
         //

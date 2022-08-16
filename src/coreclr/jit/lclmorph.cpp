@@ -298,7 +298,8 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value> m_valueStack;
-    INDEBUG(bool m_stmtModified;)
+    bool              m_stmtModified;
+    bool              m_madeChanges;
 
 public:
     enum
@@ -311,8 +312,16 @@ public:
     };
 
     LocalAddressVisitor(Compiler* comp)
-        : GenTreeVisitor<LocalAddressVisitor>(comp), m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
+        : GenTreeVisitor<LocalAddressVisitor>(comp)
+        , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
+        , m_stmtModified(false)
+        , m_madeChanges(false)
     {
+    }
+
+    bool MadeChanges() const
+    {
+        return m_madeChanges;
     }
 
     void VisitStmt(Statement* stmt)
@@ -322,10 +331,10 @@ public:
         {
             printf("LocalAddressVisitor visiting statement:\n");
             m_compiler->gtDispStmt(stmt);
-            m_stmtModified = false;
         }
 #endif // DEBUG
 
+        m_stmtModified = false;
         WalkTree(stmt->GetRootNodePointer(), nullptr);
 
         // We could have something a statement like IND(ADDR(LCL_VAR)) so we need to escape
@@ -345,6 +354,7 @@ public:
 
         PopValue();
         assert(m_valueStack.Empty());
+        m_madeChanges |= m_stmtModified;
 
 #ifdef DEBUG
         if (m_compiler->verbose)
@@ -873,9 +883,8 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags = GTF_EMPTY;
-
-        INDEBUG(m_stmtModified = true;)
+        addr->gtFlags  = GTF_EMPTY;
+        m_stmtModified = true;
     }
 
     //------------------------------------------------------------------------
@@ -902,7 +911,7 @@ private:
 
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
-                INDEBUG(m_stmtModified = true);
+                m_stmtModified = true;
                 return;
 
             case IndirTransform::LclVar:
@@ -942,8 +951,7 @@ private:
         }
 
         lclNode->gtFlags = lclNodeFlags;
-
-        INDEBUG(m_stmtModified = true);
+        m_stmtModified   = true;
     }
 
     //------------------------------------------------------------------------
@@ -1065,7 +1073,7 @@ private:
         assert(node->OperIs(GT_FIELD));
         // TODO-Cleanup: Move fgMorphStructField implementation here, it's not used anywhere else.
         m_compiler->fgMorphStructField(node, user);
-        INDEBUG(m_stmtModified |= node->OperIs(GT_LCL_VAR);)
+        m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
     //------------------------------------------------------------------------
@@ -1088,7 +1096,7 @@ private:
         assert(node->OperIs(GT_LCL_FLD));
         // TODO-Cleanup: Move fgMorphLocalField implementation here, it's not used anywhere else.
         m_compiler->fgMorphLocalField(node, user);
-        INDEBUG(m_stmtModified |= node->OperIs(GT_LCL_VAR);)
+        m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
     //------------------------------------------------------------------------
@@ -1197,20 +1205,16 @@ private:
 // fgMarkAddressExposedLocals: Traverses the entire method and marks address
 //    exposed locals.
 //
+// Returns:
+//    Suitable phase status
+//
 // Notes:
 //    Trees such as IND(ADDR(LCL_VAR)), that morph is expected to fold
 //    to just LCL_VAR, do not result in the involved local being marked
 //    address exposed.
 //
-void Compiler::fgMarkAddressExposedLocals()
+PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In fgMarkAddressExposedLocals()\n");
-    }
-#endif // DEBUG
-
     LocalAddressVisitor visitor(this);
 
     for (BasicBlock* const block : Blocks())
@@ -1223,6 +1227,8 @@ void Compiler::fgMarkAddressExposedLocals()
             visitor.VisitStmt(stmt);
         }
     }
+
+    return visitor.MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

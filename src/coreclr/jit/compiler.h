@@ -5913,7 +5913,7 @@ private:
     // Clear up annotations for any struct promotion temps created for implicit byrefs.
     void fgMarkDemotedImplicitByRefArgs();
 
-    void fgMarkAddressExposedLocals();
+    PhaseStatus fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
