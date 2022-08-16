@@ -190,7 +190,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_PROMOTE_STRUCTS,
         PHASE_STR_ADRLCL,
         PHASE_FWD_SUB,
-        // morph implicit byref
+        PHASE_MORPH_IMPBYREF,
         //
         // (enable all phase checks)
         //
