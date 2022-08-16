@@ -10375,10 +10375,11 @@ public:
     GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
     ShadowParamVarInfo* gsShadowVarInfo;            // Table used by shadow param analysis code
 
-    void gsGSChecksInitCookie();   // Grabs cookie variable
-    void gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
-    bool gsFindVulnerableParams(); // Shadow param analysis code
-    void gsParamsToShadows();      // Insert copy code and replave param uses by shadow
+    PhaseStatus gsPhase();
+    void        gsGSChecksInitCookie();   // Grabs cookie variable
+    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    bool        gsFindVulnerableParams(); // Shadow param analysis code
+    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
 
     static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk

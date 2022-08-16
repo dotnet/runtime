@@ -4602,29 +4602,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // GS security checks for unsafe buffers
     //
-    auto gsPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        if (getNeedsGSSecurityCookie())
-        {
-            gsGSChecksInitCookie();
-
-            if (compGSReorderStackLayout)
-            {
-                gsCopyShadowParams();
-            }
-
-            // If we needed to create any new BasicBlocks then renumber the blocks
-            if (fgBBcount > prevBBCount)
-            {
-                fgRenumberBlocks();
-            }
-        }
-        else
-        {
-            JITDUMP("No GS security needed\n");
-        }
-    };
-    DoPhase(this, PHASE_GS_COOKIE, gsPhase);
+    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
     // Compute the block and edge weights
     //
