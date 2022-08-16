@@ -328,7 +328,7 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)DefaultUnixCreateDirectoryMode);
                 if (result == 0)
                 {
                     break; // Created parent.
@@ -360,7 +360,8 @@ namespace System.IO
             for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
+                UnixFileMode mode = i == 0 ? unixCreateMode : DefaultUnixCreateDirectoryMode;
+                int result = Interop.Sys.MkDir(mkdirPath, (int)mode);
                 if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
