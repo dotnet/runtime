@@ -672,7 +672,7 @@ namespace System.Text.Json
             if (row.HasComplexChildren && decode)
             {
                 byte[]? sourceArray = null;
-                int length = checked(segment.Length * JsonConstants.MaxExpansionFactorWhileEscaping);
+                int length = segment.Length;
                 Span<byte> sourceUnescaped = length <= JsonConstants.StackallocByteThreshold ?
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (sourceArray = ArrayPool<byte>.Shared.Rent(length));
@@ -726,7 +726,7 @@ namespace System.Text.Json
             if (row.HasComplexChildren)
             {
                 byte[]? sourceArray = null;
-                int length = checked(segment.Length * JsonConstants.MaxExpansionFactorWhileEscaping);
+                int length = segment.Length;
                 Span<byte> sourceUnescaped = length <= JsonConstants.StackallocByteThreshold ?
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (sourceArray = ArrayPool<byte>.Shared.Rent(length));
