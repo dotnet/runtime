@@ -69,7 +69,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if HAVE_THUMBPRINT_OVERLOADS
         [Theory]
         [InlineData("SHA1", false)]
         [InlineData("SHA1", true)]
@@ -152,7 +151,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-#endif
 
         [Fact]
         public static void TestGetFormat()

@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // GetSerialNumber() returns in little-endian order.
                 Array.Reverse(expectedSerial);
                 AssertExtensions.SequenceEqual(expectedSerial, serial1);
-                
+
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
 
                 int pklen = cert.GetPublicKey().Length;
@@ -369,10 +369,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // State held on X509Certificate
                 Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetCertHashString());
-#if HAVE_THUMBPRINT_OVERLOADS
                 Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash(HashAlgorithmName.SHA256));
                 Assert.ThrowsAny<CryptographicException>(() => c.GetCertHashString(HashAlgorithmName.SHA256));
-#endif
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithm());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParameters());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
@@ -384,10 +382,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.NotBefore);
                 Assert.ThrowsAny<CryptographicException>(() => c.NotAfter);
 
-#if HAVE_THUMBPRINT_OVERLOADS
                 Assert.ThrowsAny<CryptographicException>(
                     () => c.TryGetCertHash(HashAlgorithmName.SHA256, Array.Empty<byte>(), out _));
-#endif
 
                 // State held on X509Certificate2
                 Assert.ThrowsAny<CryptographicException>(() => c.RawDataMemory);

@@ -22,9 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             object ignored;
             Assert.Equal(IntPtr.Zero, h);
             Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
-#if HAVE_THUMBPRINT_OVERLOADS
             Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash(HashAlgorithmName.SHA256));
-#endif
             Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithm());
             Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParameters());
             Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
@@ -44,9 +42,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => ignored = c.SubjectName);
             Assert.ThrowsAny<CryptographicException>(() => ignored = c.IssuerName);
             Assert.ThrowsAny<CryptographicException>(() => c.GetCertHashString());
-#if HAVE_THUMBPRINT_OVERLOADS
             Assert.ThrowsAny<CryptographicException>(() => c.GetCertHashString(HashAlgorithmName.SHA256));
-#endif
             Assert.ThrowsAny<CryptographicException>(() => c.GetEffectiveDateString());
             Assert.ThrowsAny<CryptographicException>(() => c.GetExpirationDateString());
             Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKeyString());
@@ -58,10 +54,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => c.GetName());
 #pragma warning restore 0618
 
-#if HAVE_THUMBPRINT_OVERLOADS
             Assert.ThrowsAny<CryptographicException>(
                 () => c.TryGetCertHash(HashAlgorithmName.SHA256, Array.Empty<byte>(), out _));
-#endif
         }
 
         [Fact]
@@ -81,10 +75,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] actualThumbprint = c.GetCertHash();
                 Assert.Equal(expectedThumbPrintSha1, actualThumbprint);
 
-#if HAVE_THUMBPRINT_OVERLOADS
                 byte[] specifiedAlgThumbprint = c.GetCertHash(HashAlgorithmName.SHA1);
                 Assert.Equal(expectedThumbPrintSha1, specifiedAlgThumbprint);
-#endif
             };
 
             using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))
@@ -114,10 +106,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] actualThumbprint = cert.GetCertHash();
                 Assert.Equal(expectedThumbPrintSha1, actualThumbprint);
 
-#if HAVE_THUMBPRINT_OVERLOADS
                 byte[] specifiedAlgThumbprint = cert.GetCertHash(HashAlgorithmName.SHA1);
                 Assert.Equal(expectedThumbPrintSha1, specifiedAlgThumbprint);
-#endif
             };
 
             using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificatePemBytes))
@@ -148,9 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c2 = new X509Certificate2(c1))
             {
                 Assert.Equal(c1.GetCertHash(), c2.GetCertHash());
-#if HAVE_THUMBPRINT_OVERLOADS
                 Assert.Equal(c1.GetCertHash(HashAlgorithmName.SHA256), c2.GetCertHash(HashAlgorithmName.SHA256));
-#endif
                 Assert.Equal(c1.GetKeyAlgorithm(), c2.GetKeyAlgorithm());
                 Assert.Equal(c1.GetKeyAlgorithmParameters(), c2.GetKeyAlgorithmParameters());
                 Assert.Equal(c1.GetKeyAlgorithmParametersString(), c2.GetKeyAlgorithmParametersString());
@@ -168,9 +156,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(c1.SubjectName.Name, c2.SubjectName.Name);
                 Assert.Equal(c1.IssuerName.Name, c2.IssuerName.Name);
                 Assert.Equal(c1.GetCertHashString(), c2.GetCertHashString());
-#if HAVE_THUMBPRINT_OVERLOADS
                 Assert.Equal(c1.GetCertHashString(HashAlgorithmName.SHA256), c2.GetCertHashString(HashAlgorithmName.SHA256));
-#endif
                 Assert.Equal(c1.GetEffectiveDateString(), c2.GetEffectiveDateString());
                 Assert.Equal(c1.GetExpirationDateString(), c2.GetExpirationDateString());
                 Assert.Equal(c1.GetPublicKeyString(), c2.GetPublicKeyString());
