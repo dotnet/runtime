@@ -1039,5 +1039,27 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task InspectThisThatInheritsFromClassNonUserCode(bool jmc)
+        {
+            await SetJustMyCode(jmc);
+            var expression = $"{{ invoke_static_method('[debugger-test] ClassInheritsFromClassWithoutDebugSymbols:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1287, 8,
+                $"ClassInheritsFromClassWithoutDebugSymbols.CallMethod",
+                locals_fn: async (locals) =>
+                {
+                    var this_props = await GetObjectOnLocals(locals, "this");
+                    await CheckProps(this_props, new
+                    {
+                    }, "this_props", num_fields: jmc ? 1 : 7);
+                }
+            );
+        }
     }
 }

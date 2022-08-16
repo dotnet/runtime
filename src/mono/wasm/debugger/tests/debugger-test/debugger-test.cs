@@ -1275,3 +1275,18 @@ public partial class HiddenSequencePointTest {
 #line default
 }
 
+public class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromClassWithoutDebugSymbols();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField;
+}
