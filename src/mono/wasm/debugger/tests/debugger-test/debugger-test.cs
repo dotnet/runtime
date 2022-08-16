@@ -1287,7 +1287,7 @@ public class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWith
     {
         System.Diagnostics.Debugger.Break();
     }
-
+    public int myField2;
     public int myField;
 }
 
@@ -1328,6 +1328,23 @@ public class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
     public static void Run()
     {
         var myVar = new ClassInheritsFromNonUserCodeClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField2;
+    public int myField;
+}
+
+public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
         myVar.CallMethod();
     }
 
