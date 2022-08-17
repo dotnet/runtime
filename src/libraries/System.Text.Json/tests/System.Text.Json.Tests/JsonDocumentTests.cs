@@ -1414,6 +1414,14 @@ namespace System.Text.Json.Tests
             expectedDouble *= 10;
             expectedFloat *= 10;
             expectedDecimal *= 10;
+#if NET7_0_OR_GREATER
+            // x * 10 = x * (2^1 + 2^3)
+            ulong numberTimes10low = unchecked((ulong.MaxValue << 1) + (ulong.MaxValue << 3));
+            // + 1 because overflow happened
+            ulong numberTimes10high = 1 + unchecked((ulong.MaxValue >> (64 - 1)) + (ulong.MaxValue >> (64 - 3)));
+            Int128 expectedInt128 = new Int128(numberTimes10high, numberTimes10low);
+            UInt128 expectedUInt128 = new UInt128(numberTimes10high, numberTimes10low);
+#endif
 
             using (JsonDocument doc = JsonDocument.Parse("    " + ulong.MaxValue + "0  ", default))
             {
@@ -1455,11 +1463,11 @@ namespace System.Text.Json.Tests
                 Assert.Equal(0UL, ulongVal);
 
 #if NET7_0_OR_GREATER
-                Assert.False(root.TryGetInt128(out Int128 int128Val));
-                Assert.Equal(0L, int128Val);
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(expectedInt128, int128Val);
 
-                Assert.False(root.TryGetUInt128(out UInt128 uint128Val));
-                Assert.Equal(0UL, uint128Val);
+                Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
+                Assert.Equal(expectedUInt128, uint128Val);
 #endif
 
                 Assert.Equal(expectedFloat, root.GetSingle());
@@ -1471,8 +1479,8 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetUInt64());
 
 #if NET7_0_OR_GREATER
-                Assert.Throws<FormatException>(() => root.GetInt128());
-                Assert.Throws<FormatException>(() => root.GetUInt128());
+                Assert.Equal(expectedInt128, root.GetInt128());
+                Assert.Equal(expectedUInt128, root.GetUInt128());
 #endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
