@@ -5104,7 +5104,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-    Compiler::jitTotalMethodCompiled++;
+    InterlockedIncrement(&Compiler::jitTotalMethodCompiled);
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -6722,7 +6722,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #else
         const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
         const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-        printf("JIT compiling %4d [%s]%s::%s, ILsize=%u\n", Compiler::jitTotalMethodCompiled, compGetTieringName(),
+        printf("JIT compiling %4d [%s]%s:%s, ILsize=%u\n", Compiler::jitTotalMethodCompiled, compGetTieringName(),
                className, methodName, info.compILCodeSize);
 #endif
     }
