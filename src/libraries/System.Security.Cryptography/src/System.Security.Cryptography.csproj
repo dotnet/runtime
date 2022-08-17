@@ -560,9 +560,7 @@
              Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" /> 
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesManagedTransform.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesSubtleCryptoTransform.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Browser.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
