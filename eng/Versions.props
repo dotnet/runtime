@@ -99,9 +99,9 @@
     <SystemDataDataSetExtensionsVersion>4.5.0</SystemDataDataSetExtensionsVersion>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemIOPipesAccessControlVersion>5.0.0</SystemIOPipesAccessControlVersion>
-    <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
+    <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
-    <SystemReflectionMetadataVersion>6.0.0</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataVersion>6.0.1</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>4.7.1</SystemReflectionMetadataLoadContextVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
