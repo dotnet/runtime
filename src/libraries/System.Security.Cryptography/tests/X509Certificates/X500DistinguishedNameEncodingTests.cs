@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class X500DistinguishedNameEncodingTests
     {
         private const string InvalidX500NameFragment = "invalid X500 name";

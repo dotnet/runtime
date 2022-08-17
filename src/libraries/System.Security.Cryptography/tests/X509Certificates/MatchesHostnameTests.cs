@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class MatchesHostnameTests
     {
         [Theory]
@@ -764,7 +765,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "CN=strawberry.fruit.example",
                     key,
                     HashAlgorithmName.SHA256);
-                
+
                 req.CertificateExtensions.Add(
                     new X509Extension(
                         "2.5.29.17",

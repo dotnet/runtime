@@ -60,6 +60,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateEmptyFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -77,6 +78,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateKeyIdOnlyFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -102,6 +104,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateIssuerAndSerialFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -136,6 +139,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateFullFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -625,7 +629,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.Throws<ArgumentNullException>(
                 "issuerName",
                 () => X509AuthorityKeyIdentifierExtension.Create(
-                    ReadOnlySpan<byte>.Empty, 
+                    ReadOnlySpan<byte>.Empty,
                     null,
                     ReadOnlySpan<byte>.Empty));
         }
@@ -712,7 +716,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             // This value has 9 leading zero bits, making it an invalid encoding for a BER/DER INTEGER.
             byte[] tooManyZeros = { 0x00, 0x7F };
             byte[] invalidValue = tooManyZeros;
-            
+
             X500DistinguishedName dn = new X500DistinguishedName("CN=Bad Serial");
 
             // Array

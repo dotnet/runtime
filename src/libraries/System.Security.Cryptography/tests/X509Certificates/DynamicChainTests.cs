@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class DynamicChainTests
     {
         private static X509Extension BasicConstraintsCA => new X509BasicConstraintsExtension(

@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
         public static void NoProtocolFilter()
         {
             // While most of the callers of the various EnumerateUri methods will be interested in only the
@@ -261,6 +262,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void EnumerateNull()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile))
@@ -276,6 +278,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void EnumerateOidUsesValue()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile))
@@ -301,6 +304,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void IndependentEnumeration()
         {
             X509AuthorityInformationAccessExtension aia;

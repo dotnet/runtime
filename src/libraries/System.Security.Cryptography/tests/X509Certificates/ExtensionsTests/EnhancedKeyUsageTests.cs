@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class EnhancedKeyUsageTests
     {
         [Fact]
@@ -67,7 +68,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.Equal(0, e.EnhancedKeyUsages.Count);
             Assert.NotSame(e.EnhancedKeyUsages, e.EnhancedKeyUsages);
         }
-        
+
         private static void EncodeDecode(
             OidCollection usages,
             bool critical,

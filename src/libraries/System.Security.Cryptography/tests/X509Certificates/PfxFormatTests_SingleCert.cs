@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public sealed class PfxFormatTests_SingleCert : PfxFormatTests
     {
         protected override void ReadPfx(

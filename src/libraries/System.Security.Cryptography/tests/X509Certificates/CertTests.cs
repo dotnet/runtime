@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public class CertTests
     {
         private const string PrivateKeySectionHeader = "[Private Key]";

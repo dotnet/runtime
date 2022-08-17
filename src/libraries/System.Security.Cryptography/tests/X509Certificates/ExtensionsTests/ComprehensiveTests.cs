@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class ComprehensiveTests
     {
         [Fact]

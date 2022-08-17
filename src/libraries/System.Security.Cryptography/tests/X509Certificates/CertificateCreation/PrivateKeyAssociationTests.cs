@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
     public static class PrivateKeyAssociationTests
     {
         private const int PROV_RSA_FULL = 1;

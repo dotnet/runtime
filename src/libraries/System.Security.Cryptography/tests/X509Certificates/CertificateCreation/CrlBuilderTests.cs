@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
     public static class CrlBuilderTests
     {
         private const string CertParam = "issuerCertificate";
@@ -368,7 +369,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // for this test (since it doesn't use ECDSA's variable-length, non-deterministic, signature)
                     //
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
-                    
+
                     AssertExtensions.SequenceEqual(BuildEmptyExpectedCrl, built);
                 });
         }

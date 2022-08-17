@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestApiTests
     {
         [Fact]
@@ -253,7 +254,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     HashAlgorithmName.SHA384);
 
                 req.OtherRequestAttributes.Add(null);
-                
+
                 X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
                 InvalidOperationException ex;
 
