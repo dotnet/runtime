@@ -23,8 +23,6 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''" />
 
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
-    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs"
@@ -557,7 +555,7 @@
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" /> 
+             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
