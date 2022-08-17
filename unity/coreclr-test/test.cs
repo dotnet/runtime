@@ -516,6 +516,16 @@ namespace TestDll
             
             return null;
         }
+
+        public static IntPtr GCHandleAlloc(object o, GCHandleType type)
+        {
+            return (IntPtr)GCHandle.Alloc(o, type);
+        }
+
+        public static object GCHandleGetTarget(IntPtr p)
+        {
+            return ((GCHandle)p).Target;
+        }
     }
 
     public class DerivedClass : TestClass

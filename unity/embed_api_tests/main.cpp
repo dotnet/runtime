@@ -1346,6 +1346,51 @@ TEST(mono_gchandle_new_weakref_creates_weakref)
     CHECK(handle1 != handle2);
 }
 
+TEST(mono_gchandle_compatible_with_managed)
+{
+    MonoObject* testObj = CreateObjectHelper(kTestDLLNameSpace, kTestClassName);
+    MonoMethod* method = GetMethodHelper(kTestDLLNameSpace, kTestClassName, "GCHandleGetTarget", 1);
+    void* args[1];
+    MonoObject* returnValue;
+
+    // Normal
+    uintptr_t handle_normal = mono_gchandle_new_v2(testObj, false);
+    CHECK(handle_normal != 0);
+    args[0] = (void*)&handle_normal;
+    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
+    CHECK(testObj == returnValue);
+    mono_gchandle_free_v2(handle_normal);
+    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
+    CHECK(returnValue == nullptr);
+
+    // Pinned
+    uintptr_t handle_pinned = mono_gchandle_new_v2(testObj, true);
+    CHECK(handle_pinned != 0);
+    args[0] = (void*)&handle_pinned;
+    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
+    CHECK(testObj == returnValue);
+    mono_gchandle_free_v2(handle_pinned);
+    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
+    CHECK(returnValue == nullptr);
+}
+
+TEST(mono_gchandle_compatible_with_native)
+{
+    MonoObject* testObj = (MonoObject*)mono_string_new_wrapper("Test String");
+    MonoMethod* method = GetMethodHelper(kTestDLLNameSpace, kTestClassName, "GCHandleAlloc", 2);
+    int32_t handleType = 3; // pinned
+    void* args[2] = {(void*)testObj, (void*)&handleType};
+
+    MonoObject* returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
+    uintptr_t handle_pinned = *(uintptr_t*)mono_object_unbox(returnValue);
+    CHECK(handle_pinned != 0);
+
+    MonoObject* target = mono_gchandle_get_target_v2(handle_pinned);
+    CHECK(testObj == target);
+
+    mono_gchandle_free_v2(handle_pinned);
+}
+
 #if WIN32
 #define NOINLINE __declspec(noinline)
 #else
