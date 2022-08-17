@@ -1320,6 +1320,10 @@ namespace System.Text.Json.Tests
             double expectedDouble = value;
             float expectedFloat = value;
             decimal expectedDecimal = value;
+#if NET7_0_OR_GREATER
+            Int128 expectedInt128 = new Int128(0UL, value);
+            UInt128 expectedUInt128 = new UInt128(0UL, value);
+#endif
 
             using (JsonDocument doc = JsonDocument.Parse("    " + value + "  "))
             {
@@ -1358,8 +1362,8 @@ namespace System.Text.Json.Tests
                 Assert.Equal(0L, longVal);
 
 #if NET7_0_OR_GREATER
-                Assert.False(root.TryGetInt128(out Int128 int128Val));
-                Assert.Equal(0L, longVal);
+                Assert.True(root.TryGetInt128(out Int128 int128Val));
+                Assert.Equal(expectedInt128, int128Val);
 #endif
 
                 Assert.Equal(expectedFloat, root.GetSingle());
@@ -1370,7 +1374,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<FormatException>(() => root.GetInt64());
 
 #if NET7_0_OR_GREATER
-                Assert.Throws<FormatException>(() => root.GetInt128());
+                Assert.Equal(expectedInt128, root.GetInt128());
 #endif
 
                 Assert.True(root.TryGetUInt64(out ulong ulongVal));
@@ -1380,9 +1384,9 @@ namespace System.Text.Json.Tests
 
 #if NET7_0_OR_GREATER
                 Assert.True(root.TryGetUInt128(out UInt128 uint128Val));
-                Assert.Equal(value, uint128Val);
+                Assert.Equal(expectedUInt128, uint128Val);
 
-                Assert.Equal(value, root.GetUInt128());
+                Assert.Equal(expectedUInt128, root.GetUInt128());
 #endif
 
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
