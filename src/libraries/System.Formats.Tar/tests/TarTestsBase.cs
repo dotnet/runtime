@@ -17,6 +17,8 @@ namespace System.Formats.Tar.Tests
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
         protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
 
+        protected readonly UnixFileMode CreateDirectoryDefaultMode; // Mode of directories created using Directory.CreateDirectory(string).
+
         // Mode assumed for files and directories on Windows.
         protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
 
@@ -114,6 +116,11 @@ namespace System.Formats.Tar.Tests
         protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
 
         protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
+
+        protected TarTestsBase()
+        {
+            CreateDirectoryDefaultMode = PlatformDetection.IsWindows ? UnixFileMode.None : Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode;
+        }
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
