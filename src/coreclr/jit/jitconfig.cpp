@@ -44,14 +44,15 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
     bool         isQuoted  = false;    // true while parsing inside a quote "this-is-a-quoted-region"
     MethodName   currentName;          // Buffer used while parsing the current entry
 
-    currentName.m_next                    = nullptr;
-    currentName.m_methodNameStart         = -1;
-    currentName.m_methodNameLen           = -1;
-    currentName.m_methodNameWildcardAtEnd = false;
-    currentName.m_classNameStart          = -1;
-    currentName.m_classNameLen            = -1;
-    currentName.m_classNameWildcardAtEnd  = false;
-    currentName.m_numArgs                 = -1;
+    currentName.m_next                      = nullptr;
+    currentName.m_methodNameStart           = -1;
+    currentName.m_methodNameLen             = -1;
+    currentName.m_methodNameWildcardAtStart = false;
+    currentName.m_methodNameWildcardAtEnd   = false;
+    currentName.m_classNameStart            = -1;
+    currentName.m_classNameLen              = -1;
+    currentName.m_classNameWildcardAtEnd    = false;
+    currentName.m_numArgs                   = -1;
 
     enum State
     {
@@ -202,21 +203,31 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
                     }
 
                     // Is the first character a wildcard?
-                    if (m_list[currentName.m_methodNameStart] == WILD_CHAR)
+                    if (m_list[currentName.m_methodNameStart] == WILD_CHAR && currentName.m_methodNameLen == 1)
                     {
                         // The method name is a full wildcard; mark it as such.
                         currentName.m_methodNameStart = -1;
                         currentName.m_methodNameLen   = -1;
                     }
-                    // Is there a wildcard at the end of the method name?
-                    //
-                    else if (m_list[currentName.m_methodNameStart + currentName.m_methodNameLen - 1] == WILD_CHAR)
+                    else
                     {
-                        // i.e. class:foo*, will match any method that starts with "foo"
-
-                        // Remove the trailing WILD_CHAR from method name
-                        currentName.m_methodNameLen--; // backup for WILD_CHAR
-                        currentName.m_methodNameWildcardAtEnd = true;
+                        // Is there a wildcard at the start of the method name?
+                        if (m_list[currentName.m_methodNameStart] == WILD_CHAR)
+                        {
+                            // i.e. class:foo*, will match any method that starts with "foo"
+                            // Remove the leading WILD_CHAR from method name
+                            currentName.m_methodNameStart++;
+                            currentName.m_methodNameLen--;
+                            currentName.m_methodNameWildcardAtStart = true;
+                        }
+                        // Is there a wildcard at the end of the method name?
+                        if (m_list[currentName.m_methodNameStart + currentName.m_methodNameLen - 1] == WILD_CHAR)
+                        {
+                            // i.e. class:foo*, will match any method that starts with "foo"
+                            // Remove the trailing WILD_CHAR from method name
+                            currentName.m_methodNameLen--; // backup for WILD_CHAR
+                            currentName.m_methodNameWildcardAtEnd = true;
+                        }
                     }
 
                     // should we expect an ARG_LIST?
@@ -309,11 +320,30 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
     m_names = nullptr;
 }
 
-static bool matchesName(const char* const name, int nameLen, bool wildcardAtEnd, const char* const s2)
+// strstr that is length-limited, this implementation is not intended to be used on hot paths
+static size_t strnstr(const char* pSrc, size_t srcSize, const char* needle, size_t needleSize)
 {
-    // 's2' must start with 'nameLen' characters of 'name'
-    if (strncmp(name, s2, nameLen) != 0)
+    for (size_t srcPos = 0; srcPos <= srcSize - needleSize; srcPos++)
     {
+        if (strncmp(pSrc + srcPos, needle, needleSize) == 0)
+        {
+            return srcPos;
+        }
+    }
+    return -1;
+}
+
+static bool matchesName(
+    const char* const name, int nameLen, bool wildcardAtStart, bool wildcardAtEnd, const char* const s2)
+{
+    if (wildcardAtStart && strnstr(s2, strlen(s2), name, nameLen) == -1)
+    {
+        return false;
+    }
+
+    if (!wildcardAtStart && strncmp(name, s2, nameLen) != 0)
+    {
+        // 's2' must start with 'nameLen' characters of 'name'
         return false;
     }
 
@@ -346,12 +376,14 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
         if (name->m_methodNameStart != -1)
         {
             const char* expectedMethodName = &m_list[name->m_methodNameStart];
-            if (!matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtEnd, methodName))
+            if (!matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtStart,
+                             name->m_methodNameWildcardAtEnd, methodName))
             {
                 // C++ embeds the class name into the method name; deal with that here.
                 const char* colon = strchr(methodName, ':');
                 if (colon != nullptr && colon[1] == ':' &&
-                    matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtEnd, methodName))
+                    matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtStart,
+                                name->m_methodNameWildcardAtEnd, methodName))
                 {
                     int classLen = (int)(colon - methodName);
                     if (name->m_classNameStart == -1 ||
@@ -361,34 +393,14 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
                         return true;
                     }
                 }
-
-                // Special case: Main for top-level statements
-                if ((strcmp(expectedMethodName, "Main") == 0) && (strcmp(methodName, "<Main>$") == 0))
-                {
-                    return true;
-                }
-
-                // Special case: nested functions, e.g. "void Inner(){}" might look like
-                // "Program:<<Main>$>g__Inner|0_1()"
-                if ((strchr(methodName, ':') == nullptr) && strlen(expectedMethodName) <= 500 &&
-                    strstr(methodName, "$>g__") != nullptr)
-                {
-                    char buffer[512] = {0};
-                    sprintf_s(buffer, "$>g__%s|\0", expectedMethodName);
-                    if (strstr(methodName, buffer) != nullptr)
-                    {
-                        return true;
-                    }
-                }
-
                 continue;
             }
         }
 
         // If m_classNameStart is valid, check for a mismatch
         if (className == nullptr || name->m_classNameStart == -1 ||
-            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_classNameWildcardAtEnd,
-                        className))
+            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_methodNameWildcardAtStart,
+                        name->m_classNameWildcardAtEnd, className))
         {
             return true;
         }
@@ -399,8 +411,8 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
         if (nsSep != nullptr && nsSep != className)
         {
             const char* onlyClass = nsSep[-1] == '.' ? nsSep : &nsSep[1];
-            if (matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_classNameWildcardAtEnd,
-                            onlyClass))
+            if (matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, false,
+                            name->m_classNameWildcardAtEnd, onlyClass))
             {
                 return true;
             }
