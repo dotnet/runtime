@@ -28,7 +28,7 @@ namespace ILCompiler
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
-            if (defType.Context.Target.IsWindows || (defType.Context.Target.PointerSize == 4))
+            if (defType.Context.Target.Architecture != TargetArchitecture.ARM64 && defType.Context.Target.IsWindows || (defType.Context.Target.PointerSize == 4))
             {
                 return layoutFromMetadata;
             }
@@ -72,7 +72,7 @@ namespace ILCompiler
         public static bool IsIntegerType(DefType type)
         {
             return type.IsIntrinsic
-                && type.Namespace == "System."
+                && type.Namespace == "System"
                 && ((type.Name == "Int128") || (type.Name == "UInt128"));
         }
     }

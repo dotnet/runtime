@@ -1575,10 +1575,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         // If the argument has an alignment of 16 then the NGRN is rounded up to the next even number.
         //
         // This rule is not used for Apple platforms. See https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
-        if (!this->IsVarArg() && ((_arm64IdxGenReg & 1) == 1) && regSlots == 2 && thValueType.GetMethodTable()->GetFieldAlignmentRequirement() == 16)
+        if (!this->IsVarArg() && ((m_idxGenReg & 1) == 1) && regSlots == 2 && thValueType.GetMethodTable()->GetFieldAlignmentRequirement() == 16)
         {
             m_idxGenReg++;
-            numRegistersUsed++;
         }
 #endif
 

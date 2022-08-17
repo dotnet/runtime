@@ -11,10 +11,14 @@
 #elif defined(__SIZEOF_INT128__)
     typedef __int128 Int128;
 #else
-    typedef struct {
+struct 
+#ifdef _M_ARM64
+alignas(16)
+#endif
+Int128 {
         uint64_t lower;
         uint64_t upper;
-    } Int128;
+    };
 #endif
 
 static Int128 Int128Value = { };
