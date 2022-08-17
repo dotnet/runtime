@@ -14,13 +14,13 @@ using Mono.Linker.Tests.Extensions;
 #nullable enable
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	class ILVerifier : ILVerify.IResolver
+	sealed class ILVerifier : ILVerify.IResolver
 	{
-		Verifier _verifier;
-		NPath _assemblyFolder;
-		NPath _frameworkFolder;
-		Dictionary<string, PEReader> _assemblyCache;
-		AssemblyLoadContext _alc;
+		readonly Verifier _verifier;
+		readonly NPath _assemblyFolder;
+		readonly NPath _frameworkFolder;
+		readonly Dictionary<string, PEReader> _assemblyCache;
+		readonly AssemblyLoadContext _alc;
 
 		public IEnumerable<VerificationResult> Results { get; private set; }
 
@@ -123,7 +123,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		PEReader? ILVerify.IResolver.ResolveModule (AssemblyName referencingModule, string fileName)
 			=> Resolve (Path.GetFileNameWithoutExtension (fileName));
 
-		public string GetErrorMessage (VerificationResult result)
+		public static string GetErrorMessage (VerificationResult result)
 		{
 			return $"IL Verification error:\n{result.Message}";
 		}

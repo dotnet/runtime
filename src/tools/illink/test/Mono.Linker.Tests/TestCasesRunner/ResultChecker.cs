@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var result in verifier.Results) {
 				if (result.Code == ILVerify.VerifierError.None)
 					continue;
-				Assert.Fail (verifier.GetErrorMessage (result));
+				Assert.Fail (ILVerifier.GetErrorMessage (result));
 			}
 		}
 
@@ -1122,7 +1122,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return false;
 		}
 
-		static IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider caProvider, string attributeName )
+		static IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider caProvider, string attributeName)
 		{
 			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
 				return assembly.EntryPoint.DeclaringType.CustomAttributes
