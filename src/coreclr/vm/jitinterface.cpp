@@ -3737,7 +3737,7 @@ CorInfoInitClassResult CEEInfo::initClass(
         if (!pMD->IsCtor() && !pTypeToInitMT->IsValueType() && !pTypeToInitMT->IsInterface())
         {
             // For instance methods of types with precise-initialization
-            // semantics, we can assume that the .ctor triggerred the
+            // semantics, we can assume that the .ctor triggered the
             // type initialization.
             // This does not hold for NULL "this" object. However, the spec does
             // not require that case to work.
@@ -9458,6 +9458,32 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 /*********************************************************************/
 
+int CEEInfo::getExactClasses (
+        CORINFO_CLASS_HANDLE  baseType,
+        int                   maxExactClasses,
+        CORINFO_CLASS_HANDLE* exactClsRet
+        )
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    int exactClassesCount = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    // This function is currently implemented only on NativeAOT
+    // but can be implemented for CoreCLR as well (e.g. for internal types)
+
+    EE_TO_JIT_TRANSITION();
+
+    return exactClassesCount;
+}
+
+/*********************************************************************/
+
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     CORINFO_SIG_INFO*       sig,
     CORINFO_ARG_LIST_HANDLE args
@@ -12954,7 +12980,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         //DbgPrintf("Jitted Entry at" FMT_ADDR "method %s::%s %s size %08x\n", DBG_ADDR(nativeEntry),
         //          pszDebugClassName, pszDebugMethodName, pszDebugMethodSignature, sizeOfCode);
 
-        ClrFlushInstructionCache(nativeEntry, sizeOfCode);
+        // For dynamic method, the code memory may be reused, thus we are passing in the hasCodeExecutedBefore set to true
+        ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
         ret = (PCODE)nativeEntry;
 
 #ifdef TARGET_ARM

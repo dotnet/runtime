@@ -357,6 +357,7 @@ HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection
 ICALL_TYPE(MCMETH, "System.Reflection.RuntimeConstructorInfo", MCMETH_1)
 HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo_GetGenericMethodDefinition, MonoReflectionMethod, 1, (MonoReflectionMethod))
 HANDLES(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke, MonoObject, 4, (MonoReflectionMethod, MonoObject, MonoSpanOfObjects_ref, MonoExceptionOut))
+HANDLES(MCMETH_5, "InvokeClassConstructor", ves_icall_InvokeClassConstructor, void, 1, (MonoQCallTypeHandle))
 HANDLES_REUSE_WRAPPER(MCMETH_4, "get_metadata_token", ves_icall_reflection_get_token)
 
 ICALL_TYPE(CATTR_DATA, "System.Reflection.RuntimeCustomAttributeData", CATTR_DATA_1)

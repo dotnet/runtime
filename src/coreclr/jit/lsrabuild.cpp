@@ -221,7 +221,7 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
 //       on the defRefPosition, we leave the register requirements on the defRefPosition as-is, and set
 //       the useRefPosition to the def registers, for similar reasons to case #3.
 //    5. If both the defRefPosition and the useRefPosition specify single registers, but both have conflicts,
-//       We set the candiates on defRefPosition to be all regs of the appropriate type, and since they are
+//       We set the candidates on defRefPosition to be all regs of the appropriate type, and since they are
 //       single registers, codegen can insert the copy.
 //    6. Finally, if the RefPositions specify disjoint subsets of the registers (or the use is fixed but
 //       has a conflict), we must insert a copy.  The copy will be inserted before the use if the
@@ -3142,9 +3142,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL))
+    if (node->OperIs(GT_MUL) || node->OperIsCmpCompare() || node->OperIs(GT_AND))
     {
-        // Can be contained for MultiplyAdd on arm64
+        // Can be contained for MultiplyAdd on arm64.
+        // Compare and AND may be contained due to If Conversion.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))

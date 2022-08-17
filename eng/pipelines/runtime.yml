@@ -360,6 +360,7 @@ jobs:
   parameters:
     platforms:
       - Browser_wasm
+    buildAndRunWasi: true
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
       - normal
@@ -372,7 +373,6 @@ jobs:
       - Browser_wasm
     nameSuffix: _EAT
     runAOT: false
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # AOT Library tests

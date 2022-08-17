@@ -56,7 +56,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/jit/unwindarm.cpp">src/jit/unwindarm.cpp</a> DumpUnwindInfo
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindarm.cpp">src/jit/unwindarm.cpp</a> DumpUnwindInfo
     /// </summary>
     public class UnwindInfo : BaseUnwindInfo
     {

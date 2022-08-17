@@ -219,7 +219,7 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.Versioning.ObsoletedInOSPlatformAttribute">
+    <type fullname="System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute">
@@ -289,6 +289,15 @@
     <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -303,6 +312,9 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.CompilerServices.NativeIntegerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.ScopedRefAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
 

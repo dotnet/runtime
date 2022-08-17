@@ -16,6 +16,7 @@ namespace System
     /// <summary>
     /// A lightweight abstraction for a payload of bytes that supports converting between string, stream, JSON, and bytes.
     /// </summary>
+    [JsonConverter(typeof(BinaryDataConverter))]
     public class BinaryData
     {
         private const string JsonSerializerRequiresUnreferencedCode = "JSON serialization and deserialization might require types that cannot be statically analyzed.";

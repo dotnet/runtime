@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public static class ChainTests
     {
         private static bool TrustsMicrosoftDotComRoot
@@ -169,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(IntPtr.Zero, chain.ChainContext);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
         public static void TestResetMethod()
         {
             using (var sampleCert = new X509Certificate2(TestData.DssCer))
@@ -313,7 +312,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (!PlatformDetection.IsAndroid)
             {
                 // Android doesn't support an empty custom root
-                yield return new object[] { false, X509ChainStatusFlags.UntrustedRoot, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot };
+                X509ChainStatusFlags flags = X509ChainStatusFlags.UntrustedRoot;
+                if (!SignatureSupport.SupportsX509Sha1Signatures)
+                {
+                    flags |= X509ChainStatusFlags.NotSignatureValid;
+                }
+                yield return new object[] { false, flags, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot };
             }
 
             yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot };
@@ -558,7 +562,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
         public static void BuildChain_WithCertificatePolicy_Match()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))

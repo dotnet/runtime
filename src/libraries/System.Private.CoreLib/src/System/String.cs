@@ -236,7 +236,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;
 #else
-            return Encoding.UTF8.GetString(pb, numBytes);
+            return CreateStringFromEncoding(pb, numBytes, Encoding.UTF8);
 #endif
         }
 
@@ -508,6 +508,7 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
+        internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect

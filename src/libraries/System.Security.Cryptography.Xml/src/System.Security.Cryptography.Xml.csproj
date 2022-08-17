@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -126,6 +126,7 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXPathTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXsltTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlLicenseTransform.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\XmlResolverHelper.cs" />
     <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA1SignatureDescription.cs" />

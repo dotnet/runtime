@@ -208,7 +208,7 @@ namespace System.Net.Security
                             ref outCredential._handle,
                             out timeStamp);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -265,7 +265,7 @@ namespace System.Net.Security
                                 ref outCredential._handle,
                                 out _);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -296,7 +296,7 @@ namespace System.Net.Security
                                 ref outCredential._handle,
                                 out timeStamp);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {

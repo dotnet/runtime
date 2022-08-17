@@ -1319,7 +1319,7 @@ interface ICorProfilerCallback : IUnknown
 
     /*
      * The CLR calls ThreadAssignedToOSThread to tell the profiler
-     * that a managed thread is being implemented via a particualr OS thread.
+     * that a managed thread is being implemented via a particular OS thread.
      * This callback exists so that the profiler can maintain an accurate
      * OS to Managed thread mapping across fibres.
      */
