@@ -1833,26 +1833,28 @@ extern "C" EXPORT_API void EXPORT_CC mono_gc_wbarrier_set_field (MonoObject * ob
     SetObjectReference((OBJECTREF*)field_ptr, ObjectToOBJECTREF((MonoObject_clr*)value));
 }
 
-
-static guint32 handleId = 0;
-struct MonoHandleInfo
+static inline OBJECTHANDLE handle_from_uintptr(uintptr_t p)
 {
-    MonoHandleInfo() : Handle(0), Type((HandleType)-1)
-    {
-    }
-    MonoHandleInfo(const MonoHandleInfo& copy) : Handle(copy.Handle), Type(copy.Type)
-    {
-    }
-    uintptr_t Handle;
-    HandleType Type;
-};
+    // mask off bit that is set for pinned in managed
+    p &= (~(uintptr_t)1);
+    return (OBJECTHANDLE)p;
+}
+
+static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
+{
+    uintptr_t p = (uintptr_t)h;
+    // managed code expects lowest bit set for pinned handles
+    if (pinned)
+        p |= (uintptr_t)1;
+    return p;
+}
 
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target_v2(uintptr_t gchandle)
 {
     GCX_COOP();
     // TODO: This method is not accurate with Cooperative/Preemptive mode
 
-    OBJECTHANDLE objectHandle = (OBJECTHANDLE)gchandle;
+    OBJECTHANDLE objectHandle = handle_from_uintptr(gchandle);
     OBJECTREF objref = ObjectFromHandle(objectHandle);
     return (MonoObject*)OBJECTREFToObject(objref);
 }
@@ -1865,7 +1867,7 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_gchandle_is_in_domain_v2(uintptr_t
 
 extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
 {
-    OBJECTHANDLE objectHandle = (OBJECTHANDLE)gchandle;
+    OBJECTHANDLE objectHandle = handle_from_uintptr(gchandle);
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(objectHandle);
 }
@@ -1887,7 +1889,7 @@ extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_v2(MonoObject *obj, 
         GetAppDomain()->CreatePinningHandle(objref) :
         GetAppDomain()->CreateHandle(objref);
 
-    return (uintptr_t)rawHandle;
+    return handle_to_uintptr(rawHandle, pinned);
 }
 
 extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_weakref_v2(MonoObject *obj, gboolean track_resurrection)
@@ -1905,7 +1907,7 @@ extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_weakref_v2(MonoObjec
         GetAppDomain()->CreateLongWeakHandle(objref) :
         GetAppDomain()->CreateShortWeakHandle(objref);
 
-    return (uintptr_t)rawHandle;
+    return handle_to_uintptr(rawHandle, false);
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_array_class()
