@@ -395,7 +395,7 @@ namespace System.Threading.Tasks
     /// State information that is common between ParallelStateFlags class
     /// and ParallelStateFlags64 class.
     /// </summary>
-    internal class ParallelLoopStateFlags
+    internal abstract class ParallelLoopStateFlags
     {
         internal const int ParallelLoopStateNone = 0;
         internal const int ParallelLoopStateExceptional = 1;
@@ -453,6 +453,8 @@ namespace System.Threading.Tasks
             // we can set the canceled flag regardless of the state of other bits.
             return (AtomicLoopStateUpdate(ParallelLoopStateCanceled, ParallelLoopStateNone));
         }
+
+        internal abstract long LowestBreakIteration { get; }
     }
 
     /// <summary>
@@ -466,18 +468,14 @@ namespace System.Threading.Tasks
         // by Break().
         internal volatile int _lowestBreakIteration = int.MaxValue;
 
-        // Not strictly necessary, but maintains consistency with ParallelStateFlags64
-        internal int LowestBreakIteration
-        {
-            get { return _lowestBreakIteration; }
-        }
+        internal override long LowestBreakIteration => NullableLowestBreakIteration;
 
         // Does some processing to convert _lowestBreakIteration to a long?.
-        internal long? NullableLowestBreakIteration
+        internal long NullableLowestBreakIteration
         {
             get
             {
-                if (_lowestBreakIteration == int.MaxValue) return null;
+                if (_lowestBreakIteration == int.MaxValue) return long.MaxValue;
                 else
                 {
                     // protect against torn read of 64-bit value
@@ -533,7 +531,7 @@ namespace System.Threading.Tasks
         internal long _lowestBreakIteration = long.MaxValue;
 
         // Performs a conditionally interlocked read of _lowestBreakIteration.
-        internal long LowestBreakIteration
+        internal override long LowestBreakIteration
         {
             get
             {
