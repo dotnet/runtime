@@ -23,7 +23,7 @@ jobs:
     perfForkToUse:
       url: https://github.com/radical/performance
       branch: linker-fix
-    downloadSpecificBuild:
-      buildId: '1950042'
-      pipeline: 'runtime-wasm-perf'
-      branchName: 'refs/pull/74097/head'
+    #downloadSpecificBuild:
+      #buildId: '1950042'
+      #pipeline: 'runtime-wasm-perf'
+      #branchName: 'refs/pull/74097/head'
