@@ -85,7 +85,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
 #endif
 
     if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
