@@ -1741,7 +1741,7 @@ namespace System
             if (typeof(TOther) == typeof(byte))
             {
                 byte actualResult = checked((byte)value);
-                result = (TOther)(object)actualResult!;
+                result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
