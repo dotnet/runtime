@@ -149,7 +149,7 @@
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
       <Command Condition="'$(AGENT_OS)' != 'Windows_NT'">
         if [ "x$PERF_PREREQS_INSTALL_FAILED" = "x1" ]; then
-          echo "\n\n** Error: Failed to install prerequisites **\n\n"; export _commandExitCode=1;
+          echo "\n\n** Error: Failed to install prerequisites **\n\n"; (exit 1);
         else
           $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)";
         fi</Command>
