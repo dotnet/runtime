@@ -616,7 +616,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
@@ -859,7 +859,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
