@@ -197,7 +197,9 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MORPH_GLOBAL,
         PHASE_GS_COOKIE,
         PHASE_COMPUTE_EDGE_WEIGHTS,
+#if defined(FEATURE_EH_FUNCLETS)
         PHASE_CREATE_FUNCLETS,
+#endif
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,
         // reachability
