@@ -176,7 +176,7 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
+            int end = new ReadOnlySpan<byte>((byte*)cstr, length).IndexOf((byte)0);
             if (end >= 0)
             {
                 length = end;
@@ -450,7 +450,7 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
+            int end = new ReadOnlySpan<char>((char*)nativeHome, length).IndexOf('\0');
             if (end >= 0)
             {
                 length = end;

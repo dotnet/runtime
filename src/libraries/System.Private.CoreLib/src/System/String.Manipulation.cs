@@ -1088,7 +1088,7 @@ namespace System
                 int i = 0;
                 while (true)
                 {
-                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                    int pos = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
                     if (pos < 0)
                     {
                         break;
