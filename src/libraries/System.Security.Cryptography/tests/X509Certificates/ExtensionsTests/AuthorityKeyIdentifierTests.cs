@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
     public static class AuthorityKeyIdentifierTests
     {
         [Fact]
@@ -60,7 +61,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateEmptyFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -78,7 +78,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateKeyIdOnlyFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -104,7 +103,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateIssuerAndSerialFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
@@ -139,7 +137,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates.")]
         public static void CreateFullFromCertificate()
         {
             X509AuthorityKeyIdentifierExtension akid;
