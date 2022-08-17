@@ -48,6 +48,8 @@ namespace System.Text.Json.SourceGeneration
 
             private const string DateOnlyFullName = "System.DateOnly";
             private const string TimeOnlyFullName = "System.TimeOnly";
+            private const string Int128FullName = "System.Int128";
+            private const string UInt128FullName = "System.UInt128";
             private const string IAsyncEnumerableFullName = "System.Collections.Generic.IAsyncEnumerable`1";
 
             private const string DictionaryTypeRef = "global::System.Collections.Generic.Dictionary";
@@ -83,6 +85,9 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _nullableOfTType;
             private readonly Type _objectType;
             private readonly Type _stringType;
+
+            private readonly Type? _int128Type;
+            private readonly Type? _uint128Type;
 
             private readonly Type? _timeSpanType;
             private readonly Type? _dateTimeOffsetType;
@@ -220,6 +225,9 @@ namespace System.Text.Json.SourceGeneration
                 _nullableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Nullable_T);
                 _objectType = _metadataLoadContext.Resolve(SpecialType.System_Object);
                 _stringType = _metadataLoadContext.Resolve(SpecialType.System_String);
+
+                _int128Type = _metadataLoadContext.Resolve(Int128FullName);
+                _uint128Type = _metadataLoadContext.Resolve(UInt128FullName);
 
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
                 _byteArrayType = _metadataLoadContext.Resolve(typeof(byte)).MakeArrayType();
@@ -1571,6 +1579,9 @@ namespace System.Text.Json.SourceGeneration
                 _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt16));
                 _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt32));
                 _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt64));
+
+                AddTypeIfNotNull(_numberTypes, _int128Type);
+                AddTypeIfNotNull(_numberTypes, _uint128Type);
             }
 
             private void PopulateKnownTypes()
@@ -1606,13 +1617,13 @@ namespace System.Text.Json.SourceGeneration
                 _knownUnsupportedTypes.Add(_serializationInfoType);
                 _knownUnsupportedTypes.Add(_intPtrType);
                 _knownUnsupportedTypes.Add(_uIntPtrType);
+            }
 
-                static void AddTypeIfNotNull(HashSet<Type> types, Type? type)
+            private static void AddTypeIfNotNull(HashSet<Type> types, Type? type)
+            {
+                if (type != null)
                 {
-                    if (type != null)
-                    {
-                        types.Add(type);
-                    }
+                    types.Add(type);
                 }
             }
         }

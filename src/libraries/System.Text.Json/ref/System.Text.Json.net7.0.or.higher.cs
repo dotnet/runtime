@@ -35,7 +35,8 @@ namespace System.Text.Json.Serialization.Metadata
 {
     public static partial class JsonMetadataServices
     {
-        // public static System.Text.Json.Serialization.JsonConverter<System.Int128> Int128Converter { get { throw null; } }
-        // public static System.Text.Json.Serialization.JsonConverter<System.UInt128> UInt128Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Int128> Int128Converter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<System.UInt128> UInt128Converter { get { throw null; } }
     }
 }

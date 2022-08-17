@@ -524,7 +524,12 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(ushort) ||
                 potentialNumberType == typeof(uint) ||
                 potentialNumberType == typeof(ulong) ||
-                potentialNumberType == JsonTypeInfo.ObjectType;
+                potentialNumberType == JsonTypeInfo.ObjectType
+#if NET7_0_OR_GREATER
+                || potentialNumberType == typeof(Int128)
+                || potentialNumberType == typeof(UInt128)
+#endif
+                ;
         }
 
         private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)

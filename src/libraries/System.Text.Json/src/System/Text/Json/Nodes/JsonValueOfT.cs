@@ -134,6 +134,19 @@ namespace System.Text.Json.Nodes
                     {
                         return (TypeToConvert)(object)element.GetSByte();
                     }
+
+#if NET7_0_OR_GREATER
+                    if (typeof(TypeToConvert) == typeof(Int128) || typeof(TypeToConvert) == typeof(Int128?))
+                    {
+                        return (TypeToConvert)(object)element.GetInt128();
+                    }
+
+                    if (typeof(TypeToConvert) == typeof(UInt128) || typeof(TypeToConvert) == typeof(UInt128?))
+                    {
+                        return (TypeToConvert)(object)element.GetUInt128();
+                    }
+#endif
+
                     break;
 
                 case JsonValueKind.String:
@@ -267,6 +280,23 @@ namespace System.Text.Json.Nodes
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
+
+#if NET7_0_OR_GREATER
+                    if (typeof(TypeToConvert) == typeof(Int128) || typeof(TypeToConvert) == typeof(Int128?))
+                    {
+                        success = element.TryGetInt128(out Int128 value);
+                        result = (TypeToConvert)(object)value;
+                        return success;
+                    }
+
+                    if (typeof(TypeToConvert) == typeof(UInt128) || typeof(TypeToConvert) == typeof(UInt128?))
+                    {
+                        success = element.TryGetUInt128(out UInt128 value);
+                        result = (TypeToConvert)(object)value;
+                        return success;
+                    }
+#endif
+
                     break;
 
                 case JsonValueKind.String:

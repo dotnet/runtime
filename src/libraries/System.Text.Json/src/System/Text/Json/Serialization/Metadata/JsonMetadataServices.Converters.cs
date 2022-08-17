@@ -108,6 +108,15 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<long> Int64Converter => s_int64Converter ??= new Int64Converter();
         private static JsonConverter<long>? s_int64Converter;
 
+#if NET7_0_OR_GREATER
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Int128"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<Int128> Int128Converter => s_int128Converter ??= new Int128Converter();
+        private static JsonConverter<Int128>? s_int128Converter;
+#endif
+
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
         /// </summary>
@@ -209,6 +218,16 @@ namespace System.Text.Json.Serialization.Metadata
         [CLSCompliant(false)]
         public static JsonConverter<ulong> UInt64Converter => s_uint64Converter ??= new UInt64Converter();
         private static JsonConverter<ulong>? s_uint64Converter;
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="UInt128"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        [CLSCompliant(false)]
+        public static JsonConverter<UInt128> UInt128Converter => s_uint128Converter ??= new UInt128Converter();
+        private static JsonConverter<UInt128>? s_uint128Converter;
+#endif
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Uri"/> values.
