@@ -784,8 +784,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
+    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+
+    var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
+
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 

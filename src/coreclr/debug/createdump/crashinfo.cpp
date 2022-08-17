@@ -88,6 +88,12 @@ CrashInfo::QueryInterface(
         AddRef();
         return S_OK;
     }
+    else if (InterfaceId == IID_ICLRDataLoggingCallback)
+    {
+        *Interface = (ICLRDataLoggingCallback*)this;
+        AddRef();
+        return S_OK;
+    }
     else
     {
         *Interface = nullptr;
@@ -119,6 +125,14 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ ULONG32 size)
 {
     m_enumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE
+CrashInfo::LogMessage(
+    /* [in] */ LPCSTR message)
+{
+    Trace("%s", message);
     return S_OK;
 }
 

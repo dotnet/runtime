@@ -10,8 +10,12 @@
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
-    <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
+
+  <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
+    <Warning Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' != 'true'" Text="This sample requires perftracing or threading" />
+  </Target>
 
   <PropertyGroup>
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug')">true</MonoDiagnosticsMock>

@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] cases = Match_MemberData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { engine, cases[i].Pattern, cases[i].Input, cases[i].Options, regexes[i], cases[i].Beginning, cases[i].Length, cases[i].ExpectedSuccess, cases[i].ExpectedValue };
@@ -316,6 +316,14 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return (@".*?", "abc", lineOption, 1, 2, true, "");
                 yield return (@".*?c", "abc", lineOption, 1, 2, true, "bc");
+                yield return (@".*?[^c]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^cz]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^u]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uv]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvw]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwx]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwxy]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwxyz]", "abc", lineOption, 1, 2, true, "b");
                 yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                 yield return (@".*?", "abc", lineOption, 2, 1, true, "");
 

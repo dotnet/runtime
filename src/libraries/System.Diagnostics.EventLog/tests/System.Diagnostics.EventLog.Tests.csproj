@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -23,6 +23,7 @@
     <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" />
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventBookmarkTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="EventLogMessagesTests.cs" />

@@ -247,13 +247,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN)
+  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
+  add_definitions(-DGEN_PINVOKE)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_COMPONENTS 1)
+  set(STATIC_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
     wasi/mono-wasi-driver/driver.c

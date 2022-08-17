@@ -850,5 +850,25 @@ namespace TypeSystemTests
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }
+
+        [Fact]
+        public void TestWrapperAroundVectorTypes()
+        {
+            {
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector128`1");
+                MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
+                Assert.Equal(16, instantiatedType.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                DefType type = _testModule.GetType("Auto", "int8x16x2");
+                Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                DefType type = _testModule.GetType("Auto", "Wrapper_int8x16x2");
+                Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
+            }
+        }
     }
 }

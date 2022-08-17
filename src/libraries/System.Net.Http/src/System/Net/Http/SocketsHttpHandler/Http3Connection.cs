@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Net.Quic;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -368,6 +369,16 @@ namespace System.Net.Http
             try
             {
                 _clientControl = await _connection!.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).ConfigureAwait(false);
+
+                // Server MUST NOT abort our control stream, setup a continuation which will react accordingly
+                _ = _clientControl.WritesClosed.ContinueWith(t =>
+                {
+                    if (t.Exception?.InnerException is QuicException ex && ex.QuicError == QuicError.StreamAborted)
+                    {
+                        Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream));
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -380,7 +391,7 @@ namespace System.Net.Http
         {
             Span<byte> buffer = stackalloc byte[4 + VariableLengthIntegerHelper.MaximumEncodedLength];
 
-            int integerLength = VariableLengthIntegerHelper.WriteInteger(buffer.Slice(4), settings._maxResponseHeadersLength * 1024L);
+            int integerLength = VariableLengthIntegerHelper.WriteInteger(buffer.Slice(4), settings.MaxResponseHeadersByteLength);
             int payloadLength = 1 + integerLength; // includes the setting ID and the integer value.
             Debug.Assert(payloadLength <= VariableLengthIntegerHelper.OneByteLimit);
 
@@ -571,69 +582,77 @@ namespace System.Net.Http
         /// </summary>
         private async Task ProcessServerControlStreamAsync(QuicStream stream, ArrayBuffer buffer)
         {
-            using (buffer)
+            try
             {
-                // Read the first frame of the control stream. Per spec:
-                // A SETTINGS frame MUST be sent as the first frame of each control stream.
-
-                (Http3FrameType? frameType, long payloadLength) = await ReadFrameEnvelopeAsync().ConfigureAwait(false);
-
-                if (frameType == null)
+                using (buffer)
                 {
-                    // Connection closed prematurely, expected SETTINGS frame.
-                    throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
-                }
+                    // Read the first frame of the control stream. Per spec:
+                    // A SETTINGS frame MUST be sent as the first frame of each control stream.
 
-                if (frameType != Http3FrameType.Settings)
-                {
-                    throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.MissingSettings);
-                }
+                    (Http3FrameType? frameType, long payloadLength) = await ReadFrameEnvelopeAsync().ConfigureAwait(false);
 
-                await ProcessSettingsFrameAsync(payloadLength).ConfigureAwait(false);
-
-                // Read subsequent frames.
-
-                while (true)
-                {
-                    (frameType, payloadLength) = await ReadFrameEnvelopeAsync().ConfigureAwait(false);
-
-                    switch (frameType)
+                    if (frameType == null)
                     {
-                        case Http3FrameType.GoAway:
-                            await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
-                            break;
-                        case Http3FrameType.Settings:
-                            // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
-                            throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
-                        case Http3FrameType.Headers: // Servers should not send these frames to a control stream.
-                        case Http3FrameType.Data:
-                        case Http3FrameType.MaxPushId:
-                        case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
-                        case Http3FrameType.ReservedHttp2Ping:
-                        case Http3FrameType.ReservedHttp2WindowUpdate:
-                        case Http3FrameType.ReservedHttp2Continuation:
-                            throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
-                        case Http3FrameType.PushPromise:
-                        case Http3FrameType.CancelPush:
-                            // Because we haven't sent any MAX_PUSH_ID frame, it is invalid to receive any push-related frames as they will all reference a too-large ID.
-                            throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.IdError);
-                        case null:
-                            // End of stream reached. If we're shutting down, stop looping. Otherwise, this is an error (this stream should not be closed for life of connection).
-                            bool shuttingDown;
-                            lock (SyncObj)
-                            {
-                                shuttingDown = ShuttingDown;
-                            }
-                            if (!shuttingDown)
-                            {
-                                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
-                            }
-                            return;
-                        default:
-                            await SkipUnknownPayloadAsync(frameType.GetValueOrDefault(), payloadLength).ConfigureAwait(false);
-                            break;
+                        // Connection closed prematurely, expected SETTINGS frame.
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
+                    }
+
+                    if (frameType != Http3FrameType.Settings)
+                    {
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.MissingSettings);
+                    }
+
+                    await ProcessSettingsFrameAsync(payloadLength).ConfigureAwait(false);
+
+                    // Read subsequent frames.
+
+                    while (true)
+                    {
+                        (frameType, payloadLength) = await ReadFrameEnvelopeAsync().ConfigureAwait(false);
+
+                        switch (frameType)
+                        {
+                            case Http3FrameType.GoAway:
+                                await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
+                                break;
+                            case Http3FrameType.Settings:
+                                // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
+                                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
+                            case Http3FrameType.Headers: // Servers should not send these frames to a control stream.
+                            case Http3FrameType.Data:
+                            case Http3FrameType.MaxPushId:
+                            case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                            case Http3FrameType.ReservedHttp2Ping:
+                            case Http3FrameType.ReservedHttp2WindowUpdate:
+                            case Http3FrameType.ReservedHttp2Continuation:
+                                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
+                            case Http3FrameType.PushPromise:
+                            case Http3FrameType.CancelPush:
+                                // Because we haven't sent any MAX_PUSH_ID frame, it is invalid to receive any push-related frames as they will all reference a too-large ID.
+                                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.IdError);
+                            case null:
+                                // End of stream reached. If we're shutting down, stop looping. Otherwise, this is an error (this stream should not be closed for life of connection).
+                                bool shuttingDown;
+                                lock (SyncObj)
+                                {
+                                    shuttingDown = ShuttingDown;
+                                }
+                                if (!shuttingDown)
+                                {
+                                    throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
+                                }
+                                return;
+                            default:
+                                await SkipUnknownPayloadAsync(frameType.GetValueOrDefault(), payloadLength).ConfigureAwait(false);
+                                break;
+                        }
                     }
                 }
+            }
+            catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
+            {
+                // Peers MUST NOT close the control stream
+                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
             }
 
             async ValueTask<(Http3FrameType? frameType, long payloadLength)> ReadFrameEnvelopeAsync()
