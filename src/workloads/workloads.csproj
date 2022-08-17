@@ -84,6 +84,9 @@
       <ShortNames Include="Microsoft.NET.Workload;microsoft.net.workload">
         <Replacement>Microsoft</Replacement>
       </ShortNames>
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Manifest">
+        <Replacement>MonoToolChainManifest</Replacement>
+      </ShortNames>
     </ItemGroup>
 
     <ItemGroup>
@@ -109,7 +112,7 @@
     <ItemGroup>
       <SdkFeatureBand Include="%(SwixProjects.SdkFeatureBand)" />
     </ItemGroup>
-    
+
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
     <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />
     <ZipDirectory Overwrite="true" DestinationFile="$(VisualStudioSetupInsertionPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VSTemp)%(SdkFeatureBand.Identity)"/>
