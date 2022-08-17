@@ -70,7 +70,7 @@ public:
     // Returns the first argument register of the allocated set.
     unsigned allocRegArg(var_types type, unsigned numRegs = 1);
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // We are aligning the register to an ABI-required boundary, such as putting
     // double-precision floats in even-numbered registers, by skipping one register.
     // "requiredRegAlignment" is the amount to align to: 1 for no alignment (everything
