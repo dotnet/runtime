@@ -469,7 +469,7 @@ private:
         
         if (IsContentionKeywordEnabled())
         {
-            FireEtwAwareLockCreated(this, GetClrInstanceId());
+            FireEtwLockCreated(this, GetClrInstanceId());
         }
     }
 
