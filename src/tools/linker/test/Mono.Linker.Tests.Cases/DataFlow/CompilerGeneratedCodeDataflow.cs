@@ -210,8 +210,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				FlowParameterAcrossYieldReturn ();
 				FlowUnannotatedParameterAcrossYieldReturn ();
 				FlowAcrossYieldReturnWithBackwardsBranch ();
-				
-				foreach (var o in ReturnManyObjects ());
+
+				foreach (var o in ReturnManyObjects ()) ;
 			}
 		}
 
