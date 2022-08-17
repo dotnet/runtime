@@ -9907,21 +9907,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
-            else if (strcmp(nameSpace, g_SystemNS) == 0)
-            {
-                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-
-                // These types correspond to fundamental data types in the underlying ABIs:
-                // * Int128:  __int128
-                // * UInt128: unsigned __int128
-
-                if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
-                {
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
-                }
-            }
-#endif // UNIX_AMD64_ABI || TARGET_ARM64
         }
 
         if (g_pNullableClass != NULL)
@@ -10005,6 +9990,17 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+        else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+        {
+            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+
+            // These types correspond to fundamental data types in the underlying ABIs:
+            // * Int128:  __int128
+            // * UInt128: unsigned __int128
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+        }
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
     }
     else
     {

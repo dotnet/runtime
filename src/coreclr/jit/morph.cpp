@@ -2510,6 +2510,28 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             }
             else
             {
+                if (!callIsVararg && size == 2)
+                {
+                    assert(varTypeIsStruct(argSigType));
+                    if (comp->info.compCompHnd->getClassAlignmentRequirement(argSigClass) == 16)
+                    {
+                        // Implement rule C.11 from the ARM64 Procedure calling standard.
+                        argAlignBytes = 16;
+
+                        // Implement rule C.10 from the ARM64 Procedure Calling standard.
+                        // If the argument has an alignment of 16 then the NGRN is rounded up to the next even number.
+                        //
+                        // This rule is not used for Apple platforms. See https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
+                        if (!compMacOsArm64Abi())
+                        {
+                            if ((intArgRegNum & 1) && size == 2)
+                            {
+                                intArgRegNum++;
+                            }
+                        }
+                    }
+                }
+
                 // Check if the last register needed is still in the int argument register range.
                 isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
 

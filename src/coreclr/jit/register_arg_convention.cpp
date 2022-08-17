@@ -71,7 +71,7 @@ bool InitVarDscInfo::enoughAvailRegs(var_types type, unsigned numRegs /* = 1 */)
     return regArgNum(type) + numRegs - backFillCount <= maxRegArgNum(type);
 }
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
 {
     assert(requiredRegAlignment > 0);
@@ -91,10 +91,12 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
     unsigned cAlignSkipped = requiredRegAlignment - alignMask;
     assert(cAlignSkipped == 1); // Alignment is currently only 1 or 2, so misalignment can only be 1.
 
+#ifdef TARGET_ARM
     if (varTypeIsFloating(type))
     {
         fltArgSkippedRegMask |= genMapFloatRegArgNumToRegMask(floatRegArgNum);
     }
+#endif
 
     assert(regArgNum(type) + cAlignSkipped <= maxRegArgNum(type)); // if equal, then we aligned the last slot, and the
                                                                    // arg can't be enregistered
@@ -102,7 +104,7 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
 
     return cAlignSkipped;
 }
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_ARM64
 
 bool InitVarDscInfo::canEnreg(var_types type, unsigned numRegs /* = 1 */)
 {
