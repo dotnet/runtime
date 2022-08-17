@@ -94,6 +94,17 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
         return pFlat.Extract();
     }
 
+#ifdef TARGET_OSX
+    // We need to allocate executable memory on OSX in order to do relocation of R2R code.
+    // Converted layout currently uses VirtualAlloc, so it will not work.
+    // Do not convert byte array images on OSX for now (that will disable R2R)
+    // TODO: consider relaxing this in the future.
+    if (!pOwner->IsFile())
+    {
+        return pFlat.Extract();
+    }
+#endif
+
     return new ConvertedImageLayout(pFlat);
 }
 
