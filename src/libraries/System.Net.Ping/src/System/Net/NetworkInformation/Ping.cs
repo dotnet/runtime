@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,6 +78,7 @@ namespace System.Net.NetworkInformation
             ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
+        [MemberNotNull(nameof(_timeoutOrCancellationSource))]
         private void CheckStart()
         {
             int currentStatus;
@@ -481,9 +483,9 @@ namespace System.Net.NetworkInformation
             CheckStart();
             try
             {
-                using CancellationTokenRegistration _ = cancellationToken.Register(static state => ((Ping)state!).SetCanceled(), this);
+                using CancellationTokenRegistration _ = cancellationToken.UnsafeRegister(static state => ((Ping)state!).SetCanceled(), this);
 
-                IPAddress address = await getAddress(getAddressArg, _timeoutOrCancellationSource!.Token).ConfigureAwait(false);
+                IPAddress address = await getAddress(getAddressArg, _timeoutOrCancellationSource.Token).ConfigureAwait(false);
 
                 Task<PingReply> pingTask = SendPingAsyncCore(address, buffer, timeout, options);
                 _timeoutOrCancellationSource.CancelAfter(timeout);

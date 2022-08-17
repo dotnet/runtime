@@ -278,14 +278,14 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            CancellationToken timeoutOrCancellationToken = _timeoutOrCancellationSource!.Token;
-
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using Socket socket = GetRawSocket(socketConfig);
             int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
 
             try
             {
+                CancellationToken timeoutOrCancellationToken = _timeoutOrCancellationSource!.Token;
+
                 await socket.SendToAsync(
                     socketConfig.SendBuffer.AsMemory(),
                     SocketFlags.None,

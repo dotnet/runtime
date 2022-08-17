@@ -78,33 +78,27 @@ namespace System.Net.NetworkInformation
             using Process pingProcess = GetPingProcess(address, buffer, timeout, options);
             pingProcess.Start();
 
-            var timedOutOrCanceled = false;
             try
             {
-                string stdout;
-                try
-                {
-                    await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
+                await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
-                    stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
-                }
-                catch when (timeoutOrCancellationToken.IsCancellationRequested)
-                {
-                    timedOutOrCanceled = true;
-                    if (!pingProcess.HasExited)
-                    {
-                        pingProcess.Kill();
-                    }
-                    if (_canceled)
-                    {
-                        throw;
-                    }
-                    return CreatePingReply(IPStatus.TimedOut);
-                }
+                string stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
                 return ParsePingUtilityOutput(address, pingProcess.ExitCode, stdout);
             }
-            catch (Exception e) when (!timedOutOrCanceled)
+            catch (OperationCanceledException) when (timeoutOrCancellationToken.IsCancellationRequested)
+            {
+                if (!pingProcess.HasExited)
+                {
+                    pingProcess.Kill();
+                }
+                if (_canceled)
+                {
+                    throw;
+                }
+                return CreatePingReply(IPStatus.TimedOut);
+            }
+            catch (Exception e)
             {
                 // If the standard output cannot be successfully read/parsed, throw a generic PingException.
                 throw new PingException(SR.net_ping, e);
