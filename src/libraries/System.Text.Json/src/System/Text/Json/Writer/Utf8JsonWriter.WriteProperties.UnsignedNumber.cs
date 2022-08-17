@@ -193,6 +193,164 @@ namespace System.Text.Json
         public void WriteNumber(ReadOnlySpan<byte> utf8PropertyName, uint value)
             => WriteNumber(utf8PropertyName, (ulong)value);
 
+        /// <summary>
+        /// Writes the pre-encoded property name and <see cref="ushort"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="ushort"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumber(JsonEncodedText propertyName, ushort value)
+            => WriteNumber(propertyName, (ulong)value);
+
+        /// <summary>
+        /// Writes the property name and <see cref="ushort"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="ushort"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumber(string propertyName, ushort value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), (ulong)value);
+        }
+
+        /// <summary>
+        /// Writes the property name and <see cref="ushort"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="ushort"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumber(ReadOnlySpan<char> propertyName, ushort value)
+            => WriteNumber(propertyName, (ulong)value);
+
+        /// <summary>
+        /// Writes the property name and <see cref="ushort"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="utf8PropertyName">The UTF-8 encoded name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="ushort"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumber(ReadOnlySpan<byte> utf8PropertyName, ushort value)
+            => WriteNumber(utf8PropertyName, (ulong)value);
+
+        /// <summary>
+        /// Writes the pre-encoded property name and <see cref="byte"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="byte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        public void WriteNumber(JsonEncodedText propertyName, byte value)
+            => WriteNumber(propertyName, (ulong)value);
+
+        /// <summary>
+        /// Writes the property name and <see cref="byte"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="byte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        public void WriteNumber(string propertyName, byte value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), (ulong)value);
+        }
+
+        /// <summary>
+        /// Writes the property name and <see cref="byte"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="byte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        public void WriteNumber(ReadOnlySpan<char> propertyName, byte value)
+            => WriteNumber(propertyName, (ulong)value);
+
+        /// <summary>
+        /// Writes the property name and <see cref="byte"/> value (as a JSON number) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="utf8PropertyName">The UTF-8 encoded name of the property to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="byte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// The property name is escaped before writing.
+        /// </remarks>
+        public void WriteNumber(ReadOnlySpan<byte> utf8PropertyName, byte value)
+            => WriteNumber(utf8PropertyName, (ulong)value);
+
         private void WriteNumberEscape(ReadOnlySpan<char> propertyName, ulong value)
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
@@ -450,6 +608,12 @@ namespace System.Text.Json
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
+
+        internal void WritePropertyName(byte value)
+            => WritePropertyName((ulong)value);
+
+        internal void WritePropertyName(ushort value)
+            => WritePropertyName((ulong)value);
 
         internal void WritePropertyName(uint value)
             => WritePropertyName((ulong)value);

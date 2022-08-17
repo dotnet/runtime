@@ -10,6 +10,33 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the <see cref="sbyte"/> value (as a JSON number) as an element of a JSON array.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="sbyte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumberValue(sbyte value)
+            => WriteNumberValue((long)value);
+
+        /// <summary>
+        /// Writes the <see cref="short"/> value (as a JSON number) as an element of a JSON array.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="short"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        public void WriteNumberValue(short value)
+            => WriteNumberValue((long)value);
+
+        /// <summary>
         /// Writes the <see cref="int"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
         /// <param name="value">The value to write.</param>

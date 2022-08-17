@@ -10,6 +10,33 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the <see cref="byte"/> value (as a JSON number) as an element of a JSON array.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="byte"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        public void WriteNumberValue(byte value)
+            => WriteNumberValue((ulong)value);
+
+        /// <summary>
+        /// Writes the <see cref="ushort"/> value (as a JSON number) as an element of a JSON array.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="ushort"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public void WriteNumberValue(ushort value)
+            => WriteNumberValue((ulong)value);
+
+        /// <summary>
         /// Writes the <see cref="uint"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
         /// <param name="value">The value to write.</param>
@@ -108,6 +135,15 @@ namespace System.Text.Json
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
+
+        internal void WriteNumberValueAsString(byte value)
+            => WriteNumberValueAsString((ulong)value);
+
+        internal void WriteNumberValueAsString(ushort value)
+            => WriteNumberValueAsString((ulong)value);
+
+        internal void WriteNumberValueAsString(uint value)
+            => WriteNumberValueAsString((ulong)value);
 
         internal void WriteNumberValueAsString(ulong value)
         {

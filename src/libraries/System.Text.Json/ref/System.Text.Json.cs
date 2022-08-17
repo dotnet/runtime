@@ -506,45 +506,75 @@ namespace System.Text.Json
         public void WriteNullValue() { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, decimal value) { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, double value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, sbyte value) { }
+        public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, short value) { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, int value) { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, long value) { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, float value) { }
+        public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, byte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, ushort value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, ulong value) { }
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, decimal value) { }
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, double value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.ReadOnlySpan<char> propertyName, sbyte value) { }
+        public void WriteNumber(System.ReadOnlySpan<char> propertyName, short value) { }
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, int value) { }
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, long value) { }
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, float value) { }
+        public void WriteNumber(System.ReadOnlySpan<char> propertyName, byte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.ReadOnlySpan<char> propertyName, ushort value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.ReadOnlySpan<char> propertyName, ulong value) { }
         public void WriteNumber(string propertyName, decimal value) { }
         public void WriteNumber(string propertyName, double value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(string propertyName, sbyte value) { }
+        public void WriteNumber(string propertyName, short value) { }
         public void WriteNumber(string propertyName, int value) { }
         public void WriteNumber(string propertyName, long value) { }
         public void WriteNumber(string propertyName, float value) { }
+        public void WriteNumber(string propertyName, byte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(string propertyName, ushort value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(string propertyName, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(string propertyName, ulong value) { }
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, decimal value) { }
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, double value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, sbyte value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, short value) { }
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, int value) { }
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, long value) { }
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, float value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, byte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, ushort value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, ulong value) { }
         public void WriteNumberValue(decimal value) { }
         public void WriteNumberValue(double value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumberValue(sbyte value) { }
+        public void WriteNumberValue(short value) { }
         public void WriteNumberValue(int value) { }
         public void WriteNumberValue(long value) { }
         public void WriteNumberValue(float value) { }
+        public void WriteNumberValue(byte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumberValue(ushort value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumberValue(uint value) { }
         [System.CLSCompliantAttribute(false)]

@@ -28,9 +28,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, ushort value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/74001")]
-            // TODO: Casting to long should not be required
-            writer.WritePropertyName((long)value);
+            writer.WritePropertyName(value);
         }
 
         internal override ushort ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
@@ -48,9 +46,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if ((JsonNumberHandling.WriteAsString & handling) != 0)
             {
-                // TODO: [ActiveIssue("https://github.com/dotnet/runtime/issues/74001")]
-                // TODO: Casting to long should not be required
-                writer.WriteNumberValueAsString((long)value);
+                writer.WriteNumberValueAsString(value);
             }
             else
             {
