@@ -219,7 +219,7 @@ namespace ILCompiler
                 // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
             }*/
 
-            _dependencies.Add(_factory.ReflectableField(field), "field kept due to embedded descriptor");
+            _dependencies.Add(_factory.ReflectableField(field), "field kept due to descriptor");
         }
 
         protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
@@ -234,11 +234,11 @@ namespace ILCompiler
             if (customData is bool required && !required)
             {
                 //TODO: Add a conditional dependency if the type is used also mark the method
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
             }
             else
             {
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
             }
         }
 
@@ -332,7 +332,7 @@ namespace ILCompiler
             return _accessorsAll;
         }
 
-        public static DependencyList GetDependencies(NodeFactory factory, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        public static DependencyList GetDependencies(NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             var descriptor = new DescriptorMarker(factory, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
             descriptor.ProcessXml(false);

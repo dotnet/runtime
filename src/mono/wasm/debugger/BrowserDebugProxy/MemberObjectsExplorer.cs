@@ -71,6 +71,7 @@ namespace BrowserDebugProxy
                 FieldAttributes.Public => "result",
                 _ => "internal"
             };
+
             if (field.IsBackingField)
             {
                 fieldValue["__isBackingField"] = true;
@@ -567,13 +568,20 @@ namespace BrowserDebugProxy
             for (int i = 0; i < typeIdsCnt; i++)
             {
                 int typeId = typeIdsIncludingParents[i];
+                var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
+
+                if (typeInfo.Info.IsNonUserCode && getCommandType.HasFlag(GetObjectCommandOptions.JustMyCode))
+                    continue;
+
                 int parentTypeId = i + 1 < typeIdsCnt ? typeIdsIncludingParents[i + 1] : -1;
                 string typeName = await sdbHelper.GetTypeName(typeId, token);
                 // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
+
                 IReadOnlyList<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
                 if (!includeStatic)
                     thisTypeFields = thisTypeFields.Where(f => !f.Attributes.HasFlag(FieldAttributes.Static)).ToList();
+
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await ExpandFieldValues(

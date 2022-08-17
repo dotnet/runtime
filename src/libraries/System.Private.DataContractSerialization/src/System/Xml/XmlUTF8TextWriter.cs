@@ -14,7 +14,7 @@ namespace System.Xml
 
     internal sealed class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
-        private XmlUTF8NodeWriter? _writer;
+        private XmlUTF8NodeWriter _writer = null!;  // initialized in SetOutput
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
@@ -29,6 +29,15 @@ namespace System.Xml
             _writer ??= new XmlUTF8NodeWriter();
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
+        }
+
+        public override bool CanFragment
+        {
+            get
+            {
+                // Fragmenting only works for utf8
+                return _writer.Encoding == null;
+            }
         }
 
         protected override XmlSigningNodeWriter CreateSigningNodeWriter()
@@ -92,6 +101,14 @@ namespace System.Xml
             base.SetOutput(stream, ownsStream, utf8Encoding);
             _encoding = encoding;
             _inAttribute = false;
+        }
+
+        public Encoding? Encoding
+        {
+            get
+            {
+                return _encoding;
+            }
         }
 
         private byte[] GetCharEntityBuffer() => _entityChars ??= new byte[maxEntityLength];
@@ -686,7 +703,7 @@ namespace System.Xml
         {
             int offset;
             byte[] buffer = GetBuffer(XmlConverter.MaxUInt64Chars, out offset);
-            Advance(XmlConverter.ToChars((double)value, buffer, offset));
+            Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteGuidText(Guid value)

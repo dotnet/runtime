@@ -1121,6 +1121,7 @@ namespace System.Net.Test.Common
             {
                 newOptions.Address = options.Address;
                 newOptions.UseSsl = options.UseSsl;
+                newOptions.Certificate = options.Certificate;
                 newOptions.SslProtocols = options.SslProtocols;
                 newOptions.ListenBacklog = options.ListenBacklog;
             }

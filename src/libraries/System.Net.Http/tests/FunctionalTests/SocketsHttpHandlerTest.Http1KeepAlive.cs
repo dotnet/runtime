@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        public async Task Http10ResponseWithKeepAliveTimeout_ConnectionRecycledAfterTimeout()
+        public async Task Http1ResponseWithKeepAliveTimeout_ConnectionRecycledAfterTimeout()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -60,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.WriteStringAsync("HTTP/1.0 200 OK\r\nKeep-Alive: timeout=1\r\nContent-Length: 1\r\n\r\n1");
+                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nKeep-Alive: timeout=2\r\nContent-Length: 1\r\n\r\n1");
                     connection.CompleteRequestProcessing();
 
                     await Assert.ThrowsAnyAsync<Exception>(() => connection.ReadRequestDataAsync());
@@ -74,6 +74,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("timeout=1000", true)]
         [InlineData("timeout=30", true)]
         [InlineData("timeout=0", false)]
+        [InlineData("timeout=1", false)]
         [InlineData("foo, bar=baz, timeout=30", true)]
         [InlineData("foo, bar=baz, timeout=0", false)]
         [InlineData("timeout=-1", true)]
@@ -86,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("timeout=30, max=0", false)]
         [InlineData("timeout=0, max=1", false)]
         [InlineData("timeout=0, max=0", false)]
-        public async Task Http10ResponseWithKeepAlive_ConnectionNotReusedForShortTimeoutOrMax0(string keepAlive, bool shouldReuseConnection)
+        public async Task Http1ResponseWithKeepAlive_ConnectionNotReusedForShortTimeoutOrMax0(string keepAlive, bool shouldReuseConnection)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -100,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.WriteStringAsync($"HTTP/1.0 200 OK\r\nKeep-Alive: {keepAlive}\r\nContent-Length: 1\r\n\r\n1");
+                    await connection.WriteStringAsync($"HTTP/1.{Random.Shared.Next(10)} 200 OK\r\nKeep-Alive: {keepAlive}\r\nContent-Length: 1\r\n\r\n1");
                     connection.CompleteRequestProcessing();
 
                     if (shouldReuseConnection)
@@ -117,33 +118,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync();
                 }
-            });
-        }
-
-        [Theory]
-        [InlineData("timeout=1")]
-        [InlineData("timeout=0")]
-        [InlineData("max=1")]
-        [InlineData("max=0")]
-        public async Task Http11ResponseWithKeepAlive_KeepAliveIsIgnored(string keepAlive)
-        {
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using HttpClient client = CreateHttpClient();
-
-                await client.GetAsync(uri);
-                await client.GetAsync(uri);
-            },
-            async server =>
-            {
-                await server.AcceptConnectionAsync(async connection =>
-                {
-                    await connection.ReadRequestDataAsync();
-                    await connection.WriteStringAsync($"HTTP/1.1 200 OK\r\nKeep-Alive: {keepAlive}\r\nContent-Length: 1\r\n\r\n1");
-                    connection.CompleteRequestProcessing();
-
-                    await connection.HandleRequestAsync();
-                });
             });
         }
     }
