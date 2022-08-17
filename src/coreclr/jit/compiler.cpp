@@ -34,9 +34,7 @@ extern ICorJitHost* g_jitHost;
 #define COLUMN_FLAGS (COLUMN_KINDS + 32)
 #endif
 
-#if defined(DEBUG)
 unsigned Compiler::jitTotalMethodCompiled = 0;
-#endif // defined(DEBUG)
 
 #if defined(DEBUG)
 LONG Compiler::jitNestingLevel = 0;
@@ -5106,9 +5104,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-#if defined(DEBUG)
-    ++Compiler::jitTotalMethodCompiled;
-#endif // defined(DEBUG)
+    Compiler::jitTotalMethodCompiled++;
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -6709,25 +6705,29 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         }
     }
 
-#ifdef DEBUG
-    if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
+    if (JitConfig.DumpJittedMethods() && !compIsForInlining())
     {
-        enum
-        {
-            BUFSIZE = 20
-        };
-        char osrBuffer[BUFSIZE] = {0};
+#ifdef DEBUG
+        const int BUFSIZE            = 20;
+        char      osrBuffer[BUFSIZE] = {0};
         if (opts.IsOSR())
         {
             // Tiering name already includes "OSR", we just want the IL offset
-            //
             sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
         }
 
-        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
-               info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), osrBuffer, compGetStressMessage());
+        printf("JIT Compiling %4d [%s]%s, ILsize=%u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
+               compGetTieringName(), info.compFullName, info.compILCodeSize, info.compMethodHash(), osrBuffer,
+               compGetStressMessage());
+#else
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        printf("JIT compiling %4d [%s]%s::%s, ILsize=%u\n", Compiler::jitTotalMethodCompiled, compGetTieringName(),
+               className, methodName, info.compILCodeSize);
+#endif
     }
+
+#ifdef DEBUG
     if (compIsForInlining())
     {
         compGenTreeID   = impInlineInfo->InlinerCompiler->compGenTreeID;

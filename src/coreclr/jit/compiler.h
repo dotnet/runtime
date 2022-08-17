@@ -4141,9 +4141,7 @@ private:
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
 
-#if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
-#endif
 
 #ifdef DEBUG
     static LONG jitNestingLevel;

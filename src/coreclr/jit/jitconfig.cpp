@@ -361,6 +361,26 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
                         return true;
                     }
                 }
+
+                // Special case: Main for top-level statements
+                if ((strcmp(expectedMethodName, "Main") == 0) && (strcmp(methodName, "<Main>$") == 0))
+                {
+                    return true;
+                }
+
+                // Special case: nested functions, e.g. "void Inner(){}" might look like
+                // "Program:<<Main>$>g__Inner|0_1()"
+                if ((strchr(methodName, ':') == nullptr) && strlen(expectedMethodName) <= 500 &&
+                    strstr(methodName, "$>g__") != nullptr)
+                {
+                    char buffer[512] = {0};
+                    sprintf_s(buffer, "$>g__%s|\0", expectedMethodName);
+                    if (strstr(methodName, buffer) != nullptr)
+                    {
+                        return true;
+                    }
+                }
+
                 continue;
             }
         }
