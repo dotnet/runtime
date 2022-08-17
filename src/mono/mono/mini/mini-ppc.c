@@ -5183,8 +5183,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 								}
 							}
 							else if (ppc_is_imm32 (inst->inst_offset)) {
-								ppc_addis (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_ha(doffset));
-								ppc_stptr (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+								ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset, ppc_r12);
 							}
 							else {
 								g_assert_not_reached();
@@ -5198,8 +5198,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 										inst->inst_basereg);
 							}
 							else if (ppc_is_imm32 (inst->inst_offset)) {
-								ppc_addis (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_ha(doffset));
-								ppc_stptr (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+								ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset, ppc_r12);
 							}
 							else {
 								g_assert_not_reached();
