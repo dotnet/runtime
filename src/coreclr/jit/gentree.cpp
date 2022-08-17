@@ -18013,13 +18013,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 // Return Value:
 //    true if the tree is a suitable helper call
 //
-// Notes:
-//    Excludes R2R helpers as they specify the target field in a way
-//    that is opaque to the jit.
 
 bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
 {
-    if (tree->OperGet() != GT_CALL)
+    if (!tree->IsCall())
     {
         return false;
     }
