@@ -34,7 +34,7 @@ namespace TypeSystemTests
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
         public TestTypeSystemContext(TargetArchitecture arch, TargetOS targetOS = TargetOS.Unknown)
-            : base(new TargetDetails(arch, TargetOS.Unknown, TargetAbi.Unknown))
+            : base(new TargetDetails(arch, targetOS, TargetAbi.Unknown))
         {
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout, true);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayout);

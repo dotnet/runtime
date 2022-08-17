@@ -6337,7 +6337,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
         
 #if TARGET_ARM64
-        if (!info.compIsVarArgs && varDsc->lvSize() == 16 && varDsc->lvType == TYP_STRUCT && !isFloatHfa && info.compCompHnd->getClassAlignmentRequirement(varDsc->GetStructHnd()) == 16)
+        if (!info.compIsVarArgs && varDsc->lvType == TYP_STRUCT && varDsc->lvSize() == 16 && !isFloatHfa && info.compCompHnd->getClassAlignmentRequirement(varDsc->GetStructHnd()) == 16)
         {
             // TODO-Cleanup: use "eeGetArgSizeAlignment" here. See also: https://github.com/dotnet/runtime/issues/46026.
             argAlignment = 16;
