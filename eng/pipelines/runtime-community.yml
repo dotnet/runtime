@@ -7,6 +7,12 @@ schedules:
       include:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
+  - cron: "0 4,16 * * *" # run at 4:00 and 16:00 (UTC) which is 20:00 and 08:00 (PST).
+    displayName: Runtime-community release schedule
+    branches:
+      include:
+      - release/7.0*
+    always: false # run only if there were changes since the last successful scheduled run.
 
 variables:
   - template: /eng/pipelines/common/variables.yml
