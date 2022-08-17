@@ -73,6 +73,24 @@ namespace System
         private readonly ref byte _value;
         private readonly RuntimeTypeHandle _typeHandle;
     }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Int128
+    {
+
+        private readonly ulong _lower;
+        private readonly ulong _upper;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct UInt128
+    {
+
+        private readonly ulong _lower;
+        private readonly ulong _upper;
+    }
 }
 
 namespace System.Collections
