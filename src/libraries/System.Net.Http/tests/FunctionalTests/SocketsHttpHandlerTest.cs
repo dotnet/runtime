@@ -3745,7 +3745,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotAndroid))]
     public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
