@@ -1256,36 +1256,39 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10240)]
         public async Task Http3Test(int? maxResponseHeadersLength)
         {
-            var requestCts = new CancellationTokenSource();
-            var controlStreamEstablishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            for (int repeat = 0; repeat < 100; repeat++)
             {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-                using HttpClient client = CreateHttpClient(handler);
+                var requestCts = new CancellationTokenSource();
+                var controlStreamEstablishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                if (maxResponseHeadersLength.HasValue)
+                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
-                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
-                }
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClient client = CreateHttpClient(handler);
 
-                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(uri, requestCts.Token));
+                    if (maxResponseHeadersLength.HasValue)
+                    {
+                        handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                    }
 
-                await controlStreamEstablishedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-            },
-            async server =>
-            {
-                await server.AcceptConnectionAsync(async connection =>
+                    await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(uri, requestCts.Token));
+
+                    await controlStreamEstablishedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                },
+                async server =>
                 {
-                    requestCts.Cancel();
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        requestCts.Cancel();
 
-                    var http3Connection = (Http3LoopbackConnection)connection;
+                        var http3Connection = (Http3LoopbackConnection)connection;
 
-                    await http3Connection.EnsureControlStreamAcceptedAsync().WaitAsync(TestHelper.PassingTestTimeout);
+                        await http3Connection.EnsureControlStreamAcceptedAsync().WaitAsync(TestHelper.PassingTestTimeout);
 
-                    controlStreamEstablishedTcs.SetResult();
+                        controlStreamEstablishedTcs.SetResult();
+                    });
                 });
-            });
+            }
         }
     }
 
