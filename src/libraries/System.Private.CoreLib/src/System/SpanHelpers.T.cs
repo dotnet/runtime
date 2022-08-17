@@ -1455,14 +1455,14 @@ namespace System
             => IndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfValueType<T, N>(ref T searchSpace, T value, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = 0;
 
@@ -1470,14 +1470,14 @@ namespace System
                 {
                     length -= 8;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 4) == value)) return (int)offset + 4;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 5) == value)) return (int)offset + 5;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 6) == value)) return (int)offset + 6;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 7) == value)) return (int)offset + 7;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 4) == value)) return (int)offset + 4;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 5) == value)) return (int)offset + 5;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 6) == value)) return (int)offset + 6;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 7) == value)) return (int)offset + 7;
 
                     offset += 8;
                 }
@@ -1486,10 +1486,10 @@ namespace System
                 {
                     length -= 4;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
 
                     offset += 4;
                 }
@@ -1498,24 +1498,24 @@ namespace System
                 {
                     length -= 1;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset).Equals(value))) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset).Equals(value))) return (int)offset;
 
                     offset += 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, values = Vector256.Create(value);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, values = Vector256.Create(value);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -1524,10 +1524,10 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
-                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref oneVectorAwayFromEnd)));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref oneVectorAwayFromEnd)));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1535,17 +1535,17 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, values = Vector128.Create(value);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, values = Vector128.Create(value);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -1554,10 +1554,10 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
-                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd)));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd)));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1581,41 +1581,41 @@ namespace System
 
         // having INumber<T> constraint here allows to use == operator and get better perf compared to .Equals
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = 0;
-                T lookUp;
+                TValue lookUp;
 
-                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
+                if (typeof(TValue) == typeof(byte)) // this optimization is beneficial only to byte
                 {
                     while (length >= 8)
                     {
                         length -= 8;
 
-                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
                         lookUp = Unsafe.Add(ref current, 1);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 1;
                         lookUp = Unsafe.Add(ref current, 2);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 2;
                         lookUp = Unsafe.Add(ref current, 3);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 3;
                         lookUp = Unsafe.Add(ref current, 4);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 4;
                         lookUp = Unsafe.Add(ref current, 5);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 5;
                         lookUp = Unsafe.Add(ref current, 6);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 6;
                         lookUp = Unsafe.Add(ref current, 7);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 7;
 
                         offset += 8;
                     }
@@ -1625,15 +1625,15 @@ namespace System
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 1;
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 2;
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset + 3;
 
                     offset += 4;
                 }
@@ -1643,25 +1643,25 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
 
                     offset += 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -1670,11 +1670,11 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1682,18 +1682,18 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -1702,11 +1702,11 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1725,41 +1725,41 @@ namespace System
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = 0;
-                T lookUp;
+                TValue lookUp;
 
-                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
+                if (typeof(TValue) == typeof(byte)) // this optimization is beneficial only to byte
                 {
                     while (length >= 8)
                     {
                         length -= 8;
 
-                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
                         lookUp = Unsafe.Add(ref current, 1);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 1;
                         lookUp = Unsafe.Add(ref current, 2);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 2;
                         lookUp = Unsafe.Add(ref current, 3);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 3;
                         lookUp = Unsafe.Add(ref current, 4);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 4;
                         lookUp = Unsafe.Add(ref current, 5);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 5;
                         lookUp = Unsafe.Add(ref current, 6);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 6;
                         lookUp = Unsafe.Add(ref current, 7);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 7;
 
                         offset += 8;
                     }
@@ -1769,15 +1769,15 @@ namespace System
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 1;
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 2;
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset + 3;
 
                     offset += 4;
                 }
@@ -1787,25 +1787,25 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
 
                     offset += 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -1814,11 +1814,11 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current) | Vector256.Equals(values2, current));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1826,18 +1826,18 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -1846,11 +1846,11 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current) | Vector128.Equals(values2, current));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1869,31 +1869,31 @@ namespace System
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, T value3, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = 0;
-                T lookUp;
+                TValue lookUp;
 
                 while (length >= 4)
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 1;
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 2;
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset + 3;
 
                     offset += 4;
                 }
@@ -1903,26 +1903,26 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
 
                     offset += 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
                         | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
-                    if (equals == Vector256<T>.Zero)
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -1931,12 +1931,12 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values0, current) | Vector256.Equals(values1, current)
                         | Vector256.Equals(values2, current) | Vector256.Equals(values3, current));
-                    if (equals != Vector256<T>.Zero)
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -1944,19 +1944,19 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
-                ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
+                ref TValue currentSearchSpace = ref searchSpace;
+                ref TValue oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
                         | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
-                    if (equals == Vector128<T>.Zero)
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -1965,12 +1965,12 @@ namespace System
                 while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
-                    equals = N.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
                         | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
-                    if (equals != Vector128<T>.Zero)
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, equals);
                     }
@@ -2102,14 +2102,14 @@ namespace System
             => LastIndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int LastIndexOfValueType<T, N>(ref T searchSpace, T value, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int LastIndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = (nuint)length - 1;
 
@@ -2117,14 +2117,14 @@ namespace System
                 {
                     length -= 8;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 4) == value)) return (int)offset - 4;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 5) == value)) return (int)offset - 5;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 6) == value)) return (int)offset - 6;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 7) == value)) return (int)offset - 7;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 4) == value)) return (int)offset - 4;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 5) == value)) return (int)offset - 5;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 6) == value)) return (int)offset - 6;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 7) == value)) return (int)offset - 7;
 
                     offset -= 8;
                 }
@@ -2133,10 +2133,10 @@ namespace System
                 {
                     length -= 4;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
 
                     offset -= 4;
                 }
@@ -2145,23 +2145,23 @@ namespace System
                 {
                     length -= 1;
 
-                    if (N.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset).Equals(value))) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset).Equals(value))) return (int)offset;
 
                     offset -= 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, values = Vector256.Create(value);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, values = Vector256.Create(value);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref currentSearchSpace)));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -2170,10 +2170,10 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
-                    equals = N.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2181,16 +2181,16 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, values = Vector128.Create(value);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, values = Vector128.Create(value);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref currentSearchSpace)));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -2199,10 +2199,10 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
-                    equals = N.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2221,41 +2221,41 @@ namespace System
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = (nuint)length - 1;
-                T lookUp;
+                TValue lookUp;
 
-                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
+                if (typeof(TValue) == typeof(byte)) // this optimization is beneficial only to byte
                 {
                     while (length >= 8)
                     {
                         length -= 8;
 
-                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
                         lookUp = Unsafe.Add(ref current, -1);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
                         lookUp = Unsafe.Add(ref current, -2);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
                         lookUp = Unsafe.Add(ref current, -3);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
                         lookUp = Unsafe.Add(ref current, -4);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 4;
                         lookUp = Unsafe.Add(ref current, -5);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 5;
                         lookUp = Unsafe.Add(ref current, -6);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 6;
                         lookUp = Unsafe.Add(ref current, -7);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 7;
 
                         offset -= 8;
                     }
@@ -2265,15 +2265,15 @@ namespace System
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 1;
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 2;
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset - 3;
 
                     offset -= 4;
                 }
@@ -2283,24 +2283,24 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)offset;
 
                     offset -= 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -2309,11 +2309,11 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2321,17 +2321,17 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -2340,11 +2340,11 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2363,41 +2363,41 @@ namespace System
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = (nuint)length - 1;
-                T lookUp;
+                TValue lookUp;
 
-                if (typeof(T) == typeof(byte)) // this optimization is beneficial only to byte
+                if (typeof(TValue) == typeof(byte)) // this optimization is beneficial only to byte
                 {
                     while (length >= 8)
                     {
                         length -= 8;
 
-                        ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                        ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
                         lookUp = Unsafe.Add(ref current, -1);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
                         lookUp = Unsafe.Add(ref current, -2);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
                         lookUp = Unsafe.Add(ref current, -3);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
                         lookUp = Unsafe.Add(ref current, -4);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 4;
                         lookUp = Unsafe.Add(ref current, -5);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 5;
                         lookUp = Unsafe.Add(ref current, -6);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 6;
                         lookUp = Unsafe.Add(ref current, -7);
-                        if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 7;
 
                         offset -= 8;
                     }
@@ -2407,15 +2407,15 @@ namespace System
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 1;
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 2;
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset - 3;
 
                     offset -= 4;
                 }
@@ -2425,24 +2425,24 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)offset;
 
                     offset -= 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
-                    if (equals == Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -2451,11 +2451,11 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
-                    if (equals != Vector256<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2463,17 +2463,17 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
-                    if (equals == Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -2482,11 +2482,11 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
-                    if (equals != Vector128<T>.Zero)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2505,31 +2505,31 @@ namespace System
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int LastIndexOfAnyValueType<T, N>(ref T searchSpace, T value0, T value1, T value2, T value3, int length)
-            where T : struct, INumber<T>
-            where N : struct, INegator<T>
+        private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
             Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
 
-            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<TValue>.Count)
             {
                 nuint offset = (nuint)length - 1;
-                T lookUp;
+                TValue lookUp;
 
                 while (length >= 4)
                 {
                     length -= 4;
 
-                    ref T current = ref Unsafe.Add(ref searchSpace, offset);
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 1;
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 2;
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset - 3;
 
                     offset -= 4;
                 }
@@ -2539,25 +2539,25 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (N.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)offset;
 
                     offset -= 1;
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+            else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector256<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector256.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1)
                                             | Vector256.Equals(current, values2) | Vector256.Equals(current, values3));
-                    if (equals == Vector256<T>.Zero)
+                    if (equals == Vector256<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector256<TValue>.Count);
                         continue;
                     }
 
@@ -2566,12 +2566,12 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector256<T>.Count != 0)
+                if ((uint)length % Vector256<TValue>.Count != 0)
                 {
                     current = Vector256.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1)
+                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1)
                                             | Vector256.Equals(current, values2) | Vector256.Equals(current, values3));
-                    if (equals != Vector256<T>.Zero)
+                    if (equals != Vector256<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2579,18 +2579,18 @@ namespace System
             }
             else
             {
-                Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
-                ref T currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
+                ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
                     current = Vector128.LoadUnsafe(ref currentSearchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1)
                                             | Vector128.Equals(current, values2) | Vector128.Equals(current, values3));
-                    if (equals == Vector128<T>.Zero)
+                    if (equals == Vector128<TValue>.Zero)
                     {
-                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<T>.Count);
+                        currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValue>.Count);
                         continue;
                     }
 
@@ -2599,12 +2599,12 @@ namespace System
                 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
                 // If any elements remain, process the first vector in the search space.
-                if ((uint)length % Vector128<T>.Count != 0)
+                if ((uint)length % Vector128<TValue>.Count != 0)
                 {
                     current = Vector128.LoadUnsafe(ref searchSpace);
-                    equals = N.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1)
+                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1)
                                             | Vector128.Equals(current, values2) | Vector128.Equals(current, values3));
-                    if (equals != Vector128<T>.Zero)
+                    if (equals != Vector128<TValue>.Zero)
                     {
                         return ComputeLastIndex(ref searchSpace, ref searchSpace, equals);
                     }
@@ -2613,7 +2613,6 @@ namespace System
 
             return -1;
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct

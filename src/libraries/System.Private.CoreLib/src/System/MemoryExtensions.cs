@@ -698,7 +698,7 @@ namespace System
                 case 3:
                     return IndexOfAnyExcept(span, values[0], values[1], values[2]);
 
-                case 4: // used to search for non whitespaces " \t\r\n"
+                case 4:
                     return IndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
@@ -942,7 +942,7 @@ namespace System
                 case 3:
                     return LastIndexOfAnyExcept(span, values[0], values[1], values[2]);
 
-                case 4: // common for searching ASCII whitespaces (" \t\r\n")
+                case 4:
                     return LastIndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
@@ -1468,7 +1468,6 @@ namespace System
                         Unsafe.As<T, short>(ref value2),
                         span.Length);
                 }
-                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
             }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -1554,7 +1553,6 @@ namespace System
                         Unsafe.As<T, short>(ref value2),
                         span.Length);
                 }
-                // we can easily add int and long here, but there must be an evidence that shows that it's actually needed
             }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -1568,66 +1566,69 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
         {
-            if (Unsafe.SizeOf<T>() == sizeof(byte))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-                if (values.Length == 2)
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return SpanHelpers.LastIndexOfAnyValueType(
-                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                        valueRef,
-                        Unsafe.Add(ref valueRef, 1),
-                        span.Length);
-                }
-                else if (values.Length == 3)
-                {
-                    return SpanHelpers.LastIndexOfAnyValueType(
-                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                        valueRef,
-                        Unsafe.Add(ref valueRef, 1),
-                        Unsafe.Add(ref valueRef, 2),
-                        span.Length);
-                }
-            }
-
-            if (Unsafe.SizeOf<T>() == sizeof(short))
-            {
-                ref short spanRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span));
-                ref short valueRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
-                switch (values.Length)
-                {
-                    case 0:
-                        return -1;
-
-                    case 1:
-                        return SpanHelpers.LastIndexOfValueType(ref spanRef, valueRef, span.Length);
-
-                    case 2:
+                    ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+                    if (values.Length == 2)
+                    {
                         return SpanHelpers.LastIndexOfAnyValueType(
-                            ref spanRef,
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                             valueRef,
                             Unsafe.Add(ref valueRef, 1),
                             span.Length);
-
-                    case 3:
+                    }
+                    else if (values.Length == 3)
+                    {
                         return SpanHelpers.LastIndexOfAnyValueType(
-                            ref spanRef,
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                             valueRef,
                             Unsafe.Add(ref valueRef, 1),
                             Unsafe.Add(ref valueRef, 2),
                             span.Length);
+                    }
+                }
 
-                    case 4:
-                        return SpanHelpers.LastIndexOfAnyValueType(
-                            ref spanRef,
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            Unsafe.Add(ref valueRef, 3),
-                            span.Length);
+                if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    ref short spanRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span));
+                    ref short valueRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
+                    switch (values.Length)
+                    {
+                        case 0:
+                            return -1;
 
-                    default:
-                        return LastIndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
+                        case 1:
+                            return SpanHelpers.LastIndexOfValueType(ref spanRef, valueRef, span.Length);
+
+                        case 2:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                span.Length);
+
+                        case 3:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                span.Length);
+
+                        case 4:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                span.Length);
+
+                        default:
+                            return LastIndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
+                    }
                 }
             }
 
