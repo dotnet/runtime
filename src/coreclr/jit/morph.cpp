@@ -96,6 +96,7 @@ PhaseStatus Compiler::fgMorphInit()
         lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
         lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
         lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
+        madeChanges                          = true;
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -104,6 +105,7 @@ PhaseStatus Compiler::fgMorphInit()
     {
         lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
         lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
+        madeChanges                        = true;
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
