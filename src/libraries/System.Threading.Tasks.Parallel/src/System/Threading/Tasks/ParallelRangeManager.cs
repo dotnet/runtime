@@ -8,6 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -189,6 +190,24 @@ namespace System.Threading.Tasks
             // convert to 32 bit before returning
             nFromInclusiveLocal32 = (int)nFromInclusiveLocal;
             nToExclusiveLocal32 = (int)nToExclusiveLocal;
+
+            return bRetVal;
+        }
+
+        /// <summary>
+        /// 32/64 bit integer version of FindNewWork. Assumes the ranges were initialized with 32 bit values.
+        /// </summary>
+        internal bool FindNewWork<TIndex>(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) where TIndex : INumber<TIndex>
+        {
+            Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long));
+            long nFromInclusiveLocal64;
+            long nToExclusiveLocal64;
+
+            bool bRetVal = FindNewWork(out nFromInclusiveLocal64, out nToExclusiveLocal64);
+
+            // convert before returning
+            nFromInclusiveLocal = TIndex.CreateChecked(nFromInclusiveLocal64);
+            nToExclusiveLocal = TIndex.CreateChecked(nToExclusiveLocal64);
 
             return bRetVal;
         }

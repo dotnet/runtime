@@ -9,6 +9,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Numerics;
 
 // Prevents compiler warnings/errors regarding the use of ref params in Interlocked methods
 
@@ -260,6 +261,8 @@ namespace System.Threading.Tasks
                 }
             }
         }
+
+        internal virtual void SetCurrentIteration<TIndex>(TIndex CurrentIteration) where TIndex : INumber<TIndex> => throw new NotImplementedException("Shoul not call this");
     }
 
     internal sealed class ParallelLoopState32 : ParallelLoopState
@@ -321,6 +324,8 @@ namespace System.Threading.Tasks
         {
             ParallelLoopState.Break(CurrentIteration, _sharedParallelStateFlags);
         }
+
+        internal override void SetCurrentIteration<TIndex>(TIndex currentIteration) => CurrentIteration = int.CreateChecked(currentIteration);
     }
 
     /// <summary>
@@ -389,6 +394,8 @@ namespace System.Threading.Tasks
         {
             ParallelLoopState.Break(CurrentIteration, _sharedParallelStateFlags);
         }
+
+        internal override void SetCurrentIteration<TIndex>(TIndex currentIteration) => CurrentIteration = long.CreateChecked(currentIteration);
     }
 
     /// <summary>
@@ -454,6 +461,16 @@ namespace System.Threading.Tasks
             return (AtomicLoopStateUpdate(ParallelLoopStateCanceled, ParallelLoopStateNone));
         }
 
+        internal abstract bool ShouldExitLoop<TIndex>(TIndex CallerIteration) where TIndex : INumber<TIndex>;
+
+        // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
+        // Since simpler bodies cannot stop or break, we can safely skip checks for those flags here.
+        internal bool ShouldExitLoop()
+        {
+            int flags = LoopStateFlags;
+            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
+        }
+
         internal abstract long LowestBreakIteration { get; }
     }
 
@@ -510,13 +527,7 @@ namespace System.Threading.Tasks
                             (((flags & ParallelLoopStateBroken) != 0) && (CallerIteration > LowestBreakIteration))));
         }
 
-        // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
-        // Since simpler bodies cannot stop or break, we can safely skip checks for those flags here.
-        internal bool ShouldExitLoop()
-        {
-            int flags = LoopStateFlags;
-            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
-        }
+        internal override bool ShouldExitLoop<TIndex>(TIndex CallerIteration) => ShouldExitLoop(int.CreateChecked(CallerIteration));
     }
 
     /// <summary>
@@ -577,13 +588,7 @@ namespace System.Threading.Tasks
                             (((flags & ParallelLoopStateBroken) != 0) && (CallerIteration > LowestBreakIteration))));
         }
 
-        // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
-        // Since simpler bodies cannot stop or break, we can safely skip checks for those flags here.
-        internal bool ShouldExitLoop()
-        {
-            int flags = LoopStateFlags;
-            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
-        }
+        internal override bool ShouldExitLoop<TIndex>(TIndex CallerIteration) => ShouldExitLoop(long.CreateChecked(CallerIteration));
     }
 
     /// <summary>
