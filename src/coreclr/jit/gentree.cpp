@@ -18041,6 +18041,7 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_READYTORUN_STATIC_BASE:
             return true;
         default:
             break;
