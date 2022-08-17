@@ -1,7 +1,7 @@
 {
   "version": "${WorkloadVersion}",
   "depends-on": {
-    "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
+    "Microsoft.NET.Workload.Emscripten.net7": "${EmscriptenVersion}"
   },
   "workloads": {
     "wasm-tools": {
@@ -11,11 +11,11 @@
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-net7" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "wasm-experimental": {
-      "description": ".NET WebAssembly experimental",
+      "description": ".NET WebAssembly experimental tooling",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
