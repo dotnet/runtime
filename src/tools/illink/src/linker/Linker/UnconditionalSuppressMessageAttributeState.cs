@@ -18,8 +18,18 @@ namespace Mono.Linker
 
 		public class Suppression
 		{
-			public SuppressMessageInfo SuppressMessageInfo { get; set; }
+			public SuppressMessageInfo SuppressMessageInfo { get; }
 			public bool Used { get; set; }
+			public CustomAttribute OriginAttribute { get; }
+			public ICustomAttributeProvider Provider { get; }
+
+			public Suppression (SuppressMessageInfo suppressMessageInfo, bool used, CustomAttribute originAttribute, ICustomAttributeProvider provider)
+			{
+				SuppressMessageInfo = suppressMessageInfo;
+				Used = used;
+				OriginAttribute = originAttribute;
+				Provider = provider;
+			}
 		}
 
 		readonly LinkContext _context;
@@ -33,19 +43,20 @@ namespace Mono.Linker
 			InitializedAssemblies = new HashSet<AssemblyDefinition> ();
 		}
 
-		void AddSuppression (SuppressMessageInfo info, ICustomAttributeProvider provider)
+		void AddSuppression (Suppression suppression)
 		{
 			var used = false;
-			if (!_suppressions.TryGetValue (provider, out var suppressions)) {
+			if (!_suppressions.TryGetValue (suppression.Provider, out var suppressions)) {
 				suppressions = new Dictionary<int, Suppression> ();
-				_suppressions.Add (provider, suppressions);
-			} else if (suppressions.TryGetValue (info.Id, out Suppression? value)) {
+				_suppressions.Add (suppression.Provider, suppressions);
+			} else if (suppressions.TryGetValue (suppression.SuppressMessageInfo.Id, out Suppression? value)) {
 				used = value.Used;
-				string? elementName = provider is MemberReference memberRef ? memberRef.GetDisplayName () : provider.ToString ();
+				string? elementName = suppression.Provider is MemberReference memberRef ? memberRef.GetDisplayName () : suppression.Provider.ToString ();
 				_context.LogMessage ($"Element '{elementName}' has more than one unconditional suppression. Note that only the last one is used.");
 			}
 
-			suppressions[info.Id] = new Suppression { SuppressMessageInfo = info, Used = used };
+			suppression.Used = used;
+			suppressions[suppression.SuppressMessageInfo.Id] = suppression;
 		}
 
 		public bool IsSuppressed (int id, MessageOrigin warningOrigin, out SuppressMessageInfo info)
@@ -82,12 +93,12 @@ namespace Mono.Linker
 			TryGetSuppressionsForProvider (provider, out _);
 		}
 
-		public IEnumerable<(ICustomAttributeProvider provider, SuppressMessageInfo suppressMessageInfo)> GetUnusedSuppressions ()
+		public IEnumerable<Suppression> GetUnusedSuppressions ()
 		{
 			foreach (var (provider, suppressions) in _suppressions) {
 				foreach (var (_, suppression) in suppressions) {
 					if (!suppression.Used)
-						yield return (provider, suppression.SuppressMessageInfo);
+						yield return suppression;
 				}
 			}
 		}
@@ -166,8 +177,8 @@ namespace Mono.Linker
 				var assembly = module.Assembly;
 				if (InitializedAssemblies.Add (assembly)) {
 					foreach (var suppression in DecodeAssemblyAndModuleSuppressions (module)) {
-						AddSuppression (suppression.Info, suppression.Target);
-						membersToScan.Add (suppression.Target);
+						AddSuppression (suppression);
+						membersToScan.Add (suppression.Provider);
 					}
 				}
 			}
@@ -177,8 +188,8 @@ namespace Mono.Linker
 			foreach (var member in membersToScan) {
 				if (member is ModuleDefinition or AssemblyDefinition)
 					continue;
-				foreach (var suppressionInfo in DecodeSuppressions (member))
-					AddSuppression (suppressionInfo, member);
+				foreach (var suppression in DecodeSuppressions (member))
+					AddSuppression (suppression);
 			}
 
 			return _suppressions.TryGetValue (provider, out suppressions);
@@ -245,7 +256,7 @@ namespace Mono.Linker
 			}
 		}
 
-		IEnumerable<SuppressMessageInfo> DecodeSuppressions (ICustomAttributeProvider provider)
+		IEnumerable<Suppression> DecodeSuppressions (ICustomAttributeProvider provider)
 		{
 			Debug.Assert (provider is not ModuleDefinition or AssemblyDefinition);
 
@@ -259,11 +270,11 @@ namespace Mono.Linker
 				if (!TryDecodeSuppressMessageAttributeData (ca, out var info))
 					continue;
 
-				yield return info;
+				yield return new Suppression (info, used: false, originAttribute: ca, provider);
 			}
 		}
 
-		IEnumerable<(SuppressMessageInfo Info, ICustomAttributeProvider Target)> DecodeAssemblyAndModuleSuppressions (ModuleDefinition module)
+		IEnumerable<Suppression> DecodeAssemblyAndModuleSuppressions (ModuleDefinition module)
 		{
 			AssemblyDefinition assembly = module.Assembly;
 			foreach (var suppression in DecodeGlobalSuppressions (module, assembly))
@@ -275,7 +286,7 @@ namespace Mono.Linker
 			}
 		}
 
-		IEnumerable<(SuppressMessageInfo Info, ICustomAttributeProvider Target)> DecodeGlobalSuppressions (ModuleDefinition module, ICustomAttributeProvider provider)
+		IEnumerable<Suppression> DecodeGlobalSuppressions (ModuleDefinition module, ICustomAttributeProvider provider)
 		{
 			var attributes = _context.CustomAttributes.GetCustomAttributes (provider).
 					Where (a => TypeRefHasUnconditionalSuppressions (a.AttributeType));
@@ -286,13 +297,13 @@ namespace Mono.Linker
 
 				var scope = info.Scope?.ToLower ();
 				if (info.Target == null && (scope == "module" || scope == null)) {
-					yield return (info, provider);
+					yield return new Suppression (info, used: false, originAttribute: instance, provider);
 					continue;
 				}
 
 				switch (scope) {
 				case "module":
-					yield return (info, provider);
+					yield return new Suppression (info, used: false, originAttribute: instance, provider);
 					break;
 
 				case "type":
@@ -301,7 +312,7 @@ namespace Mono.Linker
 						break;
 
 					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module, _context))
-						yield return (info, result);
+						yield return new Suppression (info, used: false, originAttribute: instance, result);
 
 					break;
 				default:
@@ -315,6 +326,15 @@ namespace Mono.Linker
 		{
 			return typeRef.Name == "UnconditionalSuppressMessageAttribute" &&
 				typeRef.Namespace == "System.Diagnostics.CodeAnalysis";
+		}
+
+		public MessageOrigin GetSuppressionOrigin (Suppression suppression)
+		{
+			if (_context.CustomAttributes.TryGetCustomAttributeOrigin (suppression.Provider, suppression.OriginAttribute, out MessageOrigin origin))
+				return origin;
+			if (suppression.Provider is ModuleDefinition module)
+				return new MessageOrigin (module.Assembly);
+			return new MessageOrigin (suppression.Provider);
 		}
 	}
 }
