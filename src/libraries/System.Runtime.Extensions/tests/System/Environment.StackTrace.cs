@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -54,7 +53,6 @@ namespace System.Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [return: NotNull] // Add extra IL return parameter
         private static void StaticFrame(object obj)
         {
             s_stackTrace = Environment.StackTrace;
