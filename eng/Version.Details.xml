@@ -8,10 +8,6 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>dc012a715ceb9b5d5258f2fda77520586af5a36a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-rc.1.22411.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>216093204c415b6e37dfadfcbcf183881b443636</Sha>
-    </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
@@ -51,6 +47,14 @@
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22355.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.0-rc.1.22417.9">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>9f79703c</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.0-rc.1.22417.9">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>9f79703c</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
