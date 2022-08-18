@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 // Disable warnings for ControlledExecution.Run
@@ -9,96 +10,270 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
-    public class ControlledExecutionTests
+    public sealed class ControlledExecutionTests
     {
-        private bool _startedExecution, _caughtException, _finishedExecution;
+        private volatile bool _readyForCancellation;
+        private bool _caughtException, _finishedExecution;
         private Exception _exception;
-        private CancellationTokenSource _cts;
         private volatile int _counter;
 
-        // Tests cancellation on timeout. The ThreadAbortException must be mapped to OperationCanceledException.
+        // Tests that the Run method finishes normally if no cancellation is requested
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
-        public void CancelOnTimeout()
+        public void RunWithoutCancelling()
         {
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(200);
-            RunTest(LengthyAction, cts.Token);
+            RunTest(Test, cts.Token);
 
-            Assert.True(_startedExecution);
+            Assert.True(_finishedExecution);
+            Assert.Null(_exception);
+
+            void Test()
+            {
+                _finishedExecution = true;
+            }
+        }
+
+        // Tests that a nested invocation of the Run method throws an InvalidOperationException
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        public void TestNestedRunInvocation()
+        {
+            bool nestedExecution = false;
+
+            var cts = new CancellationTokenSource();
+            RunTest(Test, cts.Token);
+
+            Assert.False(nestedExecution);
+            Assert.IsType<InvalidOperationException>(_exception);
+
+            void Test()
+            {
+                ControlledExecution.Run(() => nestedExecution = true, cts.Token);
+            }
+        }
+
+        // Tests that an infinite loop may be aborted and that the ThreadAbortException is translated
+        // to an OperationCanceledException.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        public void CancelOutsideOfTryCatchFinally()
+        {
+            var cts = new CancellationTokenSource();
+            Task.Run(() => CancelWhenTestIsReady(cts));
+            RunTest(Test, cts.Token);
+
+            Assert.False(_finishedExecution);
+            Assert.IsType<OperationCanceledException>(_exception);
+
+            void Test()
+            {
+                _readyForCancellation = true;
+                RunInfiniteLoop();
+                _finishedExecution = true;
+            }
+        }
+
+        // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
+        // and that it is eventually translated to an OperationCanceledException.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        public void CancelInTryAndExitCatchNormally()
+        {
+            var cts = new CancellationTokenSource();
+            Task.Run(() => CancelWhenTestIsReady(cts));
+            RunTest(Test, cts.Token);
+
             Assert.True(_caughtException);
             Assert.False(_finishedExecution);
             Assert.IsType<OperationCanceledException>(_exception);
+
+            void Test()
+            {
+                try
+                {
+                    _readyForCancellation = true;
+                    RunInfiniteLoop();
+                }
+                catch
+                {
+                    // Swallow all exceptions to verify that the ThreadAbortException is automatically rethrown
+                    _caughtException = true;
+                }
+
+                if (!PlatformDetection.IsWindows)
+                {
+                    // Rethrowing a ThreadAbortException at the end of catch blocks is not implemented, so force it
+                    // here by calling native code (https://github.com/dotnet/runtime/issues/72703).
+                    Thread.Sleep(0);
+                }
+
+                _finishedExecution = true;
+            }
         }
 
-        // Tests that catch blocks are not aborted. The action catches the ThreadAbortException and throws an exception of a different type.
+        // Tests that catch blocks are not aborted. The catch block swallows the ThreadAbortException and throws a different exception.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        public void CancelOnTimeout_ThrowFromCatch()
+        public void CancelInTryAndThrowFromCatch()
         {
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(200);
-            RunTest(LengthyAction_ThrowFromCatch, cts.Token);
+            Task.Run(() => CancelWhenTestIsReady(cts));
+            RunTest(Test, cts.Token);
 
-            Assert.True(_startedExecution);
             Assert.True(_caughtException);
-            Assert.False(_finishedExecution);
-            Assert.IsType<TimeoutException>(_exception);
+            Assert.IsType<TestException>(_exception);
+
+            void Test()
+            {
+                try
+                {
+                    _readyForCancellation = true;
+                    RunInfiniteLoop();
+                }
+                catch
+                {
+                    _caughtException = true;
+                    // The catch block must not be aborted
+                    Thread.Sleep(200);
+                    throw new TestException();
+                }
+            }
         }
 
-        // Tests that finally blocks are not aborted. The action throws an exception from a finally block.
+        // Tests that finally blocks are not aborted. The finally block exits normally.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        public void CancelOnTimeout_ThrowFromFinally()
+        public void CancelInFinallyThatSleeps()
         {
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(200);
-            RunTest(LengthyAction_ThrowFromFinally, cts.Token);
+            Task.Run(() => CancelWhenTestIsReady(cts));
+            RunTest(Test, cts.Token);
 
-            Assert.True(_startedExecution);
-            Assert.IsType<TimeoutException>(_exception);
-        }
-
-        // Tests that finally blocks are not aborted. The action throws an exception from a try block.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        public void CancelOnTimeout_Finally()
-        {
-            var cts = new CancellationTokenSource();
-            cts.CancelAfter(200);
-            RunTest(LengthyAction_Finally, cts.Token);
-
-            Assert.True(_startedExecution);
             Assert.True(_finishedExecution);
-            Assert.IsType<TimeoutException>(_exception);
+            Assert.IsType<TestException>(_exception);
+
+            void Test()
+            {
+                try
+                {
+                    // Make sure to run the non-inlined finally
+                    throw new TestException();
+                }
+                finally
+                {
+                    _readyForCancellation = true;
+                    WaitUntilAbortIsRequested();
+                    // The finally block must not be aborted
+                    Thread.Sleep(200);
+                    _finishedExecution = true;
+                }
+            }
         }
 
-        // Tests cancellation before calling the Run method
+        // Tests that finally blocks are not aborted. The finally block throws an exception.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        public void CancelInFinallyThatSleepsAndThrows()
+        {
+            var cts = new CancellationTokenSource();
+            Task.Run(() => CancelWhenTestIsReady(cts));
+            RunTest(Test, cts.Token);
+
+            Assert.IsType<TestException>(_exception);
+
+            void Test()
+            {
+                try
+                {
+                    // Make sure to run the non-inlined finally
+                    throw new Exception();
+                }
+                finally
+                {
+                    _readyForCancellation = true;
+                    WaitUntilAbortIsRequested();
+                    // The finally block must not be aborted
+                    Thread.Sleep(200);
+                    throw new TestException();
+                }
+            }
+        }
+
+        // Tests cancellation before calling the Run method. The action must never start.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelBeforeRun()
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            Thread.Sleep(100);
-            RunTest(LengthyAction, cts.Token);
+            RunTest(Test, cts.Token);
 
+            Assert.False(_finishedExecution);
             Assert.IsType<OperationCanceledException>(_exception);
+
+            void Test()
+            {
+                _finishedExecution = true;
+            }
         }
 
         // Tests cancellation by the action itself
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        public void CancelItself()
+        public void CancelItselfOutsideOfTryCatchFinally()
         {
-            _cts = new CancellationTokenSource();
-            RunTest(Action_CancelItself, _cts.Token);
+            var cts = new CancellationTokenSource();
+            RunTest(Test, cts.Token);
 
-            Assert.True(_startedExecution);
             Assert.False(_finishedExecution);
+            // CancellationTokenSource.Cancel catches the ThreadAbortException; however, it is rethrown at the end
+            // of the catch block.
+            Assert.IsType<OperationCanceledException>(_exception);
+
+            void Test()
+            {
+                cts.Cancel();
+                _finishedExecution = true;
+            }
+        }
+
+        // Tests cancellation by the action itself. Finally blocks must be executed except the one that triggered cancellation.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        public void CancelItselfFromFinally()
+        {
+            bool finishedContainingFinally = false;
+
+            var cts = new CancellationTokenSource();
+            RunTest(Test, cts.Token);
+
+            Assert.False(finishedContainingFinally);
+            Assert.True(_finishedExecution);
+            // CancellationTokenSource.Cancel catches the ThreadAbortException and wraps it into an AggregateException
+            // at the end of the method's execution. The ThreadAbortException is not rethrown at the end of the catch
+            // block, because the Cancel method is called from a finally block.
             Assert.IsType<AggregateException>(_exception);
             Assert.IsType<ThreadAbortException>(_exception.InnerException);
+
+            void Test()
+            {
+                try
+                {
+                    try
+                    {
+                        // Make sure to run the non-inlined finally
+                        throw new Exception();
+                    }
+                    finally
+                    {
+                        // When cancelling itself, the containing finally block must be aborted
+                        cts.Cancel();
+                        finishedContainingFinally = true;
+                    }
+                }
+                finally
+                {
+                    _finishedExecution = true;
+                }
+            }
         }
 
         private void RunTest(Action action, CancellationToken cancellationToken)
         {
-            _startedExecution = _caughtException = _finishedExecution = false;
+            _readyForCancellation = _caughtException = _finishedExecution = false;
             _exception = null;
+            _counter = 0;
 
             try
             {
@@ -110,107 +285,37 @@ namespace System.Runtime.Tests
             }
         }
 
-        private void LengthyAction()
+        private void CancelWhenTestIsReady(CancellationTokenSource cancellationTokenSource)
         {
-            _startedExecution = true;
-            // Redirection via thread suspension is supported on Windows only.
-            // Make a call in the loop to allow redirection on other platforms.
-            bool sleep = !PlatformDetection.IsWindows;
-
-            try
+            // Wait until the execution is ready to be canceled
+            while (!_readyForCancellation)
             {
-                for (_counter = 0; _counter < int.MaxValue; _counter++)
+                Thread.Sleep(10);
+            }
+            cancellationTokenSource.Cancel();
+        }
+
+        private static void WaitUntilAbortIsRequested()
+        {
+            while ((Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == 0)
+            {
+                Thread.Sleep(10);
+            }
+        }
+
+        private void RunInfiniteLoop()
+        {
+            while (true)
+            {
+                if ((++_counter & 0xfffff) == 0)
                 {
-                    if ((_counter & 0xfffff) == 0 && sleep)
-                    {
-                        Thread.Sleep(0);
-                    }
+                    Thread.Sleep(0);
                 }
             }
-            catch
-            {
-                // Swallow all exceptions to verify that the exception is automatically rethrown
-                _caughtException = true;
-            }
-
-            _finishedExecution = true;
         }
 
-        private void LengthyAction_ThrowFromCatch()
+        private sealed class TestException : Exception
         {
-            _startedExecution = true;
-            bool sleep = !PlatformDetection.IsWindows;
-
-            try
-            {
-                for (_counter = 0; _counter < int.MaxValue; _counter++)
-                {
-                    if ((_counter & 0xfffff) == 0 && sleep)
-                    {
-                        Thread.Sleep(0);
-                    }
-                }
-            }
-            catch
-            {
-                _caughtException = true;
-                // The catch block must not be aborted
-                Thread.Sleep(100);
-                throw new TimeoutException();
-            }
-
-            _finishedExecution = true;
-        }
-
-        private void LengthyAction_ThrowFromFinally()
-        {
-            _startedExecution = true;
-
-            try
-            {
-                // Make sure to run the non-inlined finally
-                throw new Exception();
-            }
-            finally
-            {
-                // The finally block must not be aborted
-                Thread.Sleep(400);
-                throw new TimeoutException();
-            }
-        }
-
-        private void LengthyAction_Finally()
-        {
-            _startedExecution = true;
-
-            try
-            {
-                // Make sure to run the non-inlined finally
-                throw new TimeoutException();
-            }
-            finally
-            {
-                // The finally block must not be aborted
-                Thread.Sleep(400);
-                _finishedExecution = true;
-            }
-        }
-
-        private void Action_CancelItself()
-        {
-            _startedExecution = true;
-
-            try
-            {
-                // Make sure to run the non-inlined finally
-                throw new TimeoutException();
-            }
-            finally
-            {
-                // The finally block must be aborted
-                _cts.Cancel();
-                _finishedExecution = true;
-            }
         }
     }
 }
