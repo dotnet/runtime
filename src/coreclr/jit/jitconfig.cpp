@@ -336,7 +336,7 @@ static size_t strnstr(const char* pSrc, size_t srcSize, const char* needle, size
 static bool matchesName(
     const char* const name, int nameLen, bool wildcardAtStart, bool wildcardAtEnd, const char* const s2)
 {
-    if (wildcardAtStart && strnstr(s2, strlen(s2), name, nameLen) == -1)
+    if (wildcardAtStart && (int)strnstr(s2, strlen(s2), name, nameLen) == -1)
     {
         return false;
     }
