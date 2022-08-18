@@ -31,6 +31,33 @@ namespace System.Text.Json
         public bool TryGetUInt128(out System.UInt128 value) { throw null; }
     }
 }
+namespace System.Text.Json.Nodes
+{
+    public abstract partial class JsonNode
+    {
+        public static explicit operator System.Int128(System.Text.Json.Nodes.JsonNode value) { throw null; }
+        public static explicit operator System.Int128?(System.Text.Json.Nodes.JsonNode? value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128(System.Text.Json.Nodes.JsonNode value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128?(System.Text.Json.Nodes.JsonNode? value) { throw null; }
+        public static implicit operator JsonNode(System.Int128 value) { throw null; }
+        public static implicit operator JsonNode?(System.Int128? value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode(System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode?(System.UInt128? value) { throw null; }
+    }
+    public abstract partial class JsonValue
+    {
+        public static System.Text.Json.Nodes.JsonValue Create(System.Int128 value, System.Text.Json.Nodes.JsonNodeOptions? options = null) { throw null; }
+        public static System.Text.Json.Nodes.JsonValue? Create(System.Int128? value, System.Text.Json.Nodes.JsonNodeOptions? options = null) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Nodes.JsonValue Create(System.UInt128 value, System.Text.Json.Nodes.JsonNodeOptions? options = null) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Nodes.JsonValue? Create(System.UInt128? value, System.Text.Json.Nodes.JsonNodeOptions? options = null) { throw null; }
+    }
+}
 namespace System.Text.Json.Serialization.Metadata
 {
     public static partial class JsonMetadataServices

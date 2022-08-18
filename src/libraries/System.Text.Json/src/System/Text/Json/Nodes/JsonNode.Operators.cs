@@ -159,6 +159,22 @@ namespace System.Text.Json.Nodes
         /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
         public static implicit operator JsonNode?(long? value) => JsonValue.Create(value);
 
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="Int128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="Int128"/> to implicitly convert.</param>
+        /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
+        public static implicit operator JsonNode(Int128 value) => JsonValue.Create(value);
+
+        /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="Int128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="Int128"/> to implicitly convert.</param>
+        /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
+        public static implicit operator JsonNode?(Int128? value) => JsonValue.Create(value);
+#endif
+
         /// <summary>
         ///   Defines an implicit conversion of a given <see cref="sbyte"/> to a <see cref="JsonNode"/>.
         /// </summary>
@@ -243,6 +259,24 @@ namespace System.Text.Json.Nodes
         /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
         [System.CLSCompliantAttribute(false)]
         public static implicit operator JsonNode?(ulong? value) => JsonValue.Create(value);
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="UInt128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="UInt128"/> to implicitly convert.</param>
+        /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode(UInt128 value) => JsonValue.Create(value);
+
+        /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="UInt128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="UInt128"/> to implicitly convert.</param>
+        /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode?(UInt128? value) => JsonValue.Create(value);
+#endif
 
         /// <summary>
         ///   Defines an explicit conversion of a given <see cref="bool"/> to a <see cref="JsonNode"/>.
@@ -398,6 +432,22 @@ namespace System.Text.Json.Nodes
         /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
         public static explicit operator long?(JsonNode? value) => value?.GetValue<long>();
 
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="long"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="Int128"/> to explicitly convert.</param>
+        /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
+        public static explicit operator Int128(JsonNode value) => value.GetValue<Int128>();
+
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="Int128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="Int128"/> to explicitly convert.</param>
+        /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
+        public static explicit operator Int128?(JsonNode? value) => value?.GetValue<Int128>();
+#endif
+
         /// <summary>
         ///   Defines an explicit conversion of a given <see cref="sbyte"/> to a <see cref="JsonNode"/>.
         /// </summary>
@@ -482,5 +532,23 @@ namespace System.Text.Json.Nodes
         /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
         [System.CLSCompliantAttribute(false)]
         public static explicit operator ulong?(JsonNode? value) => value?.GetValue<ulong>();
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="UInt128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="UInt128"/> to explicitly convert.</param>
+        /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator UInt128(JsonNode value) => value.GetValue<UInt128>();
+
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="UInt128"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="UInt128"/> to explicitly convert.</param>
+        /// <returns>A value converted from the <see cref="JsonNode"/> instance.</returns>
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator UInt128?(JsonNode? value) => value?.GetValue<UInt128>();
+#endif
     }
 }

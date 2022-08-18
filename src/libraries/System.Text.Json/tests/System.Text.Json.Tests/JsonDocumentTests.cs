@@ -1415,12 +1415,10 @@ namespace System.Text.Json.Tests
             expectedFloat *= 10;
             expectedDecimal *= 10;
 #if NET7_0_OR_GREATER
-            // x * 10 = x * (2^1 + 2^3)
-            ulong numberTimes10low = unchecked((ulong.MaxValue << 1) + (ulong.MaxValue << 3));
-            // + 1 because overflow happened
-            ulong numberTimes10high = 1 + unchecked((ulong.MaxValue >> (64 - 1)) + (ulong.MaxValue >> (64 - 3)));
-            Int128 expectedInt128 = new Int128(numberTimes10high, numberTimes10low);
-            UInt128 expectedUInt128 = new UInt128(numberTimes10high, numberTimes10low);
+            Int128 expectedInt128 = new Int128(0UL, ulong.MaxValue);
+            UInt128 expectedUInt128 = new UInt128(0UL, ulong.MaxValue);
+            expectedInt128 *= 10;
+            expectedUInt128 *= 10;
 #endif
 
             using (JsonDocument doc = JsonDocument.Parse("    " + ulong.MaxValue + "0  ", default))

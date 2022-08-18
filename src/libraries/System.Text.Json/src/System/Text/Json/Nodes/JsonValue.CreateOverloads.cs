@@ -183,6 +183,24 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(long? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<long>(value.Value, JsonMetadataServices.Int64Converter) : null;
 
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        public static JsonValue Create(Int128 value, JsonNodeOptions? options = null) => new JsonValueTrimmable<Int128>(value, JsonMetadataServices.Int128Converter);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        public static JsonValue? Create(Int128? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<Int128>(value.Value, JsonMetadataServices.Int128Converter) : null;
+#endif
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
@@ -278,6 +296,26 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
         public static JsonValue? Create(ulong? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<ulong>(value.Value, JsonMetadataServices.UInt64Converter) : null;
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        [CLSCompliantAttribute(false)]
+        public static JsonValue Create(UInt128 value, JsonNodeOptions? options = null) => new JsonValueTrimmable<UInt128>(value, JsonMetadataServices.UInt128Converter);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        [CLSCompliantAttribute(false)]
+        public static JsonValue? Create(UInt128? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<UInt128>(value.Value, JsonMetadataServices.UInt128Converter) : null;
+#endif
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
