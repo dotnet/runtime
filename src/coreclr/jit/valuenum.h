@@ -941,7 +941,7 @@ public:
 
     enum class VN_RELATION_KIND
     {
-        VRK_Unrelated,  // (x ?  y)
+        VRK_Inferred,   // (x ?  y)
         VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)

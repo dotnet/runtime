@@ -146,9 +146,14 @@ struct RelopImplicationInfo
 // a false taken branch, so we need to invert the sense of our
 // inferences.
 //
-// Note we could also infer the tree relop's value from other
+// We can also partially infer the tree relop's value from other
 // dominating relops, for example, (x >= 0) dominating (x > 0).
-// That is left as a future enhancement.
+//
+// We don't get all the cases here we could. Still to do:
+// * two unsigned compares, same operands
+// * mixture of signed/unsigned compares, same operands
+// * mixture of compares, one operand same, other operands different constants
+//   x > 1 ==> x >= 0
 //
 void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
@@ -226,7 +231,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_GT) || (treeOper == GT_LT));
                     rii->canInferFromTrue  = true;
                     rii->canInferFromFalse = false;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
 
                 case GT_NE:
@@ -235,7 +240,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_GE) || (treeOper == GT_LE));
                     rii->canInferFromTrue  = false;
                     rii->canInferFromFalse = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
 
                 case GT_LE:
@@ -244,7 +249,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_GE));
                     rii->canInferFromFalse = true;
                     rii->canInferFromTrue  = false;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
 
                 case GT_GT:
@@ -253,7 +258,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_LT));
                     rii->canInferFromFalse = false;
                     rii->canInferFromTrue  = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
 
                 case GT_GE:
@@ -262,7 +267,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_LE));
                     rii->canInferFromFalse = true;
                     rii->canInferFromTrue  = false;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
 
                 case GT_LT:
@@ -271,7 +276,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_GT));
                     rii->canInferFromFalse = false;
                     rii->canInferFromTrue  = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     break;
             }
 
@@ -483,14 +488,14 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     // Was this an inference from an unrelated relop (GE => GT, say)?
                     //
-                    const bool domIsUnrelatedRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Unrelated);
+                    const bool domIsInferredRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Inferred);
 
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    if (domIsUnrelatedRelop)
+                    if (domIsInferredRelop)
                     {
-                        // Unrelated inference should be one-sided
+                        // This inference should be one-sided
                         //
                         assert(rii.canInferFromTrue ^ rii.canInferFromFalse);
                         JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has same VN operands but different relop\n",
@@ -541,7 +546,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
-                        const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsUnrelatedRelop);
+                        const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
                         JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->bbJumpDest->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsTrue ? "true" : "false");
@@ -552,7 +557,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
-                        const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsUnrelatedRelop);
+                        const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
                         JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->bbNext->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
