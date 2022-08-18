@@ -2727,6 +2727,9 @@ void MethodContext::dmpGetExactClasses(DLD key, DLD value)
 }
 int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
 {
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(baseType);
