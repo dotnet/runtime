@@ -3,6 +3,10 @@
   <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
     <!-- for non-ci builds, we install the sdk when tests are run -->
     <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+
+    <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
+    <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
+    <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,8 +17,9 @@
   </ItemGroup>
 
   <Target Name="ProvisionSdkForWorkloadTesting"
-          DependsOnTargets="_ProvisionSdkWithNoWorkload"
-          Condition="!Exists($(SdkWithNoWorkloadStampPath)) or !Exists($(SdkWithWorkloadStampPath))">
+          DependsOnTargets="_ProvisionDotNetForWorkloadTesting"
+          Inputs="@(_SdkWithWorkloadToInstall)"
+          Outputs="%(StampPath)">
 
     <Error Text="%24(SdkWithWorkloadForTestingPath) is not set" Condition="'$(SdkWithWorkloadForTestingPath)' == ''" />
 
@@ -25,30 +30,35 @@
              Condition="'$(SdkVersionForWorkloadTesting)' == ''"
              Importance="High" />
 
-    <RemoveDir Directories="$(SdkWithWorkloadForTestingPath)" />
-    <MakeDir Directories="$(SdkWithWorkloadForTestingPath)" />
+    <RemoveDir Directories="%(_SdkWithWorkloadToInstall.InstallPath)" />
+    <MakeDir Directories="%(_SdkWithWorkloadToInstall.InstallPath)" />
 
     <ItemGroup>
-      <_SourceFiles Include="$(SdkWithNoWorkloadForTestingPath)\**" />
+      <_SourceFiles Include="$(_SdkWithNoWorkloadPath)\**" />
     </ItemGroup>
+    <PropertyGroup>
+      <_InstallPath />
+      <_InstallPath>@(_SdkWithWorkloadToInstall -> '%(InstallPath)')</_InstallPath>
+    </PropertyGroup>
 
-    <Copy SourceFiles="@(_SourceFiles)" DestinationFolder="$(SdkWithWorkloadForTestingPath)\%(_SourceFiles.RecursiveDir)" />
 
-    <WriteLinesToFile File="$(SdkWithWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
 
-  <Target Name="_ProvisionSdkWithNoWorkload" Condition="!Exists($(SdkWithNoWorkloadStampPath))">
-    <Error Text="%24(SdkWithNoWorkloadForTestingPath) is not set" Condition="'$(SdkWithNoWorkloadForTestingPath)' == ''" />
+  <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
+    <Error Text="%24(_SdkWithNoWorkloadPath) is not set" Condition="'$(_SdkWithNoWorkloadPath)' == ''" />
 
-    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(SdkWithNoWorkloadForTestingPath)"
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(_SdkWithNoWorkloadPath)"
              Condition="'$(SdkVersionForWorkloadTesting)' != ''"
              Importance="High" />
-    <Message Text="** Installing latest sdk for workload based tests into $(SdkWithNoWorkloadForTestingPath)"
+    <Message Text="** Installing latest sdk for workload based tests into $(_SdkWithNoWorkloadPath)"
              Condition="'$(SdkVersionForWorkloadTesting)' == ''"
              Importance="High" />
 
-    <RemoveDir Directories="$(SdkWithNoWorkloadForTestingPath)" />
-    <MakeDir Directories="$(SdkWithNoWorkloadForTestingPath)" />
+    <ItemGroup>
+      <_SdkWithNoWorkloadTarget Include="none" InstallPath="$(_SdkWithNoWorkloadPath)" />
+    </ItemGroup>
+    <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
+    <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
 
     <PropertyGroup>
       <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
@@ -59,16 +69,16 @@
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v latest -q daily --channel 7.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 7.0</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Quality daily -Channel 7.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 7.0</_DotNetInstallCommand>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
@@ -82,13 +92,17 @@
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
-
-    <WriteLinesToFile File="$(SdkWithNoWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
 
   <Target Name="GetWorkloadInputs">
     <ItemGroup>
       <AvailableNuGetsInArtifacts Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
+
+      <!--<_SdkWithWorkloadToInstall Include="none" Version="none" />-->
+      <_SdkWithWorkloadToInstall Include="@(WorkloadCombinationsToInstall)" />
+      <_SdkWithWorkloadToInstall InstallPath="$(_SdkForWorkloadTestingBasePath)\dotnet-%(Identity)" />
+      <!--<_SdkWithWorkloadToInstall StampPath="%(InstallPath)\version-%(Version).stamp" Condition="'%(Version)' != ''" />-->
+      <_SdkWithWorkloadToInstall StampPath="%(InstallPath)\version.stamp" />
     </ItemGroup>
 
     <Error Text="Cannot find any nupkg files in $(LibrariesShippingPackagesDir), needed for workloads" Condition="@(AvailableNuGetsInArtifacts->Count()) == 0" />
@@ -104,7 +118,7 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
+          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;GetWorkloadInputs;_ProvisionDotNetForWorkloadTesting;_InstallWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild">
@@ -204,13 +218,23 @@
 
   <Target Name="_InstallWorkload"
           Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="$(SdkWithWorkload_WorkloadStampPath)">
+          Outputs="%(_SdkWithWorkloadToInstall.StampPath)">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
 
-    <PropertyGroup>
-    </PropertyGroup>
+    <!--<Error Text="%24(SdkWithWorkloadForTestingPath) is not set" Condition="'$(SdkWithWorkloadForTestingPath)' == ''" />-->
+
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into %(_SdkWithWorkloadToInstall.InstallPath)"
+             Condition="'$(SdkVersionForWorkloadTesting)' != ''"
+             Importance="High" />
+    <Message Text="** Installing latest sdk for workload based tests into %(_SdkWithWorkloadToInstall.InstallPath)"
+             Condition="'$(SdkVersionForWorkloadTesting)' == ''"
+             Importance="High" />
+
+    <ItemGroup>
+      <_SourceFiles Include="$(_SdkWithNoWorkloadPath)\**" />
+    </ItemGroup>
 
     <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
            Condition="!Exists($(_AOTCrossNuGetPath))" />
@@ -219,25 +243,13 @@
 
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"
+                     InstallTargets="@(_SdkWithWorkloadToInstall)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
-                     SdkDir="$(SdkWithWorkloadForTestingPath)" />
-    <WriteLinesToFile File="$(SdkWithWorkload_WorkloadStampPath)" Lines="" Overwrite="true" />
-  </Target>
+                     SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+      />
 
-  <Target Name="_UpdateManifestsForSdkWithNoWorkload"
-          Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="$(SdkWithNoWorkload_WorkloadStampPath)">
-
-    <InstallWorkloadFromArtifacts
-                     WorkloadIds="@(WorkloadIdForTesting)"
-                     VersionBand="$(SdkBandVersion)"
-                     LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
-                     TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
-                     SdkDir="$(SdkWithNoWorkloadForTestingPath)"
-                     OnlyUpdateManifests="true"/>
-
-    <WriteLinesToFile File="$(SdkWithNoWorkload_WorkloadStampPath)" Lines="" Overwrite="true" />
+    <!--<WriteLinesToFile File="%(_SdkWithWorkloadToInstall.StampPath)" Lines="" Overwrite="true" />-->
   </Target>
 </Project>

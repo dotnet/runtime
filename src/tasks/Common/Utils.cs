@@ -233,6 +233,9 @@ internal static class Utils
 #if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
+        if (!Directory.Exists(destDir))
+            Directory.CreateDirectory(destDir);
+
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         foreach (string file in files)
         {

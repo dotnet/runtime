@@ -138,14 +138,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WorkloadIdForTesting Include="wasm-tools"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+    <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
+                          Variant="net7"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
-    <WorkloadIdForTesting Include="wasm-experimental"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+
+    <WorkloadIdForTesting Include="wasm-tools-net6"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
+                          Variant="net6"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
+
+    <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
+    <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />
+    <WorkloadCombinationsToInstall Include="net6+7" Variants="net6;net7" />
+    <!--<WorkloadCombinationsToInstall Include="none" />-->
 
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
