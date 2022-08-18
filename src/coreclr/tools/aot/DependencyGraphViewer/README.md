@@ -8,7 +8,7 @@ If you are developing with NativeAOT or using the IL linker, you might ask yours
 2. Load `DependencyGraphViewer.sln`
 3. Build and Run as normal
 ## Using ETW logs
-Visual Studio must be run as an administrator if collecting ETW events when compiling with NativeAOT.
+The DependencyGraphViewer must be run as an administrator if collecting ETW events when compiling with NativeAOT. One of the easiest ways of doing this is by running Visual Studio as an administrator and then building and running the program.
 
 For collecting ETW logs, publish the NativeAOT app you want to analyze. This code snippet is an example of publishing the app for Windows as a NativeAOT application on a machine with the required prerequisites installed.
 ```
@@ -26,9 +26,9 @@ Add `<IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>` as a PropertyGroup in the 
 
 Add `--dgmllog` to the command line to save the result of dependency analysis as a DGML.
 
-### Linker
+### IL Linker
 
-If using the linker, use `--dump-dependencies` and `--dependencies-file-format dgml` to dump DGML files.
+If using the IL linker, use `--dump-dependencies` and `--dependencies-file-format dgml` to dump DGML files.
 
 Check the documentation for the compiler you are using for more information on how to generate DGML files when dumping dependencies.
 ## Get help
