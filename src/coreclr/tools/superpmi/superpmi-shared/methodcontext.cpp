@@ -2705,6 +2705,9 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
 
 void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
 {
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(baseType);
