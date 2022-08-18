@@ -320,7 +320,6 @@ public class WasmAppBuilder : Task
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
-        config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
         if (IncludeThreadsWorker)
             config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 
