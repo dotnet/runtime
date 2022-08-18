@@ -9313,7 +9313,17 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     // So, after we save `A7` on the stack in prolog, it has to copy the stack slot of the split struct
                     // which was passed by the caller. Here we load the stack slot to `REG_SCRATCH`, and save it
                     // on the stack following the `A7` in prolog.
-                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
+                    if (emitter::isValidSimm12(genTotalFrameSize()))
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
+                    }
+                    else
+                    {
+                        assert(!EA_IS_RELOC(size));
+                        GetEmitter()->emitIns_I_la(size, REG_SCRATCH, genTotalFrameSize());
+                        GetEmitter()->emitIns_R_R_R(INS_ldx_d, size, REG_SCRATCH, REG_SPBASE, REG_SCRATCH);
+                    }
+
                     if (emitter::isValidSimm12(baseOffset))
                     {
                         GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);
