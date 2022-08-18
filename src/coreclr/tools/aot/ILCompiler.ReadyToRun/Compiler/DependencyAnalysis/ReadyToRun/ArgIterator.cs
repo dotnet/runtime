@@ -1257,16 +1257,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             Debug.Assert(_transitionBlock.IsAppleArm64ABI || (cbArg % _transitionBlock.PointerSize) == 0);
 
                             int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
-
-                            if (!IsVarArg && !_transitionBlock.IsAppleArm64ABI && ((_arm64IdxGenReg & 1) == 1) && regSlots == 2 && ((DefType)_argTypeHandle.GetRuntimeTypeHandle()).InstanceFieldAlignment == new LayoutInt(16))
-                            {
-                                // Implement rule C.10 from the ARM64 Procedure Calling standard.
-                                // If the argument has an alignment of 16 then the NGRN is rounded up to the next even number.
-                                //
-                                // This rule is not used for Apple platforms. See https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
-                                _arm64IdxGenReg++;
-                            }
-
                             // Only x0-x7 are valid argument registers (x8 is always the return buffer)
                             if (_arm64IdxGenReg + regSlots <= 8)
                             {
@@ -1298,9 +1288,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                         }
 
-                        int alignment = 1;
                         if (_transitionBlock.IsAppleArm64ABI)
                         {
+                            int alignment;
                             if (!isValueType)
                             {
                                 Debug.Assert((cbArg & (cbArg - 1)) == 0);
@@ -1314,15 +1304,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 alignment = 8;
                             }
+                            _arm64OfsStack = ALIGN_UP(_arm64OfsStack, alignment);
                         }
-
-                        if (!IsVarArg && cbArg == 16 && ((DefType)_argTypeHandle.GetRuntimeTypeHandle()).InstanceFieldAlignment == new LayoutInt(16))
-                        {
-                            // Implement rule C.11 from the ARM64 Procedure Calling standard.
-                            alignment = 16;
-                        }
-
-                        _arm64OfsStack = ALIGN_UP(_arm64OfsStack, alignment);
 
                         argOfs = _transitionBlock.OffsetOfArgs + _arm64OfsStack;
                         _arm64OfsStack += cbArg;

@@ -717,13 +717,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         unsigned cSlotsToEnregister = cSlots;
 
 #if defined(TARGET_ARM64)
-        if (!compMacOsArm64Abi())
-        {
-            if (!info.compIsVarArgs && (cSlots == 2) && varTypeIsStruct(argType) && varDscInfo->canEnreg(argType, cSlots) && hfaType == TYP_UNDEF && info.compCompHnd->getClassAlignmentRequirement(varDsc->GetStructHnd()) == 16)
-            {
-                compArgSize += varDscInfo->alignReg(argType, 2) * REGSIZE_BYTES;
-            }
-        }
 
         if (compFeatureArgSplit())
         {
@@ -1235,21 +1228,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             unsigned argAlignment = cAlign * TARGET_POINTER_SIZE;
 #else
             unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
-
-#ifdef TARGET_ARM64
-            if (!info.compIsVarArgs && varDscInfo->stackArgSize == 16 && !varTypeUsesFloatReg(argType) && varTypeIsStruct(argType) && info.compCompHnd->getClassAlignmentRequirement(varDsc->GetStructHnd()) == 16)
-            {
-                // TODO-Cleanup: use "eeGetArgSizeAlignment" here. See also: https://github.com/dotnet/runtime/issues/46026.
-                argAlignment = 16;
-            }
-#endif // TARGET_ARM64
-
             // We expect the following rounding operation to be a noop on all
             // ABIs except ARM (where we have 8-byte aligned args) and macOS
             // ARM64 (that allows to pack multiple smaller parameters in a
-            // single stack slot), and ARM64 128 bit layout structures passed by value
-            // that would naturally be passed in integer registers if there was space
-            assert(compMacOsArm64Abi() || (argAlignment == 16) || ((varDscInfo->stackArgSize % argAlignment) == 0));
+            // single stack slot).
+            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
 #endif
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
@@ -6334,19 +6317,11 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
-        unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        
-#if TARGET_ARM64
-        if (!info.compIsVarArgs && varDsc->lvType == TYP_STRUCT && varDsc->lvSize() == 16 && !isFloatHfa && info.compCompHnd->getClassAlignmentRequirement(varDsc->GetStructHnd()) == 16)
-        {
-            // TODO-Cleanup: use "eeGetArgSizeAlignment" here. See also: https://github.com/dotnet/runtime/issues/46026.
-            argAlignment = 16;
-        }
-        if (compMacOsArm64Abi() || (argAlignment == 16))
+        const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
+        if (compMacOsArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
         }
-#endif
 
         assert((argSize % argAlignment) == 0);
         assert((argOffs % argAlignment) == 0);

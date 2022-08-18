@@ -1569,18 +1569,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         _ASSERTE((cbArg% TARGET_POINTER_SIZE) == 0);
 #endif
         const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-
-#if !defined(OSX_ARM64_ABI)
-        // Implement rule C.10 from the ARM64 Procedure Calling standard.
-        // If the argument has an alignment of 16 then the NGRN is rounded up to the next even number.
-        //
-        // This rule is not used for Apple platforms. See https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
-        if (!this->IsVarArg() && ((m_idxGenReg & 1) == 1) && regSlots == 2 && thValueType.GetMethodTable()->GetFieldAlignmentRequirement() == 16)
-        {
-            m_idxGenReg++;
-        }
-#endif
-
         // Only x0-x7 are valid argument registers (x8 is always the return buffer)
         if (m_idxGenReg + regSlots <= 8)
         {
@@ -1618,8 +1606,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
     }
 
-    int alignment = 1;
 #ifdef OSX_ARM64_ABI
+    int alignment;
     if (!isValueType)
     {
         _ASSERTE((cbArg & (cbArg - 1)) == 0);
@@ -1633,12 +1621,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         alignment = 8;
     }
-#endif // OSX_ARM64_ABI
-    if (!this->IsVarArg() && cbArg == 16 && thValueType.GetMethodTable()->GetFieldAlignmentRequirement() == 16)
-    {
-        alignment = 16;
-    }
     m_ofsStack = (int)ALIGN_UP(m_ofsStack, alignment);
+#endif // OSX_ARM64_ABI
 
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += cbArg;
