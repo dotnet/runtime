@@ -28,7 +28,8 @@ namespace ILCompiler
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
-            if (defType.Context.Target.Architecture != TargetArchitecture.ARM64 && defType.Context.Target.IsWindows || (defType.Context.Target.PointerSize == 4))
+            // 32bit platforms use standard metadata layout engine
+            if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
                 return layoutFromMetadata;
             }

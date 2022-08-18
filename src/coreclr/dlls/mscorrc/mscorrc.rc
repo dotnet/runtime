@@ -271,6 +271,7 @@ BEGIN
     IDS_EE_BADMARSHAL_ABSTRACTRETCRITICALHANDLE "Returned CriticalHandles cannot be abstract."
     IDS_EE_BADMARSHAL_CUSTOMMARSHALER       "Custom marshalers are only allowed on classes, strings, arrays, and boxed value types."
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Non-blittable generic types cannot be marshaled."
+    IDS_EE_BADMARSHAL_INT128_RESTRICTION    "System.Int128 and System.UInt128 cannot be passed by value to unmanaged."
     IDS_EE_BADMARSHAL_AUTOLAYOUT            "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled."
     IDS_EE_BADMARSHAL_STRING_OUT            "Cannot marshal a string by-value with the [Out] attribute."
     IDS_EE_BADMARSHAL_MARSHAL_DISABLED      "Cannot marshal managed types when the runtime marshalling system is disabled."

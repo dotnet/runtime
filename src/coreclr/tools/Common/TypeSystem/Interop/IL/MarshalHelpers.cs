@@ -434,6 +434,12 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
+                if (!isField && InteropTypes.IsInt128Type(context, type))
+                {
+                    // Int128 types cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
                 if (isBlittable)
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)

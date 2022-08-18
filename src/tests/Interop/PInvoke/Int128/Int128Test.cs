@@ -7,8 +7,8 @@ using Xunit;
 
 struct StructWithInt128
 {
-    public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x101010; }
-    public long messUpPadding;
+    public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x10; }
+    public byte messUpPadding;
     public Int128 value;
 };
 
@@ -31,6 +31,10 @@ unsafe partial class Int128Native
 
     [DllImport(nameof(Int128Native))]
     public static extern Int128 AddInt128(Int128 lhs, Int128 rhs);
+
+
+    [DllImport(nameof(Int128Native))]
+    public static extern void AddStructWithInt128_ByRef(ref StructWithInt128 lhs, ref StructWithInt128 rhs);
 
     [DllImport(nameof(Int128Native))]
     public static extern StructWithInt128 AddStructWithInt128(StructWithInt128 lhs, StructWithInt128 rhs);
@@ -81,6 +85,16 @@ unsafe partial class Int128Native
 
 unsafe partial class Int128Native
 {
+    public static void TestUInt128FieldLayout()
+    {
+        // This test checks that the alignment rules of Int128 structs match the native compiler
+        StructWithInt128 lhs = new StructWithInt128(new Int128(11, 12));
+        StructWithInt128 rhs = new StructWithInt128(new Int128(13, 14));
+
+        Int128Native.AddInt128(ref lhs, ref rhs);
+        Assert.Equal(new StructWithInt128(new Int128(24, 26)), lhs);
+    }
+
     private static void TestInt128()
     {
         Int128 value1 = Int128Native.GetInt128(1, 2);

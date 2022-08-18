@@ -12,7 +12,7 @@
     typedef __int128 Int128;
 #else
 struct 
-#ifdef _M_ARM64
+#if defined(_M_ARM64) || defined(_M_AMD64) || defined(_M_IX86)
 alignas(16)
 #endif
 Int128 {
@@ -25,7 +25,7 @@ static Int128 Int128Value = { };
 
 struct StructWithInt128
 {
-    int64_t messUpPadding;
+    int8_t messUpPadding;
     Int128 value;
 };
 
@@ -70,6 +70,26 @@ extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128(Int128 lhs, Int128 rhs)
 #endif
 
     return result;
+}
+
+// Test that struct alignment behavior matches with the standard OS compiler
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE AddStructWithInt128_ByRef(StructWithInt128 *pLhs, StructWithInt128 *pRhs)
+{
+    StructWithInt128 result = {};
+    StructWithInt128 lhs = *pLhs;
+    StructWithInt128 rhs = *pRhs;
+
+    result.messUpPadding = lhs.messUpPadding;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result.value = lhs.value + rhs.value;
+#else
+    result.value.lower = lhs.value.lower + rhs.value.lower;
+    uint64_t carry = (result.value.lower < lhs.value.lower) ? 1 : 0;
+    result.value.upper = lhs.value.upper + rhs.value.upper + carry;
+#endif
+
+    *pLhs = result;
 }
 
 extern "C" DLL_EXPORT StructWithInt128 STDMETHODCALLTYPE AddStructWithInt128(StructWithInt128 lhs, StructWithInt128 rhs)
