@@ -144,6 +144,7 @@ namespace System
 
         private static TimeSpan? _localUtcOffset;
         private static object _localUtcOffsetLock = new();
+        private static Thread? _loadAndroidTZData;
         // Shortcut for TimeZoneInfo.Local.GetUtcOffset
         internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
@@ -153,19 +154,24 @@ namespace System
                 return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
             }
 
-            if (_localUtcOffset == null)
+            if (_localUtcOffset == null && _loadAndroidTZData == null)
             {
                 lock (_localUtcOffsetLock)
                 {
-                    if (_localUtcOffset == null)
+                    if (_localUtcOffset != null)
                     {
-                        Thread loadAndroidTZData = new Thread(() => {
+                        CachedData cachedData = s_cachedData;
+                        return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+                    }
+                    if (_loadAndroidTZData == null)
+                    {
+                        _loadAndroidTZData = new Thread(() => {
                             CachedData cachedData = s_cachedData;
                             _localUtcOffset = cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+                            Thread.Sleep(1000);
                         });
-                        loadAndroidTZData.IsBackground = true;
-                        loadAndroidTZData.Start();
-                        Thread.Sleep(1000);
+                        _loadAndroidTZData.IsBackground = true;
+                        _loadAndroidTZData.Start();
                     }
                 }
             }
