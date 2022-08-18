@@ -8,7 +8,7 @@ include_directories(${CLR_DIR}/gcdump)
 include_directories(${CLR_DIR}/debug/daccess)
 
 set(UNWINDER_SOURCES
-    unwinder.cpp
+    baseunwinder.cpp
 )
 
 # Include platform specific unwinder for applicable (native and cross-target) builds.

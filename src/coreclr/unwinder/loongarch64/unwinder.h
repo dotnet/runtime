@@ -6,7 +6,7 @@
 #ifndef __unwinder_loongarch64__
 #define __unwinder_loongarch64__
 
-#include "../unwinder.h"
+#include "baseunwinder.h"
 
 //---------------------------------------------------------------------------------------
 //

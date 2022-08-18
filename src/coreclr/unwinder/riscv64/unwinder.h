@@ -6,7 +6,7 @@
 #ifndef __unwinder_riscv64__
 #define __unwinder_riscv64__
 
-#include "../unwinder.h"
+#include "baseunwinder.h"
 
 #error "TODO-RISCV64: missing implementation"
 
