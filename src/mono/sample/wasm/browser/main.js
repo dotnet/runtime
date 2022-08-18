@@ -13,6 +13,10 @@ try {
         .withConsoleForwarding()
         .withElementOnExit()
         .withModuleConfig({
+            // This whole 'withModuleConfig' is for demo purposes only.
+            // It is prefered to use specific 'with***' methods instead. 
+            // Only when such method is doesn't exist, fallback to moduleConfig.
+
             configSrc: "./mono-config.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
