@@ -2283,6 +2283,21 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
+                // * Int128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // * UInt128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // The field layout is correct, so field scenarios work, but these should not be passed by value as parameters
+                //
+                // TODO: Contact Jeremy to figure out how to prohibit these types from being used as fields of parameters passed by value
+                if (!IsFieldScenario())
+                {
+                    if (m_pMT == CoreLibBinder::GetClass(CLASS__INT128)
+                        || m_pMT == CoreLibBinder::GetClass(CLASS__UINT128))
+                    {
+                        m_resID = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                        IfFailGoto(E_FAIL, lFail);
+                    }
+                }
+
                 if (!m_pMT->HasLayout())
                 {
                     m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
