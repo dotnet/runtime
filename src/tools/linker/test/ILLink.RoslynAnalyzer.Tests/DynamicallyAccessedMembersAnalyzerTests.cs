@@ -87,6 +87,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
 				.WithSpan (21, 3, 21, 38)
+				.WithSpan (19, 24, 19, 33)
 				.WithArguments ("parameter",
 					"C.NeedsPublicMethodsOnParameter(Type)",
 					"type",
@@ -126,6 +127,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType)
 				.WithSpan (18, 10, 18, 14)
+				.WithSpan (16, 24, 16, 33)
 				.WithArguments ("C.M(Type)",
 					"type",
 					"C.M(Type)",
@@ -166,6 +168,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField)
 				.WithSpan (17, 3, 17, 11)
+				.WithSpan (15, 24, 15, 33)
 				.WithArguments ("C.f",
 					"type",
 					"C.M(Type)",
@@ -203,6 +206,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
 				.WithSpan (16, 3, 16, 24)
+				.WithSpan (14, 24, 14, 33)
 				.WithArguments ("System.Type.GetMethod(String)",
 					"type",
 					"C.M(Type)",
@@ -247,6 +251,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
 				.WithSpan (12, 3, 12, 40)
+				.WithSpan (20, 2, 23, 3)
 				.WithArguments ("type", "C.NeedsPublicMethodsOnParameter(Type)", "C.GetT()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -287,6 +292,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
 				.WithSpan (18, 10, 18, 18)
+				.WithSpan (21, 2, 24, 3)
 				.WithArguments ("C.M()", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -324,6 +330,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField)
 				.WithSpan (12, 3, 12, 10)
+				.WithSpan (15, 2, 18, 3)
 				.WithArguments ("C.f",
 					"C.M()",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
@@ -361,6 +368,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
 				.WithSpan (11, 3, 11, 28)
+				.WithSpan (15, 2, 18, 3)
 				.WithArguments ("System.Type.GetMethod(String)", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 		#endregion
@@ -399,6 +407,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter)
 				.WithSpan (14, 3, 14, 24)
+				.WithSpan (10, 22, 10, 37)
 				.WithArguments ("type",
 					"C.NeedsPublicMethods(Type)",
 					"C.f",
@@ -439,6 +448,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType)
 				.WithSpan (20, 10, 20, 11)
+				.WithSpan (10, 22, 10, 37)
 				.WithArguments ("C.M()", "C.f",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
@@ -473,6 +483,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField)
 				.WithSpan (17, 3, 17, 10)
+				.WithSpan (10, 22, 10, 38)
 				.WithArguments ("C.f2",
 					"C.f1",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
@@ -506,6 +517,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
 				.WithSpan (13, 3, 13, 21)
+				.WithSpan (9, 22, 9, 37)
 				.WithArguments ("System.Type.GetMethod(String)",
 					"C.f",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
@@ -514,7 +526,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		#region SourceMethod
 
-		static string GetSystemTypeBase ()
+		public static string GetSystemTypeBase ()
 		{
 			return $$"""
 // Licensed to the .NET Foundation under one or more agreements.
@@ -740,6 +752,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetParameterWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
 				.WithSpan (198, 4, 198, 12)
+				.WithSpan (196, 3, 199, 4)
 				.WithArguments ("type", "System.C.M2(Type)", "System.C.M1()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -779,6 +792,7 @@ namespace System
 				// (203,4): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'. The return value of method 'System.ConvertsToType.implicit operator Type(ConvertsToType)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
 				.WithSpan (203, 4, 203, 28)
+				.WithSpan (191, 3, 191, 89)
 				.WithArguments ("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -891,6 +905,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodReturnTypeWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
 				.WithSpan (200, 11, 200, 15)
+				.WithSpan (196, 3, 201, 4)
 				.WithArguments ("System.C.M()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -925,6 +940,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetFieldWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField)
 				.WithSpan (198, 4, 198, 12)
+				.WithSpan (196, 3, 199, 4)
 				.WithArguments ("System.C.f",
 					"System.C.M()",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
@@ -957,6 +973,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter)
 				.WithSpan (198, 4, 198, 21)
+				.WithSpan (196, 3, 199, 4)
 				.WithArguments ("System.Type.GetMethods()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 		#endregion
@@ -993,6 +1010,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter)
 				.WithSpan (18, 3, 18, 16)
+				.WithSpan (16, 25, 16, 26)
 				.WithArguments ("type", "C.M1(Type)", "T", "C.M2<T>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -1024,6 +1042,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType)
 				.WithSpan (14, 10, 14, 19)
+				.WithSpan (12, 24, 12, 25)
 				.WithArguments ("C.M<T>()", "T", "C.M<T>()", "'DynamicallyAccessedMemberTypes.PublicConstructors'"));
 		}
 
@@ -1057,6 +1076,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField)
 				.WithSpan (16, 3, 16, 16)
+				.WithSpan (14, 24, 14, 25)
 				.WithArguments ("C.f",
 					"T",
 					"C.M<T>()",
@@ -1093,6 +1113,7 @@ namespace System
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetGenericParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
 				.WithSpan (16, 3, 16, 8)
+				.WithSpan (14, 25, 14, 26)
 				.WithArguments ("T", "C.M1<T>()", "S", "C.M2<S>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 

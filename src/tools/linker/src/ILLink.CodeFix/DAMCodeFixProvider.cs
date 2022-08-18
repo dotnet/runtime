@@ -13,7 +13,6 @@ using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Simplification;
@@ -25,9 +24,39 @@ namespace ILLink.CodeFix
 	{
 		private static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
-			return ImmutableArray.Create (
-				DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter),
-				DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter));
+			// Commented-out are currently unsupported Generic Parameter DiagnosticIDs
+			var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor> ();
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides));
+			// diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides));
+
+			return diagDescriptorsArrayBuilder.ToImmutable ();
 		}
 
 		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => GetSupportedDiagnostics ();
@@ -38,18 +67,22 @@ namespace ILLink.CodeFix
 
 		private static string FullyQualifiedAttributeName => DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute;
 
-		private static SyntaxNode[] GetAttributeArguments (ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic)
-		{
-			object id = Enum.Parse (typeof (DiagnosticId), diagnostic.Id.Substring (2));
-			switch (id) {
-			case DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter:
-				return new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.TypedConstantExpression (targetSymbol.GetAttributes ().First (attr => attr.AttributeClass?.ToDisplayString () == DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute).ConstructorArguments[0])) };
-			case DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter:
-				return new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.TypedConstantExpression (targetSymbol.GetAttributes ().First (attr => attr.AttributeClass?.ToDisplayString () == DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute).ConstructorArguments[0])) };
-			default:
-				return Array.Empty<SyntaxNode> ();
-			}
-		}
+		private static readonly string[] AttributeOnReturn = {
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter.AsString (),
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType.AsString() ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField.AsString (),
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter.AsString () ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides.AsString ()
+		};
+
+		private static readonly string[] AttributeOnGeneric = {
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter.AsString(),
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType.AsString () ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField.AsString(),
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter.AsString(),
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter.AsString(),
+			DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides.AsString()
+		};
 
 		public sealed override FixAllProvider GetFixAllProvider ()
 		{
@@ -63,55 +96,32 @@ namespace ILLink.CodeFix
 			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
 				return;
 			var diagnostic = context.Diagnostics[0];
-			SyntaxNode diagnosticNode = root.FindNode (diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
-			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
+			if (diagnostic.AdditionalLocations.Count == 0)
 				return;
-			// Note: We get the target symbol from the diagnostic location. 
-			// This works when the diagnostic location is a method call, because the target symbol will be the called method with annotations, but won't work in general for other kinds of diagnostics.
-			if (model.GetSymbolInfo (diagnosticNode).Symbol is not { } targetSymbol)
+			if (root.FindNode (diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode attributableNode)
+				return;
+			// currently not supporting multiple DAM argument, hence the check for commas in the string arguments
+			if (diagnostic.Properties[DynamicallyAccessedMembersAnalyzer.attributeArgument] is not string stringArgs || stringArgs.Contains (","))
+				return;
+
+			var syntaxGenerator = SyntaxGenerator.GetGenerator (document);
+			var attributeArguments = new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.MemberAccessExpression (syntaxGenerator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArgs)) };
+			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
 				return;
 			if (model.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
 				return;
-
-			if (diagnosticNode is not InvocationExpressionSyntax invocationExpression)
-				return;
-
-			var arguments = invocationExpression.ArgumentList.Arguments;
-
-			if (arguments.Count > 1)
-				return;
-
-			if (arguments.Count == 1) {
-				if (arguments[0].Expression is not LiteralExpressionSyntax literalSyntax
-					|| literalSyntax.Kind () is not SyntaxKind.StringLiteralExpression) {
-					return;
-				}
-			}
-
-			// N.B. May be null for FieldDeclaration, since field declarations can declare multiple variables
-			var attributableSymbol = (invocationExpression.Expression is MemberAccessExpressionSyntax simpleMember
-					&& simpleMember.Expression is IdentifierNameSyntax name) ? model.GetSymbolInfo (name).Symbol : null;
-
-
-			if (attributableSymbol is null)
-				return;
-
-			var attributableNodeList = attributableSymbol.DeclaringSyntaxReferences;
-
-			if (attributableNodeList.Length != 1)
-				return;
-
-			var attributableNode = attributableNodeList[0].GetSyntax ();
-
-			if (attributableNode is null) return;
-
-			var attributeArguments = GetAttributeArguments (targetSymbol, SyntaxGenerator.GetGenerator (document), diagnostic);
 			var codeFixTitle = CodeFixTitle.ToString ();
 
 			context.RegisterCodeFix (CodeAction.Create (
 				title: codeFixTitle,
 				createChangedDocument: ct => AddAttributeAsync (
-					document, attributableNode, attributeArguments, attributeSymbol, ct),
+					document,
+					attributableNode,
+					attributeArguments,
+					attributeSymbol,
+					addAsReturnAttribute: AttributeOnReturn.Contains (diagnostic.Id),
+					addGenericParameterAttribute: AttributeOnGeneric.Contains (diagnostic.Id),
+					ct),
 				equivalenceKey: codeFixTitle), diagnostic);
 		}
 
@@ -120,6 +130,8 @@ namespace ILLink.CodeFix
 			SyntaxNode targetNode,
 			SyntaxNode[] attributeArguments,
 			ITypeSymbol attributeSymbol,
+			bool addAsReturnAttribute,
+			bool addGenericParameterAttribute,
 			CancellationToken cancellationToken)
 		{
 			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
@@ -128,7 +140,17 @@ namespace ILLink.CodeFix
 				generator.TypeExpression (attributeSymbol), attributeArguments)
 				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
 
-			editor.AddAttribute (targetNode, attribute);
+			if (addAsReturnAttribute) {
+				// don't use AddReturnAttribute because it's the same as AddAttribute https://github.com/dotnet/roslyn/pull/63084
+				editor.ReplaceNode (targetNode, (d, g) => g.AddReturnAttributes (d, new[] { attribute }));
+			} else if (addGenericParameterAttribute) {
+				// AddReturnAttributes currently doesn't support adding attributes to type arguments https://github.com/dotnet/roslyn/pull/63292
+				var newNode = (TypeParameterSyntax) targetNode;
+				var nodeWithAttribute = newNode.AddAttributeLists ((AttributeListSyntax) attribute);
+				editor.ReplaceNode (targetNode, nodeWithAttribute);
+			} else {
+				editor.AddAttribute (targetNode, attribute);
+			}
 			return editor.GetChangedDocument ();
 		}
 	}
