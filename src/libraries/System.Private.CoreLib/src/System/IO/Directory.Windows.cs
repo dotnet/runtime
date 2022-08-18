@@ -46,7 +46,7 @@ namespace System.IO
                 if (!directoryCreated)
                 {
                     // in the off-chance that the directory already exists, try again
-                    int error = Marshal.GetLastWin32Error();
+                    int error = Marshal.GetLastPInvokeError();
                     if (error == Interop.Errors.ERROR_ALREADY_EXISTS)
                     {
                         builder.Length = initialTempPathLength;
