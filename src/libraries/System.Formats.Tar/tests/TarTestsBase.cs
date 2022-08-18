@@ -409,7 +409,8 @@ namespace System.Formats.Tar.Tests
 
         protected static void AssertFileModeEquals(string path, UnixFileMode mode)
         {
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows &&
+                !PlatformDetection.IsAndroid) // Android may change the requested permissions.)
             {
                 Assert.Equal(mode, File.GetUnixFileMode(path));
             }
