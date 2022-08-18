@@ -179,9 +179,6 @@
     -->
     <TestEnvironment Include="jitstress_random_1" JitStress="random" />
     <TestEnvironment Include="jitstress_random_2" JitStress="random" />
-    <TestEnvironment Include="jitstress_random_3" JitStress="random" />
-    <TestEnvironment Include="jitstress_random_4" JitStress="random" />
-    <TestEnvironment Include="jitstress_random_5" JitStress="random" />
     <TestEnvironment Include="jitelthookenabled" JitELTHookEnabled="1" />
     <TestEnvironment Include="jitelthookenabled_tiered" JitELTHookEnabled="1" TieredCompilation="1" />
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
