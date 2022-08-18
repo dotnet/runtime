@@ -72,12 +72,12 @@ namespace Microsoft.Interop.JavaScript
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
-                case ITypeSymbol when fullTypeName == "global.System.DateTimeOffset":
+                case ITypeSymbol when fullTypeName == "global::System.DateTimeOffset":
                     return new JSSimpleTypeInfo(KnownManagedType.DateTimeOffset)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
                     };
-                case ITypeSymbol when fullTypeName == "global.System.Exception":
+                case ITypeSymbol when fullTypeName == "global::System.Exception":
                     return new JSSimpleTypeInfo(KnownManagedType.Exception)
                     {
                         Syntax = SyntaxFactory.ParseTypeName(fullTypeName.Trim())
