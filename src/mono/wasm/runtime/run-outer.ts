@@ -220,13 +220,17 @@ class HostBuilder implements DotnetHostBuilder {
     
     withApplicationArgumentsFromQuery(): DotnetHostBuilder {
         try {
-            if (typeof globalThis.URLSearchParams != "undefined") {
-                const params = new URLSearchParams(window.location.search);
-                const values = params.getAll("arg");
-                return this.withApplicationArguments(...values);
+            if (!globalThis.window) {
+                throw new Error("Missing window to the query parameters from");
             }
-            
-            throw new Error("URLSearchParams is supported");
+
+            if (typeof globalThis.URLSearchParams == "undefined") {
+                throw new Error("URLSearchParams is supported");
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const values = params.getAll("arg");
+            return this.withApplicationArguments(...values);
         } catch (err) {
             mono_exit(1, err);
             throw err;
