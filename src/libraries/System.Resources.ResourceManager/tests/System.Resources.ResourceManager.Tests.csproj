@@ -63,6 +63,9 @@
     <!--Reference to System.Resources.Extensions is required in order to be able to embed a resource that requires a custom reader-->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Extensions\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Drawing.EnableUnixSupport" Value="true" />
+  </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221
     Workaround this for now by invoking the desktop resgen.exe on Windows manually to regenerate the resource files.
