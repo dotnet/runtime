@@ -2723,7 +2723,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         {
             return
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                !Compiler::varTypeNeedsPartialCalleeSave(physRegRecord->registerType) &&
+                !Compiler::varTypeNeedsPartialCalleeSave(physRegRecord->assignedInterval->registerType) &&
 #endif
                 GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
         }
