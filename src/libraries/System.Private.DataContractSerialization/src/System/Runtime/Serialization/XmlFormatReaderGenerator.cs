@@ -31,18 +31,21 @@ namespace System.Runtime.Serialization
             _helper = new CriticalHelper();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
         {
             return _helper.GenerateClassReader(classContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
         {
             return _helper.GenerateCollectionReader(collectionContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
         {
@@ -65,12 +68,14 @@ namespace System.Runtime.Serialization
             private ArgBuilder _memberNamespacesArg = null!; // initialized in InitArgs
             private ArgBuilder? _collectionContractArg;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static XmlFormatClassReaderDelegate CreateReflectionXmlClassReader(ClassDataContract classContract)
             {
                 return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public XmlFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
@@ -155,12 +160,14 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadCollection;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public XmlFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
             {
@@ -178,12 +185,14 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public XmlFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
@@ -199,6 +208,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private CodeGenerator GenerateCollectionReaderHelper(CollectionDataContract collectionContract, bool isGetOnlyCollection)
             {
                 _ilg = new CodeGenerator();
@@ -334,6 +344,7 @@ namespace System.Runtime.Serialization
                 return false;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadClass(ClassDataContract classContract)
             {
@@ -359,6 +370,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal)
             {
@@ -398,6 +410,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private int ReadMembers(ClassDataContract classContract, bool[] requiredMembers, Label[] memberLabels, LocalBuilder memberIndexLocal, LocalBuilder? requiredIndexLocal)
             {
@@ -486,6 +499,7 @@ namespace System.Runtime.Serialization
                 _ilg.Call(ctor);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder ReadValue(Type type, string name, string ns)
             {
@@ -597,6 +611,7 @@ namespace System.Runtime.Serialization
                 _ilg.Stloc(value);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void WrapNullableObject(LocalBuilder innerValue, LocalBuilder outerValue, int nullables)
             {
@@ -613,6 +628,7 @@ namespace System.Runtime.Serialization
             }
 
             [MemberNotNull(nameof(_objectLocal))]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadCollection(CollectionDataContract collectionContract)
             {
@@ -754,6 +770,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadGetOnlyCollection(CollectionDataContract collectionContract)
             {
@@ -817,6 +834,7 @@ namespace System.Runtime.Serialization
                 _ilg.EndIf();
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private bool TryReadPrimitiveArray(Type type, Type itemType, LocalBuilder size)
             {
@@ -867,6 +885,7 @@ namespace System.Runtime.Serialization
                 return false;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder ReadCollectionItem(CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs)
             {
@@ -889,6 +908,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void StoreCollectionValue(LocalBuilder collection, LocalBuilder value, CollectionDataContract collectionContract)
             {

@@ -421,6 +421,6 @@
     <value>[Base]</value>
   </data>
   <data name="DistributedNotSupportOn32Bits" xml:space="preserve">
-    <value>Distributed transactions are currently unsupported on 32-bit version of the .NET runtime.</value>
+    <value>Distributed transactions are currently unsupported in 32-bit processes.</value>
   </data>
 </root>

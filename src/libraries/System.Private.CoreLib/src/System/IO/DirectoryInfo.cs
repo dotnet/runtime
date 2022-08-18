@@ -34,13 +34,28 @@ namespace System.IO
             fullPath ??= originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
-            _name = fileName ?? (PathInternal.IsRoot(fullPath.AsSpan()) ?
-                    fullPath.AsSpan() :
-                    Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
+            _name = fileName;
 
             FullPath = fullPath;
 
             _isNormalized = isNormalized;
+        }
+
+        public override string Name
+        {
+            get
+            {
+                string? name = _name;
+                if (name is null)
+                {
+                    ReadOnlySpan<char> fullPath = FullPath.AsSpan();
+                    _name = name = (PathInternal.IsRoot(fullPath) ?
+                        fullPath :
+                        Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath))).ToString();
+                }
+
+                return name;
+            }
         }
 
         public DirectoryInfo? Parent

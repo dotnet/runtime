@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IExponentialFunctions<TSelf>
         : IFloatingPointConstants<TSelf>
-        where TSelf : IExponentialFunctions<TSelf>
+        where TSelf : IExponentialFunctions<TSelf>?
     {
         /// <summary>Computes <c>E</c> raised to a given power.</summary>
         /// <param name="x">The power to which <c>E</c> is raised.</param>
