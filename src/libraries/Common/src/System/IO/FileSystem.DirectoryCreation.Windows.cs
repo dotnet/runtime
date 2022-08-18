@@ -88,10 +88,10 @@ namespace System.IO
                     string name = stackDir[stackDir.Count - 1];
                     stackDir.RemoveAt(stackDir.Count - 1);
 
-                    r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
+                    r = Interop.Kernel32.CreateDirectory(name, &secAttrs);
                     if (!r && (firstError == 0))
                     {
-                        int currentError = Marshal.GetLastWin32Error();
+                        int currentError = Marshal.GetLastPInvokeError();
                         // While we tried to avoid creating directories that don't
                         // exist above, there are at least two cases that will
                         // cause us to see ERROR_ALREADY_EXISTS here.  FileExists

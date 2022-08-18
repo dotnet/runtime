@@ -46,5 +46,6 @@ internal static partial class Interop
         internal const string MsQuic = "msquic.dll";
         internal const string HostPolicy = "hostpolicy.dll";
         internal const string Ucrtbase = "ucrtbase.dll";
+        internal const string Xolehlp = "xolehlp.dll";
     }
 }

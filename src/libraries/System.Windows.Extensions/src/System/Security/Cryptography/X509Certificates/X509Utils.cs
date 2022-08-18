@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
             {
-                Exception e = new CryptographicException(Marshal.GetLastWin32Error());
+                Exception e = new CryptographicException(Marshal.GetLastPInvokeError());
                 safeCertStoreHandle?.Dispose();
                 throw e;
             }
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates
                         Interop.Crypt32.CERT_STORE_ADD_ALWAYS,
                         SafeCertContextHandle.InvalidHandle))
                     {
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
+                        throw new CryptographicException(Marshal.GetLastPInvokeError());
                     }
                 }
             }

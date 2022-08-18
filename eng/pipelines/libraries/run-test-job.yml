@@ -90,7 +90,7 @@ jobs:
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
-                    -subset host+libs.pretest
+                    -subset host.native+libs.pretest
                     $(_buildArguments)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
@@ -133,6 +133,10 @@ jobs:
               - jitstress2_tiered
               - zapdisable
               - tailcallstress
+            ${{ if in(parameters.coreclrTestGroup, 'jitstress-random') }}:
+              scenarios:
+              - jitstress_random_1
+              - jitstress_random_2
             ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
               scenarios:
               - jitstressregs1

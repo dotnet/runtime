@@ -58,6 +58,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "emit.h"
 
+// Forward declaration
+template <class T>
+inline var_types genActualType(T value);
+
 #include "hwintrinsic.h"
 #include "simd.h"
 #include "simdashwintrinsic.h"
@@ -6035,6 +6039,10 @@ protected:
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
 
+    // During global assertion prop, returns the conservative normal VN for a tree;
+    // otherwise returns NoVN
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
     // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and
@@ -7102,6 +7110,31 @@ public:
             return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT);
         }
 
+        bool CanPropLclVar()
+        {
+            return assertionKind == OAK_EQUAL && op1.kind == O1K_LCLVAR;
+        }
+
+        bool CanPropEqualOrNotEqual()
+        {
+            return assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL;
+        }
+
+        bool CanPropNonNull()
+        {
+            return assertionKind == OAK_NOT_EQUAL && op2.vn == ValueNumStore::VNForNull();
+        }
+
+        bool CanPropBndsCheck()
+        {
+            return op1.kind == O1K_ARR_BND;
+        }
+
+        bool CanPropSubRange()
+        {
+            return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
+        }
+
         static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)
         {
             return a1->assertionKind == a2->assertionKind && a1->op1.kind == a2->op1.kind &&
@@ -7223,6 +7256,11 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    bool           optCanPropLclVar;
+    bool           optCanPropEqual;
+    bool           optCanPropNonNull;
+    bool           optCanPropBndsChk;
+    bool           optCanPropSubRange;
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
@@ -9170,6 +9208,9 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
+        bool disAsm;      // Display native code as it is generated
+        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
+        bool disDiffable; // Makes the Disassembly code 'diff-able'
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9179,19 +9220,16 @@ public:
         bool dspLines;                 // Display source-code lines intermixed with native code output
         bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
-        bool disAsm;                   // Display native code as it is generated
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
-        bool disDiffable;              // Makes the Disassembly code 'diff-able'
         bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAlignment;             // Display alignment boundaries in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
-        bool dspDiffable;     // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool compLongAddress; // Force using large pseudo instructions for long address
-                              // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
-        bool dspGCtbls;       // Display the GC tables
+        bool compLongAddress;          // Force using large pseudo instructions for long address
+                                       // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
+        bool dspGCtbls;                // Display the GC tables
 #endif
 
         bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
@@ -9296,9 +9334,7 @@ public:
 
     static bool       s_pJitFunctionFileInitialized;
     static MethodSet* s_pJitMethodSet;
-#endif // DEBUG
 
-#ifdef DEBUG
 // silence warning of cast to greater size. It is easier to silence than construct code the compiler is happy with, and
 // it is safe in this case
 #pragma warning(push)
@@ -9316,6 +9352,24 @@ public:
         return (o == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
     }
 #pragma warning(pop)
+#else
+#pragma warning(push)
+#pragma warning(disable : 4312)
+    template <typename T>
+    T dspPtr(T p)
+    {
+        return p;
+    }
+
+    template <typename T>
+    T dspOffset(T o)
+    {
+        return o;
+    }
+#pragma warning(pop)
+#endif
+
+#ifdef DEBUG
 
     static int dspTreeID(GenTree* tree)
     {
@@ -9788,11 +9842,11 @@ private:
 
 public:
 #ifdef DEBUG
-    LONG     compMethodID;
     unsigned compGenTreeID;
     unsigned compStatementID;
     unsigned compBasicBlockID;
 #endif
+    LONG compMethodID;
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process
@@ -10000,12 +10054,12 @@ public:
 
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName compVarName(regNumber reg, bool isFloatReg = false);
-    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
-    const char* compRegNameForSize(regNumber reg, size_t size);
     const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG
+    const char* compRegNameForSize(regNumber reg, size_t size);
+    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
 
     //-------------------------------------------------------------------------
 
@@ -10986,6 +11040,28 @@ public:
                 }
                 break;
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+            case GT_SELECT:
+            {
+                GenTreeConditional* const conditional = node->AsConditional();
+
+                result = WalkTree(&conditional->gtCond, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp1, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp2, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
 
             // Binary nodes
             default:

@@ -312,6 +312,121 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static ulong TrailingZeroCount(ulong value) => (ulong)BitOperations.TrailingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<ulong>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out ulong value)
+        {
+            ulong result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(ulong)) && (source[..^sizeof(ulong)].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(ulong))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(ulong));
+
+                    // We have at least 8 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<ulong>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 7 bytes, so construct the relevant value directly
+                    // since the data is in Big Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<ulong>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out ulong value)
+        {
+            ulong result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[^1]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(ulong)) && (source[sizeof(ulong)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(ulong))
+                {
+                    // We have at least 8 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<ulong>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 7 bytes, so construct the relevant value directly
+                    // since the data is in Little Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part, then reverse endianness to
+                    // ensure the order is correct. This is more efficient than iterating in reverse
+                    // due to current JIT limitations
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        ulong part = Unsafe.Add(ref sourceRef, i);
+                        part <<= (i * 8);
+                        result |= part;
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<ulong>.GetShortestBitLength() => (sizeof(ulong) * 8) - BitOperations.LeadingZeroCount(m_value);
 
@@ -833,7 +948,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -900,14 +1015,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -974,14 +1089,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1048,7 +1163,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

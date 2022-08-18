@@ -311,7 +311,7 @@ namespace System.Management
             if (hModule == IntPtr.Zero)
             {
                 // This is unlikely, so having the TypeInitializationException wrapping it is fine.
-                throw new Win32Exception(Marshal.GetLastWin32Error(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
+                throw new Win32Exception(Marshal.GetLastPInvokeError(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
             }
 
             if (LoadDelegate(ref ResetSecurity_f, hModule, "ResetSecurity") &&

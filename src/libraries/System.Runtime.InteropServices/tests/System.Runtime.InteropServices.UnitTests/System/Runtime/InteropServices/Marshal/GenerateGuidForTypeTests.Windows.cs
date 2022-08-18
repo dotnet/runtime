@@ -8,10 +8,16 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GenerateGuidForTypeTests
     {
+        private const string GuidStr = "708DDB5E-09B1-4550-A5D9-9D7DE2771C10";
+
+        [ComImport]
+        [Guid(GuidStr)]
+        private class DummyObject { }
+
         [Fact]
         public void GenerateGuidForType_ComObject_ReturnsComGuid()
         {
-            Assert.Equal(new Guid("927971f5-0939-11d1-8be1-00c04fd8d503"), Marshal.GenerateGuidForType(typeof(ComImportObject)));
+            Assert.Equal(new Guid(GuidStr), Marshal.GenerateGuidForType(typeof(DummyObject)));
         }
     }
 }

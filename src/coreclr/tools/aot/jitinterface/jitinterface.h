@@ -114,6 +114,7 @@ struct JitInterfaceCallbacks
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod (* getArgType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
+    int (* getExactClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
     JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
@@ -1199,6 +1200,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CorInfoTypeWithMod temp = _callbacks->getArgType(_thisHandle, &pException, sig, args, vcTypeRet);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual int getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    int temp = _callbacks->getExactClasses(_thisHandle, &pException, baseType, maxExactClasses, exactClsRet);
     if (pException != nullptr) throw pException;
     return temp;
 }

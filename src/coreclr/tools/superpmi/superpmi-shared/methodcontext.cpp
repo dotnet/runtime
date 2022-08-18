@@ -2703,6 +2703,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
+}
+
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)

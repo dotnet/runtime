@@ -659,7 +659,7 @@ namespace System.Numerics.Tests
             VerifyBigIntegerUsingIdentities(bigInteger, 0 == expectedValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/37093
+        [Fact]
         public static void RunCtorByteArrayTests()
         {
             ulong tempUInt64;

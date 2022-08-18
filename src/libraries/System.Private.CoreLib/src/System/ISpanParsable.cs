@@ -8,7 +8,7 @@ namespace System
     /// <summary>Defines a mechanism for parsing a span of characters to a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface ISpanParsable<TSelf> : IParsable<TSelf>
-        where TSelf : ISpanParsable<TSelf>
+        where TSelf : ISpanParsable<TSelf>?
     {
         /// <summary>Parses a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>

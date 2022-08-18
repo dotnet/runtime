@@ -231,7 +231,7 @@ Return Value:
         // Restore X0-X17, and D0-D7
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, X);
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __GNUC__
@@ -242,20 +242,20 @@ Return Value:
             SourceAddress += sizeof(ULONG_PTR);
         }
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, VfpState);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, VfpState);
         VfpStateAddress = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
         if (VfpStateAddress != 0) {
 
-            SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpcr);
+            SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, Fpcr);
             Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-            SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpsr);
+            SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, Fpsr);
             Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             if (Fpcr != (ULONG)-1 && Fpsr != (ULONG)-1) {
 
                 ContextRecord->Fpcr = Fpcr;
                 ContextRecord->Fpsr = Fpsr;
 
-                SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, V);
+                SourceAddress = VfpStateAddress + offsetof(KARM64_VFP_STATE, V);
                 for (RegIndex = 0; RegIndex < 32; RegIndex++) {
                     UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
                     ContextRecord->V[RegIndex].Low = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -269,19 +269,19 @@ Return Value:
         // Restore R11, R12, SP, LR, PC, and the status registers
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Spsr);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Spsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Sp);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Lr);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Fp);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Pc);
+        SourceAddress = StartingSp + offsetof(ARM64_KTRAP_FRAME, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
         //
@@ -311,7 +311,7 @@ Return Value:
         // Restore X0-X28, and D0-D31
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X0);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, X0);
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __GNUC__
@@ -322,7 +322,7 @@ Return Value:
             SourceAddress += sizeof(ULONG_PTR);
         }
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, V);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, V);
         for (RegIndex = 0; RegIndex < 32; RegIndex++) {
             UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
             ContextRecord->V[RegIndex].Low = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -334,32 +334,32 @@ Return Value:
         // Restore SP, LR, PC, and the status registers
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Cpsr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Cpsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fp);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Lr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Sp);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Pc);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpcr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fpcr);
         ContextRecord->Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpsr);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fpsr);
         ContextRecord->Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
         //
         // Inherit the unwound-to-call flag from this context
         //
 
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, ContextFlags);
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, ContextFlags);
         ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
         ContextRecord->ContextFlags |=
                         MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
