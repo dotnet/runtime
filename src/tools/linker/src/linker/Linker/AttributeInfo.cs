@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -11,9 +13,23 @@ namespace Mono.Linker
 	{
 		public Dictionary<ICustomAttributeProvider, CustomAttribute[]> CustomAttributes { get; }
 
+		public Dictionary<CustomAttribute, MessageOrigin> CustomAttributesOrigins { get; }
+
 		public AttributeInfo ()
 		{
 			CustomAttributes = new Dictionary<ICustomAttributeProvider, CustomAttribute[]> ();
+			CustomAttributesOrigins = new Dictionary<CustomAttribute, MessageOrigin> ();
+		}
+
+		public void AddCustomAttributes (ICustomAttributeProvider provider, CustomAttribute[] customAttributes, MessageOrigin[] origins)
+		{
+			Debug.Assert (customAttributes.Length == origins.Length);
+
+			AddCustomAttributes (provider, customAttributes);
+
+			foreach (var (customAttribute, origin) in customAttributes.Zip (origins)) {
+				CustomAttributesOrigins.Add (customAttribute, origin);
+			}
 		}
 
 		public void AddCustomAttributes (ICustomAttributeProvider provider, CustomAttribute[] customAttributes)

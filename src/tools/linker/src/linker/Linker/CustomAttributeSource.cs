@@ -73,6 +73,17 @@ namespace Mono.Linker
 			}
 		}
 
+		public bool TryGetCustomAttributeOrigin (ICustomAttributeProvider provider, CustomAttribute customAttribute, out MessageOrigin origin)
+		{
+			if (PrimaryAttributeInfo.CustomAttributesOrigins.TryGetValue (customAttribute, out origin))
+				return true;
+
+			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
+				return false;
+
+			return embeddedXml.CustomAttributesOrigins.TryGetValue (customAttribute, out origin);
+		}
+
 		public bool HasAny (ICustomAttributeProvider provider)
 		{
 			if (provider.HasCustomAttributes)

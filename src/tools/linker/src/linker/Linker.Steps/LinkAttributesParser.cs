@@ -38,9 +38,10 @@ namespace Mono.Linker.Steps
 
 		static bool IsRemoveAttributeInstances (string attributeName) => attributeName == "RemoveAttributeInstances" || attributeName == "RemoveAttributeInstancesAttribute";
 
-		CustomAttribute[]? ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider)
+		(CustomAttribute[]? customAttributes, MessageOrigin[]? origins) ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider)
 		{
-			var builder = new ArrayBuilder<CustomAttribute> ();
+			var customAttributesBuilder = new ArrayBuilder<CustomAttribute> ();
+			var originsBuilder = new ArrayBuilder<MessageOrigin> ();
 			foreach (XPathNavigator attributeNav in nav.SelectChildren ("attribute", string.Empty)) {
 				if (!ShouldProcessElement (attributeNav))
 					continue;
@@ -74,11 +75,12 @@ namespace Mono.Linker.Steps
 				CustomAttribute? customAttribute = CreateCustomAttribute (attributeNav, attributeType);
 				if (customAttribute != null) {
 					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'.");
-					builder.Add (customAttribute);
+					customAttributesBuilder.Add (customAttribute);
+					originsBuilder.Add (GetMessageOriginForPosition (attributeNav));
 				}
 			}
 
-			return builder.ToArray ();
+			return (customAttributesBuilder.ToArray (), originsBuilder.ToArray ());
 
 			static string FormatCustomAttribute (CustomAttribute ca)
 			{
@@ -491,14 +493,14 @@ namespace Mono.Linker.Steps
 		{
 			Debug.Assert (_attributeInfo != null);
 			foreach (XPathNavigator parameterNav in nav.SelectChildren ("parameter", string.Empty)) {
-				var attributes = ProcessAttributes (parameterNav, method);
-				if (attributes != null) {
+				var (attributes, origins) = ProcessAttributes (parameterNav, method);
+				if (attributes != null && origins != null) {
 					string paramName = GetAttribute (parameterNav, "name");
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
 							if (parameter.HasCustomAttributes || _attributeInfo.CustomAttributes.ContainsKey (parameter))
 								LogWarning (parameterNav, DiagnosticId.XmlMoreThanOneValyForParameterOfMethod, paramName, method.GetDisplayName ());
-							_attributeInfo.AddCustomAttributes (parameter, attributes);
+							_attributeInfo.AddCustomAttributes (parameter, attributes, origins);
 							break;
 						}
 					}
@@ -572,9 +574,9 @@ namespace Mono.Linker.Steps
 		void PopulateAttributeInfo (ICustomAttributeProvider provider, XPathNavigator nav)
 		{
 			Debug.Assert (_attributeInfo != null);
-			var attributes = ProcessAttributes (nav, provider);
-			if (attributes != null)
-				_attributeInfo.AddCustomAttributes (provider, attributes);
+			var (attributes, origins) = ProcessAttributes (nav, provider);
+			if (attributes != null && origins != null)
+				_attributeInfo.AddCustomAttributes (provider, attributes, origins);
 		}
 	}
 }
