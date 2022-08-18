@@ -2,12 +2,14 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Json.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Xml\ref\System.Runtime.Serialization.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Xml\ref\System.Runtime.Serialization.Xml.csproj" />
   </ItemGroup>
 </Project>

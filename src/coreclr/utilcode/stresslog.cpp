@@ -143,27 +143,32 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
-void AppendPid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength)
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
     // if the string "{pid}" occurs in the logFilename,
     // replace it by the PID of our process
     // only the first occurrence will be replaced
     const WCHAR* pidLit =  W("{pid}");
-    const WCHAR* pidPtr = wcsstr(logFilename, pidLit);
+    const WCHAR* pidPtr = wcsstr(original, pidLit);
     if (pidPtr != nullptr)
     {
         // copy the file name up to the "{pid}" occurrence
-        ptrdiff_t pidInx = pidPtr - logFilename;
-        wcsncpy_s(fileName, fileNameLength, logFilename, pidInx);
+        ptrdiff_t pidInx = pidPtr - original;
+        wcsncpy_s(replaced, replacedLength, original, pidInx);
 
         // append the string representation of the PID
         DWORD pid = GetCurrentProcessId();
         WCHAR pidStr[20];
         _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
-        wcscat_s(fileName, fileNameLength, pidStr);
+        wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
-        wcscat_s(fileName, fileNameLength, logFilename + pidInx + wcslen(pidLit));
+        wcscat_s(replaced, replacedLength, original + pidInx + wcslen(pidLit));
+    }
+    else
+    {
+        size_t originalLength = wcslen(original);
+        wcsncpy_s(replaced, replacedLength, original, originalLength);
     }
 }
 
@@ -175,10 +180,10 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
         return nullptr;
     }
 
-    WCHAR fileName[MAX_PATH];
-    AppendPid(logFilename, fileName, MAX_PATH);
+    WCHAR logFilenameReplaced[MAX_PATH];
+    ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(fileName,
+    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor

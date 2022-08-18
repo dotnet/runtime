@@ -127,13 +127,11 @@
     <Compile Include="System\Xml\XmlNameTable.cs" />
     <Compile Include="System\Xml\XmlNodeOrder.cs" />
     <Compile Include="System\Xml\XmlNodeType.cs" />
-    <Compile Include="System\Xml\XmlNullResolver.cs" />
     <Compile Include="System\Xml\XmlQualifiedName.cs" />
     <Compile Include="System\Xml\XmlReservedNs.cs" />
     <Compile Include="System\Xml\XmlResolver.cs" />
-    <Compile Include="System\Xml\XmlResolverAsync.cs" />
+    <Compile Include="System\Xml\XmlResolver.ThrowingResolver.cs" />
     <Compile Include="System\Xml\XmlSecureResolver.cs" />
-    <Compile Include="System\Xml\XmlSecureResolverAsync.cs" />
     <Compile Include="System\Xml\XmlUrlResolver.cs" />
     <Compile Include="System\Xml\XmlUrlResolverAsync.cs" />
     <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
@@ -748,6 +746,7 @@
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs" Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

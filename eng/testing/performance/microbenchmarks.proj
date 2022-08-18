@@ -131,12 +131,13 @@
     <HelixWorkItem Include="@(Partition)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
-      <Command>
-        if [ "x$PERF_PREREQS_INSTALLED" = "x1" ]; then
-          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)";
+      <Command Condition="'$(AGENT_OS)' != 'Windows_NT'">
+        if [ "x$PERF_PREREQS_INSTALL_FAILED" = "x1" ]; then
+          echo "\n\n** Error: Failed to install prerequisites **\n\n"; (exit 1);
         else
-          echo "\n\n** Error: Failed to install prerequisites **\n\n"; export _commandExitCode=1;
+          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)";
         fi</Command>
+      <Command Condition="'$(AGENT_OS)' == 'Windows_NT'">$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
       <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
@@ -146,12 +147,13 @@
     <HelixWorkItem Include="$(BuildConfig).WorkItem">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
-      <Command>
-        if [ "x$PERF_PREREQS_INSTALLED" = "x1" ]; then
-          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)";
+      <Command Condition="'$(AGENT_OS)' != 'Windows_NT'">
+        if [ "x$PERF_PREREQS_INSTALL_FAILED" = "x1" ]; then
+          echo "\n\n** Error: Failed to install prerequisites **\n\n"; (exit 1);
         else
-          echo "\n\n** Error: Failed to install prerequisites **\n\n"; export _commandExitCode=1;
+          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)";
         fi</Command>
+      <Command Condition="'$(AGENT_OS)' == 'Windows_NT'">$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
       <Timeout>4:00</Timeout>
     </HelixWorkItem>

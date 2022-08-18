@@ -61,11 +61,7 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.UInts);
             RunAsRootTypeTest(JsonNumberTestData.ULongs);
             RunAsRootTypeTest(JsonNumberTestData.Floats);
-            // https://github.com/dotnet/runtime/issues/72862
-            if (!PlatformDetection.IsAndroidX86)
-            {
-                RunAsRootTypeTest(JsonNumberTestData.Doubles);
-            }
+            RunAsRootTypeTest(JsonNumberTestData.Doubles);
             RunAsRootTypeTest(JsonNumberTestData.Decimals);
             RunAsRootTypeTest(JsonNumberTestData.NullableBytes);
             RunAsRootTypeTest(JsonNumberTestData.NullableSBytes);
@@ -76,11 +72,7 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.NullableUInts);
             RunAsRootTypeTest(JsonNumberTestData.NullableULongs);
             RunAsRootTypeTest(JsonNumberTestData.NullableFloats);
-            // https://github.com/dotnet/runtime/issues/72862
-            if (!PlatformDetection.IsAndroidX86)
-            {
-                RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
-            }
+            RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
             RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
         }
 
@@ -97,15 +89,6 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
-            // Added float case for x86 android due to nan conversion in below switch
-            // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
-#if NETCOREAPP
-            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && Type.GetTypeCode(typeof(T)) == TypeCode.Single)
-            {
-                return Convert.ToSingle(number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
-            }
-#endif
-
             return number switch
             {
                 double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
@@ -388,11 +371,7 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.UInts);
             RunAsCollectionElementTest(JsonNumberTestData.ULongs);
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
-            // https://github.com/dotnet/runtime/issues/72862
-            if (!PlatformDetection.IsAndroidX86)
-            {
-                RunAsCollectionElementTest(JsonNumberTestData.Doubles);
-            }
+            RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
 
             // https://github.com/dotnet/runtime/issues/66220
@@ -407,11 +386,7 @@ namespace System.Text.Json.Serialization.Tests
                 RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-                // https://github.com/dotnet/runtime/issues/72862
-                if (!PlatformDetection.IsAndroidX86)
-                {
-                    RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
-                }
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
             }
         }
@@ -637,11 +612,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
             RunAllDictionariessRoundTripTest(JsonNumberTestData.Floats);
-            // https://github.com/dotnet/runtime/issues/72862
-            if (!PlatformDetection.IsAndroidX86)
-            {
-                RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
-            }
+            RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
         }
 
         private static void RunAllDictionariessRoundTripTest<T>(List<T> numbers)

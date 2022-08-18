@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class ExpressionResolverBuilder : CallSiteVisitor<object?, Expression>
     {
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));

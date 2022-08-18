@@ -25,18 +25,25 @@ namespace System.Runtime.Serialization.Json
 {
     public sealed partial class DataContractJsonSerializer : System.Runtime.Serialization.XmlObjectSerializer
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Runtime.Serialization.Json.DataContractJsonSerializerSettings? settings) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, string? rootName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, string? rootName, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString? rootName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString? rootName, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
         public System.Runtime.Serialization.DateTimeFormat? DateTimeFormat { get { throw null; } }
@@ -46,36 +53,54 @@ namespace System.Runtime.Serialization.Json
         public int MaxItemsInObjectGraph { get { throw null; } }
         public bool SerializeReadOnlyTypes { get { throw null; } }
         public bool UseSimpleDictionaryFormat { get { throw null; } }
+        public System.Runtime.Serialization.ISerializationSurrogateProvider? GetSerializationSurrogateProvider() { throw null; }
+        public void SetSerializationSurrogateProvider(System.Runtime.Serialization.ISerializationSurrogateProvider? provider) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override bool IsStartObject(System.Xml.XmlReader reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.IO.Stream stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.Xml.XmlDictionaryReader reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.Xml.XmlReader reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteEndObject(System.Xml.XmlDictionaryWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteEndObject(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObject(System.IO.Stream stream, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObject(System.Xml.XmlDictionaryWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObject(System.Xml.XmlWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObjectContent(System.Xml.XmlWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlWriter writer, object? graph) { }
     }

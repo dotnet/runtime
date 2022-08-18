@@ -9,7 +9,7 @@ namespace System.Numerics
     /// <typeparam name="TResult">The type that is returned as a result of the comparison.</typeparam>
     public interface IComparisonOperators<TSelf, TOther, TResult>
         : IEqualityOperators<TSelf, TOther, TResult>
-        where TSelf : IComparisonOperators<TSelf, TOther, TResult>
+        where TSelf : IComparisonOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Compares two values to determine which is less.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>

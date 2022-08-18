@@ -1216,6 +1216,23 @@ enum bookkeeping_element
     total_bookkeeping_elements
 };
 
+class mark_queue_t
+{
+    static const size_t slot_count = 16;
+    uint8_t* slot_table[slot_count];
+    size_t curr_slot_index;
+
+public:
+    mark_queue_t();
+
+    uint8_t *queue_mark(uint8_t *o);
+    uint8_t *queue_mark(uint8_t *o, int condemned_gen);
+
+    uint8_t* get_next_marked();
+
+    void verify_empty();
+};
+
 //class definition of the internal class
 class gc_heap
 {
@@ -1241,6 +1258,8 @@ class gc_heap
 #endif //defined (WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
 
     friend void PopulateDacVars(GcDacVars *gcDacVars);
+
+    friend class mark_queue_t;
 
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
@@ -2410,6 +2429,9 @@ protected:
     void mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
     PER_HEAP
     void mark_object_simple1 (uint8_t* o, uint8_t* start THREAD_NUMBER_DCL);
+
+    PER_HEAP
+    void drain_mark_queue();
 
 #ifdef MH_SC_MARK
     PER_HEAP
@@ -5131,6 +5153,8 @@ protected:
     PER_HEAP_ISOLATED
     size_t bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
+    PER_HEAP
+    mark_queue_t mark_queue;
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

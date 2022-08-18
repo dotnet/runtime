@@ -1937,6 +1937,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     // It is expected to fail on pre Win8 OSes.
     callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsCallback2, (void **)&m_updateMemCb);
 
+    // QI for optional logging callback that createdump uses
+    callback->QueryInterface(IID_ICLRDataLoggingCallback, (void **)&m_logMessageCb);
+
     EX_TRY
     {
         ClearDumpStats();
@@ -1999,6 +2002,11 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     {
         m_updateMemCb->Release();
         m_updateMemCb = NULL;
+    }
+    if (m_logMessageCb)
+    {
+        m_logMessageCb->Release();
+        m_logMessageCb = NULL;
     }
     m_enumMemCb = NULL;
 

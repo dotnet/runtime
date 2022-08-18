@@ -791,10 +791,7 @@ namespace System.Net.Security.Tests
                 serverChain = _certificates.serverChain;
             }
 
-            // TODO: line below is wrong, but it breaks on Mac, it should be
-            // serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73295")]
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -859,15 +856,19 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
+            // macOS ignores CertificateAuthority
+            // https://github.com/dotnet/runtime/issues/48207
+            StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
             List<SslStream> streams = new List<SslStream>();
-            TestHelper.CleanupCertificates();
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
 
-            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
             {
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
                 store.Open(OpenFlags.ReadWrite);
@@ -875,18 +876,29 @@ namespace System.Net.Security.Tests
                 store.Close();
             }
 
-            using (var chain = new X509Chain())
+            // make sure we can build chain. There may be some race conditions after certs being added to the store.
+            int retries = 10;
+            int delay = 100;
+            while (retries > 0)
             {
-                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.DisableCertificateDownloads = false;
-                bool chainStatus = chain.Build(clientCertificate);
-                // Verify we can construct full chain
-                if (chain.ChainElements.Count < clientChain.Count)
+                using (var chain = new X509Chain())
                 {
-                    throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.DisableCertificateDownloads = true;
+                    bool chainStatus = chain.Build(clientCertificate);
+                    if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
+                    {
+                        break;
+                    }
                 }
+
+                Thread.Sleep(delay);
+                delay *= 2;
+                retries--;
             }
+
+            Assert.NotEqual(0, retries);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -905,7 +917,9 @@ namespace System.Net.Security.Tests
                     _output.WriteLine("received {0}", c.Subject);
                 }
 
-                Assert.Equal(clientChain.Count - 1, chain.ChainPolicy.ExtraStore.Count);
+                // We may get completed chain from OS even if client sent less.
+                // As minimum, it should send more than the leaf cert
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
                 Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
                 return true;
             };
@@ -926,7 +940,7 @@ namespace System.Net.Security.Tests
                 streams.Add(server);
             }
 
-            TestHelper.CleanupCertificates();
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
             {
