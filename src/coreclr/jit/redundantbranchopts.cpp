@@ -284,7 +284,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
             for (const RelopImplicationRule& rule : s_implicationRules)
             {
-                if ((rule.domRelop == domOper) && (rule.treeRelop == treeOper))
+                if ((rule.domRelop == (VNFunc)domOper) && (rule.treeRelop == (VNFunc)treeOper))
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
