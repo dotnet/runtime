@@ -3887,7 +3887,7 @@ _SetMinOpts:
     //
     opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
 #else
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
+    opts.compExpandCallsEarly  = (JitConfig.JitExpandCallsEarly() != 0);
 #endif
 
     fgCanRelocateEHRegions = true;
@@ -5104,7 +5104,28 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-    InterlockedIncrement(&Compiler::jitTotalMethodCompiled);
+    unsigned methodsCompiled = InterlockedIncrement(&Compiler::jitTotalMethodCompiled);
+
+    if (JitConfig.DumpJittedMethods() && !compIsForInlining())
+    {
+#ifdef DEBUG
+        const int BUFSIZE            = 20;
+        char      osrBuffer[BUFSIZE] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+        }
+
+        printf("JIT compiled %4d [%s] %s, ILSize=%u, hash=0x%08x %s%s\n", methodsCompiled, compGetTieringName(),
+               info.compFullName, info.compILCodeSize, info.compMethodHash(), osrBuffer, compGetStressMessage());
+#else
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        printf("JIT compiled %4d [%s] %s:%s, ILSize=%u\n", methodsCompiled, compGetTieringName(), className, methodName,
+               info.compILCodeSize);
+#endif
+    }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -6703,28 +6724,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             goto _Next;
         }
-    }
-
-    if (JitConfig.DumpJittedMethods() && !compIsForInlining())
-    {
-#ifdef DEBUG
-        const int BUFSIZE            = 20;
-        char      osrBuffer[BUFSIZE] = {0};
-        if (opts.IsOSR())
-        {
-            // Tiering name already includes "OSR", we just want the IL offset
-            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
-        }
-
-        printf("JIT Compiling %4d [%s]%s, ILsize=%u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
-               compGetTieringName(), info.compFullName, info.compILCodeSize, info.compMethodHash(), osrBuffer,
-               compGetStressMessage());
-#else
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-        printf("JIT compiling %4d [%s]%s:%s, ILsize=%u\n", Compiler::jitTotalMethodCompiled, compGetTieringName(),
-               className, methodName, info.compILCodeSize);
-#endif
     }
 
 #ifdef DEBUG
