@@ -3887,7 +3887,7 @@ _SetMinOpts:
     //
     opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
 #else
-    opts.compExpandCallsEarly  = (JitConfig.JitExpandCallsEarly() != 0);
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
 #endif
 
     fgCanRelocateEHRegions = true;
@@ -5117,13 +5117,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
         }
 
-        printf("JIT compiled %4d [%s] %s, ILSize=%u, hash=0x%08x %s%s\n", methodsCompiled, compGetTieringName(),
-               info.compFullName, info.compILCodeSize, info.compMethodHash(), osrBuffer, compGetStressMessage());
+        printf("%4d) JIT compiled [%s] %s   ILSize=%u, AsmSize=%u, hash=0x%08x %s%s\n", methodsCompiled,
+               compGetTieringName(), info.compFullName, info.compILCodeSize, *methodCodeSize, info.compMethodHash(),
+               osrBuffer, compGetStressMessage());
 #else
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-        printf("JIT compiled %4d [%s] %s:%s, ILSize=%u\n", methodsCompiled, compGetTieringName(), className, methodName,
-               info.compILCodeSize);
+        printf("%4d) JIT compiled [%s] %s   ILSize=%u, AsmSize=%u\n", methodsCompiled, compGetTieringName(),
+               eeGetMethodFullName(info.compMethodHnd), info.compILCodeSize, *methodCodeSize);
 #endif
     }
 

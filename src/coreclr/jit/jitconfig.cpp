@@ -214,7 +214,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
                         // Is there a wildcard at the start of the method name?
                         if (m_list[currentName.m_methodNameStart] == WILD_CHAR)
                         {
-                            // i.e. class:foo*, will match any method that starts with "foo"
+                            // i.e. class:*foo, will match any method that ends with "foo"
                             // Remove the leading WILD_CHAR from method name
                             currentName.m_methodNameStart++;
                             currentName.m_methodNameLen--;
@@ -399,8 +399,7 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
 
         // If m_classNameStart is valid, check for a mismatch
         if (className == nullptr || name->m_classNameStart == -1 ||
-            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_methodNameWildcardAtStart,
-                        name->m_classNameWildcardAtEnd, className))
+            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, false, false, className))
         {
             return true;
         }
