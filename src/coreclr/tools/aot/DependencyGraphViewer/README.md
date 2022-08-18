@@ -1,7 +1,7 @@
 # DependencyGraphViewer
 
 ## Why use this tool?
-If you are developing with NativeAOT or using the Linker, you might ask yourself: why are types or methods being kept after trimming? Sometimes, it can be unclear why certain types or methods are retained after a self-contained application is trimmed.
+If you are developing with NativeAOT or using the IL linker, you might ask yourself: why are types or methods being kept after trimming? Sometimes, it can be unclear why certain types or methods are retained after a self-contained application is trimmed.
 
 ## How to build and run
 1. Launch Visual Studio
