@@ -49,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
-            for (int repeat = 0; repeat <= (UseVersion.Major == 3 ? 100 : 1); repeat++)
+            for (int repeat = 0; repeat <= (UseVersion.Major == 3 ? 50 : 1); repeat++)
             {
                 await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
@@ -64,94 +64,127 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static IEnumerable<object[]> LargeSingleHeader_ThrowsException_MemberData()
+        {
+            object[][] options = new[]
+            {
+                new object[] { 1 },
+                new object[] { 2 },
+                new object[] { 15 },
+            };
+
+            var rng = new Random();
+            int count = options.Length * 50;
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return options[rng.Next(options.Length)];
+            }
+        }
+
         [Theory]
-        [InlineData(1)]
-        [InlineData(15)]
+        [MemberData(nameof(LargeSingleHeader_ThrowsException_MemberData))]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            for (int repeat = 0; repeat <= (UseVersion.Major == 3 ? 100 : 1); repeat++)
+            if (UseVersion.Major != 3) return;
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.MaxResponseHeadersLength = maxResponseHeadersLength;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient(handler);
+
+                Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri)).WaitAsync(TestHelper.PassingTestTimeout);
+                if (!IsWinHttpHandler)
+                {
+                    Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                }
+            },
+            async server =>
+            {
+                HttpHeaderData[] headers = new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) };
+
+                try
+                {
+                    await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
+            });
+        }
+
+        public static IEnumerable<object[]> ThresholdExceeded_ThrowsException_MemberData()
+        {
+            object[][] options = new[]
+            {
+                new object[] { null, 63 * 1024 },
+                new object[] { null, 65 * 1024 },
+                new object[] { 1, 100 },
+                new object[] { 1, 1024 },
+                new object[] { 2, 1100 },
+                new object[] { 2, 2048 },
+                new object[] { int.MaxValue / 800, 100 * 1024 },
+            };
+
+            var rng = new Random();
+            int count = options.Length * 50;
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return options[rng.Next(options.Length)];
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThresholdExceeded_ThrowsException_MemberData))]
+        public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
+        {
+            if (UseVersion.Major != 3) return;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
-                handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
-                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                if (maxResponseHeadersLength.HasValue)
                 {
-                    using HttpClient client = CreateHttpClient(handler);
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
 
+                using HttpClient client = CreateHttpClient(handler);
+
+                if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
+                {
+                    await client.GetAsync(uri).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+                else
+                {
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri)).WaitAsync(TestHelper.PassingTestTimeout);
                     if (!IsWinHttpHandler)
                     {
                         Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                     }
-                },
-                async server =>
-                {
-                    HttpHeaderData[] headers = new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) };
-
-                    try
-                    {
-                        await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                });
-            }
-        }
-
-        [Theory]
-        [InlineData(null, 63 * 1024)]
-        [InlineData(null, 65 * 1024)]
-        [InlineData(1, 100)]
-        [InlineData(1, 1024)]
-        [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
-        public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
-        {
-            for (int repeat = 0; repeat <= (UseVersion.Major == 3 ? 100 : 1); repeat++)
+                }
+            },
+            async server =>
             {
-                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                var headers = new List<HttpHeaderData>();
+                for (int i = 0; i <= headersLengthEstimate / 500; i++)
                 {
-                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
+                }
 
-                    if (maxResponseHeadersLength.HasValue)
-                    {
-                        handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
-                    }
-
-                    using HttpClient client = CreateHttpClient(handler);
-
-                    if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
-                    {
-                        await client.GetAsync(uri).WaitAsync(TestHelper.PassingTestTimeout);
-                    }
-                    else
-                    {
-                        Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri)).WaitAsync(TestHelper.PassingTestTimeout);
-                        if (!IsWinHttpHandler)
-                        {
-                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
-                        }
-                    }
-                },
-                async server =>
+                try
                 {
-                    var headers = new List<HttpHeaderData>();
-                    for (int i = 0; i <= headersLengthEstimate / 500; i++)
-                    {
-                        headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
-                    }
-
-                    try
-                    {
-                        await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                });
-            }
+                    await server.HandleRequestAsync(headers: headers).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
+            });
         }
     }
 }

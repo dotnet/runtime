@@ -1246,49 +1246,63 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
 
+        public static IEnumerable<object[]> Http3Test_MemberData()
+        {
+            object[][] options = new[]
+            {
+                new object[] { null },
+                new object[] { 1 },
+                new object[] { 2 },
+                new object[] { 16 },
+                new object[] { 64 },
+                new object[] { 256 },
+                new object[] { 1024 },
+                new object[] { 10240 },
+            };
+
+            var rng = new Random();
+            int count = options.Length * 50;
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return options[rng.Next(options.Length)];
+            }
+        }
+
         [Theory]
-        [InlineData(null)]
-        [InlineData(1)]
-        [InlineData(16)]
-        [InlineData(64)]
-        [InlineData(256)]
-        [InlineData(1024)]
-        [InlineData(10240)]
+        [MemberData(nameof(Http3Test_MemberData))]
         public async Task Http3Test(int? maxResponseHeadersLength)
         {
-            for (int repeat = 0; repeat < 100; repeat++)
+            var requestCts = new CancellationTokenSource();
+            var controlStreamEstablishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                var requestCts = new CancellationTokenSource();
-                var controlStreamEstablishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
 
-                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                if (maxResponseHeadersLength.HasValue)
                 {
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    using HttpClient client = CreateHttpClient(handler);
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
 
-                    if (maxResponseHeadersLength.HasValue)
-                    {
-                        handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
-                    }
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(uri, requestCts.Token));
 
-                    await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(uri, requestCts.Token));
-
-                    await controlStreamEstablishedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-                },
-                async server =>
+                await controlStreamEstablishedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
                 {
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        requestCts.Cancel();
+                    requestCts.Cancel();
 
-                        var http3Connection = (Http3LoopbackConnection)connection;
+                    var http3Connection = (Http3LoopbackConnection)connection;
 
-                        await http3Connection.EnsureControlStreamAcceptedAsync().WaitAsync(TestHelper.PassingTestTimeout);
+                    await http3Connection.EnsureControlStreamAcceptedAsync().WaitAsync(TestHelper.PassingTestTimeout);
 
-                        controlStreamEstablishedTcs.SetResult();
-                    });
+                    controlStreamEstablishedTcs.SetResult();
                 });
-            }
+            });
         }
     }
 
