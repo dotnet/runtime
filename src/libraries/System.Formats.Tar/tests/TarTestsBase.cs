@@ -119,7 +119,7 @@ namespace System.Formats.Tar.Tests
 
         protected TarTestsBase()
         {
-            CreateDirectoryDefaultMode = PlatformDetection.IsWindows ? UnixFileMode.None : Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode;
+            CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
         }
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
@@ -416,7 +416,8 @@ namespace System.Formats.Tar.Tests
 
         protected static void AssertFileModeEquals(string path, UnixFileMode mode)
         {
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows &&
+                !PlatformDetection.IsAndroid) // Android may change the requested permissions.
             {
                 Assert.Equal(mode, File.GetUnixFileMode(path));
             }
