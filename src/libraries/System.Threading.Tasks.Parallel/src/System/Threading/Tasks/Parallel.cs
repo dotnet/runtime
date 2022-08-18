@@ -385,10 +385,7 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive,
-                s_defaultParallelOptions,
-                body, null, null, null, null);
+            return ForWorker<int, object>(fromInclusive, toExclusive, s_defaultParallelOptions, body, null, null, null, null);
         }
 
         /// <summary>
@@ -411,9 +408,7 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<long, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                body, null, null, null, null);
+            return ForWorker<long, object>(fromInclusive, toExclusive, s_defaultParallelOptions, body, null, null, null, null);
         }
 
         /// <summary>
@@ -448,9 +443,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive, parallelOptions,
-                body, null, null, null, null);
+            return ForWorker<int, object>(fromInclusive, toExclusive, parallelOptions, body, null, null, null, null);
         }
 
         /// <summary>
@@ -485,9 +478,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<long, object>(
-                fromInclusive, toExclusive, parallelOptions,
-                body, null, null, null, null);
+            return ForWorker<long, object>(fromInclusive, toExclusive, parallelOptions, body, null, null, null, null);
         }
 
         /// <summary>
@@ -534,9 +525,7 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                null, body, null, null, null);
+            return ForWorker<int, object>(fromInclusive, toExclusive, s_defaultParallelOptions, null, body, null, null, null);
         }
 
         /// <summary>

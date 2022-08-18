@@ -195,7 +195,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// 32/64 bit integer version of FindNewWork. Assumes the ranges were initialized with 32 bit values.
+        /// 32/64 bit integer version of FindNewWork.
         /// </summary>
         internal bool FindNewWork<TIndex>(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) where TIndex : INumber<TIndex>
         {
