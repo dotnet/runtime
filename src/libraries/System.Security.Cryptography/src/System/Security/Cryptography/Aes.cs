@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         protected Aes()
         {
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
-            LegalKeySizesValue = AesImplementation.s_legalKeySizes.CloneKeySizesArray();
+            LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
 
             BlockSizeValue = 128;
             FeedbackSizeValue = 8;
@@ -34,5 +34,6 @@ namespace System.Security.Cryptography
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };
+        private static readonly KeySizes[] s_legalKeySizes = { new KeySizes(128, 256, 64) };
     }
 }

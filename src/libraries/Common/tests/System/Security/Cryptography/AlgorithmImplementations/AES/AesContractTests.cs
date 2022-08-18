@@ -56,10 +56,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(128, keySizeLimits.MinSize);
                 Assert.Equal(256, keySizeLimits.MaxSize);
-
-                // Browser's SubtleCrypto doesn't support AES-192
-                int expectedKeySkipSize = PlatformDetection.IsBrowser ? 128 : 64;
-                Assert.Equal(expectedKeySkipSize, keySizeLimits.SkipSize);
+                Assert.Equal(64, keySizeLimits.SkipSize);
             }
         }
 
