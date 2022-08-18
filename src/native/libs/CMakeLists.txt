@@ -156,7 +156,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(System.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER)
-        add_subdirectory(System.Security.Cryptography.Native.Browser)
+        # skip for now
     elseif (CLR_CMAKE_TARGET_MACCATALYST)
         add_subdirectory(System.Net.Security.Native)
         # System.Security.Cryptography.Native is intentionally disabled on iOS
