@@ -50,11 +50,11 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.0-rc.1.22417.9">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9f79703c</Sha>
+      <Sha>9f79703c8da93b249f75741f60a7d96e3aecfb14</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.0-rc.1.22417.9">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9f79703c</Sha>
+      <Sha>9f79703c8da93b249f75741f60a7d96e3aecfb14</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
