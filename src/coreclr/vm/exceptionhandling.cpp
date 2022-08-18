@@ -1836,10 +1836,8 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                 //
                 // 1) ICF address is higher than the current frame's SP (which we get from DispatcherContext), AND
                 // 2) ICF address is below callerSP.
-                // 3) ICF is active.
-                //      - 
-                if ((GetSP(pDispatcherContext->ContextRecord) < (TADDR)pICF)
-                    && ((UINT_PTR)pICF < uCallerSP))
+                if ((GetSP(pDispatcherContext->ContextRecord) < (TADDR)pICF) &&
+                    ((UINT_PTR)pICF < uCallerSP))
                 {
                     pICFForUnwindTarget = pFrame;
 
