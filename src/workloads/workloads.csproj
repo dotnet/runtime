@@ -79,8 +79,8 @@
     <!-- Shorten package names to avoid long path issues in Visual Studio -->
     <ItemGroup>
       <!-- These need to be in order - matching rules will try in order. -->
-      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Manifest">
-        <Replacement>MonoToolChainManifest</Replacement>
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.">
+        <Replacement>Mono</Replacement>
       </ShortNames>
       <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
         <Replacement>Microsoft</Replacement>
