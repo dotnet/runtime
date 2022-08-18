@@ -1374,8 +1374,6 @@ FOUND_AM:
 
         if (varTypeIsGC(rv2->TypeGet()))
         {
-            noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
             tmp = rv1;
             rv1 = rv2;
             rv2 = tmp;
