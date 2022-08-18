@@ -81,7 +81,7 @@ namespace System.Formats.Tar
                 return;
             }
 
-            // Missing parents are created using default permissions.
+            // If there are missing parents, Directory.CreateDirectory will create them using default permissions.
             if (mode.HasValue)
             {
                 // Ensure we have sufficient permissions to extract in the directory.
@@ -95,7 +95,6 @@ namespace System.Formats.Tar
             }
             else
             {
-                // Create directory using default permissions.
                 Directory.CreateDirectory(fullPath);
             }
         }
