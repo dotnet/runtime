@@ -5104,7 +5104,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-    unsigned methodsCompiled = InterlockedIncrement(&Compiler::jitTotalMethodCompiled);
+    unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
 
     if (JitConfig.DumpJittedMethods() && !compIsForInlining())
     {
