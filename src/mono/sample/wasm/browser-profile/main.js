@@ -1,4 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 function wasm_exit(exit_code, reason) {
     /* Set result in a tests_done element, to be read by xharness */
@@ -29,19 +29,19 @@ function saveProfile(aotProfileData) {
 }
 let enableProfiler = false
 try {
-    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
-        configSrc: "./mono-config.json",
-        disableDotnet6Compatibility: true,
-        onConfigLoaded: (config) => {
-            if (config.enableProfiler) {
-                enableProfiler = true;
-                config.aotProfilerOptions = {
-                    writeAt: "Sample.Test::StopProfile",
-                    sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await dotnet
+        .withModuleConfig({
+            onConfigLoaded: (config) => {
+                if (config.enableProfiler) {
+                    enableProfiler = true;
+                    config.aotProfilerOptions = {
+                        writeAt: "Sample.Test::StopProfile",
+                        sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+                    }
                 }
             }
-        }
-    });
+        })
+        .create();
     console.log("not ready yet")
     const exports = await getAssemblyExports("Wasm.BrowserProfile.Sample");
     const testMeaning = exports.Sample.Test.TestMeaning;

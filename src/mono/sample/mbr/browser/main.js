@@ -1,12 +1,13 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 try {
-    const { getAssemblyExports } = await createDotnetRuntime({
-        configSrc: "./mono-config.json",
-        onConfigLoaded: (config) => {
-            config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-        },
-    });
+    const { getAssemblyExports } = await dotnet
+        .withModuleConfig({
+            onConfigLoaded: (config) => {
+                config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+            }
+        })
+        .create();
 
     const exports = await getAssemblyExports("WasmDelta.dll");
     const update = exports.Sample.Test.Update;

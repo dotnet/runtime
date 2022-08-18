@@ -1,4 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 function wasm_exit(exit_code, reason) {
     /* Set result in a tests_done element, to be read by xharness in runonly CI test */
@@ -61,10 +61,12 @@ function onInputValueChanged(exports, inputElement) {
 
 try {
     const inputElement = document.getElementById("inputN");
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime callback');
-        return {
-            configSrc: "./mono-config.json",
+    const { setModuleImports, getAssemblyExports, runMain } = await dotnet
+        .withModuleConfig({
+            // This whole 'withModuleConfig' is for demo purposes only.
+            // It is prefered to use specific 'with***' methods instead. 
+            // Only when such method is doesn't exist, fallback to moduleConfig.
+
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
@@ -83,15 +85,16 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
-        }
-    });
-    console.log('user code after createDotnetRuntime()');
+        })
+        .create();
+    
+    console.log('user code after dotnet.create');
     setModuleImports("main.js", {
-	Sample: {
-	    Test: {
-		updateProgress
-	    }
-	}
+        Sample: {
+            Test: {
+                updateProgress
+            }
+        }
     });
 
     const exports = await getAssemblyExports(assemblyName);

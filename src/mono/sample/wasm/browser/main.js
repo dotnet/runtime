@@ -41,9 +41,7 @@ try {
 
 
     // at this point both emscripten and monoVM are fully initialized.
-    // we could use the APIs returned and resolved from createDotnetRuntime promise
-    // both exports are receiving the same object instances
-    console.log('user code after createDotnetRuntime()');
+    console.log('user code after dotnet.create');
     setModuleImports("main.js", {
         Sample: {
             Test: {

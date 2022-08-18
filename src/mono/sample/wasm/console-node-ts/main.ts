@@ -9,3 +9,6 @@ const { runMainAndExit } = await createDotnetRuntime(() => ({
 const app_args = process.argv.slice(2);
 const dllName = "Wasm.Console.Node.TS.Sample.dll";
 await runMainAndExit(dllName, app_args);
+
+// import { dotnet } from '@microsoft/dotnet-runtime'
+// await dotnet.run();

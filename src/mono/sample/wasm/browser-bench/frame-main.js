@@ -3,7 +3,7 @@
 
 "use strict";
 
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 class FrameApp {
     async init({ getAssemblyExports }) {
@@ -30,24 +30,24 @@ try {
         mute = true;
     }
 
-    const runtime = await createDotnetRuntime({
-        disableDotnet6Compatibility: true,
-        configSrc: "./mono-config.json",
-        printErr: function () {
-            if (!mute) {
-                console.error(...arguments);
-            }
-        },
-        onConfigLoaded: (config) => {
-            if (window.parent != window) {
-                window.parent.resolveAppStartEvent("onConfigLoaded");
-            }
-            // config.diagnosticTracing = true;
-        },
-        onAbort: (error) => {
-            wasm_exit(1, error);
-        },
-    });
+    const runtime = await dotnet
+        .withModuleConfig({
+            printErr: function () {
+                if (!mute) {
+                    console.error(...arguments);
+                }
+            },
+            onConfigLoaded: (config) => {
+                if (window.parent != window) {
+                    window.parent.resolveAppStartEvent("onConfigLoaded");
+                }
+                // config.diagnosticTracing = true;
+            },
+            onAbort: (error) => {
+                wasm_exit(1, error);
+            },
+        })
+        .create();
 
     if (window.parent != window) {
         window.parent.resolveAppStartEvent("onDotnetReady");
