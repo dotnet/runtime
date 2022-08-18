@@ -35,7 +35,7 @@ namespace ILLink.Shared.TrimAnalysis
 					var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
 					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes)) {
 						(var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch (valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
-						_diagnosticContext.AddDiagnostic (diagnosticId, diagnosticArguments);
+						_diagnosticContext.AddDiagnostic (diagnosticId, valueWithDynamicallyAccessedMembers, targetValue, diagnosticArguments);
 					}
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
