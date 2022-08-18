@@ -109,11 +109,6 @@ public class WasmAppBuilder : Task
         public WasmEntry(string name) : base(name, "dotnetwasm") { }
     }
 
-    private sealed class CryptoWorkerEntry : AssetEntry
-    {
-        public CryptoWorkerEntry(string name) : base(name, "js-module-crypto") { }
-    }
-
     private sealed class ThreadsWorkerEntry : AssetEntry
     {
         public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
