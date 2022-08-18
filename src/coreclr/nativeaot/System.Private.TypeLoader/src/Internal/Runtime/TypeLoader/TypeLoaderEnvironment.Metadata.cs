@@ -106,7 +106,7 @@ namespace Internal.Runtime.TypeLoader
         /// Return the metadata handle for a TypeRef if this type was referenced indirectly by other type that pay-for-play has denoted as browsable
         /// (for example, as part of a method signature.)
         ///
-        /// This is only used in "debug" builds to provide better MissingMetadataException diagnostics.
+        /// This is only used in "debug" builds to provide better diagnostics when metadata is missing.
         ///
         /// Preconditions:
         ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)

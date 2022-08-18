@@ -654,6 +654,32 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
+        internal unsafe struct GCFrameRegistration
+        {
+            private nuint m_reserved1;
+            private nuint m_reserved2;
+            private void* m_pObjRefs;
+            private uint m_numObjRefs;
+            private int m_MaybeInterior;
+
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+                m_reserved1 = 0;
+                m_reserved2 = 0;
+                m_pObjRefs = allocation;
+                m_numObjRefs = elemCount;
+                m_MaybeInterior = areByRefs ? 1 : 0;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterForGCReporting")]
+        internal static extern unsafe void RhRegisterForGCReporting(GCFrameRegistration* pRegistration);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhUnregisterForGCReporting")]
+        internal static extern unsafe void RhUnregisterForGCReporting(GCFrameRegistration* pRegistration);
+
         //
         // ETW helpers.
         //

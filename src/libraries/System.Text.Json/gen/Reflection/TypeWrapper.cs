@@ -109,7 +109,7 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public override Type BaseType => _typeSymbol.BaseType!.AsType(_metadataLoadContext);
+        public override Type BaseType => _typeSymbol.BaseType.AsType(_metadataLoadContext);
 
         public override Type DeclaringType => _typeSymbol.ContainingType?.ConstructedFrom.AsType(_metadataLoadContext);
 
@@ -499,9 +499,29 @@ namespace System.Text.Json.Reflection
                     _typeAttributes |= TypeAttributes.Interface;
                 }
 
-                if (_typeSymbol.ContainingType != null && _typeSymbol.DeclaredAccessibility == Accessibility.Private)
+                bool isNested = _typeSymbol.ContainingType != null;
+
+                switch (_typeSymbol.DeclaredAccessibility)
                 {
-                    _typeAttributes |= TypeAttributes.NestedPrivate;
+                    case Accessibility.NotApplicable:
+                    case Accessibility.Private:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedPrivate : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.ProtectedAndInternal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamANDAssem : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Protected:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamily : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Internal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedAssembly : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.ProtectedOrInternal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamORAssem : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Public:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedPublic : TypeAttributes.Public;
+                        break;
                 }
             }
 
@@ -543,7 +563,7 @@ namespace System.Text.Json.Reflection
 
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
-            // TODO: peformance; caching; honor bindingAttr
+            // TODO: performance; caching; honor bindingAttr
             foreach (PropertyInfo propertyInfo in GetProperties(bindingAttr))
             {
                 if (propertyInfo.Name == name)
@@ -595,17 +615,11 @@ namespace System.Text.Json.Reflection
 
         public override bool IsAssignableFrom(Type c)
         {
-            if (c is TypeWrapper tr)
-            {
-                return tr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
-                    (tr._namedTypeSymbol != null && tr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default));
-            }
-            else if (_metadataLoadContext.Resolve(c) is TypeWrapper trr)
-            {
-                return trr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
-                    (trr._namedTypeSymbol != null && trr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default));
-            }
-            return false;
+            TypeWrapper? tr = c as TypeWrapper ?? _metadataLoadContext.Resolve(c) as TypeWrapper;
+
+            return tr is not null &&
+                (tr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
+                (tr._namedTypeSymbol != null && tr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default)));
         }
 
 #pragma warning disable RS1024 // Compare symbols correctly

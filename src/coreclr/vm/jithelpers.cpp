@@ -3037,7 +3037,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
+        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
         // could put it in a "ifdef _DEBUG" block
         CrstHolder lock(&g_pJitGenericHandleCacheCrst);
         EEHashTableIteration iter;

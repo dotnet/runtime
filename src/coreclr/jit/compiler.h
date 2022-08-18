@@ -58,6 +58,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "emit.h"
 
+// Forward declaration
+template <class T>
+inline var_types genActualType(T value);
+
 #include "hwintrinsic.h"
 #include "simd.h"
 #include "simdashwintrinsic.h"
@@ -380,7 +384,7 @@ enum class DoNotEnregisterReason
     NotRegSizeStruct, // the struct size does not much any register size, usually the struct size is too big.
     LocalField,       // the local is accessed with LCL_FLD, note we can do it not only for struct locals.
     VMNeedsStackAddr,
-    LiveInOutOfHandler, // the local is alive in and out of exception handler and not signle def.
+    LiveInOutOfHandler, // the local is alive in and out of exception handler and not single def.
     BlockOp,            // Is read or written via a block operation.
     IsStructArg,        // Is a struct passed as an argument in a way that requires a stack location.
     DepField,           // It is a field of a dependently promoted struct
@@ -493,7 +497,7 @@ public:
 
     unsigned char lvSingleDefRegCandidate : 1; // variable has a single def and hence is a register candidate
                                                // Currently, this is only used to decide if an EH variable can be
-                                               // a register candiate or not.
+                                               // a register candidate or not.
 
     unsigned char lvDisqualifySingleDefRegCandidate : 1; // tracks variable that are disqualified from register
                                                          // candidancy
@@ -1218,7 +1222,7 @@ inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue
 // 1. CAST_OVF(ubyte <- uint): does not overflow for [0..UBYTE_MAX], produces the
 //    same range - all casts that do not change the representation, i. e. have the same
 //    "actual" input and output type, have the same "input" and "output" range.
-// 2. CAST_OVF(ulong <- uint): never oveflows => the "input" range is [INT_MIN..INT_MAX]
+// 2. CAST_OVF(ulong <- uint): never overflows => the "input" range is [INT_MIN..INT_MAX]
 //    (aka all possible 32 bit integers). Produces [0..UINT_MAX] (aka all possible 32
 //    bit integers zero-extended to 64 bits).
 // 3. CAST_OVF(int <- uint): overflows for inputs larger than INT_MAX <=> less than 0
@@ -3799,8 +3803,11 @@ protected:
     Statement* impLastStmt; // The last statement for the current BB.
 
 public:
-    static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
-    static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
+    enum
+    {
+        CHECK_SPILL_ALL  = -1,
+        CHECK_SPILL_NONE = -2
+    };
 
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
@@ -4000,7 +4007,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void impSpillLclRefs(unsigned lclNum, unsigned chkLevel);
+    void impSpillLclRefs(unsigned lclNum);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
@@ -6032,6 +6039,10 @@ protected:
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
 
+    // During global assertion prop, returns the conservative normal VN for a tree;
+    // otherwise returns NoVN
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
     // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and
@@ -6689,7 +6700,7 @@ protected:
     bool optValnumCSE_Locate();
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_DataFlow();
-    void optValnumCSE_Availablity();
+    void optValnumCSE_Availability();
     void optValnumCSE_Heuristic();
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
@@ -9167,6 +9178,9 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
+        bool disAsm;      // Display native code as it is generated
+        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
+        bool disDiffable; // Makes the Disassembly code 'diff-able'
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9176,19 +9190,16 @@ public:
         bool dspLines;                 // Display source-code lines intermixed with native code output
         bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
-        bool disAsm;                   // Display native code as it is generated
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
-        bool disDiffable;              // Makes the Disassembly code 'diff-able'
         bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAlignment;             // Display alignment boundaries in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
-        bool dspDiffable;     // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool compLongAddress; // Force using large pseudo instructions for long address
-                              // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
-        bool dspGCtbls;       // Display the GC tables
+        bool compLongAddress;          // Force using large pseudo instructions for long address
+                                       // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
+        bool dspGCtbls;                // Display the GC tables
 #endif
 
         bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
@@ -9293,9 +9304,7 @@ public:
 
     static bool       s_pJitFunctionFileInitialized;
     static MethodSet* s_pJitMethodSet;
-#endif // DEBUG
 
-#ifdef DEBUG
 // silence warning of cast to greater size. It is easier to silence than construct code the compiler is happy with, and
 // it is safe in this case
 #pragma warning(push)
@@ -9313,6 +9322,24 @@ public:
         return (o == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
     }
 #pragma warning(pop)
+#else
+#pragma warning(push)
+#pragma warning(disable : 4312)
+    template <typename T>
+    T dspPtr(T p)
+    {
+        return p;
+    }
+
+    template <typename T>
+    T dspOffset(T o)
+    {
+        return o;
+    }
+#pragma warning(pop)
+#endif
+
+#ifdef DEBUG
 
     static int dspTreeID(GenTree* tree)
     {
@@ -9651,7 +9678,7 @@ public:
     }
 
     // Returns true if the method returns a value in more than one return register
-    // TODO-ARM-Bug: Deal with multi-register genReturnLocaled structs?
+    // TODO-ARM-Bug: Deal with multi-register genReturnLocal structs?
     // TODO-ARM64: Does this apply for ARM64 too?
     bool compMethodReturnsMultiRegRetType()
     {
@@ -9785,11 +9812,11 @@ private:
 
 public:
 #ifdef DEBUG
-    LONG     compMethodID;
     unsigned compGenTreeID;
     unsigned compStatementID;
     unsigned compBasicBlockID;
 #endif
+    LONG compMethodID;
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process
@@ -9997,12 +10024,12 @@ public:
 
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName compVarName(regNumber reg, bool isFloatReg = false);
-    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
-    const char* compRegNameForSize(regNumber reg, size_t size);
     const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG
+    const char* compRegNameForSize(regNumber reg, size_t size);
+    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
 
     //-------------------------------------------------------------------------
 
@@ -10325,7 +10352,7 @@ public:
             //     to take conservative approach.
             //
             // Possible solution to address case (b)
-            //   - Whenver a parameter passed in an argument register needs to be spilled by LSRA, we
+            //   - Whenever a parameter passed in an argument register needs to be spilled by LSRA, we
             //     create a new spill temp if the method needs GS cookie check.
             return varDsc->lvIsParam;
 #else // !defined(TARGET_AMD64)
@@ -10983,6 +11010,28 @@ public:
                 }
                 break;
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+            case GT_SELECT:
+            {
+                GenTreeConditional* const conditional = node->AsConditional();
+
+                result = WalkTree(&conditional->gtCond, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp1, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp2, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
 
             // Binary nodes
             default:

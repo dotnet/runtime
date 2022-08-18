@@ -282,7 +282,7 @@ internal static partial class Interop
 
         internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string? ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Marshal.PtrToStringUTF8(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }
@@ -327,7 +327,7 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeSslHandle : SafeHandle
+    internal sealed class SafeSslHandle : SafeDeleteSslContext
     {
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
@@ -335,6 +335,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
+        public SafeSslContextHandle? SslContextHandle;
 
         public bool IsServer
         {
@@ -431,6 +432,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Disconnect();
             }
+
+            SslContextHandle?.DangerousRelease();
 
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);

@@ -94,6 +94,140 @@ namespace DebuggerTests.AsyncTests
             Console.WriteLine ($"done with this method");
         }
 
+        public static async Task RunAsyncWithLineHidden()
+        {
+            await HiddenLinesInAnAsyncBlock("foobar");
+            await HiddenLinesJustBeforeANestedAsyncBlock("foobar");
+            await HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod("foobar"); 
+            await HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod("foobar"); 
+            await HiddenLinesContainingStartOfAnAsyncBlock("foobar");
+            await HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod("foobar");
+            await HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod2("foobar");
+            System.Diagnostics.Debugger.Break();
+        }
+        public static async Task HiddenLinesInAnAsyncBlock(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+#line hidden
+                var code = t.Status;
+#line default
+                var ncs_dt0 = new DateTime(3412, 4, 6, 8, 0, 2);
+                Console.WriteLine ($"First continueWith: {code}, {ncs_dt0}"); // t, code, str, dt0
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine ($"t2: {t2.Status}, str: {str}, {ncs_dt1}, {ncs_dt0}");//t2, dt1, str, dt0
+                });
+            });
+            Console.WriteLine ($"done with this method");
+        }
+        static async Task HiddenLinesJustBeforeANestedAsyncBlock(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                Console.WriteLine($"First continueWith");
+        #line hidden
+                var code = t.Status; // Next line will be in the next async block? hidden line just before async block
+                Console.WriteLine("another line of code");
+        #line default
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+                });
+            });
+            Console.WriteLine($"done with this method");
+        }
+
+        static async Task HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                var code = t.Status;
+                Console.WriteLine($"First continueWith");
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+        #line hidden
+                    Console.WriteLine("something else"); // Next line will be in the next async block? hidden line at end of async block
+        #line default
+                });
+            });
+        }
+
+        static async Task HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                var code = t.Status;
+                Console.WriteLine($"First continueWith");
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+        #line hidden
+                    Console.WriteLine("something else"); // Next line will be in the next async block? hidden line at end of async block
+        #line default
+                });
+            });
+            Console.WriteLine ($"Last line..");
+        }
+
+        static async Task HiddenLinesContainingStartOfAnAsyncBlock(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                var code = t.Status;
+                Console.WriteLine($"First continueWith");
+        #line hidden
+                await Task.Delay(300).ContinueWith(t2 =>
+        #line default
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+                    Console.WriteLine("something else"); // Next line will be in the next async block? hidden line at end of async block
+                });
+            });
+            Console.WriteLine($"done with this method");
+        }
+
+        static async Task HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                var code = t.Status;
+                Console.WriteLine($"First continueWith");
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+        #line hidden
+                    Console.WriteLine("somethind else"); // Next line will be in the next async block? hidden line at end of async block
+                });
+            });
+        #line default
+            Console.WriteLine($"done with this method");
+        }
+
+        static async Task HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod2(string str)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                var code = t.Status;
+                Console.WriteLine($"First continueWith");
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    var ncs_dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
+                    Console.WriteLine($"t2: {t2.Status}, str: {str}, {ncs_dt1}");//t2, dt1, str, dt0
+        #line hidden
+                    Console.WriteLine("somethind else"); // Next line will be in the next async block? hidden line at end of async block
+                });
+        #line default
+            });
+            Console.WriteLine($"done with this method");
+        }
     }
 
 }

@@ -971,7 +971,12 @@ Debugger::Debugger()
     // as data structure layouts change, add a new version number
     // and comment the changes
     m_mdDataStructureVersion = 1;
-
+    m_fOutOfProcessSetContextEnabled =
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        Thread::AreCetShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
+#else
+        FALSE;
+#endif
 }
 
 /******************************************************************************
@@ -2343,7 +2348,7 @@ HRESULT Debugger::RequestFavor(FAVORCALLBACK fp, void * pData)
     if (m_pRCThread == NULL ||
         m_pRCThread->GetRCThreadId() == GetCurrentThreadId())
     {
-        // Since favors are only used internally, we know that the helper should alway be up and ready
+        // Since favors are only used internally, we know that the helper should always be up and ready
         // to handle them. Also, since favors can be used in low-stack scenarios, there's not any
         // extra initialization needed for them.
         _ASSERTE(!"Helper not initialized for favors.");
@@ -3370,7 +3375,7 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
 
     // Just tell the JIT to extend everything.
     // Note that if optimizations are enabled, the native compilers are
-    // free to ingore *extendOthers
+    // free to ignore *extendOthers
     *extendOthers = true;
 
     DWORD bits = md->GetModule()->GetDebuggerInfoBits();
@@ -4747,7 +4752,7 @@ BOOL IsDuplicatePatch(SIZE_T *rgEntries,
 /******************************************************************************
 // HRESULT Debugger::MapAndBindFunctionBreakpoints():  For each breakpoint
 //      that we've set in any version of the existing function,
-//      set a correponding breakpoint in the new function if we haven't moved
+//      set a corresponding breakpoint in the new function if we haven't moved
 //      the patch to the new version already.
 //
 //      This must be done _AFTER_ the MethodDesc has been updated
@@ -4790,7 +4795,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
         "Ver:0x%04x (DJI:0x%p)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
 
     // We need to traverse the patch list while under the controller lock (small lock).
-    // But we can only send BreakpointSetErros while under the debugger lock (big lock).
+    // But we can only send BreakpointSetErrors while under the debugger lock (big lock).
     // So to avoid a lock violation, we queue any errors we find under the small lock,
     // and then send the whole list when under the big lock.
     PATCH_UNORDERED_ARRAY listUnbindablePatches;
@@ -5504,7 +5509,8 @@ bool Debugger::IsJMCMethod(Module* pModule, mdMethodDef tkMethod)
 bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                           CONTEXT *context,
                                           DWORD code,
-                                          Thread *thread)
+                                          Thread *thread,
+                                          BOOL fIsVEH)
 {
 
     // @@@
@@ -5537,19 +5543,27 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 
     bool retVal;
 
-    // Don't stop for native debugging anywhere inside our inproc-Filters.
-    CantStopHolder hHolder;
-
-    if (!CORDBUnrecoverableError(this))
     {
-        retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                           code, thread);
-    }
-    else
-    {
-        retVal = false;
+        // Don't stop for native debugging anywhere inside our inproc-Filters.
+        CantStopHolder hHolder;
+
+        if (!CORDBUnrecoverableError(this))
+        {
+            retVal = DebuggerController::DispatchNativeException(exception, context,
+                                                               code, thread);
+        }
+        else
+        {
+            retVal = false;
+        }
     }
 
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+    if (retVal && fIsVEH)
+    {
+        SendSetThreadContextNeeded(context);
+    }
+#endif
     return retVal;
 }
 
@@ -8465,7 +8479,7 @@ BOOL Debugger::ShouldAutoAttach()
 
     LOG((LF_CORDB, LL_INFO1000000, "D::SAD\n"));
 
-    // Check if the user has specified a seting in the registry about what he
+    // Check if the user has specified a setting in the registry about what he
     // wants done when an unhandled exception occurs.
     DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
 
@@ -8810,7 +8824,7 @@ Debugger::ATTACH_ACTION Debugger::ShouldAttachDebugger(bool fIsUserBreakpoint)
         return ATTACH_NO;
     }
 
-    // Check if the user has specified a seting in the registry about what he wants done when an unhandled exception
+    // Check if the user has specified a setting in the registry about what he wants done when an unhandled exception
     // occurs.
     DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
 
@@ -13146,7 +13160,7 @@ void STDCALL ExceptionHijackWorker(
             break;
     case EHijackReason::kFirstChanceSuspend:
             _ASSERTE(pData == NULL);
-            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord);
+            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord, FALSE);
             break;
     case EHijackReason::kGenericHijack:
             _ASSERTE(pData == NULL);
@@ -13463,7 +13477,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
         okay = g_pDebugger->FirstChanceNativeException(pExceptionRecord,
             pContext,
             pExceptionRecord->ExceptionCode,
-            pEEThread);
+            pEEThread,
+            FALSE);
         _ASSERTE(okay == true);
         LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: FirstChanceNativeException returned\n"));
     }
@@ -13502,7 +13517,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 // - this thread is not in cooperative mode.
 //-----------------------------------------------------------------------------
 LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
-                                              EXCEPTION_RECORD *pExceptionRecord)
+                                              EXCEPTION_RECORD *pExceptionRecord,
+                                              BOOL fIsVEH)
 {
     // if we aren't set up to do interop debugging this function should just bail out
     if(m_pRCThread == NULL)
@@ -13638,6 +13654,12 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     if (pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        if (fIsVEH)
+        {
+            SendSetThreadContextNeeded(pContext);
+        }
+#endif
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     else
@@ -16631,4 +16653,93 @@ void Debugger::StartCanaryThread()
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    if (!m_fOutOfProcessSetContextEnabled)
+        return;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextFlags = context->ContextFlags;
+    DWORD contextSize = 0;
+
+    // determine the context size
+    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER || contextSize == 0)
+    {
+        // The initialize call should fail but return contextSize
+        _ASSERTE(!"InitializeContext unexpectedly failed\n");
+        return;
+    }
+
+    // allocate a temp buffer for the context
+    BYTE *pBuffer = (BYTE*)_alloca(contextSize);
+    if (pBuffer == NULL)
+    {
+        _ASSERTE(!"Failed to allocate context buffer");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Failed to allocate context buffer\n"));
+        return;
+    }
+
+    // make a copy of the context
+    PCONTEXT pContext = NULL;
+    success = InitializeContext(pBuffer, contextFlags, &pContext, &contextSize);
+    if (!success)
+    {
+        _ASSERTE(!"InitializeContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from InitializeContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    success = CopyContext(pContext, contextFlags, context);
+    if (!success)
+    {
+        _ASSERTE(!"CopyContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from CopyContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    // adjust context size if the context pointer is not aligned with the buffer we allocated
+    contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
+
+    // send the context to the right side
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
+    EX_TRY
+    {
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+#else
+    #error Platform not supported
+#endif
+
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
+    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return m_fOutOfProcessSetContextEnabled;
+}
+#else
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
+{
+    _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return FALSE;
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+#endif // DACCESS_COMPILE
+
 #endif //DEBUGGING_SUPPORTED
+

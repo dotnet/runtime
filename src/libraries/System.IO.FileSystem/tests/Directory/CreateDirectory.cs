@@ -468,7 +468,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // drive letters casing
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DriveLetter_Unix()
         {
             // On Unix, there's no special casing for drive letters.  These may or may not be valid names, depending

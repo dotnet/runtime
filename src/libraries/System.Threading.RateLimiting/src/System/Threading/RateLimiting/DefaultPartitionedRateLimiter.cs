@@ -65,19 +65,19 @@ namespace System.Threading.RateLimiting
             _timer.Dispose();
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
-            return GetRateLimiter(resource).GetAvailablePermits();
+            return GetRateLimiter(resource).GetStatistics();
         }
 
-        protected override RateLimitLease AcquireCore(TResource resource, int permitCount)
+        protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
         {
-            return GetRateLimiter(resource).Acquire(permitCount);
+            return GetRateLimiter(resource).AttemptAcquire(permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
-            return GetRateLimiter(resource).WaitAndAcquireAsync(permitCount, cancellationToken);
+            return GetRateLimiter(resource).AcquireAsync(permitCount, cancellationToken);
         }
 
         private RateLimiter GetRateLimiter(TResource resource)

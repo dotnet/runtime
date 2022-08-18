@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -338,6 +339,154 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static short TrailingZeroCount(short value) => (byte)(BitOperations.TrailingZeroCount(value << 16) - 16);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<short>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out short value)
+        {
+            short result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[0]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= sizeof(short)))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > sizeof(short))
+                {
+                    if (source[..^sizeof(short)].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^sizeof(short)]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(short))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(short));
+
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<short>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else if (isUnsigned)
+                {
+                    // We only have 1-byte so read it directly
+                    result = sourceRef;
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly with sign extension
+                    result = (sbyte)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<short>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out short value)
+        {
+            short result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[^1]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= sizeof(short)))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > sizeof(short))
+                {
+                    if (source[sizeof(short)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[sizeof(short) - 1]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(short))
+                {
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<short>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else if (isUnsigned)
+                {
+                    // We only have 1-byte so read it directly
+                    result = sourceRef;
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly with sign extension
+                    result = (sbyte)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<short>.GetShortestBitLength()
@@ -999,7 +1148,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<short>.TryConvertToChecked<TOther>(short value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<short>.TryConvertToChecked<TOther>(short value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1060,14 +1209,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<short>.TryConvertToSaturating<TOther>(short value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<short>.TryConvertToSaturating<TOther>(short value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1129,14 +1278,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<short>.TryConvertToTruncating<TOther>(short value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<short>.TryConvertToTruncating<TOther>(short value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1197,7 +1346,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

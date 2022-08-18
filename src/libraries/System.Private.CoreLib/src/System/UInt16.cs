@@ -327,6 +327,104 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static ushort TrailingZeroCount(ushort value) => (ushort)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<ushort>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out ushort value)
+        {
+            ushort result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(ushort)) && (source[..^sizeof(ushort)].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(ushort))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(ushort));
+
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<ushort>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out ushort value)
+        {
+            ushort result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[^1]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(ushort)) && (source[sizeof(ushort)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(ushort))
+                {
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<ushort>.GetShortestBitLength() => (sizeof(ushort) * 8) - LeadingZeroCount(m_value);
 
@@ -848,7 +946,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertToChecked<TOther>(ushort value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ushort>.TryConvertToChecked<TOther>(ushort value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -915,14 +1013,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertToSaturating<TOther>(ushort value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ushort>.TryConvertToSaturating<TOther>(ushort value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -989,14 +1087,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertToTruncating<TOther>(ushort value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ushort>.TryConvertToTruncating<TOther>(ushort value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1063,7 +1161,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

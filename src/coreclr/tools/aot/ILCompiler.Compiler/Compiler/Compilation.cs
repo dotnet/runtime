@@ -219,6 +219,11 @@ namespace ILCompiler
             return _devirtualizationManager.IsEffectivelySealed(type);
         }
 
+        public TypeDesc[] GetImplementingClasses(TypeDesc type)
+        {
+            return _devirtualizationManager.GetImplementingClasses(type);
+        }
+
         public bool IsEffectivelySealed(MethodDesc method)
         {
             return _devirtualizationManager.IsEffectivelySealed(method);

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
         internal sealed override object? ReadCoreAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             return ReadCore(ref reader, options, ref state);
         }
@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization
         internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             try
             {
@@ -58,8 +58,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo;
-                bool success = TryRead(ref reader, jsonPropertyInfo.PropertyType, options, ref state, out T? value);
+                bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? value);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.
