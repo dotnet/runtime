@@ -11,7 +11,9 @@ schedules:
     displayName: Runtime-community release schedule
     branches:
       include:
-      - release/7.0*
+      - release/*
+      exclude:
+      - release/6.0*
     always: false # run only if there were changes since the last successful scheduled run.
 
 variables:
