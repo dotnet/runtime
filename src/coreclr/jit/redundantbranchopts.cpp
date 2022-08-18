@@ -115,13 +115,75 @@ struct RelopImplicationInfo
     ValueNumStore::VN_RELATION_KIND vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
     // Can we draw an inference?
     bool canInfer = false;
-    // If canInfer and ominating relop is true, can we infer value of dominated relop?
+    // If canInfer and dominating relop is true, can we infer value of dominated relop?
     bool canInferFromTrue = true;
     // If canInfer and dominating relop is false, can we infer value of dominated relop?
     bool canInferFromFalse = true;
     // Reverse the sense of the inference
     bool reverseSense = false;
 };
+
+//------------------------------------------------------------------------
+// RelopImplicationRule
+//
+// A rule allowing inference between two otherwise unrelated relops.
+// Related relops are handled via s_vnRelations above.
+//
+struct RelopImplicationRule
+{
+    VNFunc domRelop;
+    bool   canInferFromTrue;
+    bool   canInferFromFalse;
+    VNFunc treeRelop;
+    bool   reverse;
+};
+
+//------------------------------------------------------------------------
+// s_implicationRules: rule table for unrelated relops
+//
+// clang-format off
+//
+#define V(x) (VNFunc)GT_##x
+
+static const RelopImplicationRule s_implicationRules[] =
+{
+    // EQ
+    {V(EQ),  true, false, V(GE), false},
+    {V(EQ),  true, false, V(LE), false},
+    {V(EQ),  true, false, V(GT),  true},
+    {V(EQ),  true, false, V(LT),  true},
+
+    // NE
+    {V(NE), false,  true, V(GE),  true},
+    {V(NE), false,  true, V(LE),  true},
+    {V(NE), false,  true, V(GT), false},
+    {V(NE), false,  true, V(LT), false},
+
+    // LE
+    {V(LE), false,  true, V(EQ), false},
+    {V(LE), false,  true, V(NE),  true},
+    {V(LE), false,  true, V(GE),  true},
+    {V(LE), false,  true, V(LT), false},
+
+    // GT
+    {V(GT),  true, false, V(EQ),  true},
+    {V(GT),  true, false, V(NE), false},
+    {V(GT),  true, false, V(GE), false},
+    {V(GT),  true, false, V(LT),  true},
+
+    // GE
+    {V(GE), false,  true, V(EQ), false},
+    {V(GE), false,  true, V(NE),  true},
+    {V(GE), false,  true, V(LE),  true},
+    {V(GE), false,  true, V(GT), false},
+
+    // LT
+    {V(LT),  true, false, V(EQ),  true},
+    {V(LT),  true, false, V(NE), false},
+    {V(LT),  true, false, V(LE), false},
+    {V(LT),  true, false, V(GT),  true},
+};
+// clang-format on
 
 //------------------------------------------------------------------------
 // optRedundantBranch: try and optimize a possibly redundant branch
@@ -220,71 +282,20 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 domOper = GenTree::SwapRelop(domOper);
             }
 
-            switch (domOper)
+            for (const RelopImplicationRule& rule : s_implicationRules)
             {
-                default:
-                    break;
-
-                case GT_EQ:
-                    rii->canInfer =
-                        (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
-                    rii->reverseSense      = ((treeOper == GT_GT) || (treeOper == GT_LT));
-                    rii->canInferFromTrue  = true;
-                    rii->canInferFromFalse = false;
+                if ((rule.domRelop == domOper) && (rule.treeRelop == treeOper))
+                {
+                    rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
+                    rii->canInferFromTrue  = rule.canInferFromTrue;
+                    rii->canInferFromFalse = rule.canInferFromFalse;
+                    rii->reverseSense      = rule.reverse;
 
-                case GT_NE:
-                    rii->canInfer =
-                        (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
-                    rii->reverseSense      = ((treeOper == GT_GE) || (treeOper == GT_LE));
-                    rii->canInferFromTrue  = false;
-                    rii->canInferFromFalse = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
-
-                case GT_LE:
-                    rii->canInfer =
-                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
-                    rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_GE));
-                    rii->canInferFromFalse = true;
-                    rii->canInferFromTrue  = false;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
-
-                case GT_GT:
-                    rii->canInfer =
-                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
-                    rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_LT));
-                    rii->canInferFromFalse = false;
-                    rii->canInferFromTrue  = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
-
-                case GT_GE:
-                    rii->canInfer =
-                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
-                    rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_LE));
-                    rii->canInferFromFalse = true;
-                    rii->canInferFromTrue  = false;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
-
-                case GT_LT:
-                    rii->canInfer =
-                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
-                    rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_GT));
-                    rii->canInferFromFalse = false;
-                    rii->canInferFromTrue  = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    break;
-            }
-
-            if (rii->canInfer)
-            {
-                JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOper),
-                        rii->canInferFromTrue ? "true" : "false", GenTree::OpName(oper));
-                return;
+                    JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOper),
+                            rii->canInferFromTrue ? "true" : "false", GenTree::OpName(oper));
+                    return;
+                }
             }
         }
     }
