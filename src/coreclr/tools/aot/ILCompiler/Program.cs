@@ -15,9 +15,11 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
+using ILCompiler.Dataflow;
+using ILLink.Shared;
+
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
-using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -103,6 +105,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _singleWarnEnabledAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _singleWarnDisabledAssemblies = Array.Empty<string>();
         private bool _singleWarn;
+        private bool _noTrimWarn;
+        private bool _noAotWarn;
 
         private string _makeReproPath;
 
@@ -228,6 +232,8 @@ namespace ILCompiler
                 syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
                 syntax.DefineOptionList("nowarn", ref _suppressedWarnings, "Disable specific warning messages");
                 syntax.DefineOption("singlewarn", ref _singleWarn, "Generate single AOT/trimming warning per assembly");
+                syntax.DefineOption("notrimwarn", ref _noTrimWarn, "Disable warnings related to trimming");
+                syntax.DefineOption("noaotwarn", ref _noAotWarn, "Disable warnings related to AOT");
                 syntax.DefineOptionList("singlewarnassembly", ref _singleWarnEnabledAssemblies, "Generate single AOT/trimming warning for given assembly");
                 syntax.DefineOptionList("nosinglewarnassembly", ref _singleWarnDisabledAssemblies, "Expand AOT/trimming warnings for given assembly");
                 syntax.DefineOptionList("directpinvoke", ref _directPInvokes, "PInvoke to call directly");
@@ -768,7 +774,13 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var suppressedWarningCategories = new List<string>();
+            if (_noTrimWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (_noAotWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies, suppressedWarningCategories);
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = _emitStackTraceData ?
