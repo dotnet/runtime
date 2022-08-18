@@ -192,6 +192,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.Android)]
         public async Task UnixFileModes_Async()
         {
             using TempDirectory source = new TempDirectory();
@@ -249,6 +250,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.Android)]
         public async Task UnixFileModes_RestrictiveParentDir_Async()
         {
             using TempDirectory source = new TempDirectory();
