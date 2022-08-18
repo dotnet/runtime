@@ -523,7 +523,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
-                    
+
                 // Protocol extensions
                 case "DotnetDebugger.setDebuggerProperty":
                     {
