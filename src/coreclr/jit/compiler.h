@@ -5277,7 +5277,7 @@ public:
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
-    bool        fgCreateFuncletPrologBlocks();
+    void        fgCreateFuncletPrologBlocks();
     PhaseStatus fgCreateFunclets();
 #else  // !FEATURE_EH_FUNCLETS
     bool fgRelocateEHRegions();

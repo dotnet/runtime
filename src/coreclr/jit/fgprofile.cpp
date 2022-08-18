@@ -3511,7 +3511,7 @@ PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
 //   that were not profiled and do not yet have weights.
 //
 // Arguments
-//    return weight [out] - sum of weights for all return and throw blocks
+//    returnWeight [out] - sum of weights for all return and throw blocks
 //
 // Returns:
 //    true if any changes made

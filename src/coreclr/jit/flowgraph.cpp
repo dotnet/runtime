@@ -3302,9 +3302,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //------------------------------------------------------------------------
 // fgCreateFuncletPrologBlocks: create prolog blocks for funclets if needed
 //
-// Returns:
-//   true if any changes were made
-//
 // Notes:
 //   Every funclet will have a prolog. That prolog will be inserted as the first instructions
 //   in the first block of the funclet. If the prolog is also the head block of a loop, we
@@ -3313,7 +3310,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //   block when needed. We detect a loop by looking for any predecessor that isn't in the
 //   handler's try region, since the only way to get into a handler is via that try region.
 //
-bool Compiler::fgCreateFuncletPrologBlocks()
+void Compiler::fgCreateFuncletPrologBlocks()
 {
     noway_assert(fgComputePredsDone);
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
@@ -3367,8 +3364,6 @@ bool Compiler::fgCreateFuncletPrologBlocks()
         fgDebugCheckBBlist();
 #endif // DEBUG
     }
-
-    return prologBlocksCreated;
 }
 
 //------------------------------------------------------------------------
@@ -3384,7 +3379,7 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
 
-    bool madeChanges = fgCreateFuncletPrologBlocks();
+    fgCreateFuncletPrologBlocks();
 
     unsigned           XTnum;
     EHblkDsc*          HBtab;
@@ -3431,7 +3426,6 @@ PhaseStatus Compiler::fgCreateFunclets()
         HBtab->ebdFuncIndex          = funcIdx;
         funcIdx++;
         fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
-        madeChanges = true;
     }
 
     // We better have populated all of them by now
@@ -3444,7 +3438,7 @@ PhaseStatus Compiler::fgCreateFunclets()
 
     fgFuncletsCreated = true;
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return (compHndBBtabCount > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
