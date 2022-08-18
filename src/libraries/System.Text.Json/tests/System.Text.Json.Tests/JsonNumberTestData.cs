@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Tests
 {
@@ -32,6 +33,13 @@ namespace System.Text.Json.Tests
         public static List<float?> NullableFloats { get; set; }
         public static List<double?> NullableDoubles { get; set; }
         public static List<decimal?> NullableDecimals { get; set; }
+
+#if NET7_0_OR_GREATER
+        public static List<Int128> Int128s { get; set; }
+        public static List<UInt128> UInt128s { get; set; }
+        public static List<Int128?> NullableInt128s { get; set; }
+        public static List<UInt128?> NullableUInt128s { get; set; }
+#endif
 
         public static byte[] JsonData { get; set; }
 
@@ -237,6 +245,44 @@ namespace System.Text.Json.Tests
             }
             #endregion
 
+            #region generate Int128s
+#if NET7_0_OR_GREATER
+            Int128s = new List<Int128>
+            {
+                Int128.Zero,
+                new Int128(1234567890UL, 12345678901UL),
+                new Int128(ulong.MaxValue, 12345678901UL),
+                Int128.MaxValue,
+                Int128.MinValue
+            };
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                Random128(out ulong valueHigh, out ulong valueLow);
+                Int128 value = new Int128(valueHigh, valueLow);
+                Int128s.Add(value);
+            }
+#endif
+            #endregion
+
+            #region generate UInt128s
+#if NET7_0_OR_GREATER
+            UInt128s = new List<UInt128>
+            {
+                UInt128.Zero,
+                new UInt128(1234567890UL, 12345678901UL),
+                new UInt128(ulong.MaxValue, 12345678901UL),
+                UInt128.MaxValue,
+                UInt128.MinValue
+            };
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                Random128(out ulong valueHigh, out ulong valueLow);
+                UInt128 value = new UInt128(valueHigh, valueLow);
+                UInt128s.Add(value);
+            }
+#endif
+            #endregion
+
             #region generate the json
             var builder = new StringBuilder();
             builder.Append("{");
@@ -304,6 +350,19 @@ namespace System.Text.Json.Tests
                 builder.AppendFormat(CultureInfo.InvariantCulture, "{0}", str);
             }
 
+#if NET7_0_OR_GREATER
+            for (int i = 0; i < Int128s.Count; i++)
+            {
+                builder.Append("\"Int128").Append(i).Append("\": ");
+                builder.Append(Int128s[i]).Append(", ");
+            }
+            for (int i = 0; i < UInt128s.Count; i++)
+            {
+                builder.Append("\"UInt128").Append(i).Append("\": ");
+                builder.Append(UInt128s[i]).Append(", ");
+            }
+#endif
+
             builder.Append("\"intEnd\": 0}");
             #endregion
 
@@ -319,9 +378,24 @@ namespace System.Text.Json.Tests
             NullableFloats = new List<float?>(Floats.Select(num => (float?)num));
             NullableDoubles = new List<double?>(Doubles.Select(num => (double?)num));
             NullableDecimals = new List<decimal?>(Decimals.Select(num => (decimal?)num));
+#if NET7_0_OR_GREATER
+            NullableInt128s = new List<Int128?>(Int128s.Select(num => (Int128?)num));
+            NullableUInt128s = new List<UInt128?>(UInt128s.Select(num => (UInt128?)num));
+#endif
 
             string jsonString = builder.ToString();
             JsonData = Encoding.UTF8.GetBytes(jsonString);
+
+#if NET7_0_OR_GREATER
+            void Random128(out ulong high, out ulong low)
+            {
+                Span<byte> bytes = stackalloc byte[16];
+                random.NextBytes(bytes);
+                Span<ulong> ulongs = MemoryMarshal.Cast<byte, ulong>(bytes);
+                high = ulongs[0];
+                low = ulongs[1];
+            }
+#endif
         }
     }
 }

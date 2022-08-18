@@ -30,6 +30,10 @@ namespace System.Text.Json.Tests
             List<float> floats = JsonNumberTestData.Floats;
             List<double> doubles = JsonNumberTestData.Doubles;
             List<decimal> decimals = JsonNumberTestData.Decimals;
+#if NET7_0_OR_GREATER
+            List<Int128> int128s = JsonNumberTestData.Int128s;
+            List<UInt128> uint128s = JsonNumberTestData.UInt128s;
+#endif
 
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
             string key = "";
@@ -106,6 +110,24 @@ namespace System.Text.Json.Tests
                         Assert.Equal(ulongs[count], numberULong);
                         count++;
                     }
+#if NET7_0_OR_GREATER
+                    else if (key.StartsWith("Int128"))
+                    {
+                        Assert.True(json.TryGetInt128(out Int128 numberInt128));
+                        if (count >= int128s.Count)
+                            count = 0;
+                        Assert.Equal(int128s[count], numberInt128);
+                        count++;
+                    }
+                    else if (key.StartsWith("UInt128"))
+                    {
+                        Assert.True(json.TryGetUInt128(out UInt128 numberUInt128));
+                        if (count >= uint128s.Count)
+                            count = 0;
+                        Assert.Equal(uint128s[count], numberUInt128);
+                        count++;
+                    }
+#endif
                     else if (key.StartsWith("float"))
                     {
                         Assert.True(json.TryGetSingle(out float numberFloat));
@@ -169,6 +191,10 @@ namespace System.Text.Json.Tests
             List<float> floats = JsonNumberTestData.Floats;
             List<double> doubles = JsonNumberTestData.Doubles;
             List<decimal> decimals = JsonNumberTestData.Decimals;
+#if NET7_0_OR_GREATER
+            List<Int128> int128s = JsonNumberTestData.Int128s;
+            List<UInt128> uint128s = JsonNumberTestData.UInt128s;
+#endif
 
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
             string key = "";
@@ -237,6 +263,22 @@ namespace System.Text.Json.Tests
                         Assert.Equal(ulongs[count], json.GetUInt64());
                         count++;
                     }
+#if NET7_0_OR_GREATER
+                    else if (key.StartsWith("Int128"))
+                    {
+                        if (count >= int128s.Count)
+                            count = 0;
+                        Assert.Equal(int128s[count], json.GetInt128());
+                        count++;
+                    }
+                    else if (key.StartsWith("UInt128"))
+                    {
+                        if (count >= uint128s.Count)
+                            count = 0;
+                        Assert.Equal(uint128s[count], json.GetUInt128());
+                        count++;
+                    }
+#endif
                     else if (key.StartsWith("float"))
                     {
                         if (count >= floats.Count)

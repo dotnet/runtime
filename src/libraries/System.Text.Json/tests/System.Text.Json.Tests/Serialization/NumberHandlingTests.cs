@@ -82,6 +82,13 @@ namespace System.Text.Json.Serialization.Tests
                 RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
             }
             RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
+
+#if NET7_0_OR_GREATER
+            RunAsRootTypeTest(JsonNumberTestData.Int128s);
+            RunAsRootTypeTest(JsonNumberTestData.UInt128s);
+            RunAsRootTypeTest(JsonNumberTestData.NullableInt128s);
+            RunAsRootTypeTest(JsonNumberTestData.NullableUInt128s);
+#endif
         }
 
         private static void RunAsRootTypeTest<T>(List<T> numbers)
@@ -414,6 +421,13 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
             }
+
+#if NET7_0_OR_GREATER
+            RunAsCollectionElementTest(JsonNumberTestData.Int128s);
+            RunAsCollectionElementTest(JsonNumberTestData.UInt128s);
+            RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
+            RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
+#endif
         }
 
         private static void RunAsCollectionElementTest<T>(List<T> numbers)
@@ -1038,6 +1052,12 @@ namespace System.Text.Json.Serialization.Tests
             PerformEscapingTest(JsonNumberTestData.Floats, options);
             PerformEscapingTest(JsonNumberTestData.Doubles, options);
             PerformEscapingTest(JsonNumberTestData.Decimals, options);
+#if NET7_0_OR_GREATER
+            PerformEscapingTest(JsonNumberTestData.Int128s, options);
+            PerformEscapingTest(JsonNumberTestData.UInt128s, options);
+            PerformEscapingTest(JsonNumberTestData.NullableInt128s, options);
+            PerformEscapingTest(JsonNumberTestData.NullableUInt128s, options);
+#endif
         }
 
         private static void PerformEscapingTest<T>(List<T> numbers, JsonSerializerOptions options)
