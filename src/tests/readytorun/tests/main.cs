@@ -417,7 +417,7 @@ class Program
     // public constructor, so we run something when loading from byte array in the test below
     public Program()
     {
-        // do somehting in the constructor to see if it works
+        // do something in the constructor to see if it works
         TestVirtualMethodCalls();
     }
 
