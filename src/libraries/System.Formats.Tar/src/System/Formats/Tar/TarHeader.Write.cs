@@ -390,24 +390,24 @@ namespace System.Formats.Tar
 
             if (_mode > 0)
             {
-                checksum += WriteAsOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
+                checksum += FormatOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
             if (_uid > 0)
             {
-                checksum += WriteAsOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+                checksum += FormatOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
 
             if (_gid > 0)
             {
-                checksum += WriteAsOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+                checksum += FormatOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
             _size = actualLength;
 
             if (_size > 0)
             {
-                checksum += WriteAsOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+                checksum += FormatOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
             checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
@@ -472,12 +472,12 @@ namespace System.Formats.Tar
 
             if (_devMajor > 0)
             {
-                checksum += WriteAsOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
+                checksum += FormatOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
             }
 
             if (_devMinor > 0)
             {
-                checksum += WriteAsOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
+                checksum += FormatOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
 
             return checksum;
@@ -653,7 +653,7 @@ namespace System.Formats.Tar
 
             Span<byte> converted = stackalloc byte[FieldLengths.Checksum];
             converted.Clear();
-            WriteAsOctal(checksum, converted);
+            FormatOctal(checksum, converted);
 
             Span<byte> destination = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
 
@@ -728,17 +728,17 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        internal static int WriteAsOctal(long tenBaseNumber, Span<byte> destination)
+        internal static int FormatOctal(long value, Span<byte> destination)
         {
-            ulong value = (ulong)tenBaseNumber;
+            ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longest possible octal representation of a ulong is 21 digits
 
             int i = digits.Length - 1;
             while (true)
             {
-                digits[i] = (byte)('0' + (value % 8));
-                value /= 8;
-                if (value == 0) break;
+                digits[i] = (byte)('0' + (remaining % 8));
+                remaining /= 8;
+                if (remaining == 0) break;
                 i--;
             }
 
@@ -749,7 +749,7 @@ namespace System.Formats.Tar
         private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
-            return WriteAsOctal(unixTimeSeconds, destination);
+            return FormatOctal(unixTimeSeconds, destination);
         }
 
         // Writes the specified text as an ASCII string aligned to the left, and returns its checksum.
