@@ -52,7 +52,7 @@ namespace System.Formats.Tar
         internal static SortedDictionary<string, UnixFileMode>? CreatePendingModesDictionary()
             => new SortedDictionary<string, UnixFileMode>(s_reverseStringComparer);
 
-        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, bool overwriteMetadata, SortedDictionary<string, UnixFileMode>? pendingModes)
+        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, SortedDictionary<string, UnixFileMode>? pendingModes)
         {
             // Minimal permissions required for extracting.
             const UnixFileMode ExtractPermissions = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
@@ -61,8 +61,8 @@ namespace System.Formats.Tar
 
             if (Directory.Exists(fullPath))
             {
-                // Apply permissions to an existing directory when we're overwriting metadata.
-                if (mode.HasValue && overwriteMetadata)
+                // Apply permissions to an existing directory.
+                if (mode.HasValue)
                 {
                     // Ensure we have sufficient permissions to extract in the directory.
                     bool hasExtractPermissions = (mode.Value & ExtractPermissions) == ExtractPermissions;
