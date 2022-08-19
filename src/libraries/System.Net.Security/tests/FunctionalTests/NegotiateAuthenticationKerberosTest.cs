@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace System.Net.Security.Tests
 {
     [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]
-    [SkipOnPlatform(TestPlatforms.Android, "Kerberos auth is not supported on Android")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74224", TestPlatforms.Android)]
     public class NegotiateAuthenticationKerberosTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
