@@ -370,7 +370,7 @@ namespace System.Formats.Tar
             int entryNameLength = file.FullName.Length - basePathLength;
             Debug.Assert(entryNameLength > 0);
 
-            bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
+            bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
             return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
         }
 
