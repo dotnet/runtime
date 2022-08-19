@@ -1752,7 +1752,7 @@ namespace System.Text
 
         private static unsafe nuint WidenAsciiToUtf16_Vector256(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
-            Debug.Assert(Vector256.IsHardwareAccelerated);
+            // Debug.Assert(Vector256.IsHardwareAccelerated); currently commented out due to R2R bug: #74253
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * (uint)Vector256<byte>.Count);
 
