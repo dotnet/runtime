@@ -70,7 +70,7 @@ protected:
 //    tree - A GT_ASG tree that performs block initialization.
 //
 // Return Value:
-//    A possibly modified tree to perfom the initializetion.
+//    A possibly modified tree to perform the initializetion.
 //
 // static
 GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
@@ -114,7 +114,7 @@ MorphInitBlockHelper::MorphInitBlockHelper(Compiler* comp, GenTree* asg, bool in
 //    or sets lvDoNotEnregister on locals.
 //
 // Return Value:
-//    A possibly modified tree to perfom the block operation.
+//    A possibly modified tree to perform the block operation.
 //
 // Notes:
 //    It is used for both init and copy block.
@@ -186,7 +186,7 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_asg->TypeGet() != m_dst->TypeGet())
     {
         assert(!m_initBlock && "the asg type should be final for an init block.");
-        JITDUMP("changing type of asignment from %-6s to %-6s\n", varTypeName(m_asg->TypeGet()),
+        JITDUMP("changing type of assignment from %-6s to %-6s\n", varTypeName(m_asg->TypeGet()),
                 varTypeName(m_dst->TypeGet()));
 
         m_asg->ChangeType(m_dst->TypeGet());
@@ -561,10 +561,10 @@ void MorphInitBlockHelper::TryInitFieldByField()
             if (varTypeIsSIMD(fieldDesc) || varTypeIsGC(fieldDesc))
             {
                 // Cannot initialize GC or SIMD types with a non-zero constant.
-                // The former is completly bogus. The later restriction could be
+                // The former is completely bogus. The later restriction could be
                 // lifted by supporting non-zero SIMD constants or by generating
                 // field initialization code that converts an integer constant to
-                // the appropiate SIMD value. Unlikely to be very useful, though.
+                // the appropriate SIMD value. Unlikely to be very useful, though.
                 JITDUMP(" dest contains GC and/or SIMD fields and source constant is not 0.\n");
                 return;
             }
@@ -692,7 +692,7 @@ protected:
 //    tree - A GT_ASG tree that performs block copy.
 //
 // Return Value:
-//    A possibly modified tree to perfom the copy.
+//    A possibly modified tree to perform the copy.
 //
 // static
 GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
@@ -761,7 +761,7 @@ void MorphCopyBlockHelper::PrepareSrc()
 }
 
 // TrySpecialCases: check special cases that require special transformations.
-//    The current special cases include asignments with calls in RHS.
+//    The current special cases include assignments with calls in RHS.
 //
 // Notes:
 //    It could change multiReg flags or change m_dst node.
@@ -941,7 +941,7 @@ void MorphCopyBlockHelper::MorphStructCases()
     {
         // It is not always profitable to do field by field init for structs that are allocated to memory.
         // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
-        // A simple heuristic when field by field copy is prefered:
+        // A simple heuristic when field by field copy is preferred:
         // - if fields can be enregistered;
         // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
         // - if the struct has only one field.
@@ -1130,7 +1130,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 }
 
 //------------------------------------------------------------------------
-// CopyFieldByField: transform the copy block to a field by field asignment.
+// CopyFieldByField: transform the copy block to a field by field assignment.
 //
 // Notes:
 //    We do it for promoted lclVars which fields can be enregistered.
@@ -1282,7 +1282,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         if (i == (fieldCnt - 1))
                         {
-                            // Reuse the orginal "dstAddr" tree for the last field.
+                            // Reuse the original "dstAddr" tree for the last field.
                             dstAddrClone = dstAddr;
                         }
                         else
@@ -1370,7 +1370,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         if (i == (fieldCnt - 1))
                         {
-                            // Reuse the orginal m_srcAddr tree for the last field.
+                            // Reuse the original m_srcAddr tree for the last field.
                             srcAddrClone = srcAddr;
                         }
                         else
@@ -1478,7 +1478,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //    tree - a block copy (i.e. an assignment with a block op on the lhs).
 //
 // Return Value:
-//    We can return the orginal block copy unmodified (least desirable, but always correct)
+//    We can return the original block copy unmodified (least desirable, but always correct)
 //    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
@@ -1491,8 +1491,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //    if they cannot be enregistered.
 //    When performing a field by field assignment we can have one of Source() or Dest treated as a blob of bytes
 //    and in such cases we will call lvaSetVarDoNotEnregister() on the one treated as a blob of bytes.
-//    If the Source() or Dest() is a struct that has a "CustomLayout" and "ConstainsHoles" then we
-//    can not use a field by field assignment and must leave the orginal block copy unmodified.
+//    If the Source() or Dest() is a struct that has a "CustomLayout" and "ContainsHoles" then we
+//    can not use a field by field assignment and must leave the original block copy unmodified.
 //
 GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 {
@@ -1511,7 +1511,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 //    perform a field by field assignment for each of the promoted struct fields.
 //    This is not always possible (e.g. if the struct is address exposed).
 //
-//    Otherwise the orginal GT_ASG tree is returned unmodified, note that the
+//    Otherwise the original GT_ASG tree is returned unmodified, note that the
 //    nodes can still be changed.
 //
 // Assumptions:
@@ -1550,13 +1550,17 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if (size != 0)
         {
             GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            lhs->SetIndirExceptionFlags(this);
-
             GenTree* asg = gtNewAssignNode(lhs, tree->Data());
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            JITDUMP("MorphStoreDynBlock: trasformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+
+            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
+            if (lclVarTree != nullptr)
+            {
+                lclVarTree->gtFlags |= GTF_VAR_DEF;
+            }
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }

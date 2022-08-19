@@ -111,8 +111,13 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR ep_rt_redefine
 
+#ifndef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+typedef uint32_t (*ep_rt_hash_map_hash_callback_t)(const void *);
+typedef bool (*ep_rt_hash_map_equal_callback_t)(const void *, const void *);
+#endif
+
 #define EP_RT_DECLARE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, ep_rt_hash_map_hash_callback_t hash_callback, ep_rt_hash_map_equal_callback_t eq_callback, void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, free) (hash_map_type *hash_map); \
 	static bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value); \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove_all) (hash_map_type *hash_map); \
@@ -249,7 +254,7 @@ ep_rt_shutdown (void);
 
 static
 bool
-ep_rt_config_aquire (void);
+ep_rt_config_acquire (void);
 
 static
 bool
@@ -348,6 +353,11 @@ EP_RT_DECLARE_LIST_ITERATOR (event_list, ep_rt_event_list_t, ep_rt_event_list_it
 EP_RT_DECLARE_HASH_MAP_REMOVE(metadata_labels_hash, ep_rt_metadata_labels_hash_map_t, EventPipeEvent *, uint32_t)
 EP_RT_DECLARE_HASH_MAP(stack_hash, ep_rt_stack_hash_map_t, StackHashKey *, StackHashEntry *)
 EP_RT_DECLARE_HASH_MAP_ITERATOR(stack_hash, ep_rt_stack_hash_map_t, ep_rt_stack_hash_map_iterator_t, StackHashKey *, StackHashEntry *)
+
+#ifndef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+#define ep_rt_stack_hash_key_hash ep_stack_hash_key_hash
+#define ep_rt_stack_hash_key_equal ep_stack_hash_key_equal
+#endif
 
 /*
  * EventPipeProvider.
@@ -658,7 +668,7 @@ ep_rt_runtime_version_get_utf8 (void);
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock);
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock);
 
 static
 bool
@@ -691,7 +701,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock);
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
@@ -961,7 +971,7 @@ ep_rt_volatile_store_ptr_without_barrier (
 #define EP_SPIN_LOCK_ENTER(expr, section_name) \
 { \
 	ep_rt_spin_lock_requires_lock_not_held (expr); \
-	ep_rt_spin_lock_aquire (expr); \
+	ep_rt_spin_lock_acquire (expr); \
 	bool _no_error_ ##section_name = false;
 
 #define EP_SPIN_LOCK_EXIT(expr, section_name) \
@@ -985,7 +995,7 @@ _ep_on_spinlock_exit_ ##section_name : \
 #define EP_LOCK_ENTER(section_name) \
 { \
 	ep_requires_lock_not_held (); \
-	bool _owns_config_lock_ ##section_name = ep_rt_config_aquire (); \
+	bool _owns_config_lock_ ##section_name = ep_rt_config_acquire (); \
 	bool _no_config_error_ ##section_name = false; \
 	if (EP_UNLIKELY((!_owns_config_lock_ ##section_name))) \
 		goto _ep_on_config_lock_exit_ ##section_name;

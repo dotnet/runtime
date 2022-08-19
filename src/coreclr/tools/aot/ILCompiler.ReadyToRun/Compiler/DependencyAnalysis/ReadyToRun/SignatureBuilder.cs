@@ -136,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint isSigned = (data < 0 ? 1u : 0u);
             uint udata = unchecked((uint)data);
 
-            // Note that we cannot use CompressData to pack the data value, because of negative values 
+            // Note that we cannot use CompressData to pack the data value, because of negative values
             // like: 0xffffe000 (-8192) which has to be encoded as 1 in 2 bytes, i.e. 0x81 0x00
             // However CompressData would store value 1 as 1 byte: 0x01
             if ((udata & SignMask.ONEBYTE) == 0 || (udata & SignMask.ONEBYTE) == SignMask.ONEBYTE)
@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            // Out of compressable range
+            // Out of compressible range
             throw new NotImplementedException();
         }
 
@@ -219,6 +219,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case TypeFlags.Pointer:
                     EmitPointerTypeSignature((PointerType)typeDesc, context);
+                    return;
+
+                case TypeFlags.FunctionPointer:
+                    EmitFunctionPointerTypeSignature((FunctionPointerType)typeDesc, context);
                     return;
 
                 case TypeFlags.ByRef:
@@ -366,6 +370,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ParameterType, context);
         }
 
+        private void EmitFunctionPointerTypeSignature(FunctionPointerType type, SignatureContext context)
+        {
+            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(type.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+            SignatureAttributes callingConventionAttributes = ((type.Signature.Flags & MethodSignatureFlags.Static) != 0 ? SignatureAttributes.None : SignatureAttributes.Instance);
+
+            EmitElementType(CorElementType.ELEMENT_TYPE_FNPTR);
+            EmitUInt((uint)((byte)callingConvention | (byte)callingConventionAttributes));
+            EmitUInt((uint)type.Signature.Length);
+
+            EmitTypeSignature(type.Signature.ReturnType, context);
+            for (int argIndex = 0; argIndex < type.Signature.Length; argIndex++)
+            {
+                EmitTypeSignature(type.Signature[argIndex], context);
+            }
+        }
+
         private void EmitByRefTypeSignature(ByRefType type, SignatureContext context)
         {
             EmitElementType(CorElementType.ELEMENT_TYPE_BYREF);
@@ -393,7 +413,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public void EmitMethodSignature(
-            MethodWithToken method, 
+            MethodWithToken method,
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
@@ -437,7 +457,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodWithToken method, 
+        private void EmitMethodSpecificationSignature(MethodWithToken method,
             uint flags, bool enforceDefEncoding, bool enforceOwningType, SignatureContext context)
         {
             ModuleToken methodToken = method.Token;
@@ -510,23 +530,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void EmitFieldSignature(FieldDesc field, SignatureContext context)
+        public void EmitFieldSignature(FieldWithToken field, SignatureContext context)
         {
             uint fieldSigFlags = 0;
-            TypeDesc canonOwnerType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
             TypeDesc ownerType = null;
-            if (canonOwnerType.HasInstantiation)
+            if (field.OwningTypeNotDerivedFromToken)
             {
-                ownerType = field.OwningType;
+                ownerType = field.Field.OwningType;
                 fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
             }
-            if (canonOwnerType != field.OwningType)
-            {
-                // Convert field to canonical form as this is what the field - module token lookup stores
-                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
-            }
 
-            ModuleToken fieldToken = context.GetModuleTokenForField(field);
+            ModuleToken fieldToken = field.Token;
             switch (fieldToken.TokenType)
             {
                 case CorTokenType.mdtMemberRef:

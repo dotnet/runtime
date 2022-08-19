@@ -605,7 +605,7 @@ jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, co
     return fid;
 }
 
-static void DetatchThreadFromJNI(void* unused)
+static void DetachThreadFromJNI(void* unused)
 {
     LOG_DEBUG("Detaching thread from JNI");
     (void)unused;
@@ -618,7 +618,7 @@ static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
 static void
 make_key()
 {
-    (void) pthread_key_create(&threadLocalEnvKey, &DetatchThreadFromJNI);
+    (void) pthread_key_create(&threadLocalEnvKey, &DetachThreadFromJNI);
 }
 
 JNIEnv* GetJNIEnv()

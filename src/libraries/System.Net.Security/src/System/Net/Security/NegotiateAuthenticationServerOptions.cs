@@ -8,10 +8,21 @@ using System.Security.Principal;
 namespace System.Net.Security
 {
     /// <summary>
-    /// Represents a propery bag for server-side of an authentication exchange.
+    /// Represents a property bag for server-side of an authentication exchange.
     /// </summary>
+    /// <remarks>
+    /// This property bag is used as argument for <see cref="NegotiateAuthentication" />
+    /// constructor for initializing a server-side authentication.
+    /// </remarks>
     public class NegotiateAuthenticationServerOptions
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NegotiateAuthenticationServerOptions" /> class.
+        /// </summary>
+        public NegotiateAuthenticationServerOptions()
+        {
+        }
+
         /// <summary>
         /// Specifies the GSSAPI authentication package used for the authentication.
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.

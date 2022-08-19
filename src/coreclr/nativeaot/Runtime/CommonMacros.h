@@ -189,7 +189,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 typedef bool CLR_BOOL;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artifically widened on x86 and amd64
+// The return value is artificially widened on x86 and amd64
 typedef int32_t FC_BOOL_RET;
 #else
 typedef bool FC_BOOL_RET;

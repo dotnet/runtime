@@ -1537,7 +1537,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     }
     else
     {
-        // Collectible types requires that for shared generic code, if we use the generic context paramter
+        // Collectible types requires that for shared generic code, if we use the generic context parameter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
         lvaGenericsContextInUse = true;
@@ -2393,7 +2393,7 @@ private:
 
         BasicBlock* mergedReturnBlock = nullptr;
 
-        // Do not look for mergable constant returns in debug codegen as
+        // Do not look for mergeable constant returns in debug codegen as
         // we may lose track of sequence points.
         if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.compDbgCode)
         {
@@ -2589,6 +2589,10 @@ private:
 void Compiler::fgAddInternal()
 {
     noway_assert(!compIsForInlining());
+
+    // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
+    // type with a runtime lookup
+    fgCreateFiltersForGenericExceptions();
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Similarly, we need a scratch BB for poisoning. Create it here.
@@ -3467,7 +3471,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-    // Since we may need to create a new transistion block
+    // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
     assert(fgSafeBasicBlockCreation);

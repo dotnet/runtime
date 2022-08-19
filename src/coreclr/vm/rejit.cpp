@@ -1108,7 +1108,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
 
             if (FAILED(hr))
             {
-                // Only call if the GetReJITParamters call failed
+                // Only call if the GetReJITParameters call failed
                 ReportReJITError(pModule, methodDef, pModule->LookupMethodDef(methodDef), hr);
             }
             return S_OK;
@@ -1134,7 +1134,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
     }
     else if (fWaitForParameters)
     {
-        // This feels annoying, but it doesn't appear like we have the good threading primitves
+        // This feels annoying, but it doesn't appear like we have the good threading primitives
         // for this. What I would like is an AutoResetEvent that atomically exits the table
         // Crst when I wait on it. From what I can tell our AutoResetEvent doesn't have
         // that atomic transition which means this ordering could occur:
@@ -1161,7 +1161,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
                 if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive)
                 {
-                    break; // the other thread got the parameters succesfully, go race to rejit
+                    break; // the other thread got the parameters successfully, go race to rejit
                 }
             }
             ClrSleepEx(1, FALSE);

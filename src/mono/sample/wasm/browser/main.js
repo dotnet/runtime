@@ -1,16 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
-
-function wasm_exit(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    if (exit_code) tests_done_elem.style.background = "red";
-    document.body.appendChild(tests_done_elem);
-
-    if (reason) console.error(reason);
-    console.log(`WASM EXIT ${exit_code}`);
-}
+import { dotnet, exit } from './dotnet.js'
 
 function add(a, b) {
     return a + b;
@@ -21,34 +9,58 @@ function sub(a, b) {
 }
 
 try {
-    const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime');
-        return {
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig } = await dotnet
+        .withConsoleForwarding()
+        .withElementOnExit()
+        .withModuleConfig({
             configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+                console.log('user code Module.onConfigLoaded');
+                // config is loaded and could be tweaked before the rest of the runtime startup sequence
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+            },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
-            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized'); },
+            onRuntimeInitialized: () => {
+                console.log('user code Module.onRuntimeInitialized');
+                // here we could use API passed into this callback
+                // Module.FS.chdir("/");
+            },
+            onDotnetReady: () => {
+                // This is called after all assets are loaded.
+                console.log('user code Module.onDotnetReady');
+            },
             postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .create();
+
+
+    // at this point both emscripten and monoVM are fully initialized.
+    // we could use the APIs returned and resolved from createDotnetRuntime promise
+    // both exports are receiving the same object instances
+    console.log('user code after createDotnetRuntime()');
+    setModuleImports("main.js", {
+        Sample: {
+            Test: {
+                add,
+                sub
+            }
         }
     });
-    console.log('after createDotnetRuntime');
-    IMPORTS.Sample = {
-        Test: {
-            add,
-            sub
-        }
-    };
 
-    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.ES6.Sample.dll");
+    const config = getConfig();
+    const exports = await getAssemblyExports(config.mainAssemblyName);
     const meaning = exports.Sample.Test.TestMeaning();
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
-        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
         console.debug(`ret: ${meaning}`);
     }
 
-    let exit_code = await MONO.mono_run_main("Wasm.Browser.ES6.Sample.dll", []);
-    wasm_exit(exit_code);
-} catch (err) {
-    wasm_exit(2, err);
+    let exit_code = await runMain(config.mainAssemblyName, []);
+    exit(exit_code);
+}
+catch (err) {
+    exit(2, err);
 }

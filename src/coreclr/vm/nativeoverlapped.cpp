@@ -28,7 +28,7 @@
 FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, DWORD* numBytes)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
 #ifndef TARGET_UNIX
     Thread *pThread = GetThread();

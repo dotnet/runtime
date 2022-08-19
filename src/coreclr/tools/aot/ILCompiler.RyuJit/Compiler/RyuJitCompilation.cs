@@ -71,7 +71,7 @@ namespace ILCompiler
             // RyuJIT makes assumptions around the value of these symbols - in particular, it assumes
             // that type handles and type symbols have a 1:1 relationship. We therefore need to
             // make sure RyuJIT never sees a constructed and unconstructed type symbol for the
-            // same type. If the type is constructable and we don't have whole progam view
+            // same type. If the type is constructable and we don't have whole program view
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
@@ -93,7 +93,7 @@ namespace ILCompiler
             ObjectWritingOptions options = default;
             if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
                 options |= ObjectWritingOptions.UseDwarf5;
-            
+
             if (_debugInformationProvider is not NullDebugInformationProvider)
                 options |= ObjectWritingOptions.GenerateDebugInfo;
 

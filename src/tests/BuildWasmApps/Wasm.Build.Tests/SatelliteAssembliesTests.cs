@@ -42,13 +42,15 @@ namespace Wasm.Build.Tests
             // Release+publish defaults to native relinking
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT && buildArgs.Config != "Release";
 
+            string extraProperties = (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
+                                        // make ASSERTIONS=1 so that we test with it
+                                        + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
+
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
-                                        // make ASSERTIONS=1 so that we test with it
-                                        + $"<EmccCompileOptimizationFlag>{ (buildArgs.Config == "Debug" ? "-O0 -sASSERTIONS=1" : "-O0 -sASSERTIONS=1")}</EmccCompileOptimizationFlag>"
-                                        );
+                                        extraProperties: extraProperties);
 
             BuildProject(buildArgs,
                             id: id,
@@ -65,7 +67,7 @@ namespace Wasm.Build.Tests
                             args: argCulture,
                             host: host, id: id,
                             // check that downloading assets doesn't have timing race conditions
-                            extraXHarnessMonoArgs: "--fetch-random-delay=200");
+                            extraXHarnessMonoArgs: host is RunHost.Chrome ? "--fetch-random-delay=200" : string.Empty);
         }
 
         [Theory]
@@ -81,10 +83,15 @@ namespace Wasm.Build.Tests
             string projectName = $"SatelliteAssemblyFromProjectRef";
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
+            string extraProperties = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>"
+                                        // make ASSERTIONS=1 so that we test with it
+                                        + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
+
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>",
+                                        extraProperties: extraProperties,
                                         extraItems: $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />");
 
             BuildProject(buildArgs,
@@ -97,8 +104,18 @@ namespace Wasm.Build.Tests
                                     _projectDir = Path.Combine(rootDir, projectName);
 
                                     Directory.CreateDirectory(_projectDir);
-                                    Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "SatelliteAssemblyFromProjectRef"), rootDir);
+                                    Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, projectName), rootDir);
+
+                                    // D.B.* used for wasm projects should be moved next to the wasm project, so it doesn't
+                                    // affect the non-wasm library project
+                                    File.Move(Path.Combine(rootDir, "Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
+                                    File.Move(Path.Combine(rootDir, "Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+
                                     CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
+
+                                    // The root D.B* should be empty
+                                    File.WriteAllText(Path.Combine(rootDir, "Directory.Build.props"), "<Project />");
+                                    File.WriteAllText(Path.Combine(rootDir, "Directory.Build.targets"), "<Project />");
                                 }));
 
             RunAndTestWasmApp(buildArgs,

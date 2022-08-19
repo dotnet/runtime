@@ -40,7 +40,7 @@ namespace LibraryImportGenerator.IntegrationTests
             [return: MarshalUsing(ConstantElementCount = sizeof(long))]
             public static partial Span<byte> GetLongBytes(long l);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
             [return: MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers(Span<BoolStruct> pArray, int length);
         }

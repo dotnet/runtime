@@ -27,10 +27,10 @@ PALTEST(filemapping_memmgt_VirtualFree_test3_paltest_virtualfree_test3, "filemap
     {
         ExitProcess(FAIL);
     }
-    
-    //Allocate the physical storage in memory or in the paging file on disk 
+
+    //Allocate the physical storage in memory or in the paging file on disk
     lpVirtualAddress = VirtualAlloc(NULL,//system determine where to allocate the region
-            VIRTUALSIZE,         //specify the size 
+            VIRTUALSIZE,         //specify the size
             MEM_RESERVE,         //allocation type
             PAGE_NOACCESS);      //access protection
     if(NULL == lpVirtualAddress)
@@ -40,7 +40,7 @@ PALTEST(filemapping_memmgt_VirtualFree_test3_paltest_virtualfree_test3, "filemap
 
     //decommit and release the specified region
     err = VirtualFree(lpVirtualAddress,     //base address
-                    VIRTUALSIZE,            //decommited size
+                    VIRTUALSIZE,            //decommitted size
                     MEM_DECOMMIT|MEM_RELEASE);//free operation
     if(0 != err)
     {

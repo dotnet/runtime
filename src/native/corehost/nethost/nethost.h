@@ -47,7 +47,7 @@ extern "C" {
 //     Size of the struct. This is used for versioning.
 //
 //   assembly_path
-//     Path to the compenent's assembly.
+//     Path to the component's assembly.
 //     If specified, hostfxr is located as if the assembly_path is the apphost
 //
 //   dotnet_root

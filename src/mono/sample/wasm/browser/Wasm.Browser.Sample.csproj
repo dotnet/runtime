@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <WasmDebugLevel>1</WasmDebugLevel>
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+  <PropertyGroup>
+    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+</Project>

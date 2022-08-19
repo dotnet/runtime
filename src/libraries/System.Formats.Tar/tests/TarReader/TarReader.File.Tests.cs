@@ -118,7 +118,7 @@ namespace System.Formats.Tar.Tests
             Read_Archive_LongFileName_Over100_Under255_Internal(format, testFormat);
 
         [Theory]
-        // Neither V7 not Ustar can handle path lenghts waaaay beyond name+prefix length
+        // Neither V7 not Ustar can handle path lengths waaaay beyond name+prefix length
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]

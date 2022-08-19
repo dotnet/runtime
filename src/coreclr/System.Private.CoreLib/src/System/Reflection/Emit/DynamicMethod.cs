@@ -208,7 +208,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
-        // helpers for intialization
+        // helpers for initialization
 
         private static void CheckConsistency(MethodAttributes attributes, CallingConventions callingConvention)
         {

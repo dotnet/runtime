@@ -222,7 +222,7 @@ STDMETHODIMP RegMeta::EnumTypeDefs(
         pEnum = NULL;
     }
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rTypeDefs, pcTypeDefs);
 
 ErrExit:

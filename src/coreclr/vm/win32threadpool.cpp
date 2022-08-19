@@ -137,7 +137,7 @@ CLRLifoSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) LONG  ThreadpoolMgr::GateThreadStatus=GATE_THREAD_STATUS_NOT_RUNNING;
 
-// Move out of from preceeding variables' cache line
+// Move out of from preceding variables' cache line
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) ThreadpoolMgr::RecycledListsWrapper ThreadpoolMgr::RecycledLists;
 
 BOOL ThreadpoolMgr::IsApcPendingOnWaitThread = FALSE;
@@ -898,7 +898,7 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     EnsureInitialized();
 
@@ -1738,7 +1738,7 @@ DWORD WINAPI ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     Thread *pThread = NULL;
     DWORD dwSwitchCount = 0;
@@ -2151,7 +2151,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
 }
 
 
-// Returns a wait thread that can accomodate another wait request. The
+// Returns a wait thread that can accommodate another wait request. The
 // caller is responsible for synchronizing access to the WaitThreadsHead
 ThreadpoolMgr::ThreadCB* ThreadpoolMgr::FindWaitThread()
 {
@@ -2413,7 +2413,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 
     ClrFlsSetThreadType (ThreadType_Wait);
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     ThreadCB* threadCB = (ThreadCB*) lpArgs;
     Thread* pThread = SetupThreadNoThrow();
@@ -3070,7 +3070,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPoolForIO());
 
     DWORD numBytes=0;
     size_t key=0;

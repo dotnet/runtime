@@ -11,8 +11,8 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarWriter class.
     public sealed partial class TarWriter : IDisposable
     {
-        // Creating archives in Windows always sets the mode to 777
-        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
+        // Windows files don't have a mode. Use a mode of 755 for directories and files.
+        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)

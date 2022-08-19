@@ -414,5 +414,67 @@ namespace TypeSystemTests
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
             Assert.Equal(0x4, tARMFieldStruct.GetField("_struct").Offset.AsInt);
         }
+
+        [Fact]
+        public void TestAlignmentBehavior_StructStructByte_StructByteAuto()
+        {
+            string _namespace = "Sequential";
+            string _type = "StructStructByte_StructByteAuto";
+
+            MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
+            MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
+            MetadataType tARM = _testModuleARM.GetType(_namespace, _type);
+
+            Assert.Equal(0x1, tX64.InstanceFieldAlignment.AsInt);
+            Assert.Equal(0x1, tARM.InstanceFieldAlignment.AsInt);
+            Assert.Equal(0x1, tX86.InstanceFieldAlignment.AsInt);
+
+            Assert.Equal(0x2, tX64.InstanceFieldSize.AsInt);
+            Assert.Equal(0x2, tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(0x2, tX86.InstanceFieldSize.AsInt);
+
+            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+
+            Assert.Equal(0x1, tX64.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x1, tARM.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x1, tX86.GetField("fld2").Offset.AsInt);
+        }
+
+        [Theory]
+        [InlineData("StructStructByte_StructByteAuto", new int[]{1,1,1}, new int[]{2,2,2})]
+        [InlineData("StructStructByte_Struct2BytesAuto", new int[]{2,2,2}, new int[]{4,4,4})]
+        [InlineData("StructStructByte_Struct3BytesAuto", new int[]{4,4,4}, new int[]{8,8,8})]
+        [InlineData("StructStructByte_Struct4BytesAuto", new int[]{4,4,4}, new int[]{8,8,8})]
+        [InlineData("StructStructByte_Struct5BytesAuto", new int[]{8,4,4}, new int[]{16,12,12})]
+        [InlineData("StructStructByte_Struct8BytesAuto", new int[]{8,4,4}, new int[]{16,12,12})]
+        [InlineData("StructStructByte_Struct9BytesAuto", new int[]{8,4,4}, new int[]{24,16,16})]
+        public void TestAlignmentBehavior_AutoAlignmentRules(string wrapperType, int[] alignment, int[] size)
+        {
+            string _namespace = "Sequential";
+            string _type = wrapperType;
+
+            MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
+            MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
+            MetadataType tARM = _testModuleARM.GetType(_namespace, _type);
+
+            Assert.Equal(alignment[0], tX64.InstanceFieldAlignment.AsInt);
+            Assert.Equal(alignment[1], tARM.InstanceFieldAlignment.AsInt);
+            Assert.Equal(alignment[2], tX86.InstanceFieldAlignment.AsInt);
+
+            Assert.Equal(size[0], tX64.InstanceFieldSize.AsInt);
+            Assert.Equal(size[1], tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(size[2], tX86.InstanceFieldSize.AsInt);
+
+            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+
+            Assert.Equal(alignment[0], tX64.GetField("fld2").Offset.AsInt);
+            Assert.Equal(alignment[1], tARM.GetField("fld2").Offset.AsInt);
+            Assert.Equal(alignment[2], tX86.GetField("fld2").Offset.AsInt);
+        }
+
     }
 }

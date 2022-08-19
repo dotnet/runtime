@@ -201,7 +201,7 @@
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpCheckedAssignRefArm64
+        b       C_FUNC(RhpCheckedAssignRefArm64)
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -221,7 +221,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpAssignRefArm64
+        b       C_FUNC(RhpAssignRefArm64)
 
 LEAF_END RhpAssignRef, _TEXT
 
@@ -361,13 +361,13 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
-    ldr x15, [x13]
-    str x15, [x14]
+    ldr     x15, [x13]
+    stlr    x15, [x14]
 
     INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12, X15
 
-    add X13, x13, #8
-    add x14, x14, #8
+    add     X13, x13, #8
+    add     x14, x14, #8
 
     ret
 LEAF_END RhpByRefAssignRefArm64, _TEXT

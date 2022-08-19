@@ -65,7 +65,7 @@ Wszystko gotowe? Zaczynamy!</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">Zasoby</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Dokumentacja&lt;/A&gt;</String>
-  <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Informacje o wersji&lt;/A&gt;</String>
+  <String Id="ReleaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Informacje o wersji&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Samouczki&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetria platformy .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Zasady zachowania poufności informacji&lt;/A&gt;</String>

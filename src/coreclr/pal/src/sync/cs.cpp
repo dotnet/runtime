@@ -531,11 +531,11 @@ namespace CorUnix
 #ifdef _DEBUG
     enum CSSubSysInitState
     {
-        CSSubSysNotInitialzed,
+        CSSubSysNotInitialized,
         CSSubSysInitializing,
         CSSubSysInitialized
     };
-    static Volatile<CSSubSysInitState> csssInitState = CSSubSysNotInitialzed;
+    static Volatile<CSSubSysInitState> csssInitState = CSSubSysNotInitialized;
 
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     static Volatile<LONG> g_lPALCSInitializeCount         = 0;
@@ -567,8 +567,8 @@ namespace CorUnix
 #ifdef _DEBUG
         LONG lRet = InterlockedCompareExchange((LONG *)&csssInitState,
                                                (LONG)CSSubSysInitializing,
-                                               (LONG)CSSubSysNotInitialzed);
-        if ((LONG)CSSubSysNotInitialzed == lRet)
+                                               (LONG)CSSubSysNotInitialized);
+        if ((LONG)CSSubSysNotInitialized == lRet)
         {
             InitializeListHead(&g_PALCSList);
 
@@ -1050,7 +1050,7 @@ namespace CorUnix
     Function:
       CorUnix::PALCS_FullyInitialize
 
-    Fully initializes a CS previously initialied true InitializeCriticalSection.
+    Fully initializes a CS which was previously initialized in InitializeCriticalSection.
     This method is called at the first contention on the target CS
     --*/
     bool PALCS_FullyInitialize(PAL_CRITICAL_SECTION * pPalCriticalSection)

@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeCertContextHandle certContext = ((CertificatePal)certificate).GetCertContext())
             {
                 if (!Interop.Crypt32.CertAddCertificateContextToStore(_certStore, certContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
         }
 
@@ -66,8 +66,10 @@ namespace System.Security.Cryptography.X509Certificates
                     return; // The certificate is not present in the store, simply return.
 
                 Interop.Crypt32.CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
+                enumCertContext.Dispose();
+
                 if (!Interop.Crypt32.CertDeleteCertificateFromStore(pCertContextToDelete))
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
         }
 

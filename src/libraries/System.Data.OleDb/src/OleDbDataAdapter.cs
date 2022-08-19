@@ -334,7 +334,7 @@ namespace System.Data.OleDb
                 OleDbDataReader? dataReader = null;
                 try
                 {
-                    // intialized with chapter only since we don't want ReleaseChapter called for this chapter handle
+                    // initialized with chapter only since we don't want ReleaseChapter called for this chapter handle
                     ChapterHandle chapterHandle = ChapterHandle.CreateChapterHandle(chapter);
 
                     dataReader = new OleDbDataReader(null, null, 0, behavior);

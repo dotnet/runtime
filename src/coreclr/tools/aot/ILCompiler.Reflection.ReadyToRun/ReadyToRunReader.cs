@@ -21,7 +21,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
     /// </summary>
     public enum OperatingSystem
     {
@@ -607,6 +607,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case Machine.Arm64:
                     _architecture = Architecture.Arm64;
+                    _pointerSize = 8;
+                    break;
+
+                case (Machine) 0x6264: /* LoongArch64 */
+                    _architecture = (Architecture) 6; /* LoongArch64 */
                     _pointerSize = 8;
                     break;
 
@@ -1383,7 +1388,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         /// <summary>
         /// Reads the method entrypoint from the offset. Used for non-generic methods
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
         /// </summary>
         private void GetRuntimeFunctionIndexFromOffset(int offset, out int runtimeFunctionIndex, out int? fixupOffset)
         {

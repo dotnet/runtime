@@ -24,13 +24,13 @@ namespace System.Text.Json.Serialization
         /// </remarks>
         public JsonSerializerOptions Options
         {
-            get => _options ??= new JsonSerializerOptions { TypeInfoResolver = this, IsLockedInstance = true };
+            get => _options ??= new JsonSerializerOptions { TypeInfoResolver = this, IsImmutable = true };
 
             internal set
             {
-                Debug.Assert(!value.IsLockedInstance);
+                Debug.Assert(!value.IsImmutable);
                 value.TypeInfoResolver = this;
-                value.IsLockedInstance = true;
+                value.IsImmutable = true;
                 _options = value;
             }
         }

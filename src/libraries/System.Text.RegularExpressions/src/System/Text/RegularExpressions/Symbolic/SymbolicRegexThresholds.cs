@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Gets the value of the environment variable whose name is
         /// given by <see cref="SymbolicRegexSafeSizeThreshold_ConfigKeyName"/>
         /// or else returns <see cref="DefaultSymbolicRegexSafeSizeThreshold"/>
-        /// if the environment variable is undefined, incorrectly formated, or not a positive integer.
+        /// if the environment variable is undefined, incorrectly formatted, or not a positive integer.
         /// </summary>
         /// <remarks>
         /// The value is queried from <code>AppContext</code>

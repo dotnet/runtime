@@ -169,7 +169,7 @@ public:
     }
 
     DWORD Wait(DWORD dwMilliseconds, BOOL bAlertable);
-    BOOL Release(LONG lReleaseCount, LONG* lpPreviouseCount);
+    BOOL Release(LONG lReleaseCount, LONG* lpPreviousCount);
 
 private:
     HANDLE m_handle;

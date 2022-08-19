@@ -830,7 +830,7 @@ public:
     static BOOL AddWaitRequest(HANDLE waitHandle, WaitInfo* waitInfo);
 
 
-    static ThreadCB* FindWaitThread();              // returns a wait thread that can accomodate another wait request
+    static ThreadCB* FindWaitThread();              // returns a wait thread that can accommodate another wait request
 
     static BOOL CreateWaitThread();
 

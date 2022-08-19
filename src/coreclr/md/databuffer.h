@@ -45,7 +45,7 @@ public:
     // Creates memory block copy.
     inline DataBuffer(
         const DataBuffer &source);
-    // Initializes memory block to empty data. The object could be already initialzied.
+    // Initializes memory block to empty data. The object could be already initialized.
     inline void Clear();
     // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
     inline void Init(
@@ -135,7 +135,7 @@ public:
 
     // Skips the buffer to exact size (cbSize).
     // Returns FALSE if there's less than cbSize data represented.
-    // Returns TRUE otherwise and skips data at the beggining, so that the result has size cbSize.
+    // Returns TRUE otherwise and skips data at the beginning, so that the result has size cbSize.
     __checkReturn
     inline BOOL SkipToExactSize(UINT32 cbSize);
 

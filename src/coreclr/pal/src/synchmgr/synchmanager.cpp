@@ -410,7 +410,7 @@ namespace CorUnix
                 break;
             }
             case WaitSucceeded:
-            case MutexAbondoned:
+            case MutexAbandoned:
                 *pdwSignaledObject = dwSigObjIdx;
                 break;
             default:
@@ -643,7 +643,7 @@ namespace CorUnix
             // if the thread is currently waiting/sleeping and it wakes up
             // before shutdown code manage to suspend it, it will be rerouted
             // to ThreadPrepareForShutdown (that will be done without holding
-            // any internal lock, in a way to accomodate shutdown time thread
+            // any internal lock, in a way to accommodate shutdown time thread
             // suspension).
             // At this time we also unregister the wait, so no dummy nodes are
             // left around on waiting objects.
@@ -1836,7 +1836,7 @@ namespace CorUnix
                         // resetting the data by acquiring the object ownership
                         if (psdSynchData->IsAbandoned())
                         {
-                            twrWakeUpReason = MutexAbondoned;
+                            twrWakeUpReason = MutexAbandoned;
                         }
 
                         // Acquire ownership

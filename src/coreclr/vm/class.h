@@ -119,9 +119,9 @@ class ExplicitFieldTrust
             kNone         = 0,    // no guarantees at all                                              - Type refuses to load at all.
             kLegal        = 1,    // guarantees no objref <-> scalar overlap and no unaligned objref   - Type loads but field access won't verify
             kVerifiable   = 2,    // guarantees no objref <-> objref overlap and all guarantees above  - Type loads and field access will verify
-            kNonOverLayed = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
+            kNonOverlaid = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
 
-            kMaxTrust     = kNonOverLayed,
+            kMaxTrust     = kNonOverlaid,
         };
 
 };
@@ -159,10 +159,10 @@ class ExplicitClassTrust : private ExplicitFieldTrust
             return m_trust >= kVerifiable;
         }
 
-        BOOL IsNonOverLayed()
+        BOOL IsNonOverlaid()
         {
             LIMITED_METHOD_CONTRACT;
-            return m_trust >= kNonOverLayed;
+            return m_trust >= kNonOverlaid;
         }
 
         TrustLevel GetTrustLevel()
@@ -1268,10 +1268,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_HASLAYOUT;  //modified before the class is published
     }
-    inline void SetHasOverLayedFields()
+    inline void SetHasOverlaidFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= VMFLAG_HASOVERLAYEDFIELDS;
+        m_VMFlags |= VMFLAG_HASOVERLAIDFIELDS;
     }
     inline void SetIsNested()
     {
@@ -1349,10 +1349,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_HASLAYOUT;
     }
-    BOOL HasOverLayedField()
+    BOOL HasOverlaidField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_HASOVERLAYEDFIELDS;
+        return m_VMFlags & VMFLAG_HASOVERLAIDFIELDS;
     }
     BOOL IsNested()
     {
@@ -1687,8 +1687,8 @@ public:
 
         VMFLAG_IS_EQUIVALENT_TYPE              = 0x00000200,
 
-        //   OVERLAYED is used to detect whether Equals can safely optimize to a bit-compare across the structure.
-        VMFLAG_HASOVERLAYEDFIELDS              = 0x00000400,
+        //   OVERLAID is used to detect whether Equals can safely optimize to a bit-compare across the structure.
+        VMFLAG_HASOVERLAIDFIELDS               = 0x00000400,
 
         // Set this if this class or its parent have instance fields which
         // must be explicitly inited in a constructor (e.g. pointers of any
@@ -1783,14 +1783,14 @@ private:
     DWORD m_VMFlags;
 
     /*
-     * We maintain some auxillary flags in DEBUG builds,
+     * We maintain some auxiliary flags in DEBUG builds,
      * this frees up some bits in m_wVMFlags
      */
 #if defined(_DEBUG)
     WORD m_wAuxFlags;
 #endif
 
-    // NOTE: Following BYTE fields are layed out together so they'll fit within the same DWORD for efficient
+    // NOTE: Following BYTE fields are laid out together so they'll fit within the same DWORD for efficient
     // structure packing.
     BYTE m_NormType;
     BYTE m_fFieldsArePacked;        // TRUE iff fields pointed to by GetPackedFields() are in packed state
@@ -2082,7 +2082,7 @@ inline BOOL EEClass::IsBlittable()
     LIMITED_METHOD_CONTRACT;
 
     // Either we have an opaque bunch of bytes, or we have some fields that are
-    // all isomorphic and explicitly layed out.
+    // all isomorphic and explicitly laid out.
     return (HasLayout() && GetLayoutInfo()->IsBlittable());
 }
 

@@ -215,7 +215,7 @@ PALEXPORT ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t
 /*
 Shims the X509_STORE_free method.
 */
-PALEXPORT void CryptoNative_X509StoreDestory(X509_STORE* v);
+PALEXPORT void CryptoNative_X509StoreDestroy(X509_STORE* v);
 
 /*
 Shims the X509_STORE_add_crl method.

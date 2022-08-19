@@ -246,7 +246,7 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        
+
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         loop.close()
@@ -559,7 +559,7 @@ class CrossGenRunner:
         stdout = None
         stderr = None
 
-        proc = await asyncio.create_subprocess_shell(" ".join(args), 
+        proc = await asyncio.create_subprocess_shell(" ".join(args),
                                                      stdin=asyncio.subprocess.PIPE,
                                                      stdout=asyncio.subprocess.PIPE,
                                                      stderr=asyncio.subprocess.PIPE)
@@ -878,7 +878,7 @@ def compare_results(args):
         root.appendChild(assemblies)
 
         assembly = root.createElement('assembly')
-        assembly.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        assembly.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         assembly.setAttribute('total', '{0}'.format(len(both_assemblies)))
         assembly.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         assembly.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
@@ -886,7 +886,7 @@ def compare_results(args):
         assemblies.appendChild(assembly)
 
         collection = root.createElement('collection')
-        collection.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        collection.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         collection.setAttribute('total', '{0}'.format(len(both_assemblies)))
         collection.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         collection.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
@@ -941,7 +941,7 @@ def compare_results(args):
             base_result = base_results_by_name[assembly_name]
             diff_result = diff_results_by_name[assembly_name]
             base_diff_are_equal = True
-            
+
             if base_result.returncode != diff_result.returncode:
                 base_diff_are_equal = False
             elif base_result.returncode == 0 and diff_result.returncode == 0:
@@ -981,11 +981,11 @@ def compare_results(args):
 
                 failureXml.appendChild(messageXml)
 
-        xml_str = root.toprettyxml(indent ="\t") 
+        xml_str = root.toprettyxml(indent ="\t")
 
         if output_file_type == FileTypes.NativeOrReadyToRunImage:
             with open(args.testresultsxml, "w") as f:
-                f.write(xml_str) 
+                f.write(xml_str)
 
     if not did_compare:
         sys.exit(1)

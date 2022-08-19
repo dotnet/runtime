@@ -329,7 +329,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pDebugger->EnumMemoryRegions(flags); )
 
     // now dump the memory get dragged in by using DAC API implicitly.
-    m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
+    m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -340,7 +340,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // Helper function for skinny mini-dump
-// Pass in an managed object, this function will dump the EEClass hierachy
+// Pass in an managed object, this function will dump the EEClass hierarchy
 // and field desc of object so SOS's !DumpObj will work
 //
 //
@@ -1615,7 +1615,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerSkinny(IN CLRDataEnumMemoryFlags f
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
     // now dump the memory get dragged in by using DAC API implicitly.
-    m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
+    m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -1665,7 +1665,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerMicroTriage(IN CLRDataEnumMemoryFl
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
     // now dump the memory get dragged in by using DAC API implicitly.
-    m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
+    m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -1756,7 +1756,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
         // we are done...
 
         // now dump the memory get dragged in implicitly
-        m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
+        m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
     }
     else if (eFlavor == DUMP_FLAVOR_CriticalCLRState)
@@ -1783,7 +1783,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
         // we are done...
 
         // now dump the memory get dragged in implicitly
-        m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
+        m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
     }
     else if (eFlavor == DUMP_FLAVOR_NonHeapCLRState)
@@ -1937,6 +1937,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     // It is expected to fail on pre Win8 OSes.
     callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsCallback2, (void **)&m_updateMemCb);
 
+    // QI for optional logging callback that createdump uses
+    callback->QueryInterface(IID_ICLRDataLoggingCallback, (void **)&m_logMessageCb);
+
     EX_TRY
     {
         ClearDumpStats();
@@ -1999,6 +2002,11 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     {
         m_updateMemCb->Release();
         m_updateMemCb = NULL;
+    }
+    if (m_logMessageCb)
+    {
+        m_logMessageCb->Release();
+        m_logMessageCb = NULL;
     }
     m_enumMemCb = NULL;
 

@@ -891,7 +891,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_extsw(c,A,S)  ppc_extswx(c,S,A,0)
 #define ppc_extswd(c,A,S) ppc_extswx(c,S,A,1)
 
-/* These move float to/from instuctions are only available on POWER6 in
+/* These move float to/from instructions are only available on POWER6 in
    native mode.  These instruction are faster then the equivalent
    store/load because they avoid the store queue and associated delays.
    These instructions should only be used in 64-bit mode unless the

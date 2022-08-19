@@ -1757,7 +1757,7 @@ namespace System.Configuration
             {
                 validator = elem.ElementProperty.Validator;
 
-                // Since ElementProperty can be overriden by derived classes we need to make sure that
+                // Since ElementProperty can be overridden by derived classes we need to make sure that
                 // the validator supports the type of elem every time
                 if ((validator != null) && !validator.CanValidate(elem.GetType()))
                 {

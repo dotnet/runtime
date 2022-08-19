@@ -135,9 +135,9 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
 #if defined(SHF_COMPRESSED)
   if (shdr->sh_flags & SHF_COMPRESSED)
     {
-      unsigned long destSize;
       Elf_W (Chdr) *chdr = (shdr->sh_offset + ei.image);
 #ifdef HAVE_ZLIB
+      unsigned long destSize;
       if (chdr->ch_type == ELFCOMPRESS_ZLIB)
 	{
 	  *bufsize = destSize = chdr->ch_size;

@@ -1757,7 +1757,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object ConvertXmlToObject(string s)
         {
-            Debug.Assert(s != null, "Caller is resposible for missing element/attribute case");
+            Debug.Assert(s != null, "Caller is responsible for missing element/attribute case");
             return InsureStorage().ConvertXmlToObject(s);
         }
 
@@ -1770,14 +1770,14 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string ConvertObjectToXml(object value)
         {
-            Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
+            Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
             return InsureStorage().ConvertObjectToXml(value);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
-            Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
+            Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
             InsureStorage().ConvertObjectToXml(value, xmlWriter, xmlAttrib);
         }
 

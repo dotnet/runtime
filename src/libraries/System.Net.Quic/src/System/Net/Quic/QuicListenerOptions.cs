@@ -15,11 +15,13 @@ public sealed class QuicListenerOptions
 {
     /// <summary>
     /// The endpoint to listen on.
+    /// This property is mandatory and not setting it will result in validation error when starting the listener.
     /// </summary>
     public IPEndPoint ListenEndPoint { get; set; } = null!;
 
     /// <summary>
     /// List of application protocols which the listener will accept. At least one must be specified.
+    /// This property is mandatory and not setting it will result in validation error when starting the listener.
     /// </summary>
     public List<SslApplicationProtocol> ApplicationProtocols { get; set; } = null!;
 

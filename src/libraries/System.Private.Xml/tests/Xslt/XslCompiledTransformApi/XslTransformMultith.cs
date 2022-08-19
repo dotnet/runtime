@@ -236,7 +236,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation("Multiple Transform(): Reader - FormatNubmer function")]
+        //[Variation("Multiple Transform(): Reader - FormatNumber function")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc9()
         {
@@ -523,7 +523,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation("Multiple Transform(): TextWriter - FormatNubmer function")]
+        //[Variation("Multiple Transform(): TextWriter - FormatNumber function")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc9()
         {

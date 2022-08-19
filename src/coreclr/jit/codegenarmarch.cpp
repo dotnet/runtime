@@ -363,19 +363,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_ARM64
         case GT_TEST_EQ:
         case GT_TEST_NE:
+            // On ARM64 genCodeForCompare does not consume its own operands because
+            // genCodeForBinary also has this behavior and it can end up calling
+            // genCodeForCompare when generating compare chains for GT_AND.
+            // Thus, we must do it here.
+            genConsumeOperands(treeNode->AsOp());
 #endif // TARGET_ARM64
             genCodeForCompare(treeNode->AsOp());
             break;
 
 #ifdef TARGET_ARM64
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
-            genCodeForConditional(treeNode->AsConditional());
+            genCodeForSelect(treeNode->AsConditional());
             break;
 #endif
 
@@ -1340,7 +1339,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     assert(op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
-    // Treat dst register as a homogenous vector with element size equal to the src size
+    // Treat dst register as a homogeneous vector with element size equal to the src size
     // Insert pieces in reverse order
     for (int i = regCount - 1; i >= 0; --i)
     {
@@ -2858,8 +2857,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-    if (!node->gtBlkOpGcUnsafe &&
-        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
+    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
     {
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
@@ -4475,7 +4473,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     assert(src->isUsedFromReg());
     regNumber srcReg = src->GetRegNum();
 
-    // Treat src register as a homogenous vector with element size equal to the reg size
+    // Treat src register as a homogeneous vector with element size equal to the reg size
     // Insert pieces in order
     unsigned regCount = retTypeDesc->GetReturnRegCount();
     for (unsigned i = 0; i < regCount; ++i)

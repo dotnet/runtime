@@ -196,7 +196,7 @@ namespace
             if (!ClrSafeInt<ULONG>::addition(classSizeInMetadata, (ULONG)parentSize, classSize))
                 COMPlusThrowOM();
 
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             calcTotalSize = max(classSize, calcTotalSize);
         }
         else

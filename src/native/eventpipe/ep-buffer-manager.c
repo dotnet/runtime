@@ -1188,7 +1188,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	// need an arbitrarily large cache in the reader to store all the events, however there is a fair amount of slop
 	// in the current scheme. In the worst case you could imagine N threads, each of which was already allocated a
 	// max size buffer (currently 1MB) but only an insignificant portion has been used. Even if the trigger
-	// threshhold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream
+	// threshold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream
 	// beforehand. I'm betting on these extreme cases being very rare and even something like 1GB isn't an unreasonable
 	// amount of virtual memory to use on to parse an extreme trace. However if I am wrong we can control
 	// both the allocation policy and the triggering instrumentation. Nothing requires us to give out 1MB buffers to
@@ -1393,8 +1393,8 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
 	// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
 	// buffer at the same time.
-	ep_timestamp_t stop_timetamp = ep_perf_timestamp_get ();
-	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timetamp);
+	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
+	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timestamp);
 	return buffer_manager->current_event;
 }
 

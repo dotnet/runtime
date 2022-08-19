@@ -20,7 +20,7 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
 
     LPWSTR CapturedEnvironmentStrings = NULL;
     LPWSTR EnviroStringReturned = NULL;
-    WCHAR EnvironmentVariableBuffer[] = 
+    WCHAR EnvironmentVariableBuffer[] =
         {'P','A','L','T','E','S','T','I','N','G','\0'};
     WCHAR EnvironmentValueBuffer[] = {'T','e','s','t','i','n','g','\0'};
 
@@ -33,11 +33,11 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
         return FAIL;
     }
 
-    /* This test depends on SetEnvironmentVariableW working.  
-       We need to set a variable so we can test and ensure it's there 
-       when we get them back 
+    /* This test depends on SetEnvironmentVariableW working.
+       We need to set a variable so we can test and ensure it's there
+       when we get them back
     */
-  
+
     SetEnvironmentVariable(EnvironmentVariableBuffer,EnvironmentValueBuffer);
 
     CapturedEnvironmentStrings = GetEnvironmentStrings();
@@ -47,31 +47,31 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
         Fail("The function returned a pointer to NULL, which it shouldn't do. "
              "It should point to a block of Environment Strings.\n");
     }
-  
-    /* Now that we've grabbed the list of envrionment strings, go through
+
+    /* Now that we've grabbed the list of environment strings, go through
        each one, and check for a match to 'PALTESTING'.  If this is missing
        it's not pointing at the environment block.
     */
-  
-    while(*CapturedEnvironmentStrings != 0) 
+
+    while(*CapturedEnvironmentStrings != 0)
     {
         EnviroStringReturned = wcsstr(CapturedEnvironmentStrings,
                                       EnvironmentVariableBuffer);
         CapturedEnvironmentStrings += wcslen(CapturedEnvironmentStrings)+1;
-        if(EnviroStringReturned != NULL) 
+        if(EnviroStringReturned != NULL)
         {
             break;
         }
     }
 
-    if(EnviroStringReturned == NULL) 
+    if(EnviroStringReturned == NULL)
     {
         Fail("The memory block returned was searched, but nothing was found to "
              "prove this was really the environment block.  Either this "
              "function, SetEnvironmentVariable or wcsstr() is broken.\n");
     }
-  
-    
+
+
     PAL_Terminate();
     return PASS;
 }

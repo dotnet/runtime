@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceScope CreateScope() => RootProvider.CreateScope();
 
-        [return: NotNullIfNotNull("service")]
+        [return: NotNullIfNotNull(nameof(service))]
         internal object? CaptureDisposable(object? service)
         {
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))

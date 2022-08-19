@@ -118,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // starting from all 0, bits will be flipped to 1 as necessary
             ulong result = 0;
 
-            // follow the minimum path throught the branches to a True leaf
+            // follow the minimum path through the branches to a True leaf
             while (!set.IsLeaf)
             {
                 if (set.Zero.IsEmpty) //the bit must be set to 1

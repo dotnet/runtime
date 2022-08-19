@@ -15,10 +15,10 @@ namespace Sample
             return 0;
         }
 
-        [JSImport("Sample.Test.add")]
+        [JSImport("Sample.Test.add", "main.js")]
         internal static partial int Add(int a, int b);
 
-        [JSImport("Sample.Test.sub")]
+        [JSImport("Sample.Test.sub", "main.js")]
         internal static partial int Sub(int a, int b);
 
         [JSExport]

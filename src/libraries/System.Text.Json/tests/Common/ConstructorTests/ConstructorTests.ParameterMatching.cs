@@ -500,11 +500,10 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<>))]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
-            var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
-            dont_trim_ctor = typeof(Tuple<,,,,,,,>).GetConstructors();
-
             // Seven is okay
             string json = await Serializer.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7));
             var obj = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);

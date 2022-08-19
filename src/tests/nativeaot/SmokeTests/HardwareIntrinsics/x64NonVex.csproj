@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <IlcArg Include="--instructionset:sse4.2" />
+    <IlcArg Include="--instruction-set:sse4.2" />
   </ItemGroup>
 
   <ItemGroup>

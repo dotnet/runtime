@@ -258,8 +258,8 @@ MethodTableBuilder::LoaderFindMethodInParentClass(
                     // and return the result to the caller.
                     // We do this here to avoid recalculating pSubst.
                     *pMethodConstraintsMatch = MetaSig::CompareMethodConstraints(
-                        &methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
-                        &entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
+                        methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
+                        entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
                 }
 
                 return pEntryMethod;
@@ -396,7 +396,8 @@ MethodTableBuilder::ExpandApproxInterface(
         }
 
         bmtInterfaceEntry * pNewMap = (bmtInterfaceEntry *)new (GetStackingAllocator()) BYTE[safeSize.Value()];
-        memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
+        if (bmtInterface->dwInterfaceMapAllocated > 0)
+            memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
 
         bmtInterface->pInterfaceMap = pNewMap;
         bmtInterface->dwInterfaceMapAllocated = dwNewAllocated.Value();
@@ -869,8 +870,8 @@ MethodTableBuilder::MethodSignature::SignaturesEquivalent(
     STANDARD_VM_CONTRACT;
 
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         allowCovariantReturn);
 }
 
@@ -884,8 +885,8 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
 
     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         FALSE, &newVisited);
 }
 
@@ -1722,7 +1723,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
         // For simple Blittable types we still need to check if they have any overlapping
-        // fields and call the method SetHasOverLayedFields() when they are detected.
+        // fields and call the method SetHasOverlaidFields() when they are detected.
         //
         if (HasExplicitFieldOffsetLayout())
         {
@@ -1796,7 +1797,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (IsValueClass())
     {
-        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
+        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverlaidField())
             GetHalfBakedClass()->SetIsNotTightlyPacked();
 
 #ifdef FEATURE_HFA
@@ -6087,7 +6088,7 @@ MethodTableBuilder::InitMethodDesc(
             BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
         }
 
-        // StoredSig specific intialization
+        // StoredSig specific initialization
         {
             StoredSigMethodDesc *pNewSMD = (StoredSigMethodDesc*) pNewMD;;
             DWORD cSig;
@@ -6257,8 +6258,8 @@ MethodTableBuilder::MethodImplCompareSignatures(
     }
 
     //now compare the method constraints
-    if (!MetaSig::CompareMethodConstraints(&implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
-                                           &declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
+    if (!MetaSig::CompareMethodConstraints(implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
+                                           declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
     {
         BuildMethodTableThrowException(dwConstraintErrorCode, implSig.GetToken());
     }
@@ -6599,7 +6600,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
     DispatchMapTypeID firstDispatchMapTypeID;
     ComputeDispatchMapTypeIDs(
         pDeclMT,
-        &pDecl->GetMethodSignature().GetSubstitution(),
+        pDecl->GetMethodSignature().GetSubstitution(),
         &firstDispatchMapTypeID,
         1,
         &cInterfaceDuplicates);
@@ -6622,7 +6623,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         DispatchMapTypeID * rgDispatchMapTypeIDs = (DispatchMapTypeID *)_alloca(sizeof(DispatchMapTypeID) * cInterfaceDuplicates);
         ComputeDispatchMapTypeIDs(
             pDeclMT,
-            &pDecl->GetMethodSignature().GetSubstitution(),
+            pDecl->GetMethodSignature().GetSubstitution(),
             rgDispatchMapTypeIDs,
             cInterfaceDuplicates,
             &cInterfaceDuplicates);
@@ -8486,7 +8487,7 @@ MethodTableBuilder::HandleExplicitLayout(
         pFD = bmtMFDescs->ppFieldDescList[i];
         if (pFD == NULL || pFD->IsStatic())
         {
-            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
             continue;
         }
 
@@ -8537,7 +8538,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // If we got here, this tag type is overlapping no other fields (yet).
                 // Record that these bytes now contain the current tag type.
                 memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tag, tagBlockSize);
-                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 continue;
             }
 
@@ -8608,7 +8609,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 }
                 else
                 {
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 }
                 memset((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], nonoref, fieldSize);
                 continue;
@@ -8642,9 +8643,9 @@ MethodTableBuilder::HandleExplicitLayout(
                               IDS_CLASSLOAD_EXPLICIT_LAYOUT);
     }
 
-    if (!explicitClassTrust.IsNonOverLayed())
+    if (!explicitClassTrust.IsNonOverlaid())
     {
-        SetHasOverLayedFields();
+        SetHasOverlaidFields();
     }
 
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
@@ -8677,7 +8678,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
         if (clstotalsize != 0)
         {
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             if (!numInstanceFieldBytes.IsOverflow() && clstotalsize >= numInstanceFieldBytes.Value())
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
@@ -8777,7 +8778,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // oref <--> empty
                 case empty:
                     pFieldLayout[i] = oref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // oref <--> nonoref
@@ -8798,7 +8799,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // nonoref <--> empty
                 case empty:
                     pFieldLayout[i] = nonoref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // nonoref <--> nonoref
@@ -9642,7 +9643,7 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
         pMTInterfaceMapOwner
         COMMA_INDEBUG(pMT));
 
-    // Restore type's subsitution chain for comparing interfaces
+    // Restore type's substitution chain for comparing interfaces
     *pSubstForComparing = substForComparingBackup;
 } // MethodTableBuilder::ExpandExactInheritedInterfaces
 
@@ -10176,7 +10177,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!cbTotalSize.IsOverflow());
 
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
@@ -10188,7 +10189,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -10199,7 +10200,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pClassLoader->m_dwVtableData += (dwVtableSlots * sizeof(PCODE));
 #endif // _DEBUG
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!offsetOfUnsharedVtableChunks.IsOverflow());
     _ASSERTE(!offsetOfNonVirtualSlots.IsOverflow());
     _ASSERTE(!offsetOfInterfaceMap.IsOverflow());
@@ -10856,7 +10857,7 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     // for ComObject types, i.e. if the class extends from a COM Imported
     // class
-    // make sure any interface implementated by the COM Imported class
+    // make sure any interface implemented by the COM Imported class
     // is overridden fully, (OR) not overridden at all..
     if (bmtProp->fIsComObjectType)
     {
@@ -11690,7 +11691,8 @@ void MethodTableBuilder::bmtMethodImplInfo::AddMethodImpl(
         // If we have to grow this array, we will not free the old array before we clean up the BuildMethodTable operation
         // because this is a stacking allocator. However, the old array will get freed when all the stack allocator is freed.
         Entry *rgEntriesNew = new (pStackingAllocator) Entry[newEntriesCount];
-        memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
+        if (cMaxIndex > 0)
+            memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
 
         // Start using newly allocated array.
         rgEntries = rgEntriesNew;
@@ -11791,7 +11793,7 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
             // the fact that we get some false positives and end up sharing less vtable chunks.
 
             // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
-            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // overridden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
             // slot (idx), so the implementation of it will change.
             MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
             for (SLOT_INDEX i = 0; i < idx; i++)

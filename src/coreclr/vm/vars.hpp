@@ -212,7 +212,7 @@ class OBJECTREF {
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
 
-            // allow explict casts
+            // allow explicit casts
         explicit OBJECTREF(Object *pObject);
 
         void Validate(BOOL bDeep = TRUE, BOOL bVerifyNextHeader = TRUE, BOOL bVerifySyncBlock = TRUE);

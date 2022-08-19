@@ -440,7 +440,6 @@ struct _MonoGenericClass {
 	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */ /* FIXME: Only the class_inst member of "context" is ever used, so this field could be replaced with just a monogenericinst */
 	guint is_dynamic  : 1;		/* Contains dynamic types */
 	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
-	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
 	/* The mem manager which owns this generic class. */

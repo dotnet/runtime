@@ -117,31 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidRegexGeneratorAttributeTitle" xml:space="preserve">
-    <value>Invalid RegexGenerator usage</value>
-    <comment>{Locked="RegexGenerator"}</comment>
+  <data name="InvalidGeneratedRegexAttributeTitle" xml:space="preserve">
+    <value>Invalid GeneratedRegexAttribute usage</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
   </data>
-  <data name="InvalidRegexGeneratorAttributeMessage" xml:space="preserve">
-    <value>The RegexGeneratorAttribute is malformed</value>
-    <comment>{Locked="RegexGeneratorAttribute"}</comment>
+  <data name="InvalidGeneratedRegexAttributeMessage" xml:space="preserve">
+    <value>The GeneratedRegexAttribute is malformed</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
   </data>
-  <data name="MultipleRegexGeneratorAttributesMessage" xml:space="preserve">
-    <value>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</value>
+  <data name="MultipleGeneratedRegexAttributesMessage" xml:space="preserve">
+    <value>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</value>
   </data>
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</value>
-  </data>
-  <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 11 or greater is required</value>
+    <value>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</value>
   </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
-    <value>RegexGenerator limitation reached.</value>
+    <value>Regex generator limitation reached.</value>
   </data>
   <data name="LimitedSourceGenerationMessage" xml:space="preserve">
-    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</value>
+    <value>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</value>
   </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
@@ -278,9 +275,9 @@
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="UseRegexSourceGeneratorMessage" xml:space="preserve">
-    <value>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</value>
+    <value>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</value>
   </data>
   <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
-    <value>Convert to 'RegexGenerator'.</value>
+    <value>Convert to 'GeneratedRegexAttribute'.</value>
   </data>
 </root>

@@ -27,7 +27,7 @@ namespace System.Composition.Convention
 
         // Constructor selector / configuration
         private Func<IEnumerable<ConstructorInfo>, ConstructorInfo> _constructorFilter;
-        private Action<ParameterInfo, ImportConventionBuilder> _configureConstuctorImports;
+        private Action<ParameterInfo, ImportConventionBuilder> _configureConstructorImports;
 
         //Property Import/Export selection and configuration
         private readonly List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportConventionBuilder>, Type>> _propertyExports;
@@ -135,7 +135,7 @@ namespace System.Composition.Convention
                 throw new ArgumentNullException(nameof(importConfiguration));
             }
 
-            _configureConstuctorImports = importConfiguration;
+            _configureConstructorImports = importConfiguration;
             SelectConstructor(constructorSelector);
             return this;
         }
@@ -616,16 +616,16 @@ namespace System.Composition.Convention
                 ConstructorInfo constructorInfo = _constructorFilter(constructors);
                 if (constructorInfo != null)
                 {
-                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstuctorImports);
+                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstructorImports);
                 }
                 return true;
             }
-            else if (_configureConstuctorImports != null)
+            else if (_configureConstructorImports != null)
             {
                 bool configured = false;
                 foreach (ConstructorInfo constructorInfo in FindLongestConstructors(constructors))
                 {
-                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstuctorImports);
+                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstructorImports);
                     configured = true;
                 }
                 return configured;
@@ -643,7 +643,7 @@ namespace System.Composition.Convention
             }
         }
 
-        private static void ConfigureConstructorAttributes(ConstructorInfo constructorInfo, ref List<Tuple<object, List<Attribute>>> configuredMembers, Action<ParameterInfo, ImportConventionBuilder> configureConstuctorImports)
+        private static void ConfigureConstructorAttributes(ConstructorInfo constructorInfo, ref List<Tuple<object, List<Attribute>>> configuredMembers, Action<ParameterInfo, ImportConventionBuilder> configureConstructorImports)
         {
             configuredMembers ??= new List<Tuple<object, List<Attribute>>>();
 
@@ -664,7 +664,7 @@ namespace System.Composition.Convention
                     var importBuilder = new ImportConventionBuilder();
 
                     // Let the developer alter them if they specified to do so
-                    configureConstuctorImports?.Invoke(pi, importBuilder);
+                    configureConstructorImports?.Invoke(pi, importBuilder);
 
                     // Generate the attributes
                     List<Attribute> attributes = null;

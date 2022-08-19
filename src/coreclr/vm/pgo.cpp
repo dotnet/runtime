@@ -252,7 +252,7 @@ void PgoManager::WritePgoData()
                         fprintf(pgoDataFile, s_FourByte, (unsigned)*(uint32_t*)(data + entryOffset));
                         break;
                     case ICorJitInfo::PgoInstrumentationKind::EightByte:
-                        // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
+                        // Print a pair of 4 byte values as the PRIu64 specifier isn't generally available
                         fprintf(pgoDataFile, s_EightByte, (unsigned)*(uint32_t*)(data + entryOffset), (unsigned)*(uint32_t*)(data + entryOffset + 4));
                         break;
                     case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
@@ -878,7 +878,10 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                     if (!th.IsNull())
                                                     {
                                                         MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8());
-                                                        newPtr = (INT_PTR)pMD;
+                                                        if (pMD != nullptr && !pMD->IsGenericMethodDefinition())
+                                                        {
+                                                            newPtr = (INT_PTR)pMD;
+                                                        }
                                                     }
                                                 }
                                             }

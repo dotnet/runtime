@@ -9,10 +9,19 @@ namespace System.Reflection.Tests
 {
     public class PropertyInfoTests
     {
+        public static IEnumerable<object[]> Properties_TestData()
+        {
+            yield return new object[] { typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetStaticProperty) };
+            yield return new object[] { typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetProperty) };
+
+            // trick trimming into keeping the Length property
+            if (string.Empty.Length > 0)
+                typeof(string).GetProperty("Length");
+            yield return new object[] { typeof(string), nameof(string.Length) };
+        }
+
         [Theory]
-        [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetStaticProperty))]
-        [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetProperty))]
-        [InlineData(typeof(string), nameof(string.Length))]
+        [MemberData(nameof(Properties_TestData))]
         public void Properties(Type type, string name)
         {
             PropertyInfo property = TypeExtensions.GetProperty(type, name, Helpers.AllFlags);

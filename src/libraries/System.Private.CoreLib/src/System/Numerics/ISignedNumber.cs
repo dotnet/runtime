@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface ISignedNumber<TSelf>
         : INumberBase<TSelf>
-        where TSelf : ISignedNumber<TSelf>
+        where TSelf : ISignedNumber<TSelf>?
     {
         /// <summary>Gets the value <c>-1</c> for the type.</summary>
         static abstract TSelf NegativeOne { get; }

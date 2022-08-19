@@ -1366,7 +1366,7 @@ namespace System
                             // The inheritance of properties are defined by the inheritance of their
                             // getters and setters.
                             //
-                            // A property on a base type is "overriden" by a property on a sub type
+                            // A property on a base type is "overridden" by a property on a sub type
                             // if the getter/setter of the latter occupies the same vtable slot as
                             // the getter/setter of the former.
                             //
@@ -3624,7 +3624,7 @@ namespace System
             }
 
             bool isValueType;
-            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType);
+            CheckValueStatus result = TryChangeType(ref value, ref copyBack, out isValueType);
             if (result == CheckValueStatus.Success)
             {
                 return isValueType;
@@ -3654,7 +3654,7 @@ namespace System
                         return IsValueType; // Note the call to IsValueType, not the variable.
                     }
 
-                    result = TryChangeType(ref value, out copyBack, out isValueType);
+                    result = TryChangeType(ref value, ref copyBack, out isValueType);
                     if (result == CheckValueStatus.Success)
                     {
                         return isValueType;
@@ -3676,7 +3676,7 @@ namespace System
 
         private CheckValueStatus TryChangeType(
             ref object? value,
-            out ParameterCopyBackAction copyBack,
+            ref ParameterCopyBackAction copyBack,
             out bool isValueType)
         {
             RuntimeType? sigElementType;
@@ -3732,7 +3732,6 @@ namespace System
 
             if (value == null)
             {
-                copyBack = ParameterCopyBackAction.None;
                 isValueType = RuntimeTypeHandle.IsValueType(this);
                 if (!isValueType)
                 {
@@ -3763,7 +3762,6 @@ namespace System
                 if (!CanValueSpecialCast(srcType, this))
                 {
                     isValueType = false;
-                    copyBack = ParameterCopyBackAction.None;
                     return CheckValueStatus.ArgumentException;
                 }
 
@@ -3782,12 +3780,10 @@ namespace System
                 }
 
                 isValueType = true;
-                copyBack = ParameterCopyBackAction.None;
                 return CheckValueStatus.Success;
             }
 
             isValueType = false;
-            copyBack = ParameterCopyBackAction.None;
             return CheckValueStatus.ArgumentException;
         }
 

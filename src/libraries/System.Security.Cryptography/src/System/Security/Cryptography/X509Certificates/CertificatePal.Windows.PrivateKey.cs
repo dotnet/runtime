@@ -201,13 +201,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
-            CngKeyHandleOpenOptions cngHandleOptions;
             using (SafeCertContextHandle certContext = GetCertContext())
             {
-                SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out cngHandleOptions);
+                SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out CngKeyHandleOpenOptions cngHandleOptions);
                 if (ncryptKey != null)
                 {
-                    CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
+                    CngKey cngKey = CngKey.OpenNoDuplicate(ncryptKey, cngHandleOptions);
                     return createCng(cngKey);
                 }
             }
@@ -328,7 +327,7 @@ namespace System.Security.Cryptography.X509Certificates
             int cbData = 0;
             if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))
             {
-                int dwErrorCode = Marshal.GetLastWin32Error();
+                int dwErrorCode = Marshal.GetLastPInvokeError();
                 if (dwErrorCode == ErrorCode.CRYPT_E_NOT_FOUND)
                     return null;
                 throw dwErrorCode.ToCryptographicException();
@@ -340,7 +339,7 @@ namespace System.Security.Cryptography.X509Certificates
                 fixed (byte* pPrivateKey = privateKey)
                 {
                     if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, privateKey, ref cbData))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     Interop.Crypt32.CRYPT_KEY_PROV_INFO* pKeyProvInfo = (Interop.Crypt32.CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
                     CspParameters cspParameters = new CspParameters();
@@ -388,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
-                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                     pal.Dispose();
                     throw e;
                 }
@@ -577,7 +576,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
-                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                     pal.Dispose();
                     throw e;
                 }
@@ -590,25 +589,35 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 
-            SafeNCryptKeyHandle handle = cngKey.Handle;
-
-            // Make a new pal from bytes.
-            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
-
-            if (!Interop.Crypt32.CertSetCertificateContextProperty(
-                pal._certContext,
-                Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
-                handle))
+            // Handle makes a copy of the handle.  This is required given that CertSetCertificateContextProperty accepts a SafeHandle
+            // and transfers ownership of the handle to the certificate.  We can't transfer that ownership out of the cngKey, as it's
+            // owned by the caller, so we make a copy (using Handle rather than HandleNoDuplicate).
+            using (SafeNCryptKeyHandle handle = cngKey.Handle)
             {
-                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
-                pal.Dispose();
-                throw e;
-            }
+                // Make a new pal from bytes.
+                CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
+                try
+                {
+                    if (!Interop.Crypt32.CertSetCertificateContextProperty(
+                        pal._certContext,
+                        Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                        Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
+                        handle))
+                    {
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
+                    }
 
-            // The value was transferred to the certificate.
-            handle.SetHandleAsInvalid();
-            return pal;
+                    // The value was transferred to the certificate.
+                    handle.SetHandleAsInvalid();
+
+                    return pal;
+                }
+                catch
+                {
+                    pal.Dispose();
+                    throw;
+                }
+            }
         }
     }
 }

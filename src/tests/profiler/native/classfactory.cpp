@@ -9,6 +9,7 @@
 #include "gcallocateprofiler/gcallocateprofiler.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "gcprofiler/gcprofiler.h"
+#include "handlesprofiler/handlesprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
@@ -118,6 +119,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == InliningProfiler::GetClsid())
     {
         profiler = new InliningProfiler();
+    }
+    else if (clsid == HandlesProfiler::GetClsid())
+    {
+        profiler = new HandlesProfiler();
     }
     else
     {

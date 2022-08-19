@@ -16,16 +16,6 @@ namespace System.IO.Compression
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
 
-        public enum TestScenario
-        {
-            ReadByte,
-            ReadByteAsync,
-            Read,
-            ReadAsync,
-            Copy,
-            CopyAsync,
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
@@ -60,7 +50,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task FlushAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -88,7 +77,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task FlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
@@ -130,7 +118,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());
@@ -149,7 +136,6 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read(string testFile)
         {
             var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
@@ -185,7 +171,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read_EndOfStreamPosition()
         {
             var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -205,7 +190,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read_BaseStreamSlowly()
         {
             string testFile = UncompressedTestFile();
@@ -339,7 +323,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task TestLeaveOpenAfterValidDecompress()
         {
             //Create the Stream
@@ -414,7 +397,6 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task BaseStream_Modify(CompressionMode mode)
         {
             using (var baseStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile())))
@@ -446,7 +428,6 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
             var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -488,6 +469,7 @@ namespace System.IO.Compression
             Assert.True(optimalLength >= smallestLength);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Theory]
         [InlineData(TestScenario.ReadAsync)]
         [InlineData(TestScenario.Read)]
@@ -566,6 +548,16 @@ namespace System.IO.Compression
                 }
             }
         }
+    }
+
+    public enum TestScenario
+    {
+        ReadByte,
+        ReadByteAsync,
+        Read,
+        ReadAsync,
+        Copy,
+        CopyAsync
     }
 
     internal sealed class BadWrappedStream : MemoryStream

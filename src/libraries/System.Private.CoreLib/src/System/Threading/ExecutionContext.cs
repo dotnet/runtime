@@ -104,7 +104,7 @@ namespace System.Threading
             ExecutionContext? executionContext = currentThread._executionContext ?? Default;
             if (executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotSupressFlowMultipleTimes);
+                throw new InvalidOperationException(SR.InvalidOperation_CannotSuppressFlowMultipleTimes);
             }
 
             executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
@@ -120,7 +120,7 @@ namespace System.Threading
             ExecutionContext? executionContext = currentThread._executionContext;
             if (executionContext == null || !executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsupressedFlow);
+                throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsuppressedFlow);
             }
 
             currentThread._executionContext = executionContext.ShallowClone(isFlowSuppressed: false);
@@ -212,7 +212,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// To revert to the current execution context; capture it before Restore, and Restore it again.
-        /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
+        /// It will not automatically be reverted unlike <see cref="ExecutionContext.Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
         /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>

@@ -59,6 +59,17 @@ namespace System.IO.Pipelines
             AvailableMemory = arrayPoolBuffer;
         }
 
+        // Resets memory and internal state, should be called when removing the segment from the linked list
+        public void Reset()
+        {
+            ResetMemory();
+
+            Next = null;
+            RunningIndex = 0;
+            _next = null;
+        }
+
+        // Resets memory only, should be called when keeping the BufferSegment in the linked list and only swapping out the memory
         public void ResetMemory()
         {
             IMemoryOwner<byte>? memoryOwner = _memoryOwner;
@@ -74,10 +85,8 @@ namespace System.IO.Pipelines
                 _array = null;
             }
 
-            Next = null;
-            RunningIndex = 0;
+
             Memory = default;
-            _next = null;
             _end = 0;
             AvailableMemory = default;
         }

@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="XmlThrowingResolverTests.cs" />
+    <Compile Include="XmlSecureResolverTests.cs" />
     <Compile Include="XmlUrlResolverTests.cs" />
   </ItemGroup>
 </Project>

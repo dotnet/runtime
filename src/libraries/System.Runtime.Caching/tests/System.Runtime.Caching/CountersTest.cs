@@ -28,7 +28,6 @@ namespace MonoTests.System.Runtime.Caching
     {
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Wasm is single-threaded, which makes TestEventListener ineffective.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52652", TestPlatforms.Android)]
         public async void Basic_Counters()
         {
             string cacheName = "Basic_Counters_Test";

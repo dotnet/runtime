@@ -251,6 +251,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case "/optimize+":
 						compilationOptions = compilationOptions.WithOptimizationLevel (OptimizationLevel.Release);
 						break;
+					case "/optimize-":
+						compilationOptions = compilationOptions.WithOptimizationLevel (OptimizationLevel.Debug);
+						break;
 					case "/debug:full":
 					case "/debug:pdbonly":
 						// Use platform's default debug info. This behavior is the same as csc.
@@ -267,7 +270,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case "/langversion:7.3":
 						languageVersion = LanguageVersion.CSharp7_3;
 						break;
-
+					default:
+						var splitIndex = option.IndexOf (":");
+						if (splitIndex != -1 && option[..splitIndex] == "/main") {
+							var mainTypeName = option[(splitIndex + 1)..];
+							compilationOptions = compilationOptions.WithMainTypeName (mainTypeName);
+							break;
+						}
+						throw new NotImplementedException (option);
 					}
 				}
 			}

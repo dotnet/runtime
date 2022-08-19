@@ -387,7 +387,7 @@ namespace System.Globalization
             private const int MaxLiteralTokens = 6;
             private const int MaxNumericTokens = 5;
 
-            internal TimeSpanToken _numbers0, _numbers1, _numbers2, _numbers3, _numbers4; // MaxNumbericTokens = 5
+            internal TimeSpanToken _numbers0, _numbers1, _numbers2, _numbers3, _numbers4; // MaxNumericTokens = 5
             internal ReadOnlySpan<char> _literals0, _literals1, _literals2, _literals3, _literals4, _literals5; // MaxLiteralTokens=6
 
             internal void Init(DateTimeFormatInfo dtfi)
@@ -1681,7 +1681,7 @@ namespace System.Globalization
                 return result.SetNoFormatSpecifierFailure();
             }
 
-            // Do a loop through the provided formats and see if we can parse succesfully in
+            // Do a loop through the provided formats and see if we can parse successfully in
             // one of the formats.
             for (int i = 0; i < formats.Length; i++)
             {

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.Tests;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
@@ -131,11 +132,19 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         protected bool VerifyData(ECDsa ecdsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
             VerifyData(ecdsa, data, 0, data.Length, signature, hashAlgorithm);
+
         protected abstract bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm);
 
         protected byte[] SignData(ECDsa ecdsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             SignData(ecdsa, data, 0, data.Length, hashAlgorithm);
+
         protected abstract byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
+
+        protected virtual byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
+            throw new SkipTestException("SignHash not implemented.");
+
+        protected virtual bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
+            throw new SkipTestException("VerifyHash not implemented.");
 
         public static IEnumerable<object[]> RealImplementations() =>
             new[] {
@@ -198,6 +207,40 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Assert.Throws<ObjectDisposedException>(
                 () => VerifyData(ecdsa, data, sig, HashAlgorithmName.SHA256));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_Roundtrip(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_TamperedSignature(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            signature[0] ^= 0xFF;
+
+            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_DifferentHashes(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            hash[0] ^= 0xFF;
+
+            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
         [Theory]

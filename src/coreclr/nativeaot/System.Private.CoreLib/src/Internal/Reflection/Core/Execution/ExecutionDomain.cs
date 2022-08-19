@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
@@ -41,7 +42,7 @@ namespace Internal.Reflection.Core.Execution
         public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, IList<string> defaultAssemblyNames)
         {
             if (typeName == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(typeName));
 
             if (typeName.Length == 0)
             {
@@ -206,14 +207,8 @@ namespace Internal.Reflection.Core.Execution
             }
             else
             {
-                if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
-                {
-                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
-                }
-                else
-                {
-                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition);
-                }
+                Debug.Assert(ExecutionEnvironment.IsReflectionBlocked(typeHandle) || RuntimeAugments.MightBeUnconstructedType(typeHandle));
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
             }
         }
 
@@ -285,21 +280,11 @@ namespace Internal.Reflection.Core.Execution
         }
 
         //=======================================================================================
-        // MissingMetadataExceptions.
+        // Missing metadata exceptions.
         //=======================================================================================
         public Exception CreateMissingMetadataException(Type? pertainant)
         {
             return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
-        }
-
-        public Exception CreateMissingMetadataException(TypeInfo? pertainant)
-        {
-            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
-        }
-
-        public Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName)
-        {
-            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant, nestedTypeName);
         }
 
         public Exception CreateNonInvokabilityException(MemberInfo pertainant)
@@ -336,16 +321,13 @@ namespace Internal.Reflection.Core.Execution
             if (type is not RuntimeType)
                 return false;
 
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
-            if (null == runtimeType.InternalNameIfAvailable)
-                return false;
-
             if (ExecutionEnvironment.IsReflectionBlocked(type.TypeHandle))
             {
                 // The type is an internal framework type and is blocked from reflection
                 return false;
             }
 
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType.InternalFullNameOfAssembly == Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName)
             {
                 // The type is an internal framework type but is reflectable for internal class library use

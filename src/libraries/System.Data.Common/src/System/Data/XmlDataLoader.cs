@@ -134,7 +134,7 @@ namespace System.Data
             return count;
         }
 
-        private static string GetValueForTextOnlyColums(XmlNode? n)
+        private static string GetValueForTextOnlyColumns(XmlNode? n)
         {
             string? value = null;
 
@@ -383,7 +383,7 @@ namespace System.Data
             if (column != null)
             {
                 foundColumns[column] = column;
-                string text = GetValueForTextOnlyColums(n);
+                string text = GetValueForTextOnlyColumns(n);
                 if (XMLSchema.GetBooleanAttribute(rowElement, Keywords.XSI_NIL, Keywords.XSINS, false) && string.IsNullOrEmpty(text))
                     row[column] = DBNull.Value;
                 else
@@ -417,7 +417,7 @@ namespace System.Data
                             if (c.Table == row.Table && c.ColumnMapping != MappingType.Attribute && foundColumns[c] == null)
                             {
                                 foundColumns[c] = c;
-                                string text = GetValueForTextOnlyColums(n);
+                                string text = GetValueForTextOnlyColumns(n);
                                 if (XMLSchema.GetBooleanAttribute(e, Keywords.XSI_NIL, Keywords.XSINS, false) && string.IsNullOrEmpty(text))
                                     row[c] = DBNull.Value;
                                 else
@@ -491,7 +491,7 @@ namespace System.Data
         }
 
 
-        // load all data from tree structre into datarows
+        // load all data from tree structure into datarows
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(DataRow? parentRow, XmlNode parentElement)
         {

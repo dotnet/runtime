@@ -37,6 +37,7 @@ public abstract class QuicConnectionOptions
 
     /// <summary>
     /// Error code used when the stream needs to abort read or write side of the stream internally.
+    /// This property is mandatory and not setting it will result in validation error when establishing a connection.
     /// </summary>
     // QUIC doesn't allow negative value: https://www.rfc-editor.org/rfc/rfc9000.html#integer-encoding
     // We can safely use this to distinguish if user provided value during validation.
@@ -44,8 +45,11 @@ public abstract class QuicConnectionOptions
 
     /// <summary>
     /// Error code used for <see cref="QuicConnection.CloseAsync(long, Threading.CancellationToken)"/> when the connection gets disposed.
-    /// To use different close error code, call  <see cref="QuicConnection.CloseAsync(long, Threading.CancellationToken)"/> explicitly before disposing.
+    /// This property is mandatory and not setting it will result in validation error when establishing a connection.
     /// </summary>
+    /// <remarks>
+    /// To use different close error code, call  <see cref="QuicConnection.CloseAsync(long, Threading.CancellationToken)"/> explicitly before disposing.
+    /// </remarks>
     // QUIC doesn't allow negative value: https://www.rfc-editor.org/rfc/rfc9000.html#integer-encoding
     // We can safely use this to distinguish if user provided value during validation.
     public long DefaultCloseErrorCode { get; set; } = -1;
@@ -95,11 +99,13 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
 
     /// <summary>
     /// Client authentication options to use when establishing a new connection.
+    /// This property is mandatory and not setting it will result in validation error when establishing a connection.
     /// </summary>
     public SslClientAuthenticationOptions ClientAuthenticationOptions { get; set; } = null!;
 
     /// <summary>
     /// The remote endpoint to connect to. May be both <see cref="DnsEndPoint"/>, which will get resolved to an IP before connecting, or directly <see cref="IPEndPoint"/>.
+    /// This property is mandatory and not setting it will result in validation error when establishing a connection.
     /// </summary>
     public EndPoint RemoteEndPoint { get; set; } = null!;
 
@@ -144,6 +150,7 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
 
     /// <summary>
     /// Server authentication options to use when accepting a new connection.
+    /// This property is mandatory and not setting it will result in validation error when establishing a connection.
     /// </summary>
     public SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; } = null!;
 

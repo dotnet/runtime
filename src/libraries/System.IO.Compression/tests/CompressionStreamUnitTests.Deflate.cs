@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -30,7 +31,6 @@ namespace System.IO.Compression
         /// <summary>Test to pass GZipStream data and ZLibStream data to a DeflateStream</summary>
         [Theory]
         [MemberData(nameof(DecompressFailsWithWrapperStream_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task DecompressFailsWithWrapperStream(string uncompressedPath, string newDirectory, string newSuffix)
         {
             string fileName = Path.Combine(newDirectory, Path.GetFileName(uncompressedPath) + newSuffix);
@@ -69,6 +69,34 @@ namespace System.IO.Compression
             {
                 compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).AsTask().Wait();
                 Assert.True(compressor.WriteArrayInvoked);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CompressorNotClosed_DecompressorStillSuccessful(bool closeCompressorBeforeDecompression)
+        {
+            const string Input = "example";
+
+            var ms = new MemoryStream();
+
+            using (var compressor = new DeflateStream(ms, CompressionLevel.Optimal, leaveOpen: closeCompressorBeforeDecompression))
+            {
+                compressor.Write(Encoding.ASCII.GetBytes(Input));
+                compressor.Flush();
+                if (closeCompressorBeforeDecompression)
+                {
+                    compressor.Dispose();
+                }
+
+                ms.Position = 0;
+                using (var decompressor = new DeflateStream(ms, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    var decompressed = new MemoryStream();
+                    decompressor.CopyTo(decompressed);
+                    Assert.Equal(Input, Encoding.ASCII.GetString(decompressed.ToArray()));
+                }
             }
         }
 

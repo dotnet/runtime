@@ -192,7 +192,7 @@ inline static void SoftwareWriteWatchSetDirtyRegion(void* address, size_t length
     uint8_t* end_pointer = reinterpret_cast<uint8_t*>(address) + length - 1;
     size_t end_index = reinterpret_cast<size_t>(end_pointer) >> SoftwareWriteWatchAddressToTableByteIndexShift;
 
-    // We'll mark the entire region of memory as dirty by memseting all entries in
+    // We'll mark the entire region of memory as dirty by memsetting all entries in
     // the SWW table between the start and end indexes.
     memset(&g_write_watch_table[base_index], ~0, end_index - base_index + 1);
 }

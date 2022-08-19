@@ -47,7 +47,7 @@ store_shutting_down_state (bool state)
 
 static
 uint32_t
-ipc_stream_factory_get_next_timeout (uint32_t current_timout_ms);
+ipc_stream_factory_get_next_timeout (uint32_t current_timeout_ms);
 
 static
 void

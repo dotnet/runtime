@@ -144,7 +144,7 @@ MONO_API_FUNCTION(uint32_t, mono_field_get_offset, (MonoClassField *field))
 
 MONO_API_FUNCTION(const char *, mono_field_get_data, (MonoClassField *field))
 
-/* MonoProperty acessors */
+/* MonoProperty accessors */
 MONO_API_FUNCTION(const char*, mono_property_get_name, (MonoProperty *prop))
 
 MONO_API_FUNCTION(MonoMethod*, mono_property_get_set_method, (MonoProperty *prop))

@@ -118,7 +118,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ArgumentOutOfRangeOnNegativCount()
+        public void ArgumentOutOfRangeOnNegativeCount()
         {
             using (CharArrayTextReader tr = GetCharArray().textReader)
             {

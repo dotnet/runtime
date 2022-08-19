@@ -724,106 +724,6 @@ namespace System.Transactions.Tests
         }
         #endregion
 
-        // This class is used in conjunction with SubordinateTransaction. When asked via the Promote
-        // method, it needs to create a DTC transaction and return the propagation token. Since we
-        // can't just create another CommittableTransaction and promote it and return it's propagation
-        // token in the same AppDomain, we spin up another AppDomain and do it there.
-        private class MySimpleTransactionSuperior : ISimpleTransactionSuperior
-        {
-            private DtcTxCreator _dtcTxCreator = new DtcTxCreator() { TraceEnabled = false };
-            private PromotedTx _promotedTx;
-
-            public byte[] Promote()
-            {
-                byte[] propagationToken = null;
-
-                Trace("MySimpleTransactionSuperior.Promote");
-                propagationToken = _dtcTxCreator.CreatePromotedTx(ref _promotedTx);
-
-                return propagationToken;
-            }
-
-            public void Rollback()
-            {
-                Trace("MySimpleTransactionSuperior.Rollback");
-                _promotedTx.Rollback();
-            }
-
-            public void Commit()
-            {
-                Trace("MySimpleTransactionSuperior.Commit");
-                _promotedTx.Commit();
-            }
-        }
-
-        public class DtcTxCreator // : MarshalByRefObject
-        {
-            private static bool s_trace = false;
-
-            public bool TraceEnabled
-            {
-                get { return s_trace; }
-                set { s_trace = value; }
-            }
-            public static void Trace(string stringToTrace, params object[] args)
-            {
-                if (s_trace)
-                {
-                    Debug.WriteLine(stringToTrace, args);
-                }
-            }
-
-            public byte[] CreatePromotedTx(ref PromotedTx promotedTx)
-            {
-                DtcTxCreator.Trace("DtcTxCreator.CreatePromotedTx");
-                byte[] propagationToken;
-                CommittableTransaction commitTx = new CommittableTransaction();
-                promotedTx = new PromotedTx(commitTx);
-                propagationToken = TransactionInterop.GetTransmitterPropagationToken(commitTx);
-                return propagationToken;
-            }
-        }
-
-        // This is the class that is created in the "other" AppDomain to create a
-        // CommittableTransaction, promote it to DTC, and return the propagation token.
-        // It also commits or aborts the transaction. Used by MySimpleTransactionSuperior
-        // to create a DTC transaction when asked to promote.
-        public class PromotedTx // : MarshalByRefObject
-        {
-            private CommittableTransaction _commitTx;
-
-            public PromotedTx(CommittableTransaction commitTx)
-            {
-                DtcTxCreator.Trace("PromotedTx constructor");
-                _commitTx = commitTx;
-            }
-
-            ~PromotedTx()
-            {
-                DtcTxCreator.Trace("PromotedTx destructor");
-                if (_commitTx != null)
-                {
-                    DtcTxCreator.Trace("PromotedTx destructor calling Rollback");
-                    _commitTx.Rollback();
-                    _commitTx = null;
-                }
-            }
-
-            public void Commit()
-            {
-                DtcTxCreator.Trace("PromotedTx.Commit");
-                _commitTx.Commit();
-                _commitTx = null;
-            }
-
-            public void Rollback()
-            {
-                DtcTxCreator.Trace("PromotedTx.Rollback");
-                _commitTx.Rollback();
-                _commitTx = null;
-            }
-        }
-
         #region TestCase_ methods
         private static void TestCase_VolatileEnlistments(
             int count,
@@ -2062,7 +1962,6 @@ namespace System.Transactions.Tests
 
         #endregion
 
-
         /// <summary>
         /// This test case is very basic Volatile Enlistment test.
         /// </summary>
@@ -2272,30 +2171,6 @@ namespace System.Transactions.Tests
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.
             TestCase_SetDistributedIdWithWrongNotificationObject();
-        }
-
-        [Fact]
-        public void SimpleTransactionSuperior()
-        {
-            MySimpleTransactionSuperior superior = new MySimpleTransactionSuperior();
-            SubordinateTransaction subTx = new SubordinateTransaction(IsolationLevel.Serializable, superior);
-
-            AutoResetEvent durableCompleted = new AutoResetEvent(false);
-            MyEnlistment durable = null;
-
-            durable = new MyEnlistment(
-                durableCompleted,
-                true,
-                false,
-                EnlistmentOptions.None,
-                /*expectSuccessfulEnlist=*/ false,
-                /*secondEnlistmentCompleted=*/ null);
-            durable.TransactionToEnlist = Transaction.Current;
-
-            Assert.Throws<PlatformNotSupportedException>(() => // SubordinateTransaction promotes to MSDTC
-            {
-                subTx.EnlistDurable(Guid.NewGuid(), durable, EnlistmentOptions.None);
-            });
         }
     }
 }

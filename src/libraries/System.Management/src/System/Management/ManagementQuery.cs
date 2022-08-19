@@ -1220,7 +1220,7 @@ namespace System.Management
         //  We resolve this by trying to parse the string, if it succeeds we assume it's the query, if
         //  not we assume it's the source object.
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.RelatedObjectQuery'/>class. If the specified string can be succesfully parsed as
+        /// <para>Initializes a new instance of the <see cref='System.Management.RelatedObjectQuery'/>class. If the specified string can be successfully parsed as
         ///    a WQL query, it is considered to be the query string; otherwise, it is assumed to be the path of the source
         ///    object for the query. In this case, the query is assumed to be an instance query. </para>
         /// </summary>
@@ -1857,7 +1857,7 @@ namespace System.Management
         //  We resolve this by trying to parse the string, if it succeeds we assume it's the query, if
         //  not we assume it's the source object.
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.RelationshipQuery'/>class. If the specified string can be succesfully parsed as
+        /// <para>Initializes a new instance of the <see cref='System.Management.RelationshipQuery'/>class. If the specified string can be successfully parsed as
         ///    a WQL query, it is considered to be the query string; otherwise, it is assumed to be the path of the source
         ///    object for the query. In this case, the query is assumed to be an instances query. </para>
         /// </summary>
@@ -3207,7 +3207,7 @@ namespace System.Management
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the desitnation type, this will
+        ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </summary>
         /// <param name='context'>An ITypeDescriptorContext that provides a format context.</param>
