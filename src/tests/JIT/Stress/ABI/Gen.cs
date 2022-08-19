@@ -49,7 +49,7 @@ namespace ABIStress
                 return (double)rand.Next();
 
             if (type == typeof(Int128))
-                return new Int128((ulong)GenConstant(typeof(ulong), null, rand), (ulong)GenConstant(typeof(ulong), null, rand));
+                return new Int128((ulong)(long)GenConstant(typeof(long), null, rand), (ulong)(long)GenConstant(typeof(long), null, rand));
 
             if (type == typeof(Vector<int>))
                 return GenConstantVector<Vector<int>, int>(rand);
