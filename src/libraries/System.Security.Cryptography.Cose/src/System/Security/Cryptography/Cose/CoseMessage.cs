@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Cose
                 }
 
                 int? arrayLength = reader.ReadStartArray();
-                if (arrayLength != 4)
+                if (arrayLength != null && arrayLength != CoseSign1Message.Sign1ArrayLength)
                 {
                     throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1ArrayLengthMustBeFour));
                 }
@@ -208,9 +208,9 @@ namespace System.Security.Cryptography.Cose
                 }
 
                 int? arrayLength = reader.ReadStartArray();
-                if (arrayLength != 4)
+                if (arrayLength != null && arrayLength != CoseMultiSignMessage.MultiSignArrayLength)
                 {
-                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1ArrayLengthMustBeFour));
+                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeMultiSignArrayLengthMustBeFour));
                 }
 
                 var protectedHeaders = new CoseHeaderMap();
@@ -322,19 +322,12 @@ namespace System.Security.Cryptography.Cose
         private static List<CoseSignature> DecodeCoseSignaturesArray(CborReader reader, byte[] bodyProtected)
         {
             int? signaturesLength = reader.ReadStartArray();
+            List<CoseSignature> signatures = new List<CoseSignature>(signaturesLength ?? 1);
 
-            if (signaturesLength.GetValueOrDefault() < 1)
-            {
-                throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.MultiSignMessageMustCarryAtLeastOneSignature));
-            }
-
-            List<CoseSignature> signatures = new List<CoseSignature>(signaturesLength!.Value);
-
-            for (int i = 0; i < signaturesLength; i++)
+            while (reader.PeekState() == CborReaderState.StartArray)
             {
                 int? length = reader.ReadStartArray();
-
-                if (length != CoseMultiSignMessage.CoseSignatureArrayLength)
+                if (length != null && length != CoseMultiSignMessage.CoseSignatureArrayLength)
                 {
                     throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeCoseSignatureMustBeArrayOfThree));
                 }
@@ -351,12 +344,17 @@ namespace System.Security.Cryptography.Cose
                 }
 
                 byte[] signatureBytes = DecodeSignature(reader);
+                reader.ReadEndArray();
 
                 signatures.Add(new CoseSignature(protectedHeaders, unprotectedHeaders, bodyProtected, signProtected, signatureBytes));
-
-                reader.ReadEndArray();
             }
+
             reader.ReadEndArray();
+
+            if (signatures.Count < 1)
+            {
+                throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.MultiSignMessageMustCarryAtLeastOneSignature));
+            }
 
             return signatures;
         }

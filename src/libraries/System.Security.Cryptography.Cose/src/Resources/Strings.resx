@@ -157,7 +157,7 @@
     <value>Critical Headers must be a definite-length CBOR array of at least one element.</value>
   </data>
   <data name="DecodeCoseSignatureMustBeArrayOfThree" xml:space="preserve">
-    <value>COSE Signature must be a definite-length array of 3 elements.</value>
+    <value>COSE Signature must be an array of 3 elements.</value>
   </data>
   <data name="DecodeErrorWhileDecoding" xml:space="preserve">
     <value>Error while decoding COSE message. {0}</value>
@@ -168,11 +168,14 @@
   <data name="DecodeMessageContainedTrailingData" xml:space="preserve">
     <value>CBOR payload contained trailing data after message was complete.</value>
   </data>
+  <data name="DecodeMultiSignArrayLengthMustBeFour" xml:space="preserve">
+    <value>COSE_Sign must be an array of four elements.</value>
+  </data>
   <data name="DecodeMultiSignIncorrectTag" xml:space="preserve">
     <value>Incorrect tag. Expected Sign(98) or Untagged, Actual '{0}'.</value>
   </data>
   <data name="DecodeSign1ArrayLengthMustBeFour" xml:space="preserve">
-    <value>Array length for COSE_Sign1 must be four.</value>
+    <value>COSE_Sign1 must be an array of four elements.</value>
   </data>
   <data name="DecodeSign1EncodedProtectedMapIncorrect" xml:space="preserve">
     <value>Protected map was incorrect.</value>
