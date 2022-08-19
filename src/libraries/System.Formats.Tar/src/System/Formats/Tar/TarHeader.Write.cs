@@ -663,11 +663,11 @@ namespace System.Formats.Tar
             List<byte> bytesList = new();
 
             bytesList.AddRange(finalTotalCharCountBytes);
-            bytesList.Add(TarHelpers.SpaceChar);
+            bytesList.Add((byte)' ');
             bytesList.AddRange(keyBytes);
-            bytesList.Add(TarHelpers.EqualsChar);
+            bytesList.Add((byte)'=');
             bytesList.AddRange(valueBytes);
-            bytesList.Add(TarHelpers.NewLineChar);
+            bytesList.Add((byte)'\n');
 
             Debug.Assert(bytesList.Count == (realTotalCharCount + suffixByteCount));
 
@@ -681,7 +681,7 @@ namespace System.Formats.Tar
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
-            checksum += TarHelpers.SpaceChar * 8;
+            checksum += (byte)' ' * 8;
 
             Span<byte> converted = stackalloc byte[FieldLengths.Checksum];
             WriteAsOctal(checksum, converted, 0, converted.Length);
@@ -689,8 +689,8 @@ namespace System.Formats.Tar
             Span<byte> destination = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
 
             // Checksum field ends with a null and a space
-            destination[^1] = TarHelpers.SpaceChar; // ' '
-            destination[^2] = 0; // '\0'
+            destination[^1] = (byte)' ';
+            destination[^2] = (byte)'\0';
 
             int i = destination.Length - 3;
             int j = converted.Length - 1;
@@ -704,7 +704,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    destination[i] = TarHelpers.ZeroChar; // Leading zero chars '0'
+                    destination[i] = (byte)'0';  // Leading zero chars
                 }
                 i--;
             }
@@ -749,7 +749,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    destination[i] = TarHelpers.ZeroChar; // leading zeros
+                    destination[i] = (byte)'0'; // leading zeros
                 }
                 checksum += destination[i];
                 i--;

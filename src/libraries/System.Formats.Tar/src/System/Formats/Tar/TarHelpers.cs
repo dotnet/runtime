@@ -17,11 +17,6 @@ namespace System.Formats.Tar
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
 
-        internal const int ZeroChar = 0x30;
-        internal const byte SpaceChar = 0x20;
-        internal const byte EqualsChar = 0x3d;
-        internal const byte NewLineChar = 0xa;
-
         // Default mode for TarEntry created for a file-type.
         private const UnixFileMode DefaultFileMode =
             UnixFileMode.UserRead | UnixFileMode.UserWrite |
