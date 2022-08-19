@@ -1371,6 +1371,27 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
+        {
+            // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
+
+            // prefer architecture specific intrinsic as they offer better perf
+            if (Sse41.IsSupported)
+            {
+                return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0x80));
+            }
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> maxBytes = AdvSimd.Arm64.MaxPairwise(asciiVector, asciiVector);
+                return (maxBytes.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
+            }
+            else
+            {
+                return asciiVector.ExtractMostSignificantBits() != 0;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             // prefer architecture specific intrinsic as they offer better perf
@@ -1709,7 +1730,7 @@ namespace System.Text
             {
                 Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
 
-                if (asciiVector.ExtractMostSignificantBits() != 0)
+                if (VectorContainsNonAsciiChar(asciiVector))
                 {
                     break;
                 }
