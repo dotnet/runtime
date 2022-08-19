@@ -1578,11 +1578,13 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector<byte>.Count)
+            if (BitConverter.IsLittleEndian && Vector256.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector256<byte>.Count)
             {
-                currentOffset = Vector256.IsHardwareAccelerated
-                    ? WidenAsciiToUtf16_Vector256(pAsciiBuffer, pUtf16Buffer, elementCount)
-                    : WidenAsciiToUtf16_Vector128(pAsciiBuffer, pUtf16Buffer, elementCount);
+                currentOffset = WidenAsciiToUtf16_Vector256(pAsciiBuffer, pUtf16Buffer, elementCount);
+            }
+            else if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
+            {
+                currentOffset = WidenAsciiToUtf16_Vector128(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
             else if (Vector.IsHardwareAccelerated)
             {
