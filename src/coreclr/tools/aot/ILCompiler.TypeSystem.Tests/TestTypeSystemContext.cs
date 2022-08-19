@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler;
 using Internal.TypeSystem;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
@@ -22,6 +23,7 @@ namespace TypeSystemTests
     {
         Dictionary<string, ModuleDesc> _modules = new Dictionary<string, ModuleDesc>(StringComparer.OrdinalIgnoreCase);
 
+        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -32,6 +34,7 @@ namespace TypeSystemTests
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown, TargetAbi.Unknown))
         {
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout, true);
         }
 
         public ModuleDesc GetModuleForSimpleName(string simpleName)
@@ -67,6 +70,10 @@ namespace TypeSystemTests
         {
             if (type == UniversalCanonType)
                 return UniversalCanonLayoutAlgorithm.Instance;
+            else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
+            {
+                return _vectorFieldLayoutAlgorithm;
+            }
 
             return _metadataFieldLayout;
         }

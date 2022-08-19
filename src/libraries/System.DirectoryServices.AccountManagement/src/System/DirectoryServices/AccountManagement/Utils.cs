@@ -129,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 else
                 {
-                    int lastErrorCode = Marshal.GetLastWin32Error();
+                    int lastErrorCode = Marshal.GetLastPInvokeError();
 
                     GlobalDebug.WriteLineIf(
                                       GlobalDebug.Warn,
@@ -354,7 +354,7 @@ namespace System.DirectoryServices.AccountManagement
                                 out tokenHandle
                                 ))
                 {
-                    if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
+                    if ((error = Marshal.GetLastPInvokeError()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
                         tokenHandle.Dispose();
@@ -366,7 +366,7 @@ namespace System.DirectoryServices.AccountManagement
                                         out tokenHandle
                                         ))
                         {
-                            int lastError = Marshal.GetLastWin32Error();
+                            int lastError = Marshal.GetLastPInvokeError();
                             GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: OpenProcessToken failed, gle=" + lastError);
 
                             throw new PrincipalOperationException(SR.Format(SR.UnableToOpenToken, lastError));
@@ -394,7 +394,7 @@ namespace System.DirectoryServices.AccountManagement
                                         out neededBufferSize);
 
                 int getTokenInfoError = 0;
-                if ((getTokenInfoError = Marshal.GetLastWin32Error()) != 122) // ERROR_INSUFFICIENT_BUFFER
+                if ((getTokenInfoError = Marshal.GetLastPInvokeError()) != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: GetTokenInformation (1st try) failed, gle=" + getTokenInfoError);
 
@@ -416,7 +416,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetCurrentUserSid: GetTokenInformation (2nd try) failed, neededBufferSize=" + neededBufferSize + ", gle=" + lastError);
@@ -437,7 +437,7 @@ namespace System.DirectoryServices.AccountManagement
                 success = Interop.Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetCurrentUserSid: CopySid failed, errorcode=" + lastError);
@@ -508,7 +508,7 @@ namespace System.DirectoryServices.AccountManagement
                 bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetMachineDomainSid: CopySid failed, errorcode=" + lastError);
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 int f = Interop.Advapi32.LookupAccountSid(serverName, sid, null, ref nameLength, null, ref domainNameLength, out accountUsage);
 
-                int lastErr = Marshal.GetLastWin32Error();
+                int lastErr = Marshal.GetLastPInvokeError();
                 if (lastErr != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (1st try) failed, gle=" + lastErr);
@@ -622,7 +622,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (f == 0)
                     {
-                        lastErr = Marshal.GetLastWin32Error();
+                        lastErr = Marshal.GetLastPInvokeError();
                         Debug.Assert(lastErr != 0);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (2nd try) failed, gle=" + lastErr);
@@ -752,7 +752,7 @@ namespace System.DirectoryServices.AccountManagement
             // check the result
             if (result == 0)
             {
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: LogonUser failed, gle=" + lastError);
 
                 throw new PrincipalOperationException(
@@ -762,7 +762,7 @@ namespace System.DirectoryServices.AccountManagement
             result = Interop.Advapi32.ImpersonateLoggedOnUser(hToken);
             if (result == 0)
             {
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: ImpersonateLoggedOnUser failed, gle=" + lastError);
 
                 // Close the token the was created above....

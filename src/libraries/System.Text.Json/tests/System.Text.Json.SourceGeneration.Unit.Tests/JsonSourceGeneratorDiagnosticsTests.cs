@@ -11,13 +11,14 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     public class JsonSourceGeneratorDiagnosticsTests
     {
         /// <summary>
         /// https://github.com/dotnet/runtime/issues/61379
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void EmitsDocumentationOnPublicMembersAndDoesNotCauseCS1591()
         {
             // Compile the referenced assembly first.
@@ -89,7 +90,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void SuccessfulSourceGeneration()
         {
             // Compile the referenced assembly first.
@@ -139,7 +139,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void UnsuccessfulSourceGeneration()
         {
             static void RunTest(bool explicitRef)
@@ -218,7 +217,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void NameClashSourceGeneration()
         {
             // Without resolution.
@@ -251,7 +249,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void ProgramsThatDontUseGeneratorCompile()
         {
             // No STJ usage.
@@ -294,7 +291,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
@@ -314,7 +310,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void DoNotWarnOnClassesWithConstructorInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
@@ -327,7 +322,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
         
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void WarnOnClassesWithMixedInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
@@ -347,7 +341,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void DoNotWarnOnRecordsWithInitOnlyPositionalParameters()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
@@ -360,7 +353,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();

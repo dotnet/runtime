@@ -109,7 +109,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString() is String mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
+				if (attrProvider.ToString () is String mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
 					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
@@ -220,7 +220,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
 
-										string actualName = methodDesc.OwningType.ToString ().Replace("+", ".") + "." + methodDesc.Name;
+										string actualName = methodDesc.OwningType.ToString ().Replace ("+", ".") + "." + methodDesc.Name;
 										if (actualName.Contains (expectedMember.DeclaringType.FullName.Replace ("/", ".")) &&
 											actualName.Contains ("<" + expectedMember.Name + ">")) {
 											expectedWarningFound = true;
@@ -386,7 +386,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					value = value.Replace (", ", ",");
 				}
 
-				return value;
+				// Split it into . separated parts and if one is ending with > rewrite it to `1 format
+				// ILC folows the reflection format which doesn't actually use generic instantiations on anything but the last type
+				// in nested hierarchy - it's difficult to replicate this with Cecil as it has different representation so just strip that info
+				var parts = value.Split ('.');
+				StringBuilder sb = new StringBuilder ();
+				foreach (var part in parts) {
+					if (sb.Length > 0)
+						sb.Append (".");
+
+					if (part.EndsWith ('>')) {
+						int i = part.LastIndexOf ('<');
+						if (i >= 0) {
+							sb.Append (part.Substring (0, i));
+							sb.Append ("`");
+							sb.Append (part.Substring (i + 1).Where (c => c == ',').Count () + 1);
+							continue;
+						}
+					}
+
+					sb.Append (part);
+				}
+
+				return sb.ToString ();
 			}
 		}
 

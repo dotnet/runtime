@@ -108,14 +108,14 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         internal static async Task<Regex> SourceGenRegexAsync(
-            string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
+            string pattern, CultureInfo? culture, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
         {
-            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
+            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, culture, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
             return results[0];
         }
 
         internal static async Task<Regex[]> SourceGenRegexAsync(
-            (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
+            (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
             // Un-ifdef to compile each regex individually, which can be useful if one regex among thousands is causing a failure.
             // We compile them all en mass for test efficiency, but it can make it harder to debug a compilation failure in one of them.
@@ -144,7 +144,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.True(regex.options is not null || regex.matchTimeout is null);
                 code.AppendLine("    /// <summary>RegexGenerator method</summary>");
-                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
+                code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
                     code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
@@ -152,6 +152,10 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
                     }
+                }
+                if (regex.culture is not null)
+                {
+                    code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
                 code.AppendLine($")] public static partial Regex Get{count}();");
 

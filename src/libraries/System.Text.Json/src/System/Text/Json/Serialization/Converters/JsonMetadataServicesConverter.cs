@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => Converter.ElementType;
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
-
+        internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
         public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Converters
             _converterStrategy = converter.ConverterStrategy;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
              => Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
@@ -70,13 +70,12 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(options == jsonTypeInfo.Options);
 
             if (!state.SupportContinuation &&
-                jsonTypeInfo.HasSerializeHandler &&
-                jsonTypeInfo is JsonTypeInfo<T> info &&
-                !state.CurrentContainsMetadata && // Do not use the fast path if state needs to write metadata.
-                info.Options.SerializerContext?.CanUseSerializationLogic == true)
+                jsonTypeInfo.CanUseSerializeHandler &&
+                !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
-                Debug.Assert(info.SerializeHandler != null);
-                info.SerializeHandler(writer, value);
+                Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
+                Debug.Assert(options.SerializerContext?.CanUseSerializationLogic == true);
+                ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);
                 return true;
             }
 

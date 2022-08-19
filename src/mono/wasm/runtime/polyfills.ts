@@ -1,9 +1,11 @@
-import Configuration from "consts:configuration";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { afterUpdateGlobalBufferAndViews } from "./memory";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { afterThreadInitTLS } from "./pthreads/worker";
+import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
 
 let node_fs: any | undefined = undefined;
@@ -120,7 +122,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // require replacement
-    const imports = anyModule.imports = Module.imports || <DotnetModuleConfigImports>{};
+    const imports = anyModule.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
         const resolved = (<any>Module.imports)[name];
         if (resolved) {
@@ -144,7 +146,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
     anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (Configuration === "Debug") {
+    if (BuildConfiguration === "Debug") {
         console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
@@ -173,16 +175,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // threads
     if (MonoWasmThreads) {
         if (replacements.pthreadReplacements) {
-            const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-            replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-                originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-                afterLoadWasmModuleToWorker(worker);
-            };
-            const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-            replacements.pthreadReplacements.threadInitTLS = (): void => {
-                originalThreadInitTLS();
-                afterThreadInitTLS();
-            };
+            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
         }
     }
 
@@ -195,7 +188,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
 }
 
 export async function init_polyfills_async(): Promise<void> {
-    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+    if (ENVIRONMENT_IS_NODE) {
         // wait for locateFile setup on NodeJs
         INTERNAL.require = await runtimeHelpers.requirePromise;
         if (globalThis.performance === dummyPerformance) {
@@ -250,6 +243,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
         return <Response><any>{
             ok: false,
             url,
+            status: 500,
+            statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
             json: () => { throw e; }
         };
@@ -271,31 +266,6 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
     if (ENVIRONMENT_IS_WORKER) {
         // Check worker, not web, since window could be polyfilled
         replacements.scriptUrl = self.location.href;
-    }
-    // when ENVIRONMENT_IS_ESM we have scriptUrl from import.meta.url from dotnet.es6.lib.js
-    if (!ENVIRONMENT_IS_ESM) {
-        if (ENVIRONMENT_IS_WEB) {
-            if (
-                (typeof (globalThis.document) === "object") &&
-                (typeof (globalThis.document.createElement) === "function")
-            ) {
-                // blazor injects a module preload link element for dotnet.[version].[sha].js
-                const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
-                if (blazorDotNetJS.length == 1) {
-                    replacements.scriptUrl = blazorDotNetJS[0].href;
-                } else {
-                    const temp = globalThis.document.createElement("a");
-                    temp.href = "dotnet.js";
-                    replacements.scriptUrl = temp.href;
-                }
-            }
-        }
-        if (ENVIRONMENT_IS_NODE) {
-            if (typeof __filename !== "undefined") {
-                // unix vs windows
-                replacements.scriptUrl = __filename;
-            }
-        }
     }
     if (!replacements.scriptUrl) {
         // probably V8 shell in non ES6

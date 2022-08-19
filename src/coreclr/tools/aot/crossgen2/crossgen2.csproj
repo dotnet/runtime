@@ -7,6 +7,10 @@
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 and we
          don't want to ship using NativeAOT on MacOS -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
+
+    <!-- Work around https://github.com/dotnet/runtime/issues/72645 -->
+    <NativeAotSupported Condition="'$(TargetArchitecture)' == 'arm64'">false</NativeAotSupported>
+
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
     <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
@@ -42,7 +46,7 @@
   </PropertyGroup>
 
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 
   <Target Name="RewriteRuntimePackDir"

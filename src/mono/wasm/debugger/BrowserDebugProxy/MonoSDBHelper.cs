@@ -59,7 +59,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         OwnProperties = 4,
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
-        WithProperties = 32
+        WithProperties = 32,
+        JustMyCode = 64
     }
 
     internal enum CommandSet {
@@ -1797,20 +1798,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, name, token);
         }
 
-        public Task<JObject> InvokeMethod(int objectId, int methodId, bool isValueType, CancellationToken token)
+        public Task<JObject> InvokeMethod(int objectId, int methodId, bool isValueType, CancellationToken token, bool isMethodStatic = false)
         {
-            if (isValueType)
+            if (isValueType && !isMethodStatic)
             {
                 return ValueCreator.TryGetValueTypeById(objectId, out var valueType)
                         ? InvokeMethod(valueType.Buffer, methodId, token)
                         : throw new ArgumentException($"Could not find valuetype with id {objectId}, for method id: {methodId}", nameof(objectId));
             }
-            else
-            {
-                using var commandParamsObjWriter = new MonoBinaryWriter();
+            using var commandParamsObjWriter = new MonoBinaryWriter();
+            if (!isMethodStatic)
                 commandParamsObjWriter.Write(ElementType.Class, objectId);
-                return InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-            }
+            return InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
         }
 
         public Task<JObject> InvokeMethod(DotnetObjectId dotnetObjectId, CancellationToken token, int methodId = -1)
@@ -1820,10 +1819,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject args = dotnetObjectId.ValueAsJson;
                 int? objectId = args["containerId"]?.Value<int>();
                 int? embeddedMethodId = args["methodId"]?.Value<int>();
+                bool isMethodStatic = args["isStatic"]?.Value<bool>() == true;
 
                 return objectId == null || embeddedMethodId == null
                     ? throw new ArgumentException($"Invalid object id for a method, with missing container, or methodId", nameof(dotnetObjectId))
-                    : InvokeMethod(objectId.Value, embeddedMethodId.Value, isValueType: args["isValueType"]?.Value<bool>() == true, token);
+                    : InvokeMethod(objectId.Value,
+                        embeddedMethodId.Value,
+                        isValueType: args["isValueType"]?.Value<bool>() == true,
+                        token,
+                        isMethodStatic);
             }
 
             return dotnetObjectId.Scheme is "object" or "valuetype"
@@ -1966,7 +1970,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetThis, commandParamsWriter, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
-                GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token);
+                GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token, includeStatic: true);
                 var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
                 return asyncLocals;
             }
@@ -1977,7 +1981,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    var var_json = await ValueCreator.ReadAsVariableValue(localsDebuggerCmdReader, var.Name, token);
+                    var var_json = await ValueCreator.ReadAsVariableValue(localsDebuggerCmdReader, var.Name, token, includeStatic: true);
                     locals.Add(var_json);
                 }
                 catch (Exception ex)
@@ -2363,19 +2367,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static bool IsPrimitiveType(string simplifiedClassName)
             => s_primitiveTypeNames.Contains(simplifiedClassName);
-
-    }
-
-    internal static class HelperExtensions
-    {
-        public static void AddRange(this JArray arr, JArray addedArr)
-        {
-            foreach (var item in addedArr)
-                arr.Add(item);
-        }
-
-        public static bool IsNullValuedObject(this JObject obj)
-            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
 
     }
 }

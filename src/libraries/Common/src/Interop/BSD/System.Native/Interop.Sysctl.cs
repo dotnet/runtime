@@ -42,7 +42,7 @@ internal static partial class Interop
                 ret = Sysctl(name, name_len, value, &bytesLength);
                 if (ret != 0)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastPInvokeError()));
                 }
                 value = (byte*)Marshal.AllocHGlobal((int)bytesLength);
             }
@@ -75,7 +75,7 @@ internal static partial class Interop
                 {
                     Marshal.FreeHGlobal((IntPtr)value);
                 }
-                throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
+                throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastPInvokeError()));
             }
 
             len = (int)bytesLength;

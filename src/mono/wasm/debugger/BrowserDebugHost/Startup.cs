@@ -77,6 +77,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var filtered = new Dictionary<string, string>();
             HttpRequest request = context.Request;
+            var isNode = response.TryGetValue("type", out string type) && type == "node";
 
             foreach (string key in response.Keys)
             {
@@ -84,7 +85,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case "devtoolsFrontendUrl":
                         string front = response[key];
-                        filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
+                        if (!isNode)
+                            filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
+                        else
+                            filtered[key] = $"{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
                         break;
                     case "webSocketDebuggerUrl":
                         var page = new Uri(response[key]);
@@ -118,6 +122,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 router.MapGet("json/new", RewriteSingle);
                 router.MapGet("devtools/page/{pageId}", ConnectProxy);
                 router.MapGet("devtools/browser/{pageId}", ConnectProxy);
+                router.MapGet("{pageId}", ConnectProxy); //for node this is the URL format: ws://localhost:54693/dbad4979-2d2e-4ada-b449-d583a83b0545
 
                 string GetEndpoint(HttpContext context)
                 {

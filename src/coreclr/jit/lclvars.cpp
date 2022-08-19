@@ -1959,7 +1959,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 //   This is needed for AOT R2R compilation when we can't cross compilation bubble borders
 //   so we should not ask about fields that are not directly referenced. If we do VM will have
 //   to emit a type check for this field type but it does not have enough information about it.
-//   As a workaround for perfomance critical corner case: struct with 1 gcref, we try to construct
+//   As a workaround for performance critical corner case: struct with 1 gcref, we try to construct
 //   the field information from indirect observations.
 //
 bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo)
@@ -3174,6 +3174,16 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
         return;
     }
 
+    if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
+    {
+        CORINFO_CLASS_HANDLE exactClass;
+        if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
+        {
+            isExact = true;
+            clsHnd  = exactClass;
+        }
+    }
+
     // Else we should have a type handle.
     assert(clsHnd != nullptr);
 
@@ -4187,7 +4197,7 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 //
 //     In checked builds:
 //
-//     Verifies that local accesses are consistenly typed.
+//     Verifies that local accesses are consistently typed.
 //     Verifies that casts remain in bounds.
 
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute)
@@ -4881,7 +4891,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // Context was not in use but now is.
         //
         // Changing from unused->used should never happen; creation of any new IR
-        // for context use should also be settting lvaGenericsContextInUse.
+        // for context use should also be setting lvaGenericsContextInUse.
         assert(!"unexpected new use of generics context");
     }
 
@@ -6358,7 +6368,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // !UNIX_AMD64_ABI
 
 //-----------------------------------------------------------------------------
-// lvaAssingVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
+// lvaAssignVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
 //  all elements on the stackframe.
 //
 // Notes:
@@ -7533,7 +7543,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // For System V platforms there is no outgoing args space.
         //
         // For System V and x86, a register passed struct arg is homed on the stack in a separate local var.
-        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
+        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg method.
         // Make sure the code below is not executed for these structs and the offset is not changed.
         //
         const bool mustProcessParams = true;

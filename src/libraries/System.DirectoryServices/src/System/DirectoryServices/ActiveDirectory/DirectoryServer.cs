@@ -285,7 +285,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var replicaConsistencyCheck = (delegate* unmanaged<IntPtr, int, int, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaConsistencyCheck");
             if (replicaConsistencyCheck == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             int result = replicaConsistencyCheck(dsHandle, 0, 0);
@@ -309,7 +309,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsReplicaGetInfoW = (delegate* unmanaged<IntPtr, int, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
                 if (dsReplicaGetInfoW == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
                 fixed (char* partitionPtr = partition)
                 {
@@ -333,7 +333,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsReplicaGetInfoW = (delegate* unmanaged<IntPtr, int, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
                 if (dsReplicaGetInfoW == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
 
                 fixed (char* partitionPtr = partition)
@@ -599,7 +599,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     exception = ExceptionHelper.CreateSyncAllException(temp, true);
                     if (exception == null)
                     {
-                        // this is the special case that we ingore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
+                        // this is the special case that we ignore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
                         return true;
                     }
                 }
@@ -636,7 +636,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (dsReplicaSyncAllW == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             int result;
@@ -681,7 +681,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsReplicaFreeInfo = (delegate* unmanaged<int, IntPtr, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaFreeInfo");
                 if (dsReplicaFreeInfo == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
                 dsReplicaFreeInfo((int)type, value);
             }
@@ -719,7 +719,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsReplicaSyncW = (delegate* unmanaged<IntPtr, char*, IntPtr, int, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncW");
                 if (dsReplicaSyncW == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
 
                 fixed (char* partitionPtr = partition)
