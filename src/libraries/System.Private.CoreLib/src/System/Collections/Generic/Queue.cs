@@ -231,7 +231,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
@@ -263,7 +263,7 @@ namespace System.Collections.Generic
         {
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
