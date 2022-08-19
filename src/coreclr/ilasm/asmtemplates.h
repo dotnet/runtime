@@ -135,61 +135,62 @@ private:
 
 template <class T> struct Indx256
 {
-    void* table[256];
-    Indx256() { memset(table,0,sizeof(table)); };
+    T* item;
+    Indx256* table; // [256];
+    Indx256() { item=nullptr; table=nullptr; };
     ~Indx256()
     {
         ClearAll(true);
-        for(int i = 1; i < 256; i++) delete ((Indx256*)(table[i]));
+        delete[] table;
     };
     T** IndexString(BYTE* psz, T* pObj)
     {
         if(*psz == 0)
         {
-            table[0] = (void*)pObj;
-            return (T**)table;
+            item = pObj;
+            return &item;
         }
         else
         {
-            Indx256* pInd = (Indx256*)(table[*psz]);
-            if(pInd == NULL)
+            if(table == NULL)
             {
-                pInd = new Indx256;
-                if(pInd)
-                    table[*psz] = pInd;
-                else
+                table = new Indx256[256];
+                if (table == NULL)
                 {
                     _ASSERTE(!"Out of memory in Indx256::IndexString!");
                     fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
                     return NULL;
                 }
+                memset(table,0,sizeof(Indx256[256]));
             }
-            return pInd->IndexString(psz+1,pObj);
+            return table[*psz].IndexString(psz+1,pObj);
         }
     };
     T*  FindString(BYTE* psz)
     {
         if(*psz > 0)
         {
-            Indx256* pInd = (Indx256*)(table[*psz]);
-            return (pInd == NULL) ? NULL : pInd->FindString(psz+1);
+            if(table == NULL)
+            {
+                return NULL;
+            }
+            return table[*psz].FindString(psz+1);
         }
-        return (T*)(table[0]); // if i==0
+        return item; // if i==0
     };
 
     void ClearAll(bool DeleteObj)
     {
-        if(DeleteObj) delete (T*)(table[0]);
-        table[0] = NULL;
-        for(unsigned i = 1; i < 256; i++)
+        if(DeleteObj) delete (T*)item;
+        item = NULL;
+        if (table)
         {
-            if(table[i])
+            for(unsigned i = 1; i < 256; i++)
             {
-                Indx256* pInd = (Indx256*)(table[i]);
-                pInd->ClearAll(DeleteObj);
-                //delete pInd;
-                //table[i] = NULL;
+                table[i].ClearAll(DeleteObj);
             }
+            delete[] table;
+            table = NULL;
         }
     };
 };
