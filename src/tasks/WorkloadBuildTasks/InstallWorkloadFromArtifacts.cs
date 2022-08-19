@@ -79,6 +79,7 @@ namespace Microsoft.Workload.Build.Tasks
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
                     });
 
+                string cachePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
                     Log.LogMessage(MessageImportance.High, $"** Installing workload {req.WorkloadId} in {req.TargetPath} **");
