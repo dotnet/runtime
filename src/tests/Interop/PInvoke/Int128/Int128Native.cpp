@@ -29,6 +29,11 @@ struct StructWithInt128
     Int128 value;
 };
 
+struct StructJustInt128
+{
+    Int128 value;
+};
+
 extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE GetInt128(uint64_t upper, uint64_t lower)
 {
     Int128 result;
@@ -49,6 +54,24 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetInt128Out(uint64_t upper, uint64
 {
     Int128 value = GetInt128(upper, lower);
     *pValue = value;
+}
+
+extern "C" DLL_EXPORT uint64_t STDMETHODCALLTYPE GetInt128Lower(Int128 value)
+{
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    return (uint64_t)value;
+#else
+    return value.lower;
+#endif
+}
+
+extern "C" DLL_EXPORT uint64_t STDMETHODCALLTYPE GetInt128Lower_S(StructJustInt128 value)
+{
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    return (uint64_t)value.value;
+#else
+    return value.value.lower;
+#endif
 }
 
 extern "C" DLL_EXPORT const Int128* STDMETHODCALLTYPE GetInt128Ptr(uint64_t upper, uint64_t lower)

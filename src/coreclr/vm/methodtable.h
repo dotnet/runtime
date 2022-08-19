@@ -1487,6 +1487,9 @@ public:
 
     inline BOOL IsAutoLayoutOrHasAutoLayoutField();
 
+    // Only accurate on types which are not auto layout
+    inline BOOL IsInt128OrHasInt128Fields();
+
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()

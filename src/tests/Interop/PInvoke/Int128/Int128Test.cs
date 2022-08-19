@@ -5,12 +5,18 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+struct StructJustInt128
+{
+    public StructJustInt128(Int128 val) { value = val; }
+    public Int128 value;
+}
+
 struct StructWithInt128
 {
     public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x10; }
     public byte messUpPadding;
     public Int128 value;
-};
+}
 
 unsafe partial class Int128Native
 {
@@ -22,6 +28,15 @@ unsafe partial class Int128Native
 
     [DllImport(nameof(Int128Native))]
     public static extern void GetInt128Out(ulong upper, ulong lower, out Int128 value);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern void GetInt128Out(ulong upper, ulong lower, out StructJustInt128 value);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern ulong GetInt128Lower_S(StructJustInt128 value);
+
+    [DllImport(nameof(Int128Native))]
+    public static extern ulong GetInt128Lower(Int128 value);
 
     [DllImport(nameof(Int128Native))]
     public static extern Int128* GetInt128Ptr(ulong upper, ulong lower);
@@ -85,20 +100,14 @@ unsafe partial class Int128Native
 
 unsafe partial class Int128Native
 {
-    public static void TestUInt128FieldLayout()
+    public static void TestInt128FieldLayout()
     {
         // This test checks that the alignment rules of Int128 structs match the native compiler
         StructWithInt128 lhs = new StructWithInt128(new Int128(11, 12));
         StructWithInt128 rhs = new StructWithInt128(new Int128(13, 14));
 
-        Int128Native.AddInt128(ref lhs, ref rhs);
+        Int128Native.AddStructWithInt128_ByRef(ref lhs, ref rhs);
         Assert.Equal(new StructWithInt128(new Int128(24, 26)), lhs);
-    }
-
-    private static void TestInt128()
-    {
-        Int128 value1 = Int128Native.GetInt128(1, 2);
-        Assert.Equal(new Int128(1, 2), value1);
 
         Int128 value2;
         Int128Native.GetInt128Out(3, 4, &value2);
@@ -106,6 +115,28 @@ unsafe partial class Int128Native
 
         Int128Native.GetInt128Out(5, 6, out Int128 value3);
         Assert.Equal(new Int128(5, 6), value3);
+
+        StructJustInt128 value4;
+        Int128Native.GetInt128Out(7, 8, out value4);
+        Assert.Equal(new StructJustInt128(new Int128(7, 8)), value4);
+
+        // Until we implement the correct abi for Int128, validate that we don't marshal to native
+
+        // Checking return value
+        Assert.Throws<System.Runtime.InteropServices.MarshalDirectiveException>(() => GetInt128(0, 1));
+
+        // Checking input value as Int128 itself
+        Assert.Throws<System.Runtime.InteropServices.MarshalDirectiveException>(() => GetInt128Lower(default(Int128)));
+
+        // Checking input value as structure wrapping Int128
+        Assert.Throws<System.Runtime.InteropServices.MarshalDirectiveException>(() => GetInt128Lower_S(default(StructJustInt128)));
+    }
+
+    private static void TestInt128()
+    {
+        Int128 value1 = Int128Native.GetInt128(1, 2);
+        Assert.Equal(new Int128(1, 2), value1);
+
 
         Int128* value4 = Int128Native.GetInt128Ptr(7, 8);
         Assert.Equal(new Int128(7, 8), *value4);

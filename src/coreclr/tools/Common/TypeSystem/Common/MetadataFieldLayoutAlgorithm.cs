@@ -110,6 +110,7 @@ namespace Internal.TypeSystem
                     FieldSize = sizeAndAlignment.Size,
                     LayoutAbiStable = true,
                     IsAutoLayoutOrHasAutoLayoutFields = false,
+                    IsInt128OrHasInt128Fields = false,
                 };
 
                 if (numInstanceFields > 0)
@@ -211,7 +212,7 @@ namespace Internal.TypeSystem
                 }
 
                 ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout: false, context.Target.DefaultPackingSize, out bool _, out bool _);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout: false, context.Target.DefaultPackingSize, out bool _, out bool _, out bool _);
 
                 block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment, context.Target);
                 result.Offsets[index] = new FieldAndOffset(field, block.Size);
@@ -303,15 +304,18 @@ namespace Internal.TypeSystem
             int fieldOrdinal = 0;
             bool layoutAbiStable = true;
             bool hasAutoLayoutField = false;
+            bool hasInt128Field = type.BaseType == null ? false : type.BaseType.IsInt128OrHasInt128Fields;
 
             foreach (var fieldAndOffset in layoutMetadata.Offsets)
             {
                 TypeDesc fieldType = fieldAndOffset.Field.FieldType;
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
                 if (fieldHasAutoLayout)
                     hasAutoLayoutField = true;
+                if (fieldHasInt128Field)
+                    hasInt128Field = true;
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
@@ -357,6 +361,7 @@ namespace Internal.TypeSystem
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
+                IsInt128OrHasInt128Fields = hasInt128Field,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -392,17 +397,20 @@ namespace Internal.TypeSystem
             int packingSize = ComputePackingSize(type, layoutMetadata);
             bool layoutAbiStable = true;
             bool hasAutoLayoutField = false;
+            bool hasInt128Field = type.BaseType == null ? false : type.BaseType.IsInt128OrHasInt128Fields;
 
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
                 if (fieldHasAutoLayout)
                     hasAutoLayoutField = true;
+                if (fieldHasInt128Field)
+                    hasInt128Field = true;
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
@@ -424,6 +432,7 @@ namespace Internal.TypeSystem
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
+                IsInt128OrHasInt128Fields = hasInt128Field,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -459,6 +468,7 @@ namespace Internal.TypeSystem
             int instanceValueClassFieldCount = 0;
             int instanceGCPointerFieldsCount = 0;
             int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
+            bool hasInt128Field = false;
 
             foreach (var field in type.GetFields())
             {
@@ -471,6 +481,8 @@ namespace Internal.TypeSystem
                 {
                     // Valuetypes which are not primitives or enums
                     instanceValueClassFieldCount++;
+                    if (((DefType)fieldType).IsInt128OrHasInt128Fields)
+                        hasInt128Field = true;
                 }
                 else if (fieldType.IsGCPointer)
                 {
@@ -480,7 +492,7 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum || fieldType.IsByRef);
 
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool _, out bool _);
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool _, out bool _, out bool _);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
                 }
             }
@@ -517,7 +529,7 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
@@ -678,7 +690,7 @@ namespace Internal.TypeSystem
             for (int i = 0; i < instanceValueClassFieldsArr.Length; i++)
             {
                 // Align the cumulative field offset to the indeterminate value
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
@@ -729,6 +741,7 @@ namespace Internal.TypeSystem
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = true,
+                IsInt128OrHasInt128Fields = hasInt128Field,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -742,7 +755,7 @@ namespace Internal.TypeSystem
 
         private static void PlaceInstanceField(FieldDesc field, bool hasLayout, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal, LayoutInt offsetBias)
         {
-            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, hasLayout, packingSize, out bool _, out bool _);
+            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, hasLayout, packingSize, out bool _, out bool _, out bool _);
 
             instanceFieldPos = AlignUpInstanceFieldOffset(field.OwningType, instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
             offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos + offsetBias);
@@ -802,11 +815,12 @@ namespace Internal.TypeSystem
             return cumulativeInstanceFieldPos;
         }
 
-        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, bool hasLayout, int packingSize, out bool layoutAbiStable, out bool fieldTypeHasAutoLayout)
+        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, bool hasLayout, int packingSize, out bool layoutAbiStable, out bool fieldTypeHasAutoLayout, out bool fieldTypeHasInt128Field)
         {
             SizeAndAlignment result;
             layoutAbiStable = true;
             fieldTypeHasAutoLayout = true;
+            fieldTypeHasInt128Field = false;
 
             if (fieldType.IsDefType)
             {
@@ -817,6 +831,7 @@ namespace Internal.TypeSystem
                     result.Alignment = defType.InstanceFieldAlignment;
                     layoutAbiStable = defType.LayoutAbiStable;
                     fieldTypeHasAutoLayout = defType.IsAutoLayoutOrHasAutoLayoutFields;
+                    fieldTypeHasInt128Field = defType.IsInt128OrHasInt128Fields;
                 }
                 else
                 {

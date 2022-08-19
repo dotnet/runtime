@@ -148,4 +148,11 @@ public class PInvokes
     {
         Assert.Equal((byte)ByteEnum.Value, DisabledRuntimeMarshallingNative.GetEnumUnderlyingValue(ByteEnum.Value));
     }
+
+    [Fact]
+    [SkipOnMono("Blocking this on CoreCLR should be good enough.")]
+    public static void Int128_NotSupported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithInt128(default(Int128)));
+    }
 }

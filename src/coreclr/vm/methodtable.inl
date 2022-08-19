@@ -949,6 +949,13 @@ inline BOOL MethodTable::IsAutoLayoutOrHasAutoLayoutField()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::IsInt128OrHasInt128Fields()
+{
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetClass()->IsInt128OrHasInt128Fields();
+}
+
+//==========================================================================================
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;

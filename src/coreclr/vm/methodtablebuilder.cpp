@@ -9993,6 +9993,7 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
             EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+            pLayout->SetIsInt128OrHasInt128Fields(TRUE);
 #ifdef TARGET_ARM
             // No such type exists for the Procedure Call Standard for ARM. We will default
             // to the same alignment as __m128, which is supported by the ABI.

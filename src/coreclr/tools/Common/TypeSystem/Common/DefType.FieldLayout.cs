@@ -68,6 +68,11 @@ namespace Internal.TypeSystem
             /// True if the type transitively has any types with LayoutKind.Auto in its layout.
             /// </summary>
             public const int IsAutoLayoutOrHasAutoLayoutFields = 0x400;
+
+            /// <summary>
+            /// True if the type transitively has an Int128 in it or is an Int128
+            /// </summary>
+            public const int IsInt128OrHasInt128Fields = 0x800;
         }
 
         private class StaticBlockInfo
@@ -135,6 +140,20 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Is a type Int128 or transitively have any fields of a type Int128.
+        /// </summary>
+        public virtual bool IsInt128OrHasInt128Fields
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsInt128OrHasInt128Fields);
+            }
+        }
 
         /// <summary>
         /// The number of bytes required to hold a field of this type
@@ -429,6 +448,10 @@ namespace Internal.TypeSystem
             if (computedLayout.IsAutoLayoutOrHasAutoLayoutFields)
             {
                 _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsAutoLayoutOrHasAutoLayoutFields);
+            }
+            if (computedLayout.IsInt128OrHasInt128Fields)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsInt128OrHasInt128Fields);
             }
 
             if (computedLayout.Offsets != null)
