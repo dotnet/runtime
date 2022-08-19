@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Fact]
-        public void RootDisposeTest()
+        public void RootEngineScopeDisposeTest()
         {
             var services = new ServiceCollection();
             ServiceProvider sp = services.BuildServiceProvider();

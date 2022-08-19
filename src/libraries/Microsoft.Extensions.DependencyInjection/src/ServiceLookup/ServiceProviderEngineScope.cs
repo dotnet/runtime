@@ -187,8 +187,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             }
 
-            if (IsRootScope)
+            if (IsRootScope && !RootProvider.IsDisposed())
             {
+                // If this ServiceProviderEngineScope instance is a root scope, disposing this instance will need to dispose the RootProvider too.
+                // Otherwise the RootProvider will never get disposed and will leak.
+                // Note, if the RootProvider get disposed first, it will automatically dispose all attached ServiceProviderEngineScope objects.
                 RootProvider.Dispose();
             }
 
