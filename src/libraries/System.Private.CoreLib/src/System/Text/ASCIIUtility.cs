@@ -1380,7 +1380,7 @@ namespace System.Text
             {
                 return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0x80));
             }
-            if (AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
                 Vector128<byte> maxBytes = AdvSimd.Arm64.MaxPairwise(asciiVector, asciiVector);
                 return (maxBytes.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
@@ -1793,7 +1793,13 @@ namespace System.Text
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
-            if (Vector128.IsHardwareAccelerated)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
+                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+            }
+            else if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
