@@ -2859,7 +2859,11 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
 
         case DoNotEnregisterReason::ReturnSpCheck:
-            JITDUMP("Used for SP check\n");
+            JITDUMP("Used for SP check on return\n");
+            break;
+
+        case DoNotEnregisterReason::CallSpCheck:
+            JITDUMP("Used for SP check on call\n");
             break;
 
         case DoNotEnregisterReason::SimdUserForcesDep:

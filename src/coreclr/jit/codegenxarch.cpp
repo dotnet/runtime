@@ -2722,9 +2722,8 @@ BAILOUT:
     // Update local variable to reflect the new stack pointer.
     if (compiler->opts.compStackCheckOnRet)
     {
-        noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif
@@ -5582,9 +5581,8 @@ void CodeGen::genCall(GenTreeCall* call)
     // Store the stack pointer so we can check it after the call.
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
-        noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
+        assert(compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
@@ -5714,30 +5712,9 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)
-    if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
-    {
-        noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
-        if (!call->CallerPop() && (stackArgBytes != 0))
-        {
-            // ECX is trashed, so can be used to compute the expected SP. We saved the value of SP
-            // after pushing all the stack arguments, but the caller popped the arguments, so we need
-            // to do some math to figure a good comparison.
-            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-            GetEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_ARG_0, stackArgBytes);
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_ARG_0, compiler->lvaCallSpCheck, 0);
-        }
-        else
-        {
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
-        }
-
-        BasicBlock* sp_check = genCreateTempLabel();
-        GetEmitter()->emitIns_J(INS_je, sp_check);
-        instGen(INS_BREAKPOINT);
-        genDefineTempLabel(sp_check);
-    }
+    // REG_ARG_0 (ECX) is trashed, so can be used as a temporary register.
+    genStackPointerCheck(compiler->opts.compStackCheckOnCall && (call->gtCallType == CT_USER_FUNC),
+                         compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
 #if !defined(FEATURE_EH_FUNCLETS)
