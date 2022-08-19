@@ -23,10 +23,6 @@ namespace System.Formats.Tar
         private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
         private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
 
-        // Extended Attribute entries have a special format in the Name field:
-        // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"
-        private const string PaxHeadersFormat = "{0}/PaxHeaders.{1}/{2}{3}";
-
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
 
@@ -769,15 +765,12 @@ namespace System.Formats.Tar
             string? dirName = Path.GetDirectoryName(_name);
             dirName = string.IsNullOrEmpty(dirName) ? "." : dirName;
 
-            int processId = Environment.ProcessId;
-
             string? fileName = Path.GetFileName(_name);
             fileName = string.IsNullOrEmpty(fileName) ? "." : fileName;
 
-            string trailingSeparator = (_typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList) ?
-                $"{Path.DirectorySeparatorChar}" : string.Empty;
-
-            return string.Format(PaxHeadersFormat, dirName, processId, fileName, trailingSeparator);
+            return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}" :
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}";
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.
