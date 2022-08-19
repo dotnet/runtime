@@ -125,6 +125,9 @@ namespace ILCompiler.Logging
             if (context.IsWarningSuppressed(code, origin))
                 return null;
 
+            if (context.IsWarningSubcategorySuppressed(subcategory))
+                return null;
+
             if (TryLogSingleWarning(context, code, origin, subcategory))
                 return null;
 
@@ -137,6 +140,9 @@ namespace ILCompiler.Logging
         private static MessageContainer? CreateWarningMessageContainer(Logger context, MessageOrigin origin, DiagnosticId id, string subcategory, params string[] args)
         {
             if (context.IsWarningSuppressed((int)id, origin))
+                return null;
+
+            if (context.IsWarningSubcategorySuppressed(subcategory))
                 return null;
 
             if (TryLogSingleWarning(context, (int)id, origin, subcategory))
