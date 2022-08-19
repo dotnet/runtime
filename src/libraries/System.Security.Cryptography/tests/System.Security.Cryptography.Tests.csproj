@@ -13,10 +13,6 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <WasmXHarnessMonoArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=TEST_EXPECT_SUBTLE_CRYPTO=true</WasmXHarnessMonoArgs>
-    <WasmXHarnessArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <UseAndroidCrypto>true</UseAndroidCrypto>
     <XUnitSingleThreadedMode>true</XUnitSingleThreadedMode>
@@ -312,9 +308,6 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <Compile Include="AesTests.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

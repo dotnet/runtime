@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     internal static partial class Helpers
     {
         [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasNonAesSymmetricEncryption =>
+        internal static bool HasSymmetricEncryption { get; } =
 #if NETCOREAPP
             !OperatingSystem.IsBrowser();
 #else
