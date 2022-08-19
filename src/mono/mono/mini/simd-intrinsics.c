@@ -4009,7 +4009,6 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Bitmask},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
-	{SN_Constant},
 	{SN_ExtractLane},
 	{SN_ReplaceLane},
 	{SN_Shuffle},
@@ -4041,8 +4040,6 @@ emit_packedsimd_intrinsics (
 			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 		case SN_CompareNotEqual:
 			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
-		case SN_Constant:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XMOVE, 0, arg0_type, fsig, args);
 		case SN_ExtractLane: {
 			int extract_op = type_to_xextract_op (arg0_type);
 			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
