@@ -88,24 +88,15 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
 #endif
 
-    if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
+    // ignore R2R if the image is not a file.
+    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
+        pFlat->HasWriteableSections())
     {
-        // we can use flat layout for this
-        return pFlat.Extract();
+        return new ConvertedImageLayout(pFlat);
     }
 
-#ifdef TARGET_OSX
-    // We need to allocate executable memory on OSX in order to do relocation of R2R code.
-    // Converted layout currently uses VirtualAlloc, so it will not work.
-    // Do not convert byte array images on OSX for now (that will disable R2R)
-    // TODO: consider relaxing this in the future.
-    if (!pOwner->IsFile())
-    {
-        return pFlat.Extract();
-    }
-#endif
-
-    return new ConvertedImageLayout(pFlat);
+    // we can use flat layout for this
+    return pFlat.Extract();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -459,7 +450,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
