@@ -97,7 +97,6 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetFormatsAndFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.Android)]
         public void Extract(TarEntryFormat format, TarEntryType entryType)
         {
             using TempDirectory root = new TempDirectory();
