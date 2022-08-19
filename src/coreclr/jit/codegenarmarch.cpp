@@ -4458,12 +4458,24 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
 #ifdef TARGET_ARM64
-            // Handle LEA with "contained" BFIZ
-            if (index->isContained() && index->OperIs(GT_BFIZ))
+
+            if (index->isContained())
             {
-                assert(scale == 0);
-                scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
-                index = index->gtGetOp1()->gtGetOp1();
+                if (index->OperIs(GT_BFIZ))
+                {
+                    // Handle LEA with "contained" BFIZ
+                    assert(scale == 0);
+                    scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
+                    index = index->gtGetOp1()->gtGetOp1();
+                }
+                else if (index->OperIs(GT_CAST))
+                {
+                    index = index->AsCast()->gtGetOp1();
+                }
+                else
+                {
+                    assert(!"There are more unhandled nodes for contained index for ARM64");
+                }
             }
 #endif
 
