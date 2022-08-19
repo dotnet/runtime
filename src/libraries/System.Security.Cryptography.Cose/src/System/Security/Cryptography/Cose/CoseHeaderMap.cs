@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.Cose
                             reader.SkipValue();
                             break;
                         case KnownHeaders.Crit:
-                            int? length = reader.ReadStartArray();
+                            reader.ReadStartArray();
                             bool isEmpty = true;
 
                             while (true)
