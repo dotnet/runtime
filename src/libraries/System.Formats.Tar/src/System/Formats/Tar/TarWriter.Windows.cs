@@ -63,16 +63,8 @@ namespace System.Formats.Tar
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Read,
-                    Share = FileShare.Read,
-                    Options = fileOptions
-                };
-
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = new FileStream(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
             }
 
             return entry;
