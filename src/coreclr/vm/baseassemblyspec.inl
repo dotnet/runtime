@@ -243,10 +243,23 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
             || strcmp(m_pAssemblyName, pSpec->m_pAssemblyName)))
         return FALSE;
 
-    if (m_cbPublicKeyOrToken != pSpec->m_cbPublicKeyOrToken
-        || memcmp(m_pbPublicKeyOrToken, pSpec->m_pbPublicKeyOrToken, m_cbPublicKeyOrToken))
+    if (m_cbPublicKeyOrToken != pSpec->m_cbPublicKeyOrToken)
         return FALSE;
 
+    if (m_pbPublicKeyOrToken == NULL
+        && pSpec->m_pbPublicKeyOrToken == NULL
+        && m_cbPublicKeyOrToken == 0) {
+        //
+        // case memset(0, 0, 0) empirically returns 0 on glibc x64
+        // emulate that here, so as to not trip ubsan at runtime.
+        //
+        return TRUE;
+    }
+    //
+    // At this point, by construction, neither src1 nor src2 to memcmp are NULL.
+    //
+    if (memcmp(m_pbPublicKeyOrToken, pSpec->m_pbPublicKeyOrToken, m_cbPublicKeyOrToken) != 0)
+        return FALSE;
 
     if (m_dwFlags != pSpec->m_dwFlags)
         return FALSE;
