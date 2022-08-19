@@ -35,7 +35,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void RuntimeFilterChange()
         {
             CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
@@ -96,7 +96,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_RemoveSwitch()
         {
             // Use a SourceSwitch that logs Error.
@@ -137,7 +137,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_ChangeSwitch()
         {
             // Use a SourceSwitch that logs Error.
@@ -163,7 +163,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_RemoveSource()
         {
             // Use a SourceSwitch that logs Error.
@@ -197,7 +197,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void ConfigWithEvents_RuntimeListener()
         {
             CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
@@ -264,7 +264,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void AllTypes()
         {
             CreateAndLoadConfigFile("testhost_AllTypes.config");
@@ -309,7 +309,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Switch_MissingValue_Throws()
         {
             Exception e = Assert.Throws<ConfigurationErrorsException>(() =>
