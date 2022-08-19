@@ -364,7 +364,9 @@ namespace System.Formats.Tar
         // by two records consisting entirely of zero bytes.
         private void WriteFinalRecords()
         {
-            byte[] emptyRecord = new byte[TarHelpers.RecordSize];
+            Span<byte> emptyRecord = stackalloc byte[TarHelpers.RecordSize];
+            emptyRecord.Clear();
+
             _archiveStream.Write(emptyRecord);
             _archiveStream.Write(emptyRecord);
         }
@@ -374,9 +376,14 @@ namespace System.Formats.Tar
         // This method is called from DisposeAsync, so we don't want to propagate a cancelled CancellationToken.
         private async ValueTask WriteFinalRecordsAsync()
         {
-            byte[] emptyRecord = new byte[TarHelpers.RecordSize];
-            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
-            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
+            const int TwoRecordSize = TarHelpers.RecordSize * 2;
+
+            byte[] twoEmptyRecords = ArrayPool<byte>.Shared.Rent(TwoRecordSize);
+            Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
+
+            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
+
+            ArrayPool<byte>.Shared.Return(twoEmptyRecords);
         }
 
         private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)
