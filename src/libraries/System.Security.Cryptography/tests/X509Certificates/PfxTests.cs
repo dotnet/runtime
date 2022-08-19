@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | keyStorageFlags))
             {
-                const string password = "NotVerySecret";
+                const string password = "Placeholder";
 
                 byte[] pkcs12 = cert.Export(X509ContentType.Pkcs12, password);
 
@@ -163,6 +163,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ReadECDsaPrivateKey_WindowsPfx(X509KeyStorageFlags keyStorageFlags)
         {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", keyStorageFlags))
             {
                 using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
@@ -175,6 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", Cert.EphemeralIfPossible))
             using (var pubOnly = new X509Certificate2(cert.RawData))
             {
@@ -199,6 +201,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ReadECDHPrivateKey_WindowsPfx(X509KeyStorageFlags keyStorageFlags)
         {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
             using (var cert = new X509Certificate2(TestData.EcDhP256_KeyAgree_Pfx_Windows, "test", keyStorageFlags))
             {
                 using (ECDiffieHellman ecdh = cert.GetECDiffieHellmanPrivateKey())
@@ -211,6 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ECDHPrivateKeyProperty_WindowsPfx()
         {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
             using (var cert = new X509Certificate2(TestData.EcDhP256_KeyAgree_Pfx_Windows, "test", Cert.EphemeralIfPossible))
             using (var pubOnly = new X509Certificate2(cert.RawData))
             {
@@ -305,6 +309,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ReadECDsaPrivateKey_OpenSslPfx(X509KeyStorageFlags keyStorageFlags)
         {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_OpenSsl, "Test", keyStorageFlags))
             using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
             {
