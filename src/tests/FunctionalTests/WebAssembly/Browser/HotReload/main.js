@@ -12,11 +12,7 @@ function wasm_exit(exit_code) {
 try {
     const { getAssemblyExports } = await dotnet
         .withElementOnExit()
-        .withModuleConfig({
-            onConfigLoaded: (config) => {
-                config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-            }
-        })
+        .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
         .create();
 
     const exports = await getAssemblyExports("WebAssembly.Browser.HotReload.Test.dll");

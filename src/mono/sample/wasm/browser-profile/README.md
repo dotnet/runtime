@@ -14,15 +14,11 @@ public static void StopProfile(){}
 
 ```
 await dotnet
-    .withModuleConfig({
-        onConfigLoaded: () => {
-            if (config.enableProfiler) {
-                config.aotProfilerOptions = {
-                    write_at: "<Namespace.Class::StopProfile>",
-                    send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
-                }
-            }
-        },
+    .withConfig({
+        aotProfilerOptions: {
+            writeAt: "<Namespace.Class::StopProfile>",
+            sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+        }
     })
     .create();
 ```
