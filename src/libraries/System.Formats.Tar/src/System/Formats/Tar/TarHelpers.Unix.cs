@@ -92,7 +92,7 @@ namespace System.Formats.Tar
                     }
                     else if (overwriteMetadata || pendingModes.ContainsKey(fullPath))
                     {
-                            pendingModes[fullPath] = mode.Value;
+                        pendingModes[fullPath] = mode.Value;
                     }
                 }
                 return;
