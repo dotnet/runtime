@@ -84,8 +84,20 @@ namespace System.Formats.Tar
         /// </summary>
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (_wroteEntries)
+                {
+                    WriteFinalRecords();
+                }
+
+                if (!_leaveOpen)
+                {
+                    _archiveStream.Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -93,8 +105,20 @@ namespace System.Formats.Tar
         /// </summary>
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsync(disposing: true).ConfigureAwait(false);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (_wroteEntries)
+                {
+                    await WriteFinalRecordsAsync().ConfigureAwait(false);
+                }
+
+                if (!_leaveOpen)
+                {
+                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                }
+            }
         }
 
         /// <summary>
@@ -239,58 +263,6 @@ namespace System.Formats.Tar
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
-        }
-
-        // Disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private void Dispose(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    if (_wroteEntries)
-                    {
-                        WriteFinalRecords();
-                    }
-
-
-                    if (!_leaveOpen)
-                    {
-                        _archiveStream.Dispose();
-                    }
-                }
-                finally
-                {
-                    _isDisposed = true;
-                }
-            }
-        }
-
-        // Asynchronously disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private async ValueTask DisposeAsync(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    if (_wroteEntries)
-                    {
-                        await WriteFinalRecordsAsync().ConfigureAwait(false);
-                    }
-
-
-                    if (!_leaveOpen)
-                    {
-                        await _archiveStream.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    _isDisposed = true;
-                }
-            }
         }
 
         // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
