@@ -330,10 +330,6 @@ namespace
 
     BOOL TypeHasInt128Field(CorElementType corElemType, TypeHandle pNestedType)
     {
-        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
-        {
-            return FALSE;
-        }
         if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!pNestedType.IsNull());
