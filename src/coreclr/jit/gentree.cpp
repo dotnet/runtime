@@ -10424,12 +10424,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                     --msgLength;
                     break;
                 }
-                if (tree->gtFlags & GTF_VAR_CAST)
-                {
-                    printf("C");
-                    --msgLength;
-                    break;
-                }
                 if (tree->gtFlags & GTF_VAR_CONTEXT)
                 {
                     printf("!");

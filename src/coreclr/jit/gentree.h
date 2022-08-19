@@ -468,11 +468,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
-    GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00100000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
                                       // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
                                       // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
                                       // on their parents in post-order morph.
@@ -2313,20 +2312,18 @@ public:
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
-        {
-            return true;
-        }
-        return false;
+        return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
+
     void SetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
+
     void ResetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 

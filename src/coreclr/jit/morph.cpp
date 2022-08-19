@@ -4548,8 +4548,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
-            arrRef                = gtNewLclvNode(arrRefTmpNum, arrRef->TypeGet());
-            arrRef2               = gtNewLclvNode(arrRefTmpNum, arrRef->TypeGet());
+            arrRef                = gtNewLclvNode(arrRefTmpNum, lvaGetDesc(arrRefTmpNum)->TypeGet());
+            arrRef2               = gtNewLclvNode(arrRefTmpNum, lvaGetDesc(arrRefTmpNum)->TypeGet());
         }
         else
         {
@@ -4563,8 +4563,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
-            index                = gtNewLclvNode(indexTmpNum, index->TypeGet());
-            index2               = gtNewLclvNode(indexTmpNum, index->TypeGet());
+            index                = gtNewLclvNode(indexTmpNum, lvaGetDesc(indexTmpNum)->TypeGet());
+            index2               = gtNewLclvNode(indexTmpNum, lvaGetDesc(indexTmpNum)->TypeGet());
         }
         else
         {
@@ -17266,7 +17266,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                     // Side-effect; create a temp.
                     // unsigned newIdxLcl    = m_compiler->lvaGrabTemp(true DEBUGARG("MD array index copy"));
                     unsigned newIdxLcl    = m_pTempCache->GrabTemp(idx->TypeGet());
-                    GenTree* newIdx       = m_compiler->gtNewLclvNode(newIdxLcl, idx->TypeGet());
+                    GenTree* newIdx       = m_compiler->gtNewLclvNode(newIdxLcl, genActualType(idx));
                     idxToUse[i]           = newIdx;
                     idxToCopy[i]          = newIdxLcl;
                     anyIdxWithSideEffects = true;

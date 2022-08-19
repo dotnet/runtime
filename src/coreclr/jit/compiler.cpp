@@ -9219,10 +9219,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_USEASG]");
                 }
-                if (tree->gtFlags & GTF_VAR_CAST)
-                {
-                    chars += printf("[VAR_CAST]");
-                }
                 if (tree->gtFlags & GTF_VAR_ITERATOR)
                 {
                     chars += printf("[VAR_ITERATOR]");
