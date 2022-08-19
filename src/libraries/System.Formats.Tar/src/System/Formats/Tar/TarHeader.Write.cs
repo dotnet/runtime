@@ -17,8 +17,8 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private static ReadOnlySpan<byte> PaxMagicBytes => "ustar\0"u8;
-        private static ReadOnlySpan<byte> PaxVersionBytes => "00"u8;
+        private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
+        private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
 
         private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
         private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
@@ -442,8 +442,8 @@ namespace System.Formats.Tar
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
         private static int WritePosixMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksum(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(UstarMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksum(UstarVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
