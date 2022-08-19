@@ -17,6 +17,8 @@ declare global {
 
 export default createDotnetRuntime;
 
+declare const dotnet: ModuleAPI["dotnet"];
+declare const exit: ModuleAPI["exit"];
 
 /**
  * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
@@ -71,6 +73,7 @@ export {
     EmscriptenModule, NativePointer,
     RuntimeAPI, ModuleAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig,
     AssetEntry, ResourceRequest, LoadingResource, AssetBehaviours,
-    IMemoryView, MemoryViewType, ManagedObject, ManagedError, Span, ArraySegment
+    IMemoryView, MemoryViewType, ManagedObject, ManagedError, Span, ArraySegment,
+    dotnet, exit
 };
 
