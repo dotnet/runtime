@@ -192,7 +192,7 @@ namespace System.ServiceProcess
                         return _dependentServices;
                     }
 
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     if (lastError != Interop.Errors.ERROR_MORE_DATA)
                         throw new Win32Exception(lastError);
 
@@ -305,7 +305,7 @@ namespace System.ServiceProcess
                     return _servicesDependedOn;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -384,7 +384,7 @@ namespace System.ServiceProcess
                 using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_CONFIG);
                 bool success = Interop.Advapi32.QueryServiceConfig(serviceHandle, IntPtr.Zero, 0, out int bytesNeeded);
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -575,7 +575,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;
@@ -606,7 +606,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;

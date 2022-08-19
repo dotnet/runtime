@@ -1,5 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #pragma warning disable 649
 #pragma warning disable 169
@@ -135,5 +137,23 @@ namespace System.Runtime.CompilerServices
     {
         public const string ByRefFields = nameof(ByRefFields);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+    }
+
+    internal sealed class IntrinsicAttribute : Attribute
+    {
+    }
+}
+
+namespace System.Runtime.Intrinsics
+{
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential, Size = 16)]
+    public readonly struct Vector128<T>
+        where T : struct
+    {
+        // These fields exist to ensure the alignment is 8, rather than 1.
+        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
+        private readonly ulong _00;
+        private readonly ulong _01;
     }
 }
