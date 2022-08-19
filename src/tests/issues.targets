@@ -18,9 +18,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>https://github.com/dotnet/runtime/issues/11213</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11213</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
@@ -1427,6 +1424,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
+            <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>
