@@ -436,7 +436,6 @@ namespace Auto
         public byte fld9;
     }
 
-<<<<<<< HEAD
     [StructLayout(LayoutKind.Auto)]
     public struct UInt128Struct
     {
@@ -447,12 +446,12 @@ namespace Auto
     public struct Int128Struct
     {
         Int128 fld1;
-=======
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class Class16Align
     {
         Vector128<byte> vector16Align;
->>>>>>> 7f70d973821 (Address David's PR feedback)
     }
 }
 
