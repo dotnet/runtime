@@ -5117,9 +5117,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
         }
 
-        printf("%4d) JIT compiled [%s] %s   ILSize=%u, AsmSize=%u, hash=0x%08x %s%s\n", methodsCompiled,
-               compGetTieringName(), info.compFullName, info.compILCodeSize, *methodCodeSize, info.compMethodHash(),
-               osrBuffer, compGetStressMessage());
+        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x %s]\n", methodsCompiled,
+               info.compFullName, compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize, info.compMethodHash(),
+               compGetStressMessage());
 #else
         printf("%4d) JIT compiled [%s] %s   ILSize=%u, AsmSize=%u\n", methodsCompiled, compGetTieringName(),
                eeGetMethodFullName(info.compMethodHnd), info.compILCodeSize, *methodCodeSize);
