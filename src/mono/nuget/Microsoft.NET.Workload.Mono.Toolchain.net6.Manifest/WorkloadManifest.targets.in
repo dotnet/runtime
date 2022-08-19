@@ -1,25 +1,26 @@
-<Project TreatAsLocalProperty="UsingBrowserRuntimeWorkload;WasmNativeWorkload;TargetsNet6">
+<Project TreatAsLocalProperty="WasmNativeWorkload;TargetsNet6">
     <PropertyGroup>
-        <RuntimePackInWorkloadVersion>${PackageVersionNet6}</RuntimePackInWorkloadVersion>
+        <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
         <BrowserWorkloadDisabled Condition="'$(BrowserWorkloadDisabled)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
                                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                             !$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '6.0'))">true</BrowserWorkloadDisabled>
         <TargetsNet6 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</TargetsNet6>
+        <_UsingBrowserRuntimeWorkload6>$(UsingBrowserRuntimeWorkload)</_UsingBrowserRuntimeWorkload6>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' AND '$(_UsingBrowserRuntimeWorkload6)' == ''">
         <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
-        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
-        <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
+        <_UsingBrowserRuntimeWorkload6 Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</_UsingBrowserRuntimeWorkload6>
+        <_UsingBrowserRuntimeWorkload6 Condition="'$(_UsingBrowserRuntimeWorkload6)' == ''" >$(WasmNativeWorkload)</_UsingBrowserRuntimeWorkload6>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(BrowserWorkloadDisabled)' == 'true'">
-        <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        <_UsingBrowserRuntimeWorkload6>false</_UsingBrowserRuntimeWorkload6>
         <WasmNativeWorkload>false</WasmNativeWorkload>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(_UsingBrowserRuntimeWorkload6)' == 'true'">
       <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
@@ -79,7 +80,7 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net6.tvossimulator-x64" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+    <ImportGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_UsingBrowserRuntimeWorkload6)' == 'true'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net6" />
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net6" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net6.browser-wasm" />
@@ -87,15 +88,15 @@
     </ImportGroup>
 
     <!-- HACK: -->
-    <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">
+    <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(_UsingBrowserRuntimeWorkload6)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python.net6" Condition="!$([MSBuild]::IsOsPlatform('Linux'))" />
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node.net6" />
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk.net6" />
     </ImportGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'))">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(_UsingBrowserRuntimeWorkload6)' == 'true'))">
       <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
-      <_MonoWorkloadRuntimePackPackageVersion>$(RuntimePackInWorkloadVersion)</_MonoWorkloadRuntimePackPackageVersion>
+      <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersion6)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetsNet6)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
