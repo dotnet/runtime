@@ -430,7 +430,7 @@ namespace System.Formats.Tar
                 _magic = GnuMagic;
                 _format = TarEntryFormat.Gnu;
             }
-            else if (_format == TarEntryFormat.V7 && magic.SequenceEqual(PaxMagicBytes))
+            else if (_format == TarEntryFormat.V7 && magic.SequenceEqual(UstarMagicBytes))
             {
                 // Important: Only change to ustar if we had not changed the format to pax already
                 _magic = UstarMagic;
@@ -452,19 +452,29 @@ namespace System.Formats.Tar
             }
 
             Span<byte> version = buffer.Slice(FieldLocations.Version, FieldLengths.Version);
-
-            _version = Encoding.ASCII.GetString(version);
-
-            // The POSIX formats have a 6 byte Magic "ustar\0", followed by a 2 byte Version "00"
-            if ((_format is TarEntryFormat.Ustar or TarEntryFormat.Pax) && _version != UstarVersion)
+            switch (_format)
             {
-                throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
-            }
+                case TarEntryFormat.Ustar or TarEntryFormat.Pax:
+                    // The POSIX formats have a 6 byte Magic "ustar\0", followed by a 2 byte Version "00"
+                    if (!version.SequenceEqual(UstarVersionBytes))
+                    {
+                        throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
+                    }
+                    _version = UstarVersion;
+                    break;
 
-            // The GNU format has a Magic+Version 8 byte string "ustar  \0"
-            if (_format == TarEntryFormat.Gnu && _version != GnuVersion)
-            {
-                throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                case TarEntryFormat.Gnu:
+                    // The GNU format has a Magic+Version 8 byte string "ustar  \0"
+                    if (!version.SequenceEqual(GnuVersionBytes))
+                    {
+                        throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                    }
+                    _version = GnuVersion;
+                    break;
+
+                default:
+                    _version = Encoding.ASCII.GetString(version);
+                    break;
             }
         }
 
