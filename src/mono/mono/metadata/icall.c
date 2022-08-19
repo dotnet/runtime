@@ -7189,7 +7189,7 @@ ves_icall_System_Threading_Thread_YieldInternal (void)
 gint32
 ves_icall_System_Environment_get_ProcessorCount (void)
 {
-	return mono_cpu_count ();
+	return mono_cpu_limit ();
 }
 
 // Generate wrappers.
