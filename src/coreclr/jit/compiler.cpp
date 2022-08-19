@@ -5121,7 +5121,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                info.compFullName, compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize,
                info.compMethodHash(), compGetStressMessage());
 #else
-        printf("%4d: JIT compiled %s [%s IL size=%u, code size=%u]\n", methodsCompiled,
+        printf("%4d: JIT compiled %s [%s, IL size=%u, code size=%u]\n", methodsCompiled,
                eeGetMethodFullName(info.compMethodHnd), compGetTieringName(), info.compILCodeSize, *methodCodeSize);
 #endif
     }
