@@ -390,27 +390,27 @@ namespace System.Formats.Tar
 
             if (_mode > 0)
             {
-                checksum += WriteAsOctal(_mode, buffer, FieldLocations.Mode, FieldLengths.Mode);
+                checksum += WriteAsOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
             if (_uid > 0)
             {
-                checksum += WriteAsOctal(_uid, buffer, FieldLocations.Uid, FieldLengths.Uid);
+                checksum += WriteAsOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
 
             if (_gid > 0)
             {
-                checksum += WriteAsOctal(_gid, buffer, FieldLocations.Gid, FieldLengths.Gid);
+                checksum += WriteAsOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
             _size = actualLength;
 
             if (_size > 0)
             {
-                checksum += WriteAsOctal(_size, buffer, FieldLocations.Size, FieldLengths.Size);
+                checksum += WriteAsOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
-            checksum += WriteAsTimestamp(_mTime, buffer, FieldLocations.MTime, FieldLengths.MTime);
+            checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
 
             char typeFlagChar = (char)actualEntryType;
             buffer[FieldLocations.TypeFlag] = (byte)typeFlagChar;
@@ -418,7 +418,7 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                checksum += WriteAsAsciiString(_linkName, buffer, FieldLocations.LinkName, FieldLengths.LinkName);
+                checksum += WriteAsAsciiString(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
             }
 
             return checksum;
@@ -462,22 +462,22 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_uName))
             {
-                checksum += WriteAsAsciiString(_uName, buffer, FieldLocations.UName, FieldLengths.UName);
+                checksum += WriteAsAsciiString(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
             }
 
             if (!string.IsNullOrEmpty(_gName))
             {
-                checksum += WriteAsAsciiString(_gName, buffer, FieldLocations.GName, FieldLengths.GName);
+                checksum += WriteAsAsciiString(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
             }
 
             if (_devMajor > 0)
             {
-                checksum += WriteAsOctal(_devMajor, buffer, FieldLocations.DevMajor, FieldLengths.DevMajor);
+                checksum += WriteAsOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
             }
 
             if (_devMinor > 0)
             {
-                checksum += WriteAsOctal(_devMinor, buffer, FieldLocations.DevMinor, FieldLengths.DevMinor);
+                checksum += WriteAsOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
 
             return checksum;
@@ -486,8 +486,8 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer, FieldLocations.ATime, FieldLengths.ATime);
-            checksum += WriteAsTimestamp(_cTime, buffer, FieldLocations.CTime, FieldLengths.CTime);
+            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             if (_gnuUnusedBytes != null)
             {
@@ -652,7 +652,8 @@ namespace System.Formats.Tar
             checksum += (byte)' ' * 8;
 
             Span<byte> converted = stackalloc byte[FieldLengths.Checksum];
-            WriteAsOctal(checksum, converted, 0, converted.Length);
+            converted.Clear();
+            WriteAsOctal(checksum, converted);
 
             Span<byte> destination = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
 
@@ -727,25 +728,35 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        internal static int WriteAsOctal(long tenBaseNumber, Span<byte> destination, int location, int length)
+        internal static int WriteAsOctal(long tenBaseNumber, Span<byte> destination)
         {
-            long octal = TarHelpers.ConvertDecimalToOctal(tenBaseNumber);
-            byte[] bytes = Encoding.ASCII.GetBytes(octal.ToString());
-            return WriteRightAlignedBytesAndGetChecksum(bytes.AsSpan(), destination.Slice(location, length));
+            ulong value = (ulong)tenBaseNumber;
+            Span<byte> digits = stackalloc byte[32]; // longest possible octal representation of a ulong is 21 digits
+
+            int i = digits.Length - 1;
+            while (true)
+            {
+                digits[i] = (byte)('0' + (value % 8));
+                value /= 8;
+                if (value == 0) break;
+                i--;
+            }
+
+            return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination);
         }
 
         // Writes the specified DateTimeOffset's Unix time seconds as a right-aligned octal number, and returns its checksum.
-        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination, int location, int length)
+        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
-            return WriteAsOctal(unixTimeSeconds, destination, location, length);
+            return WriteAsOctal(unixTimeSeconds, destination);
         }
 
         // Writes the specified text as an ASCII string aligned to the left, and returns its checksum.
-        private static int WriteAsAsciiString(string str, Span<byte> buffer, int location, int length)
+        private static int WriteAsAsciiString(string str, Span<byte> buffer)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(str);
-            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer.Slice(location, length));
+            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer);
         }
 
         // Gets the special name for the 'name' field in an extended attribute entry.
