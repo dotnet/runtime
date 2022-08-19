@@ -105,7 +105,6 @@ namespace ILLink.CodeFix
 				return;
 
 			var syntaxGenerator = SyntaxGenerator.GetGenerator (document);
-			var attributeArguments = new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.MemberAccessExpression (syntaxGenerator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArgs)) };
 			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
 				return;
 			if (model.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
@@ -117,7 +116,7 @@ namespace ILLink.CodeFix
 				createChangedDocument: ct => AddAttributeAsync (
 					document,
 					attributableNode,
-					attributeArguments,
+					stringArgs,
 					attributeSymbol,
 					addAsReturnAttribute: AttributeOnReturn.Contains (diagnostic.Id),
 					addGenericParameterAttribute: AttributeOnGeneric.Contains (diagnostic.Id),
@@ -128,7 +127,7 @@ namespace ILLink.CodeFix
 		private static async Task<Document> AddAttributeAsync (
 			Document document,
 			SyntaxNode targetNode,
-			SyntaxNode[] attributeArguments,
+			string stringArguments,
 			ITypeSymbol attributeSymbol,
 			bool addAsReturnAttribute,
 			bool addGenericParameterAttribute,
@@ -136,6 +135,7 @@ namespace ILLink.CodeFix
 		{
 			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
 			var generator = editor.Generator;
+			var attributeArguments = new[] { generator.AttributeArgument (generator.MemberAccessExpression (generator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArguments)) };
 			var attribute = generator.Attribute (
 				generator.TypeExpression (attributeSymbol), attributeArguments)
 				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
