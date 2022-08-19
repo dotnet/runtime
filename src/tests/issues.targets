@@ -8,10 +8,16 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
             <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
+            <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/11213</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>https://github.com/dotnet/runtime/issues/11213</Issue>
         </ExcludeList>

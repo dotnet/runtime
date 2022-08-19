@@ -32,6 +32,7 @@ namespace ILCompiler
             if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
                 layoutFromMetadata.LayoutAbiStable = false; // Int128 parameter passing ABI is unstable at this time
+                layoutFromMetadata.IsInt128OrHasInt128Fields = true;
                 return layoutFromMetadata;
             }
 
@@ -44,7 +45,8 @@ namespace ILCompiler
                 FieldAlignment = new LayoutInt(16),
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = false // Int128 parameter passing ABI is unstable at this time
+                LayoutAbiStable = false, // Int128 parameter passing ABI is unstable at this time
+                IsInt128OrHasInt128Fields = true
             };
         }
 
