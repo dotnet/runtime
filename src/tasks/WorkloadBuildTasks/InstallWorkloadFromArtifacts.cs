@@ -59,7 +59,7 @@ namespace Microsoft.Workload.Build.Tasks
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
 
-                IEnumerable<InstallWorkloadRequest> selectedRequests = InstallTargets
+                InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
                     {
                         if (!HasMetadata(workloadToInstall, nameof(workloadToInstall), "Variants", Log))
@@ -77,7 +77,16 @@ namespace Microsoft.Workload.Build.Tasks
                         return workloads.Any()
                                 ? workloads
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
-                    });
+                    }).ToArray();
+
+                foreach (InstallWorkloadRequest req in selectedRequests)
+                {
+                    if (Directory.Exists(req.TargetPath))
+                    {
+                        Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
+                        Directory.Delete(req.TargetPath, recursive: true);
+                    }
+                }
 
                 string cachePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 foreach (InstallWorkloadRequest req in selectedRequests)
@@ -105,12 +114,6 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 Log.LogError($"Cannot find TemplateNuGetConfigPath={TemplateNuGetConfigPath}");
                 return false;
-            }
-
-            if (Directory.Exists(req.TargetPath))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                Directory.Delete(req.TargetPath, recursive: true);
             }
 
             Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
