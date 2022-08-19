@@ -140,7 +140,7 @@ public class Test
                 output);
 
             string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
-            Assert.Contains(cryptoInitMsg, output);
+            Assert.DoesNotContain(cryptoInitMsg, output);
         }
     }
 }

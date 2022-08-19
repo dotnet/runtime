@@ -166,7 +166,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-crypto" | "js-module-threads";
+declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
 declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";

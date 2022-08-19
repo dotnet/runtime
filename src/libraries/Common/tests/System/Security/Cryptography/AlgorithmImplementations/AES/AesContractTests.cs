@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesContractTests
     {
         [Fact]
@@ -55,10 +56,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(128, keySizeLimits.MinSize);
                 Assert.Equal(256, keySizeLimits.MaxSize);
-
-                // Browser's SubtleCrypto doesn't support AES-192
-                int expectedKeySkipSize = PlatformDetection.IsBrowser ? 128 : 64;
-                Assert.Equal(expectedKeySkipSize, keySizeLimits.SkipSize);
+                Assert.Equal(64, keySizeLimits.SkipSize);
             }
         }
 
@@ -109,7 +107,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(64, false)]
         [InlineData(256, true)]
         [InlineData(127, true)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (Aes aes = AesFactory.Create())
@@ -142,7 +139,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(8)]
         [InlineData(128)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void ValidCFBFeedbackSizes(int feedbackSize)
         {
             // Windows 7 only supports CFB8.
@@ -217,7 +213,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKeyGeneration_192()
         {
             using (Aes aes = AesFactory.Create())
@@ -309,28 +304,25 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() => aes.CreateDecryptor(key, null));
             }
 
-            if (PlatformDetection.IsNotBrowser)
+            using (Aes aes = AesFactory.Create())
             {
-                using (Aes aes = AesFactory.Create())
+                aes.Mode = CipherMode.ECB;
+
+                Assert.Throws<ArgumentNullException>(() => aes.CreateEncryptor(null, iv));
+                Assert.Throws<ArgumentNullException>(() => aes.CreateEncryptor(null, null));
+
+                Assert.Throws<ArgumentNullException>(() => aes.CreateDecryptor(null, iv));
+                Assert.Throws<ArgumentNullException>(() => aes.CreateDecryptor(null, null));
+
+                // ECB will accept an IV (but ignore it), and doesn't require it.
+                using (ICryptoTransform didNotThrow = aes.CreateEncryptor(key, null))
                 {
-                    aes.Mode = CipherMode.ECB;
+                    Assert.NotNull(didNotThrow);
+                }
 
-                    Assert.Throws<ArgumentNullException>(() => aes.CreateEncryptor(null, iv));
-                    Assert.Throws<ArgumentNullException>(() => aes.CreateEncryptor(null, null));
-
-                    Assert.Throws<ArgumentNullException>(() => aes.CreateDecryptor(null, iv));
-                    Assert.Throws<ArgumentNullException>(() => aes.CreateDecryptor(null, null));
-
-                    // ECB will accept an IV (but ignore it), and doesn't require it.
-                    using (ICryptoTransform didNotThrow = aes.CreateEncryptor(key, null))
-                    {
-                        Assert.NotNull(didNotThrow);
-                    }
-
-                    using (ICryptoTransform didNotThrow = aes.CreateDecryptor(key, null))
-                    {
-                        Assert.NotNull(didNotThrow);
-                    }
+                using (ICryptoTransform didNotThrow = aes.CreateDecryptor(key, null))
+                {
+                    Assert.NotNull(didNotThrow);
                 }
             }
         }
@@ -392,7 +384,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void Cfb8ModeCanDepadCfb128Padding()
         {
             using (Aes aes = AesFactory.Create())

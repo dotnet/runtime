@@ -109,11 +109,6 @@ public class WasmAppBuilder : Task
         public WasmEntry(string name) : base(name, "dotnetwasm") { }
     }
 
-    private sealed class CryptoWorkerEntry : AssetEntry
-    {
-        public CryptoWorkerEntry(string name) : base(name, "js-module-crypto") { }
-    }
-
     private sealed class ThreadsWorkerEntry : AssetEntry
     {
         public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
@@ -320,7 +315,6 @@ public class WasmAppBuilder : Task
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
-        config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
         if (IncludeThreadsWorker)
             config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { dotnet_browser_can_use_subtle_crypto_impl, dotnet_browser_simple_digest_hash, dotnet_browser_sign, dotnet_browser_encrypt_decrypt, dotnet_browser_derive_bits } from "./subtle-crypto";
 import { mono_wasm_fire_debugger_agent_message, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -77,13 +76,6 @@ export function export_linker(): any {
         //  also keep in sync with pal_icushim_static.c
         mono_wasm_load_icu_data,
         mono_wasm_get_icudt_name,
-
-        // pal_crypto_webworker.c
-        dotnet_browser_can_use_subtle_crypto_impl,
-        dotnet_browser_simple_digest_hash,
-        dotnet_browser_sign,
-        dotnet_browser_encrypt_decrypt,
-        dotnet_browser_derive_bits,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -11,7 +12,7 @@ namespace System.Security.Cryptography
         protected Aes()
         {
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
-            LegalKeySizesValue = AesImplementation.s_legalKeySizes.CloneKeySizesArray();
+            LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
 
             BlockSizeValue = 128;
             FeedbackSizeValue = 8;
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography
             ModeValue = CipherMode.CBC;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static new Aes Create()
         {
             return new AesImplementation();
@@ -32,5 +34,6 @@ namespace System.Security.Cryptography
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };
+        private static readonly KeySizes[] s_legalKeySizes = { new KeySizes(128, 256, 64) };
     }
 }
