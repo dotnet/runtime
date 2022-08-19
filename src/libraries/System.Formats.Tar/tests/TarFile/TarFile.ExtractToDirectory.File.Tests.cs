@@ -225,7 +225,7 @@ namespace System.Formats.Tar.Tests
 
             // Directory modes that are out-of-order are still applied.
             Assert.True(Directory.Exists(outOfOrderDirPath), $"{outOfOrderDirPath}' does not exist.");
-            AssertFileModeEquals(outOfOrderDirPath, overwrite ? TestPermission4 : CreateDirectoryDefaultMode);
+            AssertFileModeEquals(outOfOrderDirPath, TestPermission4);
         }
 
         [Theory]
