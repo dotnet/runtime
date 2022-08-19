@@ -8,7 +8,7 @@
 
 
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
