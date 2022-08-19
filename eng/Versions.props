@@ -7,7 +7,6 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <SdkBandVersion>7.0.100</SdkBandVersion>
-    <EmscriptenVersionNet6>2.0.23</EmscriptenVersionNet6>
     <PackageVersionNet6>6.0.8</PackageVersionNet6>
     <PreReleaseVersionLabel>rc</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
