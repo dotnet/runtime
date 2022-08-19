@@ -518,11 +518,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached or if an attribute is malformed.
         private void ReadExtendedAttributesBlock(Stream archiveStream)
         {
-            byte[]? buffer = CreateExtendedAttributesBufferIfSizeIsValid();
-            if (buffer != null)
+            if (_size != 0)
             {
-                archiveStream.ReadExactly(buffer);
-                ReadExtendedAttributesFromBuffer(buffer, _name);
+                ValidateSize();
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
+                Span<byte> span = buffer.AsSpan(0, (int)_size);
+
+                archiveStream.ReadExactly(span);
+                ReadExtendedAttributesFromBuffer(span, _name);
+
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
@@ -531,32 +536,30 @@ namespace System.Formats.Tar
         private async ValueTask ReadExtendedAttributesBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            byte[]? buffer = CreateExtendedAttributesBufferIfSizeIsValid();
-            if (buffer != null)
+
+            if (_size != 0)
             {
-                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-                ReadExtendedAttributesFromBuffer(buffer, _name);
+                ValidateSize();
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
+                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+
+                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                ReadExtendedAttributesFromBuffer(memory.Span, _name);
+
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
-        // Return a byte array if the size field has a valid value for extended attributes. Otherwise, return null, or throw.
-        private byte[]? CreateExtendedAttributesBufferIfSizeIsValid()
+        private void ValidateSize()
         {
-            Debug.Assert(_typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
-
-            // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
-            // the size field is 12 bytes long, which fits a number with a value under int.MaxValue.
-            if (_size > Array.MaxLength)
+            if ((uint)_size > (uint)Array.MaxLength)
             {
+                ThrowSizeFieldTooLarge();
+            }
+
+            [DoesNotReturn]
+            void ThrowSizeFieldTooLarge() =>
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
-            }
-
-            if (_size == 0)
-            {
-                return null;
-            }
-
-            return new byte[(int)_size];
         }
 
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
@@ -581,11 +584,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached.
         private void ReadGnuLongPathDataBlock(Stream archiveStream)
         {
-            byte[]? buffer = CreateGnuLongDataBufferIfSizeIsValid();
-            if (buffer != null)
+            if (_size != 0)
             {
-                archiveStream.ReadExactly(buffer);
-                ReadGnuLongPathDataFromBuffer(buffer);
+                ValidateSize();
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
+                Span<byte> span = buffer.AsSpan(0, (int)_size);
+
+                archiveStream.ReadExactly(span);
+                ReadGnuLongPathDataFromBuffer(span);
+
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
@@ -595,11 +603,17 @@ namespace System.Formats.Tar
         private async ValueTask ReadGnuLongPathDataBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            byte[]? buffer = CreateGnuLongDataBufferIfSizeIsValid();
-            if (buffer != null)
+
+            if (_size != 0)
             {
-                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-                ReadGnuLongPathDataFromBuffer(buffer);
+                ValidateSize();
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
+                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+
+                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                ReadGnuLongPathDataFromBuffer(memory.Span);
+
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
@@ -616,24 +630,6 @@ namespace System.Formats.Tar
             {
                 _name = longPath;
             }
-        }
-
-        // Return a byte array if the size field has a valid value for GNU long metadata entry data. Otherwise, return null, or throw.
-        private byte[]? CreateGnuLongDataBufferIfSizeIsValid()
-        {
-            Debug.Assert(_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath);
-
-            if (_size > Array.MaxLength)
-            {
-                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
-            }
-
-            if (_size == 0)
-            {
-                return null;
-            }
-
-            return new byte[(int)_size];
         }
 
         // Tries to collect the next extended attribute from the string wrapped by the specified reader.

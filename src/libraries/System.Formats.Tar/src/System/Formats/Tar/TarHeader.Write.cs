@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -524,8 +525,18 @@ namespace System.Formats.Tar
         private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
-            archiveStream.Write(new byte[paddingAfterData]);
+            if (paddingAfterData != 0)
+            {
+                Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
+
+                Span<byte> padding = stackalloc byte[TarHelpers.RecordSize];
+                padding = padding.Slice(0, paddingAfterData);
+                padding.Clear();
+
+                archiveStream.Write(padding);
+            }
         }
 
         // Asynchronously writes the current header's data stream into the archive stream.
@@ -534,8 +545,17 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
-            await archiveStream.WriteAsync(new byte[paddingAfterData], cancellationToken).ConfigureAwait(false);
+            if (paddingAfterData != 0)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(paddingAfterData);
+
+                Array.Clear(buffer, 0, paddingAfterData);
+                await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
+
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
