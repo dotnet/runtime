@@ -53,14 +53,14 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220818200316-06f234f
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f2345
-        - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220815161656-51001d5
+        - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f234f
+        - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220818195437-06f234f
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.10.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f2345
-        - (Debian.11.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220815161656-51001d5
-        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652
+        - (Debian.10.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f234f
+        - (Debian.11.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220818195437-06f234f
+        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220818200316-06f234f
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
