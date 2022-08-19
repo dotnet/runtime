@@ -292,8 +292,6 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // increment last tick by the number of replenish periods that occurred since the last replenish
-                // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
                 _lastReplenishmentTick = nowTicks;
 
                 int availableRequestCounters = _requestCount;
