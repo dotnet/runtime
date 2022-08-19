@@ -621,7 +621,6 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 METHOD(DotProductBySelectedQuadruplet)
 // Wasm
 METHOD(Bitmask)
-METHOD(Constant)
 METHOD(Splat)
 METHOD(ExtractLane)
 METHOD(ReplaceLane)
