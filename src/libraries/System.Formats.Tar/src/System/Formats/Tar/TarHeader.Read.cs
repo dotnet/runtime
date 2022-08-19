@@ -425,16 +425,20 @@ namespace System.Formats.Tar
             }
 
             // When the magic field is set, the archive is newer than v7.
-            _magic = Encoding.ASCII.GetString(magic);
-
-            if (_magic == GnuMagic)
+            if (magic.SequenceEqual(GnuMagicBytes))
             {
+                _magic = GnuMagic;
                 _format = TarEntryFormat.Gnu;
             }
-            else if (_format == TarEntryFormat.V7 && _magic == UstarMagic)
+            else if (_format == TarEntryFormat.V7 && magic.SequenceEqual(PaxMagicBytes))
             {
                 // Important: Only change to ustar if we had not changed the format to pax already
+                _magic = UstarMagic;
                 _format = TarEntryFormat.Ustar;
+            }
+            else
+            {
+                _magic = Encoding.ASCII.GetString(magic);
             }
         }
 
