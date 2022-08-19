@@ -3722,7 +3722,6 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (Vector256<ushort> Lower, Vector256<ushort> Upper) Widen(Vector256<byte> source)
             => (WidenLower(source), WidenUpper(source));
 
