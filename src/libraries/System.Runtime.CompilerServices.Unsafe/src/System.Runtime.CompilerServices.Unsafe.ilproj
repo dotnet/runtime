@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.IL">
+<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <!-- Make sure that the DebuggableAttribute is set properly. -->
@@ -8,6 +8,8 @@
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <IlasmFlags>$(IlasmFlags) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.
 
 Commonly Used Types:

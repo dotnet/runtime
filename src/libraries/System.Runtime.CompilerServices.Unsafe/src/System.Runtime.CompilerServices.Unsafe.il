@@ -300,10 +300,11 @@
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .param [1]
 #ifdef netcoreapp
-        .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+            .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
 #else
-        .custom instance void System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+            .custom instance void System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
 #endif
+            .custom instance void System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
         ldarg.0
         ret
@@ -577,6 +578,31 @@
 
 } // end of class System.Runtime.CompilerServices.IsReadOnlyAttribute
 #endif
+
+.class private auto ansi sealed beforefieldinit System.Runtime.CompilerServices.ScopedRefAttribute
+    extends [CORE_ASSEMBLY]System.Attribute
+{
+    .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .custom instance void [CORE_ASSEMBLY]System.AttributeUsageAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.AttributeTargets) = (
+        01 00 00 08 00 00 02 00 54 02 0d 41 6c 6c 6f 77
+        4d 75 6c 74 69 70 6c 65 00 54 02 09 49 6e 68 65
+        72 69 74 65 64 00
+    )
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        .maxstack 8
+        IL_0000: ldarg.0
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
+        IL_0007: ret
+    } // end of method ScopedRefAttribute::.ctor
+
+} // end of class System.Runtime.CompilerServices.ScopedRefAttribute
 
 .class private auto ansi sealed beforefieldinit Microsoft.CodeAnalysis.EmbeddedAttribute
     extends [CORE_ASSEMBLY]System.Attribute
