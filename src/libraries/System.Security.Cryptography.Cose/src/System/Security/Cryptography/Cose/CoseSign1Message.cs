@@ -19,6 +19,12 @@ namespace System.Security.Cryptography.Cose
         private const int Sign1SizeOfCborTag = 1;
         private readonly byte[] _signature;
 
+        /// <summary>
+        /// Gets the digital signature.
+        /// </summary>
+        /// <value>A region of memory that contains the digital signature.</value>
+        public ReadOnlyMemory<byte> Signature => _signature;
+
         internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr, bool isTagged)
             : base(protectedHeader, unprotectedHeader, content, protectedHeaderAsBstr, isTagged)
         {

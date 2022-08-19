@@ -24,9 +24,9 @@ namespace System.Security.Cryptography.Cose
         private readonly List<CoseSignature> _signatures;
 
         /// <summary>
-        /// Gets a read-only collection of signatures associated to this message.
+        /// Gets a read-only collection of signatures associated with this message.
         /// </summary>
-        /// <value>A read-only collection of signatures associated to this message.</value>
+        /// <value>A read-only collection of signatures associated with this message.</value>
         public ReadOnlyCollection<CoseSignature> Signatures { get; }
 
         internal CoseMultiSignMessage(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, List<CoseSignature> signatures, byte[] encodedProtectedHeader, bool isTagged)

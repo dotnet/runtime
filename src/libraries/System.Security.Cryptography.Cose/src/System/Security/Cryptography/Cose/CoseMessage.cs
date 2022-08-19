@@ -27,24 +27,30 @@ namespace System.Security.Cryptography.Cose
         internal const CborTag Sign1Tag = (CborTag)18;
         internal const CborTag MultiSignTag = (CborTag)98;
 
-        internal byte[]? _content;
-        internal byte[] _protectedHeaderAsBstr;
-        internal bool _isTagged;
+        internal readonly byte[]? _content;
+        internal readonly byte[] _protectedHeaderAsBstr;
+        internal readonly bool _isTagged;
 
         private CoseHeaderMap _protectedHeaders;
         private CoseHeaderMap _unprotectedHeaders;
 
         /// <summary>
-        /// Gets the protected header parameters associated to this message.
+        /// Gets the protected header parameters associated with this message.
         /// </summary>
-        /// <value>A collection of protected header parameters associated to this message.</value>
+        /// <value>A collection of protected header parameters associated with this message.</value>
         public CoseHeaderMap ProtectedHeaders => _protectedHeaders;
 
         /// <summary>
-        /// Gets the unprotected header parameters associated to this message.
+        /// Gets the unprotected header parameters associated with this message.
         /// </summary>
-        /// <value>A collection of unprotected header parameters associated to this message.</value>
+        /// <value>A collection of unprotected header parameters associated with this message.</value>
         public CoseHeaderMap UnprotectedHeaders => _unprotectedHeaders;
+
+        /// <summary>
+        /// Gets the raw bytes of the protected header parameters associated with this message.
+        /// </summary>
+        /// <value>A region of memory that contains the raw bytes of the protected header parameters associated with this message.</value>
+        public ReadOnlyMemory<byte> RawProtectedHeaders => _protectedHeaderAsBstr;
 
         internal CoseMessage(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] encodedProtectedHeader, bool isTagged)
         {

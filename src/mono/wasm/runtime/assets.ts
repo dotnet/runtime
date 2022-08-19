@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
@@ -25,7 +28,6 @@ let throttlingPromise: PromiseAndController<void> | undefined;
 const skipDownloadsByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-crypto": true,
     "js-module-threads": true,
 };
 
@@ -40,7 +42,6 @@ const skipBufferByAssetTypes: {
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-crypto": true,
     "js-module-threads": true,
     "dotnetwasm": true,
 };
@@ -353,7 +354,6 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
 
     switch (asset.behavior) {
         case "dotnetwasm":
-        case "js-module-crypto":
         case "js-module-threads":
             // do nothing
             break;

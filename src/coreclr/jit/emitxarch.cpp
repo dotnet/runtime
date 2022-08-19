@@ -8710,7 +8710,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             else if (disp < 1000)
             {
-                printf("%d", (unsigned)disp);
+                printf("%02XH", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
@@ -8729,7 +8729,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             else if (disp > -1000)
             {
-                printf("-%d", (unsigned)-disp);
+                printf("-%02XH", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {

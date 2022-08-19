@@ -5,6 +5,7 @@ escape_quote = $(subst ",\",$(1))
 
 ifneq ($(V),)
 MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+MSBUILD_ARGS+=-bl
 endif
 
 DOTNET=$(TOP)/dotnet.sh

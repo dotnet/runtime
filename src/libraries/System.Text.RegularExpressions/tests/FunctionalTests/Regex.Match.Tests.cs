@@ -316,6 +316,14 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return (@".*?", "abc", lineOption, 1, 2, true, "");
                 yield return (@".*?c", "abc", lineOption, 1, 2, true, "bc");
+                yield return (@".*?[^c]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^cz]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^u]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uv]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvw]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwx]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwxy]", "abc", lineOption, 1, 2, true, "b");
+                yield return (@".*?[^uvwxyz]", "abc", lineOption, 1, 2, true, "b");
                 yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                 yield return (@".*?", "abc", lineOption, 2, 1, true, "");
 

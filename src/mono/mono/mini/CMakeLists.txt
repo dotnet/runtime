@@ -448,7 +448,7 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
 endif()
 
-if(HOST_WASM)
+if(HOST_WASM AND NOT HOST_WASI)
 # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
 # This is the only source file which contains a c++ throw or catch
 add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)

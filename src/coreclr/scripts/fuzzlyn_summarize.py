@@ -135,12 +135,14 @@ def main(main_args):
                     partition_results[partition_name]["reduced_examples"].extend(reduced_examples)
 
     total_examples_generated = 0
+    total_examples_with_known_errors = 0
     all_reduced_examples = []
     all_examples = []
     for partition_name, results in partition_results.items():
         if results['summary'] is not None:
-            # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalRunTime":"00:00:47.0918613"}
+            # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalProgramsWithKnownErrors":11,"TotalRunTime":"00:00:47.0918613"}
             total_examples_generated += results['summary']['TotalProgramsGenerated']
+            total_examples_with_known_errors += results['summary']['TotalProgramsWithKnownErrors']
 
         all_reduced_examples.extend(results['reduced_examples'])
         all_examples.extend(results['examples'])
@@ -189,6 +191,7 @@ def main(main_args):
 
         f.write("* Total programs generated: {}\n".format(total_examples_generated))
         f.write("* Number of examples found: {}\n".format(len(all_examples)))
+        f.write("* Number of known errors hit: {}\n".format(total_examples_with_known_errors))
 
         f.write("\n")
 
@@ -225,13 +228,13 @@ def main(main_args):
 
         if len(partition_results) > 0:
             f.write("# Run summaries per partition\n")
-            f.write("|Partition|# Programs generated|# Examples found|Run time|Degree of parallelism|\n")
-            f.write("|---|---|---|---|---|\n")
+            f.write("|Partition|# Programs generated|# Examples found|# Examples with known errors|Run time|Degree of parallelism|\n")
+            f.write("|---|---|---|---|---|---|\n")
             for partition_name, results in sorted(partition_results.items(), key=lambda p: p[0]):
                 summary = results['summary']
                 if summary is not None:
-                    # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalRunTime":"00:00:47.0918613"}
-                    f.write("|{}|{}|{}|{}|{}|\n".format(partition_name, summary['TotalProgramsGenerated'], len(results['examples']), summary['TotalRunTime'], summary['DegreeOfParallelism']))
+                    # {"DegreeOfParallelism":32,"TotalProgramsGenerated":354,"TotalProgramsWithKnownErrors":11,"TotalRunTime":"00:00:47.0918613"}
+                    f.write("|{}|{}|{}|{}|{}|{}|\n".format(partition_name, summary['TotalProgramsGenerated'], len(results['examples']), summary['TotalProgramsWithKnownErrors'], summary['TotalRunTime'], summary['DegreeOfParallelism']))
 
     print("##vso[task.uploadsummary]{}".format(md_path))
 

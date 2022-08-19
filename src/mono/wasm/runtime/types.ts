@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { DotnetHostBuilder } from "./run-outer";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
@@ -63,28 +64,74 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 }
 
 export type MonoConfig = {
-    assemblyRootFolder?: string, // the subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
-    assets?: AssetEntry[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
-
+    /**
+     * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
+     */
+    assemblyRootFolder?: string,
+    /**
+     * A list of assets to load along with the runtime.
+     */
+    assets?: AssetEntry[],
+    /**
+     * Additional search locations for assets.
+     */
+    remoteSources?: string[], // Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    /**
+     * It will not fail the startup is .pdb files can't be downloaded
+     */
+    ignorePdbLoadErrors?: boolean,
+    /**
+     * We are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome. The default value is 16.
+     */
+    maxParallelDownloads?: number,
+    /**
+     * Name of the assembly with main entrypoint
+     */
+    mainAssemblyName?: string,
+    /**
+     * Configures the runtime's globalization mode
+     */
+    globalizationMode?: GlobalizationMode,
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
      * debugLevel < 0 enabled debugging and disables debug logging.
      */
     debugLevel?: number,
-    maxParallelDownloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
-    globalizationMode?: GlobalizationMode, // configures the runtime's globalization mode
-    diagnosticTracing?: boolean // enables diagnostic log messages during startup
-    remoteSources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    /**
+    * Enables diagnostic log messages during startup
+    */
+    diagnosticTracing?: boolean
+    /**
+     * Dictionary-style Object containing environment variables
+     */
     environmentVariables?: {
         [i: string]: string;
-    }, // dictionary-style Object containing environment variables
+    },
+    /**
+     * initial number of workers to add to the emscripten pthread pool
+     */
+    pthreadPoolSize?: number,
+};
+
+export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    ignorePdbLoadErrors?: boolean,
-    waitForDebugger?: number
+    waitForDebugger?: number,
+    appendElementOnExit?: boolean
+    logExitCode?: boolean
+    forwardConsoleLogsToWS?: boolean,
+    asyncFlushOnExit?: boolean
 };
+
+export type RunArguments = {
+    applicationArguments?: string[],
+    virtualWorkingDirectory?: string[],
+    environmentVariables?: { [name: string]: string },
+    runtimeOptions?: string[],
+    diagnosticTracing?: boolean,
+}
 
 export type MonoConfigError = {
     isError: true,
@@ -148,7 +195,6 @@ export type AssetBehaviours =
     | "icu" // load asset as an ICU data archive
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
     | "dotnetwasm" // the binary of the dotnet runtime
-    | "js-module-crypto" // the javascript module for subtle crypto
     | "js-module-threads" // the javascript module for threads
 
 export type RuntimeHelpers = {
@@ -165,11 +211,11 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     maxParallelDownloads: number;
-    config: MonoConfig;
+    config: MonoConfigInternal;
     diagnosticTracing: boolean;
     waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
-    scriptDirectory?: string
+    scriptDirectory: string
     requirePromise: Promise<Function>
     ExitStatus: ExitStatusError;
     quit: Function,
@@ -322,8 +368,9 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: Function,
-    threadInitTLS: Function
+    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    threadInitTLS: () => void,
+    allocateUnusedWorker: () => void,
 }
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
@@ -361,6 +408,9 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
     call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
+
+    // the marshaled signature is: void InstallSynchronizationContext()
+    install_synchronization_context(): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
@@ -413,3 +463,64 @@ export interface WasmRootBuffer {
     release(): void;
     toString(): string;
 }
+
+export type APIType = {
+    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
+    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>,
+    setEnvironmentVariable: (name: string, value: string) => void,
+    getAssemblyExports(assemblyName: string): Promise<any>,
+    setModuleImports(moduleName: string, moduleImports: any): void,
+    getConfig: () => MonoConfig,
+    setHeapB32: (offset: NativePointer, value: number | boolean) => void,
+    setHeapU8: (offset: NativePointer, value: number) => void,
+    setHeapU16: (offset: NativePointer, value: number) => void,
+    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void,
+    setHeapI8: (offset: NativePointer, value: number) => void,
+    setHeapI16: (offset: NativePointer, value: number) => void,
+    setHeapI32: (offset: NativePointer, value: number) => void,
+    setHeapI52: (offset: NativePointer, value: number) => void,
+    setHeapU52: (offset: NativePointer, value: number) => void,
+    setHeapI64Big: (offset: NativePointer, value: bigint) => void,
+    setHeapF32: (offset: NativePointer, value: number) => void,
+    setHeapF64: (offset: NativePointer, value: number) => void,
+    getHeapB32: (offset: NativePointer) => boolean,
+    getHeapU8: (offset: NativePointer) => number,
+    getHeapU16: (offset: NativePointer) => number,
+    getHeapU32: (offset: NativePointer) => number,
+    getHeapI8: (offset: NativePointer) => number,
+    getHeapI16: (offset: NativePointer) => number,
+    getHeapI32: (offset: NativePointer) => number,
+    getHeapI52: (offset: NativePointer) => number,
+    getHeapU52: (offset: NativePointer) => number,
+    getHeapI64Big: (offset: NativePointer) => bigint,
+    getHeapF32: (offset: NativePointer) => number,
+    getHeapF64: (offset: NativePointer) => number,
+}
+
+// this represents visibility in the javascript
+// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
+export type RuntimeAPI = {
+    /**
+     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
+     */
+    MONO: any,
+    /**
+     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
+     */
+    BINDING: any,
+    INTERNAL: any,
+    Module: EmscriptenModule,
+    runtimeId: number,
+    runtimeBuildInfo: {
+        productVersion: string,
+        buildConfiguration: string,
+    }
+} & APIType
+
+export type ModuleAPI = {
+    dotnet: DotnetHostBuilder;
+    exit: (code: number, reason?: any) => void
+}
+
+export declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
+export type CreateDotnetRuntimeType = typeof createDotnetRuntime;

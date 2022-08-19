@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security;
 using System.Xml;
 using System.Xml.Schema;
+using static System.Xml.Serialization.ReflectionXmlSerializationReader;
 
 namespace System.Xml.Serialization
 {
@@ -4821,7 +4822,14 @@ namespace System.Xml.Serialization
                         Writer.Write("ReadSerializable(( ");
                         Writer.Write(typeof(IXmlSerializable).FullName);
                         Writer.Write(")");
-                        Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        if (sm.TypeDesc!.CSharpName == "global::System.Xml.Linq.XElement")
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, false, false, false, "\"default\""));
+                        }
+                        else
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        }
                         bool isWrappedAny = !element.Any && IsWildcard(sm);
                         if (isWrappedAny)
                         {

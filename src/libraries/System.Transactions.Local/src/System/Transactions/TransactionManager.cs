@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Transactions.Configuration;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -18,6 +18,7 @@ namespace System.Transactions
     {
         // Revovery Information Version
         private const int RecoveryInformationVersion1 = 1;
+        private const int CurrentRecoveryVersion = RecoveryInformationVersion1;
 
         // Hashtable of promoted transactions, keyed by identifier guid.  This is used by
         // FindPromotedTransaction to support transaction equivalence when a transaction is
@@ -215,9 +216,9 @@ namespace System.Transactions
         }
 
 
-        private static DistributedTransactionManager CheckTransactionManager(string? nodeName)
+        private static OletxTransactionManager CheckTransactionManager(string? nodeName)
         {
-            DistributedTransactionManager tm = DistributedTransactionManager;
+            OletxTransactionManager tm = DistributedTransactionManager;
             if (!((tm.NodeName == null && (nodeName == null || nodeName.Length == 0)) ||
                   (tm.NodeName != null && tm.NodeName.Equals(nodeName))))
             {
@@ -390,6 +391,55 @@ namespace System.Transactions
             }
         }
 
+        // This routine writes the "header" for the recovery information, based on the
+        // type of the calling object and its provided parameter collection.  This information
+        // we be read back by the static Reenlist method to create the necessary transaction
+        // manager object with the right parameters in order to do a ReenlistTransaction call.
+        internal static byte[] GetRecoveryInformation(
+            string? startupInfo,
+            byte[] resourceManagerRecoveryInformation
+        )
+        {
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, $"{nameof(TransactionManager)}.{nameof(GetRecoveryInformation)}");
+            }
+
+            MemoryStream stream = new MemoryStream();
+            byte[]? returnValue = null;
+
+            try
+            {
+                // Manually write the recovery information
+                BinaryWriter writer = new BinaryWriter(stream);
+
+                writer.Write(CurrentRecoveryVersion);
+                if (startupInfo != null)
+                {
+                    writer.Write(startupInfo);
+                }
+                else
+                {
+                    writer.Write("");
+                }
+                writer.Write(resourceManagerRecoveryInformation);
+                writer.Flush();
+                returnValue = stream.ToArray();
+            }
+            finally
+            {
+                stream.Close();
+            }
+
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodExit(TraceSourceType.TraceSourceOleTx, $"{nameof(TransactionManager)}.{nameof(GetRecoveryInformation)}");
+            }
+
+            return returnValue;
+        }
+
         /// <summary>
         /// This static function throws an ArgumentOutOfRange if the specified IsolationLevel is not within
         /// the range of valid values.
@@ -413,7 +463,6 @@ namespace System.Transactions
                     throw new ArgumentOutOfRangeException(nameof(transactionIsolationLevel));
             }
         }
-
 
         /// <summary>
         /// This static function throws an ArgumentOutOfRange if the specified TimeSpan does not meet
@@ -462,7 +511,7 @@ namespace System.Transactions
             return null;
         }
 
-        internal static Transaction FindOrCreatePromotedTransaction(Guid transactionIdentifier, DistributedTransaction dtx)
+        internal static Transaction FindOrCreatePromotedTransaction(Guid transactionIdentifier, OletxTransaction dtx)
         {
             Transaction? tx = null;
             Hashtable promotedTransactionTable = PromotedTransactionTable;
@@ -511,9 +560,10 @@ namespace System.Transactions
             LazyInitializer.EnsureInitialized(ref s_transactionTable, ref s_classSyncObject, () => new TransactionTable());
 
         // Fault in a DistributedTransactionManager if one has not already been created.
-        internal static DistributedTransactionManager? distributedTransactionManager;
-        internal static DistributedTransactionManager DistributedTransactionManager =>
+        internal static OletxTransactionManager? distributedTransactionManager;
+        internal static OletxTransactionManager DistributedTransactionManager =>
             // If the distributed transaction manager is not configured, throw an exception
-            LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject, () => new DistributedTransactionManager());
+            LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject,
+                () => new OletxTransactionManager(DefaultSettingsSection.DistributedTransactionManagerName));
     }
 }

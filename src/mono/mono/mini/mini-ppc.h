@@ -33,7 +33,16 @@
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 #ifdef TARGET_POWERPC64
+#if !defined(PPC_USES_FUNCTION_DESCRIPTOR)
+#define THUNK_SIZE 8
+#define GET_MEMORY_SLOT_THUNK_ADDRESS(c) \
+						((guint64)(((c)) [0] & 0x0000ffff) << 48) \
+						+ ((guint64)(((c)) [1] & 0x0000ffff) << 32) \
+						+ ((guint64)(((c)) [3] & 0x0000ffff) << 16) \
+						+ (guint64)(((c)) [4] & 0x0000ffff)
+#else
 #define THUNK_SIZE ((2 + 5) * 4)
+#endif
 #else
 #define THUNK_SIZE ((2 + 2) * 4)
 #endif
@@ -118,8 +127,7 @@ typedef struct MonoCompileArch {
 #else
 #define MONO_ARCH_CALLEE_FREGS (0xff << ppc_f1)
 #endif
-#define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FRE
-GS | 1))
+#define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FREGS | 1))
 
 #ifdef TARGET_POWERPC64
 #define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:	\

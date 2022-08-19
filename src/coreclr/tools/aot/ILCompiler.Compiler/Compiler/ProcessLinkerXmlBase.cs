@@ -5,19 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
 using ILCompiler.Dataflow;
-using ILLink.Shared;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -68,7 +64,7 @@ namespace ILCompiler
         protected ProcessLinkerXmlBase(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             : this(context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
-            _owningModule = resourceAssembly ?? throw new ArgumentNullException(nameof(resourceAssembly));
+            _owningModule = resourceAssembly;
         }
 
         protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _featureSwitchValues);
