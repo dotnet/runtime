@@ -1328,17 +1328,17 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    int result = SpanHelpers.IndexOf(
+                    int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), startIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
-                    int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), startIndex),
-                        Unsafe.As<T, char>(ref value),
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<short[]>(array)), startIndex),
+                        Unsafe.As<T, short>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1586,19 +1586,19 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOf(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), endIndex),
-                        Unsafe.As<T, char>(ref value),
+                    int result = SpanHelpers.LastIndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<short[]>(array)), endIndex),
+                        Unsafe.As<T, short>(ref value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1606,7 +1606,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOf(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
@@ -1616,7 +1616,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int endIndex = startIndex - count + 1;
-                    int result = SpanHelpers.LastIndexOf(
+                    int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
