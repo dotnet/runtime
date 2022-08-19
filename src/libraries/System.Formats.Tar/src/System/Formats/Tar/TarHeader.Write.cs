@@ -608,10 +608,12 @@ namespace System.Formats.Tar
             {
                 ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
+
             if (!string.IsNullOrEmpty(_gName))
             {
                 TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             }
+
             if (!string.IsNullOrEmpty(_uName))
             {
                 TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
@@ -626,7 +628,6 @@ namespace System.Formats.Tar
             {
                 ExtendedAttributes.Add(PaxEaSize, _size.ToString());
             }
-
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
             static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string value, int maxLength)

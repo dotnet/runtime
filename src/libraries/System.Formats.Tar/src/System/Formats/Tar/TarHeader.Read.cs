@@ -585,11 +585,10 @@ namespace System.Formats.Tar
 
             while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
             {
-                if (ExtendedAttributes.ContainsKey(key))
+                if (!ExtendedAttributes.TryAdd(key, value))
                 {
                     throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
-                ExtendedAttributes.Add(key, value);
             }
         }
 
