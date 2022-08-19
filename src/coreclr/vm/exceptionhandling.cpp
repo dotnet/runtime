@@ -4450,7 +4450,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 
             // Perform unwinding of the current frame
             disposition = ProcessCLRException(exceptionRecord,
-                establisherFrame,
+                (void*)establisherFrame,
                 currentFrameContext,
                 &dispatcherContext);
 
@@ -4618,7 +4618,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
             // Find exception handler in the current frame
             disposition = ProcessCLRException(ex.GetExceptionRecord(),
-                establisherFrame,
+                (void*)establisherFrame,
                 ex.GetContextRecord(),
                 &dispatcherContext);
 
