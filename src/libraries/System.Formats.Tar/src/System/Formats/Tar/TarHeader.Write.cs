@@ -60,7 +60,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
-            int tmpChecksum = WriteName(buffer, out _);
+            int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             _checksum = WriteChecksum(tmpChecksum, buffer);
 
@@ -275,7 +275,7 @@ namespace System.Formats.Tar
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            int tmpChecksum = WriteName(buffer, out _);
+            int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualLength, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu, _typeFlag));
             tmpChecksum += WriteGnuMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
@@ -358,24 +358,33 @@ namespace System.Formats.Tar
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
-        // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
-        private int WriteName(Span<byte> buffer, out byte[] fullNameBytes)
+        // All formats save in the name byte array only the ASCII bytes that fit.
+        private int WriteName(Span<byte> buffer)
         {
-            fullNameBytes = Encoding.ASCII.GetBytes(_name);
-            int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
-            return checksum;
+            ReadOnlySpan<char> src = _name.AsSpan(0, Math.Min(_name.Length, FieldLengths.Name));
+            Span<byte> dest = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
+            int encoded = Encoding.ASCII.GetBytes(src, dest);
+            return Checksum(dest.Slice(0, encoded));
         }
 
         // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
         private int WritePosixName(Span<byte> buffer)
         {
-            int checksum = WriteName(buffer, out byte[] fullNameBytes);
-            if (fullNameBytes.Length > FieldLengths.Name)
+            int checksum = WriteName(buffer);
+
+            if (_name.Length > FieldLengths.Name)
             {
-                int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Name);
+                Span<byte> remaining = prefixBytesLength <= 256 ?
+                    stackalloc byte[prefixBytesLength] :
+                    new byte[prefixBytesLength];
+
+                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name), remaining);
+                Debug.Assert(encoded == remaining.Length);
+
+                checksum += WriteLeftAlignedBytesAndGetChecksum(remaining, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
+
             return checksum;
         }
 
@@ -642,7 +651,7 @@ namespace System.Formats.Tar
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
         // is written on top of those spaces on the specified span as ascii.
         // At the end, it's saved in the header field and the final value returned.
-        internal int WriteChecksum(int checksum, Span<byte> buffer)
+        internal static int WriteChecksum(int checksum, Span<byte> buffer)
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
@@ -683,44 +692,42 @@ namespace System.Formats.Tar
         {
             Debug.Assert(destination.Length > 1);
 
-            int checksum = 0;
+            // Copy as many bytes as will fit
+            int numToCopy = Math.Min(bytesToWrite.Length, destination.Length);
+            bytesToWrite = bytesToWrite.Slice(0, numToCopy);
+            bytesToWrite.CopyTo(destination);
 
-            for (int i = 0, j = 0; i < destination.Length && j < bytesToWrite.Length; i++, j++)
-            {
-                destination[i] = bytesToWrite[j];
-                checksum += destination[i];
-            }
-
-            return checksum;
+            return Checksum(bytesToWrite);
         }
 
         // Writes the specified bytes aligned to the right, filling all the leading bytes with the zero char 0x30,
         // ensuring a null terminator is included at the end of the specified span.
         private static int WriteRightAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
         {
+            Debug.Assert(destination.Length > 1);
+
+            // Null terminated
+            destination[^1] = (byte)'\0';
+
+            // Copy as many input bytes as will fit
+            int numToCopy = Math.Min(bytesToWrite.Length, destination.Length - 1);
+            bytesToWrite = bytesToWrite.Slice(0, numToCopy);
+            int copyPos = destination.Length - 1 - bytesToWrite.Length;
+            bytesToWrite.CopyTo(destination.Slice(copyPos));
+
+            // Fill all leading bytes with zeros
+            destination.Slice(0, copyPos).Fill((byte)'0');
+
+            return Checksum(destination);
+        }
+
+        private static int Checksum(ReadOnlySpan<byte> bytes)
+        {
             int checksum = 0;
-            int i = destination.Length - 1;
-            int j = bytesToWrite.Length - 1;
-
-            while (i >= 0)
+            foreach (byte b in bytes)
             {
-                if (i == destination.Length - 1)
-                {
-                    destination[i] = 0; // null terminated
-                }
-                else if (j >= 0)
-                {
-                    destination[i] = bytesToWrite[j];
-                    j--;
-                }
-                else
-                {
-                    destination[i] = (byte)'0'; // leading zeros
-                }
-                checksum += destination[i];
-                i--;
+                checksum += b;
             }
-
             return checksum;
         }
 
