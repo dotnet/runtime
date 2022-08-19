@@ -773,6 +773,8 @@ namespace System
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<byte>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out byte value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<byte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out byte value) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
@@ -947,6 +949,8 @@ namespace System
         static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<char>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out char value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<char>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out char value) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.IBinaryNumber<char>.IsPow2(char value) { throw null; }
@@ -2604,19 +2608,11 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
-    /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
         Default = 0,
-
-        /// <summary>Forces the garbage collection to occur immediately.</summary>
         Forced = 1,
-
-        /// <summary>Allows the garbage collector to determine whether the current time is optimal to reclaim objects.</summary>
         Optimized = 2,
-
-        /// <summary>Requests that the garbage collector decommit as much memory as possible.</summary>
         Aggressive = 3,
     }
 
@@ -3191,6 +3187,8 @@ namespace System
         public static int Sign(System.Int128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.Int128>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Int128>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Int128>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Int128 value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Int128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Int128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsCanonical(System.Int128 value) { throw null; }
@@ -3296,6 +3294,8 @@ namespace System
         static short System.Numerics.IAdditionOperators<short, short, short>.operator checked +(short left, short right) { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<short>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out short value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<short>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out short value) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
@@ -3427,6 +3427,8 @@ namespace System
         static int System.Numerics.IAdditionOperators<int, int, int>.operator checked +(int left, int right) { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<int>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out int value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<int>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out int value) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
@@ -3558,6 +3560,8 @@ namespace System
         static long System.Numerics.IAdditionOperators<long, long, long>.operator checked +(long left, long right) { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<long>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out long value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<long>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out long value) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
@@ -3693,6 +3697,8 @@ namespace System
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<nint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<nint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
@@ -4618,6 +4624,8 @@ namespace System
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator checked +(sbyte left, sbyte right) { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<sbyte>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out sbyte value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<sbyte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out sbyte value) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
@@ -6186,6 +6194,8 @@ namespace System
         public static int Sign(System.UInt128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.UInt128>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.UInt128>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.UInt128>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.UInt128 value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.UInt128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.UInt128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.Abs(System.UInt128 value) { throw null; }
@@ -6291,6 +6301,8 @@ namespace System
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<ushort>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ushort value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<ushort>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ushort value) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
@@ -6422,6 +6434,8 @@ namespace System
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator checked +(uint left, uint right) { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<uint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out uint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<uint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out uint value) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
@@ -6553,6 +6567,8 @@ namespace System
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<ulong>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ulong value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<ulong>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ulong value) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
@@ -6685,6 +6701,8 @@ namespace System
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<nuint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nuint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<nuint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nuint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
@@ -9131,6 +9149,7 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static System.IO.DirectoryInfo CreateTempSubdirectory(string? prefix = null) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
@@ -10218,9 +10237,17 @@ namespace System.Numerics
         int GetShortestBitLength();
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
         static abstract TSelf PopCount(TSelf value);
+        static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
         static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);
+        static abstract bool TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
+        static abstract bool TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
         bool TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten);
         bool TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten);
         int WriteBigEndian(byte[] destination) { throw null; }
@@ -10232,7 +10259,7 @@ namespace System.Numerics
     }
     public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>
     {
-        static abstract TSelf AllBitsSet { get; }
+        static virtual TSelf AllBitsSet { get { throw null; } }
         static abstract bool IsPow2(TSelf value);
         static abstract TSelf Log2(TSelf value);
     }
@@ -12249,8 +12276,8 @@ namespace System.Runtime.CompilerServices
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
         public void AppendFormatted(string? value) { }
         public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
         public void AppendFormatted<T>(T value) { }
@@ -13332,10 +13359,10 @@ namespace System.Runtime.Versioning
         public override string ToString() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    public sealed partial class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    public sealed partial class ObsoletedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
-        public ObsoletedInOSPlatformAttribute(string platformName, string? message) : base(platformName) { }
+        public ObsoletedOSPlatformAttribute(string platformName) : base(platformName) { }
+        public ObsoletedOSPlatformAttribute(string platformName, string? message) : base(platformName) { }
         public string? Message { get { throw null; } }
         public string? Url { get { throw null; } set {} }
     }

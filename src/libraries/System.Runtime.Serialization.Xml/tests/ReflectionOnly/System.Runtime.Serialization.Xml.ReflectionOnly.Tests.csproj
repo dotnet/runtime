@@ -44,7 +44,8 @@
              Link="SerializationTestTypes\SampleTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SelfRefAndCycles.cs"
              Link="SerializationTestTypes\SelfRefAndCycles.cs" />
-
+    <Compile Include="$(TestSourceFolder)..\System.Xml\XmlBinaryNodeType.cs"
+             Link="System.Xml\XmlBinaryNodeType.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
   <ItemGroup>

@@ -13,6 +13,6 @@ public partial class MyClass
         return text;
     }
 
-    [JSImport("window.location.href")]
+    [JSImport("window.location.href", "main.js")]
     internal static partial string GetHRef();
 }

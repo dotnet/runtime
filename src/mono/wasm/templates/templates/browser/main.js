@@ -1,15 +1,28 @@
-import { App } from './app-support.js'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-App.main = async function (applicationArguments) {
-    App.IMPORTS.window = {
+import { dotnet } from './dotnet.js'
+
+const is_browser = typeof window != "undefined";
+if (!is_browser) throw new Error(`Expected to be running in a browser`);
+
+const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
+    .withDiagnosticTracing(false)
+    .withApplicationArgumentsFromQuery()
+    .create();
+
+setModuleImports("main.js", {
+    window: {
         location: {
             href: () => globalThis.window.location.href
         }
-    };
+    }
+});
 
-    const exports = await App.MONO.mono_wasm_get_assembly_exports("browser.0.dll");
-    const text = exports.MyClass.Greeting();
-    document.getElementById("out").innerHTML = `${text}`;
+const config = getConfig();
+const exports = await getAssemblyExports(config.mainAssemblyName);
+const text = exports.MyClass.Greeting();
+console.log(text);
 
-    await App.MONO.mono_run_main("browser.0.dll", applicationArguments);
-}
+document.getElementById("out").innerHTML = `${text}`;
+await runMainAndExit(config.mainAssemblyName, ["dotnet", "is", "great!"]);

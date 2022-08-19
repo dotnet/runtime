@@ -584,12 +584,6 @@ void GCToOSInterface::FlushProcessWriteBuffers()
 // otherwise raises a SIGTRAP.
 void GCToOSInterface::DebugBreak()
 {
-    // __has_builtin is only defined by clang. GCC doesn't have a debug
-    // trap intrinsic anyway.
-#ifndef __has_builtin
- #define __has_builtin(x) 0
-#endif // __has_builtin
-
 #if __has_builtin(__builtin_debugtrap)
     __builtin_debugtrap();
 #else
@@ -1229,7 +1223,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return 0;
     }
 
-    return pages * pageSize;
+    return (uint64_t)pages * (uint64_t)pageSize;
 #elif HAVE_SYSCTL
     int mib[3];
     mib[0] = CTL_HW;

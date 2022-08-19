@@ -31,6 +31,7 @@ namespace System
         {
             ClassName = className;
             MemberName = memberName;
+            HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         protected MissingMemberException(SerializationInfo info, StreamingContext context)

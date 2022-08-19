@@ -157,7 +157,13 @@ LEAF_ENTRY NotifyRightSideOfSyncCompleteFlare, _TEXT
         ret
 LEAF_END NotifyRightSideOfSyncCompleteFlare, _TEXT
 
-
+; Flare for setting the context out of process
+LEAF_ENTRY SetThreadContextNeededFlare, _TEXT
+        int 3
+        ; make sure that the basic block is unique
+        test rax,7
+        ret
+LEAF_END SetThreadContextNeededFlare, _TEXT
 
 ; This goes at the end of the assembly file
 	end

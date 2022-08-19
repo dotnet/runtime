@@ -3,15 +3,15 @@
 
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
 import { marshal_exception_to_cs, generate_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, JSMarshalerArguments as JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature as JSFunctionSignature, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
+import { get_signature_argument_count, JavaScriptMarshalerArgSize, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
 import { setI32 } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
-import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "./types";
+import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
-import { mono_wasm_new_external_root, WasmRoot } from "./roots";
-import { mono_wasm_symbolicate_string } from "./debug";
+import { mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_symbolicate_string } from "./logging";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
@@ -23,7 +23,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const js_function_name = conv_string_root(function_name_root)!;
         const js_module_name = conv_string_root(module_name_root)!;
-        if (runtimeHelpers.diagnostic_tracing) {
+        if (runtimeHelpers.diagnosticTracing) {
             console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
         }
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
@@ -31,7 +31,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const closure: any = { fn, marshal_exception_to_cs, signature };
         const bound_js_function_name = "_bound_js_" + js_function_name.replace(/\./g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
+        let body = `//# sourceURL=https://dotnet.generated.invalid/${bound_js_function_name} \n`;
         let converter_names = "";
 
 
@@ -101,6 +101,12 @@ export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHand
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
     bound_fn(args);
+}
+
+export function mono_wasm_set_module_imports(module_name: string, moduleImports: any) {
+    importedModules.set(module_name, moduleImports);
+    if (runtimeHelpers.diagnosticTracing)
+        console.debug(`MONO_WASM: added module imports '${module_name}'`);
 }
 
 function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
@@ -174,7 +180,7 @@ export async function dynamic_import(module_name: string, module_url: string): P
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
-        if (runtimeHelpers.diagnostic_tracing)
+        if (runtimeHelpers.diagnosticTracing)
             console.debug(`MONO_WASM: importing ES6 module '${module_name}' from '${module_url}'`);
         promise = import(/* webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
@@ -182,7 +188,7 @@ export async function dynamic_import(module_name: string, module_url: string): P
     const module = await promise;
     if (newPromise) {
         importedModules.set(module_name, module);
-        if (runtimeHelpers.diagnostic_tracing)
+        if (runtimeHelpers.diagnosticTracing)
             console.debug(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
     }
     return module;

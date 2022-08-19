@@ -1261,10 +1261,56 @@ namespace System
         public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
-        public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
+        public static Half BitDecrement(Half x)
+        {
+            ushort bits = x._value;
+
+            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            {
+                // NaN returns NaN
+                // -Infinity returns -Infinity
+                // +Infinity returns MaxValue
+                return (bits == PositiveInfinityBits) ? MaxValue : x;
+            }
+
+            if (bits == PositiveZeroBits)
+            {
+                // +0.0 returns -Epsilon
+                return -Epsilon;
+            }
+
+            // Negative values need to be incremented
+            // Positive values need to be decremented
+
+            bits += (ushort)(((short)bits < 0) ? +1 : -1);
+            return new Half(bits);
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
-        public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
+        public static Half BitIncrement(Half x)
+        {
+            ushort bits = x._value;
+
+            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            {
+                // NaN returns NaN
+                // -Infinity returns MinValue
+                // +Infinity returns +Infinity
+                return (bits == NegativeInfinityBits) ? MinValue : x;
+            }
+
+            if (bits == NegativeZeroBits)
+            {
+                // -0.0 returns Epsilon
+                return Epsilon;
+            }
+
+            // Negative values need to be decremented
+            // Positive values need to be incremented
+
+            bits += (ushort)(((short)bits < 0) ? -1 : +1);
+            return new Half(bits);
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
