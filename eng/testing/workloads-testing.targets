@@ -16,34 +16,6 @@
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
-  <Target Name="ProvisionSdkForWorkloadTesting"
-          DependsOnTargets="_ProvisionDotNetForWorkloadTesting"
-          Inputs="@(_SdkWithWorkloadToInstall)"
-          Outputs="%(StampPath)">
-
-    <Error Text="%24(SdkWithWorkloadForTestingPath) is not set" Condition="'$(SdkWithWorkloadForTestingPath)' == ''" />
-
-    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(SdkWithWorkloadForTestingPath)"
-             Condition="'$(SdkVersionForWorkloadTesting)' != ''"
-             Importance="High" />
-    <Message Text="** Installing latest sdk for workload based tests into $(SdkWithWorkloadForTestingPath)"
-             Condition="'$(SdkVersionForWorkloadTesting)' == ''"
-             Importance="High" />
-
-    <RemoveDir Directories="%(_SdkWithWorkloadToInstall.InstallPath)" />
-    <MakeDir Directories="%(_SdkWithWorkloadToInstall.InstallPath)" />
-
-    <ItemGroup>
-      <_SourceFiles Include="$(_SdkWithNoWorkloadPath)\**" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_InstallPath />
-      <_InstallPath>@(_SdkWithWorkloadToInstall -> '%(InstallPath)')</_InstallPath>
-    </PropertyGroup>
-
-
-  </Target>
-
   <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
     <Error Text="%24(_SdkWithNoWorkloadPath) is not set" Condition="'$(_SdkWithNoWorkloadPath)' == ''" />
 
@@ -218,7 +190,7 @@
 
   <Target Name="_InstallWorkload"
           Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="%(_SdkWithWorkloadToInstall.StampPath)">
+          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)')">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
@@ -231,10 +203,6 @@
     <Message Text="** Installing latest sdk for workload based tests into %(_SdkWithWorkloadToInstall.InstallPath)"
              Condition="'$(SdkVersionForWorkloadTesting)' == ''"
              Importance="High" />
-
-    <ItemGroup>
-      <_SourceFiles Include="$(_SdkWithNoWorkloadPath)\**" />
-    </ItemGroup>
 
     <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
            Condition="!Exists($(_AOTCrossNuGetPath))" />

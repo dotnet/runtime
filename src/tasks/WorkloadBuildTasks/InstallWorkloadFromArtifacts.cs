@@ -23,7 +23,7 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem[]    WorkloadIds        { get; set; } = Array.Empty<ITaskItem>();
 
         [Required, NotNull]
-        public ITaskItem[]    InstallTargets  { get; set; } = Array.Empty<ITaskItem>();
+        public ITaskItem[]    InstallTargets     { get; set; } = Array.Empty<ITaskItem>();
 
         [Required, NotNull]
         public string?        VersionBand        { get; set; }
@@ -38,16 +38,8 @@ namespace Microsoft.Workload.Build.Tasks
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
         public bool           OnlyUpdateManifests{ get; set; }
-        public bool           SkipUpdateManifests { get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-
-        /*
-         * 1. install all the manifests to dotnet-none
-         * 2. then based on the targets, install the workloads
-
-
-        */
 
         public override bool Execute()
         {
@@ -84,11 +76,15 @@ namespace Microsoft.Workload.Build.Tasks
 
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
-                    if (!req.Validate(Log) || !ExecuteInternal(req))
+                    Log.LogMessage(MessageImportance.High, $"** Installing workload {req.WorkloadId} in {req.TargetPath} **");
+                    if (!req.Validate(Log))
+                        return false;
+
+                    if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
                 }
 
-                return true;
+                return !Log.HasLoggedErrors;
             }
             catch (LogAsErrorException laee)
             {
@@ -104,9 +100,6 @@ namespace Microsoft.Workload.Build.Tasks
                 Log.LogError($"Cannot find TemplateNuGetConfigPath={TemplateNuGetConfigPath}");
                 return false;
             }
-
-            if (OnlyUpdateManifests)
-                return !Log.HasLoggedErrors;
 
             if (Directory.Exists(req.TargetPath))
             {
@@ -185,6 +178,8 @@ namespace Microsoft.Workload.Build.Tasks
                 manifestsInstalled.Add(req.ManifestName);
             }
 
+            File.WriteAllText(Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp"), string.Empty);
+
             return true;
         }
 
@@ -193,17 +188,26 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
-            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** dotnet workload install **{Environment.NewLine}");
+            // Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** dotnet workload install {req.WorkloadId} **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
                                                     $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {req.WorkloadId}",
                                                     workingDir: Path.GetTempPath(),
                                                     silent: false,
+                                                    logStdErrAsMessage: req.IgnoreErrors,
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
-                Log.LogError($"workload install failed with exit code {exitCode}: {output}");
+                if (req.IgnoreErrors)
+                {
+                    Log.LogMessage(MessageImportance.High,
+                                    $"{Environment.NewLine} ** Ignoring workload installation failure exit code {exitCode}. **{Environment.NewLine}");
+                }
+                else
+                {
+                    Log.LogError($"workload install failed with exit code {exitCode}: {output}");
+                }
 
                 foreach (string dir in Directory.EnumerateDirectories(Path.Combine(req.TargetPath, "sdk-manifests"), "*", SearchOption.AllDirectories))
                     Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(req.TargetPath, "sdk-manifests", dir)}");
@@ -376,6 +380,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string ManifestName => Workload.GetMetadata("ManifestName");
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
+            public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
             public string WorkloadId => Workload.ItemSpec;
 
             public bool Validate(TaskLoggingHelper log)

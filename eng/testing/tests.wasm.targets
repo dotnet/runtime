@@ -148,7 +148,9 @@
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                           Variant="net6"
                           Version="$(PackageVersion)"
-                          VersionBand="$(SdkBandVersion)" />
+                          VersionBand="$(SdkBandVersion)"
+                          IgnoreErrors="true"
+                          />
 
     <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
     <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />
