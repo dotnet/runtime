@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -216,7 +218,7 @@ namespace System.Formats.Tar
             // Second, we determine if we need a preceding LongPath, and write it if needed
             if (_name.Length > FieldLengths.Name)
             {
-                TarHeader longPathHeader = await GetGnuLongMetadataHeaderAsync(TarEntryType.LongPath, _name, cancellationToken).ConfigureAwait(false);
+                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
                 await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
@@ -228,34 +230,8 @@ namespace System.Formats.Tar
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
         private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
         {
-            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
-            Debug.Assert(longMetadataHeader._dataStream != null);
-
-            longMetadataHeader._dataStream.Write(Encoding.UTF8.GetBytes(longText));
-            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
-
-            return longMetadataHeader;
-        }
-
-        // Asynchronously creates and returns a GNU long metadata header, with the specified long text written into its data stream.
-        private static async Task<TarHeader> GetGnuLongMetadataHeaderAsync(TarEntryType entryType, string longText, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
-            Debug.Assert(longMetadataHeader._dataStream != null);
-
-            await longMetadataHeader._dataStream.WriteAsync(Encoding.UTF8.GetBytes(longText), cancellationToken).ConfigureAwait(false);
-            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
-
-            return longMetadataHeader;
-        }
-
-        // Constructs a GNU metadata header with default values for the specified entry type.
-        private static TarHeader GetDefaultGnuLongMetadataHeader(int longTextLength, TarEntryType entryType)
-        {
-            Debug.Assert((entryType is TarEntryType.LongPath && longTextLength > FieldLengths.Name) ||
-                         (entryType is TarEntryType.LongLink && longTextLength > FieldLengths.LinkName));
+            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
+                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
 
             TarHeader longMetadataHeader = new(TarEntryFormat.Gnu);
 
@@ -265,7 +241,7 @@ namespace System.Formats.Tar
             longMetadataHeader._gid = 0;
             longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
             longMetadataHeader._typeFlag = entryType;
-            longMetadataHeader._dataStream = new MemoryStream();
+            longMetadataHeader._dataStream = new MemoryStream(Encoding.UTF8.GetBytes(longText));
 
             return longMetadataHeader;
         }
@@ -321,13 +297,13 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        private Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber);
-            _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            _dataStream = GenerateExtendedAttributesDataStream(extendedAttributes);
+            return WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.
@@ -561,37 +537,69 @@ namespace System.Formats.Tar
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
         private static Stream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
+            byte[]? buffer = null;
             MemoryStream? dataStream = null;
+
             if (extendedAttributes.Count > 0)
             {
                 dataStream = new MemoryStream();
+
                 foreach ((string attribute, string value) in extendedAttributes)
                 {
-                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                    dataStream.Write(entryBytes);
+                    // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
+                    // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
+
+                    // The format is:
+                    //     "XX attribute=value\n"
+                    // where "XX" is the number of characters in the entry, including those required for the count itself.
+                    int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
+                    length += CountDigits(length);
+
+                    // Get a large enough buffer if we don't already have one.
+                    if (buffer is null || buffer.Length < length)
+                    {
+                        if (buffer is not null)
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
+                        buffer = ArrayPool<byte>.Shared.Rent(length);
+                    }
+
+                    // Format the contents.
+                    bool formatted = Utf8Formatter.TryFormat(length, buffer, out int bytesWritten);
+                    Debug.Assert(formatted);
+                    buffer[bytesWritten++] = (byte)' ';
+                    bytesWritten += Encoding.UTF8.GetBytes(attribute, buffer.AsSpan(bytesWritten));
+                    buffer[bytesWritten++] = (byte)'=';
+                    bytesWritten += Encoding.UTF8.GetBytes(value, buffer.AsSpan(bytesWritten));
+                    buffer[bytesWritten++] = (byte)'\n';
+
+                    // Write it to the stream.
+                    dataStream.Write(buffer.AsSpan(0, bytesWritten));
                 }
-                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+
+                dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
             }
-            return dataStream;
-        }
 
-        // Asynchronously dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
-        private static async Task<Stream?> GenerateExtendedAttributesDataStreamAsync(Dictionary<string, string> extendedAttributes, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            MemoryStream? dataStream = null;
-            if (extendedAttributes.Count > 0)
+            if (buffer is not null)
             {
-                dataStream = new MemoryStream();
-                foreach ((string attribute, string value) in extendedAttributes)
-                {
-                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                    await dataStream.WriteAsync(entryBytes, cancellationToken).ConfigureAwait(false);
-                }
-                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+                ArrayPool<byte>.Shared.Return(buffer);
             }
+
             return dataStream;
+
+            static int CountDigits(int value)
+            {
+                Debug.Assert(value >= 0);
+                int digits = 1;
+                while (true)
+                {
+                    value /= 10;
+                    if (value == 0) break;
+                    digits++;
+                }
+                return digits;
+            }
         }
 
         // Some fields that have a reserved spot in the header, may not fit in such field anymore, but they can fit in the
@@ -632,46 +640,6 @@ namespace System.Formats.Tar
                     extendedAttributes.Add(key, value);
                 }
             }
-        }
-
-        // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
-        // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
-        private static byte[] GenerateExtendedAttributeKeyValuePairAsByteArray(byte[] keyBytes, byte[] valueBytes)
-        {
-            // Assuming key="ab" and value="cdef"
-
-            // The " ab=cdef\n" attribute string has a length of 9 chars
-            int suffixByteCount = 3 + // leading space, equals sign and trailing newline
-                keyBytes.Length + valueBytes.Length;
-
-            // The count string "9" has a length of 1 char
-            string suffixByteCountString = suffixByteCount.ToString();
-            int firstTotalByteCount = Encoding.ASCII.GetByteCount(suffixByteCountString);
-
-            // If we prepend the count string length to the attribute string,
-            // the total length increases to 10, which has one more digit
-            // "9 abc=def\n"
-            int firstPrefixAndSuffixByteCount = firstTotalByteCount + suffixByteCount;
-
-            // The new count string "10" has an increased length of 2 chars
-            string prefixAndSuffixByteCountString = firstPrefixAndSuffixByteCount.ToString();
-            int realTotalCharCount = Encoding.ASCII.GetByteCount(prefixAndSuffixByteCountString);
-
-            byte[] finalTotalCharCountBytes = Encoding.ASCII.GetBytes(prefixAndSuffixByteCountString);
-
-            // The final string should contain the correct total length now
-            List<byte> bytesList = new();
-
-            bytesList.AddRange(finalTotalCharCountBytes);
-            bytesList.Add((byte)' ');
-            bytesList.AddRange(keyBytes);
-            bytesList.Add((byte)'=');
-            bytesList.AddRange(valueBytes);
-            bytesList.Add((byte)'\n');
-
-            Debug.Assert(bytesList.Count == (realTotalCharCount + suffixByteCount));
-
-            return bytesList.ToArray();
         }
 
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
