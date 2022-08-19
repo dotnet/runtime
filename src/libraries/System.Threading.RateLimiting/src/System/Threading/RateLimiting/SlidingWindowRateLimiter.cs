@@ -294,28 +294,21 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // increment last tick by the number of replenish periods that occurred since the last replenish
-                // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
                 _lastReplenishmentTick = nowTicks;
 
-                int initialRequestCount = _requestCount;
                 // Increment the current segment index while move the window
                 // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
                 _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
                 int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _requestsPerSegment[_currentSegmentIndex] = 0;
 
-                if (oldSegmentRequestCount != 0)
+                if (oldSegmentRequestCount == 0)
                 {
-                    _requestCount += oldSegmentRequestCount;
-                    Debug.Assert(_requestCount <= _options.PermitLimit);
-                }
-
-                if (initialRequestCount == _requestCount)
-                {
-                    // no requests added, queued items don't need updating
                     return;
                 }
+
+                _requestCount += oldSegmentRequestCount;
+                Debug.Assert(_requestCount <= _options.PermitLimit);
 
                 // Process queued requests
                 while (_queue.Count > 0)
