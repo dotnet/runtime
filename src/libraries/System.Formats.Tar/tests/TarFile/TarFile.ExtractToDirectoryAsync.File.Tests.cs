@@ -241,7 +241,7 @@ namespace System.Formats.Tar.Tests
 
             await TarFile.ExtractToDirectoryAsync(archivePath, destination.Path, overwriteFiles: overwrite);
 
-           Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
+            Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
             AssertFileModeEquals(dirPath, TestPermission1);
 
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
