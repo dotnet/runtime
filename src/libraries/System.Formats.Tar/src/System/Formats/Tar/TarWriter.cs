@@ -268,40 +268,37 @@ namespace System.Formats.Tar
         // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
         private void WriteEntryInternal(TarEntry entry)
         {
-            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-            buffer.Clear(); // Rented arrays aren't clean
-            try
+            Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
+            buffer.Clear();
+
+            switch (entry.Format)
             {
-                switch (entry.Format)
-                {
-                    case TarEntryFormat.V7:
-                        entry._header.WriteAsV7(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        entry._header.WriteAsUstar(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Pax:
-                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                        {
-                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
-                        }
-                        else
-                        {
-                            entry._header.WriteAsPax(_archiveStream, buffer);
-                        }
-                        break;
-                    case TarEntryFormat.Gnu:
-                        entry._header.WriteAsGnu(_archiveStream, buffer);
-                        break;
-                    default:
-                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rented);
+                case TarEntryFormat.V7:
+                    entry._header.WriteAsV7(_archiveStream, buffer);
+                    break;
+
+                case TarEntryFormat.Ustar:
+                    entry._header.WriteAsUstar(_archiveStream, buffer);
+                    break;
+
+                case TarEntryFormat.Pax:
+                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                    {
+                        entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
+                    }
+                    else
+                    {
+                        entry._header.WriteAsPax(_archiveStream, buffer);
+                    }
+                    break;
+
+                case TarEntryFormat.Gnu:
+                    entry._header.WriteAsGnu(_archiveStream, buffer);
+                    break;
+
+                default:
+                    Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
+                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
             }
 
             _wroteEntries = true;

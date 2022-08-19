@@ -531,8 +531,8 @@ namespace System.Formats.Tar
             if (paddingAfterData != 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(paddingAfterData);
-
                 Array.Clear(buffer, 0, paddingAfterData);
+
                 await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
 
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -542,8 +542,10 @@ namespace System.Formats.Tar
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
         private static Stream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
-            byte[]? buffer = null;
             MemoryStream? dataStream = null;
+
+            byte[]? buffer = null;
+            Span<byte> span = stackalloc byte[512];
 
             if (extendedAttributes.Count > 0)
             {
@@ -561,26 +563,27 @@ namespace System.Formats.Tar
                     length += CountDigits(length);
 
                     // Get a large enough buffer if we don't already have one.
-                    if (buffer is null || buffer.Length < length)
+                    if (span.Length < length)
                     {
                         if (buffer is not null)
                         {
                             ArrayPool<byte>.Shared.Return(buffer);
                         }
                         buffer = ArrayPool<byte>.Shared.Rent(length);
+                        span = buffer;
                     }
 
                     // Format the contents.
-                    bool formatted = Utf8Formatter.TryFormat(length, buffer, out int bytesWritten);
+                    bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
                     Debug.Assert(formatted);
-                    buffer[bytesWritten++] = (byte)' ';
-                    bytesWritten += Encoding.UTF8.GetBytes(attribute, buffer.AsSpan(bytesWritten));
-                    buffer[bytesWritten++] = (byte)'=';
-                    bytesWritten += Encoding.UTF8.GetBytes(value, buffer.AsSpan(bytesWritten));
-                    buffer[bytesWritten++] = (byte)'\n';
+                    span[bytesWritten++] = (byte)' ';
+                    bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
+                    span[bytesWritten++] = (byte)'=';
+                    bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
+                    span[bytesWritten++] = (byte)'\n';
 
                     // Write it to the stream.
-                    dataStream.Write(buffer.AsSpan(0, bytesWritten));
+                    dataStream.Write(span.Slice(0, bytesWritten));
                 }
 
                 dataStream.Position = 0; // Ensure it gets written into the archive from the beginning

@@ -535,13 +535,20 @@ namespace System.Formats.Tar
             if (_size != 0)
             {
                 ValidateSize();
-                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Span<byte> span = buffer.AsSpan(0, (int)_size);
+
+                byte[]? buffer = null;
+                Span<byte> span = _size <= 256 ?
+                    stackalloc byte[256] :
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
+                span = span.Slice(0, (int)_size);
 
                 archiveStream.ReadExactly(span);
                 ReadExtendedAttributesFromBuffer(span, _name);
 
-                ArrayPool<byte>.Shared.Return(buffer);
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -600,13 +607,20 @@ namespace System.Formats.Tar
             if (_size != 0)
             {
                 ValidateSize();
-                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Span<byte> span = buffer.AsSpan(0, (int)_size);
+
+                byte[]? buffer = null;
+                Span<byte> span = _size <= 256 ?
+                    stackalloc byte[256] :
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
+                span = span.Slice(0, (int)_size);
 
                 archiveStream.ReadExactly(span);
                 ReadGnuLongPathDataFromBuffer(span);
 
-                ArrayPool<byte>.Shared.Return(buffer);
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
