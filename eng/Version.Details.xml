@@ -270,9 +270,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>555080fde81d34b38dfab27115c52f0a620803a2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22403.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22418.3">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>793113a41d7f21b03470521bf48438f2abd9b12f</Sha>
+      <Sha>fe174f9c41d0cc1c097c807a90c81baa94780776</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="7.0.100-rc.1.22402.1">
       <Uri>https://github.com/dotnet/sdk</Uri>
