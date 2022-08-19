@@ -450,7 +450,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
