@@ -488,15 +488,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             // compare original assembly vs it's outputs.. all it's outputs!
             string assemblyPath = args.AOTAssembly.GetMetadata("FullPath");
-            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile)))
+            if (args.ProxyFiles.Any(pf => Utils.IsNewerThan(assemblyPath, pf.TargetFile)))
                 return false;
         }
 
         return true;
-
-        static bool IsNewerThanOutput(string inFile, string outFile)
-            => !File.Exists(inFile) || !File.Exists(outFile) ||
-                    (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
     private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)

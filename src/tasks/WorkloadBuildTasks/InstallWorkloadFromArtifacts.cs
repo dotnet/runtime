@@ -40,6 +40,7 @@ namespace Microsoft.Workload.Build.Tasks
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
+        private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
 
         public override bool Execute()
         {
@@ -47,6 +48,10 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 if (!Directory.Exists(SdkWithNoWorkloadInstalledPath))
                     throw new LogAsErrorException($"Cannot find {nameof(SdkWithNoWorkloadInstalledPath)}={SdkWithNoWorkloadInstalledPath}");
+
+                if (!Directory.Exists(LocalNuGetsPath))
+                    throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
+                                                    "Set it to the Shipping packages directory in artifacts.");
 
                 if (!InstallAllManifests())
                     return false;
@@ -121,6 +126,15 @@ namespace Microsoft.Workload.Build.Tasks
 
         private bool InstallAllManifests()
         {
+            var allManifestPkgs = Directory.EnumerateFiles(LocalNuGetsPath, "*Manifest*nupkg");
+            if (!AnyInputsNewerThanOutput(AllManifestsStampPath, allManifestPkgs))
+            {
+                Log.LogMessage(MessageImportance.Low,
+                                    $"Skipping installing manifests because the {AllManifestsStampPath} " +
+                                    $"is newer than packages {string.Join(',', allManifestPkgs)}.");
+                return true;
+            }
+
             // HACK BEGIN - because sdk doesn't yet have the net6/net7 manifest names in the known workloads
             // list
             string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
@@ -178,7 +192,7 @@ namespace Microsoft.Workload.Build.Tasks
                 manifestsInstalled.Add(req.ManifestName);
             }
 
-            File.WriteAllText(Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp"), string.Empty);
+            File.WriteAllText(AllManifestsStampPath, string.Empty);
 
             return true;
         }
@@ -214,8 +228,6 @@ namespace Microsoft.Workload.Build.Tasks
 
                 foreach (string dir in Directory.EnumerateDirectories(Path.Combine(req.TargetPath, "packs"), "*", SearchOption.AllDirectories))
                     Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(req.TargetPath, "packs", dir)}");
-
-                return false;
             }
 
             return !Log.HasLoggedErrors;
@@ -270,7 +282,7 @@ namespace Microsoft.Workload.Build.Tasks
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");
 
-            if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing))
+            if (!PackageInstaller.Install(new[] { pkgRef }, nugetConfigContents, Log, stopOnMissing))
                 return false;
 
             string manifestDir = pkgRef.OutputDir;
@@ -344,6 +356,9 @@ namespace Microsoft.Workload.Build.Tasks
 
             return first ?? Path.Combine(parentDir, dirName.ToLower(CultureInfo.InvariantCulture));
         }
+
+        private static bool AnyInputsNewerThanOutput(string output, IEnumerable<string> inputs)
+            => inputs.Any(i => Utils.IsNewerThan(i, output));
 
         private sealed record ManifestInformation(
             object Version,

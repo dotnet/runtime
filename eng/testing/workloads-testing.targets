@@ -90,7 +90,7 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;GetWorkloadInputs;_ProvisionDotNetForWorkloadTesting;_InstallWorkload"
+          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;GetWorkloadInputs;_ProvisionDotNetForWorkloadTesting;_InstallWorkloads"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild">
@@ -188,24 +188,12 @@
       *******************" />
   </Target>
 
-  <Target Name="_InstallWorkload"
+  <Target Name="_InstallWorkloads"
           Inputs="@(AvailableNuGetsInArtifacts)"
           Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)')">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
-
-    <!--<Error Text="%24(SdkWithWorkloadForTestingPath) is not set" Condition="'$(SdkWithWorkloadForTestingPath)' == ''" />-->
-
-    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into %(_SdkWithWorkloadToInstall.InstallPath)"
-             Condition="'$(SdkVersionForWorkloadTesting)' != ''"
-             Importance="High" />
-    <Message Text="** Installing latest sdk for workload based tests into %(_SdkWithWorkloadToInstall.InstallPath)"
-             Condition="'$(SdkVersionForWorkloadTesting)' == ''"
-             Importance="High" />
-
-    <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
-           Condition="!Exists($(_AOTCrossNuGetPath))" />
 
     <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
 
@@ -217,7 +205,5 @@
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
       />
-
-    <!--<WriteLinesToFile File="%(_SdkWithWorkloadToInstall.StampPath)" Lines="" Overwrite="true" />-->
   </Target>
 </Project>

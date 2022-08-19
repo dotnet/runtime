@@ -23,6 +23,10 @@ internal static class Utils
         return reader.ReadToEnd();
     }
 
+    public static bool IsNewerThan(string inFile, string outFile)
+        => !File.Exists(inFile) || !File.Exists(outFile) ||
+                (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
+
     public static (int exitCode, string output) RunShellCommand(
                                         TaskLoggingHelper logger,
                                         string command,
