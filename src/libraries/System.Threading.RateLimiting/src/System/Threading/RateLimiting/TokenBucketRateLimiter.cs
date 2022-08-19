@@ -60,9 +60,9 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
-            if (options.ReplenishmentPeriod < TimeSpan.Zero)
+            if (options.ReplenishmentPeriod <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than TimeSpan.Zero.", nameof(options));
             }
 
             _options = new TokenBucketRateLimiterOptions
@@ -289,15 +289,12 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                long periods = (long)((nowTicks - _lastReplenishmentTick) * TickFrequency) / _options.ReplenishmentPeriod.Ticks;
-                if (periods == 0)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
 
-                // increment last tick by the number of replenish periods that occurred since the last replenish
-                // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
-                _lastReplenishmentTick += (long)(periods * _options.ReplenishmentPeriod.Ticks / TickFrequency);
+                _lastReplenishmentTick = nowTicks;
 
                 int availablePermits = _tokenCount;
                 int maxPermits = _options.TokenLimit;
@@ -305,7 +302,7 @@ namespace System.Threading.RateLimiting
 
                 if (availablePermits < maxPermits)
                 {
-                    resourcesToAdd = (int)Math.Min(_options.TokensPerPeriod * periods, maxPermits - availablePermits);
+                    resourcesToAdd = Math.Min(maxPermits - availablePermits, _options.TokensPerPeriod);
                 }
                 else
                 {

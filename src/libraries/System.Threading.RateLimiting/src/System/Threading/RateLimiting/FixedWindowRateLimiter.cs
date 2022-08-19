@@ -59,9 +59,9 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
-            if (options.Window < TimeSpan.Zero)
+            if (options.Window <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than TimeSpan.Zero.", nameof(options));
             }
 
             _options = new FixedWindowRateLimiterOptions
@@ -287,15 +287,14 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                long periods = (long)((nowTicks - _lastReplenishmentTick) * TickFrequency) / _options.Window.Ticks;
-                if (periods == 0)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
 
                 // increment last tick by the number of replenish periods that occurred since the last replenish
                 // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
-                _lastReplenishmentTick += (long)(periods * ReplenishmentPeriod.Ticks / TickFrequency);
+                _lastReplenishmentTick = nowTicks;
 
                 int availableRequestCounters = _requestCount;
 
