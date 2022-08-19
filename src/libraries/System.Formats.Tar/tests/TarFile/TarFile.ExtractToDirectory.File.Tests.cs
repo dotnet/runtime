@@ -163,7 +163,6 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.Android)]
         public void UnixFileModes(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();
@@ -236,7 +235,6 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74076", TestPlatforms.Android)]
         public void UnixFileModes_RestrictiveParentDir(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();
