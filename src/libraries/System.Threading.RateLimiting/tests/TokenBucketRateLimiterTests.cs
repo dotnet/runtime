@@ -39,48 +39,64 @@ namespace System.Threading.RateLimiting.Test
         {
             Assert.Throws<ArgumentException>(
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = -1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                ReplenishmentPeriod = TimeSpan.FromMinutes(2),
-                TokensPerPeriod = 1,
-                AutoReplenishment = false
-            }));
+                {
+                    TokenLimit = -1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.FromMinutes(2),
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
             Assert.Throws<ArgumentException>(
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = -1,
-                ReplenishmentPeriod = TimeSpan.FromMinutes(2),
-                TokensPerPeriod = 1,
-                AutoReplenishment = false
-            }));
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = -1,
+                    ReplenishmentPeriod = TimeSpan.FromMinutes(2),
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
             Assert.Throws<ArgumentException>(
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                ReplenishmentPeriod = TimeSpan.FromMinutes(2),
-                TokensPerPeriod = -1,
-                AutoReplenishment = false
-            }));
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.FromMinutes(2),
+                    TokensPerPeriod = -1,
+                    AutoReplenishment = false
+                }));
             Assert.Throws<ArgumentException>(
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                ReplenishmentPeriod = TimeSpan.MinValue,
-                TokensPerPeriod = 1,
-                AutoReplenishment = false
-            }));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.Zero, 1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMilliseconds(-1), 1, autoReplenishment: false));
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.MinValue,
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
+            Assert.Throws<ArgumentException>(
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.Zero,
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
+            Assert.Throws<ArgumentException>(
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.FromMilliseconds(-1),
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
         }
 
         [Fact]
@@ -174,7 +190,7 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
             Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
             Replenish(limiter, 1L);
-            Assert.Equal(1, limiter.GetAvailablePermits());
+            Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
             Replenish(limiter, 1L);
 
             lease = await wait1;
@@ -917,32 +933,18 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public void ReplenishAfterMultiplePeriodsIncreaseTokensBasedOnNumberOfPeriods()
-        {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(70, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.FromMilliseconds(1), 3, autoReplenishment: false));
-            Assert.True(limiter.Acquire(50).IsAcquired);
-            Assert.False(limiter.Acquire(30).IsAcquired);
-
-            Assert.Equal(20, limiter.GetAvailablePermits());
-            Replenish(limiter, 2L);
-            Assert.Equal(26, limiter.GetAvailablePermits());
-
-            Replenish(limiter, 1L);
-            Assert.Equal(29, limiter.GetAvailablePermits());
-            Replenish(limiter, 5L);
-            Assert.Equal(44, limiter.GetAvailablePermits());
-
-            Replenish(limiter, 10L);
-            Assert.Equal(70, limiter.GetAvailablePermits());
-        }
-
-        [Fact]
         public async void TryReplenishWithAllTokensAvailable_Noops()
         {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.FromMilliseconds(30), 1, autoReplenishment: false));
-            Assert.Equal(2, limiter.GetAvailablePermits());
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(30),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+            Assert.Equal(2, limiter.GetStatistics().CurrentAvailablePermits);
             await Task.Delay(100);
             limiter.TryReplenish();
             Assert.Equal(2, limiter.GetStatistics().CurrentAvailablePermits);
@@ -1120,7 +1122,7 @@ namespace System.Threading.RateLimiting.Test
             // Ensure next tick is over uint.MaxValue
             Replenish(limiter, uint.MaxValue);
 
-            var lease = limiter.AttemtpAcquire(10);
+            var lease = limiter.AttemptAcquire(10);
             Assert.True(lease.IsAcquired);
 
             var wait = limiter.AcquireAsync(1);
@@ -1298,7 +1300,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(2, stats.TotalFailedLeases);
             Assert.Equal(1, stats.TotalSuccessfulLeases);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1);
             await lease2Task;
 
             stats = limiter.GetStatistics();
@@ -1356,6 +1358,36 @@ namespace System.Threading.RateLimiting.Test
             });
             limiter.Dispose();
             Assert.Throws<ObjectDisposedException>(limiter.GetStatistics);
+        }
+
+        [Fact]
+        public void AutoReplenishIgnoresTimerJitter()
+        {
+            var replenishmentPeriod = TimeSpan.FromMinutes(10);
+            using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = replenishmentPeriod,
+                AutoReplenishment = true,
+                TokensPerPeriod = 1,
+            });
+
+            var lease = limiter.AttemptAcquire(permitCount: 3);
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Replenish 1 millisecond less than ReplenishmentPeriod while AutoReplenishment is enabled
+            Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds - 1);
+
+            Assert.Equal(8, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Replenish 1 millisecond longer than ReplenishmentPeriod while AutoReplenishment is enabled
+            Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds + 1);
+
+            Assert.Equal(9, limiter.GetStatistics().CurrentAvailablePermits);
         }
 
         private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;

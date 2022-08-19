@@ -63,9 +63,9 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
-            if (options.Window < TimeSpan.Zero)
+            if (options.Window <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than TimeSpan.Zero.", nameof(options));
             }
 
             _options = new SlidingWindowRateLimiterOptions
@@ -289,32 +289,27 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                long periods = (long)((nowTicks - _lastReplenishmentTick) * TickFrequency) / ReplenishmentPeriod.Ticks;
-                if (periods == 0)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
 
                 // increment last tick by the number of replenish periods that occurred since the last replenish
                 // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
-                _lastReplenishmentTick += (long)(periods * ReplenishmentPeriod.Ticks / TickFrequency);
+                _lastReplenishmentTick = nowTicks;
 
                 int initialRequestCount = _requestCount;
-                do
-                {
-                    // Increment the current segment index while move the window
-                    // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
-                    _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
-                    int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
-                    _requestsPerSegment[_currentSegmentIndex] = 0;
+                // Increment the current segment index while move the window
+                // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
+                _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
+                int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
+                _requestsPerSegment[_currentSegmentIndex] = 0;
 
-                    if (oldSegmentRequestCount != 0)
-                    {
-                        _requestCount += oldSegmentRequestCount;
-                        Debug.Assert(_requestCount <= _options.PermitLimit);
-                    }
-                    periods--;
-                } while (periods > 0);
+                if (oldSegmentRequestCount != 0)
+                {
+                    _requestCount += oldSegmentRequestCount;
+                    Debug.Assert(_requestCount <= _options.PermitLimit);
+                }
 
                 if (initialRequestCount == _requestCount)
                 {
