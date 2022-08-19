@@ -5,7 +5,7 @@
         <_BrowserWorkloadDisabled7 Condition="'$(_BrowserWorkloadDisabled7)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
                                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                            !$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '6.0'))">true</_BrowserWorkloadDisabled7>
+                                            !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</_BrowserWorkloadDisabled7>
         <TargetsNet7 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
     </PropertyGroup>
 
