@@ -18,6 +18,7 @@ namespace System.Formats.Tar.Tests
         protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
 
         protected readonly UnixFileMode CreateDirectoryDefaultMode; // Mode of directories created using Directory.CreateDirectory(string).
+        protected readonly UnixFileMode UMask;
 
         // Mode assumed for files and directories on Windows.
         protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
@@ -120,6 +121,7 @@ namespace System.Formats.Tar.Tests
         protected TarTestsBase()
         {
             CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
+            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777", 8);
         }
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
@@ -414,12 +416,20 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(fileMode, entry.Mode);
         }
 
-        protected static void AssertFileModeEquals(string path, UnixFileMode mode)
+        protected void AssertFileModeEquals(string path, UnixFileMode archiveMode)
         {
-            if (!PlatformDetection.IsWindows &&
-                !PlatformDetection.IsAndroid) // Android may change the requested permissions.
+            if (!PlatformDetection.IsWindows)
             {
-                Assert.Equal(mode, File.GetUnixFileMode(path));
+                UnixFileMode expectedMode = archiveMode & ~UMask;
+
+                UnixFileMode actualMode = File.GetUnixFileMode(path);
+                // Ignore SetGroup: it may have been added to preserve group ownership.
+                if ((expectedMode & UnixFileMode.SetGroup) == 0)
+                {
+                    actualMode &= ~UnixFileMode.SetGroup;
+                }
+
+                Assert.Equal(expectedMode, actualMode);
             }
         }
 
