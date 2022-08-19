@@ -4004,7 +4004,7 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 
 #ifdef TARGET_WASM
 
-static SimdIntrinsic wasmbase_methods [] = {
+static SimdIntrinsic packedsimd_methods [] = {
 	{SN_And},
 	{SN_Bitmask},
 	{SN_CompareEqual},
@@ -4019,11 +4019,11 @@ static SimdIntrinsic wasmbase_methods [] = {
 };
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
-	{ "WasmBase", 0, wasmbase_methods, sizeof (wasmbase_methods) },
+	{ "PackedSimd", 0, packedsimd_methods, sizeof (packedsimd_methods) },
 };
 
 static MonoInst*
-emit_wasmbase_intrinsics (
+emit_packedsimd_intrinsics (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
 	MonoClass *klass, const IntrinGroup *intrin_group,
 	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
@@ -4143,7 +4143,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
 			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
-			emit_wasmbase_intrinsics);
+			emit_packedsimd_intrinsics);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
