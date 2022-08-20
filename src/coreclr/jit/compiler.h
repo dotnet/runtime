@@ -7289,7 +7289,7 @@ public:
     void optAssertionRemove(AssertionIndex index);
 
     // Assertion prop data flow functions.
-    void       optAssertionPropMain();
+    PhaseStatus optAssertionPropMain();
     Statement* optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
     bool optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP* optInitAssertionDataflowFlags();
