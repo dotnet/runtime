@@ -357,14 +357,14 @@ namespace System.Formats.Tar
             {
                 return null;
             }
-            int checksum = TarHelpers.ParseOctalAsInt32(spanChecksum);
+            int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
                 return null;
             }
 
-            long size = TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            long size = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             if (size < 0)
             {
                 throw new FormatException(string.Format(SR.TarSizeFieldNegative));
@@ -373,14 +373,14 @@ namespace System.Formats.Tar
             // Continue with the rest of the fields that require no special checks
             TarHeader header = new(initialFormat,
                 name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
-                mode: TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
-                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.ParseOctalAsInt64(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                mode: (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
+                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch((long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
                 typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
                 _checksum = checksum,
                 _size = size,
-                _uid = TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
-                _gid = TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
+                _uid = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
+                _gid = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
                 _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
             };
 
@@ -491,10 +491,10 @@ namespace System.Formats.Tar
             if (_typeFlag is TarEntryType.CharacterDevice or TarEntryType.BlockDevice)
             {
                 // Major number for a character device or block device entry.
-                _devMajor = TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
+                _devMajor = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
 
                 // Minor number for a character device or block device entry.
-                _devMinor = TarHelpers.ParseOctalAsInt32(buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
+                _devMinor = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
         }
 
@@ -503,10 +503,10 @@ namespace System.Formats.Tar
         private void ReadGnuAttributes(Span<byte> buffer)
         {
             // Convert byte arrays
-            long aTime = TarHelpers.ParseOctalAsInt64(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            long aTime = (long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
             _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
 
-            long cTime = TarHelpers.ParseOctalAsInt64(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            long cTime = (long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
