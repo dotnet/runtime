@@ -203,7 +203,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,
         PHASE_COMPUTE_REACHABILITY,
-        // block weights
+        PHASE_SET_BLOCK_WEIGHTS,
         PHASE_FIND_LOOPS,
         PHASE_CLONE_LOOPS,
         PHASE_UNROLL_LOOPS,
