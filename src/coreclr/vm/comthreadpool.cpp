@@ -1,31 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-/*============================================================
-**
-** Header: COMThreadPool.cpp
-**
-** Purpose: Native methods on System.ThreadPool
-**          and its inner classes
-**
-**
-===========================================================*/
-
-/********************************************************************************************************************/
 #include "common.h"
-#include "comdelegate.h"
+
 #include "comthreadpool.h"
-#include "class.h"
-#include "object.h"
-#include "field.h"
-#include "excep.h"
 #include "eeconfig.h"
-#include "corhost.h"
-#include "nativeoverlapped.h"
-#include "comsynchronizable.h"
-#include "callhelpers.h"
-#include "appdomain.inl"
 
 /*****************************************************************************************************/
 // Enumerates some runtime config variables that are used by CoreLib for initialization. The config variable index should start

@@ -1,21 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-/*============================================================
-**
-** Header: COMThreadPool.h
-**
-** Purpose: Native methods on System.ThreadPool
-**          and its inner classes
-**
-**
-===========================================================*/
-
 #ifndef _COMTHREADPOOL_H
 #define _COMTHREADPOOL_H
-
-#include "nativeoverlapped.h"
 
 class ThreadPoolNative
 {
