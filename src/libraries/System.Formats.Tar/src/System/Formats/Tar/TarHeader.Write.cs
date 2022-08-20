@@ -773,11 +773,11 @@ namespace System.Formats.Tar
         // - %f: The filename of the file, equivalent to the result of the basename utility on the translated pathname.
         private string GenerateExtendedAttributeName()
         {
-            string? dirName = Path.GetDirectoryName(_name);
-            dirName = string.IsNullOrEmpty(dirName) ? "." : dirName;
+            ReadOnlySpan<char> dirName = Path.GetDirectoryName(_name.AsSpan());
+            dirName = dirName.IsEmpty ? "." : dirName;
 
-            string? fileName = Path.GetFileName(_name);
-            fileName = string.IsNullOrEmpty(fileName) ? "." : fileName;
+            ReadOnlySpan<char> fileName = Path.GetFileName(_name.AsSpan());
+            fileName = fileName.IsEmpty ? "." : fileName;
 
             return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?
                 $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}" :
