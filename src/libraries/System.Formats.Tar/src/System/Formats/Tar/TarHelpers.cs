@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -198,13 +199,13 @@ namespace System.Formats.Tar
             return entryType;
         }
 
-        // Receives a byte array that represents an ASCII string containing a number in octal base.
-        // Converts the array to an octal base number, then transforms it to ten base and returns it.
-        internal static int ParseOctalAsInt32(ReadOnlySpan<byte> buffer)
+        /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
+        internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
             buffer = TrimEndingNullsAndSpaces(buffer);
 
-            uint value = 0;
+            T octalFactor = T.CreateTruncating(8u);
+            T value = T.Zero;
             foreach (byte b in buffer)
             {
                 uint digit = (uint)(b - '0');
@@ -213,31 +214,10 @@ namespace System.Formats.Tar
                     ThrowInvalidNumber();
                 }
 
-                value = checked((value * 8u) + digit);
+                value = checked((value * octalFactor) + T.CreateTruncating(digit));
             }
 
-            return (int)value;
-        }
-
-        // Receives a byte array that represents an ASCII string containing a number in octal base.
-        // Converts the array to an octal base number, then transforms it to ten base and returns it.
-        internal static long ParseOctalAsInt64(ReadOnlySpan<byte> buffer)
-        {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-
-            ulong value = 0;
-            foreach (byte b in buffer)
-            {
-                ulong digit = (ulong)(b - '0');
-                if (digit >= 8)
-                {
-                    ThrowInvalidNumber();
-                }
-
-                value = checked((value * 8u) + digit);
-            }
-
-            return (long)value;
+            return value;
         }
 
         [DoesNotReturn]
