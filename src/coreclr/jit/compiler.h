@@ -6695,7 +6695,7 @@ protected:
 #define FMT_CSE "CSE #%02u"
 
 public:
-    void optOptimizeValnumCSEs();
+    PhaseStatus optOptimizeValnumCSEs();
 
 protected:
     void     optValnumCSE_Init();
@@ -6704,7 +6704,7 @@ protected:
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
-    void optValnumCSE_Heuristic();
+    bool optValnumCSE_Heuristic();
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
