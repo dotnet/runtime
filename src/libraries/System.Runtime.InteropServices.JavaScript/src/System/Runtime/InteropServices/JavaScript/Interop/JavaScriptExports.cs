@@ -85,6 +85,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
+                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
+                    ex = refEx.InnerException;
+
                 arg_exc.ToJS(ex);
             }
         }
