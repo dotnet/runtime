@@ -60,7 +60,7 @@ namespace System.Threading
 
         private static unsafe bool InitializeConfig()
         {
-            int configVariableIndex = 0;
+            int configVariableIndex = 1;
             while (true)
             {
                 int nextConfigVariableIndex =
@@ -77,13 +77,7 @@ namespace System.Threading
                 Debug.Assert(nextConfigVariableIndex > configVariableIndex);
                 configVariableIndex = nextConfigVariableIndex;
 
-                if (appContextConfigNameUnsafe == null)
-                {
-                    // Special case for UsePortableThreadPool and similar, which don't go into the AppContext
-                    Debug.Assert(configValue != 0);
-                    Debug.Assert(!isBoolean);
-                    continue;
-                }
+                Debug.Assert(appContextConfigNameUnsafe != null);
 
                 var appContextConfigName = new string(appContextConfigNameUnsafe);
                 if (isBoolean)

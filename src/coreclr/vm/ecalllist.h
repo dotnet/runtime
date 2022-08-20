@@ -396,9 +396,6 @@ FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
 FCFuncEnd()
 
-FCFuncStart(gRegisteredWaitHandleFuncs)
-FCFuncEnd()
-
 FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitOneCore", WaitHandleNative::CorWaitOneNative)
     FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
@@ -774,8 +771,6 @@ FCClassElement("Object", "System", gObjectFuncs)
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
-
-FCClassElement("RegisteredWaitHandle", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)

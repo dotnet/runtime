@@ -60,12 +60,6 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
 
     switch (configVariableIndex)
     {
-        case 0:
-            *configValueRef = 2;
-            *isBooleanRef = false;
-            *appContextConfigNameRef = NULL;
-            return 1;
-
         case 1: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads, false, W("System.Threading.ThreadPool.MinThreads"))) { return 2; } FALLTHROUGH;
         case 2: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads, false, W("System.Threading.ThreadPool.MaxThreads"))) { return 3; } FALLTHROUGH;
         case 3: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection, true, W("System.Threading.ThreadPool.DisableStarvationDetection"))) { return 4; } FALLTHROUGH;

@@ -134,8 +134,6 @@ PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
-UINT64 Thread::s_workerThreadPoolCompletionCountOverflow = 0;
-UINT64 Thread::s_ioThreadPoolCompletionCountOverflow = 0;
 UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
@@ -1596,8 +1594,6 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 #endif // FEATURE_EH_FUNCLETS
 
-    m_workerThreadPoolCompletionCount = 0;
-    m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
     m_pDomain = SystemDomain::System()->DefaultDomain();
@@ -5345,12 +5341,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         if (target->IsBackground())
             s_pThreadStore->m_BackgroundThreadCount--;
 
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_workerThreadPoolCompletionCountOverflow,
-            target->m_workerThreadPoolCompletionCount);
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_ioThreadPoolCompletionCountOverflow,
-            target->m_ioThreadPoolCompletionCount);
         InterlockedExchangeAdd64(
             (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
             target->m_monitorLockContentionCount);
