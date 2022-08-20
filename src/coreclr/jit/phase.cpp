@@ -202,7 +202,7 @@ void Phase::PostPhase(PhaseStatus status)
 #endif
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,
-        // reachability
+        PHASE_COMPUTE_REACHABILITY,
         // block weights
         PHASE_FIND_LOOPS,
         PHASE_CLONE_LOOPS,

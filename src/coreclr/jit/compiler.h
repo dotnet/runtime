@@ -5046,7 +5046,7 @@ protected:
     template <typename CanRemoveBlockBody>
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    void fgComputeReachability(); // Perform flow graph node reachability analysis.
+    PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
