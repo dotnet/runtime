@@ -586,11 +586,9 @@ namespace System.Formats.Tar
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
         private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
+            buffer = TarHelpers.TrimEndingNullsAndSpaces(buffer);
 
-            using StringReader reader = new(dataAsString);
-
-            while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
+            while (TryGetNextExtendedAttribute(ref buffer, out string? key, out string? value))
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
@@ -659,43 +657,64 @@ namespace System.Formats.Tar
             }
         }
 
-        // Tries to collect the next extended attribute from the string wrapped by the specified reader.
+        // Tries to collect the next extended attribute from the string.
         // Extended attributes are saved in the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
         // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
         // "LENGTH KEY=VALUE\n"
         // Where LENGTH is the total number of bytes of that line, from LENGTH itself to the endline, inclusive.
         // Throws if end of stream is reached or if an attribute is malformed.
         private static bool TryGetNextExtendedAttribute(
-            StringReader reader,
+            ref ReadOnlySpan<byte> buffer,
             [NotNullWhen(returnValue: true)] out string? key,
             [NotNullWhen(returnValue: true)] out string? value)
         {
             key = null;
             value = null;
 
-            string? nextLine = reader.ReadLine();
-            if (string.IsNullOrWhiteSpace(nextLine))
+            // Slice off the next line.
+            int newlinePos = buffer.IndexOf((byte)'\n');
+            if (newlinePos < 0)
+            {
+                return false;
+            }
+            ReadOnlySpan<byte> line = buffer.Slice(0, newlinePos);
+
+            // Update buffer to point to the next line for the next call
+            buffer = buffer.Slice(newlinePos + 1);
+
+            // Find the end of the length and remove everything up through it.
+            int spacePos = line.IndexOf((byte)' ');
+            if (spacePos < 0)
+            {
+                return false;
+            }
+            line = line.Slice(spacePos + 1).TrimStart((byte)' ');
+
+            // If there are any more spaces, it's malformed.
+            if (line.IndexOf((byte)' ') >= 0)
             {
                 return false;
             }
 
-            StringSplitOptions splitOptions = StringSplitOptions.RemoveEmptyEntries;
-
-            string[] attributeArray = nextLine.Split(' ', 2, splitOptions);
-            if (attributeArray.Length != 2)
+            // Find the equal separator.
+            int equalPos = line.IndexOf((byte)'=');
+            if (equalPos < 0)
             {
                 return false;
             }
 
-            string[] keyAndValueArray = attributeArray[1].Split('=', 2, splitOptions);
-            if (keyAndValueArray.Length != 2)
+            ReadOnlySpan<byte> keySlice = line.Slice(0, equalPos);
+            ReadOnlySpan<byte> valueSlice = line.Slice(equalPos + 1);
+
+            // If the value contains an =, it's malformed.
+            if (valueSlice.IndexOf((byte)'=') >= 0)
             {
                 return false;
             }
 
-            key = keyAndValueArray[0];
-            value = keyAndValueArray[1];
-
+            // Return the parsed key and value.
+            key = Encoding.UTF8.GetString(keySlice);
+            value = Encoding.UTF8.GetString(valueSlice);
             return true;
         }
     }

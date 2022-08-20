@@ -738,7 +738,7 @@ namespace System.Formats.Tar
         internal static int FormatOctal(long value, Span<byte> destination)
         {
             ulong remaining = (ulong)value;
-            Span<byte> digits = stackalloc byte[32]; // longest possible octal representation of a ulong is 21 digits
+            Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
 
             int i = digits.Length - 1;
             while (true)

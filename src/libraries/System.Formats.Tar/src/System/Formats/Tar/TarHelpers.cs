@@ -232,7 +232,7 @@ namespace System.Formats.Tar
             return buffer.IsEmpty ? string.Empty : encoding.GetString(buffer);
         }
 
-        private static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        internal static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
         {
             int trimmedLength = buffer.Length;
             while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
