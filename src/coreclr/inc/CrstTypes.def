@@ -549,7 +549,7 @@ End
 
 Crst TieredCompilation
     AcquiredAfter CodeVersioning
-    AcquiredBefore
+    AcquiredBefore FuncPtrStubs
 End
 
 Crst COMCallWrapper
