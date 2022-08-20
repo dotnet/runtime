@@ -1,6 +1,6 @@
 ## About
 
-Provides types that support using XML configuration files (`app.config`). Only use this package when migrating the existing .NET Framework code that already uses XML configuration. When writing a new code, use [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/) instead.
+Provides types that support using XML configuration files (`app.config`). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/).
 
 For more information, see the documentation:
 
