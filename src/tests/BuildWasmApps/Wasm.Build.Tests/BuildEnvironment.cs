@@ -99,7 +99,6 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
-
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different
             // dotnet
