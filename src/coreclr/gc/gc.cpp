@@ -30902,9 +30902,12 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
 
     int plan_gen_num = heap_segment_plan_gen_num (region);
-    generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
-    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
-        generation_allocation_size (generation_of (plan_gen_num))));
+    if (plan_gen_num < heap_segment_gen_num (region))
+    {
+        generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
+        dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
+            generation_allocation_size (generation_of (plan_gen_num))));
+    }
 }
 
 inline
