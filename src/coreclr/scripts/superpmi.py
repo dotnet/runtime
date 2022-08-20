@@ -1956,9 +1956,12 @@ class SuperPMIReplayThroughputDiff:
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
-                    delta_instructions = diff_instructions - base_instructions
-                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
-                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    if base_instructions != 0 and diff_instructions != 0:
+                        delta_instructions = diff_instructions - base_instructions
+                        logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                        tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
 
