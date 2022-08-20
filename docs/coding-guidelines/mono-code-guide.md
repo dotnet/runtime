@@ -53,7 +53,7 @@ Macros generally use a `MONO_` prefix.  Macros in public API headers *must* use 
 
 Prefer the standard C sized types `int32_t`, `intptr_t`, etc over the eglib types `gint32`, `gsize` etc.
 
-One exception is `gboolean` is prefered over C `bool`.
+One exception is `gboolean` is preferred over C `bool`.
 
 There are actually three boolean types to keep in mind:
 

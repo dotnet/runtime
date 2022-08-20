@@ -126,7 +126,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void PathIsNullWihtoutRooted()
+        public static void PathIsNullWithoutRooted()
         {
             //any path is null without rooted after (ANE)
             CommonCasesException<ArgumentNullException>(null);

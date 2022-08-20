@@ -71,6 +71,7 @@ namespace System.Diagnostics
         public long PrivateMemorySize64 { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]

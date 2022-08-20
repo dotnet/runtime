@@ -19,14 +19,12 @@ namespace System.Security.Cryptography
             Debug.Assert(hashAlgorithmName.Name is not null);
 
             using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(
-                password.ToArray(),
-                salt.ToArray(),
+                password,
+                salt,
                 iterations,
-                hashAlgorithmName,
-                clearPassword: true))
+                hashAlgorithmName))
             {
-                byte[] result = deriveBytes.GetBytes(destination.Length);
-                result.AsSpan().CopyTo(destination);
+                deriveBytes.GetBytes(destination);
             }
         }
     }

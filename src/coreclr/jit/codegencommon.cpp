@@ -562,7 +562,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 //          There's some work to be done in several places in the JIT to
 //          accurately track the registers that are getting killed by
 //          helper calls:
-//              a) LSRA needs several changes to accomodate more precise killsets
+//              a) LSRA needs several changes to accommodate more precise killsets
 //                 for every helper call it sees (both explicitly [easy] and
 //                 implicitly [hard])
 //              b) Currently for AMD64, when we generate code for a helper call
@@ -942,7 +942,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
     if (isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
         // x86/Linux requires stack frames to be 16-byte aligned, but SP may be unaligned
-        // at this point if a jump to this block is made in the middle of pushing arugments.
+        // at this point if a jump to this block is made in the middle of pushing arguments.
         //
         // Here we restore SP to prevent potential stack alignment issues.
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -genSPtoFPdelta());
@@ -1635,7 +1635,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 #endif // defined(TARGET_ARMARCH)
     }
 
-    // Jump to the block which will throw the expection
+    // Jump to the block which will throw the exception
 
     genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 }
@@ -1740,11 +1740,18 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
+#endif
     compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
-        printf("; Assembly listing for method %s\n", compiler->info.compFullName);
+#ifdef DEBUG
+        const char* fullName = compiler->info.compFullName;
+#else
+        const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
+#endif
+
+        printf("; Assembly listing for method %s\n", fullName);
 
         printf("; Emitting ");
 
@@ -1880,7 +1887,30 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+            const char* pgoKind;
+            switch (compiler->fgPgoSource)
+            {
+                case ICorJitInfo::PgoSource::Static:
+                    pgoKind = "Static";
+                    break;
+                case ICorJitInfo::PgoSource::Dynamic:
+                    pgoKind = "Dynamic";
+                    break;
+                case ICorJitInfo::PgoSource::Blend:
+                    pgoKind = "Blend";
+                    break;
+                case ICorJitInfo::PgoSource::Text:
+                    pgoKind = "Textual";
+                    break;
+                case ICorJitInfo::PgoSource::Sampling:
+                    pgoKind = "Sample-based";
+                    break;
+                default:
+                    pgoKind = "Unknown";
+                    break;
+            }
+
+            printf("; with %s PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n", pgoKind,
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
@@ -1905,7 +1935,6 @@ void CodeGen::genGenerateMachineCode()
             printf("; invoked as altjit\n");
         }
     }
-#endif // DEBUG
 
     // We compute the final frame layout before code generation. This is because LSRA
     // has already computed exactly the maximum concurrent number of spill temps of each type that are
@@ -2056,6 +2085,11 @@ void CodeGen::genEmitMachineCode()
     {
         printf("*************** After end code gen, before unwindEmit()\n");
         GetEmitter()->emitDispIGlist(true);
+    }
+#else
+    if (compiler->opts.disAsm)
+    {
+        printf("\n; Total bytes of code %d\n\n", codeSize);
     }
 #endif
 
@@ -3361,7 +3395,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (varTypeIsStruct(varDsc) &&
+                if (varTypeIsPromotable(varDsc) &&
                     (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
                 {
                     assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);
@@ -3377,8 +3411,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) &&
-                           !compiler->isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle()));
+                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetStructHnd()));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
@@ -5873,7 +5906,7 @@ void CodeGen::genFnProlog()
     // call arguments properly since both the arg regs and the stack allocated
     // args will be contiguous.
     //
-    // OSR methods can skip this, as the setup is done by the orignal method.
+    // OSR methods can skip this, as the setup is done by the original method.
     if (compiler->info.compIsVarArgs && !compiler->opts.IsOSR())
     {
         GetEmitter()->spillIntArgRegsToShadowSlots();
@@ -6141,7 +6174,7 @@ void CodeGen::genFnProlog()
     {
         // The 'real' prolog ends here for non-interruptible methods.
         // For fully-interruptible methods, we extend the prolog so that
-        // we do not need to track GC inforation while shuffling the
+        // we do not need to track GC information while shuffling the
         // arguments.
         GetEmitter()->emitMarkPrologEnd();
     }
@@ -6380,7 +6413,7 @@ void CodeGen::genFnProlog()
 #endif
 
 //------------------------------------------------------------------------
-// getCallTarget - Get the node that evalutes to the call target
+// getCallTarget - Get the node that evaluates to the call target
 //
 // Arguments:
 //    call - the GT_CALL node
@@ -6599,12 +6632,12 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
     assert(IsHfa(hClass));
 #ifdef TARGET_ARM
     // A HFA of doubles is twice as large as an HFA of singles for ARM32
-    // (i.e. uses twice the number of single precison registers)
+    // (i.e. uses twice the number of single precision registers)
     return info.compCompHnd->getClassSize(hClass) / REGSIZE_BYTES;
 #else  // TARGET_ARM64
     var_types hfaType   = GetHfaType(hClass);
     unsigned  classSize = info.compCompHnd->getClassSize(hClass);
-    // Note that the retail build issues a warning about a potential divsion by zero without the Max function
+    // Note that the retail build issues a warning about a potential division by zero without the Max function
     unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
     return classSize / elemSize;
 #endif // TARGET_ARM64
@@ -8313,7 +8346,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         else
         {
 #ifdef TARGET_LOONGARCH64
-            // should consider the pading field within a struct.
+            // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
 #endif
             // Several fields could be passed in one register, copy using the register type.
@@ -8647,7 +8680,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //
 // Arguments:
 //  liveRanges - the "LiveRangeList" of the "VariableLiveDescriptor" we want to
-//      udpate its "LiveRangeDumper".
+//      update its "LiveRangeDumper".
 //
 // Notes:
 //  This method is expected to be called once a the code for a BasicBlock has been
@@ -8706,7 +8739,7 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeListIterator CodeGenInterface::Va
 }
 
 //------------------------------------------------------------------------
-// hasLiveRangesToDump: Retutn wheter at least a "VariableLiveRange" was alive during
+// hasLiveRangesToDump: Retutn whether at least a "VariableLiveRange" was alive during
 //  the current "BasicBlock"'s code generation
 //
 // Return Value:
@@ -8945,7 +8978,7 @@ CodeGenInterface::VariableLiveKeeper* CodeGenInterface::getVariableLiveKeeper() 
 
 //------------------------------------------------------------------------
 // VariableLiveKeeper: Create an instance of the object in charge of managing
-//  VariableLiveRanges and intialize the array "m_vlrLiveDsc".
+//  VariableLiveRanges and initialize the array "m_vlrLiveDsc".
 //
 // Arguments:
 //    totalLocalCount   - the count of args, special args and IL Local
@@ -8960,7 +8993,7 @@ CodeGenInterface::VariableLiveKeeper::VariableLiveKeeper(unsigned int  totalLoca
     : m_LiveDscCount(totalLocalCount)
     , m_LiveArgsCount(argsCount)
     , m_Compiler(comp)
-    , m_LastBasicBlockHasBeenEmited(false)
+    , m_LastBasicBlockHasBeenEmitted(false)
 {
     if (m_LiveDscCount > 0)
     {
@@ -9108,7 +9141,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
     // a valid IG so we don't report the close of a "VariableLiveRange" after code is
     // emitted.
 
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited &&
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted &&
         m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
     {
         // this variable live range is no longer valid from this point
@@ -9140,7 +9173,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     // This method is being called when the prolog is being generated, and
     // the emitter has no longer a valid IG so we don't report the close of
     //  a "VariableLiveRange" after code is emitted.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited)
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted)
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
@@ -9187,7 +9220,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
         }
     }
 
-    m_LastBasicBlockHasBeenEmited = true;
+    m_LastBasicBlockHasBeenEmitted = true;
 }
 
 //------------------------------------------------------------------------

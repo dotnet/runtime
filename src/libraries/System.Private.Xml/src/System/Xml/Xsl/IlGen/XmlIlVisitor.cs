@@ -678,7 +678,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If last condition evalutes to false, branch to false label
+                    // If last condition evaluates to false, branch to false label
                     // Else fall through to true code path
                     _iterCurr.SetBranching(BranchingContext.OnFalse, lblOnFalse);
                     break;
@@ -752,7 +752,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If left condition evalutes to true, jump to code that pushes "true"
+                    // If left condition evaluates to true, jump to code that pushes "true"
                     Debug.Assert(_iterCurr.CurrentBranchingContext == BranchingContext.None);
                     lblTemp = _helper.DefineLabel();
                     NestedVisitWithBranch(ndOr.Left, BranchingContext.OnTrue, lblTemp);
@@ -773,7 +773,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If right condition evalutes to true, jump to code that pushes "true".
+                    // If right condition evaluates to true, jump to code that pushes "true".
                     // Otherwise, if both conditions evaluate to false, fall through code path
                     // will push "false".
                     NestedVisitWithBranch(ndOr.Right, BranchingContext.OnTrue, lblTemp);
@@ -2775,7 +2775,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILConstructInfo info = XmlILConstructInfo.Read(ndElem);
             bool callChk;
             GenerateNameType nameType;
-            Debug.Assert(XmlILConstructInfo.Read(ndElem).PushToWriterFirst, "Element contruction should always be pushed to writer.");
+            Debug.Assert(XmlILConstructInfo.Read(ndElem).PushToWriterFirst, "Element construction should always be pushed to writer.");
 
             // Runtime checks must be made in the following cases:
             //   1. Xml state is not known at compile-time, or is illegal
@@ -3439,7 +3439,7 @@ namespace System.Xml.Xsl.IlGen
             // If the expression is a singleton,
             if (ndVal.Child.XmlType.IsSingleton)
             {
-                // Then generate code to push expresion result onto the stack
+                // Then generate code to push expression result onto the stack
                 NestedVisitEnsureStack(ndVal.Child, typeof(XPathNavigator), false);
 
                 // navigator.Value;
@@ -3514,7 +3514,7 @@ namespace System.Xml.Xsl.IlGen
             // If the expression is a singleton,
             if (ndGenId.Child.XmlType!.IsSingleton)
             {
-                // Then generate code to push expresion result onto the stack
+                // Then generate code to push expression result onto the stack
                 NestedVisitEnsureStack(ndGenId.Child, typeof(XPathNavigator), false);
 
                 // runtime.GenerateId(value);
@@ -3600,13 +3600,14 @@ namespace System.Xml.Xsl.IlGen
         /// Generate code for QilNodeType.XsltInvokeEarlyBound.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:RequiresUnreferencedCode",
-            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since we added " +
+            Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since we added " +
             "the attribute to this subclass' constructor. This allows us to not have to annotate the whole QilNode hirerarchy.")]
         protected override QilNode VisitXsltInvokeEarlyBound(QilInvokeEarlyBound ndInvoke)
         {
             QilName ndName = ndInvoke.Name;
             XmlExtensionFunction extFunc;
-            Type clrTypeRetSrc, clrTypeRetDst;
+            Type? clrTypeRetSrc;
+            Type clrTypeRetDst;
 
             // Retrieve metadata from the extension function
             extFunc = new XmlExtensionFunction(ndName.LocalName, ndName.NamespaceUri, ndInvoke.ClrMethod);
@@ -3621,7 +3622,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             // If this is not a static method, then get the instance object
-            if (!extFunc.Method.IsStatic)
+            if (!extFunc.Method!.IsStatic)
             {
                 // Special-case the XsltLibrary object
                 if (ndName.NamespaceUri.Length == 0)
@@ -3712,7 +3713,7 @@ namespace System.Xml.Xsl.IlGen
             else if (clrTypeRetSrc != clrTypeRetDst)
             {
                 // (T) runtime.ChangeTypeXsltResult(idxType, (object) value);
-                _helper.TreatAs(clrTypeRetSrc, typeof(object));
+                _helper.TreatAs(clrTypeRetSrc!, typeof(object));
                 _helper.Call(XmlILMethods.ChangeTypeXsltResult);
                 _helper.TreatAs(typeof(object), clrTypeRetDst);
             }

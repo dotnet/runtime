@@ -76,7 +76,7 @@ public:
     // This includes domain neutral modules that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // calls and before any UnloadAssembly or RemoveAppDomainFromIPCBlock calls realted
-    // to this module.  On CLR shutdown, we are not guarenteed to get UnloadModule calls for
+    // to this module.  On CLR shutdown, we are not guaranteed to get UnloadModule calls for
     // all outstanding loaded modules.
     virtual void UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain) = 0;
 
@@ -108,12 +108,13 @@ public:
     virtual bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                        CONTEXT *context,
                                        DWORD code,
-                                       Thread *thread) = 0;
+                                       Thread *thread,
+                                       BOOL fIsVEH = TRUE) = 0;
 
     // pThread is thread that exception is on.
     // currentSP is stack frame of the throw site.
     // currentIP is ip of the throw site.
-    // pStubFrame = NULL if the currentSp is for a non-stub frame (ie, a regular JITed catched).
+    // pStubFrame = NULL if the currentSp is for a non-stub frame (ie, a regular JITed caught).
     // For stub-based throws, pStubFrame is the EE Frame of the stub.
     virtual bool FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SIZE_T currentSP) = 0;
 
@@ -193,6 +194,11 @@ public:
                                              SIZE_T ilOffset,
                                              TADDR nativeFnxStart,
                                              SIZE_T *nativeOffset) = 0;
+
+
+    // Used by FixContextAndResume
+    virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
+    virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // EnC_SUPPORTED
 
     // Get debugger variable information for a specific version of a method
@@ -310,7 +316,7 @@ public:
     // This includes domain neutral assemblies that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // and UnloadModule calls and before any RemoveAppDomainFromIPCBlock calls realted
-    // to this assembly.  On CLR shutdown, we are not guarenteed to get UnloadAssembly calls for
+    // to this assembly.  On CLR shutdown, we are not guaranteed to get UnloadAssembly calls for
     // all outstanding loaded assemblies.
     virtual void UnloadAssembly(DomainAssembly * pDomainAssembly) = 0;
 
@@ -389,7 +395,7 @@ public:
     virtual BOOL FallbackJITAttachPrompt() = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord) = 0;
+    virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord, BOOL fIsVEH = TRUE) = 0;
 #endif
 
     // Helper method for cleaning up transport socket

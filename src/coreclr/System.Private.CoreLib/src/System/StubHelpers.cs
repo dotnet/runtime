@@ -176,7 +176,7 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
+            int end = new ReadOnlySpan<byte>((byte*)cstr, length).IndexOf((byte)0);
             if (end >= 0)
             {
                 length = end;
@@ -301,7 +301,7 @@ namespace System.StubHelpers
                 if (length == 1)
                 {
                     // In the empty string case, we need to use FastAllocateString rather than the
-                    // String .ctor, since newing up a 0 sized string will always return String.Emtpy.
+                    // String .ctor, since newing up a 0 sized string will always return String.Empty.
                     // When we marshal that out as a bstr, it can wind up getting modified which
                     // corrupts string.Empty.
                     ret = string.FastAllocateString(0);
@@ -450,7 +450,7 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
+            int end = new ReadOnlySpan<char>((char*)nativeHome, length).IndexOf('\0');
             if (end >= 0)
             {
                 length = end;

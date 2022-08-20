@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteEndObject();
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value)
         {
             object? referenceValue;
 
@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value != null);
 
             Type runtimeType = value.GetType();
-            JsonConverter runtimeConverter = options.GetConverterFromTypeInfo(runtimeType);
+            JsonConverter runtimeConverter = options.GetConverterInternal(runtimeType);
             if (runtimeConverter == this)
             {
                 ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType, this);

@@ -1794,7 +1794,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 //------------------------------------------------------------------------
 // OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
 // the high part of the source and, if the cast is to INT, the cast node itself.
-// Accounts for side effects and marks nodes unused as neccessary.
+// Accounts for side effects and marks nodes unused as necessary.
 //
 // Only accepts casts to integer types that are not long.
 // Does not optimize checked casts.

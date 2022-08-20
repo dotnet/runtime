@@ -11,7 +11,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()

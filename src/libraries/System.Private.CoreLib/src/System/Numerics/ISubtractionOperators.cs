@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will be subtracted from <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the difference of <typeparamref name="TOther" /> subtracted from <typeparamref name="TSelf" />.</typeparam>
     public interface ISubtractionOperators<TSelf, TOther, TResult>
-        where TSelf : ISubtractionOperators<TSelf, TOther, TResult>
+        where TSelf : ISubtractionOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Subtracts two values to compute their difference.</summary>
         /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>

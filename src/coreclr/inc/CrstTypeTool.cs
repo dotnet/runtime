@@ -217,7 +217,7 @@ class CrstTypeTool
         stream.Close();
     }
 
-    // Peform checking of the Crst type definitions we've read just read. Various forms of logic error are
+    // Perform checking of the Crst type definitions we've read just read. Various forms of logic error are
     // scanned for including cycles in the dependency graph. Returns true if no errors are found. If false is
     // returned a descriptive error message will have already been written to the console.
     bool ValidateCrsts()
@@ -602,7 +602,7 @@ class TypeFileParser
     // CrstTypes (which are auto-vivified in the output dictionary if they haven't been declared yet).
     void ParseList(List<CrstType> list)
     {
-        // Parse tokens until we find a non-indentifier.
+        // Parse tokens until we find a non-identifier.
         while (true)
         {
             Token token = NextToken();

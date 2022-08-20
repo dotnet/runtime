@@ -2703,6 +2703,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
+}
+
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)
@@ -2773,7 +2809,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);

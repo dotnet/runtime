@@ -752,7 +752,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(stateBuf->hdrInfoBody.ebpFrame);
-    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will alway be set. Remove it</TODO>
+    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
 
     TADDR      baseSP;
     GetHandlerFrameInfo(&stateBuf->hdrInfoBody, ctx->Ebp,
@@ -777,7 +777,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     if (ctxType == FILTER_CONTEXT)
         *ppEndRegion = (size_t *)pBaseSPslots + 1;
 
-    /*  This is just a simple assigment of throwObject to ctx->Eax,
+    /*  This is just a simple assignment of throwObject to ctx->Eax,
         just pretend the cast goo isn't there.
      */
 
@@ -991,6 +991,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     UINT32 oldSizeOfPreservedArea = oldGcDecoder.GetSizeOfEditAndContinuePreservedArea();
     UINT32 newSizeOfPreservedArea = newGcDecoder.GetSizeOfEditAndContinuePreservedArea();
 
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Got old and new EnC preserved area sizes of %u and %u\n", oldSizeOfPreservedArea, newSizeOfPreservedArea));
     // This ensures the JIT generated EnC compliant code.
     if ((oldSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ||
         (newSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA))
@@ -1000,6 +1001,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     }
 
     TADDR oldStackBase = GetSP(&oldCtx);
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old SP=%p, FP=%p\n", (void*)oldStackBase, (void*)GetFP(&oldCtx)));
 
 #if defined(TARGET_AMD64)
     // Note: we cannot assert anything about the relationship between oldFixedStackSize
@@ -1013,12 +1016,16 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     _ASSERTE(pOldCodeInfo->HasFrameRegister());
     _ASSERTE(pNewCodeInfo->HasFrameRegister());
 
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
+
     // x64: SP == FP before localloc
     if (oldStackBase != GetFP(&oldCtx))
         return E_FAIL;
 #elif defined(TARGET_ARM64)
     DWORD oldFixedStackSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
     DWORD newFixedStackSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
 
     // ARM64: FP + 16 == SP + oldFixedStackSize before localloc
     if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
@@ -1128,7 +1135,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pOldVar->startOffset <= oldMethodOffset &&
                 pOldVar->endOffset   >  oldMethodOffset)
             {
-                oldMethodVarsSorted[varNumber] = *pOldVar;
+                oldMethodVarsSorted[(int)varNumber] = *pOldVar;
             }
         }
 
@@ -1180,7 +1187,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[varNumber] = *pNewVar;
+                newMethodVarsSorted[(int)varNumber] = *pNewVar;
             }
         }
 
@@ -1937,7 +1944,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
                        S   indicates that register ESI is an interior pointer
                        D   indicates that register EDI is an interior pointer
                        the list count is the number of entries in the list
-                       the list size gives the byte-lenght of the list
+                       the list size gives the byte-length of the list
                        the offsets in the list are variable-length
   */
         while (scanOffs < curOffs)
@@ -2108,7 +2115,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
  *
  * Note on the encoding used for interior pointers
  *
- *   The iptr encoding must immediately preceed a call encoding.  It is used to
+ *   The iptr encoding must immediately precede a call encoding.  It is used to
  *   transform a normal GC pointer addresses into an interior pointers for GC purposes.
  *   The mask supplied to the iptr encoding is read from the least signicant bit
  *   to the most signicant bit. (i.e the lowest bit is read first)
@@ -2756,7 +2763,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-                     _ASSERTE_ALL_BUILDS("clr/src/VM/eetwain.cpp", !"scanArgRegTableI: args pushed 'too deep'");
+                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {
@@ -2870,7 +2877,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 }
             }
 
-            // For partial arg info, need to find the next higest pointer for argHigh
+            // For partial arg info, need to find the next highest pointer for argHigh
 
             if (hasPartialArgInfo)
             {
@@ -4275,7 +4282,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  First, handle the epilog
          */
 
-        PTR_CBYTE epilogBase = (PTR_CBYTE) (breakPC - info->epilogOffs);
+        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
         UnwindEpilog(pContext, info, epilogBase, flags);
     }
     else if (!info->ebpFrame && !info->doubleAlign)
@@ -5997,7 +6004,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     // currently only used by E&C callers need to know about doubleAlign
-    // in all likelyhood
+    // in all likelihood
     _ASSERTE(!info.doubleAlign);
     return info.stackSize;
 }
@@ -6036,7 +6043,7 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will alway be set. Remove it</TODO>
+    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
 
     TADDR       baseSP;
     DWORD       nestingLevel;

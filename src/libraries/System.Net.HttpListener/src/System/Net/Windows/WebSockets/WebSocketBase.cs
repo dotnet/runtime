@@ -1573,7 +1573,7 @@ namespace System.Net.WebSockets
                         // RECEIVE thread has finished sending out the PONG response.
                         //
                         // So, we need to release the lock briefly to give the other thread a chance to finish
-                        // processing.  We won't actually exit this outter loop and return from this async method
+                        // processing.  We won't actually exit this outer loop and return from this async method
                         // until the caller's async operation has been fully completed.
                         ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                         Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);

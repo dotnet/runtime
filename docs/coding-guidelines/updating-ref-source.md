@@ -13,7 +13,7 @@ This document provides the steps you need to take to update the reference assemb
 
 These steps can also be applied to some unique assemblies which depend on changes in System.Private.Corelib. (partial facades like System.Memory, for example).
 
-1) Run `dotnet build --no-incremental /t:GenerateReferenceSource` from the System.Runtime/src directory.
+1) Run `dotnet build --no-incremental /t:GenerateReferenceAssemblySource` from the System.Runtime/src directory.
 2) Filter out all unrelated changes and extract the changes you care about (ignore certain attributes being removed). Generally, this step is not required for other reference assemblies.
 
 ## For Full Facade Assemblies implementation assemblies

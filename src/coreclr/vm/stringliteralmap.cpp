@@ -297,10 +297,6 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    m_PinnedHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
-#endif
 }
 
 GlobalStringLiteralMap::~GlobalStringLiteralMap()
@@ -568,7 +564,7 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
 
         BOOL bSuccess;
         bSuccess = m_StringToEntryHashTable->DeleteValue(&StringData);
-        // this assert is comented out to accomodate case when StringLiteralEntryHolder
+        // this assert is comented out to accommodate case when StringLiteralEntryHolder
         // releases this object after failed insertion into hash
         //_ASSERTE(bSuccess);
 

@@ -64,7 +64,7 @@
 // For profitability we first try and avoid code growth. We do this
 // by only substituting in cases where lcl has exactly one def and one use.
 // This info is computed for us but the RCS_Early ref counting done during
-// the immediately preceeding fgMarkAddressExposedLocals phase.
+// the immediately preceding fgMarkAddressExposedLocals phase.
 //
 // Because of this, once we've substituted "tree" we know that lcl is dead
 // and we can remove the assignment statement.
@@ -758,7 +758,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // If the intial has truncate on store semantics, we need to replicate
+    // If the initial has truncate on store semantics, we need to replicate
     // that here with a cast.
     //
     if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))

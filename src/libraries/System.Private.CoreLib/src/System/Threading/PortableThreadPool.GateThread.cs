@@ -102,7 +102,7 @@ namespace System.Threading
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
-                        int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
+                        int cpuUtilization = (int)cpuUtilizationReader.CurrentUtilization;
                         threadPoolInstance._cpuUtilization = cpuUtilization;
 
                         if (!disableStarvationDetection &&

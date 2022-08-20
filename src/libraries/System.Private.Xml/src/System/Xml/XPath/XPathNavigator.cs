@@ -1560,7 +1560,7 @@ namespace System.Xml.XPath
             DeleteRange(this);
         }
 
-        public virtual void PrependChildElement(string prefix, string localName, string namespaceURI, string value)
+        public virtual void PrependChildElement(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = PrependChild();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1572,7 +1572,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void AppendChildElement(string prefix, string localName, string namespaceURI, string value)
+        public virtual void AppendChildElement(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = AppendChild();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1584,7 +1584,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void InsertElementBefore(string prefix, string localName, string namespaceURI, string value)
+        public virtual void InsertElementBefore(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = InsertBefore();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1596,7 +1596,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void InsertElementAfter(string prefix, string localName, string namespaceURI, string value)
+        public virtual void InsertElementAfter(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = InsertAfter();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1608,7 +1608,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void CreateAttribute(string prefix, string localName, string namespaceURI, string value)
+        public virtual void CreateAttribute(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = CreateAttributes();
             writer.WriteStartAttribute(prefix, localName, namespaceURI);
@@ -1730,25 +1730,19 @@ namespace System.Xml.XPath
             }
         }
 
-        internal static readonly char[] NodeTypeLetter = new char[] {
-            'R',    // Root
-            'E',    // Element
-            'A',    // Attribute
-            'N',    // Namespace
-            'T',    // Text
-            'S',    // SignificantWhitespace
-            'W',    // Whitespace
-            'P',    // ProcessingInstruction
-            'C',    // Comment
-            'X',    // All
-        };
+        // (R)oot
+        // (E)lement
+        // (A)ttribute
+        // (N)amespace
+        // (T)ext
+        // (S)ignificantWhitespace
+        // (W)hitespace
+        // (P)rocessingInstruction
+        // (C)omment
+        // (X) All
+        internal const string NodeTypeLetter = "REANTSWPCX";
 
-        internal static readonly char[] UniqueIdTbl = new char[] {
-            'A',  'B',  'C',  'D',  'E',  'F',  'G',  'H',  'I',  'J',
-            'K',  'L',  'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T',
-            'U',  'V',  'W',  'X',  'Y',  'Z',  '1',  '2',  '3',  '4',
-            '5',  '6'
-        };
+        internal const string UniqueIdTbl = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
 
         // Requirements for id:
         //  1. must consist of alphanumeric characters only
@@ -1776,14 +1770,14 @@ namespace System.Xml.XPath
                     }
                     if (idx <= 0x1f)
                     {
-                        sb.Append(UniqueIdTbl[idx]);
+                        sb.Append(UniqueIdTbl[(int)idx]);
                     }
                     else
                     {
                         sb.Append('0');
                         do
                         {
-                            sb.Append(UniqueIdTbl[idx & 0x1f]);
+                            sb.Append(UniqueIdTbl[(int)(idx & 0x1f)]);
                             idx >>= 5;
                         } while (idx != 0);
                         sb.Append('0');

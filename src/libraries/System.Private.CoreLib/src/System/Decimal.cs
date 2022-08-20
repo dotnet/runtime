@@ -602,7 +602,7 @@ namespace System
         /// <exception cref="ArgumentException">The destination span was not long enough to store the binary representation.</exception>
         public static int GetBits(decimal d, Span<int> destination)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -623,7 +623,7 @@ namespace System
         /// <returns>true if the decimal's binary representation was written to the destination; false if the destination wasn't long enough.</returns>
         public static bool TryGetBits(decimal d, Span<int> destination, out int valuesWritten)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 valuesWritten = 0;
                 return false;
@@ -1645,7 +1645,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1712,26 +1712,26 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1804,7 +1804,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

@@ -52,13 +52,6 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    enum
-    {
-        ApartmentSTA = 0,
-        ApartmentMTA = 1,
-        ApartmentUnknown = 2
-    };
-
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
@@ -110,6 +103,8 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize();
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 
 #endif // _COMSYNCHRONIZABLE_H
 

@@ -14,7 +14,16 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out string? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+
+            fixed (void* argAsRoot = &slot.IntPtrValue)
+            {
+                value = Unsafe.AsRef<string>(argAsRoot);
+            }
         }
 
         /// <summary>
@@ -24,7 +33,24 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(string? value)
         {
-            throw new NotImplementedException();
+            if (value == null)
+            {
+                slot.Type = MarshalerType.None;
+            }
+            else
+            {
+                slot.Type = MarshalerType.String;
+                // here we treat JSMarshalerArgument.IntPtrValue as root, because it's allocated on stack
+                // or we register the buffer with JSFunctionBinding._RegisterGCRoot
+                // We assume that GC would keep updating on GC move
+                // On JS side we wrap it with WasmExternalRoot
+                fixed (IntPtr* argAsRoot = &slot.IntPtrValue)
+                {
+                    string cpy = value;
+                    var currentRoot = (IntPtr*)Unsafe.AsPointer(ref cpy);
+                    argAsRoot[0] = currentRoot[0];
+                }
+            }
         }
 
         /// <summary>
@@ -34,7 +60,23 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out string?[]? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+
+            value = new string?[slot.Length];
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)slot.IntPtrValue;
+            for (int i = 0; i < slot.Length; i++)
+            {
+                ref JSMarshalerArgument arg = ref payload[i];
+                string? val;
+                arg.ToManaged(out val);
+                value[i] = val;
+            }
+            Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+            Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
         /// <summary>
@@ -44,7 +86,26 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(string?[] value)
         {
-            throw new NotImplementedException();
+            if (value == null)
+            {
+                slot.Type = MarshalerType.None;
+                return;
+            }
+            slot.Length = value.Length;
+            int bytes = value.Length * Marshal.SizeOf(typeof(JSMarshalerArgument));
+            slot.Type = MarshalerType.Array;
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            Unsafe.InitBlock(payload, 0, (uint)bytes);
+            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+            for (int i = 0; i < slot.Length; i++)
+            {
+                ref JSMarshalerArgument arg = ref payload[i];
+                string? val = value[i];
+                arg.ToJS(val);
+                value[i] = val;
+            }
+            slot.IntPtrValue = (IntPtr)payload;
+            slot.ElementType = MarshalerType.String;
         }
     }
 }

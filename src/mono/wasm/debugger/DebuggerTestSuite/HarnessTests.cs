@@ -30,8 +30,8 @@ namespace DebuggerTests
         public async Task ExceptionThrown()
         {
             var ae = await Assert.ThrowsAsync<ArgumentException>(
-                        async () => await EvaluateAndCheck("window.setTimeout(function() { non_existant_fn(); }, 3000);", null, -1, -1, null));
-            Assert.Contains("non_existant_fn is not defined", ae.Message);
+                        async () => await EvaluateAndCheck("window.setTimeout(function() { non_existent_fn(); }, 3000);", null, -1, -1, null));
+            Assert.Contains("non_existent_fn is not defined", ae.Message);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]

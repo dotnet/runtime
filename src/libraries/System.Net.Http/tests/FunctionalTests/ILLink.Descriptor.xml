@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Net.Http">
+    <type fullname="System.Net.Http.SocketsHttpHandler" />
+  </assembly>
+  <assembly fullname="System.Net.Http.Functional.Tests">
+    <type fullname="System.Net.Http.Functional.Tests.SocketsHttpHandler_Http2KeepAlivePing_Test" />
+  </assembly>
+</linker>

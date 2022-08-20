@@ -14,9 +14,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public partial class SignatureDecoderTests
     {
-        private static readonly string RuntimeAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Runtime";
-        private static readonly string CollectionsAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Collections";
-
         [Fact]
         public unsafe void VerifyMultipleOptionalModifiers()
         {
@@ -80,7 +77,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DecodeVarArgsDefAndRef()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))
@@ -132,7 +129,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         }
 
         // Test as much as we can with simple C# examples inline below.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
@@ -208,7 +205,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     Assert.Equal(expected, provider.GetTypeFromHandle(reader, genericTypeContext, @event.Type));
                 }
 
-                Assert.Equal($"[{CollectionsAssemblyName}]System.Collections.Generic.List`1<!T>", provider.GetTypeFromHandle(reader, genericTypeContext, handle: type.BaseType));
+                Assert.Equal($"[{MetadataReaderTestHelpers.CollectionsAssemblyName}]System.Collections.Generic.List`1<!T>", provider.GetTypeFromHandle(reader, genericTypeContext, handle: type.BaseType));
             }
         }
 
@@ -243,7 +240,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public event EventHandler<EventArgs> Event { add { } remove { } }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void PinnedAndUnpinnedLocals()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(PinnedAndUnpinnedLocalsToDecode).GetTypeInfo().Assembly)))
@@ -282,7 +279,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void WrongSignatureType()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))
@@ -323,12 +320,12 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 { "UIntPtr", "native uint" },
                 { "Boolean", "bool" },
                 { "Char", "char" },
-                { "ModifiedType", $"int32 modreq([{RuntimeAssemblyName}]System.Runtime.CompilerServices.IsVolatile)" },
+                { "ModifiedType", $"int32 modreq([{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Runtime.CompilerServices.IsVolatile)" },
                 { "Pointer", "int32*"  },
                 { "SZArray", "int32[]" },
                 { "Array", "int32[0...,0...]" },
                 { "GenericTypeParameter", "!T" },
-                { "GenericInstantiation", $"[{CollectionsAssemblyName}]System.Collections.Generic.List`1<int32>" },
+                { "GenericInstantiation", $"[{MetadataReaderTestHelpers.CollectionsAssemblyName}]System.Collections.Generic.List`1<int32>" },
             };
         }
 
@@ -341,8 +338,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 { "GenericMethodParameter", "method !!U *()" },
                 { ".ctor", "method void *()" },
                 { "get_Property", "method System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1/Nested<!T> *()"  },
-                { "add_Event",  $"method void *([{RuntimeAssemblyName}]System.EventHandler`1<[{RuntimeAssemblyName}]System.EventArgs>)" },
-                { "remove_Event", $"method void *([{RuntimeAssemblyName}]System.EventHandler`1<[{RuntimeAssemblyName}]System.EventArgs>)" },
+                { "add_Event",  $"method void *([{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventHandler`1<[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventArgs>)" },
+                { "remove_Event", $"method void *([{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventHandler`1<[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventArgs>)" },
             };
         }
 
@@ -360,7 +357,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             // event name -> signature
             return new Dictionary<string, string>()
             {
-                { "Event", $"[{RuntimeAssemblyName}]System.EventHandler`1<[{RuntimeAssemblyName}]System.EventArgs>" },
+                { "Event", $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventHandler`1<[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.EventArgs>" },
             };
         }
 

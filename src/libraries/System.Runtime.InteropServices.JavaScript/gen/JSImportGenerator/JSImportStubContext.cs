@@ -121,7 +121,11 @@ namespace Microsoft.Interop.JavaScript
 
 
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            var qualifiedName = $"[{env.Compilation.AssemblyName}]{method.ContainingType.ToDisplayString()}:{method.Name}";
+            string qualifiedName;
+            var ns = string.Join(".", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.NamespaceName).Select(x => x.ToString()).ToArray());
+            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.ClassName).Select(x => x.ToString()).ToArray());
+            var qclasses = method.ContainingType.ContainingNamespace == null ? ns : ns + "." + cn;
+            qualifiedName = $"[{env.Compilation.AssemblyName}]{qclasses}:{method.Name}";
 
             return new JSSignatureContext()
             {

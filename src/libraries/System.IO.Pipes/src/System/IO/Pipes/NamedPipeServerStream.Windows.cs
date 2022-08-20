@@ -141,7 +141,9 @@ namespace System.IO.Pipes
 
                 if (handle.IsInvalid)
                 {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                    Exception e = Win32Marshal.GetExceptionForLastWin32Error();
+                    handle.Dispose();
+                    throw e;
                 }
 
                 InitializeHandle(handle, false, (options & PipeOptions.Asynchronous) != 0);
@@ -166,8 +168,7 @@ namespace System.IO.Pipes
 
             if (IsAsync)
             {
-                ValueTask vt = WaitForConnectionCoreAsync(CancellationToken.None);
-                vt.AsTask().GetAwaiter().GetResult();
+                WaitForConnectionCoreAsync(CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
             else
             {
@@ -181,34 +182,25 @@ namespace System.IO.Pipes
                     }
 
                     // pipe already connected
-                    if (errorCode == Interop.Errors.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
+                    if (State == PipeState.Connected)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
                     }
+
                     // If we reach here then a connection has been established.  This can happen if a client
                     // connects in the interval between the call to CreateNamedPipe and the call to ConnectNamedPipe.
                     // In this situation, there is still a good connection between client and server, even though
                     // ConnectNamedPipe returns zero.
                 }
+
                 State = PipeState.Connected;
             }
         }
 
-        public Task WaitForConnectionAsync(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
-            if (!IsAsync)
-            {
-                return Task.Factory.StartNew(s => ((NamedPipeServerStream)s!).WaitForConnection(),
-                    this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            }
-
-            return WaitForConnectionCoreAsync(cancellationToken).AsTask();
-        }
+        public Task WaitForConnectionAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            IsAsync ? WaitForConnectionCoreAsync(cancellationToken).AsTask() :
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.WaitForConnection(), this, cancellationToken).AsTask();
 
         public void Disconnect()
         {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -194,16 +195,45 @@ namespace System.Net.Security
             return new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(statusCode));
         }
 
-        internal static unsafe int Unwrap(SafeDeleteContext securityContext, Span<byte> buffer, out int newOffset, out bool wasConfidential)
+        internal static NegotiateAuthenticationStatusCode Unwrap(
+            SafeDeleteContext securityContext,
+            ReadOnlySpan<byte> input,
+            IBufferWriter<byte> outputWriter,
+            out bool wasEncrypted)
         {
-            fixed (byte* bufferPtr = buffer)
+            Span<byte> outputBuffer = outputWriter.GetSpan(input.Length).Slice(0, input.Length);
+            NegotiateAuthenticationStatusCode statusCode;
+
+            input.CopyTo(outputBuffer);
+            statusCode = UnwrapInPlace(securityContext, outputBuffer, out int unwrappedOffset, out int unwrappedLength, out wasEncrypted);
+
+            if (statusCode == NegotiateAuthenticationStatusCode.Completed)
+            {
+                if (unwrappedOffset > 0)
+                {
+                    outputBuffer.Slice(unwrappedOffset, unwrappedLength).CopyTo(outputBuffer);
+                }
+                outputWriter.Advance(unwrappedLength);
+            }
+
+            return statusCode;
+        }
+
+        internal static unsafe NegotiateAuthenticationStatusCode UnwrapInPlace(
+            SafeDeleteContext securityContext,
+            Span<byte> input,
+            out int unwrappedOffset,
+            out int unwrappedLength,
+            out bool wasEncrypted)
+        {
+            fixed (byte* inputPtr = input)
             {
                 Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
                 Interop.SspiCli.SecBuffer* streamBuffer = &unmanagedBuffer[0];
                 Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
                 streamBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM;
-                streamBuffer->pvBuffer = (IntPtr)bufferPtr;
-                streamBuffer->cbBuffer = buffer.Length;
+                streamBuffer->pvBuffer = (IntPtr)inputPtr;
+                streamBuffer->cbBuffer = input.Length;
                 dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataBuffer->pvBuffer = IntPtr.Zero;
                 dataBuffer->cbBuffer = 0;
@@ -217,9 +247,14 @@ namespace System.Net.Security
                 int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
                 if (errorCode != 0)
                 {
-                    Exception e = new Win32Exception(errorCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                    throw new Win32Exception(errorCode);
+                    unwrappedOffset = 0;
+                    unwrappedLength = 0;
+                    wasEncrypted = false;
+                    return errorCode switch
+                    {
+                        (int)Interop.SECURITY_STATUS.MessageAltered => NegotiateAuthenticationStatusCode.MessageAltered,
+                        _ => NegotiateAuthenticationStatusCode.InvalidToken
+                    };
                 }
 
                 if (dataBuffer->BufferType != SecurityBufferType.SECBUFFER_DATA)
@@ -227,32 +262,37 @@ namespace System.Net.Security
                     throw new InternalException(dataBuffer->BufferType);
                 }
 
-                wasConfidential = qop != Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                wasEncrypted = qop != Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
 
-                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
-                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
-                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
-                return dataBuffer->cbBuffer;
+                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)inputPtr);
+                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)inputPtr + input.Length);
+                unwrappedOffset = (int)((byte*)dataBuffer->pvBuffer - inputPtr);
+                unwrappedLength = dataBuffer->cbBuffer;
+                return NegotiateAuthenticationStatusCode.Completed;
             }
         }
 
-        internal static unsafe int Wrap(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
+        internal static unsafe NegotiateAuthenticationStatusCode Wrap(
+            SafeDeleteContext securityContext,
+            ReadOnlySpan<byte> input,
+            IBufferWriter<byte> outputWriter,
+            bool requestEncryption,
+            out bool isEncrypted)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
             Debug.Assert(success);
 
             // alloc new output buffer if not supplied or too small
-            int resultSize = buffer.Length + sizes.cbMaxSignature;
-            if (output == null || output.Length < resultSize)
-            {
-                output = new byte[resultSize];
-            }
+            int resultSize = input.Length + sizes.cbMaxSignature;
+            Span<byte> outputBuffer = outputWriter.GetSpan(resultSize);
 
             // make a copy of user data for in-place encryption
-            buffer.CopyTo(output.AsSpan(sizes.cbMaxSignature, buffer.Length));
+            input.CopyTo(outputBuffer.Slice(sizes.cbMaxSignature, input.Length));
 
-            fixed (byte* outputPtr = output)
+            isEncrypted = requestEncryption;
+
+            fixed (byte* outputPtr = outputBuffer)
             {
                 // Prepare buffers TOKEN(signature), DATA and Padding.
                 Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
@@ -263,25 +303,28 @@ namespace System.Net.Security
                 tokenBuffer->cbBuffer = sizes.cbMaxSignature;
                 dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataBuffer->pvBuffer = (IntPtr)(outputPtr + sizes.cbMaxSignature);
-                dataBuffer->cbBuffer = buffer.Length;
+                dataBuffer->cbBuffer = input.Length;
 
                 Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
                 {
                     pBuffers = unmanagedBuffer
                 };
 
-                uint qop = isConfidential ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                uint qop = requestEncryption ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
                 int errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, qop);
 
                 if (errorCode != 0)
                 {
-                    Exception e = new Win32Exception(errorCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                    throw new Win32Exception(errorCode);
+                    return errorCode switch
+                    {
+                        (int)Interop.SECURITY_STATUS.ContextExpired => NegotiateAuthenticationStatusCode.ContextExpired,
+                        (int)Interop.SECURITY_STATUS.QopNotSupported => NegotiateAuthenticationStatusCode.QopNotSupported,
+                        _ => NegotiateAuthenticationStatusCode.GenericFailure,
+                    };
                 }
 
-                // return signed size
-                return tokenBuffer->cbBuffer + dataBuffer->cbBuffer;
+                outputWriter.Advance(tokenBuffer->cbBuffer + dataBuffer->cbBuffer);
+                return NegotiateAuthenticationStatusCode.Completed;
             }
         }
 

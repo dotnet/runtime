@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarWriter_Async_Tests : TarTestsBase
+    public partial class TarWriter_Tests : TarTestsBase
     {
         [Fact]
         public async Task Constructors_LeaveOpen_Async()
@@ -62,54 +62,66 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public async Task VerifyChecksumV7_Async()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_RegularFile_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(
+                format,
+                // Convert to V7RegularFile if format is V7
+                GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format),
+                longPath: false,
+                longLink: false);
+
+        [Theory] // V7 does not support BlockDevice
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_BlockDevice_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(format, TarEntryType.BlockDevice, longPath: false, longLink: false);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_Directory_LongPath_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(format, TarEntryType.Directory, longPath: true, longLink: false);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_SymbolicLink_LongLink_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_SymbolicLink_LongLink_LongPath_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(format, TarEntryType.SymbolicLink, longPath: true, longLink: true);
+
+        private async Task Verify_Checksum_Internal_Async(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink)
         {
-            await using (MemoryStream archive = new MemoryStream())
+            using MemoryStream archive = new MemoryStream();
+            int expectedChecksum;
+            await using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.V7, leaveOpen: true))
-                {
-                    V7TarEntry entry = new V7TarEntry(
-                        // '\0' = 0
-                        TarEntryType.V7RegularFile,
-                        // 'a.b' = 97 + 46 + 98 = 241
-                        entryName: "a.b");
+                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, out expectedChecksum);
+                await writer.WriteEntryAsync(entry);
+                Assert.Equal(expectedChecksum, entry.Checksum);
+            }
 
-                    // '0000744\0' = 48 + 48 + 48 + 48 + 55 + 52 + 52 + 0 = 351
-                    entry.Mode = AssetMode; // octal 744 = u+rxw, g+r, o+r
-
-                    // '0017351\0' = 48 + 48 + 49 + 55 + 51 + 53 + 49 + 0 = 353
-                    entry.Uid = AssetUid; // decimal 7913, octal 17351
-
-                    // '0006773\0' = 48 + 48 + 48 + 54 + 55 + 55 + 51 + 0 = 359
-                    entry.Gid = AssetGid; // decimal 3579, octal 6773
-
-                    // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-                    DateTimeOffset mtime = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero); // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674
-                    entry.ModificationTime = mtime;
-
-                    entry.DataStream = new MemoryStream();
-                    byte[] buffer = new byte[] { 72, 101, 108, 108, 111 };
-
-                    // '0000000005\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 53 + 0 = 533
-                    await entry.DataStream.WriteAsync(buffer); // Data length: decimal 5
-                    entry.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
-
-                    // Sum so far: 0 + 241 + 351 + 353 + 359 + 571 + 533 = decimal 2408
-                    // Add 8 spaces to the sum: 2408 + (8 x 32) = octal 5150, decimal 2664 (final)
-                    // Checksum: '005150\0 '
-
-                    await writer.WriteEntryAsync(entry);
-
-                    Assert.Equal(2664, entry.Checksum);
-                }
-
-                archive.Seek(0, SeekOrigin.Begin);
-                await using (TarReader reader = new TarReader(archive))
-                {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    Assert.Equal(2664, entry.Checksum);
-                }
+            archive.Seek(0, SeekOrigin.Begin);
+            await using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = await reader.GetNextEntryAsync();
+                Assert.Equal(expectedChecksum, entry.Checksum);
             }
         }
     }

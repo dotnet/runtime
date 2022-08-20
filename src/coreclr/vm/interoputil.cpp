@@ -51,7 +51,7 @@
 #define GET_ENUMERATOR_METHOD_NAME          W("GetEnumerator")
 
 #ifdef _DEBUG
-    VOID IntializeInteropLogging();
+    VOID InitializeInteropLogging();
 #endif
 
 struct ByrefArgumentInfo
@@ -3199,7 +3199,7 @@ void IUInvokeDispMethod(
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
-        // Retrieve the IDispath pointer from the wrapper.
+        // Retrieve the IDispatch pointer from the wrapper.
         pDisp = (IDispatch*)pRCW->GetIDispatch();
         if (!pDisp)
             COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
@@ -3691,7 +3691,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
     }
     CONTRACT_END;
 
-    // Work our way up the hierachy until we find the first COM import type.
+    // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
     {
         pClassMT = pClassMT->GetParentMethodTable();
@@ -3753,7 +3753,7 @@ void InitializeComInterop()
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
-    IntializeInteropLogging();
+    InitializeInteropLogging();
 #endif //_DEBUG
 }
 
@@ -3766,7 +3766,7 @@ void InitializeComInterop()
 static int g_TraceCount = 0;
 static IUnknown* g_pTraceIUnknown = NULL;
 
-VOID IntializeInteropLogging()
+VOID InitializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 

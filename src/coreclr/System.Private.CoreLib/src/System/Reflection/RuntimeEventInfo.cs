@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -53,8 +54,7 @@ namespace System.Reflection
             return
                 o is RuntimeEventInfo m &&
                 m.m_token == m_token &&
-                RuntimeTypeHandle.GetModule(m_declaringType).Equals(
-                    RuntimeTypeHandle.GetModule(m.m_declaringType));
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
 
         internal BindingFlags BindingFlags => m_bindingFlags;
@@ -68,6 +68,13 @@ namespace System.Reflection
 
             return m_addMethod.GetParametersNoCopy()[0].ParameterType.FormatTypeName() + " " + Name;
         }
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider

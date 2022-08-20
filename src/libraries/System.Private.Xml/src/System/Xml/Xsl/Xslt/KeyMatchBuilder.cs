@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.Xslt
             _depth++;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public override QilNode? EndBuild(QilNode? result)
         {
             _depth--;

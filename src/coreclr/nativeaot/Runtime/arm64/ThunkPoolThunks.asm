@@ -36,7 +36,7 @@ RO$name % 8
     MACRO
         JUMP_TO_COMMON $groupIndex, $index
         ;; start                                        : xip0 points to the current thunks first data cell in the data page
-        ;; set xip0 to begining of data page            : xip0 <- xip0 - (THUNK_DATASIZE * current thunk's index)
+        ;; set xip0 to beginning of data page            : xip0 <- xip0 - (THUNK_DATASIZE * current thunk's index)
         ;; fix offset to point to last QWROD in page    : xip1 <- [xip0 + PAGE_SIZE - POINTER_SIZE]
         ;; tailcall to the location pointed at by the last qword in the data page
         ldr      xip1, [xip0, #(PAGE_SIZE - POINTER_SIZE - ($groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * $index))]

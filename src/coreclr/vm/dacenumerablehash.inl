@@ -518,7 +518,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
         if (m_pEntry)
             return VALUE_FROM_VOLATILE_ENTRY(dac_cast<PTR_VolatileEntry>(m_pEntry));
 
-        // Othwerwise we found the end of a bucket chain. Increment the current bucket and, if there are
+        // Otherwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
         m_dwBucket++;
     }

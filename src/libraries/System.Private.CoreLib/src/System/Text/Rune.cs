@@ -842,7 +842,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            if ((uint)index >= (uint)input!.Length)
+            if ((uint)index >= (uint)input.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
@@ -1019,7 +1019,7 @@ namespace System.Text
                     charsWritten = 1;
                     return true;
                 }
-                else if (1 < (uint)destination.Length)
+                else if (destination.Length > 1)
                 {
                     UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)value._value, out destination[0], out destination[1]);
                     charsWritten = 2;
@@ -1066,7 +1066,7 @@ namespace System.Text
                     return true;
                 }
 
-                if (1 < (uint)destination.Length)
+                if (destination.Length > 1)
                 {
                     if (value.Value <= 0x7FFu)
                     {
@@ -1077,7 +1077,7 @@ namespace System.Text
                         return true;
                     }
 
-                    if (2 < (uint)destination.Length)
+                    if (destination.Length > 2)
                     {
                         if (value.Value <= 0xFFFFu)
                         {
@@ -1089,7 +1089,7 @@ namespace System.Text
                             return true;
                         }
 
-                        if (3 < (uint)destination.Length)
+                        if (destination.Length > 3)
                         {
                             // Scalar 000uuuuu zzzzyyyy yyxxxxxx -> bytes [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
                             destination[0] = (byte)((value._value + (0b11110 << 21)) >> 18);

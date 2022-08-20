@@ -252,6 +252,9 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
+// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+#define STATUS_REDHAWK_THREAD_ABORT     0x43
+
 //
 // Rename fields of nested structs
 //
@@ -269,11 +272,10 @@ C_FUNC(\Name):
 #define PTFF_SAVE_R15            0x00000080
 #define PTFF_SAVE_ALL_PRESERVED  0x000000F1   // NOTE: RBP is not included in this set!
 #define PTFF_SAVE_RSP            0x00008000
-#define PTFF_SAVE_RAX            0x00000100   // RAX is saved if it contains a GC ref and we're in hijack handler
+#define PTFF_SAVE_RAX            0x00000100   // RAX is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
-#define PTFF_RAX_IS_GCREF        0x00010000   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
-#define PTFF_RAX_IS_BYREF        0x00020000   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
-#define PTFF_THREAD_ABORT        0x00040000   // indicates that ThreadAbortException should be thrown when returning from the transition
+#define PTFF_THREAD_ABORT        0x00100000   // indicates that ThreadAbortException should be thrown when returning from the transition
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0

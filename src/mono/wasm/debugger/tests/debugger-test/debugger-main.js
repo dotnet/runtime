@@ -6,22 +6,23 @@
 import createDotnetRuntime from './dotnet.js'
 
 try {
-    const { BINDING, INTERNAL } = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime(({ INTERNAL }) => ({
         configSrc: "./mono-config.json",
         onConfigLoaded: (config) => {
-            config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-            config.diagnostic_tracing = true;
+            config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
             /* For custom logging patch the functions below
-            config.environment_variables["MONO_LOG_LEVEL"] = "debug";
-            config.environment_variables["MONO_LOG_MASK"] = "all";
+            config.diagnosticTracing = true;
+            config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
+            config.environmentVariables["MONO_LOG_MASK"] = "all";
             INTERNAL.logging = {
-                trace: function (domain, log_level, message, isFatal, dataPtr) { },
-                debugger: function (level, message) { }
+                trace: (domain, log_level, message, isFatal, dataPtr) => console.log({ domain, log_level, message, isFatal, dataPtr }),
+                debugger: (level, message) => console.log({ level, message }),
             };
             */
         },
     }));
-    App.init({ BINDING, INTERNAL })
+    App.runtime = runtime;
+    await App.init();
 } catch (err) {
     console.log(`WASM ERROR ${err}`);
 }

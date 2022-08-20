@@ -1,0 +1,41 @@
+﻿<Project>
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>4aaf81e6-6cdc-44fa-adfd-d7b47b9c998f</SharedGUID>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Compile>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeKdcServer.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeKdcServer.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeKerberosPrincipal.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeKerberosPrincipal.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakePrincipalService.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakePrincipalService.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeRealmReferral.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeRealmReferral.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeRealmService.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeRealmService.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeRealmSettings.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeRealmSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FakeTrustedRealms.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\FakeTrustedRealms.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)KerberosExecutor.cs">
+      <Link>CommonTest\System\Net\Security\Kerberos\KerberosExecutor.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Kerberos.NET" Version="4.5.174" />
+  </ItemGroup>
+</Project>

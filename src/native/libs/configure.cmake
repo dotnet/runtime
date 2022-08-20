@@ -30,7 +30,7 @@ endif ()
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     # This variable can be set and used by the coreclr and installer builds.
     # Libraries doesn't need it, but not using it makes the build fail.  So
-    # just check and igore the variable.
+    # just check and ignore the variable.
 endif()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -120,18 +120,6 @@ check_c_source_compiles(
     }
     "
     HAVE_FLOCK64)
-
-check_c_source_compiles(
-    "
-    #include <sys/types.h>
-    #include <ifaddrs.h>
-    int main(void)
-    {
-        struct ifaddrs ia;
-        return 0;
-    }
-    "
-    HAVE_IFADDRS)
 
 check_symbol_exists(
     O_CLOEXEC

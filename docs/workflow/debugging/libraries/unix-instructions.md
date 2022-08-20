@@ -15,7 +15,7 @@ It is also possible to debug .NET crash dumps using lldb and SOS. In order to do
 - The crash dump file.
 - On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.'
 
-There are instructions for installing lldb and SOS [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos.md).
+There are instructions for installing lldb and SOS [here](https://github.com/dotnet/diagnostics/blob/main/documentation/sos.md).
 
 Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
@@ -29,7 +29,7 @@ lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" --core <core-
 
 lldb should start debugging successfully at this point. You should see stacktraces with resolved symbols for libcoreclr.so. At this point you can begin using SOS commands provided you've set it up as described in the links.
 
-Also see this [link](https://github.com/dotnet/diagnostics/blob/master/documentation/debugging-coredump.md) in the diagnostics repo.
+Also see this [link](https://github.com/dotnet/diagnostics/blob/main/documentation/debugging-coredump.md) in the diagnostics repo.
 
 ##### Example
 

@@ -192,45 +192,7 @@ namespace System.Formats.Tar
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
-
-            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-            buffer.Clear(); // Rented arrays aren't clean
-            try
-            {
-                switch (entry.Format)
-                {
-                    case TarEntryFormat.V7:
-                        entry._header.WriteAsV7(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        entry._header.WriteAsUstar(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Pax:
-                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                        {
-                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber);
-                            _nextGlobalExtendedAttributesEntryNumber++;
-                        }
-                        else
-                        {
-                            entry._header.WriteAsPax(_archiveStream, buffer);
-                        }
-                        break;
-                    case TarEntryFormat.Gnu:
-                        entry._header.WriteAsGnu(_archiveStream, buffer);
-                        break;
-                    default:
-                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
-
-            _wroteEntries = true;
+            WriteEntryInternal(entry);
         }
 
         /// <summary>
@@ -331,6 +293,48 @@ namespace System.Formats.Tar
             }
         }
 
+        // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
+        private void WriteEntryInternal(TarEntry entry)
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
+            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+            buffer.Clear(); // Rented arrays aren't clean
+            try
+            {
+                switch (entry.Format)
+                {
+                    case TarEntryFormat.V7:
+                        entry._header.WriteAsV7(_archiveStream, buffer);
+                        break;
+                    case TarEntryFormat.Ustar:
+                        entry._header.WriteAsUstar(_archiveStream, buffer);
+                        break;
+                    case TarEntryFormat.Pax:
+                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                        {
+                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
+                        }
+                        else
+                        {
+                            entry._header.WriteAsPax(_archiveStream, buffer);
+                        }
+                        break;
+                    case TarEntryFormat.Gnu:
+                        entry._header.WriteAsGnu(_archiveStream, buffer);
+                        break;
+                    default:
+                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
+                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+
+            _wroteEntries = true;
+        }
+
         // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
         private async Task WriteEntryAsyncInternal(TarEntry entry, CancellationToken cancellationToken)
         {
@@ -340,36 +344,17 @@ namespace System.Formats.Tar
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
 
-            switch (entry.Format)
+            Task task = entry.Format switch
             {
-                case TarEntryFormat.V7:
-                    entry._header._checksum = await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
+                TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
+                TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
+                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+            };
+            await task.ConfigureAwait(false);
 
-                case TarEntryFormat.Ustar:
-                    entry._header._checksum = await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
-
-                case TarEntryFormat.Pax:
-                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                    {
-                        entry._header._checksum = await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
-                        _nextGlobalExtendedAttributesEntryNumber++;
-                    }
-                    else
-                    {
-                        entry._header._checksum = await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case TarEntryFormat.Gnu:
-                    entry._header._checksum = await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
-
-                case TarEntryFormat.Unknown:
-                default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-            }
             _wroteEntries = true;
 
             ArrayPool<byte>.Shared.Return(rented);

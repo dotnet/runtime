@@ -244,7 +244,7 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 	mono_ptrset_init (&visited);
 	/*
 	 * Variables in exception handler register cannot be allocated to registers
-	 * so make them volatile. See bug #42136. This will not be neccessary when
+	 * so make them volatile. See bug #42136. This will not be necessary when
 	 * the back ends could guarantee that the variables will be in the
 	 * correct registers when a handler is called.
 	 * This includes try blocks too, since a variable in a try block might be

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -11,6 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -93,7 +95,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "The invalid certificate is rejected by Android and the .NET validation code isn't reached")]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {
             X509RevocationMode mode = checkRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
@@ -107,11 +109,6 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
-            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
-            {
-                throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
-            }
-
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
             // b) the server stapled the response
@@ -123,6 +120,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsDebian10))]
         public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
             // Offline will only work if
@@ -133,6 +131,62 @@ namespace System.Net.Security.Tests
             // this test runs.
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
         }
+
+#if WINDOWS
+        [ConditionalTheory]
+        [OuterLoop("Uses external servers")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(X509RevocationMode.Offline)]
+        [InlineData(X509RevocationMode.Online)]
+        [InlineData(X509RevocationMode.NoCheck)]
+        public Task ConnectWithRevocation_RemoteServer_StapledOcsp_FromWindows(X509RevocationMode revocationMode)
+        {
+            // This test could ideally end at the Client Hello, because it really only wants to
+            // ensure that the status_request extension was asserted.  Since the SslStream tests
+            // do not currently attempt to intercept and inspect the Client Hello, this test
+            // obtains the data indirectly: by talking to a host known to do OCSP Server Stapling
+            // with revocation in Offline mode.
+            // Unfortunately, this test will fail if the remote host stops doing server stapling,
+            // but it's the best we can do right now.
+
+            string serverName = Configuration.Http.Http2Host;
+
+            SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                RemoteCertificateValidationCallback = CertificateValidationCallback,
+                CertificateRevocationCheckMode = revocationMode,
+            };
+
+            return EndToEndHelper(clientOpts);
+
+            static bool CertificateValidationCallback(
+                object sender,
+                X509Certificate? certificate,
+                X509Chain? chain,
+                SslPolicyErrors sslPolicyErrors)
+            {
+                Assert.NotNull(certificate);
+
+                using (SafeCertContextHandle ctx = new SafeCertContextHandle(certificate.Handle, ownsHandle: false))
+                {
+                    bool hasStapledOcsp =
+                        ctx.CertHasProperty(Interop.Crypt32.CertContextPropId.CERT_OCSP_RESPONSE_PROP_ID);
+
+                    if (((SslStream)sender).CheckCertRevocationStatus)
+                    {
+                        Assert.True(hasStapledOcsp, "Cert has stapled OCSP data");
+                    }
+                    else
+                    {
+                        Assert.False(hasStapledOcsp, "Cert has stapled OCSP data");
+                    }
+                }
+
+                return true;
+            }
+        }
+#endif
 
         private async Task ConnectWithRevocation_WithCallback_Core(
             X509RevocationMode revocationMode,
@@ -153,11 +207,31 @@ namespace System.Net.Security.Tests
                 keySize: 2048,
                 extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
 
+            X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert();
+            X509Certificate2 rootCert = rootAuthority.CloneIssuerCert();
+
             SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
             {
                 TargetHost = serverName,
                 RemoteCertificateValidationCallback = CertificateValidationCallback,
-                CertificateRevocationCheckMode = revocationMode,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = revocationMode,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+
+                    // The offline test will not know about revocation for the intermediate,
+                    // so change the policy to only check the end certificate.
+                    RevocationFlag = X509RevocationFlag.EndCertificateOnly,
+
+                    ExtraStore =
+                    {
+                        issuerCert,
+                    },
+                    CustomTrustStore =
+                    {
+                        rootCert,
+                    },
+                },
             };
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -173,7 +247,8 @@ namespace System.Net.Security.Tests
             using (rootAuthority)
             using (intermediateAuthority)
             using (serverCert)
-            using (X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert())
+            using (issuerCert)
+            using (rootCert)
             await using (SslStream tlsClient = new SslStream(clientStream))
             await using (SslStream tlsServer = new SslStream(serverStream))
             {
@@ -242,20 +317,6 @@ namespace System.Net.Security.Tests
                 Assert.NotNull(certificate);
                 Assert.NotNull(chain);
 
-                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
-
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(chain.ChainElements[^1].Certificate);
-
-                // The offline test will not know about revocation for the intermediate,
-                // so change the policy to only check the end certificate.
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EndCertificateOnly;
-
-                if (!chain.Build((X509Certificate2)certificate))
-                {
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                }
-
                 if (chain.ChainPolicy.RevocationMode == X509RevocationMode.NoCheck)
                 {
                     X509ChainStatusFlags chainFlags = 0;
@@ -277,9 +338,8 @@ namespace System.Net.Security.Tests
                     // process, because there's no OCSP data.
                     Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, sslPolicyErrors);
 
-                    Assert.Contains(
-                        chain.ChainElements[0].ChainElementStatus,
-                        cs => cs.Status == X509ChainStatusFlags.RevocationStatusUnknown);
+                    X509ChainStatusFlags[] flags = chain.ChainElements[0].ChainElementStatus.Select(cs => cs.Status).ToArray();
+                    Assert.Contains(X509ChainStatusFlags.RevocationStatusUnknown, flags);
                 }
                 else
                 {
@@ -287,9 +347,8 @@ namespace System.Net.Security.Tests
                     // say the chain isn't happy.
                     Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, sslPolicyErrors);
 
-                    Assert.Contains(
-                        chain.ChainElements[0].ChainElementStatus,
-                        cs => cs.Status == X509ChainStatusFlags.Revoked);
+                    X509ChainStatusFlags[] flags = chain.ChainElements[0].ChainElementStatus.Select(cs => cs.Status).ToArray();
+                    Assert.Contains(X509ChainStatusFlags.Revoked, flags);
                 }
 
                 return true;
@@ -313,6 +372,27 @@ namespace System.Net.Security.Tests
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
                     await sslStream.AuthenticateAsClientAsync(host);
+                }
+            }
+        }
+
+        private async Task EndToEndHelper(SslClientAuthenticationOptions clientOptions)
+        {
+            using (var client = new TcpClient())
+            {
+                try
+                {
+                    await client.ConnectAsync(clientOptions.TargetHost, 443);
+                }
+                catch (Exception ex)
+                {
+                    // if we cannot connect skip the test instead of failing.
+                    throw new SkipTestException($"Unable to connect to '{clientOptions.TargetHost}': {ex.Message}");
+                }
+
+                using (SslStream sslStream = new SslStream(client.GetStream()))
+                {
+                    await sslStream.AuthenticateAsClientAsync(clientOptions);
                 }
             }
         }

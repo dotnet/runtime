@@ -14,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out bool value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = slot.BooleanValue;
         }
 
         /// <summary>
@@ -24,7 +29,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(bool value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.Boolean;
+            slot.BooleanValue = value;
         }
 
         /// <summary>
@@ -34,7 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out bool? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = slot.BooleanValue;
         }
 
         /// <summary>
@@ -44,7 +55,15 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(bool? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.Boolean;
+                slot.BooleanValue = value.Value;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
     }
 }

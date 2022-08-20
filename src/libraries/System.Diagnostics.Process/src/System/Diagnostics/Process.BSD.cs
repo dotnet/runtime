@@ -74,7 +74,7 @@ namespace System.Diagnostics
             }
             else
             {
-                // The contract specifies that this throws Win32Exception when it failes to retrieve the info
+                // The contract specifies that this throws Win32Exception when it fails to retrieve the info
                 throw new Win32Exception();
             }
         }

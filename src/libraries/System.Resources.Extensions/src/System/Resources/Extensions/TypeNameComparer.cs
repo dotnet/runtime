@@ -13,7 +13,7 @@ namespace System.Resources.Extensions
     /// When type names are missing, mscorlib is assumed.
     /// This comparer is not meant to capture all scenarios (eg: TypeForwards)
     /// but is meant to serve as a best effort, avoiding false positives, in the
-    /// absense of real type metadata.
+    /// absence of real type metadata.
     /// </summary>
     internal sealed class TypeNameComparer : IEqualityComparer<string>
     {

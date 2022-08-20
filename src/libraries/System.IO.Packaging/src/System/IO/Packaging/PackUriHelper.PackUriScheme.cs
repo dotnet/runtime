@@ -112,7 +112,7 @@ namespace System.IO.Packaging
                 packUri = new Uri(string.Concat(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped), fragment));
 
             // We want to ensure that internal content of resulting Uri has canonical form
-            // i.e.  result.OrignalString would appear as perfectly formatted Uri string
+            // i.e.  result.OriginalString would appear as perfectly formatted Uri string
             // so we roundtrip the result.
 
             return new Uri(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped));

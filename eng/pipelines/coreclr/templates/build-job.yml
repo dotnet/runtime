@@ -97,7 +97,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''
@@ -202,11 +202,11 @@ jobs:
 
     - ${{ if ne(parameters.archType, 'x64') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
-        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targetting x86)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
     - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm')) }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x86 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
-        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x86 targetting arm)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x86 targeting arm)
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |

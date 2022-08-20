@@ -10,8 +10,9 @@
 #include <eventpipe/ep-types-forward.h>
 #include <glib.h>
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
+#include <pthread.h>
 #include <emscripten.h>
 
 G_BEGIN_DECLS
@@ -27,12 +28,12 @@ typedef uint32_t MonoWasmEventPipeSessionID;
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id);
@@ -42,6 +43,18 @@ mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id);
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_diagnostic_server_create_thread (const char *websocket_url, pthread_t *out_thread_id);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_diagnostic_server_thread_attach_to_runtime (void);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_diagnostic_server_post_resume_runtime (void);
+
+EMSCRIPTEN_KEEPALIVE IpcStream *
+mono_wasm_diagnostic_server_create_stream (void);
 
 G_END_DECLS
 

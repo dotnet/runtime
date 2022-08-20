@@ -55,7 +55,6 @@ FCFuncStart(gDependentHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnumFuncs)
-    FCFuncElement("InternalGetUnderlyingType",  ReflectionEnum::InternalGetEnumUnderlyingType)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
     FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
 FCFuncEnd()
@@ -123,7 +122,6 @@ FCFuncStart(gTypedReferenceFuncs)
 FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
-    FCFuncElement("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
 FCFuncEnd()
 
@@ -172,7 +170,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
-    FCFuncElement("GetValueInternal", RuntimeTypeHandle::GetValueInternal)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
 FCFuncEnd()
 

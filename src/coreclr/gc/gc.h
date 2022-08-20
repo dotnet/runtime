@@ -95,7 +95,7 @@ enum gc_etw_segment_type
     gc_etw_segment_pinned_object_heap = 3
 };
 
-/* forward declerations */
+/* forward declarations */
 class CObjectHeader;
 class Object;
 
@@ -106,7 +106,7 @@ class IGCHeapInternal;
 
 enum gc_generation_num
 {
-    // small object heap includes generations [0-2], which are "generations" in the general sense. 
+    // small object heap includes generations [0-2], which are "generations" in the general sense.
     soh_gen0 = 0,
     soh_gen1 = 1,
     soh_gen2 = 2,
@@ -120,10 +120,10 @@ enum gc_generation_num
 
     uoh_start_generation = loh_generation,
 
-    // number of ephemeral generations 
+    // number of ephemeral generations
     ephemeral_generation_count = max_generation,
 
-    // number of all generations 
+    // number of all generations
     total_generation_count = poh_generation + 1
 };
 

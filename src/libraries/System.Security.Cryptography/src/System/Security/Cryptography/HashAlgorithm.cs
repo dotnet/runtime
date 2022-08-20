@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static HashAlgorithm? Create(string hashName) =>
-            (HashAlgorithm?)CryptoConfigForwarder.CreateFromName(hashName);
+            CryptoConfigForwarder.CreateFromName<HashAlgorithm>(hashName);
 
         public virtual int HashSize => HashSizeValue;
 

@@ -86,7 +86,7 @@ public static partial class MountHelper
 
         bool isWindows = OperatingSystem.IsWindows();
 #endif
-        Process symLinkProcess = new Process();
+        using Process symLinkProcess = new Process();
         if (isWindows)
         {
             symLinkProcess.StartInfo.FileName = "cmd";
@@ -170,7 +170,7 @@ public static partial class MountHelper
 
     private static bool RunProcess(ProcessStartInfo startInfo)
     {
-        var process = Process.Start(startInfo);
+        using Process process = Process.Start(startInfo);
         process.WaitForExit();
         return process.ExitCode == 0;
     }

@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (File.Exists(path))
             {
                 using (TextReader textReader = File.OpenText(path))
-                using (JsonTextReader reader = new JsonTextReader(textReader))
+                using (var reader = new JsonTextReader(textReader) { MaxDepth = null })
                 {
                     JObject root = (JObject)JToken.ReadFrom(reader);
                     JObject runtimeOptions = (JObject)root["runtimeOptions"];

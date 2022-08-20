@@ -33,7 +33,7 @@ namespace DebuggerTests
             //stop in the managed caught exception
             pause_location = await WaitForManagedException(pause_location);
 
-            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
+            AssertEqual("DebuggerTests.ExceptionTestsClass.TestCaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
 
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
@@ -47,7 +47,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
-            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
+            AssertEqual("DebuggerTests.ExceptionTestsClass.TestUncaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
             //stop in the uncaught exception
             CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
@@ -202,7 +202,7 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
         [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
-            "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "run",
+            "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "DebuggerTests.ExceptionTestsClass.TestUncaughtException.run",
             "DebuggerTests.CustomException", "not implemented uncaught")]
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
             string exception_type, string exception_message)
@@ -248,7 +248,7 @@ namespace DebuggerTests
             //stop in the managed caught exception
             pause_location = await WaitForManagedException(pause_location);
 
-            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
+            AssertEqual("DebuggerTests.ExceptionTestsClass.TestUncaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
             //stop in the uncaught exception
             CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
@@ -266,9 +266,9 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
-        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
-        public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
+        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76, "DebuggerTests.ExceptionTestsClassDefault")]
+        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28, "DebuggerTests.ExceptionTestsClass")]
+        public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number, string class_name_pause)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
@@ -310,7 +310,7 @@ namespace DebuggerTests
             //stop in the managed caught exception
             pause_location = await WaitForManagedException(pause_location);
 
-            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
+            AssertEqual($"{class_name_pause}.TestCaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
 
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
@@ -325,7 +325,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "_message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
-            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
+            AssertEqual($"{class_name_pause}.TestUncaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
             //stop in the uncaught exception
             CheckLocation(debugger_test_loc, line_number, 16, scripts, pause_location["callFrames"][0]["location"]);

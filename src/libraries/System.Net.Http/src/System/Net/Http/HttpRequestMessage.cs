@@ -168,6 +168,8 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
+        internal bool IsExtendedConnectRequest => Method == HttpMethod.Connect && _headers?.Protocol != null;
+
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)

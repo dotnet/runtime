@@ -162,7 +162,7 @@ namespace System.Security.AccessControl.Tests
                 {
                     if (dacl == null)
                     {
-                        //check the contructor created an empty Dacl with correct IsContainer and isDS info
+                        //check the constructor created an empty Dacl with correct IsContainer and isDS info
                         if (isContainer == commonSecurityDescriptor.DiscretionaryAcl.IsContainer &&
                             isDS == commonSecurityDescriptor.DiscretionaryAcl.IsDS &&
                             commonSecurityDescriptor.DiscretionaryAcl.Count == 1 &&

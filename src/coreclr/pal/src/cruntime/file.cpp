@@ -50,7 +50,7 @@ Function:
 
     CRTInitStdStreams.
 
-    Initilizes the standard streams.
+    Initializes the standard streams.
     Returns TRUE on success, FALSE otherwise.
 --*/
 BOOL CRTInitStdStreams()

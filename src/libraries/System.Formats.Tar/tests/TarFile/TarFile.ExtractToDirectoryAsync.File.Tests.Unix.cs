@@ -10,7 +10,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarTestsBase
     {
-        [Fact]
+        [ConditionalFact(nameof(IsUnixButNotSuperUser))]
         public async Task Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess_Async()
         {
             using (TempDirectory root = new TempDirectory())

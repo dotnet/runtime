@@ -1871,7 +1871,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         pNewRCW->InitNoCheck(NewWrapperObj);
 
         // Insert the wrapper into the hashtable. The wrapper will be a duplicate however we
-        // we fix the identity to ensure there is no collison in the hash table & it is required
+        // we fix the identity to ensure there is no collision in the hash table & it is required
         // since the hashtable is used on appdomain unload to determine what RCW's need to released.
         {
             RCWCache::LockHolder lh(pCache);
@@ -2293,7 +2293,7 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 }
 
 //---------------------------------------------------------------------
-// Helper function called from ReleaseAllInterfacesCallBack do do the
+// Helper function called from ReleaseAllInterfacesCallBack to do the
 // actual releases.
 void RCW::ReleaseAllInterfaces()
 {

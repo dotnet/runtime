@@ -129,7 +129,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal static void CompileXmlOrCopyCfg(
             Stream inputStream,
             Stream outputStream,
-            Uri orginalUri)
+            Uri originalUri)
         {
             // Wrap stream in case Seek is not supported:
             SeekableReadStream seekableInputStream = new(inputStream);
@@ -149,7 +149,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             else
             {
                 // Else compile the Xml:
-                SrgsCompiler.CompileStream(new XmlReader[] { new XmlTextReader(seekableInputStream) }, null, outputStream, true, orginalUri, null, null);
+                SrgsCompiler.CompileStream(new XmlReader[] { new XmlTextReader(seekableInputStream) }, null, outputStream, true, originalUri, null, null);
             }
         }
 

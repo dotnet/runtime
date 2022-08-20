@@ -269,7 +269,7 @@ private:
 #if FEATURE_MULTIREG_RET
 
                 // Is this a type that is returned in multiple registers
-                // or a via a primitve type that is larger than the struct type?
+                // or a via a primitive type that is larger than the struct type?
                 // if so we need to force into into a form we accept.
                 // i.e. LclVar = call()
                 case Compiler::SPK_ByValue:
@@ -644,7 +644,7 @@ private:
 //   * the return value tree from the inlinee, if the inline succeeded
 //
 //   This replacement happens in preorder; on the postorder side of the same
-//   tree walk, we look for opportunties to devirtualize or optimize now that
+//   tree walk, we look for opportunities to devirtualize or optimize now that
 //   we know the context for the newly supplied return value tree.
 //
 //   Inline arguments may be directly substituted into the body of the inlinee
@@ -652,6 +652,11 @@ private:
 //
 PhaseStatus Compiler::fgInline()
 {
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+#endif // DEBUG
+
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -1529,7 +1534,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
     // for the "this" pointer.
     // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
-    // However the assetionProp logic will remove any unecessary null checks that we may have added
+    // However the assetionProp logic will remove any unnecessary null checks that we may have added
     //
     GenTree* nullcheck = nullptr;
 
@@ -1633,21 +1638,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             }
             else
             {
-                /* The argument is either not used or a const or lcl var */
-
+                // The argument is either not used or a const or lcl var
                 noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
-
-                /* Make sure we didnt change argNode's along the way, or else
-                   subsequent uses of the arg would have worked with the bashed value */
-                if (argInfo.argIsInvariant)
-                {
-                    assert(argNode->OperIsConst() || argNode->gtOper == GT_ADDR);
-                }
                 noway_assert((argInfo.argIsLclVar == 0) ==
                              (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
 
-                /* If the argument has side effects, append it */
-
+                // If the argument has side effects, append it
                 if (argInfo.argHasSideEff)
                 {
                     noway_assert(argInfo.argIsUsed == false);

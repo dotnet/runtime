@@ -56,6 +56,8 @@ namespace System.Security.Cryptography.X509Certificates
                 return handle;
             }
 
+            handle.Dispose();
+
             using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
@@ -72,6 +74,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     return handle;
                 }
+
+                handle.Dispose();
             }
 
             if (OpenSslX509ChainEventSource.Log.IsEnabled())

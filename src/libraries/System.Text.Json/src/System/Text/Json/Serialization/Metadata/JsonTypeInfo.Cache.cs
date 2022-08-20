@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Reflection;
@@ -54,26 +53,35 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter converter)
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType)
         {
-            Debug.Assert(propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
+            JsonPropertyInfo jsonPropertyInfo;
 
-            if (converter.TypeToConvert == propertyType)
+            if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
             {
-                // For the vast majority of use cases, the converter type matches the property type.
-                // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
-                return converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+                // If a JsonTypeInfo has already been cached for the property type,
+                // avoid reflection-based initialization by delegating construction
+                // of JsonPropertyInfo<T> construction to the property type metadata.
+                jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+            }
+            else
+            {
+                // Metadata for `propertyType` has not been registered yet.
+                // Use reflection to instantiate the correct JsonPropertyInfo<T>
+                Type propertyInfoType = typeof(JsonPropertyInfo<>).MakeGenericType(propertyType);
+                jsonPropertyInfo = (JsonPropertyInfo)propertyInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(Type), typeof(JsonTypeInfo), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { Type, this, Options })!;
             }
 
-            s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-            MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
-            return (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
+            Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);
+            return jsonPropertyInfo;
         }
 
-        private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
-            => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
-
-        private static MethodInfo? s_createJsonPropertyInfo;
+        /// <summary>
+        /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
+        /// </summary>
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options);
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,7 +92,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             PropertyRef propertyRef;
 
-            ValidateCanBeUsedForDeserialization();
+            ValidateCanBeUsedForMetadataSerialization();
             ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.

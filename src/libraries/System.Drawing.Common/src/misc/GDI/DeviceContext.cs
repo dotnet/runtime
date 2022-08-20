@@ -180,7 +180,7 @@ namespace System.Drawing.Internal
                 default:
                     return;
                     // do nothing, the hdc is not owned by this object.
-                    // in this case it is ok if disposed throught finalization.
+                    // in this case it is ok if disposed through finalization.
             }
 
             DbgUtil.AssertFinalization(this, disposing);

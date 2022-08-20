@@ -36,7 +36,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_t
                         FILE_SHARE_READ,
                         NULL,
                         CREATE_ALWAYS,
-                        FILE_ATTRIBUTE_NORMAL, 
+                        FILE_ATTRIBUTE_NORMAL,
                         NULL);
 
     if (hFile == INVALID_HANDLE_VALUE)
@@ -68,7 +68,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_t
         Fail("");
     }
 
-    /* Attempt to create a unnamed file-mapping object to a zero lenght
+    /* Attempt to create a unnamed file-mapping object to a zero length
      * file.
      */
     hFileMapping = CreateFileMapping(
@@ -102,7 +102,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_t
         Fail("");
     }
 
-    /* Attempt to create a file mapping that is larger than 
+    /* Attempt to create a file mapping that is larger than
      * the file.
      */
     hFileMapping = CreateFileMapping(
@@ -143,7 +143,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_t
     }
 
     /* Terminate the PAL.
-     */ 
+     */
     PAL_Terminate();
     return PASS;
 }

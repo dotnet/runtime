@@ -10,7 +10,7 @@
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
   <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
 
   <Target Name="BuildAllFrameworkLibraries"

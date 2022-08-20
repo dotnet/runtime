@@ -704,7 +704,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         //   may cause many methods that are currently fully interruptible to have to be partially interruptible and record
         //   extra GC info instead. This would be nontrivial and there would be tradeoffs.
         // - For any method that may have an entry point slot that would be backpatched with the call counting stub's entry
-        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and fowards to
+        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and forwards to
         //   the larger call counting stub. This is a simple solution for now and seems to have negligible impact.
         // - Reusing FuncPtrStubs was considered. FuncPtrStubs are currently not used as a code entry point for a virtual or
         //   interface method and may be bypassed. For example, a call may call through the vtable slot, or a devirtualized call

@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial interface IHostEnvironment
     {
-        string? ApplicationName { get; set; }
+        string ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Hosting
     [System.ObsoleteAttribute("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
     public partial interface IHostingEnvironment
     {
-        string? ApplicationName { get; set; }
+        string ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }

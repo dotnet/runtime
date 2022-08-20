@@ -1015,6 +1015,17 @@ CorInfoTypeWithMod WrapICorJitInfo::getArgType(
     return temp;
 }
 
+int WrapICorJitInfo::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    API_ENTER(getExactClasses);
+    int temp = wrapHnd->getExactClasses(baseType, maxExactClasses, exactClsRet);
+    API_LEAVE(getExactClasses);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getArgClass(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args)

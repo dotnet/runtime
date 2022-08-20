@@ -30,7 +30,7 @@ namespace System.Net
 
         #region HtmlEncode / HtmlDecode methods
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -175,7 +175,7 @@ namespace System.Net
             }
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlDecode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -387,7 +387,7 @@ namespace System.Net
 
         #region UrlEncode public methods
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static string? UrlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -439,7 +439,7 @@ namespace System.Net
             return Encoding.UTF8.GetString(newBytes);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static byte[]? UrlEncodeToBytes(byte[]? value, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(value, offset, count))
@@ -479,7 +479,7 @@ namespace System.Net
 
         #region UrlDecode implementation
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         private static string? UrlDecodeInternal(string? value, Encoding encoding)
         {
             if (string.IsNullOrEmpty(value))
@@ -542,7 +542,7 @@ namespace System.Net
             return helper.GetString();
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         private static byte[]? UrlDecodeInternal(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -590,13 +590,13 @@ namespace System.Net
         #region UrlDecode public methods
 
 
-        [return: NotNullIfNotNull("encodedValue")]
+        [return: NotNullIfNotNull(nameof(encodedValue))]
         public static string? UrlDecode(string? encodedValue)
         {
             return UrlDecodeInternal(encodedValue, Encoding.UTF8);
         }
 
-        [return: NotNullIfNotNull("encodedValue")]
+        [return: NotNullIfNotNull(nameof(encodedValue))]
         public static byte[]? UrlDecodeToBytes(byte[]? encodedValue, int offset, int count)
         {
             return UrlDecodeInternal(encodedValue, offset, count);

@@ -28,7 +28,6 @@
     <Compile Include="System\Security\Authentication\InvalidCredentialExceptionTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <Compile Include="MD4Tests.cs" />
-    <Compile Include="NTAuthenticationTests.cs" />
     <Compile Include="NegotiateAuthenticationTests.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
@@ -51,6 +50,8 @@
              Link="Common\System\Net\Security\MD4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
              Link="Common\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
+             Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
@@ -77,8 +78,6 @@
              Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
-    <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs"
-             Link="ProductionCode\Common\System\Net\TlsAlertMessage.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
@@ -131,6 +130,8 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"

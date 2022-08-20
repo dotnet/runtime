@@ -74,8 +74,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Unsafe.As<QueriedMemberList<M>>(result);
             }
 
-            public EnumInfo EnumInfo => _lazyEnumInfo ??= ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(_type.TypeHandle);
-
             private static object[] CreatePerNameQueryCaches(RuntimeTypeInfo type, bool ignoreCase)
             {
                 object[] perNameCaches = new object[MemberTypeIndex.Count];
@@ -102,7 +100,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
             private readonly RuntimeTypeInfo _type;
 
-            private volatile EnumInfo _lazyEnumInfo;
+            // Generic cache for scenario specific data. For example, it is used to cache Enum names and values.
+            internal object? _genericCache;
 
             //
             // Each PerName cache persists the results of a Type.Get(name, bindingFlags) for a particular MemberInfoType "M".

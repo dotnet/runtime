@@ -72,7 +72,7 @@ Some packages may wish to include a companion analyzer or source-generator with 
 
 To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer and set the `Pack` metadata to true. If you just want to include the analyzer but not consume it, set the `ReferenceAnalyzer` metadata to false.
 ```xml
-  <ItemGroup> 
+  <ItemGroup>
     <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" Pack="true" ReferenceAnalyzer="false" />
   </ItemGroup>
 ```
@@ -86,7 +86,7 @@ In the analyzer project make sure to do the following. Ensure it only targets `n
   </PropertyGroup>
 ```
 
-In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overriden by setting the following property in the project that produces the package
+In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overridden by setting the following property in the project that produces the package
 ```xml
   <PropertyGroup>
     <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName>
@@ -102,7 +102,7 @@ The infrastructure generates a targets file that throws a user readable Error wh
 buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
 buildTransitive\net462\_._
 buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
-buildTransitive\net6.0\_._ 
+buildTransitive\net6.0\_._
 ```
 
 Whenever a library wants to author their own set of props and targets files (i.e. for source generators) and the above mentioned infrastructure kicks in (because the library targets .NETStandard), such files **must be included not only for the .NETStandard target framework but also for the specific minimum supported target frameworks**. The _.NETStandard Compatibility packaging infrastructure_ then omits the otherwise necessary placeholder files. Example:

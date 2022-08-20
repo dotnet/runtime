@@ -69,10 +69,10 @@
   <PropertyGroup Condition="'$(PERFLAB_Framework)' != 'net461'">
     <WorkItemCommand>$(WorkItemCommand) $(CliArguments)</WorkItemCommand>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <WorkItemTimeout>2:30</WorkItemTimeout>
-    <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
+    <WorkItemTimeout Condition="'$(OnlySanityCheck)' == 'true'">1:30</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
@@ -86,6 +86,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Partition Include="$(BuildConfig).Partition0" Index="0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OnlySanityCheck)' != 'true'">
     <Partition Include="$(BuildConfig).Partition1" Index="1" />
     <Partition Include="$(BuildConfig).Partition2" Index="2" />
     <Partition Include="$(BuildConfig).Partition3" Index="3" />
@@ -128,7 +131,13 @@
     <HelixWorkItem Include="@(Partition)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
-      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
+      <Command Condition="'$(AGENT_OS)' != 'Windows_NT'">
+        if [ "x$PERF_PREREQS_INSTALL_FAILED" = "x1" ]; then
+          echo "\n\n** Error: Failed to install prerequisites **\n\n"; (exit 1);
+        else
+          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)";
+        fi</Command>
+      <Command Condition="'$(AGENT_OS)' == 'Windows_NT'">$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
       <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
@@ -138,7 +147,13 @@
     <HelixWorkItem Include="$(BuildConfig).WorkItem">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
-      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
+      <Command Condition="'$(AGENT_OS)' != 'Windows_NT'">
+        if [ "x$PERF_PREREQS_INSTALL_FAILED" = "x1" ]; then
+          echo "\n\n** Error: Failed to install prerequisites **\n\n"; (exit 1);
+        else
+          $(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)";
+        fi</Command>
+      <Command Condition="'$(AGENT_OS)' == 'Windows_NT'">$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
       <Timeout>4:00</Timeout>
     </HelixWorkItem>

@@ -1139,7 +1139,7 @@ dotnet_diagnostic.SA1314.severity = none
 # SA1316: Tuple element names should use correct casing
 dotnet_diagnostic.SA1316.severity = none
 
-# SA1400: Member should declare an access modifer
+# SA1400: Member should declare an access modifier
 dotnet_diagnostic.SA1400.severity = warning
 
 # SA1401: Fields should be private

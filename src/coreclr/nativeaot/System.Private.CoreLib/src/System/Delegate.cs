@@ -52,9 +52,8 @@ namespace System
         private protected const int ClosedStaticThunk = 1;
         private protected const int OpenStaticThunk = 2;
         private protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
-        private protected const int DelegateInvokeThunk = 4;
-        private protected const int OpenInstanceThunk = 5;        // This may not exist
-        private protected const int ObjectArrayThunk = 6;         // This may not exist
+        private protected const int OpenInstanceThunk = 4;        // This may not exist
+        private protected const int ObjectArrayThunk = 5;         // This may not exist
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
@@ -266,31 +265,21 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected virtual object DynamicInvokeImpl(object?[]? args)
+        protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             if (IsDynamicDelegate())
             {
                 // DynamicDelegate case
-                object result = ((Func<object?[]?, object>)m_helperObject)(args);
+                object? result = ((Func<object?[]?, object?>)m_helperObject)(args);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
             else
             {
-                IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
+                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
 
-                IntPtr genericDictionary = IntPtr.Zero;
-                if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* descriptor = FunctionPointerOps.ConvertToGenericDescriptor(invokeThunk);
-                        genericDictionary = descriptor->InstantiationArgument;
-                        invokeThunk = descriptor->MethodFunctionPointer;
-                    }
-                }
-
-                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true);
+                object? result = dynamicInvokeInfo.Invoke(m_firstParameter, m_functionPointer,
+                    args, binderBundle: null, wrapInTargetInvocationException: true);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }

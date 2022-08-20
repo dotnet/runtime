@@ -85,15 +85,15 @@
         <Text Name="SuccessUninstallHeader" X="160" Y="80" Width="-11" Height="30" FontId="2" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessUninstallHeader)</Text>
         <Button Name="LaunchButton" X="-131" Y="-11" Width="95" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.SuccessLaunchButton)</Button>
         <Text Name="SuccessRestartText" X="-11" Y="-51" Width="400" Height="34" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessRestartText)</Text>
-        
+
          <Text Name="SuccessInstallLocation" X="160" Y="130" Width="400" Height="20" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessInstallLocation)</Text>
          <Text Name="SuccessInstallProductName" X="185" Y="155" Width="400" Height="30" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessInstallProductName)</Text>
          <Text Name="SuccessInstallResourcesHeader" X="160" Y="195" Width="400" Height="30" FontId="2" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.ResourcesHeader)</Text>
          <Hypertext Name="DocumentationLink" X="185" Y="238" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.DocumentationLink)</Hypertext>
-         <Hypertext Name="RelaseNotesLink" X="185" Y="259" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.RelaseNotesLink)</Hypertext>
+         <Hypertext Name="ReleaseNotesLink" X="185" Y="259" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.ReleaseNotesLink)</Hypertext>
          <Hypertext Name="TutorialLink" X="185" Y="280" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.TutorialLink)</Hypertext>
          <Hypertext Name="TelemetryLink" X="185" Y="301" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.TelemetryLink)</Hypertext>
-        
+
         <Button Name="SuccessRestartButton" X="-131" Y="-11" Width="95" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.SuccessRestartButton)</Button>
         <Button Name="SuccessCancelButton" X="-31" Y="-11" Width="95" Height="23" TabStop="yes" FontId="0">#(loc.SuccessCloseButton)</Button>
     </Page>

@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.RevocationFlag,
                     chainPolicy._customTrustStore,
                     chainPolicy.TrustMode,
-                    chainPolicy.VerificationTime,
+                    chainPolicy.VerificationTimeIgnored ? DateTime.Now : chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout,
                     chainPolicy.DisableCertificateDownloads);
 

@@ -4,6 +4,7 @@
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -20,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                throw new NotImplementedException();
+                return JavaScriptImports.GetGlobalThis();
             }
         }
 
@@ -31,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                throw new NotImplementedException();
+                return JavaScriptImports.GetDotnetInstance();
             }
         }
 
@@ -43,9 +44,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="moduleUrl">The location of the module file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A proxy for the JavaScript object that contains the module's exports.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
     }
 }
