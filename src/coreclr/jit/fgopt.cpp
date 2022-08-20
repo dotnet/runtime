@@ -5921,6 +5921,12 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
     constexpr bool doTailDup   = false;
     constexpr bool isPhase     = true;
     const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+
+    // Dominator and reachability sets are no longer valid.
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
+
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

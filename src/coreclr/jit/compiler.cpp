@@ -4795,6 +4795,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
+                // Note: this invalidates loops, dominators and reachability
+                //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
                 // Recompute the edge weight if we have modified the flow graph
@@ -4811,11 +4813,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
-
-#ifdef DEBUG
-    // Run this before we potentially tear down dominators.
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-#endif
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
