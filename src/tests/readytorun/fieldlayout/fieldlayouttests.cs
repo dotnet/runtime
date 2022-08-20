@@ -193,6 +193,8 @@ class SequentialTest
     static Sequential.StructStructByte_Struct5BytesAuto _fld11;
     static Sequential.StructStructByte_Struct8BytesAuto _fld12;
     static Sequential.StructStructByte_Struct9BytesAuto _fld13;
+    static Sequential.StructStructByte_Int128StructAuto _fld14;
+    static Sequential.StructStructByte_UInt128StructAuto _fld15;
 
     public static void Test()
     {
@@ -232,6 +234,8 @@ class SequentialTest
         _fld11.fld2 = default(Auto.Struct5Bytes);
         _fld12.fld2 = default(Auto.Struct8Bytes);
         _fld13.fld2 = default(Auto.Struct9Bytes);
+        _fld14.fld2 = default(Auto.Int128Struct);
+        _fld15.fld2 = default(Auto.UInt128Struct);
     }
 }
 

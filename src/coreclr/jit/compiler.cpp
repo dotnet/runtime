@@ -4359,37 +4359,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // PostImportPhase: cleanup inlinees
+    // Cleanup un-imported BBs, cleanup un-imported or
+    // partially imported try regions, add OSR step blocks.
     //
-    auto postImportPhase = [this]() {
-
-        // If this is a viable inline candidate
-        if (compIsForInlining() && !compDonotInline())
-        {
-            // Filter out unimported BBs in the inlinee
-            //
-            fgPostImportationCleanup();
-
-            // Update type of return spill temp if we have gathered
-            // better info when importing the inlinee, and the return
-            // spill temp is single def.
-            if (fgNeedReturnSpillTemp())
-            {
-                CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
-                if (retExprClassHnd != nullptr)
-                {
-                    LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
-
-                    if (returnSpillVarDsc->lvSingleDef)
-                    {
-                        lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
-                                       impInlineInfo->retExprClassHndIsExact);
-                    }
-                }
-            }
-        }
-    };
-    DoPhase(this, PHASE_POST_IMPORT, postImportPhase);
+    DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
@@ -4420,101 +4393,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-#if !FEATURE_EH
-    // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
-    // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
-    fgRemoveEH();
-#endif // !FEATURE_EH
-
-    // We could allow ESP frames. Just need to reserve space for
-    // pushing EBP if the method becomes an EBP-frame after an edit.
-    // Note that requiring a EBP Frame disallows double alignment.  Thus if we change this
-    // we either have to disallow double alignment for E&C some other way or handle it in EETwain.
-
-    if (opts.compDbgEnC)
-    {
-        codeGen->setFramePointerRequired(true);
-
-        // We don't care about localloc right now. If we do support it,
-        // EECodeManager::FixContextForEnC() needs to handle it smartly
-        // in case the localloc was actually executed.
-        //
-        // compLocallocUsed            = true;
-    }
-
-    // Start phases that are broadly called morphing, and includes
-    // global morph, as well as other phases that massage the trees so
-    // that we can generate code out of them.
+    // Prepare for the morph phases
     //
-    auto morphInitPhase = [this]() {
-
-        // Initialize the BlockSet epoch
-        NewBasicBlockEpoch();
-
-        fgOutgoingArgTemps = nullptr;
-
-        // Insert call to class constructor as the first basic block if
-        // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
-                                        impTokenLookupContextHandle /* context */) &
-            CORINFO_INITCLASS_USE_HELPER)
-        {
-            fgEnsureFirstBBisScratch();
-            fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
-        }
-
-#ifdef DEBUG
-        if (opts.compGcChecks)
-        {
-            for (unsigned i = 0; i < info.compArgsCount; i++)
-            {
-                if (lvaGetDesc(i)->TypeGet() == TYP_REF)
-                {
-                    // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree* op = gtNewLclvNode(i, TYP_REF);
-                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
-
-                    fgEnsureFirstBBisScratch();
-                    fgNewStmtAtEnd(fgFirstBB, op);
-
-                    if (verbose)
-                    {
-                        printf("\ncompGcChecks tree:\n");
-                        gtDispTree(op);
-                    }
-                }
-            }
-        }
-#endif // DEBUG
-
-#if defined(DEBUG) && defined(TARGET_XARCH)
-        if (opts.compStackCheckOnRet)
-        {
-            lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
-            lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
-            lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
-        }
-#endif // defined(DEBUG) && defined(TARGET_XARCH)
-
-#if defined(DEBUG) && defined(TARGET_X86)
-        if (opts.compStackCheckOnCall)
-        {
-            lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-            lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
-        }
-#endif // defined(DEBUG) && defined(TARGET_X86)
-
-        // Update flow graph after importation.
-        // Removes un-imported blocks, trims EH, and ensures correct OSR entry flow.
-        //
-        fgPostImportationCleanup();
-    };
-    DoPhase(this, PHASE_MORPH_INIT, morphInitPhase);
-
-#ifdef DEBUG
-    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
-    fgDebugCheckBBlist(false, false);
-#endif // DEBUG
+    DoPhase(this, PHASE_MORPH_INIT, &Compiler::fgMorphInit);
 
     // Inline callee methods into this root method
     //
@@ -4648,24 +4529,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Run an early flow graph simplification pass
         //
-        auto earlyUpdateFlowGraphPhase = [this]() {
-            constexpr bool doTailDup = false;
-            fgUpdateFlowGraph(doTailDup);
-        };
-        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
     }
 
     // Promote struct locals
     //
-    auto promoteStructsPhase = [this]() {
+    DoPhase(this, PHASE_PROMOTE_STRUCTS, &Compiler::fgPromoteStructs);
 
-        // For x64 and ARM64 we need to mark irregular parameters
-        lvaRefCountState = RCS_EARLY;
-        fgResetImplicitByRefRefCount();
-
-        fgPromoteStructs();
-    };
-    DoPhase(this, PHASE_PROMOTE_STRUCTS, promoteStructsPhase);
+    // Enable early ref counting of locals
+    //
+    lvaRefCountState = RCS_EARLY;
 
     // Figure out what locals are address-taken.
     //
@@ -4727,29 +4600,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // GS security checks for unsafe buffers
     //
-    auto gsPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        if (getNeedsGSSecurityCookie())
-        {
-            gsGSChecksInitCookie();
-
-            if (compGSReorderStackLayout)
-            {
-                gsCopyShadowParams();
-            }
-
-            // If we needed to create any new BasicBlocks then renumber the blocks
-            if (fgBBcount > prevBBCount)
-            {
-                fgRenumberBlocks();
-            }
-        }
-        else
-        {
-            JITDUMP("No GS security needed\n");
-        }
-    };
-    DoPhase(this, PHASE_GS_COOKIE, gsPhase);
+    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
     // Compute the block and edge weights
     //
@@ -4947,11 +4798,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
-                auto optUpdateFlowGraphPhase = [this]() {
-                    constexpr bool doTailDup = false;
-                    fgUpdateFlowGraph(doTailDup);
-                };
-                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
+                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
                 // Recompute the edge weight if we have modified the flow graph
                 //
