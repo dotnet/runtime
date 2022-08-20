@@ -780,8 +780,8 @@ namespace System.Formats.Tar
             fileName = string.IsNullOrEmpty(fileName) ? "." : fileName;
 
             return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?
-                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}" :
-                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}";
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}" :
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}";
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.
