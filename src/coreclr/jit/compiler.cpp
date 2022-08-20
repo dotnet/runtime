@@ -5106,9 +5106,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
 
-    if (JitConfig.DumpJittedMethods() && !compIsForInlining())
+    if (JitConfig.JitDisasmSummary() && !compIsForInlining())
     {
-#ifdef DEBUG
         const int BUFSIZE            = 20;
         char      osrBuffer[BUFSIZE] = {0};
         if (opts.IsOSR())
@@ -5117,13 +5116,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
         }
 
-        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x %s]\n", methodsCompiled,
-               info.compFullName, compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize,
-               info.compMethodHash(), compGetStressMessage());
+#ifdef DEBUG
+        const char* fullName = info.compFullName;
+        unsigned    hash     = info.compMethodHash();
 #else
-        printf("%4d: JIT compiled %s [%s, IL size=%u, code size=%u]\n", methodsCompiled,
-               eeGetMethodFullName(info.compMethodHnd), compGetTieringName(), info.compILCodeSize, *methodCodeSize);
+        const char* fullName  = eeGetMethodFullName(info.compMethodHnd);
+        unsigned    hash      = 0;
 #endif
+
+        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x %s]\n", methodsCompiled, fullName,
+               compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
