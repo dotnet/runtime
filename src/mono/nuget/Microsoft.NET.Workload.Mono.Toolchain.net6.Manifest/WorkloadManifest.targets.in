@@ -15,6 +15,9 @@
         - UsingBrowserRuntimeWorkload
         - UsingBlazorAOTWorkloadManifest
     -->
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
+        <WasmNativeWorkload Condition="'$(WasmNativeWorkload)' != 'true'">false</WasmNativeWorkload>
+    </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
