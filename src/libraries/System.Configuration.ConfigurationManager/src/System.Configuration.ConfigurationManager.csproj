@@ -7,7 +7,7 @@
     <IsTrimmable>false</IsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides types that support using XML configuration files (app.config). This package is mostly useful to assist in porting of the existing .NET Framework code that depends on XML configuration. For a modern configuration API, see Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageDescription>Provides types that support using XML configuration files (app.config). Only use this package when migrating the existing .NET Framework code that already uses XML configuration. When writing a new code, use Microsoft.Extensions.Configuration instead.</PackageDescription>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
