@@ -5960,6 +5960,7 @@ private:
 public:
     void optInit();
 
+    PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
     GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);

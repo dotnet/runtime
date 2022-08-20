@@ -4786,14 +4786,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doRangeAnalysis)
             {
-                auto rangePhase = [this]() {
-                    RangeCheck rc(this);
-                    rc.OptimizeRangeChecks();
-                };
-
                 // Bounds check elimination via range analysis
                 //
-                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
+                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
             if (fgModified)
