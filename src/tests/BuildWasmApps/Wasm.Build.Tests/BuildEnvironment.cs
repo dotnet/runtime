@@ -99,6 +99,7 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
+
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different
             // dotnet
@@ -111,6 +112,12 @@ namespace Wasm.Build.Tests
 
             // helps with debugging
             EnvVars["WasmNativeStrip"] = "false";
+
+            // Works around an issue in msbuild due to which
+            // second, and subsequent builds fail without any details
+            // in the logs
+            EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
+            DefaultBuildArgs += " /nr:false";
 
             if (OperatingSystem.IsWindows())
             {
