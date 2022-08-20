@@ -10223,6 +10223,13 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
         }
     }
 
+    // Unmark any preheader
+    //
+    if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
+    {
+        loop.lpHead->bbFlags &= ~BBF_LOOP_PREHEADER;
+    }
+
     loop.lpFlags |= LPFLG_REMOVED;
 
 #ifdef DEBUG

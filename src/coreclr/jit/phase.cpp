@@ -219,21 +219,25 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_VALUE_NUMBER,
         PHASE_HOIST_LOOP_CODE,
         PHASE_VN_COPY_PROP,
-        // PHASE_OPTIMIZE_BRANCHES,
-        // cse
-        // assertion prop
-        // range check
+        PHASE_OPTIMIZE_BRANCHES,
+        // PHASE_OPTIMIZE_VALNUM_CSES
+        // PHASE_ASSERTION_PROP_MAIN
+        // PHASE_OPTIMIZE_INDEX_CHECKS
         // PHASE_OPT_UPDATE_FLOW_GRAPH,
-        // edge weights 2
+        // PHASE_COMPUTE_EDGE_WEIGHTS2
         PHASE_INSERT_GC_POLLS,
         PHASE_OPTIMIZE_LAYOUT,
-        // first cold block
+        // PHASE_DETERMINE_FIRST_COLD_BLOCK
         PHASE_RATIONALIZE,
+        // PHASE_SIMPLE_LOWERING
         PHASE_LOWERING,
-        // lsra
+        // PHASE_LINEAR_SCAN
         PHASE_STACK_LEVEL_SETTER
-        // align loops
-        // codegen
+        // PHASE_ALIGN_LOOPS
+        // PHASE_GENERATE_CODE
+        // PHASE_EMIT_CODE
+        // PHASE_EMIT_GCEH
+        // PHASE_POST_EMIT
     };
 
     // clang-format on
