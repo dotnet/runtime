@@ -218,7 +218,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_EARLY_PROP,
         PHASE_VALUE_NUMBER,
         PHASE_HOIST_LOOP_CODE,
-        // copy prop
+        PHASE_VN_COPY_PROP,
         // PHASE_OPTIMIZE_BRANCHES,
         // cse
         // assertion prop
