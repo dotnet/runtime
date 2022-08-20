@@ -430,11 +430,14 @@ namespace System.Formats.Tar
                 _magic = GnuMagic;
                 _format = TarEntryFormat.Gnu;
             }
-            else if (_format == TarEntryFormat.V7 && magic.SequenceEqual(UstarMagicBytes))
+            else if (magic.SequenceEqual(UstarMagicBytes))
             {
-                // Important: Only change to ustar if we had not changed the format to pax already
                 _magic = UstarMagic;
-                _format = TarEntryFormat.Ustar;
+                if (_format == TarEntryFormat.V7)
+                {
+                    // Important: Only change to ustar if we had not changed the format to pax already
+                    _format = TarEntryFormat.Ustar;
+                }
             }
             else
             {
