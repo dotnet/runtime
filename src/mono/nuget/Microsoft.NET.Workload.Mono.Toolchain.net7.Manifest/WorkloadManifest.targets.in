@@ -126,7 +126,7 @@
     </Target>
 
     <!-- not checking TargetsNet7 here since this essentially checks for net5.0 -->
-    <Target Name="_ErrorDisabledWorkload" Condition="'$(_BrowserWorkloadDisabled7)' == 'true'" BeforeTargets="Build">
+    <Target Name="_ErrorDisabledWorkload" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
       <Error Condition="'$(RunAOTCompilation)' == 'true'"
              Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
 
