@@ -15,11 +15,6 @@ namespace System.Formats.Tar
     /// </summary>
     public static class TarFile
     {
-        // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
-        // to be greater than the length of typical entry names from the file system, even
-        // on non-Windows platforms. The capacity will be increased, if needed.
-        private const int DefaultCapacity = 260;
-
         /// <summary>
         /// Creates a tar stream that contains all the filesystem entries from the specified directory.
         /// </summary>
@@ -283,23 +278,14 @@ namespace System.Formats.Tar
                 DirectoryInfo di = new(sourceDirectoryName);
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
-                char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
-
-                try
+                if (includeBaseDirectory)
                 {
-                    if (includeBaseDirectory)
-                    {
-                        writer.WriteEntry(di.FullName, GetEntryNameForBaseDirectory(di.Name, ref entryNameBuffer));
-                    }
-
-                    foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
-                    {
-                        writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length, ref entryNameBuffer));
-                    }
+                    writer.WriteEntry(di.FullName, GetEntryNameForBaseDirectory(di.Name));
                 }
-                finally
+
+                foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                 {
-                    ArrayPool<char>.Shared.Return(entryNameBuffer);
+                    writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length));
                 }
             }
         }
@@ -339,23 +325,14 @@ namespace System.Formats.Tar
                 DirectoryInfo di = new(sourceDirectoryName);
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
-                char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
-
-                try
+                if (includeBaseDirectory)
                 {
-                    if (includeBaseDirectory)
-                    {
-                        await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name, ref entryNameBuffer), cancellationToken).ConfigureAwait(false);
-                    }
-
-                    foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
-                    {
-                        await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length, ref entryNameBuffer), cancellationToken).ConfigureAwait(false);
-                    }
+                    await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name), cancellationToken).ConfigureAwait(false);
                 }
-                finally
+
+                foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                 {
-                    ArrayPool<char>.Shared.Return(entryNameBuffer);
+                    await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -365,18 +342,18 @@ namespace System.Formats.Tar
             includeBaseDirectory && di.Parent != null ? di.Parent.FullName : di.FullName;
 
         // Constructs the entry name used for a filesystem entry when creating an archive.
-        private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength, ref char[] entryNameBuffer)
+        private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
         {
             int entryNameLength = file.FullName.Length - basePathLength;
             Debug.Assert(entryNameLength > 0);
 
-            bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
-            return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
+            bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
+            return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, appendPathSeparator: isDirectory);
         }
 
-        private static string GetEntryNameForBaseDirectory(string name, ref char[] entryNameBuffer)
+        private static string GetEntryNameForBaseDirectory(string name)
         {
-            return ArchivingUtils.EntryFromPath(name, 0, name.Length, ref entryNameBuffer, appendPathSeparator: true);
+            return ArchivingUtils.EntryFromPath(name, 0, name.Length, appendPathSeparator: true);
         }
 
         // Extracts an archive into the specified directory.
