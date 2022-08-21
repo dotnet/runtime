@@ -33,10 +33,15 @@ namespace System.IO.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Directory.SetCurrentDirectory(TestDirectory);
-                // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-                // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-                // path that followed the symlink.
-                if (!OperatingSystem.IsMacOS())
+
+                if ((File.GetAttributes(Path.GetDirectoryName(TestDirectory)) & FileAttributes.ReparsePoint) != 0)
+                {
+                    // If the temp directory is symlink, setting the current directory to a symlinked path will result
+                    // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+                    // the test directory name in that case.
+                    Assert.Equal(Path.GetFileName(TestDirectory), Path.GetFileName(Directory.GetCurrentDirectory()));
+                }
+                else
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
@@ -70,13 +75,19 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(linkPath, Directory.GetCurrentDirectory());
                     }
-                    else if (OperatingSystem.IsMacOS())
-                    {
-                        Assert.Equal("/private" + path, Directory.GetCurrentDirectory());
-                    }
                     else
                     {
-                        Assert.Equal(path, Directory.GetCurrentDirectory());
+                        if ((File.GetAttributes(Path.GetDirectoryName(TestDirectory)) & FileAttributes.ReparsePoint) != 0)
+                        {
+                            // If the temp directory is symlink, setting the current directory to a symlinked path will result
+                            // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+                            // the test directory name in that case.
+                            Assert.Equal(Path.GetFileName(path), Path.GetFileName(Directory.GetCurrentDirectory()));
+                        }
+                        else
+                        {
+                            Assert.Equal(path, Directory.GetCurrentDirectory());
+                        }
                     }
 
                     Directory.SetCurrentDirectory(Path.GetTempPath());
