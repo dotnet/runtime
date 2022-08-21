@@ -208,6 +208,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_CLONE_LOOPS,
         PHASE_UNROLL_LOOPS,
         PHASE_CLEAR_LOOP_INFO,
+        PHASE_MORPH_MDARR,
         PHASE_MARK_LOCAL_VARS,
         PHASE_OPTIMIZE_ADD_COPIES,
         PHASE_OPTIMIZE_BOOLS,
