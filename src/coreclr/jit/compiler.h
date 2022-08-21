@@ -2927,7 +2927,6 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
-    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4636,6 +4635,10 @@ public:
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
+
+#if FEATURE_LOOP_ALIGN
+    PhaseStatus placeLoopAlignInstructions();
+#endif
 
     GenTree* fgInitThisClass();
 
