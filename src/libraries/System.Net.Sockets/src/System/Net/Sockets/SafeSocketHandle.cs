@@ -50,13 +50,7 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
-        internal bool HasShutdownSend
-        {
-            get
-            {
-                return _hasShutdownSend;
-            }
-        }
+        internal bool HasShutdownSend => _hasShutdownSend;
 
         private bool TryOwnClose()
         {
