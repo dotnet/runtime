@@ -287,12 +287,12 @@ namespace System.Formats.Tar
 
             if (EntryType == TarEntryType.Directory)
             {
-                TarHelpers.CreateDirectory(fileDestinationPath, Mode, overwrite, pendingModes);
+                TarHelpers.CreateDirectory(fileDestinationPath, Mode, pendingModes);
             }
             else
             {
                 // If it is a file, create containing directory.
-                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, overwrite, pendingModes);
+                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, pendingModes);
                 ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
             }
         }
@@ -309,13 +309,13 @@ namespace System.Formats.Tar
 
             if (EntryType == TarEntryType.Directory)
             {
-                TarHelpers.CreateDirectory(fileDestinationPath, Mode, overwrite, pendingModes);
+                TarHelpers.CreateDirectory(fileDestinationPath, Mode, pendingModes);
                 return Task.CompletedTask;
             }
             else
             {
                 // If it is a file, create containing directory.
-                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, overwrite, pendingModes);
+                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, pendingModes);
                 return ExtractToFileInternalAsync(fileDestinationPath, linkTargetPath, overwrite, cancellationToken);
             }
         }

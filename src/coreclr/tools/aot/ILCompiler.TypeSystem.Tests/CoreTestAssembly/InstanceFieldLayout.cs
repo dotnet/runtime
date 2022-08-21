@@ -212,6 +212,24 @@ namespace Sequential
         public StructByte fld1;
         public Auto.Struct9Bytes fld2;
     }
+
+    public struct StructStructByte_Int128StructAuto
+    {
+        public StructByte fld1;
+        public Auto.Int128Struct fld2;
+    }
+
+    public struct StructStructByte_UInt128StructAuto
+    {
+        public StructByte fld1;
+        public Auto.UInt128Struct fld2;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
+    }
 }
 
 namespace Auto
@@ -416,6 +434,24 @@ namespace Auto
         public byte fld7;
         public byte fld8;
         public byte fld9;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct UInt128Struct
+    {
+        UInt128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Int128Struct
+    {
+        Int128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
     }
 }
 

@@ -203,6 +203,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ReadOnlyCollection()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
@@ -224,6 +225,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
     [Theory]
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
         XmlSerializer serializer;
