@@ -51,7 +51,6 @@
 
 #include "appdomain.inl"
 #include "typeparse.h"
-#include "threadpoolrequest.h"
 
 #include "nativeoverlapped.h"
 
@@ -961,8 +960,6 @@ void SystemDomain::Attach()
 #ifdef FEATURE_TIERED_COMPILATION
     CallCountingStubManager::Init();
 #endif
-
-    PerAppDomainTPCountList::InitAppDomainIndexList();
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
@@ -1913,14 +1910,7 @@ AppDomain::~AppDomain()
     }
     CONTRACTL_END;
 
-
-    // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
-    // can only be released once all threads in the AppDomain have exited.
-    if (GetTPIndex().m_dwIndex != 0)
-        PerAppDomainTPCountList::ResetAppDomainIndex(GetTPIndex());
-
     m_AssemblyCache.Clear();
-
 }
 
 //*****************************************************************************
@@ -1937,11 +1927,6 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
-
-    //Allocate the threadpool entry before the appdomain id list. Otherwise,
-    //the thread pool list will be out of sync if insertion of id in
-    //the appdomain fails.
-    m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();
 
     BaseDomain::Init();
 
