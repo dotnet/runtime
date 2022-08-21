@@ -11038,6 +11038,19 @@ DONE_MORPHING_CHILDREN:
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
+#if defined(TARGET_XARCH)
+        case GT_DIV:
+        case GT_UDIV:
+            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            {
+                GenTree* optimizedTree = fgOptimizeDivision(tree->AsOp());
+                if (optimizedTree != nullptr)
+                {
+                    tree = optimizedTree;
+                }
+            }
+            break;
+#endif
         case GT_ADD:
 
         CM_OVF_OP:
@@ -12322,6 +12335,50 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 }
 
 #endif
+
+//------------------------------------------------------------------------
+// fgOptimizeDivision: Optimizes division operations.
+//
+// Arguments:
+//   tree - the unchecked GT_DIV/GT_UDIV tree to optimize.
+//
+// Return Value:
+//   The optimized tree that can have any shape.
+//
+GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
+{
+    assert(div->OperIs(GT_DIV, GT_UDIV));
+
+    if (gtTreeHasSideEffects(div, GTF_SIDE_EFFECT))
+    {
+        return nullptr;
+    }
+
+    GenTree* op1 = div->gtGetOp1();
+    GenTree* op2 = div->gtGetOp2();
+    if (op1->OperIs(GT_UDIV, GT_DIV) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst())
+    {
+        GenTree* chOp1 = op1->gtGetOp1();
+        GenTree* chOp2 = op1->gtGetOp2();
+
+        int64_t child_val = chOp2->AsIntConCommon()->IntegralValue();
+        int64_t root_val  = op2->AsIntConCommon()->IntegralValue();
+
+        div->gtOp1 = chOp1;
+        div->gtOp1->SetVNsFromNode(op1);
+
+        div->gtOp2 = chOp2;
+        div->gtOp2->AsIntConCommon()->SetIntegralValue(root_val * child_val);
+        div->gtOp2->SetVNsFromNode(op2);
+
+        DEBUG_DESTROY_NODE(op1);
+        DEBUG_DESTROY_NODE(op2);
+
+        return div;
+    }
+
+    return nullptr;
+}
 
 //------------------------------------------------------------------------
 // fgOptimizeCommutativeArithmetic: Optimizes commutative operations.

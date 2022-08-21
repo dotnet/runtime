@@ -5745,6 +5745,7 @@ private:
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
+    GenTree* fgOptimizeDivision(GenTreeOp* div);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
     GenTree* fgOptimizeBitwiseXor(GenTreeOp* xorOp);
