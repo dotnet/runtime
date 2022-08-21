@@ -4145,13 +4145,15 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
     }
     CONTRACTL_END;
 
-    if (dwID < m_aDynamicEntries)
+    SIZE_T oldDynamicEntries = m_aDynamicEntries.Load();
+
+    if (dwID < oldDynamicEntries)
     {
         _ASSERTE(m_pDynamicClassTable.Load() != NULL);
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, m_aDynamicEntries.Load());
+    SIZE_T aDynamicEntries = max(16, oldDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;
@@ -4162,7 +4164,10 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
 
-    memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
+    if (oldDynamicEntries != 0)
+    {
+        memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
+    }
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pNewDynamicClassTable + m_aDynamicEntries, 0, (aDynamicEntries - m_aDynamicEntries) * sizeof(DynamicClassInfo));
