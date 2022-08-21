@@ -224,6 +224,12 @@ namespace Sequential
         public StructByte fld1;
         public Auto.UInt128Struct fld2;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
+    }
 }
 
 namespace Auto
@@ -440,6 +446,12 @@ namespace Auto
     public struct Int128Struct
     {
         Int128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
     }
 }
 
