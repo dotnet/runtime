@@ -231,8 +231,8 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_RATIONALIZE,
         PHASE_SIMPLE_LOWERING,
         PHASE_LOWERING,
-        // PHASE_LINEAR_SCAN
-        PHASE_STACK_LEVEL_SETTER
+        PHASE_STACK_LEVEL_SETTER,
+        PHASE_LINEAR_SCAN,
         // PHASE_ALIGN_LOOPS
         // PHASE_GENERATE_CODE
         // PHASE_EMIT_CODE

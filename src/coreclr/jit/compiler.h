@@ -1377,11 +1377,20 @@ public:
     }
 };
 
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+};
+
 // interface to hide linearscan implementation from rest of compiler
 class LinearScanInterface
 {
 public:
-    virtual void doLinearScan()                                = 0;
+    virtual PhaseStatus doLinearScan()                         = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1411,15 +1420,6 @@ enum class PhaseChecks
 {
     CHECK_NONE,
     CHECK_ALL
-};
-
-// Specify compiler data that a phase might modify
-enum class PhaseStatus : unsigned
-{
-    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
-    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
