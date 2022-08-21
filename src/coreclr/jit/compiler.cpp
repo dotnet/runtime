@@ -1838,8 +1838,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // Initialize this to the first phase to run.
     mostRecentlyActivePhase = PHASE_PRE_IMPORT;
 
-    // Initially, no phase checks are active.
+    // Initially, no phase checks are active, and all dumps are enabled.
     activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_ALL;
 
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
@@ -4909,6 +4910,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Place loop alignment instructions
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
+
+    // The common phase checks and dumps are no longer relevant past this point.
+    //
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_NONE;
 
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);

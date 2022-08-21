@@ -1422,6 +1422,14 @@ enum class PhaseChecks
     CHECK_ALL
 };
 
+// Specify which dumps should be run after each phase
+//
+enum class PhaseDumps
+{
+    DUMP_NONE,
+    DUMP_ALL
+};
+
 // The following enum provides a simple 1:1 mapping to CLR API's
 enum API_ICorJitInfo_Names
 {
@@ -9878,6 +9886,7 @@ public:
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
+    PhaseDumps  activePhaseDumps;        // the currently active phase dumps
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've

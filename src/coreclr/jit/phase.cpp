@@ -71,60 +71,14 @@ void Phase::PrePhase()
     comp->BeginPhase(m_phase);
 
 #ifdef DEBUG
-
-    // To help in the incremental conversion of jit activity to phases
-    // without greatly increasing dump size or checked jit time, we
-    // currently allow the phases that do pre-phase checks and
-    // dumps via the phase object, and not via explicit calls from
-    // the various methods in the phase.
-    //
-    // In the long run the aim is to get rid of all pre-phase checks
-    // and dumps, relying instead on post-phase checks and dumps from
-    // the preceding phase.
-    //
-    // Currently the list is just the set of phases that have custom
-    // derivations from the Phase class.
-    static Phases s_allowlist[] = {PHASE_BUILD_SSA, PHASE_OPTIMIZE_VALNUM_CSES, PHASE_RATIONALIZE, PHASE_LOWERING,
-                                   PHASE_STACK_LEVEL_SETTER};
-    bool doPrePhase = false;
-
-    for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
+    if (comp->compIsForInlining())
     {
-        if (m_phase == s_allowlist[i])
-        {
-            doPrePhase = true;
-            break;
-        }
+        printf("\n*************** Inline @[%06u] Starting PHASE %s\n",
+               Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name);
     }
-
-    if (VERBOSE)
+    else
     {
-        if (doPrePhase)
-        {
-            printf("Trees before %s\n", m_name);
-            comp->fgDispBasicBlocks(true);
-        }
-
-        if (comp->compIsForInlining())
-        {
-            printf("\n*************** Inline @[%06u] Starting PHASE %s\n",
-                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name);
-        }
-        else
-        {
-            printf("\n*************** Starting PHASE %s\n", m_name);
-        }
-    }
-
-    if (doPrePhase)
-    {
-        if ((comp->activePhaseChecks == PhaseChecks::CHECK_ALL) && (comp->expensiveDebugCheckLevel >= 2))
-        {
-            // If everyone used the Phase class, this would duplicate the PostPhase() from the previous phase.
-            // But, not everyone does, so go ahead and do the check here, too.
-            comp->fgDebugCheckBBlist();
-            comp->fgDebugCheckLinks();
-        }
+        printf("\n*************** Starting PHASE %s\n", m_name);
     }
 #endif // DEBUG
 
@@ -146,135 +100,27 @@ void Phase::PostPhase(PhaseStatus status)
 #ifdef DEBUG
 
     // Don't dump or check post phase unless the phase made changes.
-    const bool        madeChanges   = (status != PhaseStatus::MODIFIED_NOTHING);
+    //
+    const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
+    const bool doPostPhase       = madeChanges;
+    const bool doPostPhaseChecks = (comp->activePhaseChecks == PhaseChecks::CHECK_ALL);
+    const bool doPostPhaseDumps  = (comp->activePhaseDumps == PhaseDumps::DUMP_ALL);
+
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
-    bool              doPostPhase   = false;
-
-    // To help in the incremental conversion of jit activity to phases
-    // without greatly increasing dump size or checked jit time, we
-    // currently allow the phases that do post-phase checks and
-    // dumps via the phase object, and not via explicit calls from
-    // the various methods in the phase.
-    //
-    // As we remove the explicit checks and dumps from each phase, we
-    // will add to this list; once all phases are updated, we can
-    // remove the list entirely.
-    //
-    // This list includes custom derivations from the Phase class as
-    // well as the new-style phases that have been updated to return
-    // PhaseStatus from their DoPhase methods.
-    //
-    // clang-format off
-
-    static Phases s_allowlist[] = {
-        PHASE_PRE_IMPORT,
-        PHASE_INCPROFILE,
-        PHASE_IBCPREP,
-        PHASE_IMPORTATION,
-        PHASE_PATCHPOINTS,
-        PHASE_IBCINSTR,
-        PHASE_INDXCALL,
-        PHASE_POST_IMPORT,
-        PHASE_MORPH_INIT,
-        PHASE_MORPH_INLINE,
-        PHASE_ALLOCATE_OBJECTS,
-        PHASE_MORPH_ADD_INTERNAL,
-        PHASE_EMPTY_TRY,
-        PHASE_EMPTY_FINALLY,
-        PHASE_MERGE_FINALLY_CHAINS,
-        PHASE_CLONE_FINALLY,
-        PHASE_UPDATE_FINALLY_FLAGS,
-        PHASE_COMPUTE_PREDS,
-        PHASE_MERGE_THROWS,
-        PHASE_EARLY_UPDATE_FLOW_GRAPH,
-        PHASE_PROMOTE_STRUCTS,
-        PHASE_STR_ADRLCL,
-        PHASE_FWD_SUB,
-        PHASE_MORPH_IMPBYREF,
-        //
-        // (enable all phase checks)
-        //
-        PHASE_MORPH_GLOBAL,
-        PHASE_GS_COOKIE,
-        PHASE_COMPUTE_EDGE_WEIGHTS,
-#if defined(FEATURE_EH_FUNCLETS)
-        PHASE_CREATE_FUNCLETS,
-#endif
-        PHASE_INVERT_LOOPS,
-        PHASE_OPTIMIZE_FLOW,
-        PHASE_COMPUTE_REACHABILITY,
-        PHASE_SET_BLOCK_WEIGHTS,
-        PHASE_FIND_LOOPS,
-        PHASE_CLONE_LOOPS,
-        PHASE_UNROLL_LOOPS,
-        PHASE_CLEAR_LOOP_INFO,
-        PHASE_MORPH_MDARR,
-        PHASE_MARK_LOCAL_VARS,
-        PHASE_OPTIMIZE_ADD_COPIES,
-        PHASE_OPTIMIZE_BOOLS,
-        PHASE_FIND_OPER_ORDER,
-        PHASE_SET_BLOCK_ORDER,
-        PHASE_BUILD_SSA,
-        // (ssa subphases)
-        PHASE_EARLY_PROP,
-        PHASE_VALUE_NUMBER,
-        PHASE_HOIST_LOOP_CODE,
-        PHASE_VN_COPY_PROP,
-        PHASE_OPTIMIZE_BRANCHES,
-        PHASE_OPTIMIZE_VALNUM_CSES,
-        PHASE_ASSERTION_PROP_MAIN,
-        PHASE_OPTIMIZE_INDEX_CHECKS,
-        PHASE_OPT_UPDATE_FLOW_GRAPH,
-        PHASE_COMPUTE_EDGE_WEIGHTS2,
-        PHASE_INSERT_GC_POLLS,
-        PHASE_OPTIMIZE_LAYOUT,
-        PHASE_DETERMINE_FIRST_COLD_BLOCK,
-        PHASE_RATIONALIZE,
-        PHASE_SIMPLE_LOWERING,
-        PHASE_LOWERING,
-        PHASE_STACK_LEVEL_SETTER,
-        PHASE_LINEAR_SCAN,
-        PHASE_ALIGN_LOOPS
-        // PHASE_GENERATE_CODE
-        // PHASE_EMIT_CODE
-        // PHASE_EMIT_GCEH
-        // PHASE_POST_EMIT
-    };
-
-    // clang-format on
-
-    // Also note when this phase has not opted into the active post phase checks.
-    //
-    const bool  doPostPhaseChecks = comp->activePhaseChecks == PhaseChecks::CHECK_ALL;
-    const char* checkMessage =
-        madeChanges && doPostPhaseChecks ? " [phase has not yet enabled common post phase checks]" : "";
-
-    if (madeChanges)
-    {
-        for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
-        {
-            if (m_phase == s_allowlist[i])
-            {
-                doPostPhase  = true;
-                checkMessage = "";
-                break;
-            }
-        }
-    }
 
     if (VERBOSE)
     {
         if (comp->compIsForInlining())
         {
-            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s%s\n",
-                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage, checkMessage);
+            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s\n",
+                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage);
         }
         else
         {
-            printf("\n*************** Finishing PHASE %s%s%s\n", m_name, statusMessage, checkMessage);
+            printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
         }
 
-        if (doPostPhase)
+        if (doPostPhase && doPostPhaseDumps)
         {
             printf("Trees after %s\n", m_name);
             comp->fgDispBasicBlocks(true);
