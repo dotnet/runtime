@@ -71,14 +71,17 @@ void Phase::PrePhase()
     comp->BeginPhase(m_phase);
 
 #ifdef DEBUG
-    if (comp->compIsForInlining())
+    if (VERBOSE)
     {
-        printf("\n*************** Inline @[%06u] Starting PHASE %s\n",
-               Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name);
-    }
-    else
-    {
-        printf("\n*************** Starting PHASE %s\n", m_name);
+        if (comp->compIsForInlining())
+        {
+            printf("\n*************** Inline @[%06u] Starting PHASE %s\n",
+                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name);
+        }
+        else
+        {
+            printf("\n*************** Starting PHASE %s\n", m_name);
+        }
     }
 #endif // DEBUG
 
