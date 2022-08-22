@@ -1,5 +1,6 @@
 parameters:
   archType: ''
+  isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
   hostArchType: ''
