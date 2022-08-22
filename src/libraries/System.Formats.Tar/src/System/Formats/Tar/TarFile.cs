@@ -366,10 +366,10 @@ namespace System.Formats.Tar
                     RecurseSubdirectories = true
                 })
             {
-                ShouldRecursePredicate = IsDirectorySymlink
+                ShouldRecursePredicate = IsNotADirectorySymlink
             };
 
-            static bool IsDirectorySymlink(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
+            static bool IsNotADirectorySymlink(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
         }
 
         // Determines what should be the base path for all the entries when creating an archive.

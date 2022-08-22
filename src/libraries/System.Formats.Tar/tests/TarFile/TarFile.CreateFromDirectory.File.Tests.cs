@@ -215,15 +215,14 @@ namespace System.Formats.Tar.Tests
             TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
-            using (TarReader reader = new(archiveStream, leaveOpen: false))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal("subDirectory/", entry.Name);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            using TarReader reader = new(archiveStream, leaveOpen: false);
 
-                Assert.Null(reader.GetNextEntry()); // file.txt should not be found
-            }
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("subDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(reader.GetNextEntry()); // file.txt should not be found
         }
 
         [Fact]
@@ -245,15 +244,14 @@ namespace System.Formats.Tar.Tests
             TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: true); // Base directory is a symlink, do not recurse
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
-            using (TarReader reader = new(archiveStream, leaveOpen: false))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal("baseDirectory/", entry.Name);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            using TarReader reader = new(archiveStream, leaveOpen: false);
 
-                Assert.Null(reader.GetNextEntry());
-            }
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("baseDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(reader.GetNextEntry());
         }
     }
 }

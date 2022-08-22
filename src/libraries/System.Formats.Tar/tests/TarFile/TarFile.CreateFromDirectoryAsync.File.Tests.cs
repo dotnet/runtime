@@ -259,15 +259,14 @@ namespace System.Formats.Tar.Tests
             await TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
 
             await using FileStream archiveStream = File.OpenRead(destinationArchive);
-            await using (TarReader reader = new(archiveStream, leaveOpen: false))
-            {
-                TarEntry entry = await reader.GetNextEntryAsync();
-                Assert.NotNull(entry);
-                Assert.Equal("subDirectory/", entry.Name);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            await using TarReader reader = new(archiveStream, leaveOpen: false);
 
-                Assert.Null(await reader.GetNextEntryAsync()); // file.txt should not be found
-            }
+            TarEntry entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal("subDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(await reader.GetNextEntryAsync()); // file.txt should not be found
         }
 
         [Fact]
@@ -289,15 +288,14 @@ namespace System.Formats.Tar.Tests
             await TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: true); // Base directory is a symlink, do not recurse
 
             await using FileStream archiveStream = File.OpenRead(destinationArchive);
-            await using (TarReader reader = new(archiveStream, leaveOpen: false))
-            {
-                TarEntry entry = await reader.GetNextEntryAsync();
-                Assert.NotNull(entry);
-                Assert.Equal("baseDirectory/", entry.Name);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            await using TarReader reader = new(archiveStream, leaveOpen: false);
 
-                Assert.Null(await reader.GetNextEntryAsync()); // subDirectory should not be found
-            }
+            TarEntry entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal("baseDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(await reader.GetNextEntryAsync()); // subDirectory should not be found
         }
     }
 }
