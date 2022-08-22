@@ -269,6 +269,8 @@ declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
+declare const dotnet: ModuleAPI["dotnet"];
+declare const exit: ModuleAPI["exit"];
 /**
  * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
  * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
@@ -315,4 +317,4 @@ declare class ManagedObject implements IDisposable {
     toString(): string;
 }
 
-export { ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, ModuleAPI, MonoConfig, NativePointer, ResourceRequest, RuntimeAPI, Span, createDotnetRuntime as default };
+export { ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, ModuleAPI, MonoConfig, NativePointer, ResourceRequest, RuntimeAPI, Span, createDotnetRuntime as default, dotnet, exit };
