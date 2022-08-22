@@ -4080,8 +4080,9 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 //
 const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
 
     if (!opts.compMinOptsIsSet)
     {
@@ -4095,13 +4096,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 
     if (tier0)
     {
-        return "Tier0";
+        return instrumenting ? "Instrumented Tier0" : "Tier0";
     }
     else if (tier1)
     {
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            return "Tier1-OSR";
+            return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
@@ -4144,6 +4145,31 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     else
     {
         return wantShortName ? "Unknown" : "Unknown optimization level";
+    }
+}
+
+//------------------------------------------------------------------------
+// compGetPgoSourceName: get a string describing PGO source
+//
+// Returns:
+//   String describing describing PGO source (e.g. Dynamic, Static, etc)
+//
+const char* Compiler::compGetPgoSourceName() const
+{
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Static:
+            return "Static PGO";
+        case ICorJitInfo::PgoSource::Dynamic:
+            return "Dynamic PGO";
+        case ICorJitInfo::PgoSource::Blend:
+            return "Blend PGO";
+        case ICorJitInfo::PgoSource::Text:
+            return "Textual PGO";
+        case ICorJitInfo::PgoSource::Sampling:
+            return "Sample-based PGO";
+        default:
+            return "";
     }
 }
 
@@ -4971,8 +4997,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         unsigned    hash      = 0;
 #endif
 
-        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x%s]\n", methodsCompiled, fullName,
-               compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
+        const bool hasProf = fgHaveProfileData();
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u, hash=0x%08x%s]\n", methodsCompiled, fullName,
+               compGetTieringName(), osrBuffer, hasProf ? " " : "", hasProf ? compGetPgoSourceName() : "",
+               info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);

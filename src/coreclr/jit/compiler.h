@@ -9503,6 +9503,7 @@ public:
     }
 
     const char* compGetTieringName(bool wantShortName = false) const;
+    const char* compGetPgoSourceName() const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt() const
