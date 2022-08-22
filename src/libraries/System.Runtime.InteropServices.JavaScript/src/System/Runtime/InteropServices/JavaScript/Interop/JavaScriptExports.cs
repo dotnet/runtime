@@ -195,6 +195,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if FEATURE_WASM_THREADS
+
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // void InstallSynchronizationContext()
@@ -209,6 +211,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_exc.ToJS(ex);
             }
         }
+
+#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void StopProfile()
