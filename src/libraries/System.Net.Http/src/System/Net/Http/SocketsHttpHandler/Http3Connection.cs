@@ -567,16 +567,13 @@ namespace System.Net.Http
                     }
                 }
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
+            {
+                // ignore the exception, we have already closed the connection
+            }
             catch (Exception ex)
             {
-                if (ex is QuicException qe && qe.QuicError == QuicError.OperationAborted)
-                {
-                    // ignore the exception, we have already closed the connection
-                }
-                else
-                {
-                    Abort(ex);
-                }
+                Abort(ex);
             }
             finally
             {
