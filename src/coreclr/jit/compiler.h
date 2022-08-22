@@ -4145,9 +4145,7 @@ private:
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
 
-#if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
-#endif
 
 #ifdef DEBUG
     static LONG jitNestingLevel;
@@ -9505,6 +9503,7 @@ public:
     }
 
     const char* compGetTieringName(bool wantShortName = false) const;
+    const char* compGetPgoSourceName() const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt() const
