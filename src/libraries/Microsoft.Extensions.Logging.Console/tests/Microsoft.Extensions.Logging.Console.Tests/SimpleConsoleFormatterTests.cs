@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50575", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51398", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73436", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
@@ -38,6 +36,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (colorBehavior)
             {
                 case LoggerColorBehavior.Enabled:
+                case LoggerColorBehavior.Default:
                     Assert.Equal(2, sink.Writes.Count);
                     var write = sink.Writes[0];
                     Assert.Equal(ConsoleColor.Black, write.BackgroundColor);
@@ -46,7 +45,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
                     Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
                     break;
-                case LoggerColorBehavior.Default:
                 case LoggerColorBehavior.Disabled:
                     Assert.Equal(1, sink.Writes.Count);
                     write = sink.Writes[0];
