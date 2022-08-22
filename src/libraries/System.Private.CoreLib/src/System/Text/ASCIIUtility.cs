@@ -1578,11 +1578,11 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-            if (BitConverter.IsLittleEndian && Vector256.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector256<byte>.Count)
+            if (BitConverter.IsLittleEndian && Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
             {
                 currentOffset = WidenAsciiToUtf16_Vector256(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
-            else if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
+            else if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
                 currentOffset = WidenAsciiToUtf16_Vector128(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
@@ -1718,7 +1718,7 @@ namespace System.Text
         {
             Debug.Assert(Vector128.IsHardwareAccelerated);
             Debug.Assert(BitConverter.IsLittleEndian);
-            Debug.Assert(elementCount >= 2 * (uint)Vector128<byte>.Count);
+            Debug.Assert(elementCount >= (uint)Vector128<byte>.Count);
 
             nuint currentOffset = 0;
             ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
@@ -1754,7 +1754,7 @@ namespace System.Text
         {
             // Debug.Assert(Vector256.IsHardwareAccelerated); currently commented out due to R2R bug: #74253
             Debug.Assert(BitConverter.IsLittleEndian);
-            Debug.Assert(elementCount >= 2 * (uint)Vector256<byte>.Count);
+            Debug.Assert(elementCount >= (uint)Vector256<byte>.Count);
 
             nuint currentOffset = 0;
             ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
