@@ -1025,12 +1025,14 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 		 * This is needed so the mono_class_is_assignable_from_internal () calls in the
 		 * conflict resolution work.
 		 */
-		if (mono_class_is_ginst (override_class)) {
+		g_assert (override_class == override->klass);
+		if (mono_class_is_ginst (override_class) && override->klass != override_class) {
 			override = mono_class_inflate_generic_method_checked (override, &mono_class_get_generic_class (override_class)->context, error);
 			mono_error_assert_ok (error);
 		}
 
-		if (mono_class_is_ginst (prev_override_class)) {
+		g_assert (prev_override->klass == prev_override_class);
+		if (mono_class_is_ginst (prev_override_class)  && prev_override->klass != prev_override_class) {
 			prev_override = mono_class_inflate_generic_method_checked (prev_override, &mono_class_get_generic_class (prev_override_class)->context, error);
 			mono_error_assert_ok (error);
 		}
