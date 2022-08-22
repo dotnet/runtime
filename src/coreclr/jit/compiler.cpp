@@ -4971,7 +4971,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         unsigned    hash      = 0;
 #endif
 
-        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x %s]\n", methodsCompiled, fullName,
+        printf("%4d: JIT compiled %s [%s%s, IL size=%u, code size=%u, hash=0x%08x%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
     }
 
