@@ -14393,6 +14393,14 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
     /* If this tree makes a new assertion - make it available */
     optAssertionGen(tree);
 
+    // For struct copies & inits, also use the original tree
+    // to generate assertions.
+    //
+    if ((oldTree != nullptr) && oldTree->OperIsBlkOp())
+    {
+        optAssertionGen(oldTree);
+    }
+
 DONE:;
 
 #ifdef DEBUG
