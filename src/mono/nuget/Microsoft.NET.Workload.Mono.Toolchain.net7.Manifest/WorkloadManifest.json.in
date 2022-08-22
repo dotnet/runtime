@@ -441,14 +441,14 @@
     "Microsoft.NETCore.App.Runtime.Mono.multithread.net7.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}",
-      "alias-to: {
+      "alias-to": {
         "any": "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.perftrace.net7.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}",
-      "alias-to: {
+      "alias-to": {
         "any": "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm"
       }
     },
