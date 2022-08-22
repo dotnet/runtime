@@ -1361,7 +1361,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public void AutoReplenishIgnoresTimerJitter()
+        public void AutoReplenishPreservesTimeWithTimerJitter()
         {
             var replenishmentPeriod = TimeSpan.FromMinutes(10);
             using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
@@ -1382,7 +1382,9 @@ namespace System.Threading.RateLimiting.Test
             // Replenish 1 millisecond less than ReplenishmentPeriod while AutoReplenishment is enabled
             Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds - 1);
 
-            Assert.Equal(8, limiter.GetStatistics().CurrentAvailablePermits);
+            // Timer ran faster than ReplenishmentPeriod so a full token wasn't added.
+            // Internally the limiter is tracking that so the next timer call will add to the previous partial token
+            Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
 
             // Replenish 1 millisecond longer than ReplenishmentPeriod while AutoReplenishment is enabled
             Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds + 1);
