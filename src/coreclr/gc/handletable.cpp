@@ -111,7 +111,7 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     if (pTable == NULL)
         return NULL;
 
-    memset (pTable, 0, dwSize);
+    memset ((void*)pTable, 0, dwSize);
 
     // allocate the initial handle segment
     pTable->pSegmentList = SegmentAlloc(pTable);

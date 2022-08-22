@@ -1310,7 +1310,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     }
     CONTRACTL_END;
 
-    INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
+    INDEBUG(*pcfThisFrame = {});
 
     // Clear various flags
     pcfThisFrame->isFrameless = false;
@@ -1398,7 +1398,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
     CONTRACTL_END;
 
-    INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
+    INDEBUG(*pcfThisFrame = {});
     pcfThisFrame->pRD = pRD;
 
     // Clear various flags

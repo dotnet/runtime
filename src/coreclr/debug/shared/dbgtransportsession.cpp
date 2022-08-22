@@ -81,7 +81,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
 
     // Start with a blank slate so that Shutdown() on a partially initialized instance will only do the
     // cleanup necessary.
-    memset(this, 0, sizeof(*this));
+    *this = {};
 
     // Because of the above memset the embedded classes/structs need to be reinitialized especially
     // the two way pipe; it expects the in/out handles to be -1 instead of 0.

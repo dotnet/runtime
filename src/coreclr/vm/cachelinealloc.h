@@ -65,7 +65,8 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,32);
+        m_Link = {};
+        memset(m_xxx,0,32 - sizeof(m_Link));
     }
 
     void Init64()
@@ -79,7 +80,8 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,64);
+        m_Link = {};
+        memset(m_xxx,0,64 - sizeof(m_Link));
     }
 
     CacheLine()
@@ -93,7 +95,8 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,sizeof(CacheLine));
+        m_Link = {};
+        memset(m_xxx,0,numValidBytes);
     }
 };
 #include <poppack.h>

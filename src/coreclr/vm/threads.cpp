@@ -2020,8 +2020,7 @@ void Thread::HandleThreadStartupFailure()
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } args{};
 
     GCPROTECT_BEGIN(args);
 

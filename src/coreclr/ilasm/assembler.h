@@ -287,10 +287,7 @@ struct SEH_Descriptor
         mdTypeRef   cException; // what to catch
     };
 
-    SEH_Descriptor()
-    {
-        memset(this, 0, sizeof(*this));
-    }
+    SEH_Descriptor() = default;
 };
 
 
@@ -340,6 +337,19 @@ struct EventDescriptor
     mdEvent             m_edEventTok;
     BOOL                m_fNew;
     CustomDescrList     m_CustomDescrList;
+    EventDescriptor()
+        : m_tdClass{}
+        , m_szName{}
+        , m_dwAttr{}
+        , m_tkEventType{}
+        , m_tkAddOn{}
+        , m_tkRemoveOn{}
+        , m_tkFire{}
+        , m_tklOthers{}
+        , m_edEventTok{}
+        , m_fNew{}
+        , m_CustomDescrList{}
+    { }
     ~EventDescriptor() { m_tklOthers.RESET(false); };
 };
 typedef FIFO<EventDescriptor> EventDList;
@@ -360,6 +370,22 @@ struct PropDescriptor
     mdProperty          m_pdPropTok;
     BOOL                m_fNew;
     CustomDescrList     m_CustomDescrList;
+    PropDescriptor()
+        : m_tdClass{}
+        , m_szName{}
+        , m_dwAttr{}
+        , m_pSig{}
+        , m_dwCSig{}
+        , m_dwCPlusTypeFlag{}
+        , m_pValue{}
+        , m_cbValue{}
+        , m_tkSet{}
+        , m_tkGet{}
+        , m_tklOthers{}
+        , m_pdPropTok{}
+        , m_fNew{}
+        , m_CustomDescrList{}
+    { }
     ~PropDescriptor() { m_tklOthers.RESET(false); };
 };
 typedef FIFO<PropDescriptor> PropDList;

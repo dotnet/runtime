@@ -1309,11 +1309,12 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
 // EEArgumentException is an EE exception subclass representing a bad argument
 // ---------------------------------------------------------------------------
 
-typedef struct {
+struct ProtectArgsStruct
+{
     OBJECTREF pThrowable;
     STRINGREF s1;
     OBJECTREF pTmpThrowable;
-} ProtectArgsStruct;
+};
 
 OBJECTREF EEArgumentException::CreateThrowable()
 {
@@ -1328,8 +1329,7 @@ OBJECTREF EEArgumentException::CreateThrowable()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    ProtectArgsStruct prot;
-    memset(&prot, 0, sizeof(ProtectArgsStruct));
+    ProtectArgsStruct prot{};
     ResMgrGetString(m_resourceName, &prot.s1);
     GCPROTECT_BEGIN(prot);
 
