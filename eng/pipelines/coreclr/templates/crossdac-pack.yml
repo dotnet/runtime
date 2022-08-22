@@ -54,19 +54,6 @@ jobs:
         - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.buildConfig }}
 
     steps:
-    # Install MicroBuild for signing the package
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/restore-internal-tools.yml
-
-      - task: MicroBuildSigningPlugin@2
-        displayName: Install MicroBuild plugin for Signing
-        inputs:
-          signType: $(SignType)
-          zipSources: false
-          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-        continueOnError: false
-        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
-
     - task: DownloadBuildArtifacts@0
       displayName: Download CrossDac artifacts
       inputs:
