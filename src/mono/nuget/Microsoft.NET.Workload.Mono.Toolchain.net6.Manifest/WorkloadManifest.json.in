@@ -30,10 +30,10 @@
       "abstract": true,
       "description": "Android Mono AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.android-x86",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.android-x64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.android-arm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.android-arm64"
       ],
       "extends": [ "microsoft-net-runtime-android-net6" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -90,8 +90,8 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.net6.osx-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net6.osx-x64",
-        "Microsoft.NETCore.App.Runtime.osx-arm64",
-        "Microsoft.NETCore.App.Runtime.osx-x64"
+        "Microsoft.NETCore.App.Runtime.net6.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.net6.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net6" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
