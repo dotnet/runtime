@@ -208,6 +208,8 @@ namespace System.Formats.Tar
             T value = T.Zero;
             foreach (byte b in buffer)
             {
+                if (b == (byte)' ') continue; // skip space
+
                 uint digit = (uint)(b - '0');
                 if (digit >= 8)
                 {

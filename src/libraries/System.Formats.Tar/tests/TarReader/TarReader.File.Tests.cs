@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -125,28 +125,33 @@ namespace System.Formats.Tar.Tests
         public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat) =>
             Read_Archive_LongPath_Over255_Internal(format, testFormat);
 
-        [Fact]
-        public void Read_NodeTarArchives_Successfully()
+        [Theory]
+        [InlineData("node-tar")]
+        [InlineData("tar-rs")]
+        public void Read_TestArchives_Successfully(string subset)
         {
-            string nodeTarPath = Path.Join(Directory.GetCurrentDirectory(), "tar", "node-tar");
+            string nodeTarPath = Path.Join(Directory.GetCurrentDirectory(), "tar", subset);
             foreach (string file in Directory.EnumerateFiles(nodeTarPath, "*.tar", SearchOption.AllDirectories))
             {
                 using FileStream sourceStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
                 using var reader = new TarReader(sourceStream);
 
                 TarEntry? entry = null;
-                while (true)
+                while ((entry = reader.GetNextEntry()) != null)
                 {
-                    Exception ex = Record.Exception(() => entry = reader.GetNextEntry());
-                    Assert.Null(ex);
+                    Assert.NotNull(entry.Name);
+                    Assert.True(Enum.IsDefined(entry.EntryType));
+                    Assert.True(Enum.IsDefined(entry.Format));
 
-                    if (entry is null) break;
+                    if (entry.EntryType == TarEntryType.Directory)
+                        continue;
 
-                    ex = Record.Exception(() => entry.Name);
-                    Assert.Null(ex);
-
-                    ex = Record.Exception(() => entry.Length);
-                    Assert.Null(ex);
+                    var ds = entry.DataStream;
+                    if (ds != null && ds.Length > 0)
+                    {
+                        using var memoryStream = new MemoryStream();
+                        ds.CopyTo(memoryStream);
+                    }
                 }
             }
         }
