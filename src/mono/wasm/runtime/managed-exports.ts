@@ -22,8 +22,8 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_sync_context = get_method("InstallSynchronizationContext");
-    mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
+    const install_sync_context = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, "InstallSynchronizationContext", -1);
+    // mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
@@ -134,19 +134,22 @@ export function init_managed_exports(): void {
             anyModule.stackRestore(sp);
         }
     };
-    runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
-        const sp = anyModule.stackSave();
-        try {
-            const args = alloc_stack_frame(2);
-            invoke_method_and_handle_exception(install_sync_context, args);
-        } finally {
-            anyModule.stackRestore(sp);
-        }
-    };
 
-    if (!ENVIRONMENT_IS_PTHREAD)
-        // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
-        runtimeHelpers.javaScriptExports.install_synchronization_context();
+    if (install_sync_context) {
+        runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
+            const sp = anyModule.stackSave();
+            try {
+                const args = alloc_stack_frame(2);
+                invoke_method_and_handle_exception(install_sync_context, args);
+            } finally {
+                anyModule.stackRestore(sp);
+            }
+        };
+
+        if (!ENVIRONMENT_IS_PTHREAD)
+            // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
+            runtimeHelpers.javaScriptExports.install_synchronization_context();
+    }
 }
 
 export function get_method(method_name: string): MonoMethod {

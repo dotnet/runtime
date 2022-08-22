@@ -216,13 +216,9 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             AssertFileModeEquals(filePath, TestPermission2);
 
-            // Missing parents are created with DefaultDirectoryMode.
-            // The mode is not set when overwrite == true if there is no entry and the directory exists before extracting.
+            // Missing parents are created with CreateDirectoryDefaultMode.
             Assert.True(Directory.Exists(missingParentPath), $"{missingParentPath}' does not exist.");
-            if (!overwrite)
-            {
-                AssertFileModeEquals(missingParentPath, DefaultDirectoryMode);
-            }
+            AssertFileModeEquals(missingParentPath, CreateDirectoryDefaultMode);
 
             Assert.True(Directory.Exists(missingParentDirPath), $"{missingParentDirPath}' does not exist.");
             AssertFileModeEquals(missingParentDirPath, TestPermission3);

@@ -54,8 +54,18 @@ namespace System.Formats.Tar
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                {
+                    foreach (Stream s in _dataStreamsToDispose)
+                    {
+                        s.Dispose();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -64,8 +74,18 @@ namespace System.Formats.Tar
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsync(disposing: true).ConfigureAwait(false);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                {
+                    foreach (Stream s in _dataStreamsToDispose)
+                    {
+                        await s.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -245,52 +265,6 @@ namespace System.Formats.Tar
                         await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
                         dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
                     }
-                }
-            }
-        }
-
-        // Disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private void Dispose(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
-                    {
-                        foreach (Stream s in _dataStreamsToDispose)
-                        {
-                            s.Dispose();
-                        }
-                    }
-                }
-                finally
-                {
-                    _isDisposed = true;
-                }
-            }
-        }
-
-        // Asynchronously disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private async ValueTask DisposeAsync(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
-                    {
-                        foreach (Stream s in _dataStreamsToDispose)
-                        {
-                            await s.DisposeAsync().ConfigureAwait(false);
-                        }
-                    }
-                }
-                finally
-                {
-                    _isDisposed = true;
                 }
             }
         }
