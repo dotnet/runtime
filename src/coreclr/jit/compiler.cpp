@@ -4981,26 +4981,26 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (JitConfig.JitDisasmSummary() && !compIsForInlining())
     {
-        const int BUFSIZE            = 20;
-        char      osrBuffer[BUFSIZE] = {0};
+        char osrBuffer[20] = {0};
         if (opts.IsOSR())
         {
             // Tiering name already includes "OSR", we just want the IL offset
-            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+            sprintf_s(osrBuffer, 20, " @0x%x", info.compILEntry);
         }
 
 #ifdef DEBUG
         const char* fullName = info.compFullName;
-        unsigned    hash     = info.compMethodHash();
 #else
         const char* fullName  = eeGetMethodFullName(info.compMethodHnd);
-        unsigned    hash      = 0;
 #endif
 
+        char debugPart[128] = {0};
+        INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
+
         const bool hasProf = fgHaveProfileData();
-        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u, hash=0x%08x%s]\n", methodsCompiled, fullName,
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
-               info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
+               info.compILCodeSize, *methodCodeSize, debugPart);
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
