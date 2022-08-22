@@ -344,16 +344,13 @@ namespace System.Formats.Tar
         // Constructs the entry name used for a filesystem entry when creating an archive.
         private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
         {
-            int entryNameLength = file.FullName.Length - basePathLength;
-            Debug.Assert(entryNameLength > 0);
-
             bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
-            return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, appendPathSeparator: isDirectory);
+            return ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
         }
 
         private static string GetEntryNameForBaseDirectory(string name)
         {
-            return ArchivingUtils.EntryFromPath(name, 0, name.Length, appendPathSeparator: true);
+            return ArchivingUtils.EntryFromPath(name, appendPathSeparator: true);
         }
 
         // Extracts an archive into the specified directory.
