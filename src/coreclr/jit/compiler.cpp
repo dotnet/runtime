@@ -4999,7 +4999,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         const bool hasProf = fgHaveProfileData();
         printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u, hash=0x%08x%s]\n", methodsCompiled, fullName,
-               compGetTieringName(), osrBuffer, hasProf ? " " : "", hasProf ? compGetPgoSourceName() : "",
+               compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, hash, compGetStressMessage());
     }
 
