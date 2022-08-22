@@ -255,4 +255,7 @@
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
+  <data name="TarInvalidNumber" xml:space="preserve">
+    <value>Unable to parse number.</value>
+  </data>
 </root>

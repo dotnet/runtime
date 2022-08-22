@@ -62,8 +62,7 @@ namespace System.IO
                 path = Combine(Interop.Sys.GetCwd(), path);
             }
 
-            // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
-            // and turns it into a full path, which we only want if fullCheck is true.
+            // We would ideally use realpath to do this, but it resolves symlinks and requires that the file actually exist.
             string collapsedString = PathInternal.RemoveRelativeSegments(path, PathInternal.GetRootLength(path));
 
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,

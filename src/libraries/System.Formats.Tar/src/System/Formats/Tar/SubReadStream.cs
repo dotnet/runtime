@@ -188,10 +188,7 @@ namespace System.Formats.Tar
         // the substream is just 'a chunk' of the super-stream
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_isDisposed)
-            {
-                _isDisposed = true;
-            }
+            _isDisposed = true;
             base.Dispose(disposing);
         }
     }

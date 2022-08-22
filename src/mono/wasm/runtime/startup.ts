@@ -13,7 +13,6 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from ".
 import { mono_on_abort, mono_exit } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { init_crypto } from "./subtle-crypto";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
@@ -255,7 +254,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
-    init_crypto();
 
     if (MonoWasmThreads) {
         preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);

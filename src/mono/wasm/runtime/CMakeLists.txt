@@ -27,8 +27,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.Security.Cryptography.Native.Browser.a)
+    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/runtime.es6.iffe.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/pal_random.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.post.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
