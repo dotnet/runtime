@@ -138,6 +138,11 @@ namespace System.Formats.Tar
                     TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
                 };
 
+                if (_archiveStream.CanSeek && _archiveStream.Length == _archiveStream.Position)
+                {
+                    _reachedEndMarkers = true;
+                }
+
                 _previouslyReadEntry = entry;
                 PreserveDataStreamForDisposalIfNeeded(entry);
                 return entry;
@@ -290,6 +295,11 @@ namespace System.Formats.Tar
                     TarEntryFormat.Ustar => new UstarTarEntry(header, this),
                     TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
                 };
+
+                if (_archiveStream.CanSeek && _archiveStream.Length == _archiveStream.Position)
+                {
+                    _reachedEndMarkers = true;
+                }
 
                 _previouslyReadEntry = entry;
                 PreserveDataStreamForDisposalIfNeeded(entry);
