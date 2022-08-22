@@ -559,8 +559,16 @@ namespace System.Formats.Tar
                     // The format is:
                     //     "XX attribute=value\n"
                     // where "XX" is the number of characters in the entry, including those required for the count itself.
+                    // If prepending the length digits increases the number of digits, we need to expand.
                     int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
+                    int originalDigitCount = CountDigits(length), newDigitCount;
                     length += CountDigits(length);
+                    while ((newDigitCount = CountDigits(length)) != originalDigitCount)
+                    {
+                        length += newDigitCount - originalDigitCount;
+                        originalDigitCount = newDigitCount;
+                    }
+                    Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
 
                     // Get a large enough buffer if we don't already have one.
                     if (span.Length < length)
@@ -569,8 +577,7 @@ namespace System.Formats.Tar
                         {
                             ArrayPool<byte>.Shared.Return(buffer);
                         }
-                        buffer = ArrayPool<byte>.Shared.Rent(length);
-                        span = buffer;
+                        span = buffer = ArrayPool<byte>.Shared.Rent(length);
                     }
 
                     // Format the contents.
