@@ -202,21 +202,18 @@ namespace System.Formats.Tar
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-
             T octalFactor = T.CreateTruncating(8u);
             T value = T.Zero;
-            foreach (byte b in buffer)
+
+            // skip leading non-octal bytes
+            int offset = 0;
+            for (; offset < buffer.Length && (buffer[offset] < (byte)'0' || buffer[offset] > (byte)'7'); ++offset);
+
+            foreach (byte b in buffer.Slice(offset))
             {
-                if (b == (byte)' ') continue; // skip space
+                if (b < (byte)'0' || b > (byte)'7') break;
 
-                uint digit = (uint)(b - '0');
-                if (digit >= 8)
-                {
-                    ThrowInvalidNumber();
-                }
-
-                value = checked((value * octalFactor) + T.CreateTruncating(digit));
+                value = checked((value * octalFactor) + T.CreateTruncating((uint)(b - '0')));
             }
 
             return value;

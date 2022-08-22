@@ -21,19 +21,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void MalformedArchive_HeaderSize()
-        {
-            using MemoryStream malformed = new MemoryStream();
-            byte[] buffer = new byte[512]; // Minimum length of any header
-            Array.Fill<byte>(buffer, 0x1);
-            malformed.Write(buffer);
-            malformed.Seek(0, SeekOrigin.Begin);
-
-            using TarReader reader = new TarReader(malformed);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
-        }
-
-        [Fact]
         public void EmptyArchive()
         {
             using MemoryStream empty = new MemoryStream();
