@@ -461,18 +461,36 @@ namespace System.Formats.Tar
                     // The POSIX formats have a 6 byte Magic "ustar\0", followed by a 2 byte Version "00"
                     if (!version.SequenceEqual(UstarVersionBytes))
                     {
-                        throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
+                        // Check for gnu version header for mixed case
+                        if (!version.SequenceEqual(GnuVersionBytes))
+                        {
+                            throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
+                        }
+
+                        _version = GnuVersion;
                     }
-                    _version = UstarVersion;
+                    else
+                    {
+                        _version = UstarVersion;
+                    }
                     break;
 
                 case TarEntryFormat.Gnu:
                     // The GNU format has a Magic+Version 8 byte string "ustar  \0"
                     if (!version.SequenceEqual(GnuVersionBytes))
                     {
-                        throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                        // Check for ustar or pax version header for mixed case
+                        if (!version.SequenceEqual(UstarVersionBytes))
+                        {
+                            throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                        }
+
+                        _version = UstarVersion;
                     }
-                    _version = GnuVersion;
+                    else
+                    {
+                        _version = GnuVersion;
+                    }
                     break;
 
                 default:
