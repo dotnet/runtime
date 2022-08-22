@@ -53,11 +53,11 @@ steps:
 
       displayName: Gather CrossDac Artifacts
 
-  - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-    parameters:
-      basePath: $(crossDacArtifactPath)
-      isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      timeoutInMinutes: 30
+    - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+      parameters:
+        basePath: $(crossDacArtifactPath)
+        isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        timeoutInMinutes: 30
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2
