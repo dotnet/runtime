@@ -217,7 +217,7 @@ namespace System.Formats.Tar
 
             if (!File.Exists(sourceFileName))
             {
-                throw new FileNotFoundException(string.Format(SR.IO_FileNotFound, sourceFileName));
+                throw new FileNotFoundException(string.Format(SR.IO_FileNotFound_FileName, sourceFileName));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
@@ -256,7 +256,7 @@ namespace System.Formats.Tar
 
             if (!File.Exists(sourceFileName))
             {
-                return Task.FromException(new FileNotFoundException(string.Format(SR.IO_FileNotFound, sourceFileName)));
+                return Task.FromException(new FileNotFoundException(string.Format(SR.IO_FileNotFound_FileName, sourceFileName)));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
