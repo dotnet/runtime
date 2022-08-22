@@ -53,10 +53,8 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsMacCatalyst)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
-    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">true</_MonoUseLLVMPackage>
-    <_MonoUseAOTLLVMPackage Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">true</_MonoUseAOTLLVMPackage>
-    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
-    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'llvm'))</MonoAOTLLVMDir>
+    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and ('$(MonoEnableLLVM)' == 'true' or $(MonoAOTEnableLLVM) == 'true')">true</_MonoUseLLVMPackage>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' or '$(_MonoUseLLVMPackage)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
   </PropertyGroup>
 
   <PropertyGroup>
