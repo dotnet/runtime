@@ -890,7 +890,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     noway_assert(opts.OptEnabled(CLFLG_INLINING));
 
     // This is the InlineInfo struct representing a method to be inlined.
-    InlineInfo inlineInfo{};
+    InlineInfo            inlineInfo{};
     CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
 
     inlineInfo.fncHandle              = fncHandle;
