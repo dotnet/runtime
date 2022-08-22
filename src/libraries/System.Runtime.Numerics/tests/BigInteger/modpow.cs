@@ -275,6 +275,18 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RegressionIssue70330()
+        {
+            byte[] tempByteArray1 = { 226, 32 };
+            byte[] tempByteArray2 = { 113 };
+            byte[] tempByteArray3 = { 15, 8, 201, 158, 96, 200, 233, 243, 184, 0, 33, 203, 210, 80, 174, 198, 244, 177, 223, 221, 168, 243, 233, 133, 103, 252, 219, 195, 187, 227, 215, 54, 66, 248, 37, 186, 232, 45, 227, 147, 100, 14, 121, 244, 56, 89, 181, 120, 205, 4, 59, 48, 65, 239, 221, 28, 30, 68, 55, 99, 237, 38, 56, 213, 40, 234, 136, 218, 42, 244, 222, 198, 205 };
+            VerifyIdentityString(
+                Print(tempByteArray3) + Print(tempByteArray2) + Print(tempByteArray1) + "tModPow",
+                Print(tempByteArray3) + Print(tempByteArray2) + Print(tempByteArray1) + "bPow" + " bRemainder"
+            );
+        }
+
+        [Fact]
         public static void ModPowBoundary()
         {
             // Check interesting cases for boundary conditions

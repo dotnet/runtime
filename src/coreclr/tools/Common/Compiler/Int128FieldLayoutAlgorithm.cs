@@ -28,8 +28,11 @@ namespace ILCompiler
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
-            if (defType.Context.Target.IsWindows || (defType.Context.Target.PointerSize == 4))
+            // 32bit platforms use standard metadata layout engine
+            if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
+                layoutFromMetadata.LayoutAbiStable = false; // Int128 parameter passing ABI is unstable at this time
+                layoutFromMetadata.IsInt128OrHasInt128Fields = true;
                 return layoutFromMetadata;
             }
 
@@ -42,7 +45,8 @@ namespace ILCompiler
                 FieldAlignment = new LayoutInt(16),
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = true
+                LayoutAbiStable = false, // Int128 parameter passing ABI is unstable at this time
+                IsInt128OrHasInt128Fields = true
             };
         }
 
@@ -72,7 +76,7 @@ namespace ILCompiler
         public static bool IsIntegerType(DefType type)
         {
             return type.IsIntrinsic
-                && type.Namespace == "System."
+                && type.Namespace == "System"
                 && ((type.Name == "Int128") || (type.Name == "UInt128"));
         }
     }

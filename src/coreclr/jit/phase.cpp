@@ -167,37 +167,39 @@ void Phase::PostPhase(PhaseStatus status)
     // clang-format off
 
     static Phases s_allowlist[] = {
-        // pre import
+        PHASE_PRE_IMPORT,
         PHASE_INCPROFILE,
         PHASE_IBCPREP,
         PHASE_IMPORTATION,
         PHASE_PATCHPOINTS,
         PHASE_IBCINSTR,
         PHASE_INDXCALL,
-        // post import
-        // morph init
+        PHASE_POST_IMPORT,
+        PHASE_MORPH_INIT,
         PHASE_MORPH_INLINE,
         PHASE_ALLOCATE_OBJECTS,
-        // add internal
+        PHASE_MORPH_ADD_INTERNAL,
         PHASE_EMPTY_TRY,
         PHASE_EMPTY_FINALLY,
         PHASE_MERGE_FINALLY_CHAINS,
         PHASE_CLONE_FINALLY,
-        // finally flags
-        // compute preds
+        PHASE_UPDATE_FINALLY_FLAGS,
+        PHASE_COMPUTE_PREDS,
         PHASE_MERGE_THROWS,
-        // early fg update
-        // promote structs
-        // mark addr exposed locals
+        PHASE_EARLY_UPDATE_FLOW_GRAPH,
+        PHASE_PROMOTE_STRUCTS,
+        PHASE_STR_ADRLCL,
         PHASE_FWD_SUB,
-        // morph implicit byref
+        PHASE_MORPH_IMPBYREF,
         //
         // (enable all phase checks)
         //
         PHASE_MORPH_GLOBAL,
-        // gs cookie
-        // compute edge weights
-        // create funclets
+        PHASE_GS_COOKIE,
+        PHASE_COMPUTE_EDGE_WEIGHTS,
+#if defined(FEATURE_EH_FUNCLETS)
+        PHASE_CREATE_FUNCLETS,
+#endif
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,
         // reachability
@@ -221,7 +223,7 @@ void Phase::PostPhase(PhaseStatus status)
         // cse
         // assertion prop
         // range check
-        // update flow
+        // PHASE_OPT_UPDATE_FLOW_GRAPH,
         // edge weights 2
         PHASE_INSERT_GC_POLLS,
         PHASE_OPTIMIZE_LAYOUT,

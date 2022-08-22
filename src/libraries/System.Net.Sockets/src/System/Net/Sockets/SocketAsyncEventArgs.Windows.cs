@@ -203,7 +203,7 @@ namespace System.Net.Sockets
                                 {
                                     NetEventSource.Info(thisRef, canceled ?
                                         "Socket operation canceled." :
-                                        $"CancelIoEx failed with error '{Marshal.GetLastWin32Error()}'.");
+                                        $"CancelIoEx failed with error '{Marshal.GetLastPInvokeError()}'.");
                                 }
                             }
                             catch (ObjectDisposedException)

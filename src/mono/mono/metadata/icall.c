@@ -2809,6 +2809,18 @@ ves_icall_RuntimeTypeHandle_IsComObject (MonoQCallTypeHandle type_handle, MonoEr
 	return mono_class_is_com_object (klass);
 }
 
+void
+ves_icall_InvokeClassConstructor (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+	return_if_nok (error);
+
+	mono_runtime_class_init_full (vtable, error);
+}
+
 guint32
 ves_icall_reflection_get_token (MonoObjectHandle obj, MonoError *error)
 {
