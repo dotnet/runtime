@@ -6396,6 +6396,7 @@ void CodeGen::genFnProlog()
 #if defined(DEBUG) && defined(TARGET_XARCH)
     if (compiler->opts.compStackCheckOnRet)
     {
+        assert(compiler->lvaReturnSpCheck != BAD_VAR_NUM);
         assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
         assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
@@ -8612,6 +8613,7 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
 {
     if (doStackPointerCheck)
     {
+        assert(lvaStackPointerVar != BAD_VAR_NUM);
         assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister);
         assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
 

@@ -81,6 +81,14 @@ void Compiler::lvaInit()
 #endif // FEATURE_SIMD
     lvaCurEpoch = 0;
 
+#if defined(DEBUG) && defined(TARGET_XARCH)
+    lvaReturnSpCheck = BAD_VAR_NUM;
+#endif
+
+#if defined(DEBUG) && defined(TARGET_X86)
+    lvaCallSpCheck = BAD_VAR_NUM;
+#endif
+
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
 }
 
