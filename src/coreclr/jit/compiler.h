@@ -2220,7 +2220,7 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
-    void fgCreateFiltersForGenericExceptions();
+    bool fgCreateFiltersForGenericExceptions();
 
     void fgCheckForLoopsInHandlers();
 
@@ -4339,7 +4339,7 @@ public:
     }
 
     BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
-    void fgEnsureFirstBBisScratch();
+    bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
 
@@ -4461,6 +4461,8 @@ public:
 
     PhaseStatus fgTransformPatchpoints();
 
+    PhaseStatus fgMorphInit();
+
     PhaseStatus fgInline();
 
     PhaseStatus fgRemoveEmptyTry();
@@ -4522,7 +4524,7 @@ public:
     // The number of separate return points in the method.
     unsigned fgReturnCount;
 
-    void fgAddInternal();
+    PhaseStatus fgAddInternal();
 
     enum class FoldResult
     {
@@ -5222,7 +5224,7 @@ public:
 
     unsigned fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting = nullptr);
 
-    void fgPostImportationCleanup();
+    PhaseStatus fgPostImportationCleanup();
 
     void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
@@ -5275,8 +5277,8 @@ public:
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
-    void fgCreateFuncletPrologBlocks();
-    void fgCreateFunclets();
+    void        fgCreateFuncletPrologBlocks();
+    PhaseStatus fgCreateFunclets();
 #else  // !FEATURE_EH_FUNCLETS
     bool fgRelocateEHRegions();
 #endif // !FEATURE_EH_FUNCLETS
@@ -5301,10 +5303,10 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    void     fgComputeBlockAndEdgeWeights();
-    weight_t fgComputeMissingBlockWeights();
-    void fgComputeCalledCount(weight_t returnWeight);
-    void fgComputeEdgeWeights();
+    PhaseStatus fgComputeBlockAndEdgeWeights();
+    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
+    bool fgComputeCalledCount(weight_t returnWeight);
+    PhaseStatus fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
 
@@ -5316,7 +5318,8 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
+    PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgFindOperOrder();
 
@@ -5896,7 +5899,7 @@ private:
     static fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
 #endif
 
-    void fgPromoteStructs();
+    PhaseStatus fgPromoteStructs();
     void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
@@ -5905,12 +5908,12 @@ private:
 
     // Change implicit byrefs' types from struct to pointer, and for any that were
     // promoted, create new promoted struct temps.
-    void fgRetypeImplicitByRefArgs();
+    PhaseStatus fgRetypeImplicitByRefArgs();
 
     // Clear up annotations for any struct promotion temps created for implicit byrefs.
     void fgMarkDemotedImplicitByRefArgs();
 
-    void fgMarkAddressExposedLocals();
+    PhaseStatus fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
@@ -10478,10 +10481,11 @@ public:
     GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
     ShadowParamVarInfo* gsShadowVarInfo;            // Table used by shadow param analysis code
 
-    void gsGSChecksInitCookie();   // Grabs cookie variable
-    void gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
-    bool gsFindVulnerableParams(); // Shadow param analysis code
-    void gsParamsToShadows();      // Insert copy code and replave param uses by shadow
+    PhaseStatus gsPhase();
+    void        gsGSChecksInitCookie();   // Grabs cookie variable
+    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    bool        gsFindVulnerableParams(); // Shadow param analysis code
+    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
 
     static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk

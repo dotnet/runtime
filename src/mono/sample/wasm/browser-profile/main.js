@@ -1,16 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
-
-function wasm_exit(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    if (exit_code) tests_done_elem.style.background = "red";
-    document.body.appendChild(tests_done_elem);
-
-    if (reason) console.error(reason);
-    console.log(`WASM EXIT ${exit_code}`);
-}
+import { dotnet, exit } from './dotnet.js'
 
 function saveProfile(aotProfileData) {
     if (!aotProfileData) {
@@ -27,21 +15,18 @@ function saveProfile(aotProfileData) {
     // Remove anchor from body
     document.body.removeChild(a);
 }
-let enableProfiler = false
 try {
-    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
-        configSrc: "./mono-config.json",
-        disableDotnet6Compatibility: true,
-        onConfigLoaded: (config) => {
-            if (config.enableProfiler) {
-                enableProfiler = true;
-                config.aotProfilerOptions = {
-                    writeAt: "Sample.Test::StopProfile",
-                    sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
-                }
+    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .withConfig({
+            aotProfilerOptions: {
+                writeAt: "Sample.Test::StopProfile",
+                sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
             }
-        }
-    });
+        })
+        .create();
+
     console.log("not ready yet")
     const exports = await getAssemblyExports("Wasm.BrowserProfile.Sample");
     const testMeaning = exports.Sample.Test.TestMeaning;
@@ -51,13 +36,11 @@ try {
     document.getElementById("out").innerHTML = ret;
     console.debug(`ret: ${ret}`);
 
-    if (enableProfiler) {
-        stopProfile();
-        saveProfile(INTERNAL.aotProfileData);
-    }
+    stopProfile();
+    saveProfile(INTERNAL.aotProfileData);
 
     let exit_code = ret == 42 ? 0 : 1;
-    wasm_exit(exit_code);
+    exit(exit_code);
 } catch (err) {
-    wasm_exit(-1, err);
+    exit(-1, err);
 }

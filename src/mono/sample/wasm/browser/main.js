@@ -13,6 +13,10 @@ try {
         .withConsoleForwarding()
         .withElementOnExit()
         .withModuleConfig({
+            // This whole 'withModuleConfig' is for demo purposes only.
+            // It is prefered to use specific 'with***' methods instead. 
+            // Only when such method is doesn't exist, fallback to moduleConfig.
+
             configSrc: "./mono-config.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
@@ -37,9 +41,7 @@ try {
 
 
     // at this point both emscripten and monoVM are fully initialized.
-    // we could use the APIs returned and resolved from createDotnetRuntime promise
-    // both exports are receiving the same object instances
-    console.log('user code after createDotnetRuntime()');
+    console.log('user code after dotnet.create');
     setModuleImports("main.js", {
         Sample: {
             Test: {

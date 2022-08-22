@@ -15,10 +15,9 @@ namespace System.IO
         private const char PathSeparatorChar = '/';
         private const string PathSeparatorString = "/";
 
-        public static string EntryFromPath(string entry, int offset, int length, ref char[] buffer, bool appendPathSeparator = false)
+        public static string EntryFromPath(string entry, int offset, int length, bool appendPathSeparator = false)
         {
             Debug.Assert(length <= entry.Length - offset);
-            Debug.Assert(buffer != null);
 
             // Remove any leading slashes from the entry name:
             while (length > 0)
@@ -32,26 +31,36 @@ namespace System.IO
             }
 
             if (length == 0)
-                return appendPathSeparator ? PathSeparatorString : string.Empty;
-
-            int resultLength = appendPathSeparator ? length + 1 : length;
-            EnsureCapacity(ref buffer, resultLength);
-            entry.CopyTo(offset, buffer, 0, length);
-
-            // '/' is a more broadly recognized directory separator on all platforms (eg: mac, linux)
-            // We don't use Path.DirectorySeparatorChar or AltDirectorySeparatorChar because this is
-            // explicitly trying to standardize to '/'
-            for (int i = 0; i < length; i++)
             {
-                char ch = buffer[i];
-                if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
-                    buffer[i] = PathSeparatorChar;
+                return appendPathSeparator ? PathSeparatorString : string.Empty;
             }
 
             if (appendPathSeparator)
-                buffer[length] = PathSeparatorChar;
+            {
+                length++;
+            }
 
-            return new string(buffer, 0, resultLength);
+            return string.Create(length, (appendPathSeparator, offset, entry), static (dest, state) =>
+            {
+                state.entry.AsSpan(state.offset).CopyTo(dest);
+
+                // '/' is a more broadly recognized directory separator on all platforms (eg: mac, linux)
+                // We don't use Path.DirectorySeparatorChar or AltDirectorySeparatorChar because this is
+                // explicitly trying to standardize to '/'
+                for (int i = 0; i < dest.Length; i++)
+                {
+                    char ch = dest[i];
+                    if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
+                    {
+                        dest[i] = PathSeparatorChar;
+                    }
+                }
+
+                if (state.appendPathSeparator)
+                {
+                    dest[^1] = PathSeparatorChar;
+                }
+            });
         }
 
         public static void EnsureCapacity(ref char[] buffer, int min)
