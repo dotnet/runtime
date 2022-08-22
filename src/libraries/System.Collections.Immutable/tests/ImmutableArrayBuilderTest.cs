@@ -948,7 +948,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 1.6, 2.5, 4.2 }, builder);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.CreateBuilder<int>());

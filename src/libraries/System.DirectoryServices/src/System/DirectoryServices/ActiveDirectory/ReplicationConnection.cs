@@ -98,7 +98,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.context = context;
             cachedDirectoryEntry = connectionEntry;
             _connectionName = name;
-            // this is an exising connection object
+            // this is an existing connection object
             existingConnection = true;
         }
 
@@ -495,7 +495,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // NTDSCONN_OPT_TWOWAY_SYNC  ( 1 << 1 )  force sync in opposite direction at end of sync
-                    if (value == true)
+                    if (value)
                     {
                         _options |= 0x2;
                     }
@@ -721,7 +721,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // NTDSCONN_OPT_USER_OWNED_SCHEDULE (1 << 5)
-                    if (value == true)
+                    if (value)
                     {
                         _options |= 0x20;
                     }
@@ -980,11 +980,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (targetDE != null)
-                    targetDE.Close();
-
-                if (sourceDE != null)
-                    sourceDE.Close();
+                targetDE?.Close();
+                sourceDE?.Close();
             }
         }
     }

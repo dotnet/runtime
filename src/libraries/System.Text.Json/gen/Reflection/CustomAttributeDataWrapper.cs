@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class CustomAttributeDataWrapper : CustomAttributeData
+    internal sealed class CustomAttributeDataWrapper : CustomAttributeData
     {
         public CustomAttributeDataWrapper(AttributeData a, MetadataLoadContextInternal metadataLoadContext)
         {

@@ -22,34 +22,34 @@ namespace System
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimmed fields don't make a difference for equality")]
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (null == obj)
             {
                 return false;
             }
-            Type thisType = this.GetType();
-            Type thatType = obj.GetType();
 
-            if (thatType != thisType)
+            if (GetType() != obj.GetType())
             {
                 return false;
             }
 
-            object thisObj = (object)this;
-            object? thisResult, thatResult;
-
             // if there are no GC references in this object we can avoid reflection
             // and do a fast memcmp
             if (CanCompareBits(this))
-                return FastEqualsCheck(thisObj, obj);
+            {
+                return SpanHelpers.SequenceEqual(
+                    ref RuntimeHelpers.GetRawData(this),
+                    ref RuntimeHelpers.GetRawData(obj),
+                    RuntimeHelpers.GetMethodTable(this)->GetNumInstanceFieldBytes());
+            }
 
-            FieldInfo[] thisFields = thisType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] thisFields = GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             for (int i = 0; i < thisFields.Length; i++)
             {
-                thisResult = thisFields[i].GetValue(thisObj);
-                thatResult = thisFields[i].GetValue(obj);
+                object? thisResult = thisFields[i].GetValue(this);
+                object? thatResult = thisFields[i].GetValue(obj);
 
                 if (thisResult == null)
                 {
@@ -69,9 +69,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(object obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool FastEqualsCheck(object a, object b);
-
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
         **        for the first non-static field and get its hashcode.  If the type has no
@@ -84,9 +81,6 @@ namespace System
         ==============================================================================*/
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern override int GetHashCode();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetHashCodeOfPtr(IntPtr ptr);
 
         public override string? ToString()
         {

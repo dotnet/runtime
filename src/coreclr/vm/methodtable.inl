@@ -949,6 +949,13 @@ inline BOOL MethodTable::IsAutoLayoutOrHasAutoLayoutField()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::IsInt128OrHasInt128Fields()
+{
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetClass()->IsInt128OrHasInt128Fields();
+}
+
+//==========================================================================================
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1270,31 +1277,6 @@ inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
             return FALSE;
 
         CopyValueClass(dest, src->UnBox(), this);
-    }
-    return TRUE;
-}
-
-//==========================================================================================
-// unbox src into argument, making sure src is of the correct type.
-
-inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Nullable::IsNullableType(TypeHandle(this)))
-        return Nullable::UnBoxIntoArgNoGC(argDest, src, this);
-    else
-    {
-        if (src == NULL || src->GetMethodTable() != this)
-            return FALSE;
-
-        CopyValueClassArg(argDest, src->UnBox(), this, 0);
     }
     return TRUE;
 }

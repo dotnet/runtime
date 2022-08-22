@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -4358,7 +4359,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63746", TestPlatforms.tvOS)]
         public void Vector128NIntSumTest()
         {
             Vector128<nint> vector = Vector128.Create((nint)0x01);
@@ -4374,7 +4374,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63746", TestPlatforms.tvOS)]
         public void Vector128NUIntSumTest()
         {
             Vector128<nuint> vector = Vector128.Create((nuint)0x01);
@@ -4453,7 +4452,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector128DoubleEqualsNaNTest()
         {
             Vector128<double> nan = Vector128.Create(double.NaN);
@@ -4461,11 +4459,79 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector128SingleEqualsNaNTest()
         {
             Vector128<float> nan = Vector128.Create(float.NaN);
             Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void IsSupportedByte() => TestIsSupported<byte>();
+
+        [Fact]
+        public void IsSupportedDouble() => TestIsSupported<double>();
+
+        [Fact]
+        public void IsSupportedInt16() => TestIsSupported<short>();
+
+        [Fact]
+        public void IsSupportedInt32() => TestIsSupported<int>();
+
+        [Fact]
+        public void IsSupportedInt64() => TestIsSupported<long>();
+
+        [Fact]
+        public void IsSupportedIntPtr() => TestIsSupported<nint>();
+
+        [Fact]
+        public void IsSupportedSByte() => TestIsSupported<sbyte>();
+
+        [Fact]
+        public void IsSupportedSingle() => TestIsSupported<float>();
+
+        [Fact]
+        public void IsSupportedUInt16() => TestIsSupported<ushort>();
+
+        [Fact]
+        public void IsSupportedUInt32() => TestIsSupported<uint>();
+
+        [Fact]
+        public void IsSupportedUInt64() => TestIsSupported<ulong>();
+
+        [Fact]
+        public void IsSupportedUIntPtr() => TestIsSupported<nuint>();
+
+        private static void TestIsSupported<T>()
+            where T : struct
+        {
+            Assert.True(Vector128<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.True((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
+        public void IsNotSupportedBoolean() => TestIsNotSupported<bool>();
+
+        [Fact]
+        public void IsNotSupportedChar() => TestIsNotSupported<char>();
+
+        [Fact]
+        public void IsNotSupportedHalf() => TestIsNotSupported<Half>();
+
+        [Fact]
+        public void IsNotSupportedInt128() => TestIsNotSupported<Int128>();
+
+        [Fact]
+        public void IsNotSupportedUInt128() => TestIsNotSupported<UInt128>();
+
+        private static void TestIsNotSupported<T>()
+            where T : struct
+        {
+            Assert.False(Vector128<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.False((bool)methodInfo.Invoke(null, null));
         }
     }
 }

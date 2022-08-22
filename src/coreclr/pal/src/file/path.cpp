@@ -646,7 +646,7 @@ void FILECanonicalizePath(LPSTR lpUnixPath)
         }
     }
 
-    /* step 5 : remove a traling '/.' */
+    /* step 5 : remove a trailing '/.' */
 
     slashdotptr = strstr(lpUnixPath,"/.");
     if (slashdotptr != NULL && slashdotptr[2] == '\0')

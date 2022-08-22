@@ -95,6 +95,8 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const ch
 // Functions and types used by PAL_TRY-related macros.
 //
 
+extern bool IsSuperPMIException(unsigned code);
+
 extern LONG FilterSuperPMIExceptions_CatchMC(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
 struct FilterSuperPMIExceptionsParam_CaptureException
@@ -114,12 +116,15 @@ struct FilterSuperPMIExceptionsParam_CaptureException
     void Initialize(PEXCEPTION_POINTERS pExceptionPointers)
     {
         exceptionCode    = pExceptionPointers->ExceptionRecord->ExceptionCode;
-        exceptionMessage = (pExceptionPointers->ExceptionRecord->NumberParameters != 1) ? nullptr : (char*)pExceptionPointers->ExceptionRecord->ExceptionInformation[0];
+        exceptionMessage = nullptr;
+        if (IsSuperPMIException(exceptionCode) && (pExceptionPointers->ExceptionRecord->NumberParameters >= 1))
+        {
+            exceptionMessage = (char*)pExceptionPointers->ExceptionRecord->ExceptionInformation[0];
+        }
     }
 };
 
 extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 extern bool RunWithErrorTrap(void (*function)(void*), void* param);
 extern bool RunWithSPMIErrorTrap(void (*function)(void*), void* param);
 extern void RunWithErrorExceptionCodeCaptureAndContinueImp(void* param, void (*function)(void*), void (*finallyFunction)(void*, DWORD));

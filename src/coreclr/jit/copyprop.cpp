@@ -72,7 +72,7 @@ void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
         }
         else
         {
-            // A promoted field was asigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
+            // A promoted field was assigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
             JITDUMP("%d-[%06d]:V%02u(V%02u) ", iter.Get(), dspTreeID(lclVar), ssaLclNum, lclVar->GetLclNum());
         }
     }

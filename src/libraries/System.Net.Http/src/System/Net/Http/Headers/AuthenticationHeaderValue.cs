@@ -87,7 +87,7 @@ namespace System.Net.Http.Headers
 
             if (!string.IsNullOrEmpty(_parameter))
             {
-                result = result ^ _parameter.GetHashCode();
+                result ^= _parameter.GetHashCode();
             }
 
             return result;
@@ -148,7 +148,7 @@ namespace System.Net.Http.Headers
 
             int current = startIndex + schemeLength;
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             if ((current == input.Length) || (input[current] == ','))
             {
@@ -206,7 +206,7 @@ namespace System.Net.Http.Headers
                         // We have a quote but an invalid quoted-string.
                         return false;
                     }
-                    current = current + quotedStringLength;
+                    current += quotedStringLength;
                     parameterEndIndex = current - 1; // -1 because 'current' points to the char after the final '"'
                 }
                 else
@@ -223,7 +223,7 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        current = current + whitespaceLength;
+                        current += whitespaceLength;
                     }
                 }
             }
@@ -256,8 +256,8 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + tokenLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += tokenLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 // If we reached the end of the string or the token is followed by anything but '=', then the parsed
                 // token is another scheme name. The string representing parameters ends before the token (e.g.
@@ -268,7 +268,7 @@ namespace System.Net.Http.Headers
                 }
 
                 current++; // skip '=' delimiter
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
                 int valueLength = NameValueHeaderValue.GetValueLength(input, current);
 
                 // After '<name>=' we expect a valid <value> (either token or quoted string)
@@ -279,9 +279,9 @@ namespace System.Net.Http.Headers
 
                 // Update parameter end index, since we just parsed a valid <name>=<value> pair that is part of the
                 // parameters string.
-                current = current + valueLength;
+                current += valueLength;
                 parameterEndIndex = current - 1; // -1 because 'current' already points to the char after <value>
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
                 parseEndIndex = current; // this essentially points to parameterEndIndex + whitespace + next char
             } while ((current < input.Length) && (input[current] == ','));
 

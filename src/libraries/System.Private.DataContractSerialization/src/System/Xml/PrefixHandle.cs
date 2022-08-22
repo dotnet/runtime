@@ -23,7 +23,7 @@ namespace System.Xml
         private int _offset;
         private int _length;
         private static readonly string[] s_prefixStrings = { "", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
-        private static readonly byte[] s_prefixBuffer = { (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h', (byte)'i', (byte)'j', (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p', (byte)'q', (byte)'r', (byte)'s', (byte)'t', (byte)'u', (byte)'v', (byte)'w', (byte)'x', (byte)'y', (byte)'z' };
+        private static readonly byte[] s_prefixBuffer = "abcdefghijklmnopqrstuvwxyz"u8.ToArray();
 
         public PrefixHandle(XmlBufferReader bufferReader)
         {

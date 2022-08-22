@@ -44,6 +44,7 @@ internal static partial class Interop
 
             if (error != ErrorCode.ERROR_SUCCESS)
             {
+                secretAgreement.Dispose();
                 throw error.ToCryptographicException();
             }
 

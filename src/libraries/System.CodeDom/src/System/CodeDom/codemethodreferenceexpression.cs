@@ -34,6 +34,6 @@ namespace System.CodeDom
             set => _methodName = value;
         }
 
-        public CodeTypeReferenceCollection TypeArguments => _typeArguments ?? (_typeArguments = new CodeTypeReferenceCollection());
+        public CodeTypeReferenceCollection TypeArguments => _typeArguments ??= new CodeTypeReferenceCollection();
     }
 }

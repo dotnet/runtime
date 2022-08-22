@@ -18,13 +18,15 @@ namespace BinderTracingTests
     class BinderTestAttribute : Attribute
     {
         public bool Isolate { get; private set; }
+        public string ActiveIssue { get; private set; }
         public string TestSetup { get; private set; }
         public string[] AdditionalLoadsToTrack { get; private set; }
-        public BinderTestAttribute(bool isolate = false, string testSetup = null, string[] additionalLoadsToTrack = null)
+        public BinderTestAttribute(bool isolate = false, string testSetup = null, string[] additionalLoadsToTrack = null, string activeIssue = null)
         {
             Isolate = isolate;
             TestSetup = testSetup;
             AdditionalLoadsToTrack = additionalLoadsToTrack;
+            ActiveIssue = activeIssue;
         }
     }
 
@@ -75,7 +77,9 @@ namespace BinderTracingTests
         {
             MethodInfo[] methods = typeof(BinderTracingTest)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.GetCustomAttribute<BinderTestAttribute>() != null && m.ReturnType == typeof(BindOperation))
+                .Where(m => m.GetCustomAttribute<BinderTestAttribute>() != null &&
+                    m.ReturnType == typeof(BindOperation) &&
+                    m.GetCustomAttribute<BinderTestAttribute>().ActiveIssue == null)
                 .ToArray();
 
             foreach (var method in methods)
@@ -110,7 +114,10 @@ namespace BinderTracingTests
                     // Run specific test - first argument should be the test method name
                     MethodInfo method = typeof(BinderTracingTest)
                         .GetMethod(args[0], BindingFlags.Public | BindingFlags.Static);
-                    Assert.True(method != null && method.GetCustomAttribute<BinderTestAttribute>() != null && method.ReturnType == typeof(BindOperation));
+                    Assert.True(method != null &&
+                        method.GetCustomAttribute<BinderTestAttribute>() != null &&
+                        method.ReturnType == typeof(BindOperation) &&
+                        method.GetCustomAttribute<BinderTestAttribute>().ActiveIssue == null);
                     success = RunSingleTest(method);
                 }
             }

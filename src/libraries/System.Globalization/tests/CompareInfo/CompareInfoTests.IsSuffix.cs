@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
             // Turkish
             yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.None, false, 0 };
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.IgnoreCase, false, 0 };
                 yield return new object[] { s_turkishCompare, "Hi", "\u0130", CompareOptions.IgnoreCase, true, 1 };

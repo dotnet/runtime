@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.ITtsEngineSite.Write(System.IntPtr,System.Int32)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.ITtsEngineSite.Write(System.IntPtr,System.Int32)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.SpeechEventInfo.#ctor(System.Int16,System.Int16,System.Int32,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.TtsEngineSsml.GetOutputFormat(System.Speech.Synthesis.TtsEngine.SpeakOutputFormat,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.TtsEngineSsml.Speak(System.Speech.Synthesis.TtsEngine.TextFragment[],System.IntPtr,System.Speech.Synthesis.TtsEngine.ITtsEngineSite)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0005</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.TtsEngineSsml.GetOutputFormat(System.Speech.Synthesis.TtsEngine.SpeakOutputFormat,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0005</DiagnosticId>
+    <Target>M:System.Speech.Synthesis.TtsEngine.TtsEngineSsml.Speak(System.Speech.Synthesis.TtsEngine.TextFragment[],System.IntPtr,System.Speech.Synthesis.TtsEngine.ITtsEngineSite)</Target>
+    <Left>lib/net6.0/System.Speech.dll</Left>
+    <Right>lib/net7.0/System.Speech.dll</Right>
+  </Suppression>
+</Suppressions>

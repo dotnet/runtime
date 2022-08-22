@@ -58,11 +58,9 @@ namespace ILCompiler
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
-        private readonly SortedSet<MethodDesc> _dynamicInvokeTemplates = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
-        internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
@@ -105,9 +103,6 @@ namespace ILCompiler
 
             var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
-
-            DynamicInvokeTemplateData = new DynamicInvokeTemplateDataNode(commonFixupsTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DynamicInvokeTemplateData), DynamicInvokeTemplateData, DynamicInvokeTemplateData, DynamicInvokeTemplateData.EndSymbol);
 
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
@@ -221,6 +216,9 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+
+                if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
+                    _reflectableMethods.Add(method);
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
@@ -231,11 +229,6 @@ namespace ILCompiler
             if (obj is DelegateMarshallingDataNode delegateMarshallingDataNode)
             {
                 _typesWithDelegateMarshalling.Add(delegateMarshallingDataNode.Type);
-            }
-
-            if (obj is DynamicInvokeTemplateNode dynamicInvokeTemplate)
-            {
-                _dynamicInvokeTemplates.Add(dynamicInvokeTemplate.Method);
             }
 
             if (obj is NativeLayoutTemplateMethodSignatureVertexNode templateMethodEntry)
@@ -251,8 +244,7 @@ namespace ILCompiler
         /// </summary>
         public virtual bool IsReflectionInvokable(MethodDesc method)
         {
-            return Internal.IL.Stubs.DynamicInvokeMethodThunk.SupportsSignature(method.Signature)
-                && IsMethodSupportedInReflectionInvoke(method);
+            return IsMethodSupportedInReflectionInvoke(method);
         }
 
         public static bool IsMethodSupportedInReflectionInvoke(MethodDesc method)
@@ -342,6 +334,28 @@ namespace ILCompiler
 
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
+
+                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
+            }
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to generated fields.
+        /// </summary>
+        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        {
+            MetadataCategory category = GetMetadataCategory(field);
+
+            if ((category & MetadataCategory.Description) != 0)
+            {
+                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, field);
+            }
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                TypeDesc owningCanonicalType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningCanonicalType);
             }
         }
 
@@ -359,6 +373,13 @@ namespace ILCompiler
             // and property setters)
         }
 
+        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
+            // (E.g. dependencies caused by the field having custom attributes applied to it: making sure we compile the attribute constructor
+            // and property setters)
+        }
+
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
@@ -370,17 +391,11 @@ namespace ILCompiler
             {
                 GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
             }
+        }
 
-            if ((category & MetadataCategory.RuntimeMapping) != 0)
-            {
-                // We're going to generate a mapping table entry for this. Collect dependencies.
-
-                // Nothing special is needed for the mapping table (we only emit the MethodTable and we already
-                // have one, since we got this callback). But check if a child wants to do something extra.
-                GetRuntimeMappingDependenciesDueToReflectability(ref dependencies, factory, type);
-            }
-
-            GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
+        internal virtual void GetDependenciesDueToModuleUse(ref DependencyList dependencies, NodeFactory factory, ModuleDesc module)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by using a module
         }
 
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -388,17 +403,6 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
-        }
-
-        protected virtual void GetRuntimeMappingDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            // MetadataManagers can override this to provide additional dependencies caused by the emission of a runtime
-            // mapping for a type.
-        }
-
-        protected virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            // MetadataManagers can override this to provide additional dependencies caused by the emission of an MethodTable.
         }
 
         public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -431,6 +435,22 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
+        /// </summary>
+        public virtual void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the construction
+            // of a delegate to a method.
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional dependencies for overriden methods on constructed types.
+        /// </summary>
+        public virtual void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
+        {
+        }
+
+        /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated method bodies.
         /// </summary>
         public void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
@@ -440,36 +460,19 @@ namespace ILCompiler
                 ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
             }
 
-            GetDependenciesDueToTemplateTypeLoader(ref dependencies, factory, method);
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
+        }
+
+        public virtual void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the presence of
+            // method generic dictionary.
         }
 
         public virtual void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // method code.
-        }
-
-        private void GetDependenciesDueToTemplateTypeLoader(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // TODO-SIZE: this is overly generous in the templates we create
-            if (_blockingPolicy is FullyBlockedMetadataBlockingPolicy)
-                return;
-
-            if (method.HasInstantiation)
-            {
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-            }
-            else
-            {
-                TypeDesc owningTemplateType = method.OwningType;
-
-                // Unboxing and Instantiating stubs use a different type as their template
-                if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
-                    owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
-
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
-            }
         }
 
         protected virtual void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
@@ -502,48 +505,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public abstract MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method);
-
-        /// <summary>
-        /// Compute the canonical instantiation of a dynamic invoke thunk needed to invoke a method
-        /// This algorithm is shared with the runtime, so if a thunk requires generic instantiation
-        /// to be used, it must match this algorithm, and cannot be different with different MetadataManagers
-        /// NOTE: This function may return null in cases where an exact instantiation does not exist. (Universal Generics)
-        /// </summary>
-        protected MethodDesc InstantiateCanonicalDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
-        {
-            if (thunk.Instantiation.Length == 0)
-            {
-                // nothing to instantiate
-                return thunk;
-            }
-
-            MethodSignature sig = method.Signature;
-            TypeSystemContext context = method.Context;
-
-            //
-            // Instantiate the generic thunk over the parameters and the return type of the target method
-            //
-
-            TypeDesc[] instantiation = Internal.IL.Stubs.DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(method);
-            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
-
-            // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 
-            // won't create a dynamic invoker instantiation. The arguments will be interpreted at runtime by the
-            // calling convention converter during the dynamic invocation
-            foreach (TypeDesc type in instantiation)
-            {
-                if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                    return null;
-            }
-
-            // If the thunk ends up being shared code, return the canonical method body.
-            // The concrete dictionary for the thunk will be built at runtime and is not interesting for the compiler.
-            Instantiation canonInstantiation = context.ConvertInstantiationToCanonForm(new Instantiation(instantiation), CanonicalFormKind.Specific);
-
-            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, canonInstantiation);
-            return instantiatedDynamicInvokeMethod;
-        }
+        public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
 
         protected void EnsureMetadataGenerated(NodeFactory factory)
         {
@@ -710,11 +672,6 @@ namespace ILCompiler
             return _typesWithConstructedEETypesGenerated;
         }
 
-        internal IEnumerable<MethodDesc> GetDynamicInvokeTemplateMethods()
-        {
-            return _dynamicInvokeTemplates;
-        }
-
         internal IEnumerable<NativeLayoutTemplateMethodSignatureVertexNode> GetTemplateMethodEntries()
         {
             return _templateMethodEntries;
@@ -845,7 +802,7 @@ namespace ILCompiler
         {
         }
 
-        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             return null;
         }

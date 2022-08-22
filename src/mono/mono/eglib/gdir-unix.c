@@ -126,7 +126,7 @@ g_mkdir_with_parents (const gchar *pathname, int mode)
 		if (*d == '/' || *d == '\0') {
 		  char orig = *d;
 		  *d = '\0';
-		  rv = mkdir (path, mode);
+		  rv = mkdir (path, (mode_t)mode);
 		  if (rv == -1 && errno != EEXIST) {
 		  	g_free (path);
 			return -1;

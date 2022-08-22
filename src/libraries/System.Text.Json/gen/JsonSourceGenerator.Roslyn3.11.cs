@@ -29,9 +29,9 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(GeneratorInitializationContext context)
         {
             // Unfortunately, there is no cancellation token that can be passed here
-            // (the one in GeneratorInitializationContext is not safe to capture). 
+            // (the one in GeneratorInitializationContext is not safe to capture).
             // In practice this should still be ok as the generator driver itself will
-            // cancel after every file it processes. 
+            // cancel after every file it processes.
             context.RegisterForSyntaxNotifications(static () => new SyntaxContextReceiver(CancellationToken.None));
         }
 
@@ -78,14 +78,46 @@ namespace System.Text.Json.SourceGeneration
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
-                if (Parser.IsSyntaxTargetForGeneration(context.Node))
+                if (IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context, _cancellationToken);
+                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);
                     if (classSyntax != null)
                     {
                         (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(classSyntax);
                     }
                 }
+            }
+
+            private static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 };
+
+            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+            {
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == Parser.JsonSerializableAttributeFullName)
+                        {
+                            return classDeclarationSyntax;
+                        }
+                    }
+
+                }
+
+                return null;
             }
         }
 

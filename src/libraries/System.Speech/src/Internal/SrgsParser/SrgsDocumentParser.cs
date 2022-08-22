@@ -78,7 +78,7 @@ namespace System.Speech.Internal.SrgsParser
             grammar.CodeBehind = source.CodeBehind;
             grammar.Debug = source.Debug;
             grammar.ImportNamespaces = source.ImportNamespaces;
-            grammar.Language = source.Language == null ? "C#" : source.Language;
+            grammar.Language = source.Language ?? "C#";
             grammar.Namespace = source.Namespace;
 
             // if add the content to the generic _scrip

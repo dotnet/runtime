@@ -29,31 +29,51 @@ namespace Microsoft.Interop
 
                 if (info.RefKind == RefKind.Out)
                 {
-                    // Assign out params to default
-                    initializations.Add(ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(info.InstanceIdentifier),
-                            LiteralExpression(
-                                SyntaxKind.DefaultLiteralExpression,
-                                Token(SyntaxKind.DefaultKeyword)))));
+                    (TargetFramework fmk, _) = context.GetTargetFramework();
+                    if (info.ManagedType is not PointerTypeInfo
+                        && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
+                        && fmk is TargetFramework.Net)
+                    {
+                        // Use the Unsafe.SkipInit<T> API when available and
+                        // managed type is usable as a generic parameter.
+                        initializations.Add(ExpressionStatement(
+                            InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                    IdentifierName("SkipInit")))
+                            .WithArgumentList(
+                                ArgumentList(SingletonSeparatedList(
+                                    Argument(IdentifierName(info.InstanceIdentifier))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)))))));
+                    }
+                    else
+                    {
+                        // Assign out params to default
+                        initializations.Add(ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(info.InstanceIdentifier),
+                                LiteralExpression(
+                                    SyntaxKind.DefaultLiteralExpression,
+                                    Token(SyntaxKind.DefaultKeyword)))));
+                    }
                 }
 
                 // Declare variables for parameters
-                AppendVariableDeclations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             // Stub return is not the same as invoke return
             if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for stub return value
-                AppendVariableDeclations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for invoke return value
-                AppendVariableDeclations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             return new VariableDeclarations
@@ -62,7 +82,7 @@ namespace Microsoft.Interop
                 Variables = variables.ToImmutable()
             };
 
-            static void AppendVariableDeclations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
+            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
             {
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 

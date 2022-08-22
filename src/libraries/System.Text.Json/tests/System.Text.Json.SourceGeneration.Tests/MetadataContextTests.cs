@@ -252,7 +252,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public void EnsureHelperMethodGenerated_ImplicitPropertyFactory()
         {
             // ContextWithImplicitStringEnum does not have an entry for EnumWrittenAsString since it is
-            // implictly added by PocoWithEnum. Verify helper methods are still being created properly.
+            // implicitly added by PocoWithEnum. Verify helper methods are still being created properly.
 
             const string Json = "{\"MyEnum\":\"A\"}";
 

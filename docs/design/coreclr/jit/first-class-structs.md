@@ -70,11 +70,6 @@ Current Representation of Struct Values
 
 These struct-typed nodes are created by the importer, but transformed in morph, and so are not
 encountered by most phases of the JIT:
-* `GT_INDEX`: This is transformed to a `GT_IND`
-  * Currently, the IND is marked with `GTF_IND_ARR_INDEX` and the node pointer of the `GT_IND` acts as a key
-    into the array info map.
-  * Proposed: This should be transformed into a `GT_OBJ` when it represents a struct type, and then the
-    class handle would no longer need to be obtained from the array info map.
 * `GT_FIELD`: This is transformed to a `GT_LCL_VAR` by the `Compiler::fgMarkAddressExposedLocals()` phase
   if it's a promoted struct field, or to a `GT_LCL_FLD` or GT_IND` by `fgMorphField()`.
   * Proposed: A non-promoted struct typed field should be transformed into a `GT_OBJ`, so that consistently all struct
@@ -90,9 +85,7 @@ encountered by most phases of the JIT:
 ### Struct “objects” as lvalues
 
 * The lhs of a struct assignment is a block or local node:
-  * `GT_OBJ` nodes represent the “shape” info via a struct handle, along with the GC info
-    (location and type of GC references within the struct).
-    * These are currently used only to represent struct values that contain GC references (although see below).
+  * `GT_OBJ` nodes represent struct types with a handle, and store a pointer to the `ClassLayout` object.
   * `GT_BLK` nodes represent struct types with no GC references, or opaque blocks of fixed size.
     * These have no struct handle, resulting in some pessimization or even incorrect
       code when the appropriate struct handle can't be determined.
@@ -101,12 +94,12 @@ encountered by most phases of the JIT:
       [#21705](https://github.com/dotnet/coreclr/pull/21705) they are no longer large nodes.
   * `GT_STORE_OBJ` and `GT_STORE_BLK` have the same structure as `GT_OBJ` and `GT_BLK`, respectively
     * `Data()` is op2
-  * `GT_DYN_BLK` and `GT_STORE_DYN_BLK` (GenTreeDynBlk extends GenTreeBlk)
+  * `GT_STORE_DYN_BLK` (GenTreeStoreDynBlk extends GenTreeBlk)
     * Additional child `gtDynamicSize`
-    * Note that these aren't really struct types; they represent dynamically sized blocks
+    * Note that these aren't really struct stores; they represent dynamically sized blocks
       of arbitrary data.
-  * For `GT_LCL_FLD` nodes, we don't retain shape information, except indirectly via the `FieldSeqNode`.
-  * For `GT_LCL_VAR` nodes, the`ClassLayout` is obtained from the `LclVarDsc`.
+  * For `GT_LCL_FLD` nodes, we store a pointer to `ClassLayout` in the node.
+  * For `GT_LCL_VAR` nodes, the `ClassLayout` is obtained from the `LclVarDsc`.
 
 ### Struct “objects” as rvalues
 
@@ -131,10 +124,6 @@ After morph, a struct-typed value on the RHS of assignment is one of:
 * `GT_CALL`
 * `GT_LCL_VAR`
 * `GT_LCL_FLD`
-  * Note: With `compDoOldStructRetyping()`, a GT_LCL_FLD` with a primitive type of the same size as the struct
-    is used to represent a reference to the full struct when it is passed in a register.
-    This forces the struct to live on the stack, and makes it more difficult to optimize these struct values,
-    which is why this mechanism is being phased out.
 * `GT_SIMD`
 * `GT_OBJ` nodes can also be used as rvalues when they are call arguments
   * Proposed: `GT_OBJ` nodes can be used in any context where a struct rvalue or lvalue might occur,
@@ -173,8 +162,7 @@ There are three main phases in the JIT that make changes to the representation o
         registers. The necessary transformations for correct code generation would be
         made in `Lowering`.
 
-    * With `compDoOldStructRetyping()`, if it is passed in a single register, it is morphed into a
-     `GT_LCL_FLD` node of the appropriate primitive type.
+    * If it is passed in a single register, it is morphed into a `GT_LCL_FLD` node of the appropriate primitive type.
       * This may involve making a copy, if the size cannot be safely loaded.
       * Proposed: This would remain a `GT_OBJ` and would be appropriately transformed in `Lowering`,
         e.g. using `GT_BITCAST`.
@@ -234,7 +222,7 @@ This would be done in multiple phases:
       * This work item should address issue [#4323 RyuJIT properly optimizes structs with a single field
         if the field type is int but not if it is double](https://github.com/dotnet/runtime/issues/4323)
         (test is `JIT\Regressions\JitBlue\GitHub_1161`),
-        [#7200 Struct getters are generating unneccessary
+        [#7200 Struct getters are generating unnecessary
         instructions on x64 when struct contains floats](https://github.com/dotnet/runtime/issues/7200)
         and [#11413 Inefficient codegen for casts between same size types](https://github.com/dotnet/runtime/issues/11413).
     * Remove the pessimization in `LocalAddressVisitor::PostOrderVisit()` for the `GT_RETURN` case.
@@ -310,21 +298,12 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
   for block copies. See [\#21711 Improve init/copy block codegen](https://github.com/dotnet/coreclr/pull/21711).
 
 * This also includes cleanup of the block morphing methods such that block nodes needn't be visited multiple
-  times, such as `fgMorphBlkToInd` (may be simply unneeded), `fgMorphBlkNode` and `fgMorphBlkOperand`.
+  times, such as `fgMorphBlkNode` and `fgMorphBlkOperand`.
   These methods were introduced to preserve old behavior, but should be simplified.
-
-* Somewhat related is the handling of struct-typed array elements. Currently, after the `GT_INDEX` is transformed
-  into a `GT_IND`, that node must be retained as the key into the `ArrayInfoMap`. For structs, this is then
-  wrapped in `OBJ(ADDR(...))`. We should be able to change the IND to OBJ and avoid wrapping, and should also be
-  able to remove the class handle from the array info map and instead used the one provided by the `GT_OBJ`.
 
 ### Miscellaneous Cleanup
 
 These are all marked with `TODO-1stClassStructs` or `TODO-Cleanup` in the last case:
-
-* The handling of `DYN_BLK` is unnecessarily complicated to duplicate previous behavior (i.e. to enable previous
-  refactorings to be zero-diff). These nodes are infrequent so the special handling should just be eliminated
-  (e.g. see `GenTree::GetChild()`).
 
 * The checking at the end of `gtNewTempAssign()` should be simplified.
 
@@ -368,7 +347,7 @@ The following issues illustrate some of the motivation for improving the handlin
   * Unfortunately, there is not currently a scenario or test case for this issue.
 
 * [\#10879 Unix: Unnecessary struct copy while passing struct of size <=16](https://github.com/dotnet/runtime/issues/10879)
-* [\#9839 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/runtime/issues/9839)
+* [\#9839 [RyuJIT] Eliminate unnecessary copies when passing structs](https://github.com/dotnet/runtime/issues/9839)
   * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
   * It may be that these have been addressed by [PR #43870](https://github.com/dotnet/runtime/pull/43870).
 

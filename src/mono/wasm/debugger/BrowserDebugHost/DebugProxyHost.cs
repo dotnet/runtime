@@ -39,7 +39,7 @@ public static class DebugProxyHost
                                                    loggerFactory,
                                                    loggerFactory.CreateLogger("FirefoxMonoProxy"),
                                                    token,
-                                                   autoSetBreakpointOnEntryPoint: options.AutoSetBreakpointOnEntryPoint);
+                                                   options);
 
     public static async Task RunDevToolsProxyAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
     {

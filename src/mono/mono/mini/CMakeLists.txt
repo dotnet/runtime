@@ -12,13 +12,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
-  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation" "-lcompression")
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
-set(OS_LIBS "-framework CoreFoundation" "-lcompression" "-lobjc" "-lc++")
+set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
 elseif(HOST_LINUX)
@@ -209,6 +209,13 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(riscv64_sources
+    mini-riscv.c
+    mini-riscv.h
+    exceptions-riscv.c
+    tramp-riscv.c
+    cpu-riscv64.h)
+
 set(s390x_sources
     mini-s390x.c
     mini-s390x.h
@@ -220,8 +227,14 @@ set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
-    wasm_m2n_invoke.g.h
     cpu-wasm.h)
+
+set(powerpc64_sources
+    mini-ppc.c
+    mini-ppc.h
+    exceptions-ppc.c
+    tramp-ppc.c
+    cpu-ppc64.h)
 
 if(TARGET_AMD64)
 set(arch_sources ${amd64_sources})
@@ -231,10 +244,14 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_RISCV64)
+set(arch_sources ${riscv64_sources})
 elseif(TARGET_S390X)
 set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
+elseif(TARGET_POWERPC64)
+set(arch_sources ${powerpc64_sources})
 endif()
 
 set(darwin_sources
@@ -265,7 +282,9 @@ set(interp_sources
     interp/interp-intrins.c
     interp/mintops.h
     interp/mintops.c
-    interp/transform.c)
+    interp/transform.c
+    interp/tiering.h
+    interp/tiering.c)
 set(interp_stub_sources
     interp-stubs.c)
 
@@ -279,6 +298,12 @@ if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
 target_link_libraries(mono-ee-interp monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
+if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+# Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
+# generate_code are so big that some browsers overflow the stack with even a few recursive
+# invocations (e.g. during .cctor initialization)
+target_compile_options(mono-ee-interp PRIVATE -O1)
+endif()
 endif()
 
 if(ENABLE_LLVM)
@@ -300,7 +325,7 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
@@ -324,7 +349,7 @@ add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_O
 target_link_libraries (monosgen-static PRIVATE monoapi)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
-if(DISABLE_COMPONENTS)
+if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
   target_sources(monosgen-static PRIVATE "${mono-components-stub-objects}")
 endif()
@@ -423,7 +448,7 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
 endif()
 
-if(HOST_WASM)
+if(HOST_WASM AND NOT HOST_WASI)
 # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
 # This is the only source file which contains a c++ throw or catch
 add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
@@ -436,9 +461,6 @@ install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
-
-# don't set build_date, it creates non-deterministic builds
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[const char *build_date = "";]=])
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
@@ -469,6 +491,13 @@ add_custom_command(
 )
 
 add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-riscv64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_RISCV64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-riscv64.h riscv64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  VERBATIM
+)
+
+add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
@@ -482,12 +511,18 @@ add_custom_command(
   VERBATIM
 )
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.mdesc
+  VERBATIM
+)
+
 if(NOT DISABLE_EXECUTABLES)
-  set(sgen_sources "main-sgen.c")
+  set(main_sources "main.c")
   if(HOST_WIN32)
-    set(sgen_sources "${sgen_sources};${VERSION_FILE_RC_PATH}")
+    set(sgen_sources "${main_sources};${VERSION_FILE_RC_PATH}")
   endif()
-  add_executable(mono-sgen "${sgen_sources}")
+  add_executable(mono-sgen "${main_sources}")
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()

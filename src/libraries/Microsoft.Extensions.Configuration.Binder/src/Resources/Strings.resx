@@ -120,6 +120,12 @@
   <data name="Error_CannotActivateAbstractOrInterface" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because it is either abstract or an interface.</value>
   </data>
+  <data name="Error_CannotBindToConstructorParameter" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters cannot be declared as in, out, or ref. Invalid parameters are: '{1}'</value>
+  </data>
+  <data name="Error_ConstructorParametersDoNotMatchProperties" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters must have corresponding properties. Fields are not supported. Missing properties are: '{1}'</value>
+  </data>
   <data name="Error_FailedBinding" xml:space="preserve">
     <value>Failed to convert configuration value at '{0}' to type '{1}'.</value>
   </data>
@@ -129,8 +135,17 @@
   <data name="Error_MissingConfig" xml:space="preserve">
     <value>'{0}' was set on the provided {1}, but the following properties were not found on the instance of {2}: {3}</value>
   </data>
-  <data name="Error_MissingParameterlessConstructor" xml:space="preserve">
-    <value>Cannot create instance of type '{0}' because it is missing a public parameterless constructor.</value>
+  <data name="Error_MissingPublicInstanceConstructor" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it is missing a public instance constructor.</value>
+  </data>
+  <data name="Error_MultipleParameterizedConstructors" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</value>
+  </data>
+  <data name="Error_ParameterBeingBoundToIsUnnamed" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because one or more parameters are unnamed.</value>
+  </data>
+  <data name="Error_ParameterHasNoMatchingConfig" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because parameter '{1}' has no matching config. Each parameter in the constructor that does not have a default value must have a corresponding config entry.</value>
   </data>
   <data name="Error_UnsupportedMultidimensionalArray" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because multidimensional arrays are not supported.</value>

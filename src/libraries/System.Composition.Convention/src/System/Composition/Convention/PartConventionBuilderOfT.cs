@@ -187,10 +187,7 @@ namespace System.Composition.Convention
                             {
                                 var lambdaExpression = (LambdaExpression)parameter;
                                 Delegate importDelegate = lambdaExpression.Compile();
-                                if (_importBuilders == null)
-                                {
-                                    _importBuilders = new Dictionary<ParameterInfo, Action<ImportConventionBuilder>>();
-                                }
+                                _importBuilders ??= new Dictionary<ParameterInfo, Action<ImportConventionBuilder>>();
                                 _importBuilders.Add(parameterInfos[index], (Action<ImportConventionBuilder>)importDelegate);
                                 ++index;
                             }

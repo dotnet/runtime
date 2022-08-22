@@ -126,7 +126,7 @@ errno_t __cdecl _FUNC_NAME(
             }
             _TCSNCPY_S(_Dir, _DirSize, _Path, length);
 
-            // Normalize the path seperator
+            // Normalize the path separator
             size_t iIndex;
             for(iIndex = 0; iIndex < length; iIndex++)
             {

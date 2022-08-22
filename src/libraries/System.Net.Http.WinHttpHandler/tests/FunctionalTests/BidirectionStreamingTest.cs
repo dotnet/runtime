@@ -30,7 +30,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         protected override Version UseVersion => new Version(2, 0);
 
-        protected static byte[] DataBytes = Encoding.ASCII.GetBytes("data");
+        protected static byte[] DataBytes = "data"u8.ToArray();
 
         protected static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);

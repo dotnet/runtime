@@ -4,7 +4,8 @@
 import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
-import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish } from "./types";
+import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
+import { _zero_region } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -32,7 +33,7 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, true, name);
+    return new WasmRootBufferImpl(offset, capacity, true, name);
 }
 
 /**
@@ -51,7 +52,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, false, name);
+    return new WasmRootBufferImpl(offset, capacity, false, name);
 }
 
 /**
@@ -145,13 +146,6 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     }
 }
 
-function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
-}
-
 function _mono_wasm_release_scratch_index(index: number) {
     if (index === undefined)
         return;
@@ -179,8 +173,7 @@ function _mono_wasm_claim_scratch_index() {
     return result;
 }
 
-
-export class WasmRootBuffer {
+export class WasmRootBufferImpl implements WasmRootBuffer {
     private __count: number;
     private length: number;
     private __offset: VoidPtr;
@@ -267,24 +260,6 @@ export class WasmRootBuffer {
     }
 }
 
-export interface WasmRoot<T extends MonoObject> {
-    get_address(): MonoObjectRef;
-    get_address_32(): number;
-    get address(): MonoObjectRef;
-    get(): T;
-    set(value: T): T;
-    get value(): T;
-    set value(value: T);
-    copy_from_address(source: MonoObjectRef): void;
-    copy_to_address(destination: MonoObjectRef): void;
-    copy_from(source: WasmRoot<T>): void;
-    copy_to(destination: WasmRoot<T>): void;
-    valueOf(): T;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
-
 class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
@@ -307,7 +282,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
-        const result = this.__buffer._unsafe_get(this.__index);
+        const result = (<WasmRootBufferImpl>this.__buffer)._unsafe_get(this.__index);
         return <any>result;
     }
 

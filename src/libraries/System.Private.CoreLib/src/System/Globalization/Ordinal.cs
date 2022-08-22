@@ -164,9 +164,7 @@ namespace System.Globalization
                     return false; // not exact match, and first input isn't in [A-Za-z]
                 }
 
-                // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
-                // See https://github.com/dotnet/runtime/issues/4207.
-                return (valueA == (valueB | 0x20u)) ? true : false;
+                return valueA == (valueB | 0x20u);
             }
 
             Debug.Assert(length == 0);
@@ -266,8 +264,8 @@ namespace System.Globalization
             {
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
-                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
-                    SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
+                    SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
                 if (relativeIndex < 0)
                 {
                     break;

@@ -67,7 +67,7 @@ namespace System.Runtime.CompilerServices
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(o))]
         public static T As<T>(object? o) where T : class?
         {
             throw new PlatformNotSupportedException();
@@ -665,13 +665,14 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
         /// </summary>
+        /// <remarks>The lifetime of the reference will not be validated when using this API.</remarks>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_REF_IN
         // AOT:AsRef
         // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AsRef<T>(in T source)
+        public static ref T AsRef<T>(scoped in T source)
         {
             throw new PlatformNotSupportedException();
 

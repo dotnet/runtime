@@ -48,7 +48,7 @@ namespace System.Text.Json
             // Determine if we should use the extension property.
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.ExtensionDataProperty;
                 if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
@@ -56,7 +56,7 @@ namespace System.Text.Json
                     if (createExtensionProperty)
                     {
                         Debug.Assert(obj != null, "obj is null");
-                        CreateDataExtensionProperty(obj, dataExtProperty, options);
+                        CreateExtensionDataProperty(obj, dataExtProperty, options);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
@@ -71,18 +71,16 @@ namespace System.Text.Json
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options)
         {
             ReadOnlySpan<byte> unescapedPropertyName;
             ReadOnlySpan<byte> propertyName = reader.GetSpan();
 
-            if (reader._stringHasEscaping)
+            if (reader.ValueIsEscaped)
             {
-                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName, idx);
+                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName);
             }
             else
             {
@@ -100,7 +98,7 @@ namespace System.Text.Json
             return unescapedPropertyName;
         }
 
-        internal static void CreateDataExtensionProperty(
+        internal static void CreateExtensionDataProperty(
             object obj,
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
@@ -123,24 +121,26 @@ namespace System.Text.Json
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
-                if (jsonPropertyInfo.JsonTypeInfo.CreateObject == null)
+
+                Func<object>? createObjectForExtensionDataProp = jsonPropertyInfo.JsonTypeInfo.CreateObject
+                    ?? jsonPropertyInfo.JsonTypeInfo.CreateObjectForExtensionDataProperty;
+
+                if (createObjectForExtensionDataProp == null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
-                        extensionData = jsonPropertyInfo.ConverterBase.CreateObject(options);
+                        ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
                     }
                     else
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.PropertyType);
                     }
                 }
-                else
-                {
-                    extensionData = jsonPropertyInfo.JsonTypeInfo.CreateObject();
-                }
 
-                jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
+                extensionData = createObjectForExtensionDataProp();
+                Debug.Assert(jsonPropertyInfo.Set != null);
+                jsonPropertyInfo.Set(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

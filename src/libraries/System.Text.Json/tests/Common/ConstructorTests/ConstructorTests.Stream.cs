@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Tests
                     await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("{}")))
+                using (MemoryStream stream = new MemoryStream("{}"u8.ToArray()))
                 {
                     JsonSerializerOptions options = new JsonSerializerOptions
                     {

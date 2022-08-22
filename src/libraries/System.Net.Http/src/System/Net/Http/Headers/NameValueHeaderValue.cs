@@ -193,7 +193,7 @@ namespace System.Net.Http.Headers
             int result = 0;
             foreach (var value in values)
             {
-                result = result ^ value.GetHashCode();
+                result ^= value.GetHashCode();
             }
             return result;
         }
@@ -228,7 +228,7 @@ namespace System.Net.Http.Headers
 
             string name = input.Substring(startIndex, nameLength);
             int current = startIndex + nameLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // Parse the separator between name and value
             if ((current == input.Length) || (input[current] != '='))
@@ -236,12 +236,12 @@ namespace System.Net.Http.Headers
                 // We only have a name and that's OK. Return.
                 parsedValue = nameValueCreator();
                 parsedValue._name = name;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current); // skip whitespace
+                current += HttpRuleParser.GetWhitespaceLength(input, current); // skip whitespace
                 return current - startIndex;
             }
 
             current++; // skip delimiter.
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // Parse the value, i.e. <value> in name/value string "<name>=<value>"
             int valueLength = GetValueLength(input, current);
@@ -255,8 +255,8 @@ namespace System.Net.Http.Headers
             parsedValue = nameValueCreator();
             parsedValue._name = name;
             parsedValue._value = input.Substring(current, valueLength);
-            current = current + valueLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current); // skip whitespace
+            current += valueLength;
+            current += HttpRuleParser.GetWhitespaceLength(input, current); // skip whitespace
             return current - startIndex;
         }
 
@@ -286,8 +286,8 @@ namespace System.Net.Http.Headers
                 }
 
                 nameValueCollection.Add(parameter!);
-                current = current + nameValueLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += nameValueLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 if ((current == input.Length) || (input[current] != delimiter))
                 {
@@ -297,7 +297,7 @@ namespace System.Net.Http.Headers
 
                 // input[current] is 'delimiter'. Skip the delimiter and whitespace and try to parse again.
                 current++; // skip delimiter.
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
         }
 
@@ -358,7 +358,7 @@ namespace System.Net.Http.Headers
             }
 
             // Trailing/leading space are not allowed
-            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
+            if (value.StartsWith(' ') || value.StartsWith('\t') || value.EndsWith(' ') || value.EndsWith('\t'))
             {
                 ThrowFormatException(value);
             }

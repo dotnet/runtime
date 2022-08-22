@@ -199,18 +199,7 @@ namespace ILCompiler
                 if ((pair.Value & MetadataCategory.RuntimeMapping) != 0)
                 {
                     FieldDesc field = pair.Key;
-
-                    // We only care about static fields at this point. Instance fields don't need
-                    // runtime artifacts generated in the image.
-                    if (field.IsStatic && !field.IsLiteral)
-                    {
-                        if (field.IsThreadStatic)
-                            rootProvider.RootThreadStaticBaseForType(field.OwningType, reason);
-                        else if (field.HasGCStaticBase)
-                            rootProvider.RootGCStaticBaseForType(field.OwningType, reason);
-                        else
-                            rootProvider.RootNonGCStaticBaseForType(field.OwningType, reason);
-                    }
+                    rootProvider.AddReflectionRoot(field, reason);
                 }
             }
 
@@ -254,21 +243,19 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
             {
-                try
-                {
-                    // We'll possibly need to do something else here if we ever use this MetadataManager
-                    // with compilation modes that generate multiple metadata blobs.
-                    // (Multi-module or .NET Native style shared library.)
-                    // We are currently missing type forwarders pointing to the other blobs.
-                    var targetType = (MetadataType)module.GetObject(exportedTypeHandle);
-                    return GeneratesMetadata(targetType);
-                }
-                catch (TypeSystemException)
+                // We'll possibly need to do something else here if we ever use this MetadataManager
+                // with compilation modes that generate multiple metadata blobs.
+                // (Multi-module or .NET Native style shared library.)
+                // We are currently missing type forwarders pointing to the other blobs.
+                var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
+                if (targetType == null)
                 {
                     // No harm in generating a forwarder that didn't resolve.
                     // We'll get matching behavior at runtime.
                     return true;
                 }
+
+                return GeneratesMetadata(targetType);
             }
 
             public bool IsBlocked(MetadataType typeDef)

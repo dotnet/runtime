@@ -20,7 +20,7 @@ public class CleanTests : NativeRebuildTestsBase
     {
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildThenClean_NativeRelinking(string config)
@@ -45,16 +45,16 @@ public class CleanTests : NativeRebuildTestsBase
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 
-        AssertEmptyOrNonExistantDirectory(relinkDir);
+        AssertEmptyOrNonExistentDirectory(relinkDir);
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
@@ -92,9 +92,9 @@ public class CleanTests : NativeRebuildTestsBase
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 
-        AssertEmptyOrNonExistantDirectory(relinkDir);
+        AssertEmptyOrNonExistentDirectory(relinkDir);
     }
-    private void AssertEmptyOrNonExistantDirectory(string dirPath)
+    private void AssertEmptyOrNonExistentDirectory(string dirPath)
     {
         _testOutput.WriteLine($"dirPath: {dirPath}");
         if (!Directory.Exists(dirPath))

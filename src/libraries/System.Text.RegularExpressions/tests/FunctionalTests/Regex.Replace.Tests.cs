@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "a", "aaaaa", "b", RegexOptions.None, 2, 3, "aaabb" };
 
                 // Stress
-                yield return new object[] { engine, ".", new string('a', 1000), "b", RegexOptions.None, 1000, 0, new string('b', 1000) };
+                yield return new object[] { engine, ".", new string('a', 999), "b", RegexOptions.None, 999, 0, new string('b', 999) };
 
                 // Undefined groups
                 yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$2048$1024dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcat$2048$1024dogENDkljeah" };
@@ -34,9 +34,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"D\.(.+)", "D.Bau", "David $1", RegexOptions.None, 5, 0, "David Bau" };
 
                 // Stress
-                string pattern = string.Concat(Enumerable.Repeat("([a-z]", 1000).Concat(Enumerable.Repeat(")", 1000)));
+                string pattern = string.Concat(Enumerable.Repeat("([a-z]", 999).Concat(Enumerable.Repeat(")", 999)));
                 string input = string.Concat(Enumerable.Repeat("abcde", 200));
-                yield return new object[] { engine, pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
+                yield return new object[] { engine, pattern, input, "$999", RegexOptions.None, input.Length, 0, "de" };
                 yield return new object[] { engine, pattern, input, "$1", RegexOptions.None, input.Length, 0, input };
 
                 // Undefined group

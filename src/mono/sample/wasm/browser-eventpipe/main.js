@@ -1,102 +1,55 @@
-function wasm_exit(exit_code) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
+import { dotnet } from "./dotnet.js";
 
-    console.log(`WASM EXIT ${exit_code}`);
-}
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function downloadData(dataURL,filename)
-{
-    // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
-    const elt = document.createElement('a');
-    elt.download = filename;
-    elt.href = dataURL;
-
-    document.body.appendChild(elt);
-
-    elt.click();
-
-    document.body.removeChild(elt);
-}
-
-function makeTimestamp()
-{
-    // ISO date string, but with : and . replaced by -
-    const t = new Date();
-    const s = t.toISOString();
-    return s.replace(/[:.]/g, '-');
-}
-
-async function loadRuntime() {
-    globalThis.exports = {};
-    await import("./dotnet.js");
-    return globalThis.exports.createDotnetRuntime;
-}
+async function doWork(startWork, stopWork, getIterationsDone) {
+    const N = parseInt(document.getElementById("inputN").value);
 
 
-const delay = (ms) => new Promise((resolve) => setTimeout (resolve, ms))
+    const workPromise = startWork(N);
 
-const saveUsingBlob = true;
+    let btn = document.getElementById("startWork");
+    btn.disabled = true;
+    btn.innerText = "Working";
+    document.getElementById("out").innerHTML = '...';
 
-async function main() {
-    const createDotnetRuntime = await loadRuntime();
-        const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-            console.log('user code in createDotnetRuntime')
-            return {
-                disableDotnet6Compatibility: true,
-                configSrc: "./mono-config.json",
-                preInit: () => { console.log('user code Module.preInit') },
-                preRun: () => { console.log('user code Module.preRun') },
-                onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
-                postRun: () => { console.log('user code Module.postRun') },
-            }
-        });
-    globalThis.__Module = Module;
-    globalThis.MONO = MONO;
-    console.log('after createDotnetRuntime')
-
-    const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
-    const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
-    const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-    const eventSession = MONO.diagnostics.createEventPipeSession();
-    eventSession.start();
-    const workPromise = startWork();
-
-    document.getElementById("out").innerHTML = '&lt;&lt;running&gt;&gt;';
     await delay(5000); // let it run for 5 seconds
 
-    stopWork();
+    document.getElementById("startWork").innerText = "Stopping";
+    document.getElementById("out").innerHTML = '... ...';
 
-    document.getElementById("out").innerHTML = '&lt;&lt;stopping&gt;&gt;';
+    stopWork();
 
     const ret = await workPromise; // get the answer
     const iterations = getIterationsDone(); // get how many times the loop ran
 
-    eventSession.stop();
+    btn = document.getElementById("startWork");
+    btn.disabled = false;
+    btn.innerText = "Start Work";
 
-    document.getElementById("out").innerHTML = `${ret} as computed in ${iterations} iterations on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+    document.getElementById("out").innerHTML = `${ret} as computed in ${iterations} iterations`;
 
     console.debug(`ret: ${ret}`);
 
-    const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-
-    if (saveUsingBlob) {
-        const blob = eventSession.getTraceBlob();
-        const uri = URL.createObjectURL(blob);
-        downloadData(uri, filename);
-        URL.revokeObjectURL(uri);
-    } else {
-        const dataUri = eventSession.getTraceDataURI();
-
-        downloadData(dataUri, filename);
-    }
-    const exit_code = ret == 42 ? 0 : 1;
-
-    wasm_exit(exit_code);
+    return ret;
 }
 
-console.log("Waiting 10s for curious human before starting the program");
-setTimeout(main, 10000);
+function getOnClickHandler(startWork, stopWork, getIterationsDone) {
+    return async function () {
+        await doWork(startWork, stopWork, getIterationsDone);
+    }
+}
+
+async function main() {
+    const { MONO, Module, getAssemblyExports } = await dotnet.create()
+    globalThis.__Module = Module;
+    globalThis.MONO = MONO;
+
+    const exports = await getAssemblyExports("Wasm.Browser.EventPipe.Sample.dll");
+
+    const btn = document.getElementById("startWork");
+    btn.style.backgroundColor = "rgb(192,255,192)";
+    btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
+}
+
+main();

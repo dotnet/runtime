@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable method: " + _method.ToString();
+            return "Method metadata: " + _method.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

@@ -19,7 +19,7 @@ This method returns a status HR following the usual convention, 0 (S_OK) means a
 
 ## What if you can't run managed code in your trigger process?
 
-If you are unable to run managed code as part of your trigger process, it is still possible to request a profiler attach. The spec for the diagnostics port is located [here](https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md).
+If you are unable to run managed code as part of your trigger process, it is still possible to request a profiler attach. The spec for the diagnostics port is located [here](https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md).
 
 You will have to do the following (according to the above spec):
 1) Open the appropriate channel - domain socket on Linux and a named pipe on Windows

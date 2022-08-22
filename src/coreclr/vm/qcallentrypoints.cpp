@@ -86,6 +86,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
+    DllImportEntry(MethodTable_AreTypesEquivalent)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
@@ -208,12 +209,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
-    DllImportEntry(ThreadPool_GetCompletedWorkItemCount)
-    DllImportEntry(ThreadPool_RequestWorkerThread)
-    DllImportEntry(ThreadPool_PerformGateActivities)
-    DllImportEntry(AppDomainTimer_Create)
-    DllImportEntry(AppDomainTimer_Change)
-    DllImportEntry(AppDomainTimer_Delete)
+    DllImportEntry(ThreadNative_Abort)
+    DllImportEntry(ThreadNative_ResetAbort)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif
@@ -231,6 +228,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
 #endif
+    DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_GetHINSTANCE)
@@ -274,6 +272,7 @@ static const Entry s_QCall[] =
     DllImportEntry(LogThreadPoolWorkerThreadStart)
     DllImportEntry(LogThreadPoolWorkerThreadStop)
     DllImportEntry(LogThreadPoolWorkerThreadWait)
+    DllImportEntry(LogThreadPoolMinMaxThreads)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentSample)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentAdjustment)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentStats)

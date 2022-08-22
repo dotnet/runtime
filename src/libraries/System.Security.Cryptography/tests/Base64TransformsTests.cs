@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void InvalidInput_ToBase64Transform()
         {
-            byte[] data_3bytes = Text.Encoding.ASCII.GetBytes("aaa");
+            byte[] data_3bytes = "aaa"u8.ToArray();
             ICryptoTransform transform = new ToBase64Transform();
 
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformBlock(null, 0, 0, null, 0));
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void InvalidInput_FromBase64Transform()
         {
-            byte[] data_4bytes = Text.Encoding.ASCII.GetBytes("aaaa");
+            byte[] data_4bytes = "aaaa"u8.ToArray();
             ICryptoTransform transform = new FromBase64Transform();
 
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformBlock(null, 0, 0, null, 0));

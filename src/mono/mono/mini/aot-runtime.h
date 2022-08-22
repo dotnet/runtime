@@ -280,4 +280,28 @@ MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
 typedef guint32 (*MonoAotResolvePltInfoOffset)(gpointer amodule, guint32 plt_entry_index);
 #endif
 
+#ifdef HOST_WASM
+
+#include "mini/interp/interp.h"
+
+MONO_API void
+mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb);
+
+MONO_API int
+mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i);
+
+MONO_API gint64
+mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i);
+
+MONO_API float
+mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i);
+
+MONO_API double
+mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i);
+
+MONO_API gpointer*
+mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs);
+
+#endif
+
 #endif /* __MONO_AOT_RUNTIME_H__ */

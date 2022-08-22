@@ -77,8 +77,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Characters_With_Common_Lowercase_Match_Data))]
         public async Task Characters_With_Common_Lowercase_Match(RegexEngine engine, string pattern, string input, string culture)
         {
-            using var _ = new ThreadCultureChange(culture);
-            Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase, CultureInfo.GetCultureInfo(culture));
             Assert.True(regex.IsMatch(input));
         }
 
@@ -153,6 +152,7 @@ namespace System.Text.RegularExpressions.Tests
         // This test takes a long time to run since it needs to compute all possible lowercase mappings across
         // 3 different cultures and then creates Regex matches for all of our engines for each mapping.
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67793")]
         [Theory]
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
         public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, RegexOptions options)

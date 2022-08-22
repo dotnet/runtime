@@ -7,7 +7,7 @@ Scenarios:
       Will only include paths specified in the list.
   3. exclude + include:
       1st we evaluate changes for all paths except ones in excluded list. If we can not find
-      any applicable changes like that, then we evaluate changes for incldued paths
+      any applicable changes like that, then we evaluate changes for included paths
       if any of these two finds changes, then a variable will be set to true.
   In order to consume this variable in a yaml pipeline, reference it via: $[ dependencies.<JobName>.outputs["<StepName>_<subset>.containschange"] ]
 

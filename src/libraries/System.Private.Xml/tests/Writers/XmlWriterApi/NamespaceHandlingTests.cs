@@ -758,7 +758,7 @@ namespace System.Xml.Tests
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
@@ -780,7 +780,7 @@ namespace System.Xml.Tests
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
@@ -803,7 +803,7 @@ namespace System.Xml.Tests
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
             XmlWriter w = CreateMemWriter(utils, wSettings);
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             w.WriteStartElement("A");
             w.WriteAttributeString("xmlns", "p", null, "ns1");

@@ -174,12 +174,7 @@ namespace System
             }
 
             int[]? modifiers = GetModifiers();
-
-            fixed (int* ptr = modifiers)
-            {
-                IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
-            }
+            return RuntimeTypeHandle.GetTypeHelper(baseType, types!, modifiers);
         }
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)

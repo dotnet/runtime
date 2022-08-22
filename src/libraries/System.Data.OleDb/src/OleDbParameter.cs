@@ -166,8 +166,7 @@ namespace System.Data.OleDb
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return _parameterName ?? string.Empty;
             }
             set
             {

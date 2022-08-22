@@ -1,2 +1,1 @@
-csc Generator\*.cs /out:Generator.exe
-Generator.exe
+dotnet run --project Generator\NativeFormatGen.csproj

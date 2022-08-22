@@ -34,6 +34,7 @@ import re
 import urllib
 import urllib.request
 import zipfile
+import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
@@ -322,23 +323,26 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
+# common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
 base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading COMPlus_")
 base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
-asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
+asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
+asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -608,6 +612,8 @@ class SuperPMICollect:
 
         """
 
+        self.core_root = coreclr_args.core_root
+
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
@@ -620,11 +626,11 @@ class SuperPMICollect:
         else:
             raise RuntimeError("Unsupported OS.")
 
+        self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
+
         self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
-
-        self.core_root = coreclr_args.core_root
 
         self.collection_command = coreclr_args.collection_command
         self.collection_args = coreclr_args.collection_args
@@ -684,7 +690,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup, change_dir=False) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -799,6 +805,10 @@ class SuperPMICollect:
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                collection_complus_env["JitPath"] = self.collection_shim_path
                 collection_complus_env["JitName"] = self.collection_shim_name
                 set_and_report_env(collection_command_env, root_env, collection_complus_env)
 
@@ -875,6 +885,10 @@ class SuperPMICollect:
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                pmi_complus_env["JitPath"] = self.collection_shim_path
                 pmi_complus_env["JitName"] = self.collection_shim_name
 
                 if self.coreclr_args.pmi_path is not None:
@@ -1412,9 +1426,6 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDisasm": "*",
             "COMPlus_JitUnwindDump": "*",
             "COMPlus_JitEHDump": "*",
-            "COMPlus_NgenDisasm": "*",
-            "COMPlus_NgenUnwindDump": "*",
-            "COMPlus_NgenEHDump": "*",
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
@@ -1422,19 +1433,16 @@ class SuperPMIReplayAsmDiffs:
 
         if self.coreclr_args.gcinfo:
             asm_complus_vars.update({
-                "COMPlus_JitGCDump": "*",
-                "COMPlus_NgenGCDump": "*" })
+                "COMPlus_JitGCDump": "*" })
 
         if self.coreclr_args.debuginfo:
             asm_complus_vars.update({
                 "COMPlus_JitDebugDump": "*",
-                "COMPlus_NgenDebugDump": "*",
                 "COMPlus_JitDisasmWithDebugInfo": "1" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
-            "COMPlus_JitDump": "*",
-            "COMPlus_NgenDump": "*" })
+            "COMPlus_JitDump": "*" })
 
         asm_complus_vars_full_env = os.environ.copy()
         asm_complus_vars_full_env.update(asm_complus_vars)
@@ -1453,12 +1461,19 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
         base_option_flags_for_diff_artifact = base_option_flags
 
         diff_option_flags = []
         diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
@@ -1619,11 +1634,12 @@ class SuperPMIReplayAsmDiffs:
                             async def create_one_artifact(jit_path: str, location: str, flags) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
-                                with open(item_path, 'w') as file_handle:
-                                    logging.debug("%sGenerating %s", print_prefix, item_path)
-                                    logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE, env=env)
-                                    await proc.communicate()
+                                modified_env = env.copy()
+                                modified_env['COMPlus_JitStdOutFile'] = item_path
+                                logging.debug("%sGenerating %s", print_prefix, item_path)
+                                logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
+                                proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
+                                await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
                                     generated_txt = file_handle.read()
                                 return generated_txt
@@ -1711,6 +1727,20 @@ class SuperPMIReplayAsmDiffs:
                         if not ran_jit_analyze:
                             logging.info("jit-analyze not found on PATH. Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
                             logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
+
+                        if self.coreclr_args.git_diff:
+                            asm_diffs_location = os.path.join(asm_root_dir, "asm_diffs.diff")
+                            git_diff_command = [ "git", "diff", "--output=" + asm_diffs_location, "--no-index", "--", base_asm_location, diff_asm_location ]
+                            git_diff_time = time.time() * 1000
+                            git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                            git_diff_proc.communicate()
+                            git_diff_elapsed_time = round((time.time() * 1000) - git_diff_time, 1)
+                            git_diff_return_code = git_diff_proc.returncode
+                            if git_diff_return_code == 0 or git_diff_return_code == 1: # 0 means no differences and 1 means differences
+                                logging.info("Created git diff file at %s in %s ms", asm_diffs_location, git_diff_elapsed_time)
+                                logging.info("-------")
+                            else:
+                                raise RuntimeError("Couldn't create git diff")
 
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
@@ -1926,9 +1956,12 @@ class SuperPMIReplayThroughputDiff:
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
-                    delta_instructions = diff_instructions - base_instructions
-                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
-                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    if base_instructions != 0 and diff_instructions != 0:
+                        delta_instructions = diff_instructions - base_instructions
+                        logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                        tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
 
@@ -3059,7 +3092,7 @@ def process_base_jit_path_arg(coreclr_args):
 
 def get_pintools_path(coreclr_args):
     """ Get the local path where we expect pintools for this OS to be located
-    
+
     Returns:
         A path to the folder.
     """
@@ -3067,7 +3100,7 @@ def get_pintools_path(coreclr_args):
 
 def get_pin_exe_path(coreclr_args):
     """ Get the local path where we expect the pin executable to be located
-    
+
     Returns:
         A path to the executable.
     """
@@ -3077,7 +3110,7 @@ def get_pin_exe_path(coreclr_args):
 
 def get_inscount_pintool_path(coreclr_args):
     """ Get the local path where we expect the clrjit inscount pintool to be located
-    
+
     Returns:
         A path to the pintool library.
     """
@@ -3349,6 +3382,11 @@ def setup_args(args):
                             "base_git_hash",
                             lambda unused: True,
                             "Unable to set base_git_hash")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
         coreclr_args.verify(args,
                             "base_jit_option",
@@ -3646,6 +3684,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_with_release.")
 
+        coreclr_args.verify(args,
+                            "git_diff",
+                            lambda unused: True,
+                            "Unable to set git_diff.")
+
         process_base_jit_path_arg(coreclr_args)
 
         jit_in_product_location = False
@@ -3935,7 +3978,7 @@ def main(args):
         logging.info("SuperPMI throughput diff")
         logging.debug("------------------------------------------------------------")
         logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
-        
+
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 

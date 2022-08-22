@@ -47,8 +47,11 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 return;
 
             // An exception may be thrown during Create() if the Oid is bad, or later during native calls
-            Assert.Throws<PlatformNotSupportedException>(
-                () => ECDiffieHellmanFactory.Create(curveDef.Curve).ExportParameters(false));
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                using ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(curveDef.Curve);
+                ecdh.ExportParameters(false);
+            });
         }
 
         [Theory, MemberData(nameof(TestCurvesFull))]

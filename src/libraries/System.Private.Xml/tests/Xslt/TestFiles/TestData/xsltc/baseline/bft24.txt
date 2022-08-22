@@ -1,6 +1,0 @@
-Microsoft (R) XSLT Compiler version 2.0.60220
-for Microsoft (R) Windows (R) 2005 Framework version 2.0.50727
-Copyright (C) Microsoft Corporation 2006. All rights reserved.
-
-bft24b.xsl(3,18) : error : Stylesheet 'bft24a.xsl' cannot directly or indirectly include or import itself.
-bft24a.xsl(3,17) : error : Stylesheet 'bft24b.xsl' cannot directly or indirectly include or import itself.

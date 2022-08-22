@@ -1089,7 +1089,7 @@ namespace BINDER_SPACE
                 // Lock the application context
                 CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-                // Only perform costly validation if other binds succeded before us
+                // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
                     IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,
@@ -1180,6 +1180,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
+                                               /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1208,7 +1209,7 @@ Retry:
                         pAssemblyName,
                         true,  // skipFailureCaching
                         true,  // skipVersionCompatibilityCheck
-                        false, // excludeAppPaths
+                        excludeAppPaths, // excludeAppPaths
                         &bindResult);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))

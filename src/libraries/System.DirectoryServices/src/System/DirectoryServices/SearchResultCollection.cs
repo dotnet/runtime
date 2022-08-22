@@ -64,17 +64,8 @@ namespace System.DirectoryServices
             }
         }
 
-        internal UnsafeNativeMethods.IDirectorySearch SearchObject
-        {
-            get
-            {
-                if (_searchObject == null)
-                {
-                    _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once
-                }
-                return _searchObject;
-            }
-        }
+        internal UnsafeNativeMethods.IDirectorySearch SearchObject =>
+            _searchObject ??= (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once
 
         /// <devdoc>
         /// Gets the handle returned by IDirectorySearch::ExecuteSearch, which was called
@@ -257,10 +248,7 @@ namespace System.DirectoryServices
                     if (!_initialized || _eof)
                         throw new InvalidOperationException(SR.DSNoCurrentEntry);
 
-                    if (_currentResult == null)
-                        _currentResult = GetCurrentResult();
-
-                    return _currentResult;
+                    return _currentResult ??= GetCurrentResult();
                 }
             }
 

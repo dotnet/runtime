@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.OleDb.OleDbInfoMessageEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.OleDb.dll</Left>
+    <Right>lib/net7.0/System.Data.OleDb.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.OleDb.OleDbRowUpdatedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.OleDb.dll</Left>
+    <Right>lib/net7.0/System.Data.OleDb.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.OleDb.OleDbRowUpdatingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.OleDb.dll</Left>
+    <Right>lib/net7.0/System.Data.OleDb.dll</Right>
+  </Suppression>
+</Suppressions>

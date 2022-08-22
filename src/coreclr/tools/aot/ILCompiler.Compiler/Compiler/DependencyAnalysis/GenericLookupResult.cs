@@ -1427,6 +1427,22 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!_constrainedMethod.HasInstantiation || !_directCall, "Direct call to constrained generic method isn't supported");
         }
 
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
+            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots && !canonMethod.HasInstantiation)
+            {
+                // Report the method as virtually used so that types that could be used here at runtime
+                // have the appropriate implementations generated.
+                // This covers instantiations created at runtime (MakeGeneric*). The statically present generic dictionaries
+                // are already covered by the dependency analysis within the compiler because we call GetTarget for those.
+                yield return factory.VirtualMethodUse(canonMethod);
+            }
+        }
+
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
@@ -1438,6 +1454,16 @@ namespace ILCompiler.DependencyAnalysis
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
                     implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                    if (implMethod == null)
+                    {
+                        DefaultInterfaceMethodResolution resolution =
+                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
+                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                        {
+                            // TODO: diamond/reabstraction
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
                 }
                 else
                 {
@@ -1451,7 +1477,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
-            Debug.Assert(!instantiatedConstraintType.IsValueType || implMethod.OwningType == instantiatedConstraintType);
 
             if (implMethod.Signature.IsStatic)
             {
@@ -1483,8 +1508,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.NotSupportedDictionarySlot;
-            //return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+            return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)

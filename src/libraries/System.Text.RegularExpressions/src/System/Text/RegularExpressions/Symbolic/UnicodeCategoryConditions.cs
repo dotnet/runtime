@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public static BDD WordLetterForAnchors(CharSetSolver solver) =>
             s_wordLetterForAnchors ??
-            Interlocked.CompareExchange(ref s_wordLetterForAnchors, solver.Or(WordLetter(solver), solver.CreateSetFromRange('\u200C', '\u200D')), null) ??
+            Interlocked.CompareExchange(ref s_wordLetterForAnchors, solver.Or(WordLetter(solver), solver.CreateBDDFromRange('\u200C', '\u200D')), null) ??
             s_wordLetterForAnchors;
     }
 }

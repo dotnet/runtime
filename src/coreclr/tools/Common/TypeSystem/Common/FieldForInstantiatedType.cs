@@ -51,6 +51,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            return _fieldDef.GetEmbeddedSignatureData();
+        }
+
         public override bool IsStatic
         {
             get

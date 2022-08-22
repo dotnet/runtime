@@ -41,6 +41,10 @@ case "$CPUName" in
         arch=loongarch64
         ;;
 
+    riscv64)
+        arch=riscv64
+        ;;
+
     amd64|x86_64)
         arch=x64
         ;;
@@ -66,6 +70,9 @@ case "$CPUName" in
         arch=s390x
 	;;
 
+    ppc64le)
+	arch=ppc64le
+	;;
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         arch=x64

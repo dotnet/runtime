@@ -156,25 +156,12 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #define _WINNT_
 
-// C++ standard, 18.1.5 - offsetof requires a POD (plain old data) struct or
-// union. Since offsetof is a macro, gcc doesn't actually check for improper
-// use of offsetof, it keys off of the -> from NULL (which is also invalid for
-// non-POD types by 18.1.5)
-//
-// As we have numerous examples of this behavior in our codebase,
-// making an offsetof which doesn't use 0.
-
-// PAL_safe_offsetof is a version of offsetof that protects against an
-// overridden operator&
-
-#define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
 #ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
 #endif
-#define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
 
 #define CONTAINING_RECORD(address, type, field) \
-    ((type *)((LONG_PTR)(address) - FIELD_OFFSET(type, field)))
+    ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
@@ -314,13 +301,6 @@ typedef OLECHAR* LPOLESTR;
 typedef const OLECHAR* LPCOLESTR;
 
 typedef WCHAR *BSTR;
-
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocString(const OLECHAR*);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringLen(const OLECHAR*, UINT);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringByteLen(const char *, UINT);
-STDAPI_VIS(DLLEXPORT, void) SysFreeString(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringLen(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringByteLen(BSTR);
 
 typedef double DATE;
 
@@ -692,7 +672,7 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
 
 /*
 The wrappers below are simple implementations that may not be as robust as complete functions in the Secure CRT library.
-Remember to fix the errcode defintion in safecrt.h.
+Remember to fix the errcode definition in safecrt.h.
 */
 
 #define swscanf_s swscanf
@@ -930,44 +910,6 @@ typedef JIT_DEBUG_INFO JIT_DEBUG_INFO64, *LPJIT_DEBUG_INFO64;
 #define RT_RCDATA           MAKEINTRESOURCE(10)
 #define RT_VERSION          MAKEINTRESOURCE(16)
 
-/******************* SAFEARRAY ************************/
-
-#define	FADF_VARIANT	( 0x800 )
-
-typedef struct tagSAFEARRAYBOUND
-    {
-    ULONG cElements;
-    LONG lLbound;
-    } 	SAFEARRAYBOUND;
-
-typedef struct tagSAFEARRAYBOUND *LPSAFEARRAYBOUND;
-
-typedef struct tagSAFEARRAY
-    {
-    USHORT cDims;
-    USHORT fFeatures;
-    ULONG cbElements;
-    ULONG cLocks;
-    PVOID pvData;
-    SAFEARRAYBOUND rgsabound[ 1 ];
-    } 	SAFEARRAY;
-
-typedef SAFEARRAY *LPSAFEARRAY;
-
-
-STDAPI_(SAFEARRAY *) SafeArrayCreateVector(VARTYPE vt, LONG lLbound, ULONG cElements);
-STDAPI_(UINT) SafeArrayGetDim(SAFEARRAY * psa);
-STDAPI SafeArrayGetElement(SAFEARRAY * psa, LONG * rgIndices, void * pv);
-STDAPI SafeArrayGetLBound(SAFEARRAY * psa, UINT nDim, LONG * plLbound);
-STDAPI SafeArrayGetUBound(SAFEARRAY * psa, UINT nDim, LONG * plUbound);
-STDAPI SafeArrayGetVartype(SAFEARRAY * psa, VARTYPE * pvt);
-STDAPI SafeArrayPutElement(SAFEARRAY * psa, LONG * rgIndices, void * pv);
-STDAPI SafeArrayDestroy(SAFEARRAY * psa);
-
-EXTERN_C void * _stdcall _lfind(const void *, const void *, unsigned int *, unsigned int,
-        int (__cdecl *)(const void *, const void *));
-
-
 /*<TODO>****************** clean this up ***********************</TODO>*/
 
 
@@ -978,7 +920,7 @@ interface IMoniker;
 
 typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)(
     DWORD dwErrorCode,
-    DWORD dwNumberOfBytesTransfered,
+    DWORD dwNumberOfBytesTransferred,
     LPOVERLAPPED lpOverlapped);
 
 //
@@ -1189,6 +1131,14 @@ typedef struct _DISPATCHER_CONTEXT {
 
 typedef struct _DISPATCHER_CONTEXT {
     // S390X does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_POWERPC64)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // PPC64LE does not build the VM or JIT at this point,
     // so we only provide a dummy definition.
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;

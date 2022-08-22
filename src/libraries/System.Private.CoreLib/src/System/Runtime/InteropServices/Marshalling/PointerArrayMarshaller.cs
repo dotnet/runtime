@@ -7,168 +7,196 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Marshaller for arrays of pointers
+    /// Represents a marshaller for an array of pointers.
     /// </summary>
-    /// <typeparam name="T">Array element pointer type</typeparam>
+    /// <typeparam name="T">The array element pointer type.</typeparam>
+    /// <typeparam name="TUnmanagedElement">The unmanaged type for the element pointer type.</typeparam>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        MarshalMode.Default,
+        typeof(PointerArrayMarshaller<,>))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        MarshalMode.ManagedToUnmanagedIn,
+        typeof(PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [ContiguousCollectionMarshaller]
+    public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
+        where T : unmanaged
+        where TUnmanagedElement : unmanaged
     {
-        private readonly int _sizeOfNativeElement;
-
-        private T*[]? _managedArray;
-        private IntPtr _allocatedMemory;
-        private Span<byte> _span;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
+        /// Allocates memory for the unmanaged representation of the array.
         /// </summary>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public PointerArrayMarshaller(int sizeOfNativeElement)
-            : this()
+        /// <param name="managed">The managed array to marshal.</param>
+        /// <param name="numElements">The unmanaged element count.</param>
+        /// <returns>The unmanaged pointer to the allocated memory.</returns>
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements)
         {
-            _sizeOfNativeElement = sizeOfNativeElement;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
-        /// </summary>
-        /// <param name="array">Array to be marshalled.</param>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement)
-            : this(array, Span<byte>.Empty, sizeOfNativeElement)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
-        /// </summary>
-        /// <param name="array">Array to be marshalled.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        /// </remarks>
-        public PointerArrayMarshaller(T*[]? array, Span<byte> buffer, int sizeOfNativeElement)
-        {
-            _allocatedMemory = default;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            if (array is null)
+            if (managed is null)
             {
-                _managedArray = null;
-                _span = default;
-                return;
+                numElements = 0;
+                return null;
             }
 
-            _managedArray = array;
+            numElements = managed.Length;
 
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(array.Length * _sizeOfNativeElement, 1);
-            if (spaceToAllocate <= buffer.Length)
-            {
-                _span = buffer[0..spaceToAllocate];
-            }
-            else
-            {
-                _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-                _span = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
-            }
+            int spaceToAllocate = Math.Max(checked(sizeof(TUnmanagedElement) * numElements), 1);
+            return (TUnmanagedElement*)Marshal.AllocCoTaskMem(spaceToAllocate);
         }
 
         /// <summary>
-        /// Gets a span that points to the memory where the managed values of the array are stored.
+        /// Gets a source for the managed elements in the array.
         /// </summary>
-        /// <returns>Span over managed values of the array.</returns>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        /// </remarks>
-        public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
+        /// <param name="managed">The managed array to get a source for.</param>
+        /// <returns>The <see cref="ReadOnlySpan{IntPtr}"/> containing the managed elements to marshal.</returns>
+        public static ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed)
+            => Unsafe.As<IntPtr[]>(managed);
 
         /// <summary>
-        /// Gets a span that points to the memory where the unmarshalled managed values of the array should be stored.
+        /// Gets a destination for the unmanaged elements in the array.
         /// </summary>
-        /// <param name="length">Length of the array.</param>
-        /// <returns>Span where managed values of the array should be stored.</returns>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
-        public Span<IntPtr> GetManagedValuesDestination(int length)
+        /// <param name="unmanaged">The unmanaged allocation to get a destination for.</param>
+        /// <param name="numElements">The unmanaged element count.</param>
+        /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements.</returns>
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        /// <summary>
+        /// Allocates memory for the managed representation of the array.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged array.</param>
+        /// <param name="numElements">The unmanaged element count.</param>
+        /// <returns>The managed array.</returns>
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
-            if (_allocatedMemory == IntPtr.Zero)
+            if (unmanaged is null)
                 return null;
 
-            _managedArray = new T*[length];
-            return Unsafe.As<IntPtr[]>(_managedArray);
+            return new T*[numElements];
         }
 
         /// <summary>
-        /// Returns a span that points to the memory where the native values of the array are stored after the native call.
+        /// Gets a destination for the managed elements in the array.
         /// </summary>
-        /// <param name="length">Length of the array.</param>
-        /// <returns>Span over the native values of the array.</returns>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
-        public ReadOnlySpan<byte> GetNativeValuesSource(int length)
+        /// <param name="managed">The managed array to get a destination for.</param>
+        /// <returns>The <see cref="Span{T}"/> of managed elements.</returns>
+        public static Span<IntPtr> GetManagedValuesDestination(T*[]? managed)
+            => Unsafe.As<IntPtr[]>(managed);
+
+        /// <summary>
+        /// Gets a source for the unmanaged elements in the array.
+        /// </summary>
+        /// <param name="unmanagedValue">The unmanaged array to get a source for.</param>
+        /// <param name="numElements">The unmanaged element count.</param>
+        /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal.</returns>
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
+            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+
+        /// <summary>
+        /// Frees memory for the unmanaged array.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged array.</param>
+        public static void Free(TUnmanagedElement* unmanaged)
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+
+        /// <summary>
+        /// Represents a marshaller for marshalling an array from managed to unmanaged.
+        /// </summary>
+        public ref struct ManagedToUnmanagedIn
         {
-            if (_allocatedMemory == IntPtr.Zero)
-                return default;
+            /// <summary>
+            /// Gets the requested caller-allocated buffer size.
+            /// </summary>
+            /// <remarks>
+            /// This property represents a potential optimization for the marshaller.
+            /// </remarks>
+            // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
-            _span = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
-            return _span;
-        }
+            private T*[]? _managedArray;
+            private TUnmanagedElement* _allocatedMemory;
+            private Span<TUnmanagedElement> _span;
 
-        /// <summary>
-        /// Returns a span that points to the memory where the native values of the array should be stored.
-        /// </summary>
-        /// <returns>Span where native values of the array should be stored.</returns>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        /// </remarks>
-        public Span<byte> GetNativeValuesDestination() => _span;
+            /// <summary>
+            /// Initializes the <see cref="PointerArrayMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedIn"/> marshaller.
+            /// </summary>
+            /// <param name="array">The array to be marshalled.</param>
+            /// <param name="buffer">The buffer that may be used for marshalling.</param>
+            /// <remarks>
+            /// The <paramref name="buffer"/> must not be movable - that is, it should not be
+            /// on the managed heap or it should be pinned.
+            /// </remarks>
+            public void FromManaged(T*[]? array, Span<TUnmanagedElement> buffer)
+            {
+                _allocatedMemory = null;
+                if (array is null)
+                {
+                    _managedArray = null;
+                    _span = default;
+                    return;
+                }
 
-        /// <summary>
-        /// Returns a reference to the marshalled array.
-        /// </summary>
-        public ref byte GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+                _managedArray = array;
 
-        /// <summary>
-        /// Returns the native value representing the array.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+                // Always allocate at least one byte when the array is zero-length.
+                if (array.Length <= buffer.Length)
+                {
+                    _span = buffer[0..array.Length];
+                }
+                else
+                {
+                    int bufferSize = checked(array.Length * sizeof(TUnmanagedElement));
+                    int spaceToAllocate = Math.Max(bufferSize, 1);
+                    _allocatedMemory = (TUnmanagedElement*)NativeMemory.Alloc((nuint)spaceToAllocate);
+                    _span = new Span<TUnmanagedElement>(_allocatedMemory, array.Length);
+                }
+            }
 
-        /// <summary>
-        /// Sets the native value representing the array.
-        /// </summary>
-        /// <param name="value">The native value.</param>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public void FromNativeValue(byte* value) => _allocatedMemory = (IntPtr)value;
+            /// <summary>
+            /// Returns a span that points to the memory where the managed values of the array are stored.
+            /// </summary>
+            /// <returns>A span over managed values of the array.</returns>
+            public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
 
-        /// <summary>
-        /// Returns the managed array.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
-        public T*[]? ToManaged() => _managedArray;
+            /// <summary>
+            /// Returns a span that points to the memory where the unmanaged values of the array should be stored.
+            /// </summary>
+            /// <returns>A span where unmanaged values of the array should be stored.</returns>
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
 
-        /// <summary>
-        /// Frees native resources.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
-        public void FreeNative()
-        {
-            Marshal.FreeCoTaskMem(_allocatedMemory);
+            /// <summary>
+            /// Returns a reference to the marshalled array.
+            /// </summary>
+            /// <returns>A pinnable reference to the unmanaged marshalled array.</returns>
+            public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+
+            /// <summary>
+            /// Returns the unmanaged value representing the array.
+            /// </summary>
+            /// <returns>A pointer to the beginning of the unmanaged value.</returns>
+            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+
+            /// <summary>
+            /// Frees resources.
+            /// </summary>
+            public void Free()
+            {
+                NativeMemory.Free(_allocatedMemory);
+            }
+
+            /// <summary>
+            /// Gets a pinnable reference to the managed array.
+            /// </summary>
+            /// <param name="array">The managed array.</param>
+            /// <returns>The reference that can be pinned and directly passed to unmanaged code.</returns>
+            public static ref byte GetPinnableReference(T*[]? array)
+            {
+                if (array is null)
+                {
+                    return ref Unsafe.NullRef<byte>();
+                }
+                return ref MemoryMarshal.GetArrayDataReference(array);
+            }
         }
     }
 }

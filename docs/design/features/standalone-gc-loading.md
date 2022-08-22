@@ -127,7 +127,7 @@ standalone GCs has a major version number and minor version number that is obtai
   incompatible interfaces. A change is considered breaking if it alters the semantics of an existing method or if
   it deletes or renames existing methods so that VTable layouts are not compatible.
 * If the EE's MinorVersion is greater than the MinorVersion obtained from the candidate GC, accept
-  (Forward compatability). The EE must take care not to call any new APIs that are not present in the version of
+  (Forward compatibility). The EE must take care not to call any new APIs that are not present in the version of
   the candidate GC.
 * Otherwise, accept (Backward compatibility). It is perfectly safe to use a GC whose MinorVersion exceeds the EE's
   MinorVersion.

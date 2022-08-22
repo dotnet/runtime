@@ -145,7 +145,7 @@ public:
     VOID SetIsFullyLoaded()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&m_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
     }
 
     ClassLoadLevel GetLoadLevel();
@@ -220,12 +220,10 @@ class ParamTypeDesc : public TypeDesc {
 
 public:
 #ifndef DACCESS_COMPILE
-    ParamTypeDesc(CorElementType type, MethodTable* pMT, TypeHandle arg)
+    ParamTypeDesc(CorElementType type, TypeHandle arg)
         : TypeDesc(type), m_Arg(arg), m_hExposedClassObject(0) {
 
         LIMITED_METHOD_CONTRACT;
-
-        m_TemplateMT = pMT;
 
         // ParamTypeDescs start out life not fully loaded
         m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
@@ -276,8 +274,6 @@ public:
 
     TypeHandle GetTypeParam();
 
-    BOOL OwnsTemplateMethodTable();
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -288,13 +284,8 @@ public:
     friend class ArrayOpLinker;
 #endif
 protected:
-    PTR_MethodTable GetTemplateMethodTableInternal() {
-        WRAPPER_NO_CONTRACT;
-        return m_TemplateMT;
-    }
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    PTR_MethodTable m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
 };

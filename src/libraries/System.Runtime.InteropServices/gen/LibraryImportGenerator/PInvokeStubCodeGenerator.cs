@@ -69,14 +69,13 @@ namespace Microsoft.Interop
                 SupportsTargetFramework = true;
             }
 
-
-            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
+            _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
 
             bool noMarshallingNeeded = true;
@@ -147,18 +146,20 @@ namespace Microsoft.Interop
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
 
-            var invokeStatement = statements.InvokeStatement;
+            BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
             if (_setLastError)
             {
                 StatementSyntax clearLastError = MarshallerHelpers.CreateClearLastSystemErrorStatement(SuccessErrorCode);
 
                 StatementSyntax getLastError = MarshallerHelpers.CreateGetLastSystemErrorStatement(LastErrorIdentifier);
 
-                invokeStatement = Block(clearLastError, invokeStatement, getLastError);
+                fixedBlock = fixedBlock.AddStatements(clearLastError, statements.InvokeStatement, getLastError);
             }
-            invokeStatement = statements.Pin.NestFixedStatements(invokeStatement);
-
-            tryStatements.Add(invokeStatement);
+            else
+            {
+                fixedBlock = fixedBlock.AddStatements(statements.InvokeStatement);
+            }
+            tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
             // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -167,7 +168,7 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.KeepAlive);
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;

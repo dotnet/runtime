@@ -5,16 +5,13 @@
 **
 ** Source:  test1.c
 **
-** Purpose: Run through every possible character.  For each time that 
+** Purpose: Run through every possible character.  For each time that
 ** isxdigit returns:
 ** 1, check through a list of the known hex characters to ensure that it
-** is really a hex char.  Also, when it returns 0, ensure that that character
+** is really a hex char.  Also, when it returns 0, ensure that the character
 ** isn't a hex character.
 **
-**
 **==========================================================================*/
-
-
 
 #include <palsuite.h>
 

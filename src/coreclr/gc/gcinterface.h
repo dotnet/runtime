@@ -108,6 +108,15 @@ struct WriteBarrierParameters
     // The new write watch table, if we are using our own write watch
     // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
     uint8_t* write_watch_table;
+
+    // mapping table from region index to generation
+    uint8_t* region_to_generation_table;
+
+    // shift count - how many bits to shift right to obtain region index from address
+    uint8_t  region_shr;
+
+    // whether to use the more precise but slower write barrier
+    bool region_use_bitwise_write_barrier;
 };
 
 struct EtwGCSettingsInfo
@@ -275,7 +284,8 @@ enum collection_mode
     collection_non_blocking = 0x00000001,
     collection_blocking = 0x00000002,
     collection_optimized = 0x00000004,
-    collection_compacting = 0x00000008
+    collection_compacting = 0x00000008,
+    collection_aggressive = 0x00000010
 #ifdef STRESS_HEAP
     , collection_gcstress = 0x80000000
 #endif // STRESS_HEAP
@@ -534,6 +544,16 @@ public:
 
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
+
+// Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.
+enum class GCConfigurationType
+{
+    Int64,
+    StringUtf8,
+    Boolean 
+};
+
+using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -921,10 +941,20 @@ public:
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
 
+    // Get the segment/region associated with an address together with its generation for the profiler.
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
 
     IGCHeap() {}
-    virtual ~IGCHeap() {}
+
+    // The virtual destructors for the IGCHeap class hierarchy is intentionally omitted.
+    // This is to ensure we have a stable virtual function table for this interface for
+    // version resilience purposes.
+
+    // Get the total paused duration.
+    virtual int64_t GetTotalPauseDuration() = 0;
+
+    // Gets all the names and values of the GC configurations.
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
+    <Compile Include="..\Coreclr.TestWrapper\MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
 
   <ItemGroup>

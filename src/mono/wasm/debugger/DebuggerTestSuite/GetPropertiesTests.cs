@@ -8,49 +8,78 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class GetPropertiesTests : DebuggerTests
     {
+        public GetPropertiesTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {
+            // FIXME: invoking getter on the hidden(base) properties - is that supported??
             var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool>();
 
-            var type_name = "DerivedClass";
+            var type_name = "DerivedClass2";
             var all_props = new Dictionary<string, (JObject, bool)>()
             {
-                {"_stringField",                    (TString("DerivedClass#_stringField"), true)},
-                {"_dateTime",                       (TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)), true)},
-                {"_DTProp",                         (TGetter("_DTProp"), true)},
+                // own:
+                // public:
+                {"BaseBase_PropertyForHidingWithField",             (TNumber(210), true)},
+                {"Base_PropertyForOverridingWithProperty",          (TGetter("Base_PropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))), true)},
+                {"BaseBase_PropertyForVHO",                         (TGetter("BaseBase_PropertyForVHO", TString("Derived#BaseBase_PropertyForVHO")), true)},
+                {"BaseBase_PropertyForVOH",                         (TGetter("BaseBase_PropertyForVOH", TString("Derived#BaseBase_PropertyForVOH")), true)},
+                // {"BaseBase_PropertyForVOO",                         (TGetter("BaseBase_PropertyForVOO", TString("Derived#BaseBase_PropertyForVOO")), true)}, //FixMe: Issue #69788
+                {"BaseBase_AutoPropertyForVHO",                     (TString("Derived#BaseBase_AutoPropertyForVHO"), true)},
+                {"BaseBase_AutoPropertyForVOH",                     (TString("Derived#BaseBase_AutoPropertyForVOH"), true)},
+                // {"BaseBase_AutoPropertyForVOO",                  (TGetter("BaseBase_AutoPropertyForVOO", TString("Derived#BaseBase_AutoPropertyForVOO")), true)}, //FixMe: Issue #69788
 
-                // own public
-                {"a",                               (TNumber(4), true)},
-                {"DateTime",                        (TGetter("DateTime"), true)},
-                {"AutoStringProperty",              (TString("DerivedClass#AutoStringProperty"), true)},
-                {"FirstName",                       (TGetter("FirstName"), true)},
-                {"DateTimeForOverride",             (TGetter("DateTimeForOverride"), true)},
+                // protected / internal:
+                {"BaseBase_AutoPropertyForHidingWithProperty",      (TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty")), true)},
+                {"Base_PropertyForOverridingWithAutoProperty",      (TDateTime(new DateTime(2022, 7, 6, 5, 4, 3)), true)},
+                {"Base_AutoPropertyForOverridingWithAutoProperty",  (TDateTime(new DateTime(2023, 7, 6, 5, 4, 3)), true)},
+                {"Base_AutoPropertyForOverridingWithProperty",      (TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2021, 7, 6, 5, 4, 3))), true)},
 
-                {"StringPropertyForOverrideWithAutoProperty",   (TString("DerivedClass#StringPropertyForOverrideWithAutoProperty"), true)},
-                {"Base_AutoStringPropertyForOverrideWithField", (TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField"), true)},
-                {"Base_GetterForOverrideWithField",             (TString("DerivedClass#Base_GetterForOverrideWithField"), true)},
-                {"BaseBase_MemberForOverride",                  (TString("DerivedClass#BaseBase_MemberForOverride"), true)},
+                // private:
+                {"BaseBase_FieldForHidingWithAutoProperty",         (TString("Derived#BaseBase_FieldForHidingWithAutoProperty"), true)},
 
-                // protected
-                {"b",                               (TBool(true), true)},
+                // inherited from Base:
+                // public:
+                {"BaseBase_AutoPropertyForHidingWithField",                 (TNumber(115), false)},
+                {"BaseBase_PropertyForHidingWithProperty",                  (TGetter("BaseBase_PropertyForHidingWithProperty", TString("Base#BaseBase_PropertyForHidingWithProperty")), false)},
+                {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    (TString("Base#BaseBase_FieldForHidingWithAutoProperty"), false)},
+                {"Base_VirtualPropertyNotOverriddenOrHidden",               (TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2124, 5, 7, 1, 9, 2))), false)},
+                {"FirstName",                                               (TGetter("FirstName", TString("BaseClass#FirstName")), false)},
+                {"LastName",                                                (TGetter("LastName", TString("BaseClass#LastName")), false)},
+                {"BaseBase_PropertyForVOH (BaseClass2)",                    (TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH")), false)},
+                {"BaseBase_AutoPropertyForVOH (BaseClass2)",                (TString("Base#BaseBase_AutoPropertyForVOH"), false)},
 
-                // indexers don't show up in getprops
-                // {"Item",                    (TSymbol("int { get; }"), true)},
+                // protected / internal:
+                {"BaseBase_PropertyForHidingWithField (BaseClass2)",        (TNumber(110), false)},
+                {"BaseBase_FieldForHidingWithProperty",                     (TGetter("BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty")), false)},
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty",          (TString("Base#BaseBase_AutoPropertyForHidingWithAutoProperty"), false)},
 
-                // inherited private
-                {"_base_name",                      (TString("private_name"), false)},
-                {"_base_dateTime",                  (TGetter("_base_dateTime"), false)},
-                {"_base_autoProperty",              (TString("private_autoproperty"), false)},
+                // private:
+                {"BaseBase_FieldForHidingWithField",                         (TNumber(105), false)},
+                {"BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",  (TGetter("BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty")), false)},
+                {"BaseBase_PropertyForHidingWithAutoProperty",               (TString("Base#BaseBase_PropertyForHidingWithAutoProperty"), false)},
 
-                // inherited public
-                {"Base_AutoStringProperty",         (TString("base#Base_AutoStringProperty"), false)},
-                {"base_num",                        (TNumber(5), false)},
-                {"LastName",                        (TGetter("LastName"), false)}
+                // inherited from BaseBase:
+                // public:
+                {"BaseBase_FieldForHidingWithField (BaseBaseClass2)",                (TNumber(5), false)},
+                {"BaseBase_PropertyForHidingWithField (BaseBaseClass2)",             (TGetter("BaseBase_PropertyForHidingWithField (BaseBaseClass2)", TNumber(10)), false)},
+                {"BaseBase_AutoPropertyForHidingWithField (BaseBaseClass2)",         (TNumber(15), false)},
+                {"BaseBase_FieldForHidingWithProperty (BaseBaseClass2)",             (TString("BaseBase#BaseBase_FieldForHidingWithProperty"), false)},
+                {"BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",          (TGetter("BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithProperty")), false)},
+                {"BaseBase_AutoPropertyForHidingWithProperty (BaseBaseClass2)",      (TString("BaseBase#BaseBase_AutoPropertyForHidingWithProperty"), false)},
+                {"BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",         (TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty"), false)},
+                {"BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      (TGetter("BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty")), false)},
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  (TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty"), false)},
+                {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         (TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO")), false)},
+                {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     (TString("BaseBase#BaseBase_AutoPropertyForVHO"), false)},
             };
 
             // default, all properties
@@ -70,36 +99,39 @@ namespace DebuggerTests
             {
                 // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
                 data.Add(type_name, true, accessors, all_props.Keys.ToArray(), all_props, is_async);
-                // data.Add(type_name, true, accessors, new[]
-                // {
-                //     "_stringField",
-                //     "_dateTime",
-                //     "_DTProp",
-                //     "a",
-                //     "DateTime",
-                //     "AutoStringProperty",
-                //     "FirstName",
-                //     "DateTimeForOverride",
-                //     "StringPropertyForOverrideWithAutoProperty"
-                // }, all_props, is_async);
             }
 
             var all_accessors = new[]
             {
-                "_DTProp",
-                "DateTime",
-                "_base_dateTime",
+                "Base_PropertyForOverridingWithProperty",
+                "BaseBase_AutoPropertyForHidingWithProperty",
+                "Base_AutoPropertyForOverridingWithProperty",
+                "BaseBase_PropertyForVHO",
+                "BaseBase_PropertyForVOH",
+                // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
+
+                "BaseBase_PropertyForHidingWithProperty",
                 "FirstName",
                 "LastName",
-                "DateTimeForOverride"
+                "BaseBase_FieldForHidingWithProperty",
+                "BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",
+                "BaseBase_PropertyForVOH (BaseClass2)",
+
+                "BaseBase_PropertyForHidingWithField (BaseBaseClass2)",
+                "BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",
+                "BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",
+                "Base_VirtualPropertyNotOverriddenOrHidden",
+                "BaseBase_PropertyForVHO (BaseBaseClass2)"
             };
 
             var only_own_accessors = new[]
             {
-                "_DTProp",
-                "DateTime",
-                "FirstName",
-                "DateTimeForOverride"
+                "Base_PropertyForOverridingWithProperty",
+                "BaseBase_AutoPropertyForHidingWithProperty",
+                "Base_AutoPropertyForOverridingWithProperty",
+                "BaseBase_PropertyForVHO",
+                "BaseBase_PropertyForVOH",
+                // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
             };
 
             // all own, only accessors
@@ -175,7 +207,7 @@ namespace DebuggerTests
         [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
         public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{type_name}",
-            $"InstanceMethod{(is_async ? "Async" : "")}", 1, (is_async ? "MoveNext" : "InstanceMethod"),
+            $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -184,14 +216,12 @@ namespace DebuggerTests
                 var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
                 var this_props = await GetProperties(this_obj["value"]?["objectId"]?.Value<string>(), own_properties: own_properties, accessors_only: accessors_only);
 
+                AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
                 await CheckExpectedProperties(expected_names, name => GetAndAssertObjectWithName(this_props, name), all_props);
 
                 // indexer properties shouldn't show up here
                 var item = this_props.FirstOrDefault(jt => jt["name"]?.Value<string>() == "Item");
                 Assert.Null(item);
-
-                // Useful for debugging: AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
-                AssertEqual(expected_names.Length, this_props.Count(), $"expected number of properties");
             });
 
         public static IEnumerable<object[]> MembersForLocalNestedStructData(bool is_async)
@@ -204,7 +234,7 @@ namespace DebuggerTests
             $"DebuggerTests.GetPropertiesTests.NestedStruct",
             is_async ? $"TestNestedStructStaticAsync" : "TestNestedStructStatic",
             2,
-            is_async ? "MoveNext" : $"TestNestedStructStatic",
+            "DebuggerTests.GetPropertiesTests.NestedStruct." + (is_async ? "TestNestedStructStaticAsync" : $"TestNestedStructStatic"),
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.NestedStruct:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -219,9 +249,6 @@ namespace DebuggerTests
                 // indexer properties shouldn't show up here
                 var item = cs_props.FirstOrDefault(jt => jt["name"]?.Value<string>() == "Item");
                 Assert.Null(item);
-
-                // Useful for debugging: AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
-                AssertEqual(expected_names.Length, cs_props.Count(), $"expected number of properties");
             });
 
         public static TheoryData<bool, bool?, bool?, string[]> JSGetPropertiesTestData(bool test_js) => new TheoryData<bool, bool?, bool?, string[]>
@@ -348,7 +375,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 128, 8,
-               "TestWatchWithInheritance");
+               "TestChild.TestWatchWithInheritance");
             var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             var frame_locals = await GetProperties(frame_id);
             var test_props = await GetObjectOnLocals(frame_locals, "test");
@@ -397,58 +424,93 @@ namespace DebuggerTests
             }
         }
 
-        private static void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
+        private void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
         {
+            bool fail = false;
             var exp = new HashSet<string>(expected_names);
 
             foreach (var obj in actual)
             {
                 if (!exp.Contains(obj["name"]?.Value<string>()))
-                    Console.WriteLine($"Unexpected: {obj}");
+                {
+                    _testOutput.WriteLine($"Unexpected: {obj}");
+                    fail = true;
+                }
             }
+
+            var act = new HashSet<string>(actual.Select(a => a["name"].Value<string>()));
+            foreach (var obj in expected_names.Where(ename => !act.Contains(ename)))
+            {
+                _testOutput.WriteLine($"Missing: {obj}");
+                fail = true;
+            }
+
+            if (fail)
+                throw new XunitException($"missing or unexpected members found");
         }
 
-         public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
+        public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
         {
             var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
-            // object DerivedClass; should be 23 elements:
+
             var public_props = new Dictionary<string, JObject>()
             {
-                //  own
-                {"a",                               TNumber(4)},
-                {"DateTime",                        TGetter("DateTime")},
-                {"AutoStringProperty",              TString("DerivedClass#AutoStringProperty")},
-                {"FirstName",                       TGetter("FirstName")},
-                {"DateTimeForOverride",             TGetter("DateTimeForOverride")},
+                // own:
+                {"BaseBase_PropertyForHidingWithField",             TNumber(210)},
+                {"Base_PropertyForOverridingWithProperty",          TGetter("Base_PropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))},
+                {"BaseBase_PropertyForVHO",                         TGetter("BaseBase_PropertyForVHO", TString("Derived#BaseBase_PropertyForVHO"))},
+                {"BaseBase_PropertyForVOH",                         TGetter("BaseBase_PropertyForVOH", TString("Derived#BaseBase_PropertyForVOH"))},
+                // {"BaseBase_PropertyForVOO",                         TGetter("BaseBase_PropertyForVOO", TString("Derived#BaseBase_PropertyForVOO"))}, //FixMe: Issue #69788
+                {"BaseBase_AutoPropertyForVHO",                     TString("Derived#BaseBase_AutoPropertyForVHO")},
+                {"BaseBase_AutoPropertyForVOH",                     TString("Derived#BaseBase_AutoPropertyForVOH")},
+                // {"BaseBase_AutoPropertyForVOO",                     TString("Derived#BaseBase_AutoPropertyForVOO")}, //FixMe: Issue #69788
 
-                {"StringPropertyForOverrideWithAutoProperty",   TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")},
-                {"Base_AutoStringPropertyForOverrideWithField", TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField")},
-                {"Base_GetterForOverrideWithField",             TString("DerivedClass#Base_GetterForOverrideWithField")},
-                {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")},
+                // inherited from Base:
+                {"BaseBase_AutoPropertyForHidingWithField",                 TNumber(115)},
+                {"BaseBase_PropertyForHidingWithProperty",                  TGetter("BaseBase_PropertyForHidingWithProperty", TString("Base#BaseBase_PropertyForHidingWithProperty"))},
+                {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    TString("Base#BaseBase_FieldForHidingWithAutoProperty")},
+                {"FirstName",                                               TGetter("FirstName", TString("BaseClass#FirstName"))},
+                {"LastName",                                                TGetter("LastName", TString("BaseClass#LastName"))},
+                {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2124, 5, 7, 1, 9, 2)))},
+                {"BaseBase_PropertyForVOH (BaseClass2)",                    TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH"))},
+                {"BaseBase_AutoPropertyForVOH (BaseClass2)",                TString("Base#BaseBase_AutoPropertyForVOH")},
 
-                // inherited public
-                {"Base_AutoStringProperty",         TString("base#Base_AutoStringProperty")},
-                {"LastName",                        TGetter("LastName")}
+                // inherited from BaseBase:
+                {"BaseBase_FieldForHidingWithField (BaseBaseClass2)",                TNumber(5)},
+                {"BaseBase_PropertyForHidingWithField (BaseBaseClass2)",             TGetter("BaseBase_PropertyForHidingWithField (BaseBaseClass2)", TNumber(10))},
+                {"BaseBase_AutoPropertyForHidingWithField (BaseBaseClass2)",         TNumber(15)},
+                {"BaseBase_FieldForHidingWithProperty (BaseBaseClass2)",             TString("BaseBase#BaseBase_FieldForHidingWithProperty")},
+                {"BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",          TGetter("BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithProperty"))},
+                {"BaseBase_AutoPropertyForHidingWithProperty (BaseBaseClass2)",      TString("BaseBase#BaseBase_AutoPropertyForHidingWithProperty")},
+                {"BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",         TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty")},
+                {"BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      TGetter("BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty"))},
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty")},
+                {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO"))},
+                {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     TString("BaseBase#BaseBase_AutoPropertyForVHO")},
             };
 
             var internal_protected_props = new Dictionary<string, JObject>(){
-                // internal
-                {"b",                               TBool(true)},
-                // inherited protected
-                {"base_num",                        TNumber(5)}
-            };
-            
-            var private_props = new Dictionary<string, JObject>(){
-                {"_stringField",                    TString("DerivedClass#_stringField")},
-                {"_dateTime",                       TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))},
-                {"_DTProp",                         TGetter("_DTProp")},
 
-                // inherited
-                {"_base_name",                      TString("private_name")},
-                {"_base_autoProperty",              TString("private_autoproperty")},
-                {"_base_dateTime",                  TGetter("_base_dateTime")}
+                // own:
+                {"BaseBase_AutoPropertyForHidingWithProperty",          TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty"))},
+                {"Base_PropertyForOverridingWithAutoProperty",          TDateTime(new DateTime(2022, 7, 6, 5, 4, 3))},
+                {"Base_AutoPropertyForOverridingWithAutoProperty",      TDateTime(new DateTime(2023, 7, 6, 5, 4, 3))},
+                {"Base_AutoPropertyForOverridingWithProperty",          TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2021, 7, 6, 5, 4, 3)))},
+                // inherited from Base:
+                {"BaseBase_PropertyForHidingWithField (BaseClass2)",    TNumber(110)},
+                {"BaseBase_FieldForHidingWithProperty",                 TGetter("BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty"))},
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty",      TString("Base#BaseBase_AutoPropertyForHidingWithAutoProperty")}
             };
-            data.Add(public_props, internal_protected_props, private_props, "DerivedClass");
+
+            var private_props = new Dictionary<string, JObject>(){
+                 // own
+                {"BaseBase_FieldForHidingWithAutoProperty",                 TString("Derived#BaseBase_FieldForHidingWithAutoProperty")},
+                // from Base:
+                {"BaseBase_FieldForHidingWithField",                        TNumber(105)},
+                {"BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TGetter("BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty"))},
+                {"BaseBase_PropertyForHidingWithAutoProperty",              TString("Base#BaseBase_PropertyForHidingWithAutoProperty")},
+            };
+            data.Add(public_props, internal_protected_props, private_props, "DerivedClass2");
 
             // structure CloneableStruct:
             public_props = new Dictionary<string, JObject>()
@@ -474,13 +536,13 @@ namespace DebuggerTests
             data.Add(public_props, internal_protected_props, private_props, "CloneableStruct");
             return data;
         }
-        
+
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(GetDataForProtectionLevels))]
         public async Task PropertiesSortedByProtectionLevel(
-            Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>  
+            Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>
             await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, "InstanceMethod",
+            $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, $"DebuggerTests.GetPropertiesTests.{entryMethod}.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.{entryMethod}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -488,10 +550,13 @@ namespace DebuggerTests
                 var (obj, _) = await EvaluateOnCallFrame(id, "this");
                 var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
 
+                AssertHasOnlyExpectedProperties(expectedPublic.Keys.ToArray(), pub.Values<JObject>());
+                AssertHasOnlyExpectedProperties(expectedProtInter.Keys.ToArray(), internalAndProtected.Values<JObject>());
+                AssertHasOnlyExpectedProperties(expectedPriv.Keys.ToArray(), priv.Values<JObject>());
+
                 await CheckProps(pub, expectedPublic, "public");
                 await CheckProps(internalAndProtected, expectedProtInter, "internalAndProtected");
                 await CheckProps(priv, expectedPriv, "private");
-           });
-
+            });
     }
 }

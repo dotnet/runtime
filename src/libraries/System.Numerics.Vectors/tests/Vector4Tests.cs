@@ -497,7 +497,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector4f, Vector4f, float)
-        // Lerp test with values known to be innacurate with the old lerp impl
+        // Lerp test with values known to be inaccurate with the old lerp impl
         [Fact]
         public void Vector4LerpTest7()
         {
@@ -512,7 +512,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector4f, Vector4f, float)
-        // Lerp test with values known to be innacurate with the old lerp impl
+        // Lerp test with values known to be inaccurate with the old lerp impl
         // (Old code incorrectly gets 0.33333588)
         [Fact]
         public void Vector4LerpTest8()
@@ -1441,7 +1441,6 @@ namespace System.Numerics.Tests
 
         // A test for Vector4f comparison involving NaN values
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector4EqualsNaNTest()
         {
             Vector4 a = new Vector4(float.NaN, 0, 0, 0);

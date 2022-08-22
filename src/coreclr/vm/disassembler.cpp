@@ -82,7 +82,8 @@ namespace
         LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
 
         // Look for the coredistools module next to the clr binary
-        libPath.AppendPrintf(W("%s%s"), sysDirectory, libFileName);
+        libPath.Append(sysDirectory);
+        libPath.Append(libFileName);
 
         LPCWSTR libraryName = libPath.GetUnicode();
         return CLRLoadLibrary(libraryName);
@@ -157,7 +158,7 @@ Disassembler::Disassembler()
 
     // Try to get an external disassembler that is already available for use before creating one
     ExternalDisassembler *externalDisassembler =
-        FastInterlockExchangePointer(&s_availableExternalDisassembler, static_cast<ExternalDisassembler *>(nullptr));
+        InterlockedExchangeT(&s_availableExternalDisassembler, static_cast<ExternalDisassembler *>(nullptr));
     if (externalDisassembler == nullptr)
     {
     #if USE_COREDISTOOLS_DISASSEMBLER
@@ -185,7 +186,7 @@ Disassembler::~Disassembler()
 
     // Save the external disassembler for future use. We only save one instance, so delete a previously saved one.
     ExternalDisassembler *externalDisassemblerToDelete =
-        FastInterlockExchangePointer(&s_availableExternalDisassembler, m_externalDisassembler);
+        InterlockedExchangeT(&s_availableExternalDisassembler, m_externalDisassembler);
     if (externalDisassemblerToDelete == nullptr)
     {
         return;

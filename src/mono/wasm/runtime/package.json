@@ -7,6 +7,7 @@
   },
   "version": "1.0.0",
   "main": "dotnet.js",
+  "type": "module",
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
@@ -20,15 +21,17 @@
   "author": "Microsoft",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-typescript": "8.2.5",
-    "@typescript-eslint/eslint-plugin": "4.31.2",
-    "@typescript-eslint/parser": "4.31.2",
-    "eslint": "7.32.0",
-    "rollup": "2.56.3",
-    "rollup-plugin-consts": "1.0.2",
-    "rollup-plugin-dts": "4.0.0",
+    "@rollup/plugin-typescript": "8.3.3",
+    "@typescript-eslint/eslint-plugin": "5.30.7",
+    "@typescript-eslint/parser": "5.30.7",
+    "eslint": "8.20.0",
+    "fast-glob": "3.2.11",
+    "rollup": "2.77.0",
+    "rollup-plugin-consts": "1.1.0",
+    "rollup-plugin-dts": "4.2.2",
     "rollup-plugin-terser": "7.0.2",
-    "tslib": "2.3.1",
-    "typescript": "4.4.3"
+    "terser": "5.14.2",
+    "tslib": "2.4.0",
+    "typescript": "4.7.4"
   }
 }

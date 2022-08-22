@@ -20,13 +20,13 @@
 #endif
 
 #ifdef _DEBUG
-    struct Sentinal
+    struct Sentinel
     {
         enum { marker1Val = 0xBAD00BAD };
-        Sentinal(Sentinal* next) : m_Marker1(marker1Val), m_Next(next) { LIMITED_METHOD_CONTRACT; }
+        Sentinel(Sentinel* next) : m_Marker1(marker1Val), m_Next(next) { LIMITED_METHOD_CONTRACT; }
 
         unsigned  m_Marker1;        // just some data bytes
-        Sentinal* m_Next;           // linked list of these
+        Sentinel* m_Next;           // linked list of these
     };
 #endif
 
@@ -38,7 +38,7 @@
     {
         StackBlock     *m_Next;         // Next oldest block in list
         DWORD_PTR   m_Length;       // Length of block excluding header  (needs to be pointer-sized for alignment on IA64)
-        INDEBUG(Sentinal*   m_Sentinal;)    // insure that we don't fall of the end of the buffer
+        INDEBUG(Sentinel*   m_Sentinel;)    // insure that we don't fall of the end of the buffer
         INDEBUG(void**      m_Pad;)    		// keep the size a multiple of 8
         char *GetData() { return (char *)(this + 1);}
     };
@@ -135,8 +135,8 @@ public:
             return NULL;
         }
 
-        // leave room for sentinal
-        INDEBUG(n += sizeof(Sentinal));
+        // leave room for sentinel
+        INDEBUG(n += sizeof(Sentinel));
 
         // Is the request too large for the current block?
         if (n > m_BytesLeft)
@@ -156,8 +156,8 @@ public:
         m_BytesLeft -= n;
 
 #ifdef _DEBUG
-        // Add sentinal to the end
-        m_FirstBlock->m_Sentinal = new(m_FirstFree - sizeof(Sentinal)) Sentinal(m_FirstBlock->m_Sentinal);
+        // Add sentinel to the end
+        m_FirstBlock->m_Sentinel = new(m_FirstFree - sizeof(Sentinel)) Sentinel(m_FirstBlock->m_Sentinel);
 #endif
 
         RETURN ret;

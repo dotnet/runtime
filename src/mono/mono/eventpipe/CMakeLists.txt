@@ -22,6 +22,10 @@ if(ENABLE_PERFTRACING)
         add_definitions(-DDISABLE_PERFTRACING_CONNECT_PORTS)
     endif (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
 
+    if (TARGET_S390X)
+        add_definitions(-DBIGENDIAN)
+    endif (TARGET_S390X)
+
     include (${SHARED_EVENTPIPE_SOURCE_PATH}CMakeLists.txt)
 
     set(MONO_EVENTPIPE_SHIM_SOURCES "")

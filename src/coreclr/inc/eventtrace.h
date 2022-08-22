@@ -57,7 +57,7 @@ struct ProfilingScanContext : ScanContext
 };
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 namespace ETW
 {
@@ -184,7 +184,7 @@ namespace ETW
         static VOID OnTypesKeywordTurnedOff();
     };
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 
     // Class to wrap all GC logic for ETW
@@ -202,11 +202,11 @@ namespace ETW
         // we'll attach this sequence number to that GC instead of to the WPA-induced GC,
         // but who cares? When parsing ETW logs later on, it's indistinguishable if both
         // GCs really were induced at around the same time.
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
         static volatile LONGLONG s_l64LastClientSequenceNumber;
-#else // FEATURE_REDHAWK
+#else // FEATURE_NATIVEAOT
         static Volatile<LONGLONG> s_l64LastClientSequenceNumber;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     public:
         typedef union st_GCEventInfo {

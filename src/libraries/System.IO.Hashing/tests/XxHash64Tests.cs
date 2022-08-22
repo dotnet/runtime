@@ -38,6 +38,8 @@ namespace System.IO.Hashing.Tests
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
         private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
         private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
+        private const string SixteenBytes = "0123456789ABCDEF";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -45,17 +47,17 @@ namespace System.IO.Hashing.Tests
                 //https://asecuritysite.com/encryption/xxHash, Example 1
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "FBCEA83C8A378BF1"),
                 //https://asecuritysite.com/encryption/xxHash, Example 2
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "0B242D361FDA71BC"),
                 //https://asecuritysite.com/encryption/xxHash, Example 3
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "44AD33705751AD73"),
 
                 // Manual exploration to force boundary conditions in code coverage.
@@ -64,7 +66,7 @@ namespace System.IO.Hashing.Tests
                 // The "in three pieces" test causes this to build up in the accumulator every time.
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "44BC2CF5AD770999"),
                 // Accumulates every time.
                 new TestCase(
@@ -109,7 +111,37 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{ThirtyTwoBytes} (x3)",
                     Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
-                    "975E3E6FE7E67FBC")
+                    "975E3E6FE7E67FBC"),
+                // 16 * 3 bytes, filling the holdback buffer exactly on the second Append call.
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "BDD40F0FAC166EAA"),
+            };
+
+        public static IEnumerable<object[]> LargeTestCases
+        {
+            get
+            {
+                object[] arr = new object[1];
+
+                foreach (LargeTestCase testCase in LargeTestCaseDefinitions)
+                {
+                    arr[0] = testCase;
+                    yield return arr;
+                }
+            }
+        }
+
+        protected static IEnumerable<LargeTestCase> LargeTestCaseDefinitions { get; } =
+            new[]
+            {
+                // Manually run against the xxHash64 reference implementation.
+                new LargeTestCase(
+                    "EEEEE... (10GB)",
+                    (byte)'E',
+                    10L * 1024 * 1024 * 1024, // 10 GB
+                    "F3CB8D45A8B695EF"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64();
@@ -143,6 +175,14 @@ namespace System.IO.Hashing.Tests
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)
         {
             InstanceMultiAppendGetCurrentHashDriver(testCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeTestCases))]
+        [OuterLoop]
+        public void InstanceMultiAppendLargeInput(LargeTestCase testCase)
+        {
+            InstanceMultiAppendLargeInputDriver(testCase);
         }
 
         [Theory]

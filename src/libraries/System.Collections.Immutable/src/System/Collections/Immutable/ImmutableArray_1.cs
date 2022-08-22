@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
             Requires.Range(count >= 0 && startIndex + count <= self.Length, nameof(count));
 
-            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+            equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.IndexOf(self.array!, item, startIndex, count);
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
             Requires.Range(count >= 0 && startIndex - count + 1 >= 0, nameof(count));
 
-            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+            equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.LastIndexOf(self.array!, item, startIndex, count);
@@ -735,10 +735,7 @@ namespace System.Collections.Immutable
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndices == null)
-                    {
-                        removeIndices = new List<int>();
-                    }
+                    removeIndices ??= new List<int>();
 
                     removeIndices.Add(i);
                 }
@@ -809,10 +806,7 @@ namespace System.Collections.Immutable
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
             {
-                if (comparer == null)
-                {
-                    comparer = Comparer<T>.Default;
-                }
+                comparer ??= Comparer<T>.Default;
 
                 // Avoid copying the entire array when the array is already sorted.
                 bool outOfOrder = false;

@@ -375,7 +375,7 @@ namespace System.Dynamic.Tests
             return testObjects.SelectMany(i => testObjects.Select(j => new[] { i, j }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(SameNameObjectPairs))]
         public void OperationOnTwoObjectsDifferentTypesOfSameName(object x, object y)
         {

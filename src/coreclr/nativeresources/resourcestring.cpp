@@ -54,7 +54,7 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
             const WCHAR undefMsg[] = W("Undefined resource string ID:0x");
             wcscpy_s(szBuffer, iMax, undefMsg);
 
-            // Compute if there is enough space for the message and ID
+            // Compute if there is enough space for the message and ID.
             WCHAR* nxt = NULL;
             int extraSpace = iMax - (ARRAY_SIZE(undefMsg) - 1);
             if (0 < extraSpace)
@@ -68,10 +68,10 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
             }
             else
             {
-                // The only possible failure is that that string didn't fit the buffer. So the buffer contains
-                // partial string terminated by '\0'
+                // The only possible failure is that the string didn't fit the buffer. So the buffer contains
+                // partial string terminated by '\0'.
                 // We could return ERROR_INSUFFICIENT_BUFFER, but we'll error on the side of caution here and
-                // actually show something (given that this is likely a scenario involving a bug/deployment issue)
+                // actually show something (given that this is likely a scenario involving a bug/deployment issue).
                 len = iMax - 1;
             }
         }

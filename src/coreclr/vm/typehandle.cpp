@@ -998,13 +998,6 @@ BOOL TypeHandle::IsRestored() const
     }
 }
 
-BOOL TypeHandle::IsEncodedFixup() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return CORCOMPILE_IS_POINTER_TAGGED(m_asTAddr);
-}
-
 BOOL TypeHandle::HasUnrestoredTypeKey()  const
 {
     WRAPPER_NO_CONTRACT;
@@ -1022,7 +1015,6 @@ void TypeHandle::CheckRestore() const
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
     }
     CONTRACTL_END
 
@@ -1083,7 +1075,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    // Force a GC here because GetManagedClassObject could trigger GC nondeterminsticaly
+    // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 

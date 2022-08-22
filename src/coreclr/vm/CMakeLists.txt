@@ -82,7 +82,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     genericdict.cpp
     generics.cpp
     hash.cpp
-    hillclimbing.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
     ilstubresolver.cpp
@@ -107,6 +106,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     pgo.cpp
     precode.cpp
     prestub.cpp
+    readytorunstandalonemethodmetadata.cpp
     rejit.cpp
     sigformat.cpp
     siginfo.cpp
@@ -115,7 +115,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stublink.cpp
     stubmgr.cpp
     syncblk.cpp
-    threadpoolrequest.cpp
     threads.cpp
     threadstatics.cpp
     tieredcompilation.cpp
@@ -129,7 +128,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     vars.cpp
     versionresilienthashcode.cpp
     virtualcallstub.cpp
-    win32threadpool.cpp
     zapsig.cpp
 )
 
@@ -179,7 +177,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     gcheaputilities.h
     generics.h
     hash.h
-    hillclimbing.h
     ilinstrumentation.h
     ilstubcache.h
     ilstubresolver.h
@@ -221,7 +218,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     stubmgr.h
     syncblk.h
     syncblk.inl
-    threadpoolrequest.h
     threads.h
     threads.inl
     threadstatics.h
@@ -238,7 +234,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     vars.hpp
     versionresilienthashcode.h
     virtualcallstub.h
-    win32threadpool.h
     zapsig.h
 )
 
@@ -364,7 +359,6 @@ set(VM_SOURCES_WKS
     runtimehandles.cpp
     safehandle.cpp
     simplerwlock.cpp
-    sourceline.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
     stubcache.cpp
@@ -465,7 +459,6 @@ set(VM_HEADERS_WKS
     reflectioninvocation.h
     runtimehandles.h
     simplerwlock.hpp
-    sourceline.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h

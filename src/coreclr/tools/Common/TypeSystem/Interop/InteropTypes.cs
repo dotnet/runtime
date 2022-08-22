@@ -44,11 +44,6 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
         }
 
-        public static MetadataType GetStubHelpers(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
-        }
-
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
@@ -122,11 +117,6 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "ArgIterator");
         }
 
-        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "ByReference`1");
-        }
-
         public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Span`1");
@@ -145,6 +135,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemRuntimeIntrinsicsVector64T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
+        }
+
+        public static bool IsInt128Type(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Int128") || IsCoreNamedType(context, type, "System", "UInt128");
         }
 
         public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)

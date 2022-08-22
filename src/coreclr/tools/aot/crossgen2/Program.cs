@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
@@ -17,6 +18,9 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.IBC;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -77,6 +81,9 @@ namespace ILCompiler
                 case Architecture.Arm64:
                     arch = TargetArchitecture.ARM64;
                     break;
+                case Architecture.LoongArch64:
+                    arch = TargetArchitecture.LoongArch64;
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -94,7 +101,7 @@ namespace ILCompiler
             _commandLineOptions = new CommandLineOptions(args);
             PerfEventSource.StartStopEvents.CommandLineProcessingStop();
 
-            if (_commandLineOptions.Help)
+            if (_commandLineOptions.Help || _commandLineOptions.Version)
             {
                 return;
             }
@@ -179,6 +186,14 @@ namespace ILCompiler
 
         }
 
+        private string GetCompilerVersion()
+        {
+            return  Assembly
+                   .GetExecutingAssembly()
+                   .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                   .InformationalVersion;
+        }
+
         public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
         {
             armelAbi = false;
@@ -195,6 +210,8 @@ namespace ILCompiler
             }
             else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
+            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.LoongArch64;
             else
                 throw new CommandLineException(SR.TargetArchitectureUnsupported);
         }
@@ -234,9 +251,16 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
-
 
             if (_commandLineOptions.InstructionSet != null)
             {
@@ -334,6 +358,13 @@ namespace ILCompiler
             {
                 Console.WriteLine(_commandLineOptions.HelpText);
                 return 1;
+            }
+
+            if (_commandLineOptions.Version)
+            {
+                string version = GetCompilerVersion();
+                Console.WriteLine(version);
+                return 0;
             }
 
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
@@ -472,7 +503,10 @@ namespace ILCompiler
                 {
                     try
                     {
-                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+                        if (module == null)
+                            continue;
+
                         _referenceableModules.Add(module);
                         if (_commandLineOptions.InputBubble && _inputbubblereferenceFilePaths.Count == 0)
                         {
@@ -490,7 +524,11 @@ namespace ILCompiler
                     {
                         try
                         {
-                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+
+                            if (module == null)
+                                continue;
+
                             versionBubbleModulesHash.Add(module);
                         }
                         catch { } // Ignore non-managed pe files
@@ -574,9 +612,9 @@ namespace ILCompiler
                 ICompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
-
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
+                    HashSet<EcmaModule> crossModuleInlineableCode = new HashSet<EcmaModule>();
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -597,6 +635,24 @@ namespace ILCompiler
                         EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+                    }
+
+                    if (_commandLineOptions.CrossModuleInlining != null)
+                    {
+                        foreach (var crossModulePgoAssemblyName in _commandLineOptions.CrossModuleInlining)
+                        {
+                            foreach (var module in _referenceableModules)
+                            {
+                                if (!versionBubbleModulesHash.Contains(module))
+                                {
+                                    if (crossModulePgoAssemblyName == "*" ||
+                                         (String.Compare(crossModulePgoAssemblyName, module.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase) == 0))
+                                    {
+                                        crossModuleInlineableCode.Add((EcmaModule)module);
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     //
@@ -621,41 +677,84 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+                    ReadyToRunCompilationModuleGroupConfig groupConfig = new ReadyToRunCompilationModuleGroupConfig();
+                    groupConfig.Context = typeSystemContext;
+                    groupConfig.IsCompositeBuildMode = _commandLineOptions.Composite;
+                    groupConfig.IsInputBubble = _commandLineOptions.InputBubble;
+                    groupConfig.CompilationModuleSet = inputModules;
+                    groupConfig.VersionBubbleModuleSet = versionBubbleModules;
+                    groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
+                    groupConfig.CrossModuleGenericCompilation = crossModuleInlineableCode.Count > 0;
+                    groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
+                    groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
+                    groupConfig.CompileAllPossibleCrossModuleCode = false;
+
+                    // Handle non-local generics command line option
+                    ModuleDesc nonLocalGenericsHome = _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null;
+                    if (_commandLineOptions.NonLocalGenericsModule == "*")
+                    {
+                        groupConfig.CompileAllPossibleCrossModuleCode = true;
+                        nonLocalGenericsHome = inputModules[0];
+                    }
+                    else if (_commandLineOptions.NonLocalGenericsModule == "")
+                    {
+                        // Nothing was specified
+                    }
+                    else
+                    {
+                        bool matchFound = false;
+
+                        // Allow module to be specified by assembly name or by filename
+                        if (_commandLineOptions.NonLocalGenericsModule.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                            _commandLineOptions.NonLocalGenericsModule = Path.GetFileNameWithoutExtension(_commandLineOptions.NonLocalGenericsModule);
+                        foreach (var module in inputModules)
+                        {
+                            if (String.Compare(module.Assembly.GetName().Name, _commandLineOptions.NonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                matchFound = true;
+                                nonLocalGenericsHome = module;
+                                groupConfig.CompileAllPossibleCrossModuleCode = true;
+                                break;
+                            }
+                        }
+
+                        if (!matchFound)
+                        {
+                            foreach (var module in _referenceableModules)
+                            {
+                                if (String.Compare(module.Assembly.GetName().Name, _commandLineOptions.NonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
+                                {
+                                    matchFound = true;
+                                    break;
+                                }
+                            }
+
+                            if (!matchFound)
+                            {
+                                throw new CommandLineException(string.Format(SR.ErrorNonLocalGenericsModule, _commandLineOptions.NonLocalGenericsModule));
+                            }
+                        }
+                    }
+
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
                         compilationGroup = new SingleMethodCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics,
+                            groupConfig,
                             singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else if (_commandLineOptions.CompileNoMethods)
                     {
-                        compilationGroup = new NoMethodsCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics);
+                        compilationGroup = new NoMethodsCompilationModuleGroup(groupConfig);
                     }
                     else
                     {
                         // Single assembly compilation.
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics);
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(groupConfig);
                     }
 
                     // Load any profiles generated by method call chain analyis
@@ -667,22 +766,33 @@ namespace ILCompiler
                     }
 
                     // Examine profile guided information as appropriate
+                    MIbcProfileParser.MibcGroupParseRules parseRule;
+                    if (nonLocalGenericsHome != null)
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule2;
+                    }
+                    else
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1;
+                    }
+
                     ProfileDataManager profileDataManager =
                         new ProfileDataManager(logger,
                         _referenceableModules,
                         inputModules,
                         versionBubbleModules,
-                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        crossModuleInlineableCode,
+                        nonLocalGenericsHome,
                         mibcFiles,
+                        parseRule,
                         jsonProfile,
                         typeSystemContext,
                         compilationGroup,
-                        _commandLineOptions.EmbedPgoData);
+                        _commandLineOptions.EmbedPgoData,
+                        _commandLineOptions.SupportIbc,
+                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
-                    if (_commandLineOptions.Partial)
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
-                    else
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);
 
                     if ((singleMethod == null) && !_commandLineOptions.CompileNoMethods)
                     {
@@ -731,10 +841,13 @@ namespace ILCompiler
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
-                    ILProvider ilProvider = new ReadyToRunILProvider();
+                    ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
 
                     DependencyTrackingLevel trackingLevel = _commandLineOptions.DgmlLogFileName == null ?
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
+
+                    NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
+                    nodeFactoryFlags.OptimizeAsyncMethods = _commandLineOptions.AsyncMethodOptimization;
 
                     builder
                         .UseMapFile(_commandLineOptions.Map)
@@ -743,6 +856,7 @@ namespace ILCompiler
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
+                        .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseCompositeImageSettings(compositeImageSettings)
                         .UseJitPath(_commandLineOptions.JitPath)

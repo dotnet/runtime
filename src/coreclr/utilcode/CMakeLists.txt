@@ -27,7 +27,6 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
-  iallocator.cpp
   loaderheap.cpp
   outstring.cpp
   ilformatter.cpp
@@ -40,7 +39,6 @@ set(UTILCODE_COMMON_SOURCES
   sigparser.cpp
   sstring.cpp
   util_nodependencies.cpp
-  utilmessagebox.cpp
   safewrap.cpp
   clrhost.cpp
   cycletimer.cpp

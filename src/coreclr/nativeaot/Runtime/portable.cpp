@@ -36,7 +36,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 struct gc_alloc_context
 {
@@ -401,45 +401,20 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 void * ReturnFromCallDescrThunk;
 #endif
 
-#if defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
+#if defined(USE_PORTABLE_HELPERS)
 //
 // Return address hijacking
 //
-#if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-#else // !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
 COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
-#endif // !defined (HOST_ARM64)
+
+COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 #endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
 
 #if defined(USE_PORTABLE_HELPERS)
@@ -496,7 +471,7 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 }
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     return NULL;
 }
@@ -543,15 +518,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 }
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-#ifdef CALLDESCR_FPARGREGSARERETURNREGS
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub))
-#else
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub, uintptr_t* pReturnFloatingPointReturn4Thunk, uintptr_t* pReturnFloatingPointReturn8Thunk))
-#endif
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }

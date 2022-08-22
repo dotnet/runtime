@@ -82,7 +82,7 @@ public class MemberDef
             }
             else
             {
-                typeName = (kind == MemberTypeKind.WriterField) ? 
+                typeName = (kind == MemberTypeKind.WriterField) ?
                     (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{TypeName}Handle";
             }
         }
@@ -267,7 +267,7 @@ class SchemaDef
     //
 
     // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent contant primitive type values. Adds concept of constant managed reference, which
+    // that represent constant primitive type values. Adds concept of constant managed reference, which
     // must always have a null value (thus the use of the NotPersisted flag).
 
     private static readonly RecordDef[] ConstantValueRecordSchema =
@@ -301,7 +301,7 @@ class SchemaDef
         .ToArray();
 
     // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent contant arrays primitive type values. Adds concept of a constant array of handle values (currently used to store
+    // that represent constant arrays primitive type values. Adds concept of a constant array of handle values (currently used to store
     // an array TypeDefOrRefOrSpec handles corresponding to System.Type arguments to the instantiation of a custom attribute, or to store
     // custom initialized object[] arrays in custom attributes).
 
@@ -342,7 +342,7 @@ class SchemaDef
         )
         .ToArray();
 
-    private static readonly RecordDef[] ConstantRecordSchema = 
+    private static readonly RecordDef[] ConstantRecordSchema =
         ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();

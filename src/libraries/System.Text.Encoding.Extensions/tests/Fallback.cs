@@ -30,7 +30,7 @@ namespace EncodingTests
             // Test when the fallback will not occur
             encodedBytes = new byte[asciiEncoding.GetByteCount(s_asciiInputStringWinNoFallback)];
             numberOfEncodedBytes = asciiEncoding.GetBytes(s_asciiInputStringWinNoFallback, 0, s_asciiInputStringWinNoFallback.Length, encodedBytes, 0);
-            Assert.Equal(encodedBytes, new byte[] { (byte)'a', (byte)'b', (byte)'c' });
+            Assert.Equal("abc"u8.ToArray(), encodedBytes);
             decodedString = asciiEncoding.GetString(encodedBytes);
             Assert.Equal(decodedString, s_asciiInputStringWinNoFallback);
         }

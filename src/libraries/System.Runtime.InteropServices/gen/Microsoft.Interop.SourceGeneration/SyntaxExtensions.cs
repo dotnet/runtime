@@ -19,16 +19,31 @@ namespace Microsoft.Interop
             {
                 return fixedStatement.WithStatement(childStatement);
             }
+
+            BlockSyntax block;
             if (fixedStatement.Statement.IsKind(SyntaxKind.Block))
             {
-                var block = (BlockSyntax)fixedStatement.Statement;
+                block = (BlockSyntax)fixedStatement.Statement;
                 if (block.Statements.Count == 0)
                 {
                     return fixedStatement.WithStatement(childStatement);
                 }
-                return fixedStatement.WithStatement(block.AddStatements(childStatement));
             }
-            return fixedStatement.WithStatement(SyntaxFactory.Block(fixedStatement.Statement, childStatement));
+            else
+            {
+                block = SyntaxFactory.Block(fixedStatement.Statement);
+            }
+
+            if (childStatement.IsKind(SyntaxKind.Block))
+            {
+                block = block.WithStatements(block.Statements.AddRange(((BlockSyntax)childStatement).Statements));
+            }
+            else
+            {
+                block = block.AddStatements(childStatement);
+            }
+
+            return fixedStatement.WithStatement(block);
         }
 
         public static StatementSyntax NestFixedStatements(this ImmutableArray<FixedStatementSyntax> fixedStatements, StatementSyntax innerStatement)
@@ -37,7 +52,7 @@ namespace Microsoft.Interop
             if (!fixedStatements.IsEmpty)
             {
                 int i = fixedStatements.Length - 1;
-                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(SyntaxFactory.Block(nestedStatement));
+                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(WrapStatementInBlock(nestedStatement));
                 i--;
                 for (; i >= 0; i--)
                 {
@@ -45,6 +60,15 @@ namespace Microsoft.Interop
                 }
             }
             return nestedStatement;
+
+            static StatementSyntax WrapStatementInBlock(StatementSyntax statement)
+            {
+                if (statement.IsKind(SyntaxKind.Block))
+                {
+                    return statement;
+                }
+                return SyntaxFactory.Block(statement);
+            }
         }
 
         public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)

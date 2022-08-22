@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 //-----------------------------------------------------------------------------
 // genInsName: Returns the string representation of the given CPU instruction, as
@@ -147,15 +146,10 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     return insName;
 }
 
-/*****************************************************************************/
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Return the size string (e.g. "word ptr") appropriate for the given size.
  */
-
-#ifdef DEBUG
 
 const char* CodeGen::genSizeStr(emitAttr attr)
 {
@@ -213,8 +207,6 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     }
 }
 
-#endif
-
 /*****************************************************************************
  *
  *  Generate an instruction.
@@ -254,32 +246,6 @@ bool CodeGenInterface::instIsFP(instruction ins)
 #else
     return (instInfo[ins] & INST_FP) != 0;
 #endif
-}
-
-/*****************************************************************************
- *
- *  Generate a jump instruction.
- */
-
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
-{
-#if !FEATURE_FIXED_OUT_ARGS
-    // On the x86 we are pushing (and changing the stack level), but on x64 and other archs we have
-    // a fixed outgoing args area that we store into and we never change the stack level when calling methods.
-    //
-    // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef UNIX_X86_ABI
-    // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == (genStackLevel - curNestedAlignment)) || isFramePointerUsed());
-#else
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
-#endif
-#endif // !FEATURE_FIXED_OUT_ARGS
-
-    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 /*****************************************************************************
@@ -352,61 +318,8 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
     // These instructions only write the low byte of 'reg'
     GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
 #elif defined(TARGET_ARM64)
-    insCond cond;
-    /* Convert the condition to an insCond value */
-    switch (condition)
-    {
-        case EJ_eq:
-            cond = INS_COND_EQ;
-            break;
-        case EJ_ne:
-            cond = INS_COND_NE;
-            break;
-        case EJ_hs:
-            cond = INS_COND_HS;
-            break;
-        case EJ_lo:
-            cond = INS_COND_LO;
-            break;
 
-        case EJ_mi:
-            cond = INS_COND_MI;
-            break;
-        case EJ_pl:
-            cond = INS_COND_PL;
-            break;
-        case EJ_vs:
-            cond = INS_COND_VS;
-            break;
-        case EJ_vc:
-            cond = INS_COND_VC;
-            break;
-
-        case EJ_hi:
-            cond = INS_COND_HI;
-            break;
-        case EJ_ls:
-            cond = INS_COND_LS;
-            break;
-        case EJ_ge:
-            cond = INS_COND_GE;
-            break;
-        case EJ_lt:
-            cond = INS_COND_LT;
-            break;
-
-        case EJ_gt:
-            cond = INS_COND_GT;
-            break;
-        case EJ_le:
-            cond = INS_COND_LE;
-            break;
-
-        default:
-            NO_WAY("unexpected condition type");
-            return;
-    }
-    GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, cond);
+    GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
 #else
     NYI("inst_SET");
 #endif
@@ -837,6 +750,38 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+            case GT_CNS_VEC:
+            {
+                switch (op->TypeGet())
+                {
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        return OperandDesc(emit->emitSimd8Const(constValue));
+                    }
+
+                    case TYP_SIMD12:
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+
+                    case TYP_SIMD32:
+                    {
+                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        return OperandDesc(emit->emitSimd32Const(constValue));
+                    }
+#endif // FEATURE_SIMD
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+            }
 
             default:
                 unreached();

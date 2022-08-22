@@ -67,6 +67,22 @@ namespace System.IO.Packaging
             return _baseStream.Read(buffer, offset, count);
         }
 
+#if NETCOREAPP
+        public override void Write(
+            ReadOnlySpan<byte> buffer
+        )
+        {
+            _baseStream.Write(buffer);
+        }
+
+        public override int Read(
+            Span<byte> buffer
+        )
+        {
+            return _baseStream.Read(buffer);
+        }
+#endif
+
         public override void SetLength(
             long value
         )

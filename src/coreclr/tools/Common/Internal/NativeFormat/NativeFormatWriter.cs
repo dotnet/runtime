@@ -235,24 +235,24 @@ namespace Internal.NativeFormat
 
             _encoder.WriteSigned(offset - GetCurrentOffset());
         }
-        
+
         public int GetExpectedOffset(Vertex val)
         {
             Debug.Assert(val._offset != Vertex.NotPlaced);
-    
+
             if (val._iteration == -1)
             {
                 // If the offsets are not determined yet, use the maximum possible encoding
                 return 0x7FFFFFFF;
             }
-    
+
             int offset = val._offset;
-    
+
             // If the offset was not update in this iteration yet, adjust it by delta we have accumulated in this iteration so far.
             // This adjustment allows the offsets to converge faster.
             if (val._iteration < _iteration)
                 offset += _offsetAdjustment;
-    
+
             return offset;
         }
 
@@ -341,7 +341,7 @@ namespace Internal.NativeFormat
                 }
 
                 // We are not able to shrink anymore. We cannot just return here. It is possible that we have rolledback
-                // above because of we shrinked too much.
+                // above because of we shrunk too much.
                 if (_offsetAdjustment == 0)
                     break;
 
@@ -1543,7 +1543,7 @@ namespace Internal.NativeFormat
             return true;
         }
     }
-    
+
 #if NATIVEFORMAT_PUBLICWRITER
     public
 #else
@@ -1552,17 +1552,17 @@ namespace Internal.NativeFormat
     class BlobVertex : Vertex
     {
         private byte[] _data;
-    
+
         public BlobVertex(byte[] data)
         {
             _data = data;
         }
-    
+
         public int GetSize()
         {
             return _data.Length;
         }
-    
+
         internal override void Save(NativeWriter writer)
         {
             foreach (byte b in _data)
@@ -1582,13 +1582,13 @@ namespace Internal.NativeFormat
         private uint _methodIndex;
 
         private BlobVertex _fixups;
-    
+
         public EntryPointVertex(uint methodIndex, BlobVertex fixups)
         {
             _methodIndex = methodIndex;
             _fixups = fixups;
         }
-    
+
         internal override void Save(NativeWriter writer)
         {
             if (_fixups != null)
@@ -1621,13 +1621,13 @@ namespace Internal.NativeFormat
     class EntryPointWithBlobVertex : EntryPointVertex
     {
         private BlobVertex _blob;
-    
+
         public EntryPointWithBlobVertex(uint methodIndex, BlobVertex fixups, BlobVertex blob)
             : base(methodIndex, fixups)
         {
             _blob = blob;
         }
-    
+
         internal override void Save(NativeWriter writer)
         {
             _blob.Save(writer);
@@ -1745,7 +1745,7 @@ namespace Internal.NativeFormat
         {
             private Vertex _vertex;
             private int _leafIndex;
-            
+
             public VertexLeaf(Vertex vertex, int leafIndex)
             {
                 _vertex = vertex;
@@ -1755,7 +1755,7 @@ namespace Internal.NativeFormat
             internal override void Save(NativeWriter writer)
             {
                 writer.WriteUnsigned((uint)_leafIndex << 2);
-        
+
                 if (_vertex != null)
                 {
                     _vertex.Save(writer);
@@ -1789,18 +1789,18 @@ namespace Internal.NativeFormat
             internal override void Save(NativeWriter writer)
             {
                 uint value = (_first != null ? 1u : 0u);
-        
+
                 if (_second != null)
                 {
                     value |= 2;
-        
+
                     int delta = writer.GetExpectedOffset(_second) - writer.GetCurrentOffset();
                     Debug.Assert(delta >= 0);
                     value |= ((uint)delta << 2);
                 }
-        
+
                 writer.WriteUnsigned(value);
-        
+
                 if (_first != null)
                     _first.Save(writer);
             }
@@ -1820,19 +1820,19 @@ namespace Internal.NativeFormat
             {
                 Vertex first = (index < _entries.Count ? _entries[index] : null);
                 Vertex second = (index + 1 < _entries.Count ? _entries[index + 1] : null);
-    
+
                 if (first == null && second == null)
                 {
                     isLeaf = true;
                     return null;
                 }
-    
+
                 if (first == null || second == null)
                 {
                     VertexLeaf leaf = new VertexLeaf(
                         first == null ? second : first,
                         (first == null ? index + 1 : index) & (BlockSize - 1));
-                        
+
                     if (place)
                     {
                         _section.Place(leaf);
@@ -1841,13 +1841,13 @@ namespace Internal.NativeFormat
                     isLeaf = true;
                     return leaf;
                 }
-    
+
                 VertexTree tree = new VertexTree(first, second);
                 if (place)
                     _section.Place(tree);
-    
+
                 _section.Place(second);
-    
+
                 isLeaf = false;
                 return tree;
             }
@@ -1862,7 +1862,7 @@ namespace Internal.NativeFormat
 
                 bool secondIsLeaf;
                 Vertex second = ExpandBlock(index + (1 << (depth - 1)), depth - 1, true, out secondIsLeaf);
-    
+
                 if (first == null && second == null)
                 {
                     if (place)
@@ -1873,7 +1873,7 @@ namespace Internal.NativeFormat
                     isLeaf = true;
                     return null;
                 }
-    
+
                 if (first == null && secondIsLeaf)
                 {
                     Vertex pop = _section.Pop();
@@ -1884,11 +1884,11 @@ namespace Internal.NativeFormat
                         Debug.Assert(pop == tree);
                         _section.Place(second);
                     }
-    
+
                     isLeaf = true;
                     return second;
                 }
-    
+
                 if (second == null && firstIsLeaf)
                 {
                     if (place)
@@ -1897,17 +1897,17 @@ namespace Internal.NativeFormat
                         Debug.Assert(pop == tree);
                         _section.Place(first);
                     }
-    
+
                     isLeaf = true;
                     return first;
                 }
-    
+
                 tree.Update(first, second);
                 isLeaf = false;
                 return tree;
             }
         }
-    
+
         public void Set(int index, Vertex element)
         {
             while (index >= _entries.Count)
@@ -1923,7 +1923,7 @@ namespace Internal.NativeFormat
             {
                 bool isLeaf;
                 Vertex block = ExpandBlock(i, 4, true, out isLeaf);
-    
+
                 if (block == null)
                 {
                     if (nullBlock == null)
@@ -1933,29 +1933,29 @@ namespace Internal.NativeFormat
                     }
                     block = nullBlock;
                 }
-    
+
                 _blocks.Add(block);
             }
-    
+
             // Start with maximum size entries
             _entryIndexSize = 2;
         }
-    
+
         internal override void Save(NativeWriter writer)
         {
             // Lowest two bits are entry index size, the rest is number of elements
             writer.WriteUnsigned(((uint)_entries.Count << 2) | _entryIndexSize);
-    
+
             int blocksOffset = writer.GetCurrentOffset();
             int maxOffset = 0;
-    
+
             foreach (Vertex block in _blocks)
             {
                 int offset = writer.GetExpectedOffset(block) - blocksOffset;
                 Debug.Assert(offset >= 0);
-    
+
                 maxOffset = Math.Max(offset, maxOffset);
-    
+
                 if (_entryIndexSize == 0)
                 {
                     writer.WriteByte((byte)offset);
@@ -1970,7 +1970,7 @@ namespace Internal.NativeFormat
                     writer.WriteUInt32((uint)offset);
                 }
             }
-    
+
             uint newEntryIndexSize = 0;
             if (maxOffset > 0xFF)
             {
@@ -1978,14 +1978,14 @@ namespace Internal.NativeFormat
                 if (maxOffset > 0xFFFF)
                     newEntryIndexSize++;
             }
-    
+
             if (writer.IsGrowing())
             {
                 if (newEntryIndexSize > _entryIndexSize)
                 {
                     // Ensure that the table will be redone with new entry index size
                     writer.UpdateOffsetAdjustment(1);
-    
+
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
@@ -1995,7 +1995,7 @@ namespace Internal.NativeFormat
                 {
                     // Ensure that the table will be redone with new entry index size
                     writer.UpdateOffsetAdjustment(-1);
-    
+
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
@@ -2025,7 +2025,7 @@ namespace Internal.NativeFormat
 
             public static int Comparison(Entry a, Entry b)
             {
-                return (int)(a.Hashcode /*& mask*/) - (int)(b.Hashcode /*& mask*/); 
+                return (int)(a.Hashcode /*& mask*/) - (int)(b.Hashcode /*& mask*/);
             }
         }
 
@@ -2034,7 +2034,7 @@ namespace Internal.NativeFormat
         // How many entries to target per bucket. Higher fill factor means smaller size, but worse runtime perf.
         private int _nFillFactor;
 
-        // Number of buckets choosen for the table. Must be power of two. 0 means that the table is still open for mutation.
+        // Number of buckets chosen for the table. Must be power of two. 0 means that the table is still open for mutation.
         private uint _nBuckets;
 
         // Current size of index entry
@@ -2120,7 +2120,7 @@ namespace Internal.NativeFormat
             int startOffset = writer.GetCurrentOffset();
             uint bucketMask = (_nBuckets - 1);
 
-            // Lowest two bits are entry index size, the rest is log2 number of buckets 
+            // Lowest two bits are entry index size, the rest is log2 number of buckets
             int numberOfBucketsShift = HighestBit(_nBuckets) - 1;
             writer.WriteByte((byte)((numberOfBucketsShift << 2) | _entryIndexSize));
 
@@ -2128,7 +2128,7 @@ namespace Internal.NativeFormat
 
             writer.WritePad((int)((_nBuckets + 1) << _entryIndexSize));
 
-            // For faster lookup at runtime, we store the first entry index even though it is redundant (the 
+            // For faster lookup at runtime, we store the first entry index even though it is redundant (the
             // value can be inferred from number of buckets)
             PatchEntryIndex(writer, bucketsOffset, _entryIndexSize, writer.GetCurrentOffset() - bucketsOffset);
 

@@ -7,6 +7,18 @@
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
+  <!-- FIXME: use proper dependency -->
+  <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
+    <PropertyGroup>
+      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    </PropertyGroup>
+    <ItemGroup>
+        <HostConfig Include="v8" Host="v8" js-path="$(_WasmMainJSFileName)" />
+        <HostConfig Include="node" Host="nodejs" js-path="$(_WasmMainJSFileName)" />
+        <HostConfig Include="browser" Host="browser" html-path="index.html" />
+    </ItemGroup>
+  </Target>
+
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>

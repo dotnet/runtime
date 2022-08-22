@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class AssemblyWrapper : Assembly
+    internal sealed class AssemblyWrapper : Assembly
     {
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 

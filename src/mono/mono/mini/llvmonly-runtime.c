@@ -803,6 +803,9 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	WrapperSubtype subtype = mono_marshal_get_delegate_invoke_subtype (info->invoke, del);
 
+	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND)
+		del->bound = TRUE;
+
 	ftndesc = info->invoke_impl;
 	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);

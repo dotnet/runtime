@@ -12,7 +12,7 @@
 #include "shimload.h"
 
 #include "strsafe.h"
-#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
+#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
@@ -29,9 +29,6 @@ static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlig
 static ULONGLONG   g_stBaseAddress=0;
 static size_t   g_stSizeOfStackReserve=0;
 extern unsigned int g_uConsoleCP;
-#ifdef TARGET_UNIX
-char * g_pszExeFile;
-#endif
 
 void MakeTestFile(_In_ __nullterminated char* szFileName)
 {
@@ -150,7 +147,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #pragma warning(pop)
 #endif
     {
-        printf("\nMicrosoft (R) .NET IL Assembler version " CLR_PRODUCT_VERSION);
+        printf("\n.NET IL Assembler version " CLR_PRODUCT_VERSION);
         printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
         goto PrintUsageAndExit;
 
@@ -633,7 +630,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 //======================================================================
                 if(bLogo)
                 {
-                    printf("\nMicrosoft (R) .NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
+                    printf("\n.NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
                     printf("\n%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
                 }
 
@@ -855,7 +852,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #ifdef TARGET_UNIX
 int main(int argc, char* str[])
 {
-    g_pszExeFile = str[0];
     if (0 != PAL_Initialize(argc, str))
     {
         fprintf(stderr,"Error: Fail to PAL_Initialize\n");

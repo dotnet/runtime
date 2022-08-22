@@ -21,12 +21,14 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable 169");
         WriteLine("#pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct");
         WriteLine("#pragma warning disable CA1066 // IEquatable<T> implementations aren't used");
+        WriteLine("#pragma warning disable CA1822");
         WriteLine("#pragma warning disable IDE0059");
         WriteLine();
 
         WriteLine("using System;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
@@ -57,6 +59,7 @@ class ReaderGen : CsWriter
 
     private void EmitRecord(RecordDef record)
     {
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public partial struct {record.Name}");
 
         WriteLine("internal MetadataReader _reader;");
@@ -101,6 +104,7 @@ class ReaderGen : CsWriter
     {
         string handleName = $"{record.Name}Handle";
 
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public partial struct {handleName}");
 
         OpenScope("public override bool Equals(object obj)");
@@ -175,6 +179,7 @@ class ReaderGen : CsWriter
 
     private void EmitCollection(string collectionTypeName, string elementTypeName)
     {
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public partial struct {collectionTypeName}");
 
         WriteLine("private NativeReader _reader;");
@@ -197,6 +202,7 @@ class ReaderGen : CsWriter
         WriteLine($"return new Enumerator(_reader, _offset);");
         CloseScope("GetEnumerator");
 
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public struct Enumerator");
 
         WriteLine("private NativeReader _reader;");
@@ -234,6 +240,7 @@ class ReaderGen : CsWriter
 
     private void EmitOpaqueHandle()
     {
+        WriteTypeAttributesForCoreLib();
         OpenScope("public partial struct Handle");
 
         foreach (var record in SchemaDef.RecordSchema)
@@ -250,6 +257,7 @@ class ReaderGen : CsWriter
 
     private void EmitMetadataReader()
     {
+        WriteTypeAttributesForCoreLib();
         OpenScope("public partial class MetadataReader");
 
         foreach (var record in SchemaDef.RecordSchema)

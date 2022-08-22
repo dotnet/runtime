@@ -14,19 +14,26 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => true;
 
-        public bool SupportsTargetFramework { get; init; }
-
-        public bool StubIsBasicForwarder { get; init; }
+        private readonly TargetFramework _framework;
+        private readonly Version _frameworkVersion;
 
         private const string InvokeReturnIdentifier = "__invokeRetVal";
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
 
-        public ManagedToNativeStubCodeContext(string returnIdentifier, string nativeReturnIdentifier)
+        public ManagedToNativeStubCodeContext(
+            StubEnvironment environment,
+            string returnIdentifier,
+            string nativeReturnIdentifier)
         {
+            _framework = environment.TargetFramework;
+            _frameworkVersion = environment.TargetFrameworkVersion;
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
         }
+
+        public override (TargetFramework framework, Version version) GetTargetFramework()
+            =>  (_framework, _frameworkVersion);
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {

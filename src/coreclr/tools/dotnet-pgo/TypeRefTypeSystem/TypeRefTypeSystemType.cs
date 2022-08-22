@@ -119,12 +119,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return method;
         }
 
-        public FieldDesc GetOrAddField(string name, TypeDesc fieldType)
+        public FieldDesc GetOrAddField(string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             FieldDesc fld = GetField(name);
             if (fld == null)
             {
-                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType);
+                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType, embeddedSigData);
                 fld = newField;
                 _fields.Add(newField);
             }
@@ -225,7 +225,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                      flags |= TypeFlags.Class;
                 }
 
-                // All other cases are handled during TypeSystemContext intitialization
+                // All other cases are handled during TypeSystemContext initialization
             }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)

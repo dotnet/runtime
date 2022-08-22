@@ -154,7 +154,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            int[][] i = JsonSerializer.Deserialize<int[][]>(Encoding.UTF8.GetBytes("[[1,2] // Inline [\n,[3, /* Multi\n]] Line*/4]]"), options);
+            int[][] i = JsonSerializer.Deserialize<int[][]>("[[1,2] // Inline [\n,[3, /* Multi\n]] Line*/4]]"u8, options);
             Assert.Equal(1, i[0][0]);
             Assert.Equal(2, i[0][1]);
             Assert.Equal(3, i[1][0]);

@@ -33,7 +33,7 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
-// To include definiton of IsThrowableThreadAbortException
+// To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
 CRITICAL_SECTION g_dacCritSec;
@@ -269,7 +269,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
 
         memberStart = memberEnd;
 
-        for (;;)
+        while (true)
         {
             while (memberStart >= fullName &&
                    *memberStart != W('.'))
@@ -547,7 +547,7 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -583,7 +583,7 @@ MetaEnum::NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
     HRESULT status;
     LPCUTF8 tokNamespace, tokName;
 
-    for (;;)
+    while (true)
     {
         if ((status = NextToken(token, &tokNamespace, &tokName)) != S_OK)
         {
@@ -626,7 +626,7 @@ MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -1370,7 +1370,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
     // Splay fields across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (!split->m_lastField)
         {
@@ -1994,7 +1994,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     // forget all the internal pointers.
     //
 
-    for (;;)
+    while (true)
     {
         FreeAllBlocks(fSaveBlock);
 
@@ -2501,7 +2501,7 @@ namespace serialization { namespace bin {
                 return ErrOverflow;
             }
 
-            memcpy_s(dest, destSize, s.GetUTF8NoConvert(), cnt);
+            memcpy_s(dest, destSize, s.GetUTF8(), cnt);
 
             return cnt;
         }
@@ -3155,6 +3155,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 
     m_enumMemCb = NULL;
     m_updateMemCb = NULL;
+    m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
     m_gcNotificationTable  = NULL;
@@ -5335,7 +5336,7 @@ ClrDataAccess::FollowStub2(
         Thread* thread = task ? ((ClrDataTask*)task)->GetThread() : NULL;
         ULONG32 loops = 4;
 
-        for (;;)
+        while (true)
         {
             if ((status = FollowStubStep(thread,
                                          inFlags,
@@ -5536,7 +5537,7 @@ ClrDataAccess::Initialize(void)
     {
         // DAC fatal error: Platform mismatch - the platform reported by the data target
         // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
     }
 
     //
@@ -6109,7 +6110,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -6362,6 +6363,27 @@ bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* 
     }
 
     return true;
+}
+
+//
+// DacLogMessage - logs a message to an external DAC client
+//
+// Parameters:
+//   message - message to log
+//
+void DacLogMessage(LPCSTR format, ...)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (g_dacImpl->IsLogMessageEnabled())
+    {
+        va_list args;
+        va_start(args, format);
+        char buffer[1024];
+        _vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, format, args);
+        g_dacImpl->LogMessage(buffer);
+        va_end(args);
+    }
 }
 
 //

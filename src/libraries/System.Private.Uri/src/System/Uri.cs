@@ -405,7 +405,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, nameof(uriKind))] string uriString, UriKind uriKind)
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
@@ -759,7 +759,7 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                // Note: Compatibilty with V1 that does not report user info
+                // Note: Compatibility with V1 that does not report user info
                 return GetParts(UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped);
             }
         }
@@ -981,14 +981,7 @@ namespace System
                     }
 
                     // check for all back slashes
-                    for (int i = 0; i < str.Length; ++i)
-                    {
-                        if (str[i] == '/')
-                        {
-                            str = str.Replace('/', '\\');
-                            break;
-                        }
-                    }
+                    str = str.Replace('/', '\\');
 
                     return str;
                 }
@@ -1279,7 +1272,7 @@ namespace System
             {
                 fixed (char* fixedName = name)
                 {
-                    if (name[0] == '[' && name[name.Length - 1] == ']')
+                    if (name.StartsWith('[') && name.EndsWith(']'))
                     {
                         // we require that _entire_ name is recognized as ipv6 address
                         if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
@@ -1813,16 +1806,12 @@ namespace System
         //
         // Returns true if a colon is found in the first path segment, false otherwise
         //
-
-        // Check for anything that may terminate the first regular path segment
-        // or an illegal colon
-        private static readonly char[] s_pathDelims = { ':', '\\', '/', '?', '#' };
-
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {
-            int index = uriString.IndexOfAny(s_pathDelims);
-
-            return (index >= 0 && uriString[index] == ':');
+            // Check for anything that may terminate the first regular path segment
+            // or an illegal colon
+            int index = uriString.AsSpan().IndexOfAny(@":\/?#");
+            return (uint)index < (uint)uriString.Length && uriString[index] == ':';
         }
 
         internal static string InternalEscapeString(string rawString) =>
@@ -2690,10 +2679,7 @@ namespace System
                             }
                             else
                             {
-                                if (InFact(Flags.E_UserNotCanonical))
-                                {
-                                    // We should throw here but currently just accept user input known as invalid
-                                }
+                                // We would ideally throw here if InFact(Flags.E_UserNotCanonical) but currently just accept user input known as invalid
                                 dest.Append(slice);
                             }
                             break;
@@ -4877,13 +4863,10 @@ namespace System
                     if (basePart.IsUnc)
                     {
                         ReadOnlySpan<char> share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
-                        for (int i = 1; i < share.Length; ++i)
+                        int i = share.Slice(1).IndexOf('/');
+                        if (i >= 0)
                         {
-                            if (share[i] == '/')
-                            {
-                                share = share.Slice(0, i);
-                                break;
-                            }
+                            share = share.Slice(0, i + 1);
                         }
 
                         if (basePart.IsImplicitFile)
@@ -5230,7 +5213,7 @@ namespace System
         //
         // IsExcludedCharacter
         //
-        //  Determine if a character should be exluded from a URI and therefore be
+        //  Determine if a character should be excluded from a URI and therefore be
         //  escaped
         //
         // Returns:

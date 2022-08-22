@@ -89,7 +89,7 @@ There are 2 types of namespace collisions that must be handled.
    implementation (with some_function)
 
     [side note : for the Win32 PAL, this can be accomplished without touching
-    pal.h. In Windows, symbols in in dynamic libraries are resolved at
+    pal.h. In Windows, symbols in dynamic libraries are resolved at
     compile time. if an application that uses some_function is only linked to
     pal.dll, some_function will be resolved to the version in that DLL,
     even if other DLLs in the system provide other implementations. In addition,

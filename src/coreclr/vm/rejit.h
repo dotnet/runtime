@@ -75,13 +75,13 @@ class NativeImageInliningIterator
 public:
     NativeImageInliningIterator();
 
-    HRESULT Reset(Module *pInlineeModule, MethodDesc *pInlinee);
+    HRESULT Reset(Module* pInlinerModule, MethodInModule inlinee);
     BOOL Next();
-    MethodDesc *GetMethodDesc();
+    MethodInModule GetMethod();
 
 private:
     Module *m_pModule;
-    MethodDesc *m_pInlinee;
+    MethodInModule m_inlinee;
     NewArrayHolder<MethodInModule> m_dynamicBuffer;
     COUNT_T m_dynamicBufferSize;
     COUNT_T m_dynamicAvailable;
@@ -189,7 +189,8 @@ private:
 
     static HRESULT UpdateNativeInlinerActiveILVersions(
         SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
-        MethodDesc         *pInlinee,
+        Module             *pInlineeModule,
+        mdMethodDef         inlineeMethodDef,
         BOOL                fIsRevert,
         COR_PRF_REJIT_FLAGS flags);
 

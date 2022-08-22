@@ -90,43 +90,6 @@ FCIMPL0(INT32, SystemNative::GetExitCode)
 }
 FCIMPLEND
 
-FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
-{
-    FCALL_CONTRACT;
-
-    PTRARRAYREF strArray = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(strArray);
-
-    LPWSTR commandLine;
-
-    commandLine = WszGetCommandLine();
-    if (commandLine==NULL)
-        COMPlusThrowOM();
-
-    DWORD numArgs = 0;
-    LPWSTR* argv = SegmentCommandLine(commandLine, &numArgs);
-    if (!argv)
-        COMPlusThrowOM();
-
-    _ASSERTE(numArgs > 0);
-
-    strArray = (PTRARRAYREF) AllocateObjectArray(numArgs, g_pStringClass);
-    // Copy each argument into new Strings.
-    for(unsigned int i=0; i<numArgs; i++)
-    {
-        STRINGREF str = StringObject::NewString(argv[i]);
-        STRINGREF * destData = ((STRINGREF*)(strArray->GetDataPtr())) + i;
-        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str);
-    }
-    delete [] argv;
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(strArray);
-}
-FCIMPLEND
-
 // Return a method info for the method were the exception was thrown
 FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE)
 {

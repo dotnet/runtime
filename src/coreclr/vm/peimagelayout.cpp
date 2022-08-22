@@ -7,7 +7,6 @@
 #include "common.h"
 #include "peimagelayout.h"
 #include "peimagelayout.inl"
-#include "dataimage.h"
 
 #if defined(TARGET_WINDOWS)
 #include "amsi.h"
@@ -81,21 +80,23 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
 
 // TODO: enable on OSX eventually
 //       right now we have binaries that will trigger this in a singlefile bundle.
-#ifdef TARGET_LINUX 
+#ifdef TARGET_LINUX
     // we should not see R2R files here on Unix.
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
 #endif
 
-    if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
+    // ignore R2R if the image is not a file.
+    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
+        pFlat->HasWriteableSections())
     {
-        // we can use flat layout for this
-        return pFlat.Extract();
+        return new ConvertedImageLayout(pFlat);
     }
 
-    return new ConvertedImageLayout(pFlat);
+    // we can use flat layout for this
+    return pFlat.Extract();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -169,6 +170,13 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
     return pageProtection;
 }
 #endif // TARGET_UNIX
+
+// IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
+#ifdef TARGET_64BIT
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
+#else // !TARGET_64BIT
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW
+#endif // !TARGET_64BIT
 
 //To force base relocation on Vista (which uses ASLR), unmask IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
 //(0x40) for OptionalHeader.DllCharacteristics
@@ -442,7 +450,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.

@@ -54,6 +54,7 @@ namespace System.IO
         internal const string UncNTPathPrefix = @"\??\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
         internal const string ParentDirectoryPrefix = @"..\";
+        internal const string DirectorySeparators = @"\/";
 
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
@@ -88,7 +89,7 @@ namespace System.IO
         /// away from paths during normalization, but if we see such a path at this point it should be
         /// normalized and has retained the final characters. (Typically from one of the *Info classes)
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         internal static string? EnsureExtendedPrefixIfNeeded(string? path)
         {
             if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
@@ -312,7 +313,7 @@ namespace System.IO
         ///   3. Doesn't play nice with string logic
         ///   4. Isn't a cross-plat friendly concept/behavior
         /// </remarks>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         internal static string? NormalizeDirectorySeparators(string? path)
         {
             if (string.IsNullOrEmpty(path))

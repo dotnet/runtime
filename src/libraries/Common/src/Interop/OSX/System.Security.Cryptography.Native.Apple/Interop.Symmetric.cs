@@ -68,14 +68,6 @@ internal static partial class Interop
             out int cbWritten,
             out int ccStatus);
 
-        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFinal")]
-        internal static unsafe partial int CryptorFinal(
-            SafeAppleCryptorHandle cryptor,
-            byte* pbOutput,
-            int cbOutput,
-            out int cbWritten,
-            out int ccStatus);
-
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
         internal static unsafe partial int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
     }

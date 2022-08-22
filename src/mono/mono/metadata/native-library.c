@@ -803,7 +803,7 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 }
 
 static MonoDl*
-netcore_lookup_self_native_handle()
+netcore_lookup_self_native_handle (void)
 {
 	ERROR_DECL (load_error);
 	if (!internal_module)
@@ -944,22 +944,14 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	if (!attr)
 		return -3;
 
-	gpointer *typed_args, *named_args;
-	CattrNamedArg *arginfo;
-	int num_named_args;
-
-	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size,
-															&typed_args, &named_args, &num_named_args, &arginfo, error);
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		return -4;
 	}
 
-	flags = *(gint32*)typed_args [0];
-	g_free (typed_args [0]);
-	g_free (typed_args);
-	g_free (named_args);
-	g_free (arginfo);
+	flags = *(gint32*)decoded_args->typed_args[0]->value.primitive;
+	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 	return flags;
 }
@@ -1033,7 +1025,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		if (!im_cols [MONO_IMPLMAP_SCOPE] || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, im_cols [MONO_IMPLMAP_SCOPE]))
 			goto exit;
 
-		piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
+		piinfo->piflags = GUINT32_TO_UINT16 (im_cols [MONO_IMPLMAP_FLAGS]);
 		orig_import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
 		scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 		orig_scope = mono_metadata_string_heap (image, scope_token);
@@ -1466,8 +1458,8 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 		bundle_save_library_initialize ();
 
 	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
-	buffer = g_str_from_file_region (fd, offset, size);
-	g_file_set_contents (file, buffer, size, NULL);
+	buffer = g_str_from_file_region (fd, offset, GUINT64_TO_SIZE (size));
+	g_file_set_contents (file, buffer, GUINT64_TO_SIZE (size), NULL);
 
 	ERROR_DECL (load_error);
 	lib = mono_dl_open (file, MONO_DL_LAZY, load_error);

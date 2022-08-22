@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 
@@ -44,6 +45,18 @@ namespace ILCompiler
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
                 _rootAdder(_factory.ReflectableMethod(method), reason);
+        }
+
+        public void AddReflectionRoot(FieldDesc field, string reason)
+        {
+            if (!_factory.MetadataManager.IsReflectionBlocked(field))
+                _rootAdder(_factory.ReflectableField(field), reason);
+        }
+
+        public void AddCompilationRoot(object o, string reason)
+        {
+            Debug.Assert(o is IDependencyNode<NodeFactory>);
+            _rootAdder(o, reason);
         }
 
         public void RootThreadStaticBaseForType(TypeDesc type, string reason)

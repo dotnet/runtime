@@ -50,4 +50,11 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine("original");
         }
     }
+
+    public class MethodBody6 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a line that will not be changed");
+            Console.WriteLine("original");
+        }
+    }
 }

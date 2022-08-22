@@ -13,8 +13,8 @@ namespace System.Buffers.Tests
         public void WritingToSingleSegmentBuffer()
         {
             IBufferWriter<byte> bufferWriter = new TestBufferWriterSingleSegment();
-            bufferWriter.Write(Encoding.UTF8.GetBytes("Hello"));
-            bufferWriter.Write(Encoding.UTF8.GetBytes(" World!"));
+            bufferWriter.Write("Hello"u8);
+            bufferWriter.Write(" World!"u8);
             Assert.Equal("Hello World!", bufferWriter.ToString());
         }
 
@@ -22,8 +22,8 @@ namespace System.Buffers.Tests
         public void WritingToMultiSegmentBuffer()
         {
             var bufferWriter = new TestBufferWriterMultiSegment();
-            bufferWriter.Write(Encoding.UTF8.GetBytes("Hello"));
-            bufferWriter.Write(Encoding.UTF8.GetBytes(" World!"));
+            bufferWriter.Write("Hello"u8);
+            bufferWriter.Write(" World!"u8);
             Assert.Equal(12, bufferWriter.Comitted.Count);
             Assert.Equal("Hello World!", bufferWriter.ToString());
         }
@@ -120,15 +120,15 @@ namespace System.Buffers.Tests
         private class TestBufferWriterMultiSegment : IBufferWriter<byte>
         {
             private byte[] _current = new byte[0];
-            private List<byte[]> _commited = new List<byte[]>();
+            private List<byte[]> _committed = new List<byte[]>();
 
-            public List<byte[]> Comitted => _commited;
+            public List<byte[]> Comitted => _committed;
 
             public void Advance(int bytes)
             {
                 if (bytes == 0)
                     return;
-                _commited.Add(_current.AsSpan(0, bytes).ToArray());
+                _committed.Add(_current.AsSpan(0, bytes).ToArray());
                 _current = new byte[0];
             }
 
@@ -159,7 +159,7 @@ namespace System.Buffers.Tests
             public override string ToString()
             {
                 var builder = new StringBuilder();
-                foreach (byte[] buffer in _commited)
+                foreach (byte[] buffer in _committed)
                 {
                     builder.Append(Encoding.UTF8.GetString(buffer));
                 }

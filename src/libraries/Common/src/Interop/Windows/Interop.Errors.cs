@@ -34,6 +34,7 @@ internal static partial class Interop
         internal const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
         internal const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
         internal const int ERROR_INVALID_NAME = 0x7B;
+        internal const int ERROR_MOD_NOT_FOUND = 0x7E;
         internal const int ERROR_NEGATIVE_SEEK = 0x83;
         internal const int ERROR_DIR_NOT_EMPTY = 0x91;
         internal const int ERROR_BAD_PATHNAME = 0xA1;
@@ -70,6 +71,7 @@ internal static partial class Interop
         internal const int ERROR_DDE_FAIL = 0x484;
         internal const int ERROR_DLL_NOT_FOUND = 0x485;
         internal const int ERROR_NOT_FOUND = 0x490;
+        internal const int ERROR_CANCELLED = 0x4C7;
         internal const int ERROR_NETWORK_UNREACHABLE = 0x4CF;
         internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
         internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;
@@ -92,6 +94,15 @@ internal static partial class Interop
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
         internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x715;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
+        internal const int RPC_S_CALL_CANCELED = 0x71A;
         internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
+        internal const int ERROR_EVT_QUERY_RESULT_STALE = 0x3AA3;
+        internal const int ERROR_EVT_QUERY_RESULT_INVALID_POSITION = 0x3AA4;
+        internal const int ERROR_EVT_INVALID_EVENT_DATA = 0x3A9D;
+        internal const int ERROR_EVT_PUBLISHER_METADATA_NOT_FOUND = 0x3A9A;
+        internal const int ERROR_EVT_CHANNEL_NOT_FOUND = 0x3A9F;
+        internal const int ERROR_EVT_MESSAGE_NOT_FOUND = 0x3AB3;
+        internal const int ERROR_EVT_MESSAGE_ID_NOT_FOUND = 0x3AB4;
+        internal const int ERROR_EVT_PUBLISHER_DISABLED = 0x3ABD;
     }
 }

@@ -65,7 +65,7 @@ namespace System.Reflection.Metadata
         /// <param name="bytes">Pointer to bytes to decode.</param>
         /// <param name="byteCount">Number of bytes to decode.</param>
         /// <returns>The decoded string.</returns>
-        public unsafe virtual string GetString(byte* bytes, int byteCount)
+        public virtual unsafe string GetString(byte* bytes, int byteCount)
         {
             Debug.Assert(Encoding != null);
 

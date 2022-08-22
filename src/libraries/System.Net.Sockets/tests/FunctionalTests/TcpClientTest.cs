@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
 
                 using (NetworkStream s = client.GetStream())
                 {
-                    byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
+                    byte[] getRequest = "GET / HTTP/1.1\r\n\r\n"u8.ToArray();
                     await s.WriteAsync(getRequest, 0, getRequest.Length);
                     Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
                 }
@@ -240,7 +240,7 @@ namespace System.Net.Sockets.Tests
 
                 using (NetworkStream s = client.GetStream())
                 {
-                    byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
+                    byte[] getRequest = "GET / HTTP/1.1\r\n\r\n"u8.ToArray();
                     s.Write(getRequest, 0, getRequest.Length);
                     Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
                 }
@@ -268,18 +268,6 @@ namespace System.Net.Sockets.Tests
 
                 Assert.False(client.Connected);
                 Assert.Equal(0, client.Available);
-            }
-        }
-
-        [OuterLoop]
-        [Fact]
-        public void ExclusiveAddressUse_NullClient()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                client.Client = null;
-
-                Assert.False(client.ExclusiveAddressUse);
             }
         }
 

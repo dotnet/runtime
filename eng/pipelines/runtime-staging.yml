@@ -11,8 +11,9 @@ trigger:
     include:
     - '*'
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -37,8 +38,9 @@ pr:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -57,16 +59,15 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# WebAssembly legs - run windows builds. Also, debugger tests which are currently
-# unstable
+# WebAssembly legs - library tests, Wasm.Build.Tests, and debugger tests
 #
 - template: /eng/pipelines/common/templates/wasm-library-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
-      - normal
       - WasmTestOnBrowser
 
 # AOT Library tests
@@ -77,12 +78,14 @@ jobs:
     nameSuffix: _AOT
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -90,6 +93,7 @@ jobs:
     platforms:
       - Browser_wasm
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -97,7 +101,31 @@ jobs:
     platforms:
       - Browser_wasm_firefox
     browser: firefox
+    # ff tests are unstable currently
+    shouldContinueOnError: true
     alwaysRun: ${{ variables.isRollingBuild }}
+
+#
+# Build the whole product using Mono
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - FreeBSD_x64
+    jobParameters:
+      testScope: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      timeoutInMinutes: 120
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
 
 #
 # Build the whole product using Mono and run libraries tests
@@ -172,6 +200,47 @@ jobs:
         extraStepsParameters:
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Build the whole product using Mono for Android Linux with Bionic libc
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+      - Linux_bionic_arm64
+      - Linux_bionic_x64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      targetRid: Linux-bionic-x64
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      timeoutInMinutes: 240
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android devices

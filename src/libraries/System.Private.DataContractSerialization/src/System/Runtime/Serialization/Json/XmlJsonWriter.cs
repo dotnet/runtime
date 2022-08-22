@@ -166,17 +166,8 @@ namespace System.Runtime.Serialization.Json
             get { return XmlSpace.None; }
         }
 
-        private static BinHexEncoding BinHexEncoding
-        {
-            get
-            {
-                if (s_binHexEncoding == null)
-                {
-                    s_binHexEncoding = new BinHexEncoding();
-                }
-                return s_binHexEncoding;
-            }
-        }
+        private static BinHexEncoding BinHexEncoding =>
+            s_binHexEncoding ??= new BinHexEncoding();
 
         private bool HasOpenAttribute => (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
 
@@ -260,10 +251,8 @@ namespace System.Runtime.Serialization.Json
             {
                 encoding = null!;
             }
-            if (_nodeWriter == null)
-            {
-                _nodeWriter = new JsonNodeWriter();
-            }
+
+            _nodeWriter ??= new JsonNodeWriter();
 
             _nodeWriter.SetOutput(stream, ownsStream, encoding);
             InitializeWriter();
@@ -712,12 +701,8 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
-            if (ns == null)
-            {
-                ns = string.Empty;
-            }
 
-            base.WriteQualifiedName(localName, ns);
+            base.WriteQualifiedName(localName, ns ?? string.Empty);
         }
 
         public override void WriteRaw(string data)
@@ -989,10 +974,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // do work only when not indenting whitespace
                 if (!((_dataType == JsonDataType.Array || _dataType == JsonDataType.Object || _nodeType == JsonNodeType.EndElement) && XmlConverter.IsWhitespace(text)))
@@ -1106,16 +1088,10 @@ namespace System.Runtime.Serialization.Json
             }
             ArgumentNullException.ThrowIfNull(ws);
 
-            for (int i = 0; i < ws.Length; ++i)
+            int pos = ws.AsSpan().IndexOfAnyExcept(" \t\r\n");
+            if (pos >= 0)
             {
-                char c = ws[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                {
-                    throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, c.ToString(), "WriteWhitespace"), nameof(ws));
-                }
+                throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, ws[pos].ToString(), "WriteWhitespace"), nameof(ws));
             }
 
             WriteString(ws);

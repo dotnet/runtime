@@ -223,7 +223,7 @@ public:
             }
         }
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
         if (pMT->Collectible())
         {
             NumOfPointers += 1;

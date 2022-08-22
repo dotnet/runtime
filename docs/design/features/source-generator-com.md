@@ -39,7 +39,7 @@ Alternatively, the generator that reads C++ could generate its own implementatio
 
 #### Win32Metadata winmd
 
-The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesireable for us to use as our source of truth:
+The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesirable for us to use as our source of truth:
 
 - The tooling only runs on Windows
 - The tooling is extremely focused on the Win32 API
@@ -67,7 +67,7 @@ To implement this support, we would need to introduce a strong contract to be ab
 
 Basic support for this feature would naturally fall out from supporting the scenario described in open question 1. Depending on implementation, we may be able to make this more or less efficient.
 
-3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertable to `B`'s `IComFoo`?
+3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertible to `B`'s `IComFoo`?
 
 Supporting this would require either some form of type equivalence, which exists in a limited form in the runtime, or assembly-independent types, for which a C# proposal exists that has not been planned for any release. Since a solution here would require solutions for questions 1 and 2, we can likely require users to use explicit casts and avoid having any issues.
 
@@ -620,7 +620,7 @@ Cons:
 
 #### Option 5 (Selected Design): Only `GeneratedComInterfaceAttribute` attribute with Generated `ComWrappers`-derived type
 
-The built-in `ComImport` and `ComVisible` attributes have a lot of history and weird runtime behavior associated with them. Additionally the built-in `ComVisible` attribute actually takes a `bool` to determine if the applied to type is visible and it can be applied to methods as well to enable/disable COM visbility for the legacy automatic COM vtable generation that the .NET runtime has supported since .NET Framework 1.0. This option proposes introducing a single new attribute to cover the expected scenarios:
+The built-in `ComImport` and `ComVisible` attributes have a lot of history and weird runtime behavior associated with them. Additionally the built-in `ComVisible` attribute actually takes a `bool` to determine if the applied to type is visible and it can be applied to methods as well to enable/disable COM visibility for the legacy automatic COM vtable generation that the .NET runtime has supported since .NET Framework 1.0. This option proposes introducing a single new attribute to cover the expected scenarios:
 
 ```csharp
 [AttributeUsage(AttributeTargets.Interface)]

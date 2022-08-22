@@ -478,7 +478,7 @@ HRESULT ImportHelper::FindMemberRef(
         }
         if ((cbSig != 0) && (pbSig != NULL))
         {
-            // signature is specifed
+            // signature is specified
             IfFailGo(pMiniMd->getSignatureOfMemberRef(pMemberRefRec, &pbSigTmp, &cbSigTmp));
             if (cbSigTmp != cbSig)
                 continue;
@@ -1199,7 +1199,7 @@ HRESULT ImportHelper::FindCustomAttributeByToken(
     }
     else
     {
-        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashs[TBL_CustomAttribute];
+        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
 
         if (pHashTable)
         {

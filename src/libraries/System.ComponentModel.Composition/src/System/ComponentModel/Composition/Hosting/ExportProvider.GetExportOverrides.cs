@@ -780,10 +780,7 @@ namespace System.ComponentModel.Composition.Hosting
                 contractName = AttributedModelServices.GetContractName(type);
             }
 
-            if (metadataViewType == null)
-            {
-                metadataViewType = ExportServices.DefaultMetadataViewType;
-            }
+            metadataViewType ??= ExportServices.DefaultMetadataViewType;
 
             if (!MetadataViewProvider.IsViewTypeValid(metadataViewType))
             {

@@ -12,8 +12,6 @@
 
 #define WASM_REG_0 0
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
@@ -78,8 +76,6 @@ typedef struct {
 /* must be at a power of 2 and >= 8 */
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
@@ -103,6 +99,8 @@ G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 void mono_wasm_set_timeout (int timeout);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
+const unsigned char *mono_wasm_get_assembly_bytes (const char *name, unsigned int *size);
+
 void mono_wasm_print_stack_trace (void);
 
 gboolean

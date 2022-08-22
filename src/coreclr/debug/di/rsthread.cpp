@@ -3003,11 +3003,11 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 #endif
 
 // Read the contents from the LS's Predefined TLS block.
-// This is an auxillary TLS storage array-of-void*, indexed off the TLS.
+// This is an auxiliary TLS storage array-of-void*, indexed off the TLS.
 // pRead is optional. This makes sense when '0' is a valid default value.
 // 1) On success (block exists in LS, we can read it),
 //    return value of data in the slot, *pRead = true
-// 2) On failure to read block (block doens't exist yet, any other failure)
+// 2) On failure to read block (block doesn't exist yet, any other failure)
 //    return value == 0 (assumed default, *pRead = false
 REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T offset)
 {
@@ -3091,7 +3091,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
 //
 // Notes:
 //   This is very brittle because the OS can lazily allocates storage for TLS slots.
-//   In order to gaurantee the storage is available, it must have been written to by the debuggee.
+//   In order to guarantee the storage is available, it must have been written to by the debuggee.
 //   For managed threads, that's easy because the Thread* is already written to the slot.
 //   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
 //
@@ -3526,7 +3526,7 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // 3) The original context present when the hijack was started
     //
     // Both #1 and #3 are stored in the GetHijackCtx() space so of course you can't
-    // have them both. You have have #1 if IsContextSet() is true, otherwise it holds #3
+    // have them both. You have #1 if IsContextSet() is true, otherwise it holds #3.
     //
     // GenericHijack, FirstChanceHijackForSync, and RaiseExceptionHijack use #1 if available
     // and fallback to #3 if not. In other words they use GetHijackCtx() regardless of which thing it holds
@@ -4373,7 +4373,7 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
         return;
     }
 
-    // If everything was succesful then set this flag, otherwise none of the above data is considered valid
+    // If everything was successful then set this flag, otherwise none of the above data is considered valid
     SetState(CUTS_HasRaiseExceptionEntryCtx);
     return;
 }
@@ -6062,7 +6062,7 @@ HRESULT CordbNativeFrame::IsChild(BOOL * pIsChild)
 //
 // Arguments:
 //    pPotentialParentFrame - the ICDNativeFrame2 to check
-//    pIsParent             - out paramter; returns whether the specified frame is indeed the parent frame
+//    pIsParent             - out parameter; returns whether the specified frame is indeed the parent frame
 //
 // Return Value:
 //    S_OK on success.
@@ -10549,7 +10549,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
 /* ------------------------------------------------------------------------- *
  * CordbEval2
  *
- *   Extentions to the CordbEval class for Whidbey
+ *   Extensions to the CordbEval class for Whidbey
  *
  * ------------------------------------------------------------------------- */
 

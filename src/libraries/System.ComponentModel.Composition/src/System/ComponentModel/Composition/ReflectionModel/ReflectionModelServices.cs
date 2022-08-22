@@ -394,7 +394,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public IDictionary<string, object?>? GetMetadata()
         {
-            return (_metadata != null) ? _metadata.Value : null;
+            return _metadata?.Value;
         }
 
         public IEnumerable<ExportDefinition> GetExports()

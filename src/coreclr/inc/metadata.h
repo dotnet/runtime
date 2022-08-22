@@ -166,7 +166,7 @@ struct HENUMInternal
         DWORD           tkKind,             // kind of token that we are iterating
         HENUMInternal   **ppEnum);          // return the created HENUMInternal
 
-    // Destory Enum. This will free the memory
+    // Destroy Enum. This will free the memory
     static void DestroyEnum(
         HENUMInternal   *pmdEnum);
 
@@ -271,7 +271,7 @@ typedef struct
 
 
 //
-// structure use to retrieve class layout informaiton
+// structure use to retrieve class layout information
 //
 typedef struct
 {
@@ -626,7 +626,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         DWORD      *pdwFlags) PURE;
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     // returned void in v1.0/v1.1
     __checkReturn
@@ -636,7 +636,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         DWORD       *pdwImplFlags) PURE;    // [OUT] Impl. Flags
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     __checkReturn
     STDMETHOD(GetFieldRVA)(

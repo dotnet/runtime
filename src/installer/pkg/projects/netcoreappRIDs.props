@@ -4,6 +4,7 @@
   <ItemGroup>
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="linux-musl-x64" />
+    <OfficialBuildRID Include="linux-bionic-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="osx-arm64">
       <Platform>arm64</Platform>
@@ -38,6 +39,15 @@
     <OfficialBuildRID Include="linux-musl-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-bionic-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-bionic-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-bionic-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
 
     <!-- The following RIDs are not officically supported and are not
          built during official builds, however we wish to include them
@@ -54,6 +64,12 @@
     </UnofficialBuildRID>
     <UnofficialBuildRID Include="linux-musl-s390x">
       <Platform>s390x</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-ppc64le">
+      <Platform>ppc64le</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-musl-ppc64le">
+      <Platform>ppc64le</Platform>
     </UnofficialBuildRID>
   </ItemGroup>
 </Project>

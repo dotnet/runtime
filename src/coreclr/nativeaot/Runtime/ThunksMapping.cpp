@@ -89,7 +89,7 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
     return OS_PAGE_SIZE;
 }
 
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
@@ -244,7 +244,7 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
 COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* addr));
 COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* addr));
 
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     static int nextThunkDataMapping = 0;
 
@@ -297,7 +297,7 @@ COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
 COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
 COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
 
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     static void* pThunksTemplateAddress = NULL;
 

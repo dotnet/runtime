@@ -54,7 +54,7 @@ namespace System.Xml.Xsl
             }
             else
             {
-                return new XmlQualifiedNameTest(name == null ? wildcard : name, ns == null ? wildcard : ns, false);
+                return new XmlQualifiedNameTest(name ?? wildcard, ns ?? wildcard, false);
             }
         }
 

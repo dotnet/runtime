@@ -47,7 +47,7 @@
     .endr
 
         // x11 still contains the indirection cell address.
-        b RhpInterfaceDispatchSlow
+        b C_FUNC(RhpInterfaceDispatchSlow)
 
     NESTED_END "RhpInterfaceDispatch\entries", _TEXT
 
@@ -80,7 +80,7 @@
         ldr     xzr, [x0]
 
         // Just tail call to the cache miss helper.
-        b RhpInterfaceDispatchSlow
+        b C_FUNC(RhpInterfaceDispatchSlow)
     LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
 //
@@ -113,7 +113,7 @@
         //  xip1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, xip0
         mov xip1, x11
-        b       RhpUniversalTransition_DebugStepTailCall
+        b       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

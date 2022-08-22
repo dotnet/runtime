@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     if (createdPollBlocks)
     {
         noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks();
+        fgReorderBlocks(/* useProfileData */ false);
         constexpr bool computePreds = true;
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
@@ -961,13 +961,6 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         {
             return false;
         }
-
-        LclVarDsc* varDsc = lvaGetDesc(varNum);
-
-        if (varDsc->lvStackByref)
-        {
-            return false;
-        }
     }
     else if (addr->gtOper == GT_ADDR)
     {
@@ -1284,11 +1277,16 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
         return false;
     }
     //
-    // If the sign-ness of the two types are different then a cast is necessary
+    // If the sign-ness of the two types are different then a cast is necessary, except for
+    // an unsigned -> signed cast where we already know the sign bit is zero.
     //
     if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
     {
-        return true;
+        bool isZeroExtension = varTypeIsUnsigned(fromType) && (genTypeSize(fromType) < genTypeSize(toType));
+        if (!isZeroExtension)
+        {
+            return true;
+        }
     }
     //
     // If the from type is the same size or smaller then an additional cast is not necessary
@@ -1535,11 +1533,11 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
         noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL, info.compMethodHnd);
+        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
     }
     else
     {
-        // Collectible types requires that for shared generic code, if we use the generic context paramter
+        // Collectible types requires that for shared generic code, if we use the generic context parameter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
         lvaGenericsContextInUse = true;
@@ -1783,8 +1781,9 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a 'monitor acquired' boolean (actually, an unsigned byte: 1 = acquired, 0 = not acquired).
-
-    var_types typeMonAcquired = TYP_UBYTE;
+    // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
+    // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
+    var_types typeMonAcquired = TYP_I_IMPL;
     this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
@@ -1810,10 +1809,12 @@ void Compiler::fgAddSyncMethodEnterExit()
 #endif
     }
 
-    // Make a copy of the 'this' pointer to be used in the handler so it does not inhibit enregistration
-    // of all uses of the variable.
-    unsigned lvaCopyThis = 0;
-    if (!info.compIsStatic)
+    // Make a copy of the 'this' pointer to be used in the handler so it does
+    // not inhibit enregistration of all uses of the variable. We cannot do
+    // this optimization in EnC code as we would need to take care to save the
+    // copy on EnC transitions, so guard this on optimizations being enabled.
+    unsigned lvaCopyThis = BAD_VAR_NUM;
+    if (opts.OptimizationEnabled() && !info.compIsStatic)
     {
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
@@ -1833,7 +1834,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // exceptional case
-    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
+    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB,
+                        false /*exit*/);
 
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
@@ -1857,10 +1859,9 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    var_types typeMonAcquired = TYP_UBYTE;
-    GenTree*  varNode         = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
-    GenTree*  tree;
+    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
+    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* tree;
 
     if (info.compIsStatic)
     {
@@ -1893,7 +1894,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         {
             // have to insert this immediately before the GT_RETURN so we transform:
             // ret(...) ->
-            // ret(comma(comma(tmp=...,call mon_exit), tmp)
+            // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
             //
             // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
@@ -2209,7 +2210,10 @@ public:
 
     //------------------------------------------------------------------------
     // PlaceReturns: Move any generated const return blocks to an appropriate
-    //     spot in the lexical block list.
+    //    spot in the lexical block list.
+    //
+    // Returns:
+    //    True if any returns were impacted.
     //
     // Notes:
     //    The goal is to set things up favorably for a reasonable layout without
@@ -2220,12 +2224,12 @@ public:
     //    there to it can become fallthrough without requiring any motion to be
     //    performed by fgReorderBlocks.
     //
-    void PlaceReturns()
+    bool PlaceReturns()
     {
         if (!mergingReturns)
         {
             // No returns generated => no returns to place.
-            return;
+            return false;
         }
 
         for (unsigned index = 0; index < comp->fgReturnCount; ++index)
@@ -2248,6 +2252,8 @@ public:
             // affect program behavior.
             comp->fgExtendEHRegionAfter(insertionPoint);
         }
+
+        return true;
     }
 
 private:
@@ -2392,7 +2398,7 @@ private:
 
         BasicBlock* mergedReturnBlock = nullptr;
 
-        // Do not look for mergable constant returns in debug codegen as
+        // Do not look for mergeable constant returns in debug codegen as
         // we may lose track of sequence points.
         if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.compDbgCode)
         {
@@ -2580,20 +2586,35 @@ private:
 };
 }
 
-/*****************************************************************************
-*
-*  Add any internal blocks/trees we may need
-*/
-
-void Compiler::fgAddInternal()
+//------------------------------------------------------------------------
+// fgAddInternal: add blocks and trees to express special method semantics
+//
+// Notes:
+//   * rewrites shared generic catches in to filters
+//   * adds code to handle modifiable this
+//   * determines number of epilogs and merges returns
+//   * does special setup for pinvoke/reverse pinvoke methods
+//   * adds callouts and EH for synchronized methods
+//   * adds just my code callback
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::fgAddInternal()
 {
     noway_assert(!compIsForInlining());
+
+    bool madeChanges = false;
+
+    // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
+    // type with a runtime lookup
+    madeChanges |= fgCreateFiltersForGenericExceptions();
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Similarly, we need a scratch BB for poisoning. Create it here.
     if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
-        fgEnsureFirstBBisScratch();
+        madeChanges |= fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
     }
 
@@ -2655,6 +2676,8 @@ void Compiler::fgAddInternal()
                 printf("\n");
             }
 #endif
+
+            madeChanges = true;
         }
     }
 
@@ -2727,7 +2750,7 @@ void Compiler::fgAddInternal()
         }
     }
 
-    merger.PlaceReturns();
+    madeChanges |= merger.PlaceReturns();
 
     if (compMethodRequiresPInvokeFrame())
     {
@@ -2791,6 +2814,8 @@ void Compiler::fgAddInternal()
 
         fgEnsureFirstBBisScratch();
         fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
+
+        madeChanges = true;
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -2867,6 +2892,7 @@ void Compiler::fgAddInternal()
         // Reset cookies used to track start and end of the protected region in synchronized methods
         syncStartEmitCookie = NULL;
         syncEndEmitCookie   = NULL;
+        madeChanges         = true;
     }
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -2874,6 +2900,7 @@ void Compiler::fgAddInternal()
     if (opts.IsReversePInvoke())
     {
         fgAddReversePInvokeEnterExit();
+        madeChanges = true;
     }
 
 #ifdef DEBUG
@@ -2884,12 +2911,14 @@ void Compiler::fgAddInternal()
         fgDispHandlerTab();
     }
 #endif
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************/
 /*****************************************************************************/
 
-void Compiler::fgFindOperOrder()
+PhaseStatus Compiler::fgFindOperOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -2912,6 +2941,8 @@ void Compiler::fgFindOperOrder()
             gtSetStmtInfo(stmt);
         }
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -2919,7 +2950,7 @@ void Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_BOUNDS_CHECK.
+//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -2945,18 +2976,43 @@ void Compiler::fgSimpleLowering()
             switch (tree->OperGet())
             {
                 case GT_ARR_LENGTH:
+                case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
                 {
-                    GenTreeArrLen* arrLen = tree->AsArrLen();
-                    GenTree*       arr    = arrLen->AsArrLen()->ArrRef();
-                    GenTree*       add;
-                    GenTree*       con;
+                    GenTree* arr       = tree->AsArrCommon()->ArrRef();
+                    int      lenOffset = 0;
 
-                    /* Create the expression "*(array_addr + ArrLenOffs)" */
+                    switch (tree->OperGet())
+                    {
+                        case GT_ARR_LENGTH:
+                        {
+                            lenOffset = tree->AsArrLen()->ArrLenOffset();
+                            noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
+                                         lenOffset == OFFSETOF__CORINFO_String__stringLen);
+                            break;
+                        }
+
+                        case GT_MDARR_LENGTH:
+                            lenOffset = (int)eeGetMDArrayLengthOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
+                            break;
+
+                        case GT_MDARR_LOWER_BOUND:
+                            lenOffset =
+                                (int)eeGetMDArrayLowerBoundOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
+                            break;
+
+                        default:
+                            unreached();
+                    }
+
+                    // Create the expression `*(array_addr + lenOffset)`
+
+                    GenTree* addr;
 
                     noway_assert(arr->gtNext == tree);
 
-                    noway_assert(arrLen->ArrLenOffset() == OFFSETOF__CORINFO_Array__length ||
-                                 arrLen->ArrLenOffset() == OFFSETOF__CORINFO_String__stringLen);
+                    JITDUMP("Lower %s:\n", GenTree::OpName(tree->OperGet()));
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
 
                     if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
                     {
@@ -2965,20 +3021,21 @@ void Compiler::fgSimpleLowering()
                         // an invariant where there is no sum of two constants node, so
                         // let's simply return an indirection of NULL.
 
-                        add = arr;
+                        addr = arr;
                     }
                     else
                     {
-                        con = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
-                        add = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
-
-                        range.InsertAfter(arr, con, add);
+                        GenTree* con = gtNewIconNode(lenOffset, TYP_I_IMPL);
+                        addr         = gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
+                        range.InsertAfter(arr, con, addr);
                     }
 
                     // Change to a GT_IND.
                     tree->ChangeOperUnchecked(GT_IND);
+                    tree->AsOp()->gtOp1 = addr;
 
-                    tree->AsOp()->gtOp1 = add;
+                    JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
                     break;
                 }
 
@@ -3113,6 +3170,45 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     return fgLastBB;
 }
 
+//------------------------------------------------------------------------------
+// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (const flowList* predEdge : block->PredEdges())
+    {
+        BasicBlock* predBlock = predEdge->getBlock();
+        if (predBlock == block)
+        {
+            continue;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            if (lastReachablePred != nullptr)
+            {
+                // More than one of "reachable" preds - return cached result
+                return block->bbIDom;
+            }
+            lastReachablePred = predBlock;
+        }
+    }
+
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
+}
+
 /*****************************************************************************************************
  *
  *  Function to return the first basic block after the main part of the function. With funclets, it is
@@ -3203,16 +3299,17 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
 }
 
-/*****************************************************************************
- *
- * Every funclet will have a prolog. That prolog will be inserted as the first instructions
- * in the first block of the funclet. If the prolog is also the head block of a loop, we
- * would end up with the prolog instructions being executed more than once.
- * Check for this by searching the predecessor list for loops, and create a new prolog header
- * block when needed. We detect a loop by looking for any predecessor that isn't in the
- * handler's try region, since the only way to get into a handler is via that try region.
- */
-
+//------------------------------------------------------------------------
+// fgCreateFuncletPrologBlocks: create prolog blocks for funclets if needed
+//
+// Notes:
+//   Every funclet will have a prolog. That prolog will be inserted as the first instructions
+//   in the first block of the funclet. If the prolog is also the head block of a loop, we
+//   would end up with the prolog instructions being executed more than once.
+//   Check for this by searching the predecessor list for loops, and create a new prolog header
+//   block when needed. We detect a loop by looking for any predecessor that isn't in the
+//   handler's try region, since the only way to get into a handler is via that try region.
+//
 void Compiler::fgCreateFuncletPrologBlocks()
 {
     noway_assert(fgComputePredsDone);
@@ -3269,22 +3366,18 @@ void Compiler::fgCreateFuncletPrologBlocks()
     }
 }
 
-/*****************************************************************************
- *
- *  Function to create funclets out of all EH catch/finally/fault blocks.
- *  We only move filter and handler blocks, not try blocks.
- */
-
-void Compiler::fgCreateFunclets()
+//------------------------------------------------------------------------
+// fgCreateFunclets: create funclets for EH catch/finally/fault blocks.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    We only move filter and handler blocks, not try blocks.
+//
+PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgCreateFunclets()\n");
-    }
-#endif
 
     fgCreateFuncletPrologBlocks();
 
@@ -3345,17 +3438,29 @@ void Compiler::fgCreateFunclets()
 
     fgFuncletsCreated = true;
 
-#if DEBUG
-    if (verbose)
+    return (compHndBBtabCount > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// fgFuncletsAreCold: Determine if EH funclets can be moved to cold section.
+//
+// Notes:
+//   Walk the EH funclet blocks of a function to determine if the funclet
+//   section is cold. If any of the funclets are hot, then it may not be
+//   beneficial to split at fgFirstFuncletBB and move all funclets to
+//   the cold section.
+//
+bool Compiler::fgFuncletsAreCold()
+{
+    for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->bbNext)
     {
-        JITDUMP("\nAfter fgCreateFunclets()");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
+        if (!block->isRunRarely())
+        {
+            return false;
+        }
     }
 
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist();
-#endif // DEBUG
+    return true;
 }
 
 #endif // defined(FEATURE_EH_FUNCLETS)
@@ -3377,7 +3482,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-    // Since we may need to create a new transistion block
+    // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
     assert(fgSafeBasicBlockCreation);
@@ -3398,65 +3503,87 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS)
-    // TODO-CQ: handle hot/cold splitting in functions with EH (including synchronized methods
-    // that create EH in methods without explicit EH clauses).
-
-    if (compHndBBtabCount > 0)
-    {
-        JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
     BasicBlock* firstColdBlock       = nullptr;
     BasicBlock* prevToFirstColdBlock = nullptr;
     BasicBlock* block;
     BasicBlock* lblk;
 
-    for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+    bool forceSplit = false;
+
+#ifdef DEBUG
+    // If stress-splitting, split right after the first block
+    forceSplit = JitConfig.JitStressProcedureSplitting();
+#endif
+
+    if (forceSplit)
     {
-        bool blockMustBeInHotSection = false;
+        firstColdBlock       = fgFirstBB->bbNext;
+        prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
+    }
+    else
+    {
+        for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+        {
+            bool blockMustBeInHotSection = false;
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        if (bbIsHandlerBeg(block))
-        {
-            blockMustBeInHotSection = true;
-        }
+            if (bbIsHandlerBeg(block))
+            {
+                blockMustBeInHotSection = true;
+            }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
 
-        // Do we have a candidate for the first cold block?
-        if (firstColdBlock != nullptr)
-        {
-            // We have a candidate for first cold block
-
-            // Is this a hot block?
-            if (blockMustBeInHotSection || (block->isRunRarely() == false))
+            // Do we have a candidate for the first cold block?
+            if (firstColdBlock != nullptr)
             {
-                // We have to restart the search for the first cold block
-                firstColdBlock       = nullptr;
-                prevToFirstColdBlock = nullptr;
-            }
-        }
-        else // (firstColdBlock == NULL)
-        {
-            // We don't have a candidate for first cold block
+                // We have a candidate for first cold block
 
-            // Is this a cold block?
-            if (!blockMustBeInHotSection && (block->isRunRarely() == true))
-            {
-                //
-                // If the last block that was hot was a BBJ_COND
-                // then we will have to add an unconditional jump
-                // so the code size for block needs be large
-                // enough to make it worth our while
-                //
-                if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                // Is this a hot block?
+                if (blockMustBeInHotSection || (block->isRunRarely() == false))
                 {
-                    // This block is now a candidate for first cold block
-                    // Also remember the predecessor to this block
-                    firstColdBlock       = block;
-                    prevToFirstColdBlock = lblk;
+                    // We have to restart the search for the first cold block
+                    firstColdBlock       = nullptr;
+                    prevToFirstColdBlock = nullptr;
+                }
+            }
+            else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
+            {
+
+#ifdef FEATURE_EH_FUNCLETS
+                //
+                // If a function has exception handling and we haven't found the first cold block yet,
+                // consider splitting at the first funclet; do not consider splitting between funclets,
+                // as this may break unwind info.
+                //
+                if (block == fgFirstFuncletBB)
+                {
+                    if (fgFuncletsAreCold())
+                    {
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
+
+                    break;
+                }
+#endif // FEATURE_EH_FUNCLETS
+
+                // Is this a cold block?
+                if (!blockMustBeInHotSection && block->isRunRarely())
+                {
+                    //
+                    // If the last block that was hot was a BBJ_COND
+                    // then we will have to add an unconditional jump
+                    // so the code size for block needs be large
+                    // enough to make it worth our while
+                    //
+                    if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                    {
+                        // This block is now a candidate for first cold block
+                        // Also remember the predecessor to this block
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
                 }
             }
         }
@@ -3483,8 +3610,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         // then it may not be worth it to move it
         // into the Cold section as a jump to the
         // Cold section is 5 bytes in size.
+        // Ignore if stress-splitting.
         //
-        if (firstColdBlock->bbNext == nullptr)
+        if (!forceSplit && firstColdBlock->bbNext == nullptr)
         {
             // If the size of the cold block is 7 or less
             // then we will keep it in the Hot section.
@@ -3557,6 +3685,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     for (block = firstColdBlock; block != nullptr; block = block->bbNext)
     {
         block->bbFlags |= BBF_COLD;
+        block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
 EXIT:;
@@ -3930,7 +4059,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
  *  Also finds blocks that need GC polls and inserts them as needed.
  */
 
-void Compiler::fgSetBlockOrder()
+PhaseStatus Compiler::fgSetBlockOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -4033,8 +4162,11 @@ void Compiler::fgSetBlockOrder()
     {
         printf("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
     }
-    fgDebugCheckLinks();
 #endif // DEBUG
+
+    // Return "everything" to enable consistency checking of the statement links during post phase.
+    //
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************/
@@ -4114,48 +4246,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 
     return firstNode;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    // If this tree doesn't have the EXCEPT flag set, then there is no
-    // way any of the child nodes could throw, so we can stop recursing.
-    if (!(tree->gtFlags & GTF_EXCEPT))
-    {
-        return Compiler::WALK_SKIP_SUBTREES;
-    }
-
-    switch (tree->gtOper)
-    {
-        case GT_MUL:
-        case GT_ADD:
-        case GT_SUB:
-        case GT_CAST:
-            if (tree->gtOverflow())
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_INDEX:
-        case GT_INDEX_ADDR:
-            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
-            if (tree->gtFlags & GTF_INX_RNGCHK)
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_BOUNDS_CHECK:
-            return Compiler::WALK_ABORT;
-
-        default:
-            break;
-    }
-
-    return Compiler::WALK_CONTINUE;
 }
 
 /*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)

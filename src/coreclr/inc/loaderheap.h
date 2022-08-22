@@ -418,6 +418,8 @@ public:
     BOOL IsExecutable();
     BOOL IsInterleaved();
 
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
+
 public:
 #ifdef _DEBUG
     void DumpFreeList();

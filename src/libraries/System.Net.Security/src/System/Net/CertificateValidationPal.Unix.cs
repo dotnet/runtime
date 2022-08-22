@@ -24,7 +24,11 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        private static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, bool retrieveChainCertificates, ref X509Chain? chain)
+        private static X509Certificate2? GetRemoteCertificate(
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
             bool gotReference = false;
 
@@ -48,9 +52,13 @@ namespace System.Net
                 if (retrieveChainCertificates)
                 {
                     chain ??= new X509Chain();
+                    if (chainPolicy != null)
+                    {
+                        chain.ChainPolicy = chainPolicy;
+                    }
 
                     using (SafeSharedX509StackHandle chainStack =
-                        Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
+                        Interop.OpenSsl.GetPeerCertificateChain((SafeSslHandle)securityContext))
                     {
                         if (!chainStack.IsInvalid)
                         {
@@ -98,7 +106,7 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList(((SafeDeleteSslContext)securityContext).SslContext))
+            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList((SafeSslHandle)securityContext))
             {
                 if (names.IsInvalid)
                 {
@@ -152,7 +160,7 @@ namespace System.Net
             remoteCertContext = null;
             try
             {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(((SafeDeleteSslContext)securityContext).SslContext);
+                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
                 // Note that cert ownership is transferred to SafeFreeCertContext
                 remoteCertContext = new SafeFreeCertContext(remoteCertificate);
                 return 0;

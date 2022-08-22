@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
         }
 
         internal ObjectHolderList SpecialFixupObjects =>
-            _specialFixupObjects ?? (_specialFixupObjects = new ObjectHolderList());
+            _specialFixupObjects ??= new ObjectHolderList();
 
         internal ObjectHolder? FindObjectHolder(long objectID)
         {
@@ -1138,10 +1138,7 @@ namespace System.Runtime.Serialization
         /// <param name="manager">The associated object manager.</param>
         internal void AddFixup(FixupHolder fixup, ObjectManager manager)
         {
-            if (_missingElements == null)
-            {
-                _missingElements = new FixupHolderList();
-            }
+            _missingElements ??= new FixupHolderList();
             _missingElements.Add(fixup);
             _missingElementsRemaining++;
 
@@ -1180,10 +1177,7 @@ namespace System.Runtime.Serialization
         /// <param name="dependentObject">the id of the object which is dependent on this object being provided.</param>
         internal void AddDependency(long dependentObject)
         {
-            if (_dependentObjects == null)
-            {
-                _dependentObjects = new LongList();
-            }
+            _dependentObjects ??= new LongList();
             _dependentObjects.Add(dependentObject);
         }
 

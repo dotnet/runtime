@@ -153,7 +153,7 @@ namespace System.Xml.Tests
         [Fact]
         public void NodeReaderReadContentAsBase64WithSimpleXml()
         {
-            byte[] byteData = Encoding.ASCII.GetBytes("hello world");
+            byte[] byteData = "hello world"u8.ToArray();
             string xml = $"<root attr='{Convert.ToBase64String(byteData)}'><child /></root>"; //hello world encoded
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
             Assert.True(nodeReader.Read());
@@ -179,7 +179,7 @@ namespace System.Xml.Tests
         [Fact]
         public void NodeReaderReadContentAsBinHexWithSimpleXml()
         {
-            byte[] byteData = Encoding.ASCII.GetBytes("hello world");
+            byte[] byteData = "hello world"u8.ToArray();
             string xml = $"<root attr='{BitConverter.ToString(byteData).Replace("-", "")}'><child /></root>";
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
             Assert.True(nodeReader.Read());
@@ -205,7 +205,7 @@ namespace System.Xml.Tests
         [Fact]
         public void NodeReaderReadElementContentAsBase64WithSimpleXml()
         {
-            byte[] byteData = Encoding.ASCII.GetBytes("hello world");
+            byte[] byteData = "hello world"u8.ToArray();
             string xml = $"<root attr='val'>{Convert.ToBase64String(byteData)}</root>"; //hello world encoded
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
             Assert.True(nodeReader.Read());
@@ -229,7 +229,7 @@ namespace System.Xml.Tests
         [Fact]
         public void NodeReaderReadElementContentAsBinHexWithSimpleXml()
         {
-            byte[] byteData = Encoding.ASCII.GetBytes("hello world");
+            byte[] byteData = "hello world"u8.ToArray();
             string xml = $"<root attr='val'>{BitConverter.ToString(byteData).Replace("-", "")}</root>";
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
             Assert.True(nodeReader.Read());

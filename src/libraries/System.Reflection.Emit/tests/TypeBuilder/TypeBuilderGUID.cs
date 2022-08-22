@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
         public void Guid_TypeCreated_NotEmpty()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.NotEqual(Guid.Empty, type.GUID);
         }
 

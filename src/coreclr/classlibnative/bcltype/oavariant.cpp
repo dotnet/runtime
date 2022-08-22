@@ -5,7 +5,7 @@
 //
 
 //
-// Purpose: Wrapper for Ole Automation compatable math ops.
+// Purpose: Wrapper for Ole Automation compatible math ops.
 // Calls through to OleAut.dll
 //
 

@@ -40,9 +40,9 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
     }
 
     /*Setup SECURITY_ATTRIBUTES structure for CreatePipe*/
-    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes); 
-    lpPipeAttributes.lpSecurityDescriptor = NULL; 
-    lpPipeAttributes.bInheritHandle       = TRUE; 
+    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes);
+    lpPipeAttributes.lpSecurityDescriptor = NULL;
+    lpPipeAttributes.bInheritHandle       = TRUE;
 
     /*Create a Pipe*/
     bRetVal = CreatePipe(&hReadPipe,       /* read handle*/
@@ -86,10 +86,10 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
         CloseHandle(hWritePipe);
         Fail("");
     }
-    
+
     /*Read from the duplicated handle, 256 bytes, more bytes
-     than actually written. This will allow us to use the 
-     value that ReadFile returns for comparision.*/
+     than actually written. This will allow us to use the
+     value that ReadFile returns for comparison.*/
     bRetVal = ReadFile(hDupPipe,           /* handle to read pipe*/
                        buffer,             /* buffer to write to*/
                        256,                /* number of bytes to read*/
@@ -97,9 +97,9 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
                        NULL);              /* overlapped buffer*/
     if (bRetVal == FALSE)
     {
-        Trace("ERROR:%u:unable read from the duplicated pipe " 
+        Trace("ERROR:%u:unable read from the duplicated pipe "
              "hDupPipe=0x%lx\n",
-             GetLastError(), 
+             GetLastError(),
              hDupPipe);
         CloseHandle(hReadPipe);
         CloseHandle(hWritePipe);
@@ -110,7 +110,7 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
     /*Compare what was read with what was written.*/
     if ((memcmp(cTestString, buffer, dwBytesRead)) != 0)
     {
-        Trace("ERROR:%u: read \"%s\" expected \"%s\" \n", 
+        Trace("ERROR:%u: read \"%s\" expected \"%s\" \n",
                GetLastError(),
                buffer,
                cTestString);
@@ -124,9 +124,9 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
     if (dwBytesWritten != dwBytesRead)
     {
         Trace("ERROR:%u: WriteFile wrote \"%s\", but ReadFile read \"%s\","
-             " these should be the same\n", 
+             " these should be the same\n",
              GetLastError(),
-             buffer, 
+             buffer,
              cTestString);
         CloseHandle(hReadPipe);
         CloseHandle(hWritePipe);
@@ -138,7 +138,7 @@ PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threadin
     CloseHandle(hWritePipe);
     CloseHandle(hReadPipe);
     CloseHandle(hDupPipe);
-    
+
     PAL_Terminate();
     return (PASS);
 }

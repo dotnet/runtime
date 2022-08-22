@@ -102,7 +102,7 @@ namespace System.Net.Tests
         {
             yield return new object[] { string.Empty, HttpStatusCode.Unauthorized };
             yield return new object[] { null, HttpStatusCode.Unauthorized };
-            yield return new object[] { Convert.ToBase64String(Encoding.ASCII.GetBytes("username")), HttpStatusCode.BadRequest };
+            yield return new object[] { Convert.ToBase64String("username"u8), HttpStatusCode.BadRequest };
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 

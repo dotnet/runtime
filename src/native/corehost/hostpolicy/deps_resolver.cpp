@@ -45,7 +45,7 @@ namespace
     {
         // To optimize startup time, we avoid calling realpath here.
         // Because of this, there might be duplicates in the output
-        // whenever path is eiter non-normalized or a symbolic link.
+        // whenever path is either non-normalized or a symbolic link.
         if (existing->count(path))
         {
             return;
@@ -111,7 +111,7 @@ void deps_resolver_t::add_tpa_asset(
 
 // -----------------------------------------------------------------------------
 // Load local assemblies by priority order of their file extensions and
-// unique-fied  by their simple name.
+// uniquified by their simple name.
 //
 void deps_resolver_t::get_dir_assemblies(
     const pal::string_t& dir,
@@ -229,7 +229,7 @@ void deps_resolver_t::setup_probe_config(
     if (pal::directory_exists(args.core_servicing))
     {
         pal::string_t ext_ni = args.core_servicing;
-        append_path(&ext_ni, get_arch());
+        append_path(&ext_ni, get_current_arch_name());
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.

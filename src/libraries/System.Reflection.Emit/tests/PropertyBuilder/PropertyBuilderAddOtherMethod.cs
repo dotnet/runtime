@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ret);
 
             property.AddOtherMethod(method);
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("TestProperty", bindingFlags);
 
             MethodInfo[] actualMethods = createdProperty.GetAccessors(true);
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ldarg_1);
             methodILGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => property.AddOtherMethod(method));
         }
     }

@@ -47,7 +47,7 @@ namespace System
         /// <returns><c>true</c> if the specified object is equal to the current object; otherwise, <c>false</c>.</returns>
         public virtual bool Equals(object? obj)
         {
-            return RuntimeHelpers.Equals(this, obj);
+            return this == obj;
         }
 
         public static bool Equals(object? objA, object? objB)

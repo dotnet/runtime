@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        public sealed unsafe override ContentInfo? TryDecrypt(
+        public sealed override unsafe ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
             AsymmetricAlgorithm? privateKey,
@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbSize))
                 {
-                    ErrorCode errorCode = (ErrorCode)(Marshal.GetLastWin32Error());
+                    ErrorCode errorCode = (ErrorCode)(Marshal.GetLastPInvokeError());
                     keySpec = default(CryptKeySpec);
                     return errorCode.ToCryptographicException();
                 }
@@ -149,7 +149,7 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, pData, ref cbSize))
                         {
-                            ErrorCode errorCode = (ErrorCode)(Marshal.GetLastWin32Error());
+                            ErrorCode errorCode = (ErrorCode)(Marshal.GetLastPInvokeError());
                             keySpec = default(CryptKeySpec);
                             return errorCode.ToCryptographicException();
                         }

@@ -49,7 +49,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected Task Send(DevToolsQueue queue, JObject o, CancellationToken token)
         {
-            logger.LogTrace($"to-{queue.Id}: {GetFromOrTo(o)} {o}");
+            Log("protocol", $"to-{queue.Id}: {GetFromOrTo(o)} {o}");
             var msg = o.ToString(Formatting.None);
             var bytes = Encoding.UTF8.GetBytes(msg);
 
@@ -209,7 +209,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject o = result.ToJObject(id);
             if (!result.IsOk)
-                logger.LogError($"sending error response for id: {id} -> {result}");
+                logger.LogDebug($"sending error response for id: {id} -> {result}");
 
             return Send(this.ide, o, token);
         }
@@ -275,6 +275,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected void Log(string priority, string msg)
         {
+            if (priority == "protocol")
+                msg = msg.TruncateLogMessage();
+
             switch (priority)
             {
                 case "protocol":

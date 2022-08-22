@@ -200,7 +200,7 @@ ds_server_init (void)
 		ep_raise_error ();
 	}
 
-	// Initialize the RuntimeIndentifier before use
+	// Initialize the RuntimeIdentifier before use
 	ds_ipc_advertise_cookie_v1_init ();
 
 	// Ports can fail to be configured

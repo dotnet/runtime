@@ -80,7 +80,7 @@ public:
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN] the name buffer's size
-        ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName);                  // [OUT] the number of characters returned in the buffer
 
     STDMETHODIMP FindAssemblyModule(        // S_OK or error
         LPCWSTR  szAppBase,                 // [IN] optional - can be NULL
@@ -90,7 +90,7 @@ public:
         LPCWSTR  szModuleName,              // [IN] required - the name of the module
         _Out_writes_ (cchName)LPWSTR szName,// [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
-        ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName);                  // [OUT] the number of characters returned in the buffer
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     STDMETHODIMP DefinePortablePdbScope(    // Return code.

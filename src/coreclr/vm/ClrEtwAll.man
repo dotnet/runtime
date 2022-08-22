@@ -446,7 +446,13 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 38-->
+                    <task name="ThreadPoolMinMaxThreads" symbol="CLR_THREADPOOLMINMAXTHREADS_TASK"
+                          value="38" eventGUID="{6D168D67-FB06-4A60-83BA-2544E817F6A3}"
+                          message="$(string.RuntimePublisher.ThreadPoolMinMaxThreadsTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 39-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -605,6 +611,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RuntimePublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RuntimePublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="ExceptionThrownFlagsMap">
                         <map value="0x1" message="$(string.RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage)"/>
@@ -673,6 +680,8 @@
                       <map value="0x0" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage)"/>
                       <map value="0x1" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage)"/>
                       <map value="0x2" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage)"/>
+                      <map value="0x8" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage)"/>
                     </bitMap>
                 </maps>
 
@@ -1576,6 +1585,24 @@
                                 <RetiredWorkerThreadCount> %2 </RetiredWorkerThreadCount>
                                 <ClrInstanceID> %3 </ClrInstanceID>
                             </ThreadPoolWorkerThread>
+                        </UserData>
+                    </template>
+
+                    <template tid="ThreadPoolMinMaxThreads">
+                        <data name="MinWorkerThreads" inType="win:UInt16" />
+                        <data name="MaxWorkerThreads" inType="win:UInt16" />
+                        <data name="MinIOCompletionThreads" inType="win:UInt16" />
+                        <data name="MaxIOCompletionThreads" inType="win:UInt16" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <ThreadPoolMinMaxThreads xmlns="myNs">
+                                <MinWorkerThreads> %1 </MinWorkerThreads>
+                                <MaxWorkerThreads> %2 </MaxWorkerThreads>
+                                <MinIOCompletionThreads> %3 </MinIOCompletionThreads>
+                                <MaxIOCompletionThreads> %4 </MaxIOCompletionThreads>
+                                <ClrInstanceID> %5 </ClrInstanceID>
+                            </ThreadPoolMinMaxThreads>
                         </UserData>
                     </template>
 
@@ -2542,6 +2569,27 @@
                       </UserData>
                     </template>
 
+                    <template tid="MethodILToNativeMap_V1">
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="MethodExtent" inType="win:UInt8" />
+                      <data name="CountOfMapEntries" inType="win:UInt16" />
+                      <data name="ILOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="NativeOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <UserData>
+                        <MethodILToNativeMap xmlns="myNs">
+                          <MethodID> %1 </MethodID>
+                          <ReJITID> %2 </ReJITID>
+                          <MethodExtent> %3 </MethodExtent>
+                          <CountOfMapEntries> %4 </CountOfMapEntries>
+                          <ClrInstanceID> %5 </ClrInstanceID>
+                          <ILVersionID> %6 </ILVersionID>
+                        </MethodILToNativeMap>
+                      </UserData>
+                    </template>
+
                     <template tid="ClrStackWalk">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Reserved1" inType="win:UInt8" />
@@ -3024,7 +3072,7 @@
                             </ExecutionCheckpoint>
                         </UserData>
                     </template>
-
+                    
                     <template tid="ProfilerMessage">
                       <data name="ClrInstanceID" inType="win:UInt16"/>
                       <data name="Message" inType="win:UnicodeString" />
@@ -3053,7 +3101,7 @@
                 <events>
                     <!-- CLR GC events, value reserved from 0 to 39 and 200 to 239 -->
                     <!-- Note the opcode's for GC events do include 0 to 9 for backward compatibility, even though
-          they don't mean what those predefined opcodes are supposed to mean -->
+                         they don't mean what those predefined opcodes are supposed to mean -->
                     <event value="1" version="0" level="win:Informational"  template="GCStart"
                            keywords="GCKeyword" opcode="win:Start"
                            task="GarbageCollection"
@@ -3455,6 +3503,13 @@
                            keywords="ThreadingKeyword" task="YieldProcessorMeasurement" opcode="win:Info"
                            symbol="YieldProcessorMeasurement" message="$(string.RuntimePublisher.YieldProcessorMeasurementEventMessage)"/>
 
+                    <event value="59" version="0" level="win:Informational"  template="ThreadPoolMinMaxThreads"
+                           keywords="ThreadingKeyword"
+                           task="ThreadPoolMinMaxThreads"
+                           opcode="win:Info"
+                           symbol="ThreadPoolMinMaxThreads"
+                           message="$(string.RuntimePublisher.ThreadPoolMinMaxThreads)"/>
+
                     <!-- CLR private ThreadPool events -->
                     <event value="60" version="0" level="win:Verbose"  template="ThreadPoolWorkingThreadCount"
                            keywords="ThreadingKeyword"
@@ -3789,6 +3844,12 @@
                            symbol="MethodILToNativeMap"
                            message="$(string.RuntimePublisher.MethodILToNativeMapEventMessage)"/>
 
+                    <event value="190" version="1" level="win:Verbose"  template="MethodILToNativeMap_V1"
+                           keywords ="JittedMethodILToNativeMapKeyword" opcode="MethodILToNativeMap"
+                           task="CLRMethod"
+                           symbol="MethodILToNativeMap_V1"
+                           message="$(string.RuntimePublisher.MethodILToNativeMapEventMessage_V1)"/>
+
                     <event value="191" version="0" level="win:Verbose"  template="MethodJitTailCallFailed"
                            keywords ="JitTracingKeyword" opcode="JitTailCallFailed"
                            task="CLRMethod"
@@ -4106,9 +4167,9 @@
                     <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
+
                 </events>
             </provider>
-
 
             <!--CLR Rundown Publisher-->
             <provider name="Microsoft-Windows-DotNETRuntimeRundown"
@@ -4278,6 +4339,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RundownPublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RundownPublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RundownPublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="StartupFlagsMap">
                         <map value="0x000001" message="$(string.RundownPublisher.Startup.CONCURRENT_GCMapMessage)"/>
@@ -4305,6 +4367,8 @@
                       <map value="0x0" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.NoneMapMessage)"/>
                       <map value="0x1" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.QuickJitMapMessage)"/>
                       <map value="0x2" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage)"/>
+                      <map value="0x4" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage)"/>
+                      <map value="0x8" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage)"/>
                     </bitMap>
                 </maps>
 
@@ -4722,6 +4786,27 @@
                       </UserData>
                     </template>
 
+                    <template tid="MethodILToNativeMapRundown_V1">
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="MethodExtent" inType="win:UInt8" />
+                      <data name="CountOfMapEntries" inType="win:UInt16" />
+                      <data name="ILOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="NativeOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <UserData>
+                        <MethodILToNativeMap_V1 xmlns="myNs">
+                          <MethodID> %1 </MethodID>
+                          <ReJITID> %2 </ReJITID>
+                          <MethodExtent> %3 </MethodExtent>
+                          <CountOfMapEntries> %4 </CountOfMapEntries>
+                          <ClrInstanceID> %5 </ClrInstanceID>
+                          <ILVersionID> %6 </ILVersionID>
+                        </MethodILToNativeMap_V1>
+                      </UserData>
+                    </template>
+
                     <template tid="DCStartEnd">
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
@@ -4922,11 +5007,23 @@
                            symbol="MethodDCStartILToNativeMap"
                            message="$(string.RundownPublisher.MethodDCStartILToNativeMapEventMessage)"/>
 
+                    <event value="149" version="1" level="win:Verbose"  template="MethodILToNativeMapRundown_V1"
+                           keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCStartILToNativeMap"
+                           task="CLRMethodRundown"
+                           symbol="MethodDCStartILToNativeMap_V1"
+                           message="$(string.RundownPublisher.MethodDCStartILToNativeMapEventMessage_V1)"/>
+
                     <event value="150" version="0" level="win:Verbose"  template="MethodILToNativeMapRundown"
                            keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCEndILToNativeMap"
                            task="CLRMethodRundown"
                            symbol="MethodDCEndILToNativeMap"
                            message="$(string.RundownPublisher.MethodDCEndILToNativeMapEventMessage)"/>
+
+                    <event value="150" version="1" level="win:Verbose"  template="MethodILToNativeMapRundown_V1"
+                           keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCEndILToNativeMap"
+                           task="CLRMethodRundown"
+                           symbol="MethodDCEndILToNativeMap_V1"
+                           message="$(string.RundownPublisher.MethodDCEndILToNativeMapEventMessage_V1)"/>
 
                     <!-- CLR Loader Rundown Events -->
                     <event value="151" version="0" level="win:Informational"  template="DomainModuleLoadUnloadRundown"
@@ -5172,12 +5269,14 @@
                              message="$(string.PrivatePublisher.GCHandlePrivateKeywordMessage)" symbol="CLR_PRIVATEGCHANDLE_KEYWORD"/>
                     <keyword name="MulticoreJitPrivateKeyword" mask="0x20000"
                              message="$(string.PrivatePublisher.MulticoreJitPrivateKeywordMessage)" symbol="CLR_PRIVATEMULTICOREJIT_KEYWORD"/>
+                    <keyword name="JittedMethodRichDebugInfoKeyword" mask="0x40000"
+                             message="$(string.PrivatePublisher.JittedMethodRichDebugInfoKeyword)" symbol="CLR_JITTED_METHOD_RICH_DEBUG_INFO_KEYWORD"/>
+                    <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
+                             message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
                     <keyword name="StackKeyword" mask="0x40000000"
                              message="$(string.PrivatePublisher.StackKeywordMessage)" symbol="CLR_PRIVATESTACK_KEYWORD"/>
                     <keyword name="StartupKeyword" mask="0x80000000"
                              message="$(string.PrivatePublisher.StartupKeywordMessage)"  symbol="CLR_PRIVATESTARTUP_KEYWORD"/>
-                    <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
-                      message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
 
                 <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <keyword name="DynamicTypeUsageKeyword" mask="0x00000020"
@@ -5375,6 +5474,14 @@
                         <opcodes>
                             <opcode name="ModuleRangeLoadPrivate" message="$(string.PrivatePublisher.ModuleRangeLoadOpcodeMessage)" symbol="CLR_PERFTRACK_PRIVATE_MODULE_RANGE_LOAD_OPCODE" value="10"> </opcode>
                         </opcodes>
+                    </task>
+
+                    <task name="CLRMethodPrivate" symbol="CLR_METHOD_PRIVATE_TASK"
+                          value="21" eventGUID="{CBC6EEBC-2ED8-4130-9505-885EAE51BE7E}"
+                          message="$(string.PrivatePublisher.CLRMethodPrivateTaskMessage)">
+                          <opcodes>
+                            <opcode name="JittedMethodRichDebugInfo" message="$(string.PrivatePublisher.JittedMethodRichDebugInfoOpcodeMessage)" symbol="CLR_METHOD_PRIVATE_JITTED_METHOD_RICH_DEBUG_INFO_OPCODE" value="10" />
+                          </opcodes>
                     </task>
 
                     <!-- NOTE: These are not used anymore. They are kept around for backcompat with traces that might have already contained these -->
@@ -5893,6 +6000,26 @@
                                 <AssemblyName> %4 </AssemblyName>
                             </NgenBindEvent>
                         </UserData>
+                    </template>
+
+                    <template tid="JittedMethodRichDebugInfo">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <data name="ChunkIndex" inType="win:UInt32" />
+                      <data name="DataSize" inType="win:UInt32" />
+                      <data name="Data" inType="win:Binary" length="DataSize" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <MethodID> %2 </MethodID>
+                          <ReJITID> %3 </ReJITID>
+                          <ILVersionID> %4 </ILVersionID>
+                          <ChunkIndex> %5 </ChunkIndex>
+                          <DataSize> %6 </DataSize>
+                        </Settings>
+                      </UserData>
                     </template>
 
                     <template tid="ModuleTransparencyCalculation">
@@ -7081,6 +7208,11 @@
                            keywords="PrivateFusionKeyword" opcode="NgenBind"
                            task="CLRNgenBinder"
                            symbol="NgenBindEvent" message="$(string.PrivatePublisher.NgenBinderMessage)"/>
+                    
+                    <event value="189" version="0" level="win:Informational" template="JittedMethodRichDebugInfo"
+                           keywords="JittedMethodRichDebugInfoKeyword"
+                           task="CLRMethodPrivate" opcode="JittedMethodRichDebugInfo"
+                           symbol="JittedMethodRichDebugInfo" message="$(string.PrivatePublisher.JittedMethodRichDebugInfoEventMessage)"/>
 
                     <!-- CLR FailFast events -->
                     <event value="191" version="0" level="win:Critical"  template="FailFast"
@@ -8271,6 +8403,7 @@
                 <string id="RuntimePublisher.WorkerThreadRetirementRetireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementUnretireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreadCount=%2;%nClrInstanceID=%3" />
+                <string id="RuntimePublisher.ThreadPoolMinMaxThreads" value="MinWorkerThreads=%1;%nMaxWorkerThreads=%2;%nMinIOCompletionThreads=%3;%nMaxIOCompletionThreads=%4;%nClrInstanceID=%5" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementEventMessage" value="ClrInstanceID=%1;%nNsPerYield=%2;%nEstablishedNsPerYield=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentSampleEventMessage" value="Throughput=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentAdjustmentEventMessage" value="AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3;%nClrInstanceID=%4" />
@@ -8328,6 +8461,7 @@
                 <string id="RuntimePublisher.MethodJittingStartedEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodToken=%3;%nMethodILSize=%4;%nMethodNamespace=%5;%nMethodName=%6;%nMethodSignature=%7" />
                 <string id="RuntimePublisher.MethodJittingStarted_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodToken=%3;%nMethodILSize=%4;%nMethodNamespace=%5;%nMethodName=%6;%nMethodSignature=%7;%nClrInstanceID=%8" />
                 <string id="RuntimePublisher.MethodILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RuntimePublisher.MethodILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RuntimePublisher.DomainModuleLoadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6" />
                 <string id="RuntimePublisher.DomainModuleLoad_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.DomainModuleUnloadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6" />
@@ -8404,7 +8538,9 @@
                 <string id="RundownPublisher.MethodDCEndVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RundownPublisher.MethodDCEndVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />
                 <string id="RundownPublisher.MethodDCStartILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RundownPublisher.MethodDCStartILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RundownPublisher.MethodDCEndILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RundownPublisher.MethodDCEndILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RundownPublisher.DomainModuleDCStartEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6" />
                 <string id="RundownPublisher.DomainModuleDCStart_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.DomainModuleDCEndEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6" />
@@ -8501,6 +8637,7 @@
                 <string id="PrivatePublisher.FieldTransparencyComputationEndEventMessage" value="Field=%1;%nModule=%2;%nAppDomainID=%3;%nIsCritical=%4;%nIsTreatAsSafe=%5;%nClrInstanceID=%6" />
                 <string id="PrivatePublisher.TokenTransparencyComputationStartEventMessage" value="Token=%1;%nModule=%2;%nAppDomainID=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.TokenTransparencyComputationEndEventMessage" value="Token=%1;%nModule=%2;%nAppDomainID=%3;%nIsCritical=%4;%nIsTreatAsSafe=%5;%nClrInstanceID=%6" />
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoEventMessage" value="ClrInstanceID=%1;%nMethodID=%2;%nReJITID=%3;%nILVersionID=%4;%nChunkIndex=%5;%nDataSize=%6" />
 
                 <string id="PrivatePublisher.AllocRequestEventMessage" value="LoaderHeapPtr=%1;%nMemoryAddress=%2;%nRequestSize=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.ModuleRangeLoadEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5;%nIBCType=%6;%nSectionType=%7" />
@@ -8529,6 +8666,7 @@
                 <string id="RuntimePublisher.IOThreadRetirementTaskMessage" value="IOThreadRetirement" />
                 <string id="RuntimePublisher.ThreadpoolSuspensionTaskMessage" value="ThreadpoolSuspensionV2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadTaskMessage" value="ThreadPoolWorkerThread" />
+                <string id="RuntimePublisher.ThreadPoolMinMaxThreadsTaskMessage" value="ThreadPoolMinMaxThreads" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadRetirementTaskMessage" value="ThreadPoolWorkerThreadRetirement" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentTaskMessage" value="ThreadPoolWorkerThreadAdjustment" />
                 <string id="RuntimePublisher.ExceptionTaskMessage" value="Exception" />
@@ -8580,6 +8718,7 @@
 
                 <string id="PrivatePublisher.LoaderHeapAllocationPrivateTaskMessage" value="LoaderHeap" />
                 <string id="PrivatePublisher.PerfTrackTaskMessage" value="ClrPerfTrack" />
+                <string id="PrivatePublisher.CLRMethodPrivateTaskMessage" value="CLRMethodPrivate" />
                 <string id="PrivatePublisher.MulticoreJitTaskMessage" value="ClrMulticoreJit" />
                 <string id="PrivatePublisher.DynamicTypeUsageTaskMessage" value="ClrDynamicTypeUsage" />
 
@@ -8645,6 +8784,7 @@
                 <string id="RuntimePublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RuntimePublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RuntimePublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RuntimePublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage" value="HasInnerException" />
                 <string id="RuntimePublisher.ExceptionThrown.NestedMapMessage" value="Nested" />
                 <string id="RuntimePublisher.ExceptionThrown.ReThrownMapMessage" value="ReThrown" />
@@ -8729,6 +8869,8 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
+                <string id="RuntimePublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage" value="TieredPGO" />
+                <string id="RuntimePublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage" value="ReadyToRun" />
                 <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
                 <string id="RuntimePublisher.KnownPathSource.UnusedMessage" value="Unused" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
@@ -8775,6 +8917,7 @@
                 <string id="RundownPublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RundownPublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RundownPublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RundownPublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RundownPublisher.Startup.CONCURRENT_GCMapMessage" value="CONCURRENT_GC" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_SINGLE_DOMAINMapMessage" value="LOADER_OPTIMIZATION_SINGLE_DOMAIN" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_MULTI_DOMAINMapMessage" value="LOADER_OPTIMIZATION_MULTI_DOMAIN" />
@@ -8797,6 +8940,8 @@
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
+                <string id="RundownPublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage" value="TieredPGO" />
+                <string id="RundownPublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage" value="ReadyToRun" />
 
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.ModuleSection" value="ModuleSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.EETableSection" value="EETableSection"/>
@@ -8923,6 +9068,7 @@
                 <string id="PrivatePublisher.PrivateFusionKeywordMessage" value="Fusion" />
                 <string id="PrivatePublisher.LoaderHeapPrivateKeywordMessage" value="LoaderHeap" />
                 <string id="PrivatePublisher.PerfTrackKeywordMessage" value="PerfTrack" />
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoKeyword" value="JittedMethodRichDebugInfo" />
                 <string id="PrivatePublisher.DynamicTypeUsageMessage" value="DynamicTypeUsage" />
                 <string id="PrivatePublisher.MulticoreJitPrivateKeywordMessage" value="MulticoreJit" />
                 <string id="PrivatePublisher.InteropPrivateKeywordMessage" value="Interop" />
@@ -9043,7 +9189,7 @@
                 <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
-
+                
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
 
                 <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
@@ -9207,6 +9353,8 @@
 
                 <string id="PrivatePublisher.LoaderHeapPrivateAllocRequestMessage" value="LoaderHeapAllocRequest" />
                 <string id="PrivatePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
+
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoOpcodeMessage" value="JittedMethodRichDebugInfo" />
 
                 <string id="MonoProfilerPublisher.MonoProfilerTaskMessage" value="MonoProfiler" />
 

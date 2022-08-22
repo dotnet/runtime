@@ -108,7 +108,7 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons
+                // Don't validate generic definitions
                 if (type.IsGenericDefinition)
                 {
                     return type;

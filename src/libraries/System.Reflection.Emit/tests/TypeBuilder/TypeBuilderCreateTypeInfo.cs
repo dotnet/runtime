@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         public void CreateType(TypeAttributes attributes)
         {
             TypeBuilder type = Helpers.DynamicType(attributes);
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.Name, createdType.Name);
 
             Assert.Equal(type.CreateTypeInfo(), createdType.GetTypeInfo());
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             type.DefineNestedType("NestedType");
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.Name, createdType.Name);
         }
 
@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             type.DefineGenericParameters("T");
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.Name, createdType.Name);
         }
 

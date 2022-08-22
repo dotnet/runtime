@@ -533,9 +533,9 @@ namespace SerializationTestTypes
             return Globals.DefaultNamespace + clrNs.Replace('.', '/');
         }
 
-        static string GetGlobalContractNamespace(string clrNs, ICustomAttributeProvider customAttribuetProvider)
+        static string GetGlobalContractNamespace(string clrNs, ICustomAttributeProvider customAttributeProvider)
         {
-            object[] nsAttributes = customAttribuetProvider.GetCustomAttributes(typeof(ContractNamespaceAttribute), false);
+            object[] nsAttributes = customAttributeProvider.GetCustomAttributes(typeof(ContractNamespaceAttribute), false);
             string dataContractNs = null;
             for (int i = 0; i < nsAttributes.Length; i++)
             {

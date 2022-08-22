@@ -40,6 +40,8 @@ namespace System.IO.Hashing.Tests
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
         private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
         private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
+        private const string SixteenBytes = "0123456789ABCDEF";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -47,19 +49,19 @@ namespace System.IO.Hashing.Tests
                 // Same inputs as the main XxHash64 tests, but with the seed applied.
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "76E6275980CF4E30"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "5CC25b2B8248DF76"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "10E8D9E4DA841407"),
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "AE9DA0E407940A85"),
                 new TestCase(
                     "123456",
@@ -93,7 +95,36 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{ThirtyTwoBytes} (x3)",
                     Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
-                    "B358EB96B8E3E7AD")
+                    "B358EB96B8E3E7AD"),
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "C9B96062B49FEC42"),
+            };
+
+        public static IEnumerable<object[]> LargeTestCases
+        {
+            get
+            {
+                object[] arr = new object[1];
+
+                foreach (LargeTestCase testCase in LargeTestCaseDefinitions)
+                {
+                    arr[0] = testCase;
+                    yield return arr;
+                }
+            }
+        }
+
+        protected static IEnumerable<LargeTestCase> LargeTestCaseDefinitions { get; } =
+            new[]
+            {
+                // Manually run against the xxHash64 reference implementation.
+                new LargeTestCase(
+                    "EEEEE... (10GB)",
+                    (byte)'E',
+                    10L * 1024 * 1024 * 1024, // 10 GB
+                    "CD7B3A954E199AE8"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64(Seed);
@@ -127,6 +158,14 @@ namespace System.IO.Hashing.Tests
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)
         {
             InstanceMultiAppendGetCurrentHashDriver(testCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeTestCases))]
+        [OuterLoop]
+        public void InstanceMultiAppendLargeInput(LargeTestCase testCase)
+        {
+            InstanceMultiAppendLargeInputDriver(testCase);
         }
 
         [Theory]

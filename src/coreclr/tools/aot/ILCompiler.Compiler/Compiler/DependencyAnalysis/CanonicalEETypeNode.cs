@@ -61,8 +61,10 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Keep track of the default constructor map dependency for this type if it has a default constructor
+            // We only do this for reflection blocked types because dataflow analysis is responsible for
+            // generating default constructors for Activator.CreateInstance in other cases.
             MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null)
+            if (defaultCtor != null && factory.MetadataManager.IsReflectionBlocked(defaultCtor))
             {
                 dependencyList.Add(new DependencyListEntry(
                     factory.CanonicalEntrypoint(defaultCtor),
@@ -75,6 +77,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
+        }
+
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
         }
 
         protected override int GCDescSize

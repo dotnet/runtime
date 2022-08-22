@@ -85,9 +85,6 @@ set(utils_common_sources
     mono-property-hash.c
     mono-value-hash.h
     mono-value-hash.c
-    freebsd-elf_common.h
-    freebsd-elf32.h
-    freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
@@ -209,23 +206,31 @@ endif()
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
-elseif(TARGET_AMD64)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
-elseif(TARGET_X86)
+elseif(TARGET_AMD64 OR TARGET_X86)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
 elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_RISCV64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_POWERPC OR TARGET_POWERPC64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()
   message(FATAL_ERROR "")
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+
+set(utils_sources
+    ${utils_sources}
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

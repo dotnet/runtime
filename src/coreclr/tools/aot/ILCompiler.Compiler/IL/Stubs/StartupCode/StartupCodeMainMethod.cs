@@ -77,7 +77,7 @@ namespace Internal.IL.Stubs.StartupCode
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(method));
                 }
             }
-            
+
             MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
 
             // Initialize command line args if the class library supports this
@@ -105,13 +105,14 @@ namespace Internal.IL.Stubs.StartupCode
             MethodDesc initApartmentState = startup?.GetMethod("InitializeApartmentState", null);
             if (initApartmentState != null)
             {
-                if (_mainMethod.HasCustomAttribute("System", "STAThreadAttribute"))
+                if (_mainMethod.WrappedMethod.HasCustomAttribute("System", "STAThreadAttribute"))
                 {
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.STA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }
-                if (_mainMethod.HasCustomAttribute("System", "MTAThreadAttribute"))
+                else
                 {
+                    // Initialize to MTA by default
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.MTA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }

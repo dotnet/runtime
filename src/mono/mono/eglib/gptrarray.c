@@ -226,7 +226,7 @@ gboolean
 g_ptr_array_find (GPtrArray *array, gconstpointer needle, guint *index)
 {
 	g_assert (array);
-	for (int i = 0; i < array->len; i++) {
+	for (guint i = 0; i < array->len; i++) {
 		if (array->pdata [i] == needle) {
 			if (index)
 				*index = i;

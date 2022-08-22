@@ -55,7 +55,7 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             Debug.Assert(_policy.GeneratesMetadata(method));
-            return (Method)_methods.GetOrCreate(method, _initMethodDef ?? (_initMethodDef = InitializeMethodDefinition));
+            return (Method)_methods.GetOrCreate(method, _initMethodDef ??= InitializeMethodDefinition);
         }
 
         private void InitializeMethodDefinition(Cts.MethodDesc entity, Method record)
@@ -123,7 +123,7 @@ namespace ILCompiler.Metadata
         private MemberReference HandleMethodReference(Cts.MethodDesc method)
         {
             Debug.Assert(method.IsMethodDefinition);
-            return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ?? (_initMethodRef = InitializeMethodReference));
+            return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ??= InitializeMethodReference);
         }
 
         private void InitializeMethodReference(Cts.MethodDesc entity, MemberReference record)
@@ -135,7 +135,7 @@ namespace ILCompiler.Metadata
 
         private MethodInstantiation HandleMethodInstantiation(Cts.MethodDesc method)
         {
-            return (MethodInstantiation)_methods.GetOrCreate(method, _initMethodInst ?? (_initMethodInst = InitializeMethodInstantiation));
+            return (MethodInstantiation)_methods.GetOrCreate(method, _initMethodInst ??= InitializeMethodInstantiation);
         }
 
         private void InitializeMethodInstantiation(Cts.MethodDesc entity, MethodInstantiation record)

@@ -225,7 +225,7 @@ namespace System.Net.Http.Headers
             }
 
             int current = startIndex + dispositionTypeLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             ContentDispositionHeaderValue contentDispositionHeader = new ContentDispositionHeaderValue();
             contentDispositionHeader._dispositionType = dispositionType!;
 
@@ -327,7 +327,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // Must always be quoted.
-                string dateString = "\"" + HttpDateParser.DateToString(date.Value) + "\"";
+                string dateString = $"\"{date.GetValueOrDefault():r}\"";
                 if (dateParameter != null)
                 {
                     dateParameter.Value = dateString;

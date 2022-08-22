@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text.RegularExpressions;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Text.RegularExpressions;
-
     internal class XmlSerializationILGen
     {
         private int _nextMethodNumber;
@@ -128,7 +128,7 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetCSharpString(string? value)
         {
             return ReflectionAwareILGen.GetCSharpString(value);
@@ -299,7 +299,7 @@ namespace System.Xml.Serialization
 
             baseSerializerTypeBuilder.DefineDefaultConstructor(
                 MethodAttributes.Family | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
-            Type baseSerializerType = baseSerializerTypeBuilder.CreateTypeInfo()!.AsType();
+            Type baseSerializerType = baseSerializerTypeBuilder.CreateType();
             CreatedTypes.Add(baseSerializerType.Name, baseSerializerType);
 
             return baseSerializer;
@@ -396,7 +396,7 @@ namespace System.Xml.Serialization
                 ilg.EndMethod();
             }
             typedSerializerTypeBuilder.DefineDefaultConstructor(CodeGenerator.PublicMethodAttributes);
-            Type typedSerializerType = typedSerializerTypeBuilder.CreateTypeInfo()!.AsType();
+            Type typedSerializerType = typedSerializerTypeBuilder.CreateType();
             CreatedTypes.Add(typedSerializerType.Name, typedSerializerType);
 
             return typedSerializerType.Name;
@@ -558,7 +558,7 @@ namespace System.Xml.Serialization
             ilg.Call(baseCtor);
             ilg.EndMethod();
             // Instantiate type
-            Type serializerContractType = serializerContractTypeBuilder.CreateTypeInfo()!.AsType();
+            Type serializerContractType = serializerContractTypeBuilder.CreateType();
             CreatedTypes.Add(serializerContractType.Name, serializerContractType);
         }
 

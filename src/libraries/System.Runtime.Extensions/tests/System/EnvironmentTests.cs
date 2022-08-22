@@ -44,13 +44,11 @@ namespace System.Tests
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
 
-                if (!OperatingSystem.IsMacOS())
-                {
-                    // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-                    // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-                    // path that followed the symlink.
-                    Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
-                }
+                // If the temp directory is symlink, setting the current directory to a symlinked path will result
+                // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+                // the test directory name in that case.
+                Assert.Equal(Path.GetFileName(TestDirectory), Path.GetFileName(Environment.CurrentDirectory));
+
             }).Dispose();
         }
 
@@ -184,7 +182,6 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49106", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void OSVersion_ValidVersion_OSX()
         {
             Version version = Environment.OSVersion.Version;
@@ -193,6 +190,7 @@ namespace System.Tests
             // As of 12.0, only major version numbers are included in the RID
             Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
 
+            Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
@@ -558,6 +556,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
         {

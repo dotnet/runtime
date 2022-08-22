@@ -23,6 +23,7 @@
 #include <shash.h>
 #include <daccess.h>
 #include <clrtypes.h>
+#include <readytorun.h>
 
 typedef DPTR(struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE)
     PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE;
@@ -32,8 +33,28 @@ typedef DPTR(struct CORCOMPILE_EXCEPTION_CLAUSE)
    PTR_CORCOMPILE_EXCEPTION_CLAUSE;
 typedef DPTR(struct CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY)
     PTR_CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY;
-typedef DPTR(struct CORCOMPILE_IMPORT_SECTION)
-    PTR_CORCOMPILE_IMPORT_SECTION;
+typedef DPTR(struct READYTORUN_IMPORT_SECTION)
+    PTR_READYTORUN_IMPORT_SECTION;
+
+inline ReadyToRunImportSectionFlags operator |( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+{
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) | static_cast<uint16_t>(right));
+}
+
+inline ReadyToRunImportSectionFlags operator &( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+{
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) & static_cast<uint16_t>(right));
+}
+
+inline ReadyToRunCrossModuleInlineFlags operator |( const ReadyToRunCrossModuleInlineFlags left, const ReadyToRunCrossModuleInlineFlags right)
+{
+    return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) | static_cast<uint32_t>(right));
+}
+
+inline ReadyToRunCrossModuleInlineFlags operator &( const ReadyToRunCrossModuleInlineFlags left, const ReadyToRunCrossModuleInlineFlags right)
+{
+    return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) & static_cast<uint32_t>(right));
+}
 
 #ifdef TARGET_X86
 
@@ -55,81 +76,6 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 typedef DPTR(struct CORCOMPILE_RUNTIME_DLL_INFO)
     PTR_CORCOMPILE_RUNTIME_DLL_INFO;
 typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
-
-//
-// CORCOMPILE_IMPORT_SECTION describes image range with references to other assemblies or runtime data structures
-//
-// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry
-// vs. lazily initialized on first use; hot vs. cold, handles vs. code pointers, etc.
-//
-struct CORCOMPILE_IMPORT_SECTION
-{
-    IMAGE_DATA_DIRECTORY    Section;            // Section containing values to be fixed up
-    USHORT                  Flags;              // One or more of CorCompileImportFlags
-    BYTE                    Type;               // One of CorCompileImportType
-    BYTE                    EntrySize;
-    DWORD                   Signatures;         // RVA of optional signature descriptors
-    DWORD                   AuxiliaryData;      // RVA of optional auxiliary data (typically GC info)
-};
-
-enum CorCompileImportType
-{
-    CORCOMPILE_IMPORT_TYPE_UNKNOWN          = 0,
-    CORCOMPILE_IMPORT_TYPE_EXTERNAL_METHOD  = 1,
-    CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH    = 2,
-    CORCOMPILE_IMPORT_TYPE_STRING_HANDLE    = 3,
-    CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE      = 4,
-    CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE    = 5,
-    CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD   = 6,
-};
-
-enum CorCompileImportFlags
-{
-    CORCOMPILE_IMPORT_FLAGS_EAGER           = 0x0001,   // Section at module load time.
-    CORCOMPILE_IMPORT_FLAGS_CODE            = 0x0002,   // Section contains code.
-    CORCOMPILE_IMPORT_FLAGS_PCODE           = 0x0004,   // Section contains pointers to code.
-};
-
-// ================================================================================
-// Portable tagged union of a pointer field with a 30 bit scalar value
-// ================================================================================
-
-// The lowest bit of the tag will be set for tagged pointers. We also set the highest bit for convenience.
-// It makes dereferences of tagged pointers to crash under normal circumstances.
-// The highest bit of the tag will be set for tagged indexes (e.g. classid).
-
-#define CORCOMPILE_TOKEN_TAG 0x80000001
-
-// These two macros are mostly used just for debug-only checks to ensure that we have either tagged pointer (lowest bit is set)
-// or tagged index (highest bit is set).
-#define CORCOMPILE_IS_POINTER_TAGGED(token)     ((((SIZE_T)(token)) & 0x00000001) != 0)
-#define CORCOMPILE_IS_INDEX_TAGGED(token)       ((((SIZE_T)(token)) & 0x80000000) != 0)
-
-// The token (RVA of the fixup in most cases) is stored in the mid 30 bits of DWORD
-#define CORCOMPILE_TAG_TOKEN(token)             ((SIZE_T)(((token)<<1)|CORCOMPILE_TOKEN_TAG))
-#define CORCOMPILE_UNTAG_TOKEN(token)           ((((SIZE_T)(token))&~CORCOMPILE_TOKEN_TAG)>>1)
-
-#ifdef TARGET_ARM
-// Tagging of code pointers on ARM uses inverse logic because of the thumb bit.
-#define CORCOMPILE_IS_PCODE_TAGGED(token)       ((((SIZE_T)(token)) & 0x00000001) == 0x00000000)
-#define CORCOMPILE_TAG_PCODE(token)             ((SIZE_T)(((token)<<1)|0x80000000))
-#else
-#define CORCOMPILE_IS_PCODE_TAGGED(token)       CORCOMPILE_IS_POINTER_TAGGED(token)
-#define CORCOMPILE_TAG_PCODE(token)             CORCOMPILE_TAG_TOKEN(token)
-#endif
-
-inline BOOL CORCOMPILE_IS_FIXUP_TAGGED(SIZE_T fixup, PTR_CORCOMPILE_IMPORT_SECTION pSection)
-{
-#ifdef TARGET_ARM
-    // Tagging of code pointers on ARM has to use inverse logic because of the thumb bit
-    if (pSection->Flags & CORCOMPILE_IMPORT_FLAGS_PCODE)
-    {
-        return CORCOMPILE_IS_PCODE_TAGGED(fixup);
-    }
-#endif
-
-    return ((((SIZE_T)(fixup)) & CORCOMPILE_TOKEN_TAG) == CORCOMPILE_TOKEN_TAG);
-}
 
 //
 // GCRefMap blob starts with DWORDs lookup index of relative offsets into the blob. This lookup index is used to limit amount
@@ -213,9 +159,11 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE,         /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used */
     ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE,        /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. */
 
+    ENCODE_CHECK_IL_BODY,                           /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
+    ENCODE_VERIFY_IL_BODY,                          /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
-    ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */
     ENCODE_MODULE_ID_FOR_GENERIC_STATICS,           /* For accessing static fields */
     ENCODE_CLASS_ID_FOR_STATICS,                    /* For accessing static fields */
     ENCODE_SYNC_LOCK,                               /* For synchronizing access to a type */
@@ -223,7 +171,6 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VARARGS_METHODDEF,                       /* For calling a varargs method */
     ENCODE_VARARGS_METHODREF,
     ENCODE_VARARGS_SIG,
-    ENCODE_ACTIVE_DEPENDENCY,                       /* Conditional active dependency */
 };
 
 enum EncodeMethodSigFlags

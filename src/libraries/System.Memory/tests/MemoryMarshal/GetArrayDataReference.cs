@@ -17,7 +17,7 @@ namespace System.SpanTests
             Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference((Array)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public static void GetArrayDataReference_NonEmptyInput_ReturnsRefToFirstElement()
         {
             // szarray
@@ -50,7 +50,7 @@ namespace System.SpanTests
             Assert.True(Unsafe.AreSame(ref theRef, ref theMdArrayRef));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]

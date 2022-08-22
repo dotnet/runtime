@@ -35,6 +35,9 @@ internal class Program
         int EventSourceTest_Method_7() => 5; 
     }
 
+    [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+        Justification = "DAM on EventSource.GenerateManifest references compiler-generated local function GetTrimSafeTraceLoggingEventTypes " +
+                        "which calls a constructor that requires unreferenced code. EventSource will not access this local function.")]
     public static int Main()
     {
         string manifest = EventSource.GenerateManifest(typeof(EventSourceTest), null);

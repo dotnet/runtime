@@ -34,9 +34,6 @@ public:
 
     static FCDECL4(Object*, CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pBounds);
 
-    // This method will return a TypedReference to the array element
-    static FCDECL2(Object*, GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex);
-
     // This set of methods will set a value in an array
     static FCDECL3(void, SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex);
 

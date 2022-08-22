@@ -429,10 +429,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
-                {
-                    roleObjectEntry.Dispose();
-                }
+                roleObjectEntry?.Dispose();
             }
 
             // invalidate the role collection so that it gets loaded again next time
@@ -712,11 +709,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRoles == null)
-                {
-                    _cachedRoles = new ActiveDirectoryRoleCollection(GetRoles());
-                }
-                return _cachedRoles;
+                return _cachedRoles ??= new ActiveDirectoryRoleCollection(GetRoles());
             }
         }
 
@@ -1005,10 +998,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
 
-            if (domainName == null)
-            {
-                domainName = DirectoryContext.GetLoggedOnDomain();
-            }
+            domainName ??= DirectoryContext.GetLoggedOnDomain();
 
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, siteName, (long)flag | (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
@@ -1050,7 +1040,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // get the dns name of the domain
                 DomainControllerInfo domainControllerInfo;
-                int errorCode = Locator.DsGetDcNameWrapper(null, (domainName != null) ? domainName : DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
+                int errorCode = Locator.DsGetDcNameWrapper(null, domainName ?? DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
                 if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                 {
@@ -1097,7 +1087,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsGetDomainControllerInfo = (delegate* unmanaged<IntPtr, char*, int, int*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsGetDomainControllerInfoW");
             if (dsGetDomainControllerInfo == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             fixed (char* domainName = Domain.Name)
@@ -1181,7 +1171,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeDomainControllerInfo = (delegate* unmanaged<int, int, IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeDomainControllerInfoW");
                         if (dsFreeDomainControllerInfo == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeDomainControllerInfo(dcInfoLevel, dcCount, dcInfoPtr);
                     }
@@ -1269,7 +1259,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsListRoles = (delegate* unmanaged<IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListRolesW");
             if (dsListRoles == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             result = dsListRoles(_dsHandle, &rolesPtr);
@@ -1308,7 +1298,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeNameResult = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (dsFreeNameResult == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeNameResult(rolesPtr);
                     }

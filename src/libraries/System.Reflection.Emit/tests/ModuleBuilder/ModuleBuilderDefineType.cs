@@ -3,14 +3,16 @@
 
 using System.Collections.Generic;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit.Tests
 {
+    [RequiresUnreferencedCode("Uses reflection to construct test cases")]
     public class ModuleBuilderDefineType
     {
         public static IEnumerable<object[]> TestData()
         {
-            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00", "a\0b\0c" })
+            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00" })
             {
                 foreach (TypeAttributes attributes in new TypeAttributes[] { TypeAttributes.NotPublic, TypeAttributes.Interface | TypeAttributes.Abstract, TypeAttributes.Class })
                 {
@@ -97,10 +99,10 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
             TypeBuilder type1 = module.DefineType("TestType1");
-            Type parent = type1.CreateTypeInfo().AsType();
+            Type parent = type1.CreateType();
 
             TypeBuilder type2 = module.DefineType("TestType2", TypeAttributes.NotPublic, parent);
-            Type createdType = type2.CreateTypeInfo().AsType();
+            Type createdType = type2.CreateType();
             Assert.Equal("TestType2", createdType.Name);
             Assert.Equal(TypeAttributes.NotPublic, createdType.GetTypeInfo().Attributes);
             Assert.Equal(parent, createdType.GetTypeInfo().BaseType);

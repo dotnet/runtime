@@ -248,13 +248,10 @@ namespace System.Text.Json
 
         public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {
-            int backslash = source.IndexOf(JsonConstants.BackSlash);
-            Debug.Assert(backslash != -1);
-
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
             Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
 
-            Unescape(source, sourceUnescaped, backslash, out int written);
+            Unescape(source, sourceUnescaped, out int written);
             Debug.Assert(written > 0);
 
             sourceUnescaped = sourceUnescaped.Slice(0, written);
@@ -273,13 +270,10 @@ namespace System.Text.Json
 
         public static bool TryGetEscapedDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeOffset value)
         {
-            int backslash = source.IndexOf(JsonConstants.BackSlash);
-            Debug.Assert(backslash != -1);
-
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
             Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
 
-            Unescape(source, sourceUnescaped, backslash, out int written);
+            Unescape(source, sourceUnescaped, out int written);
             Debug.Assert(written > 0);
 
             sourceUnescaped = sourceUnescaped.Slice(0, written);
@@ -300,12 +294,8 @@ namespace System.Text.Json
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedGuidLength);
 
-            int idx = source.IndexOf(JsonConstants.BackSlash);
-            Debug.Assert(idx != -1);
-
             Span<byte> utf8Unescaped = stackalloc byte[JsonConstants.MaximumEscapedGuidLength];
-
-            Unescape(source, utf8Unescaped, idx, out int written);
+            Unescape(source, utf8Unescaped, out int written);
             Debug.Assert(written > 0);
 
             utf8Unescaped = utf8Unescaped.Slice(0, written);

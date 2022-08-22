@@ -9,8 +9,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
@@ -27,16 +25,14 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-            : base(credential)
+        public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+            : base(IntPtr.Zero)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
             try
             {
                 int osStatus;
 
-                _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
+                _sslContext = CreateSslContext(sslAuthenticationOptions);
 
                 // Make sure the class instance is associated to the session and is provided
                 // in the Read/Write callback connection parameter
@@ -131,9 +127,9 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            switch (credential.Policy)
+            switch (sslAuthenticationOptions.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -144,10 +140,10 @@ namespace System.Net
                     break;
 #pragma warning restore SYSLIB0040
                 default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
             }
 
-            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(isServer ? 1 : 0);
+            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(sslAuthenticationOptions.IsServer ? 1 : 0);
 
             try
             {
@@ -159,14 +155,14 @@ namespace System.Net
                 }
 
                 // Let None mean "system default"
-                if (credential.Protocols != SslProtocols.None)
+                if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None)
                 {
-                    SetProtocols(sslContext, credential.Protocols);
+                    SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (credential.CertificateContext != null)
+                if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    SetCertificate(sslContext, credential.CertificateContext);
+                    SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
 
                 Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
@@ -361,7 +357,6 @@ namespace System.Net
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
-
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
 

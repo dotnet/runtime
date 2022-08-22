@@ -391,8 +391,7 @@ namespace System.Reflection.Emit
             if (mod != null && !(mod is ModuleBuilder))
                 throw new ArgumentException("ModuleBuilder is expected");
 
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
 
             if (returnType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");

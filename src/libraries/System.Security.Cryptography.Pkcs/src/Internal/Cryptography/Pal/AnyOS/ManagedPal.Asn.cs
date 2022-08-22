@@ -11,7 +11,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
-        public unsafe override Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage)
+        public override unsafe Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage)
         {
             fixed (byte* pin = encodedMessage)
             {

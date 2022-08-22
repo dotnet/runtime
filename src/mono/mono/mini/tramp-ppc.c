@@ -53,7 +53,7 @@ mono_ppc_create_ftnptr (guint8 *code)
 static guint32
 branch_for_target_reachable (guint8 *branch, guint8 *target)
 {
-	gint diff = target - branch;
+	gint64 diff = target - branch;
 	g_assert ((diff & 3) == 0);
 	if (diff >= 0) {
 		if (diff <= 33554431)
@@ -496,7 +496,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	code = buf = (guint8 *)mono_mem_manager_code_reserve_align (mem_manager, TRAMPOLINE_SIZE, 4);
 	short_branch = branch_for_target_reachable (code + MONO_PPC_32_64_CASE (8, 5*4), tramp);
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 	/* FIXME: make shorter if possible */
 #else
 	if (short_branch)
@@ -669,7 +669,17 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
-	} else {
+	}
+#if defined(TARGET_POWERPC64) && !defined(PPC_USES_FUNCTION_DESCRIPTOR)
+	else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 32));
+		return thunk;
+	} else if (((guint32*)(code - 4)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 4));
+		return thunk;
+	}
+#endif
+	else {
 		return NULL;
 	}
 }

@@ -2,6 +2,8 @@ project(libunwind)
 
 cmake_minimum_required(VERSION 3.16.1)
 
+set(CMAKE_C_STANDARD 11)
+
 set(PKG_MAJOR "1")
 set(PKG_MINOR "6")
 set(PKG_EXTRA "-rc1")
@@ -50,7 +52,8 @@ if ("${CMAKE_GENERATOR}" MATCHES "^Visual Studio.*$")
   add_compile_options(/permissive-)
 
   # files for cross os compilation
-  include_directories(include/win)
+  include_directories(include/remote)
+  include_directories(include/remote/win)
 
   # Warnings in release builds
   add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
@@ -75,14 +78,14 @@ if ("${CMAKE_GENERATOR}" MATCHES "^Visual Studio.*$")
   # Fake it until support is added
   check_include_files(stdalign.h HAVE_STDALIGN_H)
   if (NOT HAVE_STDALIGN_H)
-    configure_file(include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h)
+    configure_file(include/remote/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h)
   endif (NOT HAVE_STDALIGN_H)
 
   # MSVC compiler is currently missing C11 stdatomic.h header
   # Fake it until support is added
   check_include_files(stdatomic.h HAVE_STDATOMIC_H)
   if (NOT HAVE_STDATOMIC_H)
-    configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h)
+    configure_file(include/remote/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h)
   endif (NOT HAVE_STDATOMIC_H)
 
   # MSVC compiler is currently missing C11 _Thread_local

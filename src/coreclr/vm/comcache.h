@@ -14,8 +14,10 @@
 #error FEATURE_COMINTEROP is required for this file
 #endif // FEATURE_COMINTEROP
 
-#include "contxt.h"
-#include "ctxtcall.h"
+// COM context callback
+typedef HRESULT ( __stdcall __RPC_FAR *PFNCTXCALLBACK)(void __RPC_FAR *pParam);
+
+#include <ctxtcall.h>
 
 //================================================================
 // Forward declarations.

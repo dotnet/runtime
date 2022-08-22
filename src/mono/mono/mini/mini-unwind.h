@@ -98,13 +98,13 @@ typedef struct {
 /* Set cfa to reg+offset */
 #define mono_emit_unwind_op_def_cfa(cfg,ip,reg,offset) do { mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_def_cfa, (reg), (offset)); (cfg)->cur_cfa_reg = (reg); (cfg)->cur_cfa_offset = (offset); } while (0)
 /* Set cfa to reg+existing offset */
-#define mono_emit_unwind_op_def_cfa_reg(cfg,ip,reg) do { mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_def_cfa_register, (reg), (0)); (cfg)->cur_cfa_reg = (reg); } while (0)
+#define mono_emit_unwind_op_def_cfa_reg(cfg,ip,reg) do { mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_def_cfa_register, (uint16_t)(reg), (0)); (cfg)->cur_cfa_reg = (reg); } while (0)
 /* Set cfa to existing reg+offset */
 #define mono_emit_unwind_op_def_cfa_offset(cfg,ip,offset) do { mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_def_cfa_offset, (0), (offset)); (cfg)->cur_cfa_offset = (offset); } while (0)
 /* Reg is the same as it was on enter to the function */
-#define mono_emit_unwind_op_same_value(cfg,ip,reg) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_same_value, (reg), 0)
+#define mono_emit_unwind_op_same_value(cfg,ip,reg) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_same_value, (uint16_t)(reg), 0)
 /* Reg is saved at cfa+offset */
-#define mono_emit_unwind_op_offset(cfg,ip,reg,offset) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_offset, (reg), (offset))
+#define mono_emit_unwind_op_offset(cfg,ip,reg,offset) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_offset, (uint16_t)(reg), (offset))
 /* Save the unwind state into an implicit stack */
 #define mono_emit_unwind_op_remember_state(cfg,ip) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_remember_state, 0, 0)
 /* Restore the unwind state from the state stack */
@@ -125,15 +125,15 @@ typedef struct {
 #endif
 
 /* Similar macros usable when a cfg is not available, like for trampolines */
-#define mono_add_unwind_op_def_cfa(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa, (reg), (offset))); } while (0)
-#define mono_add_unwind_op_def_cfa_reg(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa_register, (reg), (0))); } while (0)
+#define mono_add_unwind_op_def_cfa(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa, (uint16_t)(reg), (offset))); } while (0)
+#define mono_add_unwind_op_def_cfa_reg(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa_register, (uint16_t)(reg), (0))); } while (0)
 #define mono_add_unwind_op_def_cfa_offset(op_list,code,buf,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa_offset, 0, (offset))); } while (0)
-#define mono_add_unwind_op_same_value(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_same_value, (reg), 0)); } while (0)
-#define mono_add_unwind_op_offset(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_offset, (reg), (offset))); } while (0)
+#define mono_add_unwind_op_same_value(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_same_value, (uint16_t)(reg), 0)); } while (0)
+#define mono_add_unwind_op_offset(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_offset, (uint16_t)(reg), (offset))); } while (0)
 
 #if defined(TARGET_WIN32) && defined(TARGET_AMD64)
 #define mono_add_unwind_op_sp_alloc(op_list,code,buf,size) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_mono_sp_alloc_info_win64, 0, (size))); } while (0)
-#define mono_add_unwind_op_fp_alloc(op_list,code,buf,reg,size) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_mono_fp_alloc_info_win64, (reg), (size))); } while (0)
+#define mono_add_unwind_op_fp_alloc(op_list,code,buf,reg,size) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_mono_fp_alloc_info_win64, (uint16_t)(reg), (size))); } while (0)
 #else
 #define mono_add_unwind_op_sp_alloc(op_list,code,buf,size)
 #define mono_add_unwind_op_fp_alloc(op_list,code,buf,reg,size)

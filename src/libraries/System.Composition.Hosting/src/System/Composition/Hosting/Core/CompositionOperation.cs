@@ -59,8 +59,7 @@ namespace System.Composition.Hosting.Core
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (_nonPrerequisiteActions == null)
-                _nonPrerequisiteActions = new List<Action>();
+            _nonPrerequisiteActions ??= new List<Action>();
 
             _nonPrerequisiteActions.Add(action);
         }
@@ -77,8 +76,7 @@ namespace System.Composition.Hosting.Core
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (_postCompositionActions == null)
-                _postCompositionActions = new List<Action>();
+            _postCompositionActions ??= new List<Action>();
 
             _postCompositionActions.Add(action);
         }

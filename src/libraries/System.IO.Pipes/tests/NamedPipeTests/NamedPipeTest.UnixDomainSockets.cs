@@ -11,10 +11,10 @@ namespace System.IO.Pipes.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49873", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void NamedPipeServer_Connects_With_UnixDomainSocketEndPointClient()
         {
-            string pipeName = Path.Combine("/tmp", "pipe-tests-corefx-" + Path.GetRandomFileName());
+            string pipeName = Path.Combine(Path.GetTempPath(), "pipe-tests-corefx-" + Path.GetRandomFileName());
             var endPoint = new UnixDomainSocketEndPoint(pipeName);
 
             using (var pipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
@@ -29,10 +29,10 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49873", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task NamedPipeClient_Connects_With_UnixDomainSocketEndPointServer()
         {
-            string pipeName = Path.Combine("/tmp", "pipe-tests-corefx-" + Path.GetRandomFileName());
+            string pipeName = Path.Combine(Path.GetTempPath(), "pipe-tests-corefx-" + Path.GetRandomFileName());
             var endPoint = new UnixDomainSocketEndPoint(pipeName);
 
             using (var socketServer = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))

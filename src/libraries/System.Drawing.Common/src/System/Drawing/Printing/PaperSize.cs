@@ -127,6 +127,6 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Provides some interesting information about the PaperSize in String form.
         /// </summary>
-        public override string ToString() => $"[PaperSize {PaperName} Kind={Kind.ToString()} Height={Height.ToString(CultureInfo.InvariantCulture)} Width={Width.ToString(CultureInfo.InvariantCulture)}]";
+        public override string ToString() => $"[PaperSize {PaperName} Kind={Kind} Height={Height.ToString(CultureInfo.InvariantCulture)} Width={Width.ToString(CultureInfo.InvariantCulture)}]";
     }
 }

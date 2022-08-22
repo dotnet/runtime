@@ -90,23 +90,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static string CreatePemFromData(string label, ReadOnlyMemory<byte> data)
-        {
-            int pemSize = PemEncoding.GetEncodedSize(label.Length, data.Length);
-
-            return string.Create(pemSize, (label, data), static (destination, args) =>
-            {
-                (string label, ReadOnlyMemory<byte> data) = args;
-
-                if (!PemEncoding.TryWrite(label, data.Span, destination, out int charsWritten) ||
-                    charsWritten != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
-        }
-
         public delegate void ImportKeyAction(ReadOnlySpan<byte> source, out int bytesRead);
         public delegate ImportKeyAction? FindImportActionFunc(ReadOnlySpan<char> label);
         public delegate void ImportEncryptedKeyAction<TPass>(

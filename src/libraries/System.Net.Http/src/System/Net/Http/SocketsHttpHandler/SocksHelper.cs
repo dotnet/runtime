@@ -353,18 +353,13 @@ namespace System.Net.Http
 
         private static async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer, bool async)
         {
-            while (buffer.Length != 0)
+            int bytesRead = async
+                ? await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false).ConfigureAwait(false)
+                : stream.ReadAtLeast(buffer.Span, buffer.Length, throwOnEndOfStream: false);
+
+            if (bytesRead < buffer.Length)
             {
-                int bytesRead = async
-                    ? await stream.ReadAsync(buffer).ConfigureAwait(false)
-                    : stream.Read(buffer.Span);
-
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.net_http_invalid_response_premature_eof);
-                }
-
-                buffer = buffer[bytesRead..];
+                throw new IOException(SR.net_http_invalid_response_premature_eof);
             }
         }
     }

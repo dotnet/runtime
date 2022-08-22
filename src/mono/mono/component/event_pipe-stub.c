@@ -129,6 +129,14 @@ event_pipe_stub_write_event_threadpool_worker_thread_wait (
 	uint16_t clr_instance_id);
 
 static bool
+event_pipe_stub_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id);
+
+static bool
 event_pipe_stub_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id);
@@ -213,6 +221,7 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_threadpool_worker_thread_start,
 	&event_pipe_stub_write_event_threadpool_worker_thread_stop,
 	&event_pipe_stub_write_event_threadpool_worker_thread_wait,
+	&event_pipe_stub_write_event_threadpool_min_max_threads,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_sample,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_adjustment,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_stats,
@@ -400,6 +409,17 @@ event_pipe_stub_write_event_threadpool_worker_thread_wait (
 }
 
 static bool
+event_pipe_stub_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
 event_pipe_stub_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id)
@@ -497,16 +517,16 @@ mono_component_event_pipe_init (void)
 	return component_event_pipe_stub_init ();
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id)
@@ -528,5 +548,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 {
 	g_assert_not_reached ();
 }
-
-#endif /* HOST_WASM */
+#endif /* HOST_WASM && !HOST_WASI */

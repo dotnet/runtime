@@ -23,7 +23,7 @@
 #endif
 
 //
-// PDB annotations for the static contract analysis tool. These are seperated
+// PDB annotations for the static contract analysis tool. These are separated
 // from Contract.h to allow their inclusion in any part of the system.
 //
 

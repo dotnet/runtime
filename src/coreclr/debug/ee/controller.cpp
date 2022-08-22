@@ -11,6 +11,8 @@
 // ****************************************************************************
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
+//
+
 #include "stdafx.h"
 #include "openum.h"
 #include "../inc/common.h"
@@ -22,10 +24,6 @@
 const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
-
-
-
-
 
 // -------------------------------------------------------------------------
 //  DebuggerController routines
@@ -126,7 +124,7 @@ LOG((LF_CORDB, LL_EVERYTHING, "DPT::SPIPL GetNextPatch passed\n"));
 
     // If we decide to reorder the list, we'll need to keep the element
     // indexed by the hash function as the (sorted)first item.  Everything else
-    // chains off this element, can can thus stay put.
+    // chains off this element, can thus stay put.
     // Thus, either the element we just added is already sorted, or else we'll
     // have to move it elsewhere in the list, meaning that we'll have to swap
     // the second item & the new item, so that the index points to the proper
@@ -383,12 +381,13 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
 
     ControllerStackInfo *i = (ControllerStackInfo *) data;
 
-    //save this info away for later use
+    // save this info away for later use.
     if (i->m_bottomFP == LEAF_MOST_FRAME)
         i->m_bottomFP = pInfo->fp;
 
-    // This is part of the targetted fix for issue 650903. (See the other
-    // parts in in code:TrackUMChain and code:DebuggerStepper::TrapStepOut.)
+    // This is part of the targeted fix for issue 650903 (see the other
+    // parts in code:TrackUMChain and code:DebuggerStepper::TrapStepOut).
+    //
     // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric has been
     // set by TrackUMChain to help us remember that the current frame we're looking at is
     // ComPlusMethodFrameGeneric (we can't rely on looking at pInfo->frame to check
@@ -396,6 +395,7 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
     // dude initiating this walk to remind us that our goal in life is to do a Step Out
     // during managed-only debugging. These two things together tell us we should ignore
     // this frame, rather than erroneously identifying it as the target frame.
+    //
 #ifdef FEATURE_COMINTEROP
     if(i->m_suppressUMChainFromComPlusMethodFrameGeneric &&
         (pInfo->chainReason == CHAIN_ENTER_UNMANAGED) &&
@@ -665,7 +665,7 @@ void DebuggerPatchTable::BindPatch(DebuggerControllerPatch *patch, CORDB_ADDRESS
     _ASSERTE(!patch->IsBound() );
 
     //Since the actual patch doesn't move, we don't have to worry about
-    //zeroing out the opcode field (see lenghty comment above)
+    //zeroing out the opcode field (see lengthy comment above)
     // Since the patch is double-hashed based off Address, if we change the address,
     // we must remove and reinsert the patch.
     CHashTable::Delete(HashKey(&patch->key), ItemIndex((HASHENTRY*)patch));
@@ -1156,7 +1156,7 @@ void DebuggerController::DisableAll()
 // DebuggerControllers since we no longer have the lock.  So we have to
 // do this reference counting thing to make sure that the controllers
 // don't get toasted as we're trying to invoke SendEvent on them.  We have to
-// reaquire the lock before invoking Dequeue because Dequeue may
+// reacquire the lock before invoking Dequeue because Dequeue may
 // result in the controller being deleted, which would change the global
 // controller list.
 // How: InterlockIncrement( m_eventQueuedCount )
@@ -1483,9 +1483,9 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patch->address, patch->opcode);
 
-        //VERY IMPORTANT to zero out opcode, else we might mistake
-        //this patch for an active on on ReadMem/WriteMem (see
-        //header file comment)
+        // VERY IMPORTANT to zero out opcode, else we might mistake
+        // this patch for an active one on ReadMem/WriteMem (see
+        // header file comment).
         InitializePRD(&(patch->opcode));
 
 #if !defined(HOST_OSX) || !defined(HOST_ARM64)
@@ -1525,9 +1525,10 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         *(unsigned short *) (breakpointWriterHolder.GetRW()+1)
           = (unsigned short) patch->opcode;
 #endif //this makes no sense on anything but X86
-        //VERY IMPORTANT to zero out opcode, else we might mistake
-        //this patch for an active on on ReadMem/WriteMem (see
-        //header file comment
+
+        // VERY IMPORTANT to zero out opcode, else we might mistake
+        // this patch for an active one on ReadMem/WriteMem (see
+        // header file comment.
         InitializePRD(&(patch->opcode));
 
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
@@ -1879,7 +1880,7 @@ BOOL DebuggerController::AddBindAndActivateILSlavePatch(DebuggerControllerPatch 
         SIZE_T masterILOffset = master->offset;
 
         // Loop through all the native offsets mapped to the given IL offset.  On x86 the mapping
-        // should be 1:1.  On WIN64, because there are funclets, we have have an 1:N mapping.
+        // should be 1:1.  On WIN64, because there are funclets, we have a 1:N mapping.
         DebuggerJitInfo::ILToNativeOffsetIterator it;
         for (dji->InitILToNativeOffsetIterator(it, masterILOffset); !it.IsAtEnd(); it.Next())
         {
@@ -2373,7 +2374,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
         // Code versioning allows calls to be redirected to alternate code potentially after this trace is complete but before
         // execution reaches the call target. Rather than bind the breakpoint to a specific jitted code instance that is currently
-        // configured to receive execution we need to prepare for that potential retargetting by binding all jitted code instances.
+        // configured to receive execution we need to prepare for that potential retargeting by binding all jitted code instances.
         //
         // Triggering this based of the native offset is a little subtle, but all of the stubmanagers follow a rule that if they
         // trace across a call boundary into jitted code they either stop at offset zero of the new method, or they continue tracing
@@ -2634,7 +2635,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 
         // Annoyingly, TriggerPatch may add patches, which may cause
         // the patch table to move, which may, in turn, invalidate
-        // the patch (and patchNext) pointers.  Store indeces, instead.
+        // the patch (and patchNext) pointers.  Store indices, instead.
         iEvent = g_patches->GetItemIndex( (HASHENTRY *)patch );
 
         if (patchNext != NULL)
@@ -3067,7 +3068,7 @@ Exit:
 
 
     // We pulse the GC mode here too cooperate w/ a thread trying to suspend the runtime. If we didn't pulse
-    // the GC, the odds of catching this thread in interuptable code may be very small (since this filter
+    // the GC, the odds of catching this thread in interruptible code may be very small (since this filter
     // could be very large compared to the managed code this thread is running).
     // Only do this if the exception was actually for the debugger. (We don't want to toggle the GC mode on every
     // random exception). We can't do this while holding any debugger locks.
@@ -3111,7 +3112,7 @@ void DebuggerController::EnableSingleStep()
 
 #ifdef _DEBUG
     // Some controllers don't need to set the SS to do their job, and if they are setting it, it's likely an issue.
-    // So we assert here to catch them red-handed. This assert can always be updated to accomodate changes
+    // So we assert here to catch them red-handed. This assert can always be updated to accommodate changes
     // in a controller's behavior.
 
     switch(GetDCType())
@@ -4571,7 +4572,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
 
 
 //
-// We have to have a whole seperate function for this because you
+// We have to have a whole separate function for this because you
 // can't use __try in a function that requires object unwinding...
 //
 
@@ -4996,7 +4997,7 @@ bool DebuggerBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
 
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
-    // If we got interupted by SetIp, we just don't send the IPC event. Our triggers are still
+    // If we got interrupted by SetIp, we just don't send the IPC event. Our triggers are still
     // active so no harm done.
     if (!fIpChanged)
     {
@@ -5554,7 +5555,7 @@ bool DebuggerStepper::TrapStepInto(ControllerStackInfo *info,
     // If we're calling from managed code, this should either succeed
     // or become an ecall into mscorwks.
     // @Todo - what about stubs in mscorwks.
-    // @todo - if this fails, we want to provde as much info as possible.
+    // @todo - if this fails, we want to provide as much info as possible.
     if (!g_pEEInterface->TraceStub(ip, &trace)
         || !g_pEEInterface->FollowTrace(&trace))
     {
@@ -6335,7 +6336,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // stack.
         StackTraceTicket ticket(info);
 
-        // The last parameter here is part of a really targetted (*cough* dirty) fix to
+        // The last parameter here is part of a really targeted (*cough* dirty) fix to
         // disable getting an unwanted UMChain to fix issue 650903 (See
         // code:ControllerStackInfo::WalkStack and code:TrackUMChain for the other
         // parts.) In the case of managed step out we know that we aren't interested in
@@ -7727,12 +7728,12 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
     }
     CONTRACTL_END;
 
-    // We practically should never have a step interupted by SetIp.
+    // We practically should never have a step interrupted by SetIp.
     // We'll still go ahead and send the Step-complete event because we've already
     // deactivated our triggers by now and we haven't placed any new patches to catch us.
     // We assert here because we don't believe we'll ever be able to hit this scenario.
     // This is technically an issue, but we consider it benign enough to leave in.
-    _ASSERTE(!fIpChanged || !"Stepper interupted by SetIp");
+    _ASSERTE(!fIpChanged || !"Stepper interrupted by SetIp");
 
     LOG((LF_CORDB, LL_INFO10000, "DS::SE m_fpStepInto:0x%x\n", m_fpStepInto.GetSPValue()));
 
@@ -8357,7 +8358,7 @@ bool DebuggerThreadStarter::SendEvent(Thread *thread, bool fIpChanged)
     }
     CONTRACTL_END;
 
-    // This SendEvent can't be interupted by a SetIp because until the client
+    // This SendEvent can't be interrupted by a SetIp because until the client
     // gets a ThreadStarter event, it doesn't even know the thread exists, so
     // it certainly can't change its ip.
     _ASSERTE(!fIpChanged);
@@ -8653,7 +8654,7 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
     CONTRACTL_END;
 
 
-    // This should not ever be interupted by a SetIp.
+    // This should not ever be interrupted by a SetIp.
     // The BP will be off in random native code for which SetIp would be illegal.
     // However, func-eval conroller will restore the context from when we're at the patch,
     // so that will look like the IP changed on us.
@@ -8848,7 +8849,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     // We're returning then we'll have to re-get this lock. Be careful that we haven't kept any controller/patches
     // in the caller. They can move when we unlock, so when we release the lock and reget it here, things might have
     // changed underneath us.
-    // inverseLock holder will reaquire lock.
+    // inverseLock holder will reacquire lock.
 
     return TPR_IGNORE;
 }

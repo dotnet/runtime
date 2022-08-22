@@ -398,7 +398,7 @@ namespace Microsoft.NET.Build.Tasks
                             }
                             else
                             {
-                                // If previously compiled as R2R, treat as reference if this would be compiled seperately
+                                // If previously compiled as R2R, treat as reference if this would be compiled separately
                                 if (!compositeCompile || excludeFromComposite)
                                 {
                                     return Eligibility.CreateReferenceEligibility(excludeFromComposite);

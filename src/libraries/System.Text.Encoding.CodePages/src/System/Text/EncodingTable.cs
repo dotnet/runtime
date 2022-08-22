@@ -144,51 +144,52 @@ namespace System.Text
             Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
-            //This is a linear search, but we probably won't be doing it very often.
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            if ((uint)codePage > ushort.MaxValue)
             {
-                if (s_mappedCodePages[i] == codePage)
-                {
-                    Debug.Assert(i < indices.Length - 1);
-
-                    s_cacheLock.EnterUpgradeableReadLock();
-                    try
-                    {
-                        if (cache.TryGetValue(codePage, out name))
-                        {
-                            return name;
-                        }
-                        else
-                        {
-                            name = names.Substring(indices[i], indices[i + 1] - indices[i]);
-
-                            s_cacheLock.EnterWriteLock();
-                            try
-                            {
-                                if (cache.TryGetValue(codePage, out string? cachedName))
-                                {
-                                    return cachedName;
-                                }
-
-                                cache.Add(codePage, name);
-                            }
-                            finally
-                            {
-                                s_cacheLock.ExitWriteLock();
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        s_cacheLock.ExitUpgradeableReadLock();
-                    }
-
-                    return name;
-                }
+                return null;
             }
 
-            // Nope, we didn't find it.
-            return null;
+            //This is a linear search, but we probably won't be doing it very often.
+            int i = Array.IndexOf(s_mappedCodePages, (ushort)codePage);
+            if (i < 0)
+            {
+                // Didn't find it.
+                return null;
+            }
+
+            Debug.Assert(i < indices.Length - 1);
+
+            s_cacheLock.EnterUpgradeableReadLock();
+            try
+            {
+                if (cache.TryGetValue(codePage, out name))
+                {
+                    return name;
+                }
+
+                name = names.Substring(indices[i], indices[i + 1] - indices[i]);
+
+                s_cacheLock.EnterWriteLock();
+                try
+                {
+                    if (cache.TryGetValue(codePage, out string? cachedName))
+                    {
+                        return cachedName;
+                    }
+
+                    cache.Add(codePage, name);
+                }
+                finally
+                {
+                    s_cacheLock.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                s_cacheLock.ExitUpgradeableReadLock();
+            }
+
+            return name;
         }
     }
 }

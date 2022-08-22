@@ -1,0 +1,14 @@
+# V8
+# at <anonymous>:wasm-function[1900]:0x83f63
+# at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
+(at (?<replaceSection>[^:\()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)([^\)a-fA-F\d]|$))
+
+# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
+(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))
+
+# chrome
+# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
+(?<replaceSection>[a-z]+:\/\/[^ \)]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)
+
+# <?>.wasm-function[8962]
+(?<replaceSection>\<[^ \>]+\>[.:]wasm-function\[(?<funcNum>[0-9]+)\])

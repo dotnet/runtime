@@ -261,7 +261,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("LineNumber/LinePos after ReadBase64 succesive calls")]
+        [Variation("LineNumber/LinePos after ReadBase64 successive calls")]
         public int TestLinePos21()
         {
             if (IsCustomReader()) CError.Skip("Skipped");
@@ -281,7 +281,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("LineNumber/LinePos after ReadBinHex succesive calls")]
+        [Variation("LineNumber/LinePos after ReadBinHex successive calls")]
         public int TestLinePos22()
         {
             if (IsCustomReader()) CError.Skip("Skipped");

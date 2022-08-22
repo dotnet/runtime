@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -183,6 +184,13 @@ namespace System.Reflection
             return RuntimeTypeHandle.GetModule(RuntimeFieldHandle.GetApproxDeclaringType(this));
         }
 
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+
         #endregion
 
         #region FieldInfo Overrides
@@ -236,7 +244,7 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            bool _ref = false;
+            ParameterCopyBackAction _ref = default;
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {

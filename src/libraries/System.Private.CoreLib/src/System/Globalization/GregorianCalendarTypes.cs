@@ -3,7 +3,7 @@
 
 namespace System.Globalization
 {
-    // Note: The values of the members of this enum must match the coresponding values
+    // Note: The values of the members of this enum must match the corresponding values
     // in the CalendarId enum (since we cast between GregorianCalendarTypes and CalendarId).
     public enum GregorianCalendarTypes
     {

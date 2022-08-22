@@ -316,7 +316,7 @@ ms_find_block_obj_size_index (size_t size)
 	int i;
 	SGEN_ASSERT (9, size <= SGEN_MAX_SMALL_OBJ_SIZE, "size %" G_GSIZE_FORMAT "d is bigger than max small object size %d", size, SGEN_MAX_SMALL_OBJ_SIZE);
 	for (i = 0; i < num_block_obj_sizes; ++i)
-		if (block_obj_sizes [i] >= size)
+		if (GINT_TO_UINT(block_obj_sizes [i]) >= size)
 			return i;
 	g_error ("no object of size %" G_GSIZE_FORMAT "d\n", size);
 	return -1;
@@ -560,8 +560,8 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 
 	SGEN_ASSERT (9, count >= 2, "block with %d objects, it must hold at least 2", count);
 
-	info->obj_size = size;
-	info->obj_size_index = size_index;
+	info->obj_size = GINT_TO_UINT16 (size);
+	info->obj_size_index = GINT_TO_UINT16 (size_index);
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
@@ -1407,7 +1407,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 	for (; entry < end; ++entry) {
 		int index = MS_BLOCK_OBJ_INDEX (*entry, block);
 		GCObject *obj;
-		SGEN_ASSERT (9, index >= 0 && index < MS_BLOCK_FREE / block->obj_size, "invalid object %p index %d max-index %d", *entry, index, (int)(MS_BLOCK_FREE / block->obj_size));
+		SGEN_ASSERT (9, index >= 0 && GINT_TO_UINT(index) < MS_BLOCK_FREE / block->obj_size, "invalid object %p index %d max-index %d", *entry, index, (int)(MS_BLOCK_FREE / block->obj_size));
 		if (index == last_index)
 			continue;
 		obj = MS_BLOCK_OBJ (block, index);
@@ -1646,7 +1646,6 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 	gboolean have_free = FALSE;
 	int nused = 0;
 	int block_state;
-	int i;
 	void *tagged_block;
 	MSBlockInfo *block;
 	volatile gpointer *block_slot = sgen_array_list_get_slot (&allocated_blocks, block_index);
@@ -1712,10 +1711,10 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 		memset (block->cardtable_mod_union, 0, CARDS_PER_BLOCK);
 
 	/* Count marked objects in the block */
-	for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
+	for (guint i = 0; i < MS_NUM_MARK_WORDS; ++i)
 		nused += bitcount (block->mark_words [i]);
 
-	block->nused = nused;
+	block->nused = GINT_TO_INT16 (nused);
 	if (nused)
 		have_live = TRUE;
 	if (nused < count)
@@ -2276,7 +2275,7 @@ major_free_swept_blocks (size_t section_reserve)
 				}
 			}
 
-			SGEN_ASSERT (6, dest <= i && dest <= arr_length, "array length is off");
+			SGEN_ASSERT (6, GINT_TO_UINT(dest) <= i && GINT_TO_UINT(dest) <= arr_length, "array length is off");
 			arr_length = dest;
 			SGEN_ASSERT (6, arr_length == num_empty_blocks, "array length is off");
 
@@ -2704,7 +2703,7 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 #ifdef PREFETCH_CARDS
 MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
 		int prefetch_index = index + 6;
-		if (prefetch_index < allocated_blocks.next_slot) {
+		if (GINT_TO_UINT32(prefetch_index) < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, prefetch_index));
 			PREFETCH_READ (prefetch_block);
 			if (scan_type == CARDTABLE_SCAN_GLOBAL) {
@@ -2722,8 +2721,7 @@ MONO_RESTORE_WARNING
 		if (scan_type == CARDTABLE_SCAN_GLOBAL) {
 			gpointer *card_start = (gpointer*) sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (block));
 			gboolean has_dirty_cards = FALSE;
-			int i;
-			for (i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
+			for (guint i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
 				if (card_start [i]) {
 					has_dirty_cards = TRUE;
 					break;
@@ -2791,8 +2789,7 @@ update_cardtable_mod_union (void)
 	FOREACH_BLOCK_NO_LOCK (block) {
 		gpointer *card_start = (gpointer*) sgen_card_table_get_card_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (block));
 		gboolean has_dirty_cards = FALSE;
-		int i;
-		for (i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
+		for (guint i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
 			if (card_start [i]) {
 				has_dirty_cards = TRUE;
 				break;

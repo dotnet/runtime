@@ -21,12 +21,12 @@ namespace System.Reflection.Context.Virtual
                 get { return DeclaringProperty.ReflectionContext; }
             }
 
-            public override sealed MethodAttributes Attributes
+            public sealed override MethodAttributes Attributes
             {
                 get { return base.Attributes | MethodAttributes.SpecialName; }
             }
 
-            public override sealed Type? DeclaringType
+            public sealed override Type? DeclaringType
             {
                 get { return DeclaringProperty.DeclaringType; }
             }

@@ -483,7 +483,7 @@ void CordbModule::RefreshMetaData()
 
     // There are several different ways we can get the metadata
     // 1) [Most common] Module is loaded into VM and never changed. The importer
-    //    will be constructed refering to the file on disk. This is a significant
+    //    will be constructed referring to the file on disk. This is a significant
     //    working set win because the VM and debugger share the image. If there is
     //    an error reading by file we can fall back to case #2 for these modules
     // 2) Most modules have a buffer in target memory that represents their
@@ -1752,7 +1752,7 @@ CordbFunction * CordbModule::LookupOrCreateFunction(mdMethodDef funcMetaDataToke
 
     CordbFunction * pFunction = m_functions.GetBase(funcMetaDataToken);
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pFunction == NULL)
     {
         // EnC adds each version to the hash. So if the hash lookup fails,
@@ -1860,7 +1860,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
 //
 // Arguments:
 //    funcMetaDataToken - the functions methodDef token in this module
-//    enCVerison        - The new version number of this function
+//    enCVersion        - The new version number of this function
 //    ppFunction        - Output param for the new instance - optional
 //
 // Assumptions:
@@ -2646,7 +2646,7 @@ void CordbModule::SetLoadEventContinueMarker()
 //   The comparison is done via continue counters. The counter of the load
 //   event is cached via code:CordbModule::SetLoadEventContinueMarker.
 //
-//   This state is currently stored on the RS. Alternatively, it could likely be retreived from the LS state as
+//   This state is currently stored on the RS. Alternatively, it could likely be retrieved from the LS state as
 //   well. One disadvantage of the current model is that if we detach during the load-module callback and
 //   then reattach, the RS state is flushed and we lose the fact that we can toggle the jit flags.
 HRESULT CordbModule::EnsureModuleIsInLoadCallback()
@@ -3529,7 +3529,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }
@@ -3564,7 +3564,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }

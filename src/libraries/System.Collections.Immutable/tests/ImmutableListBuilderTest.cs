@@ -403,7 +403,7 @@ namespace System.Collections.Immutable.Tests
             this.AssertIListBaseline(RemoveFunc, new ProgrammaticEquals(v => v is string), 3);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.CreateBuilder<int>());

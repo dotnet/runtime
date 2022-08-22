@@ -11,7 +11,7 @@
           DependsOnTargets="DetermineTestOutputDirectory">
     <!--
       Ensure installers (and therefore shared framework projects) are built first. Include used
-      transitive dependenices here in case Subset is defined.
+      transitive dependencies here in case Subset is defined.
     -->
     <MSBuild
       Projects="

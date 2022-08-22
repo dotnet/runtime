@@ -56,6 +56,8 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
         public override bool HasRva
         {
             get

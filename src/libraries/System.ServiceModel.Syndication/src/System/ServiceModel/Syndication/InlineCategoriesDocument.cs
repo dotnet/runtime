@@ -35,7 +35,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationCategory> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
+            get => _categories ??= new NullNotAllowedCollection<SyndicationCategory>();
         }
 
         public bool IsFixed { get; set; }

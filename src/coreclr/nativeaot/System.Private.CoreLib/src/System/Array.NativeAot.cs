@@ -84,7 +84,7 @@ namespace System
             }
             else
             {
-                // Create a local copy of the lenghts that cannot be motified by the caller
+                // Create a local copy of the lengths that cannot be motified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
@@ -541,7 +541,7 @@ namespace System
 
             if (reliable)
             {
-                // ContrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
+                // ConstrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
                 if (sourceElementType != destElementType)
                     throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
             }
@@ -874,7 +874,7 @@ namespace System
             }
         }
 
-        // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
+        // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
         internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int* pLengths, int rank)
         {
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
@@ -897,7 +897,7 @@ namespace System
                     throw new OverflowException();
                 if (length > MaxLength)
                     maxArrayDimensionLengthOverflow = true;
-                totalLength = totalLength * (ulong)length;
+                totalLength *= (ulong)length;
                 if (totalLength > int.MaxValue)
                     throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
             }
@@ -953,6 +953,22 @@ namespace System
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
+        }
+
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (!IsSzArray)
+            {
+                ref int bounds = ref GetRawMultiDimArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
         }
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)

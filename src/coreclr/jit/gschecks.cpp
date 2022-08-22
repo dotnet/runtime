@@ -15,6 +15,42 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
+// gsPhase: modify IR and symbols to implement stack security checks
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::gsPhase()
+{
+    bool madeChanges = false;
+
+    if (getNeedsGSSecurityCookie())
+    {
+        unsigned const prevBBCount = fgBBcount;
+        gsGSChecksInitCookie();
+
+        if (compGSReorderStackLayout)
+        {
+            gsCopyShadowParams();
+        }
+
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
+        madeChanges = true;
+    }
+    else
+    {
+        JITDUMP("No GS security needed\n");
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 /*****************************************************************************
  * gsGSChecksInitCookie
  * Grabs the cookie for detecting overflow of unsafe buffers.
@@ -130,6 +166,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_FIELD:
 
             newState.isUnderIndir = true;
@@ -374,7 +412,7 @@ bool Compiler::gsFindVulnerableParams()
 void Compiler::gsParamsToShadows()
 {
     // Cache old count since we'll add new variables, and
-    // gsShadowVarInfo will not grow to accomodate the new ones.
+    // gsShadowVarInfo will not grow to accommodate the new ones.
     UINT lvaOldCount = lvaCount;
 
     // Create shadow copy for each param candidate
@@ -420,7 +458,7 @@ void Compiler::gsParamsToShadows()
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag

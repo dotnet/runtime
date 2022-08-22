@@ -83,6 +83,10 @@
     </ProjectReference>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(RequiresCodeFlowEnforcement)' == 'true'">
+    <CLRTestTargetUnsupported Condition="'$(UseCodeFlowEnforcement)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
     <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>

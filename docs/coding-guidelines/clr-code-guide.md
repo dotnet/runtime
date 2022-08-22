@@ -437,7 +437,7 @@ A GC_NOTRIGGER function cannot:
 
 [1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it's safe to allow this (and necessary to avoid some awkward code in our product.)
 
-**Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC_NOTRIGGER. In fact, there is a third thread state called GC_FORBID which is exactly that: GC_TRIGGERS plus forced cooperative mode. As its name implies, GC_FORBID _guarantees_ that no GC will occur on any thread.
+**Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC_NOTRIGGER. In fact, there is a third thread state called GC_FORBID which is exactly that: GC_NOTRIGGER plus forced cooperative mode. As its name implies, GC_FORBID _guarantees_ that no GC will occur on any thread.
 
 Why do we use GC_NOTRIGGERS rather than GC_FORBID? Because forcing every function to choose between GC_TRIGGERS and GC_FORBID is too inflexible given that some callers don't actually care about GC. Consider a simple class member function that returns the value of a field. How should it be declared? If you choose GC_TRIGGERS, then the function cannot be legally called from a GC_NOTRIGGER function even though this is perfectly safe. If you choose GC_FORBID, then every caller must switch to cooperative mode to invoke the function just to prevent an assert. Thus, GC_NOTRIGGER was created as a middle ground and has become far more pervasive and useful than GC_FORBID. Callers who actually need GC stopped will have put themselves in cooperative mode anyway and in those cases, GC_NOTRIGGER actually becomes GC_FORBID. Callers who don't care can just call the function and not worry about modes.
 
@@ -912,7 +912,7 @@ It depends.
 
 If you initialize the crst as CRST_HOST_BREAKABLE, any attempt to acquire the lock can trigger an exception (intended to kill your thread to break the deadlock.) Otherwise, you are guaranteed not to get an exception or failure. Regardless of the flag setting, releasing a lock will never fail.
 
-You can only use a non host-breakable lock if you can guarantee that that lock will never participate in a deadlock. If you cannot guarantee this, you must use a host-breakable lock and handle the exception. Otherwise, a CLR host will not be able to break deadlocks cleanly.
+You can only use a non host-breakable lock if you can guarantee that the lock will never participate in a deadlock. If you cannot guarantee this, you must use a host-breakable lock and handle the exception. Otherwise, a CLR host will not be able to break deadlocks cleanly.
 
 There are several ways we enforce this.
 

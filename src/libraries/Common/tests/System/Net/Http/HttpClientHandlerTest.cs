@@ -151,8 +151,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "IPv6 loopback with SSL doesn't work on Android")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -165,9 +166,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
@@ -185,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }, options: options);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -199,15 +198,15 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            if (PlatformDetection.IsNotBrowser)
-            {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            }
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
+
+            if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+            }
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
@@ -276,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
@@ -284,6 +283,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Host header is not supported on HTTP/2 and later.
                 return;
+            }
+
+            if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };
@@ -1025,7 +1029,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
-                        Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await Task.Factory.FromAsync(responseStream.BeginWrite, responseStream.EndWrite, new byte[1], 0, 1, null));
                         if (!responseStream.CanSeek)
                         {
                             Assert.Throws<NotSupportedException>(() => responseStream.Length);

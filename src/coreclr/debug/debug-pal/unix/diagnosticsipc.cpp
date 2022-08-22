@@ -180,7 +180,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
-    // We don't expect this to block since this is a Unix Domain Socket.  `connect` may block until the 
+    // We don't expect this to block since this is a Unix Domain Socket.  `connect` may block until the
     // TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
     // the server hasn't called `accept`.
     if (::connect(clientSocket, (struct sockaddr *)_pServerAddress, sizeof(*_pServerAddress)) < 0)
@@ -270,7 +270,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
             {
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::UNKNOWN;
                 if (callback != nullptr)
-                    callback("unkown poll response", (uint32_t)pollfds[i].revents);
+                    callback("unknown poll response", (uint32_t)pollfds[i].revents);
             }
         }
     }
@@ -297,8 +297,8 @@ void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback callback)
 
         // N.B. - it is safe to unlink the unix domain socket file while the server
         // is still alive:
-        // "The usual UNIX close-behind semantics apply; the socket can be unlinked 
-        // at any time and will be finally removed from the file system when the last 
+        // "The usual UNIX close-behind semantics apply; the socket can be unlinked
+        // at any time and will be finally removed from the file system when the last
         // reference to it is closed." - unix(7) man page
         Unlink(callback);
     }

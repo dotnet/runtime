@@ -6,12 +6,13 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.DependencyAnalysis;
 
 using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList=System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,14 +22,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, method, methodIL);
 
-            factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
+            factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.OwningType is MetadataType mdOwningType
-                && mdOwningType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Method in a module with initializer");
-            }
+            if (method.OwningType is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
 
             if (method.IsIntrinsic)
             {

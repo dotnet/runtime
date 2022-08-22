@@ -1,46 +1,68 @@
-function wasm_exit(exit_code) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
+import { dotnet, exit } from './dotnet.js'
 
-    console.log(`WASM EXIT ${exit_code}`);
+function add(a, b) {
+    return a + b;
 }
 
-async function loadRuntime() {
-    globalThis.exports = {};
-    await import("./dotnet.js");
-    return globalThis.exports.createDotnetRuntime;
+function sub(a, b) {
+    return a - b;
 }
 
-async function main() {
-    try {
-        const createDotnetRuntime = await loadRuntime();
-        const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-            console.log('user code in createDotnetRuntime')
-            return {
-                disableDotnet6Compatibility: true,
-                configSrc: "./mono-config.json",
-                preInit: () => { console.log('user code Module.preInit') },
-                preRun: () => { console.log('user code Module.preRun') },
-                onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
-                postRun: () => { console.log('user code Module.postRun') },
+try {
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig } = await dotnet
+        .withConsoleForwarding()
+        .withElementOnExit()
+        .withModuleConfig({
+            // This whole 'withModuleConfig' is for demo purposes only.
+            // It is prefered to use specific 'with***' methods instead. 
+            // Only when such method is doesn't exist, fallback to moduleConfig.
+
+            configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+                console.log('user code Module.onConfigLoaded');
+                // config is loaded and could be tweaked before the rest of the runtime startup sequence
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+            },
+            preInit: () => { console.log('user code Module.preInit'); },
+            preRun: () => { console.log('user code Module.preRun'); },
+            onRuntimeInitialized: () => {
+                console.log('user code Module.onRuntimeInitialized');
+                // here we could use API passed into this callback
+                // Module.FS.chdir("/");
+            },
+            onDotnetReady: () => {
+                // This is called after all assets are loaded.
+                console.log('user code Module.onDotnetReady');
+            },
+            postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .create();
+
+
+    // at this point both emscripten and monoVM are fully initialized.
+    console.log('user code after dotnet.create');
+    setModuleImports("main.js", {
+        Sample: {
+            Test: {
+                add,
+                sub
             }
-        });
-        console.log('after createDotnetRuntime')
+        }
+    });
 
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.CJS.Sample] Sample.Test:TestMeaning");
-        const ret = testMeaning();
-        document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
-
-        console.debug(`ret: ${ret}`);
-        let exit_code = ret == 42 ? 0 : 1;
-        wasm_exit(exit_code);
-    } catch (err) {
-        console.log(`WASM ERROR ${err}`);
-        wasm_exit(2)
+    const config = getConfig();
+    const exports = await getAssemblyExports(config.mainAssemblyName);
+    const meaning = exports.Sample.Test.TestMeaning();
+    console.debug(`meaning: ${meaning}`);
+    if (!exports.Sample.Test.IsPrime(meaning)) {
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
+        console.debug(`ret: ${meaning}`);
     }
-}
 
-main();
+    let exit_code = await runMain(config.mainAssemblyName, []);
+    exit(exit_code);
+}
+catch (err) {
+    exit(2, err);
+}

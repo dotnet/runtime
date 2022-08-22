@@ -43,7 +43,7 @@
 // End invalid
 //
 
-.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClass_Over`1<byreflike T>
+.class public sequential ansi beforefieldinit InvalidCSharp.GenericClass_Over`1<byreflike T>
     extends [System.Runtime]System.Object
 {
     .method public hidebysig specialname rtspecialname
@@ -355,6 +355,108 @@
     )
 }
 
+.class public sequential ansi sealed beforefieldinit RegularValueType
+    extends [System.Runtime]System.ValueType
+{
+}
+
+// Generic substitution of allow-byreflike with allow-byreflike
+.class interface public auto ansi abstract InvalidCSharp.GenericDerivedInterface_OverByRef`1<byreflike T>
+    implements class InvalidCSharp.GenericInterface_Over`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericDerivedClass_OverByRef`1<byreflike T>
+    extends class InvalidCSharp.GenericClass_Over`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericValueTypeWrapper_OverByRef`1<byreflike T>
+    extends [System.Runtime]System.ValueType
+{
+    .field public valuetype InvalidCSharp.GenericValueType_Over`1<!T> fld;
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClassWithMethods_OverByRef`1<byreflike T>
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig static
+        string InstantiateWithTypeLevelTypeParameter() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericClass_Over`1<!T>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string InstantiateWithMethodLevelTypeParameter<byreflike U>() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericClass_Over`1<!!U>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+}
+
+// Generic substitution of allow-byreflike with non-allow-byreflike
+.class interface public auto ansi abstract InvalidCSharp.GenericDerivedInterface_Over`1<T>
+    implements class InvalidCSharp.GenericInterface_Over`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericDerivedClass_Over`1<T>
+    extends class InvalidCSharp.GenericClass_Over`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericValueTypeWrapper_Over`1<T>
+    extends [System.Runtime]System.ValueType
+{
+    .field public valuetype InvalidCSharp.GenericValueType_Over`1<!T> fld;
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClassWithMethods_Over`1< T>
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig static
+        string InstantiateWithTypeLevelTypeParameter() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericClass_Over`1<!T>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string InstantiateWithMethodLevelTypeParameter<U>() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericClass_Over`1<!!U>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+}
+
+// Invalid generic substitution of non-allow-byreflike with allow-byreflike
+.class interface public auto ansi abstract InvalidCSharp.GenericDerivedInterface_Invalid`1<byreflike T>
+    implements class InvalidCSharp.GenericInterface_Invalid`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericDerivedClass_Invalid`1<byreflike T>
+    extends class InvalidCSharp.GenericClass_Invalid`1<!T>
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericValueTypeWrapper_Invalid`1<byreflike T>
+    extends [System.Runtime]System.ValueType
+{
+    .field public valuetype InvalidCSharp.GenericValueType_Invalid`1<!T> fld;
+}
+
+// Entry points
+
 .class public auto ansi abstract sealed beforefieldinit Exec
     extends [System.Runtime]System.Object
 {
@@ -627,5 +729,100 @@
         ceq
 
         DONE: ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionInterfaceImplementationAllowByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedInterface_OverByRef`1<valuetype ByRefLikeType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionInheritanceAllowByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedClass_OverByRef`1<valuetype ByRefLikeType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionFieldAllowByRefLike() cil managed
+    {
+        ldtoken valuetype InvalidCSharp.GenericValueTypeWrapper_OverByRef`1<valuetype ByRefLikeType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionTypeParameterInMethod() cil managed
+    {
+        call string class InvalidCSharp.GenericClassWithMethods_OverByRef`1<valuetype ByRefLikeType>::InstantiateWithTypeLevelTypeParameter()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionMethodTypeParameterInMethod() cil managed
+    {
+        call string class InvalidCSharp.GenericClassWithMethods_OverByRef`1<valuetype ByRefLikeType>::InstantiateWithMethodLevelTypeParameter<valuetype ByRefLikeType>()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionInterfaceImplementationNonByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedInterface_Over`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionInheritanceNonByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedClass_Over`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionFieldNonByRefLike() cil managed
+    {
+        ldtoken valuetype InvalidCSharp.GenericValueTypeWrapper_Over`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+    
+    .method public hidebysig static
+        string TypeSubstitutionInterfaceImplementationAllowByRefLikeIntoNonByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedInterface_Invalid`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionInheritanceAllowByRefLikeIntoNonByRefLike() cil managed
+    {
+        ldtoken class InvalidCSharp.GenericDerivedClass_Invalid`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string TypeSubstitutionFieldAllowByRefLikeIntoNonByRefLike() cil managed
+    {
+        ldtoken valuetype InvalidCSharp.GenericValueTypeWrapper_Invalid`1<valuetype RegularValueType>
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
     }
 }

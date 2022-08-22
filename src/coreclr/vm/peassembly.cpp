@@ -307,7 +307,7 @@ void PEAssembly::OpenImporter()
                                                        (void **)&pIMDImport));
 
     // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pImporter, pIMDImport, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
         pIMDImport->Release();
 }
 
@@ -362,7 +362,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Swap the pointers in a thread safe manner.  If the contents of *ppImport
     //  equals pOld then no other thread got here first, and the old contents are
     //  replaced with pNew.  The old contents are returned.
-    if (FastInterlockCompareExchangePointer(&m_pMDImport, pNew, pOld) == pOld)
+    if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
     {
         //if the debugger queries, it will now see that we have RW metadata
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
@@ -428,7 +428,7 @@ void PEAssembly::OpenEmitter()
                                                        (void **)&pIMDEmit));
 
     // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pEmitter, pIMDEmit, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
         pIMDEmit->Release();
 }
 

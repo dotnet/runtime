@@ -99,6 +99,10 @@ namespace System.Net.Sockets
             {
                 _clientSocket = value;
                 _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+                if (_clientSocket == null)
+                {
+                    InitializeClientSocket();
+                }
             }
         }
 
@@ -240,12 +244,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_notconnected);
             }
 
-            if (_dataStream == null)
-            {
-                _dataStream = new NetworkStream(Client, true);
-            }
-
-            return _dataStream;
+            return _dataStream ??= new NetworkStream(Client, true);
         }
 
         public void Close() => Dispose();

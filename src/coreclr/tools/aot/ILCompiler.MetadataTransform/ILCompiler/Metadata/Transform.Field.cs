@@ -41,7 +41,7 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(field.GetTypicalFieldDefinition() == field);
             Debug.Assert(_policy.GeneratesMetadata(field));
-            return (Field)_fields.GetOrCreate(field, _initFieldDef ?? (_initFieldDef = InitializeFieldDefinition));
+            return (Field)_fields.GetOrCreate(field, _initFieldDef ??= InitializeFieldDefinition);
         }
 
         private void InitializeFieldDefinition(Cts.FieldDesc entity, Field record)
@@ -79,7 +79,7 @@ namespace ILCompiler.Metadata
 
         private MemberReference HandleFieldReference(Cts.FieldDesc field)
         {
-            return (MemberReference)_fields.GetOrCreate(field, _initFieldRef ?? (_initFieldRef = InitializeFieldReference));
+            return (MemberReference)_fields.GetOrCreate(field, _initFieldRef ??= InitializeFieldReference);
         }
 
         private void InitializeFieldReference(Cts.FieldDesc entity, MemberReference record)

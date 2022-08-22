@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Xml.Serialization;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-
     public class XmlSchemaIdentityConstraint : XmlSchemaAnnotated
     {
         private string? _name;
@@ -89,7 +89,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName Refer
         {
             get { return _refer; }
-            set { _refer = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refer = value ?? XmlQualifiedName.Empty; }
         }
     }
 }

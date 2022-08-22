@@ -14,15 +14,15 @@ namespace System.IO.Compression
         private DeflateStream _deflateStream;
 
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which decompressed data is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         public ZLibStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression mode, and whether to leave the <paramref name="stream"/> open.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which decompressed data is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
         public ZLibStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
@@ -31,14 +31,14 @@ namespace System.IO.Compression
 
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         public ZLibStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression level, and whether to leave the <paramref name="stream"/> open.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
         public ZLibStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {

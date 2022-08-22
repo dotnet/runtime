@@ -216,10 +216,10 @@ namespace SoDBench
 
                 if (s_dotnetExe == null)
                 {
-                    if(!String.IsNullOrEmpty(options.CoreLibariesDirectory))
+                    if(!String.IsNullOrEmpty(options.CoreLibrariesDirectory))
                     {
-                        Console.WriteLine($"** Using core libraries found at {options.CoreLibariesDirectory}");
-                        s_corelibsDir = new DirectoryInfo(options.CoreLibariesDirectory);
+                        Console.WriteLine($"** Using core libraries found at {options.CoreLibrariesDirectory}");
+                        s_corelibsDir = new DirectoryInfo(options.CoreLibrariesDirectory);
                     }
                     else
                     {
@@ -296,7 +296,7 @@ namespace SoDBench
             };
 
             // Used to set where the packages will be unpacked to.
-            // There is a no gaurentee that this is a stable method, but is the only way currently to set the fallback folder location
+            // There is a no guarantee that this is a stable method, but is the only way currently to set the fallback folder location
             dotnet.Environment["DOTNET_CLI_TEST_FALLBACKFOLDER"] = s_fallbackDir.FullName;
 
             LaunchProcess(dotnet, 180000);
@@ -578,8 +578,8 @@ namespace SoDBench
                 }
             }
 
-            [Option("corelibs", Required = false, HelpText = "Specifies the location of .NET Core libaries to patch into dotnet. Cannot be used with --dotnet")]
-            public string CoreLibariesDirectory
+            [Option("corelibs", Required = false, HelpText = "Specifies the location of .NET Core libraries to patch into dotnet. Cannot be used with --dotnet")]
+            public string CoreLibrariesDirectory
             {
                 get { return _corelibsDir; }
 
@@ -644,7 +644,7 @@ namespace SoDBench
                             }
                         });
 
-                    if (options != null && !String.IsNullOrEmpty(options.DotnetExecutable) && !String.IsNullOrEmpty(options.CoreLibariesDirectory))
+                    if (options != null && !String.IsNullOrEmpty(options.DotnetExecutable) && !String.IsNullOrEmpty(options.CoreLibrariesDirectory))
                     {
                         throw new ArgumentException("--dotnet and --corlibs cannot be used together");
                     }

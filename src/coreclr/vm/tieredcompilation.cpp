@@ -10,7 +10,6 @@
 #include "common.h"
 #include "excep.h"
 #include "log.h"
-#include "win32threadpool.h"
 #include "threadsuspend.h"
 #include "tieredcompilation.h"
 
@@ -960,7 +959,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     }
 }
 
-// Dequeues the next method in the optmization queue.
+// Dequeues the next method in the optimization queue.
 // This runs on the background thread.
 NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 {

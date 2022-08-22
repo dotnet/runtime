@@ -150,7 +150,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 			 */
 			if (mono_op_to_op_imm (ins->opcode) != -1) {
 				ALLOC_DEST (cfg, dest, ins);
-				dest->opcode = mono_op_to_op_imm (ins->opcode);
+				dest->opcode = GINT_TO_OPCODE (mono_op_to_op_imm (ins->opcode));
 				dest->sreg1 = ins->sreg2;
 				dest->sreg2 = -1;
 				dest->inst_imm = arg1->inst_c0;

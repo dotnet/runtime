@@ -6,6 +6,8 @@
 
 #include "runtimedetails.h"
 
+class MethodContext;
+
 class interceptor_ICJC : public ICorJitCompiler
 {
 
@@ -16,6 +18,8 @@ public:
     ICorJitCompiler* original_ICorJitCompiler;
     HANDLE           hFile;
     CORINFO_OS       currentOs;
+
+    void finalizeAndCommitCollection(MethodContext* mc, CorJitResult result, uint8_t* nativeEntry, uint32_t nativeSizeOfCode);
 };
 
 #endif

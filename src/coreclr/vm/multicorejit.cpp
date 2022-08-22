@@ -5,7 +5,7 @@
 //
 
 // ===========================================================================
-// This file contains the implementation for MultiCore JIT (player in a seperate file MultiCoreJITPlayer.cpp)
+// This file contains the implementation for MultiCore JIT (player in a separate file MultiCoreJITPlayer.cpp)
 // ===========================================================================
 //
 
@@ -309,10 +309,9 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
     SString sAssemblyName;
-    StackScratchBuffer scratch;
     pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
-    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
+    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8();
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
 
@@ -798,7 +797,7 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
 
 
-// static: single instace within a process
+// static: single instance within a process
 
 #ifndef TARGET_UNIX
 TP_TIMER * MulticoreJitRecorder::s_delayedWriteTimer; // = NULL;
@@ -993,12 +992,12 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
     {
         m_fullFileName = pRoot;
 
-        // Append seperator if root does not end with one
+        // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != '\\'))
+        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
         {
-            m_fullFileName.Append('\\');
+            m_fullFileName.Append(W('\\'));
         }
 
         m_fullFileName.Append(pFile);
@@ -1006,10 +1005,17 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Suffix for AutoStartProfile, used for multiple appdomain
         if (suffix >= 0)
         {
-             m_fullFileName.AppendPrintf(W("_%s_%s_%d.prof"),
-                SystemDomain::System()->DefaultDomain()->GetFriendlyName(),
-                m_pDomain->GetFriendlyName(),
-                suffix);
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(SystemDomain::System()->DefaultDomain()->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(m_pDomain->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+
+            WCHAR buff[MaxSigned32BitDecString + 1];
+            FormatInteger(buff, ARRAY_SIZE(buff), "%d", suffix);
+            m_fullFileName.Append(buff);
+
+            m_fullFileName.Append(W(".prof"));
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
@@ -1179,16 +1185,13 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
     if ((pProfile != NULL) && (pProfile[0] != 0)) // Ignore empty file name, just same as StopProfile
     {
-        bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
-
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinder,
-            gatherProfile);
+            pBinder);
 
         if (pRecorder != NULL)
         {
-            gatherProfile = pRecorder->CanGatherProfile();
+            bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
 
             m_pMulticoreJitRecorder = pRecorder;
 
@@ -1198,9 +1201,11 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
             MulticoreJitTrace(("MulticoreJitRecorder session %d created: %x", sessionID, hr));
 
-            if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
+            if ((hr == COR_E_BADIMAGEFORMAT) || (SUCCEEDED(hr) && gatherProfile)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
-                m_fRecorderActive = gatherProfile;
+                m_pMulticoreJitRecorder->Activate();
+
+                m_fRecorderActive = m_pMulticoreJitRecorder->CanGatherProfile();
             }
 
             _FireEtwMulticoreJit(W("STARTPROFILE"), W("Recorder"), m_fRecorderActive, hr, 0);

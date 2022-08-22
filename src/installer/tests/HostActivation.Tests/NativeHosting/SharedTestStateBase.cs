@@ -15,9 +15,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public string NethostPath { get; }
         public RepoDirectoriesProvider RepoDirectories { get; }
 
+        private readonly TestArtifact _baseDirArtifact;
+
         public SharedTestStateBase()
         {
             BaseDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "nativeHosting"));
+            _baseDirArtifact = new TestArtifact(BaseDirectory);
             Directory.CreateDirectory(BaseDirectory);
 
             string nativeHostName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("nativehost");
@@ -49,13 +52,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDirectory))
+            if (disposing)
             {
-                Directory.Delete(BaseDirectory, true);
+                _baseDirArtifact.Dispose();
             }
         }
     }

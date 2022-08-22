@@ -12,8 +12,9 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -38,8 +39,9 @@ pr:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT

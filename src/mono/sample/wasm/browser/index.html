@@ -4,16 +4,17 @@
 <html>
 
 <head>
-  <title>Sample CJS</title>
+  <title>Wasm Browser Sample</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="modulepreload" href="./main.js" />
+  <link rel="modulepreload" href="./dotnet.js" />
 </head>
 
 <body>
-  <h3 id="header">Wasm Browser CJS Sample</h3>
+  <h3 id="header">Wasm Browser Sample</h3>
   Answer to the Ultimate Question of Life, the Universe, and Everything is : <span id="out"></span>
-  <script type="text/javascript" src="./dotnet.js"></script>
-  <script type="text/javascript" src="./main.js"></script>
+  <script type='module' src="./main.js"></script>
 </body>
 
 </html>

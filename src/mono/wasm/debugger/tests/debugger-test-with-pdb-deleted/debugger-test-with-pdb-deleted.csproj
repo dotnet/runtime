@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+  <Target Name="DeleteDebugSymbolFile" AfterTargets="Build">
+    <Message Text="Deleting $(OutDir)debugger-test-with-pdb-deleted.pdb"/>
+    <Delete Files="$(OutDir)debugger-test-with-pdb-deleted.pdb" />
+  </Target>
+</Project>

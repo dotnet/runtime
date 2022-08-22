@@ -24,7 +24,7 @@ namespace ILCompiler.Metadata
 
         private ScopeDefinition HandleScopeDefinition(Cts.ModuleDesc module)
         {
-            return _scopeDefs.GetOrCreate(module, _initScopeDef ?? (_initScopeDef = InitializeScopeDefinition));
+            return _scopeDefs.GetOrCreate(module, _initScopeDef ??= InitializeScopeDefinition);
         }
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
@@ -122,7 +122,7 @@ namespace ILCompiler.Metadata
 
         private ScopeReference HandleScopeReference(AssemblyName assemblyName)
         {
-            return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ?? (_initScopeRef = InitializeScopeReference));
+            return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ??= InitializeScopeReference);
         }
 
         private void InitializeScopeReference(AssemblyName assemblyName, ScopeReference scopeReference)

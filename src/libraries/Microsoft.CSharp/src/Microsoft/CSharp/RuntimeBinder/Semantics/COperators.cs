@@ -119,7 +119,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static OperatorInfo GetInfo(OperatorKind op) => s_operatorInfos[(int)op];
 
         public static string OperatorOfMethodName(Name name) =>
-            (s_operatorsByName ?? (s_operatorsByName = GetOperatorByName()))[name];
+            (s_operatorsByName ??= GetOperatorByName())[name];
 
         public static string GetDisplayName(OperatorKind op) => TokenFacts.GetText(GetInfo(op).TokenKind);
 

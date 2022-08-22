@@ -4,6 +4,16 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+
+#if TARGET_64BIT
+using nint_t = System.Int64;
+using nuint_t = System.UInt64;
+#else
+using nint_t = System.Int32;
+using nuint_t = System.UInt32;
+#endif
+
 namespace System.Buffers.Binary
 {
     /// <summary>
@@ -45,6 +55,24 @@ namespace System.Buffers.Binary
         public static long ReverseEndianness(long value) => (long)ReverseEndianness((ulong)value);
 
         /// <summary>
+        /// Reverses a signed native-sized integral value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nint ReverseEndianness(nint value) => (nint)ReverseEndianness((nint_t)value);
+
+        /// <summary>
+        /// Reverses a signed 128-bit integral value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Int128 ReverseEndianness(Int128 value)
+        {
+            return new Int128(
+                ReverseEndianness(value.Lower),
+                ReverseEndianness(value.Upper)
+            );
+        }
+
+        /// <summary>
         /// This is a no-op and added only for consistency.
         /// This allows the caller to read a struct of numeric primitives and reverse each field
         /// rather than having to skip byte fields.
@@ -69,6 +97,12 @@ namespace System.Buffers.Binary
 
             return (ushort)((value >> 8) + (value << 8));
         }
+
+        /// <summary>
+        /// Reverses a 16-bit character value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ReverseEndianness(char value) => (char)ReverseEndianness((ushort)value);
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
@@ -115,6 +149,24 @@ namespace System.Buffers.Binary
 
             return ((ulong)ReverseEndianness((uint)value) << 32)
                 + ReverseEndianness((uint)(value >> 32));
+        }
+
+        /// <summary>
+        /// Reverses an unsigned native-sized integral value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint ReverseEndianness(nuint value) => (nuint)ReverseEndianness((nuint_t)value);
+
+        /// <summary>
+        /// Reverses an unsigned 128-bit integral value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static UInt128 ReverseEndianness(UInt128 value)
+        {
+            return new UInt128(
+                ReverseEndianness(value.Lower),
+                ReverseEndianness(value.Upper)
+            );
         }
     }
 }

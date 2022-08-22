@@ -122,14 +122,14 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal override IntPtr GetOutputFormat(IntPtr preferedFormat)
+        internal override IntPtr GetOutputFormat(IntPtr preferredFormat)
         {
             // Initialize TTS Engine
             Guid formatId = SAPIGuids.SPDFID_WaveFormatEx;
             Guid guidNull = new();
             IntPtr coMem = IntPtr.Zero;
 
-            _sapiEngine.GetOutputFormat(ref formatId, preferedFormat, out guidNull, out coMem);
+            _sapiEngine.GetOutputFormat(ref formatId, preferredFormat, out guidNull, out coMem);
             return coMem;
         }
 

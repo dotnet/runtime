@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>Expected size of <see cref="s_extraFriendlyNameToOid"/>.</summary>
-        private const int ExtraFriendlyNameToOidCount = 10;
+        private const int ExtraFriendlyNameToOidCount = 13;
 
         // There are places inside the framework where Oid.FromFriendlyName is called
         // (to pass in an OID group restriction for Windows) and an exception is not tolerated.
@@ -53,10 +53,13 @@ namespace System.Security.Cryptography
                 { "signingTime", "1.2.840.113549.1.9.5" },
                 { "X509v3 Subject Key Identifier", "2.5.29.14" },
                 { "X509v3 Key Usage", "2.5.29.15" },
+                { "X509v3 Subject Alternative Name", "2.5.29.17" },
                 { "X509v3 Basic Constraints", "2.5.29.19" },
+                { "X509v3 Authority Key Identifier", "2.5.29.35" },
                 { "X509v3 Extended Key Usage", "2.5.29.37" },
                 { "prime256v1", "1.2.840.10045.3.1.7" },
-                { "secp224r1", "1.3.132.0.33" }
+                { "secp224r1", "1.3.132.0.33" },
+                { "Authority Information Access", Oids.AuthorityInformationAccess },
             };
 
         private static readonly Dictionary<string, string> s_extraOidToFriendlyName =

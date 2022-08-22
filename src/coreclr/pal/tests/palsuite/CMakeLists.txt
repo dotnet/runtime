@@ -6,7 +6,7 @@ include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
-# so we don't need to link them seperately
+# so we don't need to link them separately
 if(NOT CLR_CMAKE_TARGET_ANDROID)
   list(APPEND COMMON_TEST_LIBRARIES pthread)
   list(APPEND COMMON_TEST_LIBRARIES m)
@@ -848,7 +848,6 @@ add_executable_clr(paltests
   threading/GetCurrentThreadId/test1/threadId.cpp
   threading/GetExitCodeProcess/test1/childProcess.cpp
   threading/GetExitCodeProcess/test1/test1.cpp
-  threading/GetProcessTimes/test2/test2.cpp
   threading/GetThreadTimes/test1/test1.cpp
   threading/NamedMutex/test1/namedmutex.cpp
   threading/NamedMutex/test1/nopal.cpp

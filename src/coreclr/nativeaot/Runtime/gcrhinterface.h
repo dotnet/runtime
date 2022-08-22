@@ -120,7 +120,8 @@ public:
                            PTR_VOID safePointAddress,
                            REGDISPLAY * pRegisterSet,
                            void * pfnEnumCallback,
-                           void * pvCallbackData);
+                           void * pvCallbackData,
+                           bool   isActiveStackFrame);
 
     static void EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
                                                  PTR_RtuObjectRef pUpperBound,

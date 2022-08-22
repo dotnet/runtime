@@ -36,4 +36,40 @@
     <Left>lib/netstandard2.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net462/System.Configuration.ConfigurationManager.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.SettingChangingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.SettingsLoadedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.SettingsSavingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.ValidatorCallback.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.Internal.InternalConfigEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Configuration.Internal.StreamChangeCallback.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
 </Suppressions>

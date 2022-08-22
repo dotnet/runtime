@@ -51,10 +51,7 @@
 #define g_free monoeg_g_free
 #define g_get_current_dir monoeg_g_get_current_dir
 #define g_get_current_time monoeg_g_get_current_time
-#define g_get_home_dir monoeg_g_get_home_dir
-#define g_get_prgname monoeg_g_get_prgname
 #define g_get_tmp_dir monoeg_g_get_tmp_dir
-#define g_get_user_name monoeg_g_get_user_name
 #define g_getenv monoeg_g_getenv
 #define g_hasenv monoeg_g_hasenv
 #define g_hash_table_destroy monoeg_g_hash_table_destroy
@@ -151,7 +148,6 @@
 #define g_queue_push_head monoeg_g_queue_push_head
 #define g_queue_push_tail monoeg_g_queue_push_tail
 #define g_set_error monoeg_g_set_error
-#define g_set_prgname monoeg_g_set_prgname
 #define g_setenv monoeg_g_setenv
 #define g_slist_alloc monoeg_g_slist_alloc
 #define g_slist_append monoeg_g_slist_append
@@ -243,7 +239,6 @@
 #define g_utf8_pointer_to_offset monoeg_g_utf8_pointer_to_offset
 #define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_vasprintf monoeg_g_vasprintf
-#define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_disable_global monoeg_assertion_disable_global
 #define g_assert_abort monoeg_assert_abort
 #define g_assertion_message monoeg_assertion_message

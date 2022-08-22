@@ -14,8 +14,8 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 6;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMajorVersion = 8;
+        public const ushort CurrentMinorVersion = 0;
     }
 
 #pragma warning disable 0169
@@ -41,7 +41,7 @@ namespace Internal.Runtime
     // of the enum and deprecated sections should not be removed to preserve ID stability.
     //
     // This list should be kept in sync with the runtime version at
-    // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
     public enum ReadyToRunSectionType
     {
@@ -67,6 +67,7 @@ namespace Internal.Runtime
         OwnerCompositeExecutable = 116, // Added in 4.1
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
+        CrossModuleInlineInfo = 119, // Added in 6.3
 
         //
         // NativeAOT ReadyToRun sections
@@ -78,11 +79,11 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticDesc = 207,
+        // 207 is unused - it was used by GCStaticDesc
         ThreadStaticOffsetRegion = 208,
-        ThreadStaticGCDescRegion = 209,
-        ThreadStaticIndex = 210,
-        LoopHijackFlag = 211,
+        // 209 is unused - it was used by ThreadStaticGCDescRegion
+        // 210 is unused - it was used by ThreadStaticIndex
+        // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
 

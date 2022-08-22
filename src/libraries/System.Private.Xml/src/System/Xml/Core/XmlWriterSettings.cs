@@ -660,11 +660,11 @@ namespace System.Xml
             // NewLineHandling newLineHandling;
             NewLineHandling = (NewLineHandling)reader.ReadSByte(0, (sbyte)NewLineHandling.None);
             // string newLineChars;
-            NewLineChars = reader.ReadStringQ();
+            NewLineChars = reader.ReadStringQ()!;
             // TriState indent;
             IndentInternal = (TriState)reader.ReadSByte((sbyte)TriState.Unknown, (sbyte)TriState.True);
             // string indentChars;
-            IndentChars = reader.ReadStringQ();
+            IndentChars = reader.ReadStringQ()!;
             // bool newLineOnAttributes;
             NewLineOnAttributes = reader.ReadBoolean();
             // bool closeOutput;
