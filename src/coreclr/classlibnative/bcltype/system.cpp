@@ -161,10 +161,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         STRINGREF refMesgString;
         EXCEPTIONREF refExceptionForWatsonBucketing;
         STRINGREF refErrorSourceString;
-    } gc;
-    gc.refMesgString = NULL;
-    gc.refExceptionForWatsonBucketing = NULL;
-    gc.refErrorSourceString = NULL;
+    } gc{};
 
     GCPROTECT_BEGIN(gc);
 
