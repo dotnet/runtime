@@ -7259,7 +7259,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // To be invariant a LclVar node must not be the LHS of an assignment ...
                 bool isInvariant = !user->OperIs(GT_ASG) || (user->AsOp()->gtGetOp1() != tree);
                 // and the variable must be in SSA ...
-                isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
+                isInvariant = isInvariant && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
@@ -8450,7 +8450,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = arg->AsLclVar();
-                        if (lvaInSsa(argLcl->GetLclNum()) && argLcl->HasSsaName())
+                        if (argLcl->HasSsaName())
                         {
                             ValueNum argVN =
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
@@ -8528,7 +8528,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (rhsVN != ValueNumStore::NoVN)
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
-                        if (lvaInSsa(lhsLcl->GetLclNum()) && lhsLcl->HasSsaName())
+                        if (lhsLcl->HasSsaName())
                         {
                             lvaTable[lhsLcl->GetLclNum()]
                                 .GetPerSsaData(lhsLcl->GetSsaNum())

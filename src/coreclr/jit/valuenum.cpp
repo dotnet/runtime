@@ -8349,24 +8349,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
             fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
         }
-        else if (lclVarTree->HasSsaName())
-        {
-            // The local wasn't in SSA, the tree is still an SSA def. There is only one
-            // case when this can happen - a promoted "CanBeReplacedWithItsField" struct.
-            assert((lhs == lclVarTree) && rhs->IsCall() && isEntire);
-            assert(lhsVarDsc->CanBeReplacedWithItsField(this));
-            // Give a new, unique, VN to the field.
-            LclVarDsc*    fieldVarDsc    = lvaGetDesc(lhsVarDsc->lvFieldLclStart);
-            LclSsaVarDsc* fieldVarSsaDsc = fieldVarDsc->GetPerSsaData(lclVarTree->GetSsaNum());
-            ValueNum      newUniqueVN    = vnStore->VNForExpr(compCurBB, fieldVarDsc->TypeGet());
-
-            fieldVarSsaDsc->m_vnPair.SetBoth(newUniqueVN);
-
-            JITDUMP("Tree [%06u] assigned VN to the only field V%02u/%u of promoted struct V%02u: new uniq ",
-                    dspTreeID(tree), lhsVarDsc->lvFieldLclStart, lclVarTree->GetSsaNum(), lhsLclNum);
-            JITDUMPEXEC(vnPrint(newUniqueVN, 1));
-            JITDUMP("\n");
-        }
         else if (lhsVarDsc->IsAddressExposed())
         {
             fgMutateAddressExposedLocal(tree DEBUGARG("INITBLK/COPYBLK - address-exposed local"));
@@ -8485,7 +8467,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     unsigned lclNum = lclFld->GetLclNum();
 
-                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName())
+                    if (!lclFld->HasSsaName())
                     {
                         lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                     }

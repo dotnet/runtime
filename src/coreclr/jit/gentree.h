@@ -3567,10 +3567,7 @@ public:
         _gtSsaNum = ssaNum;
     }
 
-    bool HasSsaName()
-    {
-        return (GetSsaNum() != SsaConfig::RESERVED_SSA_NUM);
-    }
+    bool HasSsaName() const;
 
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()

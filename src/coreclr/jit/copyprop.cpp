@@ -257,18 +257,12 @@ void Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
 //
 // Returns:
 //    - lclNum if the local is participating in SSA;
-//    - fieldLclNum if the parent local can be replaced by its only field;
 //    - BAD_VAR_NUM otherwise.
 //
 unsigned Compiler::optIsSsaLocal(GenTreeLclVarCommon* lclNode)
 {
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-    if (!lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(this))
-    {
-        lclNum = varDsc->lvFieldLclStart;
-    }
 
     if (!lvaInSsa(lclNum))
     {

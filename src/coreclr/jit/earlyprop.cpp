@@ -374,8 +374,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
         GenTree* treeRhs = ssaDefAsg->gtGetOp2();
 
-        if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()) &&
-            treeRhs->AsLclVarCommon()->HasSsaName())
+        if (treeRhs->OperIsScalarLocal() && treeRhs->AsLclVarCommon()->HasSsaName())
         {
             // Recursively track the Rhs
             unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();

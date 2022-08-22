@@ -23405,6 +23405,30 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
+//------------------------------------------------------------------------
+// HasSsaName: Does this local node have an SSA name?
+//
+// Return Value:
+//    Whether this node's SSA name is not RESERVED_SSA_NUM.
+//
+// Notes:
+//    If the node has an SSA name, it will always represent a local that
+//    participates in SSA. Thus, "HasSsaName" implies "lvaIsInSsa". The
+//    opposite is not true - a node may be in an unreachable block not
+//    visited by the renamer.
+//
+bool GenTreeLclVarCommon::HasSsaName() const
+{
+    bool hasSsaName = GetSsaNum() != SsaConfig::RESERVED_SSA_NUM;
+
+    if (hasSsaName)
+    {
+        assert(JitTls::GetCompiler()->lvaInSsa(GetLclNum()));
+    }
+
+    return hasSsaName;
+}
+
 unsigned GenTreeLclFld::GetSize() const
 {
     return TypeIs(TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(TypeGet());

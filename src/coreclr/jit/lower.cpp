@@ -252,6 +252,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRet(node->AsUnOp());
             break;
 
+        case GT_BITCAST:
+            return LowerBitcast(node->AsUnOp());
+
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
             break;
@@ -3376,6 +3379,44 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     ContainCheckRet(ret);
 }
 
+//------------------------------------------------------------------------
+// LowerBitcast: Lower a GT_BITCAST node.
+//
+// Will remove bitcasts that do not move between different register files.
+// Such bitcasts are generated in block morphing for assignments of struct
+// locals that "can be replaced with their one field" to calls. This makes
+// the frontend (SSA) simpler, but here, in the backend, they end up as
+// unnecessary no-op BITCAST(type -> type) nodes, so we remove them.
+//
+// Arguments:
+//    bitcast - the bitcast node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerBitcast(GenTreeUnOp* bitcast)
+{
+    GenTree* nextNode = bitcast->gtNext;
+    GenTree* src      = bitcast->gtGetOp1();
+
+    if (bitcast->TypeGet() == src->TypeGet())
+    {
+        LIR::Use bitcastUse;
+        if (BlockRange().TryGetUse(bitcast, &bitcastUse))
+        {
+            bitcastUse.ReplaceWith(src);
+        }
+        else
+        {
+            src->SetUnusedValue();
+        }
+
+        BlockRange().Remove(bitcast);
+    }
+
+    return nextNode;
+}
+
 //----------------------------------------------------------------------------------------------
 // LowerStoreLocCommon: platform idependent part of local var or field store lowering.
 //
@@ -3805,6 +3846,10 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         GenTree* user = callUse.User();
         switch (user->OperGet())
         {
+            case GT_BITCAST:
+                assert(genTypeSize(user) == genTypeSize(call));
+                break;
+
             case GT_RETURN:
             case GT_STORE_LCL_VAR:
             case GT_STORE_BLK:
