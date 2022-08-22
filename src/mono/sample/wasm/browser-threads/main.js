@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { dotnet } from './dotnet.js'
 
 function wasm_exit(exit_code, reason) {
@@ -87,7 +90,7 @@ try {
             postRun: () => { console.log('user code Module.postRun'); },
         })
         .create();
-    
+
     console.log('user code after dotnet.create');
     setModuleImports("main.js", {
         Sample: {
