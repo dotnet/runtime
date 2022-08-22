@@ -3890,8 +3890,11 @@ namespace Internal.JitInterface
             else
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
-                // set is not a reason to not support usage of it.
-                if (!isMethodDefinedInCoreLib())
+                // set is not a reason to not support usage of it. Except for functions which check if a given
+                // feature is supported or hardware accelerated.
+                if (!isMethodDefinedInCoreLib() ||
+                    MethodBeingCompiled.Name == "get_IsSupported" ||
+                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
