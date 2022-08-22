@@ -48,7 +48,7 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> ReplaceLane(Vector128<double> vector, byte imm, double value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, byte imm, nint   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, byte imm, nuint  value) { throw new PlatformNotSupportedException(); }
-        
+
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) { throw new PlatformNotSupportedException(); }
 
