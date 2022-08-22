@@ -38,14 +38,14 @@
         // Transform destReg into the equivalent address in the shadow heap.
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, X9
         subs    \destReg, \destReg, x9
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, X9
         add     \destReg, \destReg, x9
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, X9
         cmp     \destReg, x9
-        bgt     0f
+        bhs     0f
 
         // Update the shadow heap.
         str     \refReg, [\destReg]
@@ -120,11 +120,11 @@
         // an object not on the epehemeral segment.
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x\trash
         cmp     \refReg, x\trash
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x\trash
         cmp     \refReg, x\trash
-        bge     0f
+        bhs     0f
 
         // Set this objects card, if it has not already been set.
 
@@ -172,11 +172,13 @@
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x\trash
         cmp     \destReg, x\trash
-        blt     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x\trash
-        cmp     \destReg, x\trash
-        bgt     0f
+
+        // If \destReg >= g_lowest_address, compare \destReg to g_highest_address.
+        // Otherwise, set the C flag (0x2) to take the next branch.
+        ccmp    \destReg, x\trash, #0x2, hs
+        bhs     0f
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg, \trash, \trash2
 

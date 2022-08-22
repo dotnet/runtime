@@ -27,7 +27,7 @@
     jb      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
     add     \DESTREG, [C_VAR(g_GCShadow)]
     cmp     \DESTREG, [C_VAR(g_GCShadowEnd)]
-    ja      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
+    jae     LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
 
     // Update the shadow heap.
     mov     [\DESTREG], \REFREG
