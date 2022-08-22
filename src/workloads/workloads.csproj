@@ -52,28 +52,30 @@
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
-      <ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET Shared Mobile Build Tools"
-                          Description="Shared build tasks for mobile platform development." Version="$(FileVersion)"/>
-      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
-                          Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
-                          Description="Build tools for Android compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
-                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
-                          Description="Build tools for iOS compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
-                          Description="Build tools for tvOS compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET Mac Catalyst Build Tools"
-                          Description="Build tools for Mac Catalyst compilation and native linking." Version="$(FileVersion)"/>
-      <ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
-                          Description=".NET runtime components for iOS execution." Version="$(FileVersion)"/>
-      <ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
-                          Description=".NET runtime components for tvOS execution." Version="$(FileVersion)"/>
-      <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
-                          Description=".NET runtime components for Mac Catalyst execution." Version="$(FileVersion)"/>
-      <ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
-                          Description=".NET runtime components for Windows execution." Version="$(FileVersion)"/>
+      <_ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET Shared Mobile Build Tools"
+                          Description="Shared build tasks for mobile platform development."/>
+      <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
+                          Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
+                          Description="Build tools for Android compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
+                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
+                          Description="Build tools for iOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
+                          Description="Build tools for tvOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+                          Description="Build tools for Mac Catalyst compilation and native linking."/>
+      <_ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
+                          Description=".NET runtime components for iOS execution."/>
+      <_ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
+                          Description=".NET runtime components for tvOS execution."/>
+      <_ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+                          Description=".NET runtime components for Mac Catalyst execution."/>
+      <_ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
+                          Description=".NET runtime components for Windows execution."/>
+
+      <ComponentResources Include="@(_ComponentResources)" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
