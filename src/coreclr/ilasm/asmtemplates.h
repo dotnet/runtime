@@ -678,7 +678,7 @@ private:
     };
 
 public:
-    RBTREE()
+    RBTREE() : NodePool{}
     {
         pRoot = NodePool.AllocNode();
         InitSpecNode(pRoot);
