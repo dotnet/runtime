@@ -323,7 +323,7 @@ namespace System.Net.Http
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
                             // Read the chunk header line.
-                            if (!_connection.TryReadNextChunkedLine(readingHeader: false, out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(out currentLine))
                             {
                                 // Could not get a whole line, so we can't parse the chunk header.
                                 return default;
@@ -379,7 +379,7 @@ namespace System.Net.Http
                         case ParsingState.ExpectChunkTerminator:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            if (!_connection.TryReadNextChunkedLine(readingHeader: false, out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(out currentLine))
                             {
                                 return default;
                             }
@@ -395,38 +395,23 @@ namespace System.Net.Http
                         case ParsingState.ConsumeTrailers:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            while (true)
+                            // Consume the receive buffer. If the stream is disposed, pass a null response to avoid
+                            // processing headers for a connection returned to the pool.
+                            if (_connection.ParseHeaders(IsDisposed ? null : _response, isFromTrailer: true))
                             {
-                                if (!_connection.TryReadNextChunkedLine(readingHeader: true, out currentLine))
-                                {
-                                    break;
-                                }
+                                // Dispose of the registration and then check whether cancellation has been
+                                // requested. This is necessary to make deterministic a race condition between
+                                // cancellation being requested and unregistering from the token.  Otherwise,
+                                // it's possible cancellation could be requested just before we unregister and
+                                // we then return a connection to the pool that has been or will be disposed
+                                // (e.g. if a timer is used and has already queued its callback but the
+                                // callback hasn't yet run).
+                                cancellationRegistration.Dispose();
+                                CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                if (currentLine.IsEmpty)
-                                {
-                                    // Dispose of the registration and then check whether cancellation has been
-                                    // requested. This is necessary to make deterministic a race condition between
-                                    // cancellation being requested and unregistering from the token.  Otherwise,
-                                    // it's possible cancellation could be requested just before we unregister and
-                                    // we then return a connection to the pool that has been or will be disposed
-                                    // (e.g. if a timer is used and has already queued its callback but the
-                                    // callback hasn't yet run).
-                                    cancellationRegistration.Dispose();
-                                    CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
-
-                                    _state = ParsingState.Done;
-                                    _connection.CompleteResponse();
-                                    _connection = null;
-
-                                    break;
-                                }
-                                // Parse the trailer.
-                                else if (!IsDisposed)
-                                {
-                                    // Make sure that we don't inadvertently consume trailing headers
-                                    // while draining a connection that's being returned back to the pool.
-                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer: true);
-                                }
+                                _state = ParsingState.Done;
+                                _connection.CompleteResponse();
+                                _connection = null;
                             }
 
                             return default;

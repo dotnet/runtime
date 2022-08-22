@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -1231,6 +1232,47 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(null, 63 * 1024)]
+        [InlineData(null, 65 * 1024)]
+        [InlineData(1, 100)]
+        [InlineData(1, 1024)]
+        public async Task LargeStatusLine_ThrowsException(int? maxResponseHeadersLength, int statusLineLengthEstimate)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                if (maxResponseHeadersLength.HasValue)
+                {
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
+
+                using HttpClient client = CreateHttpClient(handler);
+
+                if (statusLineLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
+                {
+                    await client.GetAsync(uri);
+                }
+                else
+                {
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    if (!IsWinHttpHandler)
+                    {
+                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                    }
+                }
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK{new string('a', statusLineLengthEstimate)}\r\n\r\n");
+                }
+                catch { }
+            });
+        }
     }
 
     [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
@@ -3518,6 +3560,24 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task ResponseHeaders_ExtraWhitespace_Trimmed()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues value));
+                Assert.Equal("bar", Assert.Single(value));
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("foo  ", " \t bar  \r\n ") });
+            });
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]

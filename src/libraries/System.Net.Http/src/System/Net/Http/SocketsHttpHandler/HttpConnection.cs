@@ -615,7 +615,11 @@ namespace System.Net.Http
 
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
-                ParseStatusLine((await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)).Span, response);
+
+                while (!ParseStatusLine(response))
+                {
+                    await FillAsync(async).ConfigureAwait(false);
+                }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
 
@@ -648,22 +652,22 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) Trace($"Current {response.StatusCode} response is an interim response or not expected, need to read for a final response.");
 
                     // Discard headers that come with the interim 1xx responses.
-                    // RFC7231: 1xx responses are terminated by the first empty line after the status-line.
-                    while (!IsLineEmpty(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)));
+                    while (!ParseHeaders(response: null, isFromTrailer: false))
+                    {
+                        await FillAsync(async).ConfigureAwait(false);
+                    }
 
                     // Parse the status line for next response.
-                    ParseStatusLine((await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)).Span, response);
+                    while (!ParseStatusLine(response))
+                    {
+                        await FillAsync(async).ConfigureAwait(false);
+                    }
                 }
 
                 // Parse the response headers.  Logic after this point depends on being able to examine headers in the response object.
-                while (true)
+                while (!ParseHeaders(response, isFromTrailer: false))
                 {
-                    ReadOnlyMemory<byte> line = await ReadNextResponseHeaderLineAsync(async, foldedHeadersAllowed: true).ConfigureAwait(false);
-                    if (IsLineEmpty(line))
-                    {
-                        break;
-                    }
-                    ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
+                    await FillAsync(async).ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -908,8 +912,6 @@ namespace System.Net.Http
             }, _weakThisRef);
         }
 
-        private static bool IsLineEmpty(ReadOnlyMemory<byte> line) => line.Length == 0;
-
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
             // Now that we're sending content, prohibit retries of this request by setting this flag.
@@ -972,7 +974,35 @@ namespace System.Net.Http
             }
         }
 
-        private static void ParseStatusLine(ReadOnlySpan<byte> line, HttpResponseMessage response)
+        private bool ParseStatusLine(HttpResponseMessage response)
+        {
+            Span<byte> buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
+
+            int lineFeedIndex = buffer.IndexOf((byte)'\n');
+            if (lineFeedIndex >= 0)
+            {
+                _readOffset += lineFeedIndex + 1;
+                _allowedReadLineBytes -= lineFeedIndex + 1;
+
+                int carriageReturnIndex = lineFeedIndex - 1;
+                int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
+                    ? carriageReturnIndex
+                    : lineFeedIndex;
+
+                ParseStatusLineCore(buffer.Slice(0, length), response);
+                return true;
+            }
+            else
+            {
+                if (_allowedReadLineBytes <= buffer.Length)
+                {
+                    ThrowExceededAllowedReadLineBytes();
+                }
+                return false;
+            }
+        }
+
+        private static void ParseStatusLineCore(Span<byte> line, HttpResponseMessage response)
         {
             // We sent the request version as either 1.0 or 1.1.
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
@@ -1045,95 +1075,202 @@ namespace System.Net.Http
             }
         }
 
-        private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
+        private bool ParseHeaders(HttpResponseMessage? response, bool isFromTrailer)
         {
-            Debug.Assert(line.Length > 0);
+            Span<byte> buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
 
-            int pos = 0;
-            while (line[pos] != (byte)':' && line[pos] != (byte)' ')
+            (bool finished, int bytesConsumed) = ParseHeadersCore(buffer, response, isFromTrailer);
+
+            int bytesScanned = finished ? bytesConsumed : buffer.Length;
+            if (_allowedReadLineBytes < bytesScanned)
             {
-                pos++;
-                if (pos == line.Length)
+                ThrowExceededAllowedReadLineBytes();
+            }
+
+            _readOffset += bytesConsumed;
+            _allowedReadLineBytes -= bytesConsumed;
+            Debug.Assert(_allowedReadLineBytes >= 0);
+
+            return finished;
+        }
+
+        private (bool finished, int bytesConsumed) ParseHeadersCore(Span<byte> buffer, HttpResponseMessage? response, bool isFromTrailer)
+        {
+            int originalBufferLength = buffer.Length;
+
+            while (true)
+            {
+                int colIdx = buffer.IndexOfAny((byte)':', (byte)'\n');
+                if (colIdx < 0) goto needMore;
+
+                if (buffer[colIdx] == '\n')
                 {
-                    // Invalid header line that doesn't contain ':'.
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
+                    if ((colIdx == 1 && buffer[0] == '\r') || colIdx == 0)
+                    {
+                        return (finished: true, bytesConsumed: originalBufferLength - buffer.Length + colIdx + 1);
+                    }
+
+                    ThrowForInvalidHeaderLine(buffer);
+                }
+
+                int valueStartIdx = colIdx + 1;
+
+                if ((uint)valueStartIdx >= (uint)buffer.Length) goto needMore;
+
+                Span<byte> valueIter = buffer.Slice(valueStartIdx);
+
+                while (true)
+                {
+                    int lfIdx = valueIter.IndexOf((byte)'\n');
+                    if ((uint)lfIdx >= (uint)valueIter.Length) goto needMore;
+
+                    int crIdx = lfIdx - 1;
+                    int crOrLfIdx = (uint)crIdx < (uint)valueIter.Length && valueIter[crIdx] == '\r'
+                        ? crIdx
+                        : lfIdx;
+
+                    int spIdx = lfIdx + 1;
+                    if ((uint)spIdx >= (uint)valueIter.Length) goto needMore;
+
+                    if (valueIter[spIdx] is not (byte)'\t' and not (byte)' ')
+                    {
+                        // Found the end of the header value.
+
+                        if (response is not null)
+                        {
+                            ReadOnlySpan<byte> headerName = buffer.Slice(0, valueStartIdx - 1);
+                            ReadOnlySpan<byte> headerValue = buffer.Slice(valueStartIdx, buffer.Length - valueIter.Length + crOrLfIdx - valueStartIdx);
+                            AddResponseHeader(headerName, headerValue, response, isFromTrailer);
+                        }
+
+                        buffer = buffer.Slice(buffer.Length - valueIter.Length + spIdx);
+                        break;
+                    }
+
+                    // Found an obs-fold (CRLFHT/CRLFSP).
+                    // Replace the CRLF with SPSP and keep looking for the final newline.
+                    valueIter[crOrLfIdx] = (byte)' ';
+                    valueIter[lfIdx] = (byte)' ';
+
+                    valueIter = valueIter.Slice(spIdx + 1);
                 }
             }
 
-            if (pos == 0)
-            {
-                // Invalid empty header name.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
-            }
+        needMore:
+            return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
 
-            if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
+            static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer)
             {
-                // Invalid header name.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
+                buffer = buffer.Slice(0, buffer.IndexOf((byte)'\n'));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer)));
             }
+        }
 
-            if (isFromTrailer && (descriptor.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
+        private void AddResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value, HttpResponseMessage response, bool isFromTrailer)
+        {
+            // Skip trailing whitespace and check for null length.
+            while (true)
             {
-                // Disallowed trailer fields.
-                // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
-                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
-                return;
-            }
+                int spIdx = name.Length - 1;
 
-            // Eat any trailing whitespace
-            while (line[pos] == (byte)' ')
-            {
-                pos++;
-                if (pos == line.Length)
+                if ((uint)spIdx < (uint)name.Length)
                 {
-                    // Invalid header line that doesn't contain ':'.
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
+                    if (name[spIdx] != ' ')
+                    {
+                        // hot path
+                        break;
+                    }
+
+                    name = name.Slice(0, spIdx);
+                }
+                else
+                {
+                    ThrowForEmptyHeaderName();
                 }
             }
 
-            if (line[pos++] != ':')
+            // Skip leading OWS for value.
+            // hot path: loop body runs only once.
+            while (value.Length != 0 && value[0] is (byte)' ' or (byte)'\t')
             {
-                // Invalid header line that doesn't contain ':'.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
+                value = value.Slice(1);
             }
 
-            // Skip whitespace after colon
-            while (pos < line.Length && (line[pos] == (byte)' ' || line[pos] == (byte)'\t'))
+            // Skip trailing whitespace for value.
+            while (true)
             {
-                pos++;
+                int spIdx = value.Length - 1;
+
+                if ((uint)spIdx >= (uint)value.Length || value[spIdx] != ' ')
+                {
+                    // hot path
+                    break;
+                }
+
+                value = value.Slice(0, spIdx);
             }
 
-            Debug.Assert(response.RequestMessage != null);
-            Encoding? valueEncoding = connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage);
+            if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
+            {
+                ThrowForInvalidHeaderName(name);
+            }
 
-            // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
-            ReadOnlySpan<byte> value = line.Slice(pos);
+            Encoding? valueEncoding = _pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _currentRequest!);
+
+            HttpHeaderType headerType = descriptor.HeaderType;
+
+            // Request headers returned on the response must be treated as custom headers.
+            if ((headerType & HttpHeaderType.Request) != 0)
+            {
+                descriptor = descriptor.AsCustomHeader();
+            }
+
+            string headerValue;
+            HttpHeaders headers;
+
             if (isFromTrailer)
             {
-                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
-                response.TrailingHeaders.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                if ((headerType & HttpHeaderType.NonTrailing) != 0)
+                {
+                    // Disallowed trailer fields.
+                    // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
+                    return;
+                }
+
+                headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                headers = response.TrailingHeaders;
             }
-            else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
+            else if ((headerType & HttpHeaderType.Content) != 0)
             {
-                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
-                response.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                headers = response.Content!.Headers;
             }
             else
             {
-                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+                headerValue = GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+                headers = response.Headers;
 
                 if (descriptor.Equals(KnownHeaders.KeepAlive))
                 {
                     // We are intentionally going against RFC to honor the Keep-Alive header even if
                     // we haven't received a Keep-Alive connection token to maximize compat with servers.
-                    connection.ProcessKeepAliveHeader(headerValue);
+                    ProcessKeepAliveHeader(headerValue);
                 }
-
-                // Request headers returned on the response must be treated as custom headers.
-                response.Headers.TryAddWithoutValidation(
-                    (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
-                    headerValue);
             }
+
+            bool added = headers.TryAddWithoutValidation(descriptor, headerValue);
+            Debug.Assert(added);
+
+            static void ThrowForEmptyHeaderName() =>
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+
+            static void ThrowForInvalidHeaderName(ReadOnlySpan<byte> name) =>
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+        }
+
+        private void ThrowExceededAllowedReadLineBytes()
+        {
+            throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
         }
 
         private void ProcessKeepAliveHeader(string keepAlive)
@@ -1516,15 +1653,14 @@ namespace System.Net.Http
             }
         }
 
-        private bool TryReadNextChunkedLine(bool readingHeader, out ReadOnlySpan<byte> line)
+        private bool TryReadNextChunkedLine(out ReadOnlySpan<byte> line)
         {
-            int maxByteLength = readingHeader ? _allowedReadLineBytes : MaxChunkBytesAllowed;
             var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
 
             int lineFeedIndex = buffer.IndexOf((byte)'\n');
             if (lineFeedIndex < 0)
             {
-                if (buffer.Length < maxByteLength)
+                if (buffer.Length < MaxChunkBytesAllowed)
                 {
                     line = default;
                     return false;
@@ -1533,15 +1669,9 @@ namespace System.Net.Http
             else
             {
                 int bytesConsumed = lineFeedIndex + 1;
-                int maxBytesRemaining = maxByteLength - bytesConsumed;
-                if (maxBytesRemaining >= 0)
+                if (bytesConsumed <= MaxChunkBytesAllowed)
                 {
                     _readOffset += bytesConsumed;
-
-                    if (readingHeader)
-                    {
-                        _allowedReadLineBytes = maxBytesRemaining;
-                    }
 
                     int carriageReturnIndex = lineFeedIndex - 1;
 
@@ -1554,110 +1684,7 @@ namespace System.Net.Http
                 }
             }
 
-            string message = readingHeader
-                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength)
-                : SR.net_http_chunk_too_large;
-
-            throw new HttpRequestException(message);
-        }
-
-        private async ValueTask<ReadOnlyMemory<byte>> ReadNextResponseHeaderLineAsync(bool async, bool foldedHeadersAllowed = false)
-        {
-            int previouslyScannedBytes = 0;
-            while (true)
-            {
-                int scanOffset = _readOffset + previouslyScannedBytes;
-                int lfIndex = Array.IndexOf(_readBuffer, (byte)'\n', scanOffset, _readLength - scanOffset);
-                if (lfIndex >= 0)
-                {
-                    int startIndex = _readOffset;
-                    int length = lfIndex - startIndex;
-                    if (lfIndex > 0 && _readBuffer[lfIndex - 1] == '\r')
-                    {
-                        length--;
-                    }
-
-                    // If this isn't the ending header, we need to account for the possibility
-                    // of folded headers, which per RFC2616 are headers split across multiple
-                    // lines, where the continuation line begins with a space or horizontal tab.
-                    // The feature was deprecated in RFC 7230 3.2.4, but some servers still use it.
-                    if (foldedHeadersAllowed && length > 0)
-                    {
-                        // If the newline is the last character we've buffered, we need at least
-                        // one more character in order to see whether it's space/tab, in which
-                        // case it's a folded header.
-                        if (lfIndex + 1 == _readLength)
-                        {
-                            // The LF is at the end of the buffer, so we need to read more
-                            // to determine whether there's a continuation.  We'll read
-                            // and then loop back around again, but to avoid needing to
-                            // rescan the whole header, reposition to one character before
-                            // the newline so that we'll find it quickly.
-                            int backPos = _readBuffer[lfIndex - 1] == '\r' ? lfIndex - 2 : lfIndex - 1;
-                            Debug.Assert(backPos >= 0);
-                            previouslyScannedBytes = backPos - _readOffset;
-                            _allowedReadLineBytes -= backPos - scanOffset;
-                            ThrowIfExceededAllowedReadLineBytes();
-                            await FillAsync(async).ConfigureAwait(false);
-                            continue;
-                        }
-
-                        // We have at least one more character we can look at.
-                        Debug.Assert(lfIndex + 1 < _readLength);
-                        char nextChar = (char)_readBuffer[lfIndex + 1];
-                        if (nextChar == ' ' || nextChar == '\t')
-                        {
-                            // The next header is a continuation.
-
-                            // Folded headers are only allowed within header field values, not within header field names,
-                            // so if we haven't seen a colon, this is invalid.
-                            if (Array.IndexOf(_readBuffer, (byte)':', _readOffset, lfIndex - _readOffset) == -1)
-                            {
-                                throw new HttpRequestException(SR.net_http_invalid_response_header_folder);
-                            }
-
-                            // When we return the line, we need the interim newlines filtered out. According
-                            // to RFC 7230 3.2.4, a valid approach to dealing with them is to "replace each
-                            // received obs-fold with one or more SP octets prior to interpreting the field
-                            // value or forwarding the message downstream", so that's what we do.
-                            _readBuffer[lfIndex] = (byte)' ';
-                            if (_readBuffer[lfIndex - 1] == '\r')
-                            {
-                                _readBuffer[lfIndex - 1] = (byte)' ';
-                            }
-
-                            // Update how much we've read, and simply go back to search for the next newline.
-                            previouslyScannedBytes = (lfIndex + 1 - _readOffset);
-                            _allowedReadLineBytes -= (lfIndex + 1 - scanOffset);
-                            ThrowIfExceededAllowedReadLineBytes();
-                            continue;
-                        }
-
-                        // Not at the end of a header with a continuation.
-                    }
-
-                    // Advance read position past the LF
-                    _allowedReadLineBytes -= lfIndex + 1 - scanOffset;
-                    ThrowIfExceededAllowedReadLineBytes();
-                    _readOffset = lfIndex + 1;
-
-                    return new ReadOnlyMemory<byte>(_readBuffer, startIndex, length);
-                }
-
-                // Couldn't find LF.  Read more. Note this may cause _readOffset to change.
-                previouslyScannedBytes = _readLength - _readOffset;
-                _allowedReadLineBytes -= _readLength - scanOffset;
-                ThrowIfExceededAllowedReadLineBytes();
-                await FillAsync(async).ConfigureAwait(false);
-            }
-        }
-
-        private void ThrowIfExceededAllowedReadLineBytes()
-        {
-            if (_allowedReadLineBytes < 0)
-            {
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
-            }
+            throw new HttpRequestException(SR.net_http_chunk_too_large);
         }
 
         private void Fill()
