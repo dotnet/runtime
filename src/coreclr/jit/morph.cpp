@@ -12361,8 +12361,15 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         GenTree* chOp1 = op1->gtGetOp1();
         GenTree* chOp2 = op1->gtGetOp2();
 
+        IntegralRange boundRange = IntegralRange::ForNode(op2, this);
+        int64_t       upperBound = IntegralRange::SymbolicToRealValue(boundRange.GetUpperBound());
+
         int64_t child_val = chOp2->AsIntConCommon()->IntegralValue();
         int64_t root_val  = op2->AsIntConCommon()->IntegralValue();
+
+        // Make sure it is not folded into overflow
+        if ((upperBound / child_val) < root_val)
+            return nullptr;
 
         div->gtOp1 = chOp1;
         div->gtOp1->SetVNsFromNode(op1);
