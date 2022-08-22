@@ -261,11 +261,12 @@ jobs:
             targetFolder: $(buildProductRootFolderPath)/sharedFramework
             overWrite: true
 
-    - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-      parameters:
-        basePath: $(buildProductRootFolderPath)
-        isOfficialBuild: ${{ parameters.signBinaries }}
-        timeoutInMinutes: 30
+    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
+      - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+        parameters:
+          basePath: $(buildProductRootFolderPath)
+          isOfficialBuild: ${{ parameters.signBinaries }}
+          timeoutInMinutes: 30
 
     # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
