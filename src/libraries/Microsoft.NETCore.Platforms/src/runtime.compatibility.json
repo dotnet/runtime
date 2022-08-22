@@ -3454,6 +3454,38 @@
     "any",
     "base"
   ],
+  "fedora.38": [
+    "fedora.38",
+    "fedora",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.38-arm64": [
+    "fedora.38-arm64",
+    "fedora.38",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.38-x64": [
+    "fedora.38-x64",
+    "fedora.38",
+    "fedora-x64",
+    "fedora",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "freebsd": [
     "freebsd",
     "unix",
@@ -4285,22 +4317,22 @@
     "any",
     "base"
   ],
+  "linux-musl-ppc64le": [
+    "linux-musl-ppc64le",
+    "linux-musl",
+    "linux-ppc64le",
+    "linux",
+    "unix-ppc64le",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-musl-s390x": [
     "linux-musl-s390x",
     "linux-musl",
     "linux-s390x",
     "linux",
     "unix-s390x",
-    "unix",
-    "any",
-    "base"
-  ],
-   "linux-musl-ppc64le": [
-    "linux-musl-ppc64le",
-    "linux-musl",
-    "linux-ppc64le",
-    "linux",
-    "unix-ppc64le",
     "unix",
     "any",
     "base"
@@ -4325,18 +4357,18 @@
     "any",
     "base"
   ],
-  "linux-s390x": [
-    "linux-s390x",
-    "linux",
-    "unix-s390x",
-    "unix",
-    "any",
-    "base"
-  ],
   "linux-ppc64le": [
     "linux-ppc64le",
     "linux",
     "unix-ppc64le",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-s390x": [
+    "linux-s390x",
+    "linux",
+    "unix-s390x",
     "unix",
     "any",
     "base"
@@ -8895,14 +8927,14 @@
     "any",
     "base"
   ],
-  "unix-s390x": [
-    "unix-s390x",
+  "unix-ppc64le": [
+    "unix-ppc64le",
     "unix",
     "any",
     "base"
   ],
-  "unix-ppc64le": [
-    "unix-ppc64le",
+  "unix-s390x": [
+    "unix-s390x",
     "unix",
     "any",
     "base"
