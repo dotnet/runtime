@@ -240,7 +240,7 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
-                Debug.Assert(_abortException is not null);
+                // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
                 throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
@@ -569,7 +569,14 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                Abort(ex);
+                if (ex is QuicException qe && qe.QuicError == QuicError.OperationAborted)
+                {
+                    // ignore the exception, we have already closed the connection
+                }
+                else
+                {
+                    Abort(ex);
+                }
             }
             finally
             {
