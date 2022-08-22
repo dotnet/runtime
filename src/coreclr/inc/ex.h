@@ -573,7 +573,7 @@ class OutOfMemoryException : public Exception
     }
 
     HRESULT GetHR() {LIMITED_METHOD_DAC_CONTRACT;  return E_OUTOFMEMORY; }
-    void GetMessage(SString &result) { WRAPPER_NO_CONTRACT; result.SetASCII("Out Of Memory"); }
+    void GetMessage(SString &result) { WRAPPER_NO_CONTRACT; result.SetASCII("Out of memory or another resource (e.g. Threads, PIDs)."); }
 
     virtual Exception *Clone();
 
