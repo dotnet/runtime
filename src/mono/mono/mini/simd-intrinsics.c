@@ -720,10 +720,9 @@ emit_hardware_intrinsics (
 		id = info->id;
 
 #ifdef TARGET_ARM64
-		if (!(cfg->compile_aot && cfg->full_aot)) {
+		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
 			goto support_probe_complete;
 		}
-			
 #endif
 
 		// Hardware intrinsics are LLVM-only.
