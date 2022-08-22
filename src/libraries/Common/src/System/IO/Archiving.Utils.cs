@@ -9,60 +9,6 @@ namespace System.IO
 {
     internal static partial class ArchivingUtils
     {
-        // To ensure tar files remain compatible with Unix,
-        // and per the ZIP File Format Specification 4.4.17.1,
-        // all slashes should be forward slashes.
-        private const char PathSeparatorChar = '/';
-        private const string PathSeparatorString = "/";
-
-        public static string EntryFromPath(string entry, int offset, int length, bool appendPathSeparator = false)
-        {
-            Debug.Assert(length <= entry.Length - offset);
-
-            // Remove any leading slashes from the entry name:
-            while (length > 0)
-            {
-                if (entry[offset] != Path.DirectorySeparatorChar &&
-                    entry[offset] != Path.AltDirectorySeparatorChar)
-                    break;
-
-                offset++;
-                length--;
-            }
-
-            if (length == 0)
-            {
-                return appendPathSeparator ? PathSeparatorString : string.Empty;
-            }
-
-            if (appendPathSeparator)
-            {
-                length++;
-            }
-
-            return string.Create(length, (appendPathSeparator, offset, entry), static (dest, state) =>
-            {
-                state.entry.AsSpan(state.offset).CopyTo(dest);
-
-                // '/' is a more broadly recognized directory separator on all platforms (eg: mac, linux)
-                // We don't use Path.DirectorySeparatorChar or AltDirectorySeparatorChar because this is
-                // explicitly trying to standardize to '/'
-                for (int i = 0; i < dest.Length; i++)
-                {
-                    char ch = dest[i];
-                    if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
-                    {
-                        dest[i] = PathSeparatorChar;
-                    }
-                }
-
-                if (state.appendPathSeparator)
-                {
-                    dest[^1] = PathSeparatorChar;
-                }
-            });
-        }
-
         public static void EnsureCapacity(ref char[] buffer, int min)
         {
             Debug.Assert(buffer != null);
