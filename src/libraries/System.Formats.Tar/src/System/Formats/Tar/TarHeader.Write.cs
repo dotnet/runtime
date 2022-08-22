@@ -562,7 +562,7 @@ namespace System.Formats.Tar
                     // If prepending the length digits increases the number of digits, we need to expand.
                     int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
                     int originalDigitCount = CountDigits(length), newDigitCount;
-                    length += CountDigits(length);
+                    length += originalDigitCount;
                     while ((newDigitCount = CountDigits(length)) != originalDigitCount)
                     {
                         length += newDigitCount - originalDigitCount;
