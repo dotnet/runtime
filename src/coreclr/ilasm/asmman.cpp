@@ -166,7 +166,7 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
     Assembler* pAsm = (Assembler*)m_pAssembler;
     if(tmp==NULL)
     {
-        tmp = new (nothrow) AsmManFile;
+        tmp = new (nothrow) AsmManFile();
         if(tmp==NULL)
         {
             pAsm->report->error("\nOut of memory!\n");
@@ -255,7 +255,7 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     }
     else
     {
-        if((m_pCurAsmRef = new (nothrow) AsmManAssembly))
+        if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
@@ -674,7 +674,7 @@ void    AsmMan::SetAssemblyAutodetect()
 
 void    AsmMan::StartComType(_In_ __nullterminated char* szName, DWORD dwAttr)
 {
-    if((m_pCurComType = new (nothrow) AsmManComType))
+    if((m_pCurComType = new (nothrow) AsmManComType()))
     {
         m_pCurComType->szName = szName;
         m_pCurComType->dwAttr = dwAttr;
