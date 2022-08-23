@@ -19,8 +19,8 @@ using Microsoft.CodeAnalysis.Simplification;
 
 namespace ILLink.CodeFix
 {
-	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (DAMCodeFixProvider)), Shared]
-	public sealed class DAMCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
+	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (DynamicallyAccessedMembersCodeFixProvider)), Shared]
+	public sealed class DynamicallyAccessedMembersCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
 	{
 		private static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
@@ -93,31 +93,24 @@ namespace ILLink.CodeFix
 		public override async Task RegisterCodeFixesAsync (CodeFixContext context)
 		{
 			var document = context.Document;
-			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
-				return;
 			var diagnostic = context.Diagnostics[0];
-			if (diagnostic.AdditionalLocations.Count == 0)
-				return;
-			if (root.FindNode (diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode attributableNode)
-				return;
-			// currently not supporting multiple DAM argument, hence the check for commas in the string arguments
-			if (diagnostic.Properties[DynamicallyAccessedMembersAnalyzer.attributeArgument] is not string stringArgs || stringArgs.Contains (","))
-				return;
-
-			var syntaxGenerator = SyntaxGenerator.GetGenerator (document);
-			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
-				return;
-			if (model.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
-				return;
 			var codeFixTitle = CodeFixTitle.ToString ();
 
+			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
+				return;
+			if (diagnostic.AdditionalLocations.Count == 0)
+				return;
+			if (root.FindNode (diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
+				return;
+			if (diagnostic.Properties["attributeArgument"] is not string stringArgs || stringArgs.Contains (","))
+				return;
+
 			context.RegisterCodeFix (CodeAction.Create (
-				title: codeFixTitle,
+				title: CodeFixTitle.ToString (),
 				createChangedDocument: ct => AddAttributeAsync (
 					document,
-					attributableNode,
+					targetNode,
 					stringArgs,
-					attributeSymbol,
 					addAsReturnAttribute: AttributeOnReturn.Contains (diagnostic.Id),
 					addGenericParameterAttribute: AttributeOnGeneric.Contains (diagnostic.Id),
 					ct),
@@ -128,11 +121,15 @@ namespace ILLink.CodeFix
 			Document document,
 			SyntaxNode targetNode,
 			string stringArguments,
-			ITypeSymbol attributeSymbol,
 			bool addAsReturnAttribute,
 			bool addGenericParameterAttribute,
 			CancellationToken cancellationToken)
 		{
+			if (await document.GetSemanticModelAsync (cancellationToken).ConfigureAwait (false) is not { } model)
+				return document;
+			if (model.Compilation.GetBestTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
+				return document;
+
 			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
 			var generator = editor.Generator;
 			var attributeArguments = new[] { generator.AttributeArgument (generator.MemberAccessExpression (generator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArguments)) };
