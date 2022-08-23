@@ -1,32 +1,43 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <SelfContained>false</SelfContained>
+    <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
-  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
+          Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
+
+  <Target Name="RewriteRuntimePackDir"
+          Condition="'$(RunningPublish)' == 'true'"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          BeforeTargets="ResolveRuntimePackAssets">
+      <ItemGroup>
+        <!-- Remove AspNetCore runtime pack since we don't build it locally -->
+        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.$(RuntimeIdentifier)" />
+
+        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
+          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
+        </ResolvedRuntimePack>
+      </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <PublishTrimmed>true</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <Target Name="PublishCompiler"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;StompSingleFileHostPath" />
-
-  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
-        That's unfortunate because it's not the host we're supposed to use here. -->
-  <Target Name="StompSingleFileHostPath"
-          BeforeTargets="ResolveFrameworkReferences">
-    <PropertyGroup>
-      <SingleFileHostSourcePath></SingleFileHostSourcePath>
-    </PropertyGroup>
-  </Target>
-  <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+          DependsOnTargets="Publish" />
 </Project>
