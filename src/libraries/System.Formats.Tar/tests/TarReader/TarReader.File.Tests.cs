@@ -189,14 +189,8 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetGoLangTarTestCaseNames))]
-        public void ReadDataStreamOfExternalAssetsGoLang(string testCaseName)
-        {
-            if (ShouldSkipGoLangAsset(testCaseName))
-            {
-                return;
-            }
+        public void ReadDataStreamOfExternalAssetsGoLang(string testCaseName) =>
             VerifyDataStreamOfTarUncompressedInternal("golang_tar", testCaseName, copyData: false);
-        }
 
         [Theory]
         [MemberData(nameof(GetNodeTarTestCaseNames))]
@@ -205,26 +199,13 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetRsTarTestCaseNames))]
-        public void ReadDataStreamOfExternalAssetsRs(string testCaseName)
-        {
-            if (testCaseName == "spaces")
-            {
-                // Tested separately
-                return;
-            }
+        public void ReadDataStreamOfExternalAssetsRs(string testCaseName) =>
             VerifyDataStreamOfTarUncompressedInternal("tar-rs", testCaseName, copyData: false);
-        }
 
         [Theory]
         [MemberData(nameof(GetGoLangTarTestCaseNames))]
-        public void ReadCopiedDataStreamOfExternalAssetsGoLang(string testCaseName)
-        {
-            if (ShouldSkipGoLangAsset(testCaseName))
-            {
-                return;
-            }
+        public void ReadCopiedDataStreamOfExternalAssetsGoLang(string testCaseName) =>
             VerifyDataStreamOfTarUncompressedInternal("golang_tar", testCaseName, copyData: true);
-        }
 
         [Theory]
         [MemberData(nameof(GetNodeTarTestCaseNames))]
@@ -233,14 +214,115 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetRsTarTestCaseNames))]
-        public void ReadCopiedDataStreamOfExternalAssetsRs(string testCaseName)
-        {
-            if (testCaseName == "spaces")
-            {
-                // Tested separately
-                return;
-            }
+        public void ReadCopiedDataStreamOfExternalAssetsRs(string testCaseName) =>
             VerifyDataStreamOfTarUncompressedInternal("tar-rs", testCaseName, copyData: true);
+
+        [Fact]
+        public void Throw_FifoContainsNonZeroDataSection()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "hdr-only");
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.NotNull(reader.GetNextEntry());
+            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Throw_SingleExtendedAttributesEntryWithNoActualEntry()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-path-hdr");
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.Throws<EndOfStreamException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("tar-rs", "spaces")]
+        [InlineData("golang_tar", "v7")]
+        public void AllowSpacesInOctalFields(string folderName, string testCaseName)
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, folderName, testCaseName);
+            using TarReader reader = new TarReader(archiveStream);
+            TarEntry entry;
+            while ((entry = reader.GetNextEntry()) != null)
+            {
+                AssertExtensions.GreaterThan(entry.Checksum, 0);
+                AssertExtensions.GreaterThan((int)entry.Mode, 0);
+            }
+        }
+
+        [Theory]
+        [InlineData("pax-multi-hdrs")] // Multiple consecutive PAX metadata entries
+        [InlineData("gnu-multi-hdrs")] // Multiple consecutive GNU metadata entries
+        [InlineData("neg-size")] // Garbage chars
+        [InlineData("invalid-go17")] // Many octal fields are all zero chars
+        [InlineData("issue11169")] // Checksum with null in the middle
+        [InlineData("issue10968")] // Garbage chars
+        [InlineData("writer-big")] // The size field contains an euro char
+        public void Throw_ArchivesWithRandomChars(string testCaseName)
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void GarbageEntryChecksumZeroReturnNull()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("golang_tar", "gnu-nil-sparse-data")]
+        [InlineData("golang_tar", "gnu-nil-sparse-hole")]
+        [InlineData("golang_tar", "gnu-sparse-big")]
+        [InlineData("golang_tar", "sparse-formats")]
+        [InlineData("tar-rs", "sparse-1")]
+        [InlineData("tar-rs", "sparse")]
+        public void SparseEntryNotSupported(string testFolderName, string testCaseName)
+        {
+            // Currently sparse entries are not supported.
+
+            // There are PAX archives archives in the golang folder that have extended attributes for treating a regular file as a sparse file.
+            // Sparse entries were created for the GNU format, so they are very rare entry types which are excluded from this test method:
+            // pax-nil-sparse-data, pax-nil-sparse-hole, pax-sparse-big
+
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void DirectoryListRegularFileAndSparse()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "gnu-incremental");
+            using TarReader reader = new TarReader(archiveStream);
+            TarEntry directoryList = reader.GetNextEntry();
+
+            Assert.Equal(TarEntryType.DirectoryList, directoryList.EntryType);
+            Assert.NotNull(directoryList.DataStream);
+            Assert.Equal(14, directoryList.Length);
+
+            Assert.NotNull(reader.GetNextEntry()); // Just a regular file
+
+            Assert.Throws<NotSupportedException>(() => reader.GetNextEntry()); // Sparse
+        }
+
+        [Fact]
+        public void PaxSizeLargerThanMaxAllowedByStream()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big-long");
+            using TarReader reader = new TarReader(archiveStream);
+            // The extended attribute 'size' has the value 17179869184
+            // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
+            Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
         }
 
         private static void VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData)

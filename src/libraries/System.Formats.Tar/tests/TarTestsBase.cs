@@ -118,45 +118,25 @@ namespace System.Formats.Tar.Tests
         {
             "empty",
             "file-and-dir",
-            "gnu-incremental",
             "gnu-long-nul",
-            "gnu-multi-hdrs",
-            "gnu-nil-sparse-data",
-            "gnu-nil-sparse-hole",
             "gnu-not-utf8",
-            "gnu-sparse-big",
             "gnu-utf8",
             "gnu",
             "hardlink",
-            "hdr-only",
-            "invalid-go17",
-            "issue10968",
-            "issue11169",
-            "issue12435",
-            "neg-size",
             "nil-uid",
             "pax-bad-hdr-file",
             "pax-bad-mtime-file",
             "pax-global-records",
-            "pax-multi-hdrs",
-            "pax-nil-sparse-data",
-            "pax-nil-sparse-hole",
             "pax-nul-path",
             "pax-nul-xattrs",
-            "pax-path-hdr",
             "pax-pos-size-file",
             "pax-records",
-            "pax-sparse-big",
             "pax",
-            "sparse-formats",
             "star",
             "trailing-slash",
             "ustar-file-devs",
             "ustar-file-reg",
             "ustar",
-            "v7",
-            "writer-big-long",
-            "writer-big",
             "writer",
             "xattrs"
         };
@@ -195,9 +175,6 @@ namespace System.Formats.Tar.Tests
             "reading_files",
             "simple_missing_last_header",
             "simple",
-            "spaces",
-            "sparse-1",
-            "sparse",
             "xattrs"
         };
 
@@ -633,24 +610,6 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { name };
             }
-        }
-
-        public static bool ShouldSkipGoLangAsset(string testCaseName)
-        {
-            return testCaseName is
-                "gnu-multi-hdrs" or // More than one consecutive LongPath metadata entry found
-                "hdr-only" or //
-                "invalid-go17" or //
-                "issue10968" or //
-                "issue11169" or //
-                "issue12435" or //
-                "neg-size" or //
-                "pax-multi-hdrs" or // More than one consecutive extended attributes header found
-                "pax-path-hdr" or //
-                "sparse-formats" or //
-                "v7" or //
-                "writer-big-long" or //
-                "writer-big";
         }
     }
 }

@@ -189,14 +189,8 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetGoLangTarTestCaseNames))]
-        public Task ReadDataStreamOfExternalAssetsGoLangAsync(string testCaseName)
-        {
-            if (ShouldSkipGoLangAsset(testCaseName))
-            {
-                return Task.CompletedTask;
-            }
-            return VerifyDataStreamOfTarUncompressedInternalAsync("golang_tar", testCaseName, copyData: false);
-        }
+        public Task ReadDataStreamOfExternalAssetsGoLangAsync(string testCaseName) =>
+            VerifyDataStreamOfTarUncompressedInternalAsync("golang_tar", testCaseName, copyData: false);
 
         [Theory]
         [MemberData(nameof(GetNodeTarTestCaseNames))]
@@ -205,26 +199,13 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetRsTarTestCaseNames))]
-        public Task ReadDataStreamOfExternalAssetsRsAsync(string testCaseName)
-        {
-            if (testCaseName == "spaces")
-            {
-                // Tested separately
-                return Task.CompletedTask;
-            }
-            return VerifyDataStreamOfTarUncompressedInternalAsync("tar-rs", testCaseName, copyData: false);
-        }
+        public Task ReadDataStreamOfExternalAssetsRsAsync(string testCaseName) =>
+            VerifyDataStreamOfTarUncompressedInternalAsync("tar-rs", testCaseName, copyData: false);
 
         [Theory]
         [MemberData(nameof(GetGoLangTarTestCaseNames))]
-        public Task ReadCopiedDataStreamOfExternalAssetsGoLangAsync(string testCaseName)
-        {
-            if (ShouldSkipGoLangAsset(testCaseName))
-            {
-                return Task.CompletedTask;
-            }
-            return VerifyDataStreamOfTarUncompressedInternalAsync("golang_tar", testCaseName, copyData: true);
-        }
+        public Task ReadCopiedDataStreamOfExternalAssetsGoLangAsync(string testCaseName) =>
+            VerifyDataStreamOfTarUncompressedInternalAsync("golang_tar", testCaseName, copyData: true);
 
         [Theory]
         [MemberData(nameof(GetNodeTarTestCaseNames))]
@@ -233,14 +214,115 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetRsTarTestCaseNames))]
-        public Task ReadCopiedDataStreamOfExternalAssetsRsAsync(string testCaseName)
+        public Task ReadCopiedDataStreamOfExternalAssetsRsAsync(string testCaseName) =>
+            VerifyDataStreamOfTarUncompressedInternalAsync("tar-rs", testCaseName, copyData: true);
+
+        [Fact]
+        public async Task Throw_FifoContainsNonZeroDataSectionAsync()
         {
-            if (testCaseName == "spaces")
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "hdr-only");
+            await using TarReader reader = new TarReader(archiveStream);
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            Assert.NotNull(await reader.GetNextEntryAsync());
+            await Assert.ThrowsAsync<FormatException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task Throw_SingleExtendedAttributesEntryWithNoActualEntryAsync()
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-path-hdr");
+            await using TarReader reader = new TarReader(archiveStream);
+            await Assert.ThrowsAsync<EndOfStreamException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("tar-rs", "spaces")]
+        [InlineData("golang_tar", "v7")]
+        public async Task AllowSpacesInOctalFieldsAsync(string folderName, string testCaseName)
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, folderName, testCaseName);
+            await using TarReader reader = new TarReader(archiveStream);
+            TarEntry entry;
+            while ((entry = await reader.GetNextEntryAsync()) != null)
             {
-                // Tested separately
-                return Task.CompletedTask;
+                AssertExtensions.GreaterThan(entry.Checksum, 0);
+                AssertExtensions.GreaterThan((int)entry.Mode, 0);
             }
-            return VerifyDataStreamOfTarUncompressedInternalAsync("tar-rs", testCaseName, copyData: true);
+        }
+
+        [Theory]
+        [InlineData("pax-multi-hdrs")] // Multiple consecutive PAX metadata entries
+        [InlineData("gnu-multi-hdrs")] // Multiple consecutive GNU metadata entries
+        [InlineData("neg-size")] // Garbage chars
+        [InlineData("invalid-go17")] // Many octal fields are all zero chars
+        [InlineData("issue11169")] // Checksum with null in the middle
+        [InlineData("issue10968")] // Garbage chars
+        [InlineData("writer-big")] // The size field contains an euro char
+        public async Task Throw_ArchivesWithRandomCharsAsync(string testCaseName)
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
+            await using TarReader reader = new TarReader(archiveStream);
+            await Assert.ThrowsAsync<FormatException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task GarbageEntryChecksumZeroReturnNullAsync()
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
+            await using TarReader reader = new TarReader(archiveStream);
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("golang_tar", "gnu-nil-sparse-data")]
+        [InlineData("golang_tar", "gnu-nil-sparse-hole")]
+        [InlineData("golang_tar", "gnu-sparse-big")]
+        [InlineData("golang_tar", "sparse-formats")]
+        [InlineData("tar-rs", "sparse-1")]
+        [InlineData("tar-rs", "sparse")]
+        public async Task SparseEntryNotSupportedAsync(string testFolderName, string testCaseName)
+        {
+            // Currently sparse entries are not supported.
+
+            // There are PAX archives archives in the golang folder that have extended attributes for treating a regular file as a sparse file.
+            // Sparse entries were created for the GNU format, so they are very rare entry types which are excluded from this test method:
+            // pax-nil-sparse-data, pax-nil-sparse-hole, pax-sparse-big
+
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
+            await using TarReader reader = new TarReader(archiveStream);
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task DirectoryListRegularFileAndSparseAsync()
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "gnu-incremental");
+            await using TarReader reader = new TarReader(archiveStream);
+            TarEntry directoryList = await reader.GetNextEntryAsync();
+
+            Assert.Equal(TarEntryType.DirectoryList, directoryList.EntryType);
+            Assert.NotNull(directoryList.DataStream);
+            Assert.Equal(14, directoryList.Length);
+
+            Assert.NotNull(await reader.GetNextEntryAsync()); // Just a regular file
+
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await reader.GetNextEntryAsync()); // Sparse
+        }
+
+        [Fact]
+        public async Task PaxSizeLargerThanMaxAllowedByStreamAsync()
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big-long");
+            await using TarReader reader = new TarReader(archiveStream);
+            // The extended attribute 'size' has the value 17179869184
+            // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await reader.GetNextEntryAsync());
         }
 
         private static async Task VerifyDataStreamOfTarUncompressedInternalAsync(string testFolderName, string testCaseName, bool copyData)
