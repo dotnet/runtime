@@ -1578,13 +1578,60 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-            if (BitConverter.IsLittleEndian && Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
+            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
-                currentOffset = WidenAsciiToUtf16_Vector256(pAsciiBuffer, pUtf16Buffer, elementCount);
-            }
-            else if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
-            {
-                currentOffset = WidenAsciiToUtf16_Vector128(pAsciiBuffer, pUtf16Buffer, elementCount);
+                ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
+
+                if (Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
+                {
+                    // Calculating the destination address outside the loop results in significant
+                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
+                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector256<byte>.Count;
+
+                    do
+                    {
+                        Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
+
+                        if (asciiVector.ExtractMostSignificantBits() != 0)
+                        {
+                            break;
+                        }
+
+                        (Vector256<ushort> low, Vector256<ushort> upper) = Vector256.Widen(asciiVector);
+                        low.Store(pCurrentWriteAddress);
+                        upper.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
+
+                        currentOffset += (nuint)Vector256<byte>.Count;
+                        pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
+                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                }
+                else
+                {
+                    // Calculating the destination address outside the loop results in significant
+                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
+                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
+
+                    do
+                    {
+                        Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
+
+                        if (VectorContainsNonAsciiChar(asciiVector))
+                        {
+                            break;
+                        }
+
+                        // Vector128.Widen is not used here as it less performant on ARM64
+                        Vector128<ushort> utf16HalfVector = Vector128.WidenLower(asciiVector);
+                        utf16HalfVector.Store(pCurrentWriteAddress);
+                        utf16HalfVector = Vector128.WidenUpper(asciiVector);
+                        utf16HalfVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
+
+                        currentOffset += (nuint)Vector128<byte>.Count;
+                        pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
+                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                }
             }
             else if (Vector.IsHardwareAccelerated)
             {
@@ -1712,76 +1759,6 @@ namespace System.Text
             }
 
             goto Finish;
-        }
-
-        private static unsafe nuint WidenAsciiToUtf16_Vector128(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
-        {
-            Debug.Assert(Vector128.IsHardwareAccelerated);
-            Debug.Assert(BitConverter.IsLittleEndian);
-            Debug.Assert(elementCount >= (uint)Vector128<byte>.Count);
-
-            nuint currentOffset = 0;
-            ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
-
-            // Calculating the destination address outside the loop results in significant
-            // perf wins vs. relying on the JIT to fold memory addressing logic into the
-            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-            nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
-
-            do
-            {
-                Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
-
-                if (VectorContainsNonAsciiChar(asciiVector))
-                {
-                    break;
-                }
-
-                // Vector128.Widen is not used here as it less performant on ARM64
-                Vector128<ushort> utf16HalfVector = Vector128.WidenLower(asciiVector);
-                utf16HalfVector.Store(pCurrentWriteAddress);
-                utf16HalfVector = Vector128.WidenUpper(asciiVector);
-                utf16HalfVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
-
-                currentOffset += (nuint)Vector128<byte>.Count;
-                pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
-            } while (currentOffset <= finalOffsetWhereCanRunLoop);
-
-            return currentOffset;
-        }
-
-        private static unsafe nuint WidenAsciiToUtf16_Vector256(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
-        {
-            // Debug.Assert(Vector256.IsHardwareAccelerated); currently commented out due to R2R bug: #74253
-            Debug.Assert(BitConverter.IsLittleEndian);
-            Debug.Assert(elementCount >= (uint)Vector256<byte>.Count);
-
-            nuint currentOffset = 0;
-            ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
-
-            // Calculating the destination address outside the loop results in significant
-            // perf wins vs. relying on the JIT to fold memory addressing logic into the
-            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-            nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector256<byte>.Count;
-
-            do
-            {
-                Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
-
-                if (asciiVector.ExtractMostSignificantBits() != 0)
-                {
-                    break;
-                }
-
-                (Vector256<ushort> low, Vector256<ushort> upper) = Vector256.Widen(asciiVector);
-                low.Store(pCurrentWriteAddress);
-                upper.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
-
-                currentOffset += (nuint)Vector256<byte>.Count;
-                pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
-            } while (currentOffset <= finalOffsetWhereCanRunLoop);
-
-            return currentOffset;
         }
 
         /// <summary>
