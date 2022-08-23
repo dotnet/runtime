@@ -2237,9 +2237,13 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
                 LEAVE_SPIN_LOCK(this);
             }
-            // SyncBlockCache::LockHolder goes out of scope here
         }
+        // SyncBlockCache::LockHolder goes out of scope here
     }
+
+    // Fire the LockCreated event last, such that it is outside the FAULT_FORBID region above and outside the SyncBlockCache
+    // lock. The eventing system may need to allocate.
+    syncBlock->FireLockCreatedEvent();
 
     RETURN syncBlock;
 }
@@ -2541,12 +2545,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     // the object associated with this lock.
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
-    LogContention();
-    Thread::IncrementMonitorLockContentionCount(pCurThread);
-
-    OBJECTREF obj = GetOwningObject();
-
-    BOOLEAN isContentionKeywordEnabled = IsContentionKeywordEnabled();
+    bool isContentionKeywordEnabled = IsContentionKeywordEnabled();
     LARGE_INTEGER startTicks = { {0} };
 
     if (isContentionKeywordEnabled)
@@ -2554,8 +2553,17 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         QueryPerformanceCounter(&startTicks);
 
         // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), this, m_HoldingThread->GetOSThreadId64());
+        FireEtwContentionStart_V2(
+            ETW::ContentionLog::ContentionStructs::ManagedContention,
+            GetClrInstanceId(),
+            this,
+            m_HoldingThread);
     }
+
+    LogContention();
+    Thread::IncrementMonitorLockContentionCount(pCurThread);
+
+    OBJECTREF obj = GetOwningObject();
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
     IncrementTransientPrecious();
@@ -2765,9 +2773,21 @@ BOOL AwareLock::OwnedByCurrentThread()
     return (GetThread() == m_HoldingThread);
 }
 
-BOOLEAN AwareLock::IsContentionKeywordEnabled() const
+/* static */
+bool AwareLock::IsContentionKeywordEnabled()
 {
+    WRAPPER_NO_CONTRACT;
     return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+}
+
+void AwareLock::FireLockCreatedEvent() const
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (IsContentionKeywordEnabled())
+    {
+        FireEtwLockCreated(this, GetClrInstanceId());
+    }
 }
 
 // ***************************************************************************

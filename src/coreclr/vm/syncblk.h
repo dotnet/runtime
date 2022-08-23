@@ -466,11 +466,6 @@ private:
           m_waiterStarvationStartTimeMs(0)
     {
         LIMITED_METHOD_CONTRACT;
-        
-        if (IsContentionKeywordEnabled())
-        {
-            FireEtwLockCreated(this, GetClrInstanceId());
-        }
     }
 
     ~AwareLock()
@@ -607,8 +602,10 @@ public:
         return m_HoldingThread;
     }
 
-    BOOLEAN IsContentionKeywordEnabled() const;
-
+private:
+    static bool IsContentionKeywordEnabled();
+public:
+    void FireLockCreatedEvent() const;
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1153,6 +1150,12 @@ class SyncBlock
     {
         LIMITED_METHOD_CONTRACT;
         // We've already destructed.  But retain the memory.
+    }
+
+    void FireLockCreatedEvent() const
+    {
+        WRAPPER_NO_CONTRACT;
+        m_Monitor.FireLockCreatedEvent();
     }
 
     void EnterMonitor()
