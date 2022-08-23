@@ -13,6 +13,7 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
+    <WasmExtraFilesToDeploy Include="non-wasm-page-forcing-runtime-ready.html" />
     <WasmExtraFilesToDeploy Include="wasm-page-without-assets.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
     <WasmExtraFilesToDeploy Include="weather.json" />
