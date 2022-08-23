@@ -5363,13 +5363,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
 #ifdef TARGET_ARM64
 
-    if (index != nullptr)
+    // Check containment safety against the parent node - this will ensure that LEA with the contained
+    // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+    if ((index != nullptr) && IsSafeToContainMem(parent, index))
     {
-        if (!IsSafeToContainMem(parent, index))
-        {
-            index->ClearContained();
-        }
-        else if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+        if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
         index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
             MakeSrcContained(addrMode, index);
