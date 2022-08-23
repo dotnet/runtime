@@ -26,7 +26,7 @@ public sealed class ParallelRunner
     /// error output streams to prevent them from interleaving in the final build output log.
     /// Multiple instances of this class representing the individual running processes
     /// can exist at the same time.
-    /// </summmary>
+    /// </summary>
     class ProcessSlot
     {
         /// <summary>

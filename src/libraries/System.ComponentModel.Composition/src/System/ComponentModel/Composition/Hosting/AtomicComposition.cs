@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
     ///
     /// Secondly, state is added in the form of queries associated with an object key.  The
     /// key represents a unique object the state is being held on behalf of.  The quieries are
-    /// accessed throught the Query methods which provide automatic chaining to execute queries
+    /// accessed through the Query methods which provide automatic chaining to execute queries
     /// across the target atomicComposition and its inner atomicComposition as appropriate.
     ///
     /// Lastly, when a nested atomicComposition is created for a given outer the outer atomicComposition is locked.
@@ -166,13 +166,10 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
-                            {
-                                //If any exceptions leak through the actions we will swallow them for now
-                                // complete processing the list
-                                // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                                exceptions = new List<Exception>();
-                            }
+                            //If any exceptions leak through the actions we will swallow them for now
+                            // complete processing the list
+                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                            exceptions ??= new List<Exception>();
                             exceptions.Add(e);
                         }
                     }
@@ -205,12 +202,9 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     catch (Exception e)
                     {
-                        if (exceptions == null)
-                        {
-                            //If any exceptions leak through the actions we will swallow them for now complete processing the list
-                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                            exceptions = new List<Exception>();
-                        }
+                        //If any exceptions leak through the actions we will swallow them for now complete processing the list
+                        // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }

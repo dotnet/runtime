@@ -16,7 +16,7 @@ namespace System.IO.Ports.Tests
         private const int DEFAULT_BUFFER_SIZE = 32;
         private const int MAX_WAIT_TIME = 500;
 
-        // The buffer lenght used whe filling the ouput buffer
+        // The buffer length used whe filling the output buffer
         private const int DEFAULT_BUFFER_LENGTH = 8;
 
         #region Test Cases

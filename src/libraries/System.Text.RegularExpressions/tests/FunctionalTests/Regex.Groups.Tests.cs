@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions.Tests
             )$"
             , "255", RegexOptions.IgnorePatternWhitespace, new string[] { "255", "255", "2", "5", "5", "", "255", "2", "5" } };
 
-                // Character Class Substraction
+                // Character Class Subtraction
                 yield return new object[] { engine, null, @"[abcd\-d-[bc]]+", "bbbaaa---dddccc", RegexOptions.None, new string[] { "aaa---ddd" } };
                 yield return new object[] { engine, null, @"[^a-f-[\x00-\x60\u007B-\uFFFF]]+", "aaafffgggzzz{{{", RegexOptions.None, new string[] { "gggzzz" } };
                 yield return new object[] { engine, null, @"[\[\]a-f-[[]]+", "gggaaafff]]][[[", RegexOptions.None, new string[] { "aaafff]]]" } };
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return new object[] { engine, null, @"[a-d\--[bc]]+", "cccaaa--dddbbb", RegexOptions.None, new string[] { "aaa--ddd" } };
 
-                // Not Character class substraction
+                // Not Character class subtraction
                 yield return new object[] { engine, null, @"[\0- [bc]+", "!!!\0\0\t\t  [[[[bbbcccaaa", RegexOptions.None, new string[] { "\0\0\t\t  [[[[bbbccc" } };
                 yield return new object[] { engine, null, "[[abcd]-[bc]]+", "a-b]", RegexOptions.None, new string[] { "a-b]" } };
                 yield return new object[] { engine, null, "[-[e-g]+", "ddd[[[---eeefffggghhh", RegexOptions.None, new string[] { "[[[---eeefffggg" } };
@@ -953,7 +953,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex regex;
             try
             {
-                regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+                regex = await RegexHelpers.GetRegexAsync(engine, pattern, options, CultureInfo.GetCultureInfo(cultureName));
             }
             catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException && RegexHelpers.IsNonBacktracking(engine))
             {

@@ -3,8 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Text.Json.Serialization
 {
@@ -13,14 +11,14 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
-        private readonly List<TItem> _list;
+        protected readonly List<TItem> _list;
 
         public ConfigurationList(IList<TItem>? source = null)
         {
             _list = source is null ? new List<TItem>() : new List<TItem>(source);
         }
 
-        protected abstract bool IsLockedInstance { get; }
+        protected abstract bool IsImmutable { get; }
         protected abstract void VerifyMutable();
         protected virtual void OnAddingElement(TItem item) { }
 
@@ -45,7 +43,7 @@ namespace System.Text.Json.Serialization
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => IsLockedInstance;
+        public bool IsReadOnly => IsImmutable;
 
         public void Add(TItem item)
         {

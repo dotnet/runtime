@@ -173,7 +173,7 @@ namespace System.IO.Enumeration
 
             if (handle == IntPtr.Zero || handle == (IntPtr)(-1))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
 
                 if (ContinueOnDirectoryError(error, ignoreNotFound))
                 {

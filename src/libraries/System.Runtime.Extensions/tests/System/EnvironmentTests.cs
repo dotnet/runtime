@@ -44,13 +44,11 @@ namespace System.Tests
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
 
-                if (!OperatingSystem.IsMacOS())
-                {
-                    // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-                    // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-                    // path that followed the symlink.
-                    Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
-                }
+                // If the temp directory is symlink, setting the current directory to a symlinked path will result
+                // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+                // the test directory name in that case.
+                Assert.Equal(Path.GetFileName(TestDirectory), Path.GetFileName(Environment.CurrentDirectory));
+
             }).Dispose();
         }
 
@@ -558,6 +556,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
         {

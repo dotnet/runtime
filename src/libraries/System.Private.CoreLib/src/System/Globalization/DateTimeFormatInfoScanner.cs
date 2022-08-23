@@ -352,11 +352,9 @@ namespace System.Globalization
 
         internal void AddIgnorableSymbols(string? text)
         {
-            if (m_dateWords == null)
-            {
-                // Create the date word array.
-                m_dateWords = new List<string>();
-            }
+            // Create the date word array.
+            m_dateWords ??= new List<string>();
+
             // Add the ignorable symbol into the ArrayList.
             string temp = IgnorableSymbolChar + text;
             if (!m_dateWords.Contains(temp))

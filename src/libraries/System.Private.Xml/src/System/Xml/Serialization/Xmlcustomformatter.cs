@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? FromDefaultValue(object? value, string formatter)
         {
             if (value == null) return null;
@@ -110,25 +110,25 @@ namespace System.Xml.Serialization
             return XmlConvert.ToString((ushort)value);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? FromXmlName(string? name)
         {
             return XmlConvert.EncodeName(name);
         }
 
-        [return: NotNullIfNotNull("ncName")]
+        [return: NotNullIfNotNull(nameof(ncName))]
         internal static string? FromXmlNCName(string? ncName)
         {
             return XmlConvert.EncodeLocalName(ncName);
         }
 
-        [return: NotNullIfNotNull("nmToken")]
+        [return: NotNullIfNotNull(nameof(nmToken))]
         internal static string? FromXmlNmToken(string? nmToken)
         {
             return XmlConvert.EncodeNmToken(nmToken);
         }
 
-        [return: NotNullIfNotNull("nmTokens")]
+        [return: NotNullIfNotNull(nameof(nmTokens))]
         internal static string? FromXmlNmTokens(string? nmTokens)
         {
             if (nmTokens == null)
@@ -157,7 +157,7 @@ namespace System.Xml.Serialization
             writer.WriteBase64(inData, start, count);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? FromByteArrayHex(byte[]? value)
         {
             if (value == null)
@@ -399,31 +399,31 @@ namespace System.Xml.Serialization
             return (char)XmlConvert.ToUInt16(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNCName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNmToken(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNmTokens(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static byte[]? ToByteArrayBase64(string? value)
         {
             if (value == null) return null;
@@ -433,7 +433,7 @@ namespace System.Xml.Serialization
             return Convert.FromBase64String(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static byte[]? ToByteArrayHex(string? value)
         {
             if (value == null) return null;
@@ -456,7 +456,7 @@ namespace System.Xml.Serialization
             return value;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         private static string? CollapseWhitespace(string? value)
         {
             if (value == null)

@@ -153,10 +153,7 @@ namespace System.Net.Mime
 
             try
             {
-                if (context._outputStream != null)
-                {
-                    context._outputStream.Close();
-                }
+                context._outputStream?.Close();
             }
             catch (Exception ex)
             {

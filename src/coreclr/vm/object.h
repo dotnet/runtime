@@ -938,7 +938,7 @@ class StringObject : public Object
     static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
-    **N.B.: This perfoms no range checking and relies on the caller to have done this.
+    **N.B.: This performs no range checking and relies on the caller to have done this.
     **Args: (IN)ref -- the String to be interpretted.
     **      (OUT)chars -- a pointer to the characters in the buffer.
     **      (OUT)length -- a pointer to the length of the buffer.
@@ -1686,7 +1686,7 @@ class UnknownWrapper : public Object
 {
 protected:
 
-    UnknownWrapper(UnknownWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    UnknownWrapper(UnknownWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     UnknownWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~UnknownWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1722,7 +1722,7 @@ class DispatchWrapper : public Object
 {
 protected:
 
-    DispatchWrapper(DispatchWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    DispatchWrapper(DispatchWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     DispatchWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~DispatchWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1758,7 +1758,7 @@ class VariantWrapper : public Object
 {
 protected:
 
-    VariantWrapper(VariantWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    VariantWrapper(VariantWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     VariantWrapper() {LIMITED_METHOD_CONTRACT}; // don't instantiate this class directly
     ~VariantWrapper() {LIMITED_METHOD_CONTRACT};
 
@@ -1794,7 +1794,7 @@ class ErrorWrapper : public Object
 {
 protected:
 
-    ErrorWrapper(ErrorWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    ErrorWrapper(ErrorWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     ErrorWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~ErrorWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1837,7 +1837,7 @@ class CurrencyWrapper : public Object
 {
 protected:
 
-    CurrencyWrapper(CurrencyWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    CurrencyWrapper(CurrencyWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     CurrencyWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~CurrencyWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1876,7 +1876,7 @@ class BStrWrapper : public Object
 {
 protected:
 
-    BStrWrapper(BStrWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    BStrWrapper(BStrWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     BStrWrapper() {LIMITED_METHOD_CONTRACT}; // don't instantiate this class directly
     ~BStrWrapper() {LIMITED_METHOD_CONTRACT};
 
@@ -1913,6 +1913,9 @@ class SafeHandle : public Object
     //   Modifying the order or fields of this object may require
     //   other changes to the classlib class definition of this
     //   object or special handling when loading this system class.
+#if DEBUG
+    STRINGREF m_ctorStackTrace; // Debug-only stack trace captured when the SafeHandle was constructed
+#endif
     Volatile<LPVOID> m_handle;
     Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
     Volatile<CLR_BOOL> m_ownsHandle;

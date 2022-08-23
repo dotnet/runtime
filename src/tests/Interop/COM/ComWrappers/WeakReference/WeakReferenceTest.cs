@@ -160,7 +160,7 @@ namespace ComWrappersTests
 
             // Non-globally registered ComWrappers instances do not support rehydration.
             // A weak reference to an RCW wrapping an IWeakReference can stay alive if the RCW was created through
-            // a global ComWrappers instance. If the RCW was created throug a local ComWrappers instance, the weak
+            // a global ComWrappers instance. If the RCW was created through a local ComWrappers instance, the weak
             // reference should be dead and stay dead once the RCW is collected.
             bool supportsRehydration = cw.Registration != WrapperRegistration.Local;
 

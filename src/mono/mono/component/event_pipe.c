@@ -13,7 +13,7 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 #include <emscripten/emscripten.h>
 #endif
 
@@ -98,9 +98,18 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
+#if defined(HOST_WASM)  && !defined(HOST_WASI)
+static void
+mono_wasm_event_pipe_init (void);
+#endif
+
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
+#if !defined(HOST_WASM) || defined(HOST_WASI)
 	&ep_init,
+#else
+	&mono_wasm_event_pipe_init,
+#endif
 	&ep_finish_init,
 	&ep_shutdown,
 	&event_pipe_enable,
@@ -158,7 +167,7 @@ event_pipe_enable (
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
 
 	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i) {
 			ep_provider_config_init (
 				&config_providers[i],
 				providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL,
@@ -181,7 +190,7 @@ event_pipe_enable (
 		NULL);
 
 	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i) {
 			ep_provider_config_fini (&config_providers[i]);
 			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
 			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));
@@ -336,7 +345,7 @@ mono_component_event_pipe_init (void)
 }
 
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 
 static MonoWasmEventPipeSessionID
@@ -354,19 +363,22 @@ wasm_to_ep_session_id (MonoWasmEventPipeSessionID session_id)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
 	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
-	EventPipeSessionType session_type = EP_SESSION_TYPE_FILE;
+	EventPipeSessionType session_type = output_path != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_IPCSTREAM;
+
+	g_assert ((output_path == NULL && ipc_stream != NULL) ||
+		  (output_path != NULL && ipc_stream == NULL));
 
 	EventPipeSessionID session;
 	session = ep_enable_2 (output_path,
@@ -375,7 +387,7 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			       session_type,
 			       format,
 			       !!rundown_requested,
-			       /* stream */NULL,
+			       ipc_stream,
 			       /* callback*/ NULL,
 			       /* callback_data*/ NULL);
   
@@ -403,4 +415,15 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	return TRUE;
 }
 
-#endif /* HOST_WASM */
+// JS callback to invoke on the main thread early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
+extern void mono_wasm_event_pipe_early_startup_callback (void);
+
+
+static void
+mono_wasm_event_pipe_init (void)
+{
+	ep_init ();
+	mono_wasm_event_pipe_early_startup_callback ();
+}
+
+#endif /* HOST_WASM && !HOST_WASI */

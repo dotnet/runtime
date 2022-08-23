@@ -40,6 +40,7 @@ namespace System
         {
             ClassName = className;
             MemberName = methodName;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         protected MissingMethodException(SerializationInfo info, StreamingContext context)

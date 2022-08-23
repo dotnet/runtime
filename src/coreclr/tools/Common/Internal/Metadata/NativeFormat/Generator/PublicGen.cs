@@ -16,7 +16,7 @@ using System.Linq;
 // long as the declaring scope remains on the stack.
 //
 // Each record interface simply declares as properties the members declared in the schema definition,
-// and each struct is declared as partial and as implmenting the interface, thus requiring all
+// and each struct is declared as partial and as implementing the interface, thus requiring all
 // interface properties to be supplied by the metadata reader implementation.
 //
 // Each handle interface requires type-specific equality functionality by itself implementing

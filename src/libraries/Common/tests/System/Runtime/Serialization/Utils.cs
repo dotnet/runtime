@@ -114,7 +114,7 @@ internal static class Utils
 
     internal static CompareResult Compare(string expected, string actual, bool runSmartXmlComparerOnFailure = true)
     {
-        // for CORECLR we get different xml hence we have updated code for smartyXMLcomparision
+        // for CORECLR we get different xml hence we have updated code for smartyXMLcomparison
 
         CompareResult stringcompare = CompareString(expected, actual);
 

@@ -64,10 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             public void Dispose()
             {
-                if (_chainContext != null)
-                {
-                    _chainContext.Dispose();
-                }
+                _chainContext?.Dispose();
             }
 
             public bool? Verify(X509VerificationFlags flags, out Exception? exception)

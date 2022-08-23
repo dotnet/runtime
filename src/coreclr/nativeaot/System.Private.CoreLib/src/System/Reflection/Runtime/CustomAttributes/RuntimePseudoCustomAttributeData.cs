@@ -22,8 +22,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             Type attributeType, IList<CustomAttributeTypedArgument> constructorArguments)
         {
             _attributeType = attributeType;
-            if (constructorArguments == null)
-                constructorArguments = Array.Empty<CustomAttributeTypedArgument>();
+            constructorArguments ??= Array.Empty<CustomAttributeTypedArgument>();
             _constructorArguments = new ReadOnlyCollection<CustomAttributeTypedArgument>(constructorArguments);
         }
 
@@ -49,14 +48,6 @@ namespace System.Reflection.Runtime.CustomAttributes
                     expectedParameterTypes[i] = _constructorArguments[i].ArgumentType;
                 }
                 return ResolveAttributeConstructor(_attributeType, expectedParameterTypes);
-            }
-        }
-
-        internal sealed override string AttributeTypeString
-        {
-            get
-            {
-                return _attributeType.FormatTypeNameForReflection();
             }
         }
 

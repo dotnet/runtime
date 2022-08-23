@@ -99,10 +99,7 @@ namespace System.Net.Mail
 
         internal SmtpReplyReader GetNextReplyReader()
         {
-            if (_currentReader != null)
-            {
-                _currentReader.Close();
-            }
+            _currentReader?.Close();
 
             _readState = ReadState.Status0;
             _currentReader = new SmtpReplyReader(this);

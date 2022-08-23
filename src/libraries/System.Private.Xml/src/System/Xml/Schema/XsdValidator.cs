@@ -610,10 +610,7 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
             }
         }
 

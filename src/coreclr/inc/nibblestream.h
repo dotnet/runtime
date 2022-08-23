@@ -159,6 +159,22 @@ public:
         WriteEncodedU32(dw);
     };
 
+    void WriteUnencodedU32(uint32_t x)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        for (int i = 0; i < 8; i++)
+        {
+            WriteNibble(static_cast<NIBBLE>(x & 0b1111));
+            x >>= 4;
+        }
+    }
+
 protected:
     NIBBLE m_PendingNibble;     // Pending value, not yet written out.
     bool m_fPending;
@@ -286,6 +302,26 @@ public:
         DWORD dw = ReadEncodedU32();
         int x = dw >> 1;
         return (dw & 1) ? (-x) : (x);
+    }
+
+    DWORD ReadUnencodedU32()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            SUPPORTS_DAC;
+        }
+        CONTRACTL_END;
+
+        DWORD result = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            result |= static_cast<DWORD>(ReadNibble()) << (i * 4);
+        }
+
+        return result;
     }
 
 protected:

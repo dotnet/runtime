@@ -17,7 +17,6 @@ namespace System.Security.Cryptography
     // it can't be helped.
     //
 
-    [UnsupportedOSPlatform("browser")]
     public abstract class MD5 : HashAlgorithm
     {
         /// <summary>
@@ -35,8 +34,10 @@ namespace System.Security.Cryptography
             HashSizeValue = HashSizeInBits;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static new MD5 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
 
@@ -48,6 +49,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -60,6 +62,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <returns>The hash of the data.</returns>
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
             byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeInBytes);
@@ -80,6 +83,7 @@ namespace System.Security.Cryptography
         /// The buffer in <paramref name="destination"/> is too small to hold the calculated hash
         /// size. The MD5 algorithm always produces a 128-bit hash, or 16 bytes.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(source, destination, out int bytesWritten))
@@ -100,6 +104,7 @@ namespace System.Security.Cryptography
         /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
         /// calculated hash, <see langword="true"/> otherwise.
         /// </returns>
+        [UnsupportedOSPlatform("browser")]
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < HashSizeInBytes)
@@ -133,6 +138,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(Stream source, Span<byte> destination)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -157,6 +163,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -182,6 +189,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -215,6 +223,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,

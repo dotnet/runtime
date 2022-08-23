@@ -644,10 +644,7 @@ namespace System.Xml
         private void FinishReadBinary()
         {
             _state = State.Interactive;
-            if (_readBinaryHelper != null)
-            {
-                _readBinaryHelper.Finish();
-            }
+            _readBinaryHelper?.Finish();
         }
     }
 

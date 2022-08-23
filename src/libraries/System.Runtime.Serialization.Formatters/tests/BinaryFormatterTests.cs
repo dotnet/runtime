@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 .Select(i => new Point(i, i + 1))
                 .ToArray();
 
-            // This should not throw a SerializationException as we removed the artifical limit in the ObjectIDGenerator.
+            // This should not throw a SerializationException as we removed the artificial limit in the ObjectIDGenerator.
             // Instead of round tripping we only serialize to minimize test time.
             // This will throw on .NET Framework as the artificial limit is still enabled.
             var bf = new BinaryFormatter();

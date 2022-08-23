@@ -25,41 +25,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    #region class _IOCompletionCallback
-
-    internal sealed unsafe partial class _IOCompletionCallback
-    {
-        // call back helper
-        internal static void PerformIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
-        {
-            do
-            {
-                OverlappedData overlapped = OverlappedData.GetOverlappedFromNative(pNativeOverlapped);
-
-                if (overlapped._callback is IOCompletionCallback iocb)
-                {
-                    // We got here because of UnsafePack (or) Pack with EC flow suppressed
-                    iocb(errorCode, numBytes, pNativeOverlapped);
-                }
-                else
-                {
-                    // We got here because of Pack
-                    var helper = (_IOCompletionCallback?)overlapped._callback;
-                    Debug.Assert(helper != null, "Should only be receiving a completion callback if a delegate was provided.");
-                    helper._errorCode = errorCode;
-                    helper._numBytes = numBytes;
-                    helper._pNativeOverlapped = pNativeOverlapped;
-                    ExecutionContext.RunInternal(helper._executionContext, IOCompletionCallback_Context_Delegate, helper);
-                }
-
-                // Quickly check the VM again, to see if a packet has arrived.
-                OverlappedData.CheckVMForIOPacket(out pNativeOverlapped, out errorCode, out numBytes);
-            } while (pNativeOverlapped != null);
-        }
-    }
-
-    #endregion class _IOCompletionCallback
-
     #region class OverlappedData
 
     internal sealed unsafe class OverlappedData
@@ -120,9 +85,6 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern OverlappedData GetOverlappedFromNative(NativeOverlapped* nativeOverlappedPtr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void CheckVMForIOPacket(out NativeOverlapped* pNativeOverlapped, out uint errorCode, out uint numBytes);
     }
 
     #endregion class OverlappedData

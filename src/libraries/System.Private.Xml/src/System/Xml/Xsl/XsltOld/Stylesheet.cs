@@ -357,10 +357,7 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null)
-            {
-                action = FindTemplateImports(processor, navigator);
-            }
+            action ??= FindTemplateImports(processor, navigator);
 
             return action;
         }

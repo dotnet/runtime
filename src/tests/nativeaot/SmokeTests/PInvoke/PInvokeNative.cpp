@@ -112,6 +112,13 @@ DLL_EXPORT int __stdcall VerifyByRefFoo(Foo *val)
     return 0;
 }
 
+static Foo s_foo = { 42, 43.0 };
+
+DLL_EXPORT Foo* __stdcall VerifyByRefFooReturn()
+{
+    return &s_foo;
+}
+
 DLL_EXPORT bool __stdcall GetNextChar(short *value)
 {
     if (value == NULL)

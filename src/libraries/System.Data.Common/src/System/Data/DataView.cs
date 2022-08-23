@@ -311,10 +311,7 @@ namespace System.Data
             [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_RowFilter|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -427,10 +424,7 @@ namespace System.Data
             }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Sort|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -827,7 +821,7 @@ namespace System.Data
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            // V1.1 compatability: returning List<DataRowView>.GetEnumerator() from RowViewCache
+            // V1.1 compatibility: returning List<DataRowView>.GetEnumerator() from RowViewCache
             // prevents users from changing data without invalidating the enumerator
             // aka don't 'return this.RowViewCache.GetEnumerator()'
             var temp = new DataRowView[Count];
@@ -914,10 +908,7 @@ namespace System.Data
 
         internal Index? GetFindIndex(string column, bool keepIndex)
         {
-            if (_findIndexes == null)
-            {
-                _findIndexes = new Dictionary<string, Index>();
-            }
+            _findIndexes ??= new Dictionary<string, Index>();
 
             Index? findIndex;
             if (_findIndexes.TryGetValue(column, out findIndex))

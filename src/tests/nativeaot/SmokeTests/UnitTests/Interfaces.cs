@@ -38,7 +38,7 @@ public class Interfaces
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
-        TestSharedIntefaceMethods.Run();
+        TestSharedInterfaceMethods.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -47,6 +47,10 @@ public class Interfaces
         TestSimpleDynamicStaticVirtualMethods.Run();
         TestGenericDynamicStaticVirtualMethods.Run();
         TestVariantGenericDynamicStaticVirtualMethods.Run();
+        TestStaticDefaultMethodAmbiguity.Run();
+        TestMoreConstraints.Run();
+        TestSimpleNonGeneric.Run();
+        TestSimpleGeneric.Run();
 
         return Pass;
     }
@@ -555,7 +559,7 @@ public class Interfaces
         }
     }
 
-    class TestSharedIntefaceMethods
+    class TestSharedInterfaceMethods
     {
         interface IInnerValueGrabber
         {
@@ -592,10 +596,10 @@ public class Interfaces
 
             var x = new Derived<Atom1, Atom2>() { InnerValue = "My inner value" };
             string r1 = ((IFace<Atom1>)x).GrabValue(new Atom1());
-            if (r1 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom1' with 'The Atom1'")
+            if (r1 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom1' with 'The Atom1'")
                 throw new Exception();
             string r2 = ((IFace<Atom2>)x).GrabValue(new Atom2());
-            if (r2 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom2' with 'The Atom2'")
+            if (r2 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom2' with 'The Atom2'")
                 throw new Exception();
 
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };
@@ -637,14 +641,14 @@ public class Interfaces
             public virtual IFoo GetFoo() => throw new NotImplementedException();
         }
 
-        class DerivedWithOverridenUnusedVirtual : BaseWithUnusedVirtual
+        class DerivedWithOverriddenUnusedVirtual : BaseWithUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("DerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("DerivedWithOverriddenUnusedVirtual");
         }
 
-        class SuperDerivedWithOverridenUnusedVirtual : DerivedWithOverridenUnusedVirtual
+        class SuperDerivedWithOverriddenUnusedVirtual : DerivedWithOverriddenUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("SuperDerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("SuperDerivedWithOverriddenUnusedVirtual");
         }
 
         interface IInterfaceWithCovariantReturn
@@ -685,14 +689,14 @@ public class Interfaces
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new DerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "DerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new DerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "DerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new SuperDerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "SuperDerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new SuperDerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "SuperDerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 
@@ -1288,4 +1292,171 @@ public class Interfaces
         }
     }
 
+    class TestStaticDefaultMethodAmbiguity
+    {
+        class Atom1 { }
+        class Atom2 { }
+
+        interface IFoo<T>
+        {
+            static abstract (Type, Type) DisambiguateMe();
+        }
+
+        interface IBar<T, U> : IFoo<U>
+        {
+            static (Type, Type) IFoo<U>.DisambiguateMe() => (typeof(T), typeof(U));
+        }
+
+        struct GenericStruct<T, U> : IBar<T[], U>
+        {
+        }
+
+        static (Type, Type) CallTheCall<T, U>() where T : IFoo<U> => T.DisambiguateMe();
+        static (Type, Type) DelegateTheCall<T, U>() where T : IFoo<U>
+        {
+            Func<(Type, Type)> d = T.DisambiguateMe;
+            return d();
+        }
+
+        public static void Run()
+        {
+            {
+                var results = CallTheCall<GenericStruct<Atom1, Atom2>, Atom2>();
+                if (results.Item1 != typeof(Atom1[]) || results.Item2 != typeof(Atom2))
+                    throw new Exception();
+            }
+
+            {
+                var results = DelegateTheCall<GenericStruct<Atom1, Atom2>, Atom2>();
+                if (results.Item1 != typeof(Atom1[]) || results.Item2 != typeof(Atom2))
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestMoreConstraints
+    {
+        interface IFoo
+        {
+            void Frob();
+        }
+
+        struct GenericStruct<T> : IFoo
+        {
+            public int State;
+            public void Frob() => State++;
+        }
+
+        class GenericClass<T> : IFoo
+        {
+            public int State;
+            public void Frob() => State++;
+        }
+
+        static void DoFrob<T>(ref T theT, ref GenericStruct<T> theGenericStruct) where T : IFoo
+        {
+            theT.Frob();
+            theGenericStruct.Frob();
+
+            Action delT = theT.Frob;
+            delT();
+
+            Action delGenericStruct = theGenericStruct.Frob;
+            delGenericStruct();
+        }
+
+        public static void Run()
+        {
+            GenericStruct<object> s1 = default;
+            GenericStruct<GenericStruct<object>> s2 = default;
+
+            DoFrob(ref s1, ref s2);
+
+            if (s1.State != 1 || s2.State != 1)
+                throw new Exception();
+
+            var c1 = new GenericClass<object>();
+            GenericStruct<GenericClass<object>> c2 = default;
+
+            DoFrob(ref c1, ref c2);
+            if (c1.State != 2 || c2.State != 1)
+                throw new Exception();
+        }
+    }
+
+    class TestSimpleNonGeneric
+    {
+        interface IFoo
+        {
+            static abstract int GetCookie(int val);
+        }
+
+        interface IBar : IFoo
+        {
+            static int IFoo.GetCookie(int val) => 1234 + val;
+        }
+
+        class SimpleClass : IBar { }
+        struct SimpleStruct : IBar { }
+
+        static int Call<T>(int val) where T : IFoo => T.GetCookie(val);
+
+        static int CallIndirect<T>(int val) where T : IFoo
+        {
+            Func<int, int> del = T.GetCookie;
+            return del(val);
+        }
+
+        public static void Run()
+        {
+            if (Call<SimpleClass>(1) != 1235)
+                throw new Exception();
+            if (Call<SimpleStruct>(2) != 1236)
+                throw new Exception();
+            if (CallIndirect<SimpleClass>(1) != 1235)
+                throw new Exception();
+            if (CallIndirect<SimpleStruct>(2) != 1236)
+                throw new Exception();
+        }
+    }
+
+    class TestSimpleGeneric
+    {
+        interface IFoo
+        {
+            static abstract (int, Type) GetCookie(int val);
+        }
+
+        interface IBar<T> : IFoo
+        {
+            static (int, Type) IFoo.GetCookie(int val) => (1234 + val, typeof(IBar<T>));
+        }
+
+        class SimpleClass : IBar<Atom1> { }
+        struct SimpleStruct : IBar<Atom2> { }
+
+        static (int, Type) Call<T>(int val) where T : IFoo => T.GetCookie(val);
+
+        static (int, Type) CallIndirect<T>(int val) where T : IFoo
+        {
+            Func<int, (int, Type)> del = T.GetCookie;
+            return del(val);
+        }
+
+        class Atom1 { }
+        class Atom2 { }
+
+        public static void Run()
+        {
+            if (Call<SimpleClass>(1) != (1235, typeof(IBar<Atom1>)))
+                throw new Exception();
+            if (Call<SimpleStruct>(2) != (1236, typeof(IBar<Atom2>)))
+                throw new Exception();
+
+            if (CallIndirect<SimpleClass>(1) != (1235, typeof(IBar<Atom1>)))
+                throw new Exception();
+            if (CallIndirect<SimpleStruct>(2) != (1236, typeof(IBar<Atom2>)))
+                throw new Exception();
+        }
+    }
 }

@@ -1,21 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Runtime.Serialization;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonObjectDataContract : JsonDataContract
     {
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonObjectDataContract(DataContract traditionalDataContract)
             : base(traditionalDataContract)
         {
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
@@ -49,13 +52,11 @@ namespace System.Runtime.Serialization.Json
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }
 
-            if (context != null)
-            {
-                context.AddNewObject(obj);
-            }
+            context?.AddNewObject(obj);
             return obj;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -69,7 +70,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
             }
 
-            if (value.IndexOfAny(JsonGlobals.FloatingPointCharacters) == -1)
+            if (value.AsSpan().IndexOfAny('.', 'e', 'E') < 0)
             {
                 int intValue;
                 if (int.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))

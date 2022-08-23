@@ -241,10 +241,7 @@ namespace System.Xml.Schema
             _partialValidationType = null;
 
             //Clear previous tables
-            if (_IDs != null)
-            {
-                _IDs.Clear();
-            }
+            _IDs?.Clear();
             if (ProcessSchemaHints)
             {
                 _validatedNamespaces!.Clear();
@@ -519,10 +516,7 @@ namespace System.Xml.Schema
             if (_attPresence[attQName] != null)
             { //this attribute already checked as it is duplicate;
                 SendValidationEvent(SR.Sch_DuplicateAttribute, attQName.ToString());
-                if (schemaInfo != null)
-                {
-                    schemaInfo.Clear();
-                }
+                schemaInfo?.Clear();
                 return null;
             }
 
@@ -1686,10 +1680,7 @@ namespace System.Xml.Schema
                 if (elementDeclXsi == null && xsiTypeName.Namespace == _nsXs)
                 {
                     XmlSchemaType? schemaType = DatatypeImplementation.GetSimpleTypeFromXsdType(xsiTypeName);
-                    if (schemaType == null)
-                    { //try getting complexType - xs:anyType
-                        schemaType = XmlSchemaType.GetBuiltInComplexType(xsiTypeName);
-                    }
+                    schemaType ??= XmlSchemaType.GetBuiltInComplexType(xsiTypeName);
                     if (schemaType != null)
                     {
                         elementDeclXsi = schemaType.ElementDecl;
@@ -1859,10 +1850,7 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (Reader != null)
-                {
-                    Reader.Close();
-                }
+                Reader?.Close();
             }
         }
 

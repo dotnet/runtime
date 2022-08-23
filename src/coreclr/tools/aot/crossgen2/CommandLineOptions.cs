@@ -16,6 +16,7 @@ namespace ILCompiler
 
         public bool Help;
         public string HelpText;
+        public bool Version;
 
         public IReadOnlyList<string> InputFilePaths;
         public IReadOnlyList<string> InputBubbleReferenceFilePaths;
@@ -57,6 +58,7 @@ namespace ILCompiler
         public bool MapCsv;
         public bool PrintReproInstructions;
         public bool Pdb;
+        public bool SupportIbc;
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
@@ -148,6 +150,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref SystemModule, SR.SystemModuleOverrideOption);
                 syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
                 syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
+                syntax.DefineOption("support-ibc", ref SupportIbc, SR.SupportIbc);
                 syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
                 syntax.DefineOption("imagebase", ref ImageBase, SR.ImageBase);
 
@@ -183,6 +186,7 @@ namespace ILCompiler
                 syntax.DefineOption("make-repro-path", ref MakeReproPath, SR.MakeReproPathHelp);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
+                syntax.DefineOption("v|version", ref Version, SR.VersionOption);
 
                 syntax.DefineParameterList("in", ref InputFilePaths, SR.InputFilesToCompile);
             });
@@ -238,6 +242,10 @@ namespace ILCompiler
 
                     extraHelp.Add(archString.ToString());
                 }
+
+                extraHelp.Add("");
+                extraHelp.Add(SR.CpuFamilies);
+                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
 
                 argSyntax.ExtraHelpParagraphs = extraHelp;
 

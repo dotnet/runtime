@@ -84,8 +84,20 @@ namespace System.Formats.Tar
         /// </summary>
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (_wroteEntries)
+                {
+                    WriteFinalRecords();
+                }
+
+                if (!_leaveOpen)
+                {
+                    _archiveStream.Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -93,8 +105,20 @@ namespace System.Formats.Tar
         /// </summary>
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsync(disposing: true).ConfigureAwait(false);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                if (_wroteEntries)
+                {
+                    await WriteFinalRecordsAsync().ConfigureAwait(false);
+                }
+
+                if (!_leaveOpen)
+                {
+                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                }
+            }
         }
 
         /// <summary>
@@ -138,10 +162,7 @@ namespace System.Formats.Tar
             TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
 
             WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            entry._header._dataStream?.Dispose();
         }
 
         // Asynchronously reads an entry from disk and writes it into the archive stream.
@@ -193,47 +214,9 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
-
-            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-            buffer.Clear(); // Rented arrays aren't clean
-            try
-            {
-                switch (entry.Format)
-                {
-                    case TarEntryFormat.V7:
-                        entry._header.WriteAsV7(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        entry._header.WriteAsUstar(_archiveStream, buffer);
-                        break;
-                    case TarEntryFormat.Pax:
-                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                        {
-                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber);
-                            _nextGlobalExtendedAttributesEntryNumber++;
-                        }
-                        else
-                        {
-                            entry._header.WriteAsPax(_archiveStream, buffer);
-                        }
-                        break;
-                    case TarEntryFormat.Gnu:
-                        entry._header.WriteAsGnu(_archiveStream, buffer);
-                        break;
-                    default:
-                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
-
-            _wroteEntries = true;
+            WriteEntryInternal(entry);
         }
 
         /// <summary>
@@ -276,70 +259,49 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            ThrowIfDisposed();
+
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
-        // Disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private void Dispose(bool disposing)
+        // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
+        private void WriteEntryInternal(TarEntry entry)
         {
-            if (disposing && !_isDisposed)
+            Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
+            buffer.Clear();
+
+            switch (entry.Format)
             {
-                try
-                {
-                    if (_wroteEntries)
-                    {
-                        WriteFinalRecords();
-                    }
+                case TarEntryFormat.V7:
+                    entry._header.WriteAsV7(_archiveStream, buffer);
+                    break;
 
+                case TarEntryFormat.Ustar:
+                    entry._header.WriteAsUstar(_archiveStream, buffer);
+                    break;
 
-                    if (!_leaveOpen)
+                case TarEntryFormat.Pax:
+                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
                     {
-                        _archiveStream.Dispose();
+                        entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
                     }
-                }
-                finally
-                {
-                    _isDisposed = true;
-                }
+                    else
+                    {
+                        entry._header.WriteAsPax(_archiveStream, buffer);
+                    }
+                    break;
+
+                case TarEntryFormat.Gnu:
+                    entry._header.WriteAsGnu(_archiveStream, buffer);
+                    break;
+
+                default:
+                    Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
+                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
             }
-        }
 
-        // Asynchronously disposes the current instance.
-        // If 'disposing' is 'false', the method was called from the finalizer.
-        private async ValueTask DisposeAsync(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    if (_wroteEntries)
-                    {
-                        await WriteFinalRecordsAsync().ConfigureAwait(false);
-                    }
-
-
-                    if (!_leaveOpen)
-                    {
-                        await _archiveStream.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    _isDisposed = true;
-                }
-            }
-        }
-
-        // If the underlying archive stream is disposed, throws 'ObjectDisposedException'.
-        private void ThrowIfDisposed()
-        {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
+            _wroteEntries = true;
         }
 
         // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
@@ -351,36 +313,17 @@ namespace System.Formats.Tar
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
 
-            switch (entry.Format)
+            Task task = entry.Format switch
             {
-                case TarEntryFormat.V7:
-                    entry._header._checksum = await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
+                TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
+                TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
+                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+            };
+            await task.ConfigureAwait(false);
 
-                case TarEntryFormat.Ustar:
-                    entry._header._checksum = await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
-
-                case TarEntryFormat.Pax:
-                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                    {
-                        entry._header._checksum = await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
-                        _nextGlobalExtendedAttributesEntryNumber++;
-                    }
-                    else
-                    {
-                        entry._header._checksum = await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case TarEntryFormat.Gnu:
-                    entry._header._checksum = await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                    break;
-
-                case TarEntryFormat.Unknown:
-                default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-            }
             _wroteEntries = true;
 
             ArrayPool<byte>.Shared.Return(rented);
@@ -390,7 +333,9 @@ namespace System.Formats.Tar
         // by two records consisting entirely of zero bytes.
         private void WriteFinalRecords()
         {
-            byte[] emptyRecord = new byte[TarHelpers.RecordSize];
+            Span<byte> emptyRecord = stackalloc byte[TarHelpers.RecordSize];
+            emptyRecord.Clear();
+
             _archiveStream.Write(emptyRecord);
             _archiveStream.Write(emptyRecord);
         }
@@ -400,14 +345,19 @@ namespace System.Formats.Tar
         // This method is called from DisposeAsync, so we don't want to propagate a cancelled CancellationToken.
         private async ValueTask WriteFinalRecordsAsync()
         {
-            byte[] emptyRecord = new byte[TarHelpers.RecordSize];
-            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
-            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
+            const int TwoRecordSize = TarHelpers.RecordSize * 2;
+
+            byte[] twoEmptyRecords = ArrayPool<byte>.Shared.Rent(TwoRecordSize);
+            Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
+
+            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
+
+            ArrayPool<byte>.Shared.Return(twoEmptyRecords);
         }
 
         private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             string fullPath = Path.GetFullPath(fileName);

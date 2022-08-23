@@ -7,6 +7,9 @@
     <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\Helpers.cs"
              Link="Helpers.cs" />
     <Compile Include="..\System\ArrayTests.cs"

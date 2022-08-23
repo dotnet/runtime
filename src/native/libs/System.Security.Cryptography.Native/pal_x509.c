@@ -225,7 +225,7 @@ ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
     return X509_EXTENSION_get_data(ext);
 }
 
-void CryptoNative_X509StoreDestory(X509_STORE* v)
+void CryptoNative_X509StoreDestroy(X509_STORE* v)
 {
     if (v != NULL)
     {

@@ -112,7 +112,7 @@ PALTEST(composite_threading_threadsuspension_switchthread_paltest_threading_thre
         return ( FAIL );
     }
 
-   //Initialize Application Statistics Strucuture
+   //Initialize Application Statistics Structure
    appStats.relationId=RELATION_ID;
    appStats.operationTime=0;
    appStats.buildNumber =  getBuildNumber();

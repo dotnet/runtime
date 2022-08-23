@@ -168,8 +168,8 @@ namespace System
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
@@ -216,8 +216,8 @@ namespace System
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
             if (ArmBase.Arm64.IsSupported)

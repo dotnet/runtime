@@ -128,7 +128,7 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            string? targetName = Marshal.PtrToStringAnsi(namePtr);
+            string? targetName = Marshal.PtrToStringUTF8(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
@@ -162,7 +162,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(_sslSessions != null);
 
-            string? targetName = Marshal.PtrToStringAnsi(namePtr);
+            string? targetName = Marshal.PtrToStringUTF8(namePtr);
             Debug.Assert(targetName != null);
 
             if (_sslSessions != null && targetName != null)

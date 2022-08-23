@@ -13,7 +13,7 @@
 //   stress log will log all facilities, and only filter on logging level.
 //
 // The log has a very simple structure, and is meant to be dumped from an NTSD
-//   extention (eg. strike).
+//   extension (eg. strike).
 //
 // debug\rhsos\stresslogdump.cpp contains the dumper utility that parses this
 //   log.
@@ -60,12 +60,12 @@ enum LogFacilitiesEnum: unsigned int {
 
 
 #define LL_EVERYTHING  10
-#define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trival run
-#define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trival run
-#define LL_INFO10000    7       // can be expected to generate 10,000 logs per small but not trival run
-#define LL_INFO1000     6       // can be expected to generate 1,000 logs per small but not trival run
-#define LL_INFO100      5       // can be expected to generate 100 logs per small but not trival run
-#define LL_INFO10       4       // can be expected to generate 10 logs per small but not trival run
+#define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trivial run
+#define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trivial run
+#define LL_INFO10000    7       // can be expected to generate 10,000 logs per small but not trivial run
+#define LL_INFO1000     6       // can be expected to generate 1,000 logs per small but not trivial run
+#define LL_INFO100      5       // can be expected to generate 100 logs per small but not trivial run
+#define LL_INFO10       4       // can be expected to generate 10 logs per small but not trivial run
 #define LL_WARNING      3
 #define LL_ERROR        2
 #define LL_FATALERROR   1
@@ -98,8 +98,8 @@ enum LogFacilitiesEnum: unsigned int {
 
 /*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
     in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
-     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on 
-    how many arguments are getting passed in and using va_args would require parsing the format 
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
     string during the GC
 */
 #define _Args(...) __VA_ARGS__
@@ -315,7 +315,7 @@ public:
     static long NewChunk ()     { return PalInterlockedIncrement (&theLog.totalChunk); }
     static long ChunkDeleted () { return PalInterlockedDecrement (&theLog.totalChunk); }
 
-    //the result is not 100% accurate. If multiple threads call this funciton at the same time,
+    //the result is not 100% accurate. If multiple threads call this function at the same time,
     //we could allow the total size be bigger than required. But the memory won't grow forever
     //and this is not critical so we don't try to fix the race
     static bool AllowNewChunk (long numChunksInCurThread);

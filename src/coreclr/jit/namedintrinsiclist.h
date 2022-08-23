@@ -15,6 +15,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Enum_HasFlag,
 
+    NI_System_BitConverter_DoubleToInt64Bits,
+    NI_System_BitConverter_Int32BitsToSingle,
+    NI_System_BitConverter_Int64BitsToDouble,
+    NI_System_BitConverter_SingleToInt32Bits,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,

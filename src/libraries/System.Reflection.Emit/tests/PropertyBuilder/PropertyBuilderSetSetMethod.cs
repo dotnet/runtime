@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             MethodAttributes setMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
             MethodBuilder method = ImplementMethod(type, "TestMethod", setMethodAttributes, null, new Type[] { typeof(int) }, field);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => { property.SetSetMethod(method); });
         }
 

@@ -38,14 +38,14 @@
         // Transform destReg into the equivalent address in the shadow heap.
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, X9
         subs    \destReg, \destReg, x9
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, X9
         add     \destReg, \destReg, x9
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, X9
         cmp     \destReg, x9
-        bgt     0f
+        bhs     0f
 
         // Update the shadow heap.
         str     \refReg, [\destReg]
@@ -120,11 +120,11 @@
         // an object not on the epehemeral segment.
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x\trash
         cmp     \refReg, x\trash
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x\trash
         cmp     \refReg, x\trash
-        bge     0f
+        bhs     0f
 
         // Set this objects card, if it has not already been set.
 
@@ -172,11 +172,13 @@
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x\trash
         cmp     \destReg, x\trash
-        blt     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x\trash
-        cmp     \destReg, x\trash
-        bgt     0f
+
+        // If \destReg >= g_lowest_address, compare \destReg to g_highest_address.
+        // Otherwise, set the C flag (0x2) to take the next branch.
+        ccmp    \destReg, x\trash, #0x2, hs
+        bhs     0f
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg, \trash, \trash2
 
@@ -201,7 +203,7 @@
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpCheckedAssignRefArm64
+        b       C_FUNC(RhpCheckedAssignRefArm64)
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -221,7 +223,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpAssignRefArm64
+        b       C_FUNC(RhpAssignRefArm64)
 
 LEAF_END RhpAssignRef, _TEXT
 
@@ -361,13 +363,13 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
-    ldr x15, [x13]
-    str x15, [x14]
+    ldr     x15, [x13]
+    stlr    x15, [x14]
 
     INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12, X15
 
-    add X13, x13, #8
-    add x14, x14, #8
+    add     X13, x13, #8
+    add     x14, x14, #8
 
     ret
 LEAF_END RhpByRefAssignRefArm64, _TEXT

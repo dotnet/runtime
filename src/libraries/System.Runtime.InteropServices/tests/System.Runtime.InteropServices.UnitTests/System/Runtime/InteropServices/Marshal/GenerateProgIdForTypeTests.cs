@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ClassWithNullProgID), "" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GenerateProgIdForType_Valid_TestData))]
         public void GenerateProgIdForType_ValidType_ReturnsExpected(Type type, string expected)
         {
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GenerateProgIdForType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("type", () => Marshal.GenerateProgIdForType(null));

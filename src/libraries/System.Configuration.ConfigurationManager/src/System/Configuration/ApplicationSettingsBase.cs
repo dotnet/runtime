@@ -341,10 +341,7 @@ namespace System.Configuration
         /// </summary>
         public void Reload()
         {
-            if (PropertyValues != null)
-            {
-                PropertyValues.Clear();
-            }
+            PropertyValues?.Clear();
 
             foreach (SettingsProperty sp in Properties)
             {
@@ -363,11 +360,7 @@ namespace System.Configuration
             {
                 foreach (SettingsProvider provider in Providers)
                 {
-                    IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
-                    {
-                        clientProv.Reset(Context);
-                    }
+                    (provider as IApplicationSettingsProvider)?.Reset(Context);
                 }
             }
 
@@ -434,11 +427,7 @@ namespace System.Configuration
             {
                 foreach (SettingsProvider provider in Providers)
                 {
-                    IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
-                    {
-                        clientProv.Upgrade(Context, GetPropertiesForProvider(provider));
-                    }
+                    (provider as IApplicationSettingsProvider)?.Upgrade(Context, GetPropertiesForProvider(provider));
                 }
             }
 
@@ -618,10 +607,7 @@ namespace System.Configuration
                                 }
                                 else if (attr is SettingsGroupNameAttribute)
                                 {
-                                    if (_context == null)
-                                    {
-                                        _context = new SettingsContext();
-                                    }
+                                    _context ??= new SettingsContext();
                                     _context["GroupName"] = ((SettingsGroupNameAttribute)attr).GroupName;
                                 }
                                 else if (attr is SettingsProviderAttribute)

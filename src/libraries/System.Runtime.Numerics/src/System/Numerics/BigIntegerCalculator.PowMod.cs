@@ -15,7 +15,7 @@ namespace System.Numerics
 
         public static void Pow(uint value, uint power, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
@@ -200,7 +200,7 @@ namespace System.Numerics
         public static void Pow(uint value, uint power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power,
@@ -217,7 +217,11 @@ namespace System.Numerics
             Span<uint> valueCopy = (size <= StackAllocThreshold ?
                                    stackalloc uint[StackAllocThreshold]
                                    : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
-            valueCopy.Clear();
+
+            // smallish optimization here:
+            // subsequent operations will copy the elements to the beginning of the buffer,
+            // no need to clear everything
+            valueCopy.Slice(value.Length).Clear();
 
             if (value.Length > modulus.Length)
             {
@@ -245,7 +249,7 @@ namespace System.Numerics
         public static void Pow(uint value, ReadOnlySpan<uint> power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,
@@ -262,7 +266,11 @@ namespace System.Numerics
             Span<uint> valueCopy = (size <= StackAllocThreshold ?
                                    stackalloc uint[StackAllocThreshold]
                                    : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
-            valueCopy.Clear();
+
+            // smallish optimization here:
+            // subsequent operations will copy the elements to the beginning of the buffer,
+            // no need to clear everything
+            valueCopy.Slice(value.Length).Clear();
 
             if (value.Length > modulus.Length)
             {
@@ -464,7 +472,7 @@ namespace System.Numerics
                 power >>= 1;
             }
 
-            return result.Slice(0, resultLength);
+            return result;
         }
 
         private static Span<uint> PowCore(Span<uint> value, int valueLength,

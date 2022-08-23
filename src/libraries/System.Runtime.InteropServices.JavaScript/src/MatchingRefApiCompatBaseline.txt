@@ -5,6 +5,4 @@ TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.DataView' does 
 TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Function' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Runtime' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Uint8Array' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.JSObject' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.JSException' does not exist in the reference but it does exist in the implementation.
-Total Issues: 8
+Total Issues: 6

@@ -450,10 +450,7 @@ namespace System.Xml.Schema
                 this_._leftChild!.ExpandTree(this_, symbols, positions);
 
             ProcessRight:
-                if (this_._rightChild != null)
-                {
-                    this_._rightChild.ExpandTree(this_, symbols, positions);
-                }
+                this_._rightChild?.ExpandTree(this_, symbols, positions);
 
                 if (nodeStack.Count == 0)
                     break;
@@ -466,10 +463,7 @@ namespace System.Xml.Schema
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
             _leftChild!.ExpandTree(this, symbols, positions);
-            if (_rightChild != null)
-            {
-                _rightChild.ExpandTree(this, symbols, positions);
-            }
+            _rightChild?.ExpandTree(this, symbols, positions);
         }
     }
 

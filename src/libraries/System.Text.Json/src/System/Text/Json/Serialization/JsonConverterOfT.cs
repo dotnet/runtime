@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -14,28 +15,26 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
-        protected internal JsonConverter()
-        {
-            Initialize();
-        }
+        protected internal JsonConverter() : this(initialize: true)
+        { }
 
         internal JsonConverter(bool initialize)
         {
+            IsValueType = typeof(T).IsValueType;
+            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+
             // Initialize uses abstract members, in order for them to be initialized correctly
-            // without throwing we need to delay call to Initialize
+            // without throwing we might need to delay call to Initialize
             if (initialize)
             {
                 Initialize();
             }
         }
 
-        internal void Initialize()
+        private protected void Initialize()
         {
-            IsValueType = typeof(T).IsValueType;
-            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
-
             if (HandleNull)
             {
                 HandleNullOnRead = true;
@@ -69,12 +68,16 @@ namespace System.Text.Json.Serialization
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
-        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal sealed override JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
         {
-            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
-            {
-                DefaultConverterForType = this
-            };
+            return new ReflectionJsonTypeInfo<T>(this, options);
+        }
+
+        internal sealed override JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
+        {
+            return new CustomJsonTypeInfo<T>(this, options);
         }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
@@ -84,8 +87,23 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
-            return new CastingConverter<TTarget, T>(this);
+            if (this is JsonConverter<TTarget> conv)
+            {
+                return conv;
+            }
+
+            JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
+
+            // Avoid layering casting converters by consulting any source converters directly.
+            return
+                SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
+                ?? new CastingConverter<TTarget, T>(this);
         }
+
+        /// <summary>
+        /// Set if this converter is itself a casting converter.
+        /// </summary>
+        internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
         internal override Type? KeyType => null;
 
@@ -142,7 +160,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -161,7 +179,7 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
             // For perf and converter simplicity, handle null here instead of forwarding to the converter.
             if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead && !state.IsContinuation)
@@ -223,6 +241,20 @@ namespace System.Text.Json.Serialization
             bool isContinuation = state.IsContinuation;
             bool success;
 
+            if (
+#if NETCOREAPP
+                !typeof(T).IsValueType &&
+#endif
+                CanBePolymorphic)
+            {
+                // Special case object converters since they don't
+                // require the expensive ReadStack.Push()/Pop() operations.
+                Debug.Assert(this is ObjectConverter);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+                Debug.Assert(success);
+                return true;
+            }
+
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
@@ -269,14 +301,14 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal sealed override bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value)
         {
             bool success = OnTryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
 
-        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value)
         {
             bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;

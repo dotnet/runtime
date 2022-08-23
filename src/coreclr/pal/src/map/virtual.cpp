@@ -751,7 +751,7 @@ static BOOL VIRTUALStoreAllocationInfo(
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
-        /* Set the intial allocation state, and initial allocation protection. */
+        /* Set the initial allocation state, and initial allocation protection. */
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),
@@ -2089,7 +2089,7 @@ size_t GetVirtualPageSize()
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/

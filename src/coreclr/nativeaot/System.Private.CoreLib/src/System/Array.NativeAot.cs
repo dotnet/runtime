@@ -84,7 +84,7 @@ namespace System
             }
             else
             {
-                // Create a local copy of the lenghts that cannot be motified by the caller
+                // Create a local copy of the lengths that cannot be motified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
@@ -541,7 +541,7 @@ namespace System
 
             if (reliable)
             {
-                // ContrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
+                // ConstrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
                 if (sourceElementType != destElementType)
                     throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
             }

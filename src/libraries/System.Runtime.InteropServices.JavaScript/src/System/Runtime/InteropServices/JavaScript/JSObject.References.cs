@@ -8,7 +8,6 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial class JSObject
     {
-        public bool IsDisposed { get => _isDisposed; }
         internal IntPtr JSHandle;
 
         internal GCHandle? InFlight;
@@ -24,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal void AddInFlight()
         {
-            if (IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
             lock (this)
             {
                 InFlightCounter++;
@@ -55,10 +54,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
+        /// <inheritdoc />
         public override int GetHashCode() => (int)JSHandle;
 
+        /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
         private void Dispose(bool disposing)
@@ -76,6 +78,9 @@ namespace System.Runtime.InteropServices.JavaScript
             Dispose(disposing: false);
         }
 
+        /// <summary>
+        /// Releases any resources used by the proxy and discards the reference to its target JavaScript object.
+        /// </summary>
         public void Dispose()
         {
             Dispose(disposing: true);

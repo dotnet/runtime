@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Xml
@@ -29,6 +30,7 @@ namespace System.Xml
         private int _arrayCount;
         private int _maxBytesPerRead;
         private XmlBinaryNodeType _arrayNodeType;
+        private OnXmlDictionaryReaderClose? _onClose;
 
         public XmlBinaryReader()
         {
@@ -50,7 +52,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
             if (count > buffer.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
-            MoveToInitial(quotas, session, null);
+            MoveToInitial(quotas, session, onClose);
             BufferReader.SetBuffer(buffer, offset, count, dictionary, session);
             _buffered = true;
         }
@@ -63,7 +65,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            MoveToInitial(quotas, session, null);
+            MoveToInitial(quotas, session, onClose);
             BufferReader.SetBuffer(stream, dictionary, session);
             _buffered = false;
         }
@@ -73,12 +75,26 @@ namespace System.Xml
             MoveToInitial(quotas);
             _maxBytesPerRead = quotas.MaxBytesPerRead;
             _arrayState = ArrayState.None;
+            _onClose = onClose;
             _isTextWithEndElement = false;
         }
 
         public override void Close()
         {
             base.Close();
+            OnXmlDictionaryReaderClose? onClose = _onClose;
+            _onClose = null;
+            if (onClose != null)
+            {
+                try
+                {
+                    onClose(this);
+                }
+                catch (Exception e)
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperCallback(e);
+                }
+            }
         }
 
         public override string ReadElementContentAsString()
@@ -710,8 +726,10 @@ namespace System.Xml
 
         private void ReadAttributes2()
         {
+            int startOffset = 0;
+
             if (_buffered)
-                _ = BufferReader.Offset;
+                startOffset = BufferReader.Offset;
 
             while (true)
             {
@@ -845,6 +863,8 @@ namespace System.Xml
                         ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     default:
+                        if (_buffered && (BufferReader.Offset - startOffset) > _maxBytesPerRead)
+                            XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(this, _maxBytesPerRead);
                         ProcessAttributes();
                         return;
                 }
@@ -1231,10 +1251,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (bool* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1257,10 +1274,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (short* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1283,10 +1297,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (int* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1309,10 +1320,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (long* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1335,10 +1343,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (float* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1361,10 +1366,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (double* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1387,10 +1389,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            fixed (decimal* items = &array[offset])
-            {
-                BufferReader.UnsafeReadArray((byte*)items, (byte*)&items[actual]);
-            }
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1414,9 +1413,11 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.DateTime, out _, out _);
+            foreach (ref DateTime item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadDateTime();
+                item = BufferReader.ReadDateTime();
             }
             SkipArrayElements(actual);
             return actual;
@@ -1441,9 +1442,18 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            if (BitConverter.IsLittleEndian)
             {
-                array[offset + i] = BufferReader.ReadGuid();
+                BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
+            }
+            else
+            {
+                // Try to read in whole array, but don't fail if not possible
+                BufferReader.GetBuffer(actual * ValueHandleLength.Guid, out _, out _);
+                foreach (ref Guid item in array.AsSpan(offset, actual))
+                {
+                    item = BufferReader.ReadGuid();
+                }
             }
             SkipArrayElements(actual);
             return actual;
@@ -1468,9 +1478,11 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.TimeSpan, out _, out _);
+            foreach (ref TimeSpan item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadTimeSpan();
+                item = BufferReader.ReadTimeSpan();
             }
             SkipArrayElements(actual);
             return actual;

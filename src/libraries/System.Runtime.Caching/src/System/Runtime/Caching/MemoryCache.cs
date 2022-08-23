@@ -109,10 +109,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
                 return false;
@@ -429,10 +426,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 
@@ -480,18 +474,12 @@ namespace System.Runtime.Caching
                 // unhook domain events
                 DisposeSafeCritical();
                 // stats must be disposed prior to disposing the stores.
-                if (_stats != null)
-                {
-                    _stats.Dispose();
-                }
+                _stats?.Dispose();
                 if (_storeRefs != null)
                 {
                     foreach (var storeRef in _storeRefs)
                     {
-                        if (storeRef != null)
-                        {
-                            storeRef.Dispose();
-                        }
+                        storeRef?.Dispose();
                     }
                 }
                 if (_perfCounters != null)
@@ -718,10 +706,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 
@@ -762,10 +747,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 

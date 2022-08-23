@@ -184,10 +184,10 @@ namespace System.Security.Cryptography.Xml
         private void Clear()
         {
             _CRL = null;
-            if (_subjectKeyIds != null) _subjectKeyIds.Clear();
-            if (_subjectNames != null) _subjectNames.Clear();
-            if (_issuerSerials != null) _issuerSerials.Clear();
-            if (_certificates != null) _certificates.Clear();
+            _subjectKeyIds?.Clear();
+            _subjectNames?.Clear();
+            _issuerSerials?.Clear();
+            _certificates?.Clear();
         }
 
         //

@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
 
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
                 var res = funcDelegate (10, 20);
                 App.call_test_method (""InvokeI32"", [ res, res ]);
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
 
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
                 var res = funcDelegate (10, 20);
                 for (let x = 0; x < 1000; x++)
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
                 var res = funcDelegate (10, 20);
                 for (let x = 0; x < 1000; x++)
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._functionActionResultValue = 0;
             HelperMarshal._functionActionResultValueOfAction = 0;
 
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegateWithAction"", [  ]);
                 var actionDelegate = funcDelegate (10, 20);
                 actionDelegate(30,40);
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._actionResultValue = 0;
 
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var actionDelegate = App.call_test_method (""CreateActionDelegate"", [  ]);
                 actionDelegate(30,40);
             ");
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeActionFloatIntToIntInt()
         {
             HelperMarshal._actionResultValue = 0;
-            var ex = Assert.Throws<JSException>(()=>Runtime.InvokeJS(@"
+            var ex = Assert.Throws<JSException>(()=>Utils.InvokeJS(@"
                 var actionDelegate = App.call_test_method (""CreateActionDelegate"", [  ]);
                 actionDelegate(3.14,40);
             "));
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeDelegateMethod()
         {
             HelperMarshal._delMethodResultValue = string.Empty;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var del = App.call_test_method (""CreateDelegateMethod"", [  ]);
                 del(""Hic sunt dracones"");
             ");
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeDelegateMethodReturnString()
         {
             HelperMarshal._delMethodStringResultValue = string.Empty;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var del = App.call_test_method (""CreateDelegateMethodReturnString"", [  ]);
                 var res = del(""Hic sunt dracones"");
                 App.call_test_method (""SetTestString1"", [ res ]);
@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeMultiCastDelegate_VoidString(string creator, string testStr)
         {
             HelperMarshal._delegateCallResult = string.Empty;
-            Runtime.InvokeJS($@"
+            Utils.InvokeJS($@"
                 var del = App.call_test_method (""{creator}"", [  ]);
                 del(""{testStr}"");
             ");
@@ -155,7 +155,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeDelegate_VoidString(string creator)
         {
             HelperMarshal._delegateCallResult = string.Empty;
-            var s = Runtime.InvokeJS($@"
+            var s = Utils.InvokeJS($@"
                 var del = App.call_test_method (""{creator}"", [  ]);
                 del(""Hic sunt dracones"");
             ");
@@ -178,7 +178,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(10, HelperMarshal._funcActionBufferObjectResultValue.GetObjectProperty("length"));
             Assert.Equal($"[object {creator}]", objectPrototype.Call(HelperMarshal._funcActionBufferObjectResultValue));
 
-            Runtime.InvokeJS($@"
+            Utils.InvokeJS($@"
                 var buffer = new {creator}(50);
                 var del = App.call_test_method (""CreateFunctionAccepting{creator}"", [  ]);
                 var setAction = del(buffer);
@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var evnti = dispatcher.Invoke("eventFactory", i);
                 dispatcher.Invoke("fireEvent", evnti);
                 dispatcher.Invoke("fireEvent", evnt);
-                Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
+                Utils.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
             }
         }
 
@@ -307,7 +307,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var value = (JSObject)await promise;
 
                 Assert.Equal("bar", value.GetObjectProperty("foo"));
-                Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
+                Utils.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
             }
         }
 

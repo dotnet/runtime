@@ -1113,7 +1113,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (Volatile.Read(ref target._cleanupReserved))
                 {
                     IDisposable? disposableUnlink = Interlocked.CompareExchange<IDisposable?>(ref target._unlink, null, unlink);
-                    if (disposableUnlink != null) disposableUnlink.Dispose();
+                    disposableUnlink?.Dispose();
                 }
             }
             catch (Exception exception)
@@ -1283,7 +1283,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Cleanup the timer.  (Even if we're here because of the timer firing, we still
                 // want to aggressively dispose of the timer.)
-                if (_timer != null) _timer.Dispose();
+                _timer?.Dispose();
 
                 // Cancel the token everyone is listening to.  We also want to unlink
                 // from the user-provided cancellation token to prevent a leak.
@@ -2537,19 +2537,16 @@ namespace System.Threading.Tasks.Dataflow
                     // When the source completes, complete the target. Then when the target completes,
                     // send completion messages to any observers still registered.
                     Task? sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(Observable._source);
-                    if (sourceCompletionTask != null)
+                    sourceCompletionTask?.ContinueWith((_1, state1) =>
                     {
-                        sourceCompletionTask.ContinueWith((_1, state1) =>
-                        {
-                            var ti = (ObserversState)state1!;
-                            ti.Target.Complete();
-                            ti.Target.Completion.ContinueWith(
-                                (_2, state2) => ((ObserversState)state2!).NotifyObserversOfCompletion(), state1,
-                                CancellationToken.None,
-                                Common.GetContinuationOptions(TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
-                                TaskScheduler.Default);
-                        }, this, Canceler.Token, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-                    }
+                        var ti = (ObserversState)state1!;
+                        ti.Target.Complete();
+                        ti.Target.Completion.ContinueWith(
+                            (_2, state2) => ((ObserversState)state2!).NotifyObserversOfCompletion(), state1,
+                            CancellationToken.None,
+                            Common.GetContinuationOptions(TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
+                            TaskScheduler.Default);
+                    }, this, Canceler.Token, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
                 }
 
                 /// <summary>Forwards an item to all currently subscribed observers.</summary>

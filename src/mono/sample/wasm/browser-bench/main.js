@@ -3,17 +3,18 @@
 
 "use strict";
 
-import createDotnetRuntime from './dotnet.js'
+import { dotnet, exit } from './dotnet.js'
 
 let runBenchmark;
 let setTasks;
 let getFullJsonResults;
 
 class MainApp {
-    init({ BINDING }) {
-        runBenchmark = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark");
-        setTasks = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks");
-        getFullJsonResults = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:GetFullJsonResults");
+    async init({ getAssemblyExports }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+        runBenchmark = exports.Sample.Test.RunBenchmark;
+        setTasks = exports.Sample.Test.SetTasks;
+        getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
@@ -45,7 +46,7 @@ class MainApp {
         });
     }
 
-    async PageShow() {
+    async pageShow() {
         try {
             await this.waitFor('pageshow');
         } finally {
@@ -53,7 +54,7 @@ class MainApp {
         }
     }
 
-    async ReachedManaged() {
+    async frameReachedManaged() {
         try {
             await this.waitFor('reached');
         } finally {
@@ -90,27 +91,16 @@ class MainApp {
 
 try {
     globalThis.mainApp = new MainApp();
+    globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
+    globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-    const { BINDING } = await createDotnetRuntime(() => ({
-        disableDotnet6Compatibility: true,
-        configSrc: "./mono-config.json",
-        onAbort: (error) => {
-            wasm_exit(1, error);
-        }
-    }));
-    mainApp.init({ BINDING });
+    const runtime = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
+
+    await mainApp.init(runtime);
 }
 catch (err) {
-    wasm_exit(1, err);
+    exit(1, err);
 }
-function wasm_exit(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    if (exit_code) tests_done_elem.style.background = "red";
-    document.body.appendChild(tests_done_elem);
-
-    if (reason) console.error(reason);
-    console.log(`WASM EXIT ${exit_code}`);
-};

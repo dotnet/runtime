@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
@@ -19,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.IBC;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -79,6 +81,9 @@ namespace ILCompiler
                 case Architecture.Arm64:
                     arch = TargetArchitecture.ARM64;
                     break;
+                case Architecture.LoongArch64:
+                    arch = TargetArchitecture.LoongArch64;
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -96,7 +101,7 @@ namespace ILCompiler
             _commandLineOptions = new CommandLineOptions(args);
             PerfEventSource.StartStopEvents.CommandLineProcessingStop();
 
-            if (_commandLineOptions.Help)
+            if (_commandLineOptions.Help || _commandLineOptions.Version)
             {
                 return;
             }
@@ -181,6 +186,14 @@ namespace ILCompiler
 
         }
 
+        private string GetCompilerVersion()
+        {
+            return  Assembly
+                   .GetExecutingAssembly()
+                   .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                   .InformationalVersion;
+        }
+
         public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
         {
             armelAbi = false;
@@ -197,6 +210,8 @@ namespace ILCompiler
             }
             else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
+            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.LoongArch64;
             else
                 throw new CommandLineException(SR.TargetArchitectureUnsupported);
         }
@@ -236,9 +251,16 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
-
 
             if (_commandLineOptions.InstructionSet != null)
             {
@@ -336,6 +358,13 @@ namespace ILCompiler
             {
                 Console.WriteLine(_commandLineOptions.HelpText);
                 return 1;
+            }
+
+            if (_commandLineOptions.Version)
+            {
+                string version = GetCompilerVersion();
+                Console.WriteLine(version);
+                return 0;
             }
 
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
@@ -760,6 +789,7 @@ namespace ILCompiler
                         typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData,
+                        _commandLineOptions.SupportIbc,
                         crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);

@@ -1454,9 +1454,15 @@ namespace ILCompiler.DependencyAnalysis
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
                     implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
-                    if (implMethod == null && !instantiatedConstrainedMethod.IsAbstract)
+                    if (implMethod == null)
                     {
-                        implMethod = instantiatedConstrainedMethod;
+                        DefaultInterfaceMethodResolution resolution =
+                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
+                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                        {
+                            // TODO: diamond/reabstraction
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
                     }
                 }
                 else

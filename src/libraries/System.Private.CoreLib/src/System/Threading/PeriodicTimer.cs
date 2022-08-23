@@ -23,7 +23,7 @@ namespace System.Threading
 
         /// <summary>Initializes the timer.</summary>
         /// <param name="period">The time interval between invocations of callback..</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="period"/> must be represent a number of milliseconds larger than 0 and smaller than <see cref="uint.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="period"/> must represent a number of milliseconds equal to or larger than 1, and smaller than <see cref="uint.MaxValue"/>.</exception>
         public PeriodicTimer(TimeSpan period)
         {
             long ms = (long)period.TotalMilliseconds;
@@ -63,6 +63,7 @@ namespace System.Threading
             _state.Signal(stopping: true);
         }
 
+        /// <summary>Ensures that resources are freed and other cleanup operations are performed when the garbage collector reclaims the <see cref="PeriodicTimer" /> object.</summary>
         ~PeriodicTimer() => Dispose();
 
         /// <summary>Core implementation for the periodic timer.</summary>

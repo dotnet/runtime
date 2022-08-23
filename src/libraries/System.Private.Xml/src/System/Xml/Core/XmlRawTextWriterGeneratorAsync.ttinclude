@@ -5,7 +5,6 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
-#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -133,7 +132,7 @@ namespace System.Xml
         }
 
         // Serialize the document type declaration.
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);<#
@@ -1844,7 +1843,7 @@ namespace System.Xml
     // Same as base text writer class except that elements, attributes, comments, and pi's are indented.
     internal partial class <#= ClassNameIndent #> : <#= ClassName #>
     {
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             // Add indentation

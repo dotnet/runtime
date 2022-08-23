@@ -138,7 +138,7 @@ Notes:
   - %#10x, when we have a width greater than the length (i.e padding) the
     length of the padding is not consistent with MS's wsprintf
     (MS adds an extra 2 padding chars, length of "0x")
-  - MS's wsprintf seems to ingore a 'h' prefix for number types
+  - MS's wsprintf seems to ignore a 'h' prefix for number types
   - MS's "%p" is different than gcc's
     e.g. printf("%p", NULL);
         MS  -->  00000000

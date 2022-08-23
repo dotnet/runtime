@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
             this.m_baseType = elementType;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal abstract string? FormatName(string? elementName);
 
         protected override bool IsArrayImpl()
@@ -412,7 +412,7 @@ namespace System.Reflection.Emit
             return (rank == 0) ? 1 : rank;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
@@ -445,7 +445,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
@@ -491,7 +491,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)

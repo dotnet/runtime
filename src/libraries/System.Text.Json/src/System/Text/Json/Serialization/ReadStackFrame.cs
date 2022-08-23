@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -66,6 +68,13 @@ namespace System.Text.Json
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
 
+        // Represents required properties which have value assigned.
+        // Each bit corresponds to a required property.
+        // False means that property is not set (not yet occured in the payload).
+        // Length of the BitArray is equal to number of required properties.
+        // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
+        public BitArray? RequiredPropertiesSet;
+
         public void EndConstructorParameter()
         {
             CtorArgumentState!.JsonParameterInfo = null;
@@ -105,6 +114,41 @@ namespace System.Text.Json
         public bool IsProcessingEnumerable()
         {
             return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
+        {
+            if (propertyInfo.IsRequired)
+            {
+                Debug.Assert(RequiredPropertiesSet != null);
+                RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
+        {
+            Debug.Assert(RequiredPropertiesSet == null);
+
+            if (typeInfo.NumberOfRequiredProperties > 0)
+            {
+                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.NumberOfRequiredProperties > 0)
+            {
+                Debug.Assert(RequiredPropertiesSet != null);
+
+                if (!RequiredPropertiesSet.AllBitsEqual(true))
+                {
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
+                }
+            }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

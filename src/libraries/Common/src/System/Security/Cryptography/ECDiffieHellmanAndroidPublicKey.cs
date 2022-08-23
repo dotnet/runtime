@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -9,7 +10,7 @@ namespace System.Security.Cryptography
     {
         internal sealed class ECDiffieHellmanAndroidPublicKey : ECDiffieHellmanPublicKey
         {
-            private ECAndroid _key;
+            private ECAndroid? _key;
 
             internal ECDiffieHellmanAndroidPublicKey(SafeEcKeyHandle ecKeyHandle)
             {
@@ -62,7 +63,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     _key?.Dispose();
-                    _key = null!;
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -73,6 +74,7 @@ namespace System.Security.Cryptography
                 return GetKey().DuplicateHandle();
             }
 
+            [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
                 if (_key == null)

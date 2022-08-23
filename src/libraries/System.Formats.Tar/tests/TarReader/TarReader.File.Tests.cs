@@ -118,11 +118,37 @@ namespace System.Formats.Tar.Tests
             Read_Archive_LongFileName_Over100_Under255_Internal(format, testFormat);
 
         [Theory]
-        // Neither V7 not Ustar can handle path lenghts waaaay beyond name+prefix length
+        // Neither V7 not Ustar can handle path lengths waaaay beyond name+prefix length
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
         public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat) =>
             Read_Archive_LongPath_Over255_Internal(format, testFormat);
+
+        [Fact]
+        public void Read_NodeTarArchives_Successfully()
+        {
+            string nodeTarPath = Path.Join(Directory.GetCurrentDirectory(), "tar", "node-tar");
+            foreach (string file in Directory.EnumerateFiles(nodeTarPath, "*.tar", SearchOption.AllDirectories))
+            {
+                using FileStream sourceStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var reader = new TarReader(sourceStream);
+
+                TarEntry? entry = null;
+                while (true)
+                {
+                    Exception ex = Record.Exception(() => entry = reader.GetNextEntry());
+                    Assert.Null(ex);
+
+                    if (entry is null) break;
+
+                    ex = Record.Exception(() => entry.Name);
+                    Assert.Null(ex);
+
+                    ex = Record.Exception(() => entry.Length);
+                    Assert.Null(ex);
+                }
+            }
+        }
     }
 }

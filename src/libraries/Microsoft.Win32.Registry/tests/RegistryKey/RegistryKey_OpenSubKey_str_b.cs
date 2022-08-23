@@ -20,7 +20,7 @@ namespace Microsoft.Win32.RegistryTests
             // OpenSubKey should be read only
             const string name = "FooBar";
             TestRegistryKey.SetValue(name, 42);
-            TestRegistryKey.CreateSubKey(name);
+            TestRegistryKey.CreateSubKey(name).Dispose();
             using (var rk = Registry.CurrentUser.OpenSubKey(name: TestRegistryKeyName, writable: false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
@@ -45,10 +45,11 @@ namespace Microsoft.Win32.RegistryTests
             const int testValue = 32;
             using (var rk = TestRegistryKey.OpenSubKey("", true))
             {
-                rk.CreateSubKey(TestRegistryKeyName);
+                rk.CreateSubKey(TestRegistryKeyName).Dispose();
                 rk.SetValue(TestRegistryKeyName, testValue);
 
-                Assert.NotNull(rk.OpenSubKey(TestRegistryKeyName));
+                using RegistryKey subkey = rk.OpenSubKey(TestRegistryKeyName);
+                Assert.NotNull(subkey);
                 Assert.Equal(testValue, (int)rk.GetValue(TestRegistryKeyName));
             }
         }

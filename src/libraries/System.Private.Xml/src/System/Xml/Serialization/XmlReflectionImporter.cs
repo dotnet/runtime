@@ -1437,7 +1437,7 @@ namespace System.Xml.Serialization
                 }
             }
             // Missing '{0}' needed for serialization of choice '{1}'.
-            throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+            throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
         }
 
         [RequiresUnreferencedCode("calls GetFieldModel")]
@@ -1454,21 +1454,21 @@ namespace System.Xml.Serialization
                 if (info == null)
                 {
                     // Missing '{0}' needed for serialization of choice '{1}'.
-                    throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
                 }
                 infos = new MemberInfo[] { info };
             }
             else if (infos.Length > 1)
             {
                 // Ambiguous choice identifier: there are several members named '{0}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferAmbiguous, choice.MemberName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierAmbiguous, choice.MemberName));
             }
 
             FieldModel? member = structModel.GetFieldModel(infos[0]);
             if (member == null)
             {
                 // Missing '{0}' needed for serialization of choice '{1}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMemberMissing, choice.MemberName, accessorName));
             }
             choice.SetMemberInfo(member.MemberInfo);
             Type enumType = member.FieldType;
@@ -2062,7 +2062,7 @@ namespace System.Xml.Serialization
                     if (choiceTypes.Contains(type))
                     {
                         // You need to add {0} to the '{1}'.
-                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
                     }
                     else
                     {
@@ -2073,7 +2073,7 @@ namespace System.Xml.Serialization
             if (choiceTypes.Contains(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
             {
                 // You need to add {0} to the '{1}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentifierMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
             }
 
             XmlArrayItemAttributes items = a.XmlArrayItems;

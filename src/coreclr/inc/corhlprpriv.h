@@ -743,7 +743,7 @@ CorSigUncompressPointer_EndPtr(
     // make it easier to catch invalid signatures in trusted code (e.g. IL stubs, NGEN images, etc.)
     if (pData + sizeof(void *) > pDataEnd)
     {   // Not enough data in the buffer
-        _ASSERTE(!"This signature is invalid. Note that caller should check that it is not comming from untrusted source!");
+        _ASSERTE(!"This signature is invalid. Note that caller should check that it is not coming from untrusted source!");
         return META_E_BAD_SIGNATURE;
     }
     *ppvPointerOut = *(void * UNALIGNED *)pData;

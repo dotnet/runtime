@@ -356,8 +356,7 @@ namespace Internal.Runtime.TypeLoader
         {
             Debug.Assert(!moduleHandle.IsNull);
 
-            if (t_moduleNativeReaders == null)
-                t_moduleNativeReaders = new LowLevelDictionary<TypeManagerHandle, NativeReader>();
+            t_moduleNativeReaders ??= new LowLevelDictionary<TypeManagerHandle, NativeReader>();
 
             NativeReader result;
             if (t_moduleNativeReaders.TryGetValue(moduleHandle, out result))

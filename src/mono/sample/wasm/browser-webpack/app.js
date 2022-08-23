@@ -1,12 +1,12 @@
-import createDotnetRuntime from '@microsoft/dotnet-runtime'
+import { dotnet } from '@microsoft/dotnet-runtime'
 import _ from 'underscore'
 
 async function dotnetMeaning() {
     try {
-        const { BINDING } = await createDotnetRuntime({
-            configSrc: "./mono-config.json"
-        });
-        const meaningFunction = BINDING.bind_static_method("[Wasm.Browser.WebPack.Sample] Sample.Test:Main");
+        const { getAssemblyExports } = await dotnet.create();
+
+        const exports = await getAssemblyExports("Wasm.Browser.WebPack.Sample");
+        const meaningFunction = exports.Sample.Test.Main;
         return meaningFunction();
     } catch (err) {
         console.log(err)

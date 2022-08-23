@@ -1262,7 +1262,22 @@ namespace System
             return GetBaseType() == typeof(System.MulticastDelegate);
         }
 
+        protected override bool IsValueTypeImpl()
+        {
+            // We need to return true for generic parameters with the ValueType constraint.
+            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
+            // false for all generic parameters.
+            if (this == typeof(ValueType) || this == typeof(Enum))
+                return false;
+
+            return IsSubclassOf(typeof(ValueType));
+        }
+
+        // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
+
+        // Returns true for actual enum types only.
+        internal bool IsActualEnum => RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
         public override GenericParameterAttributes GenericParameterAttributes
         {

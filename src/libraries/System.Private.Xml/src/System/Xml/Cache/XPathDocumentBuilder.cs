@@ -616,8 +616,7 @@ namespace MS.Internal.Xml.Cache
         private XPathNodeRef LinkSimilarElements(XPathNode[] pagePrev, int idxPrev, XPathNode[] pageNext, int idxNext)
         {
             // Set link on previous element
-            if (pagePrev != null)
-                pagePrev[idxPrev].SetSimilarElement(_infoTable, pageNext, idxNext);
+            pagePrev?[idxPrev].SetSimilarElement(_infoTable, pageNext, idxNext);
 
             // Add next element to index
             return new XPathNodeRef(pageNext, idxNext);

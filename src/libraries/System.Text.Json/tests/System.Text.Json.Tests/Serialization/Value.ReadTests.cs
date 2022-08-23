@@ -392,7 +392,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static int SingleToInt32Bits(float value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return BitConverter.SingleToInt32Bits(value);
 #else
             return Unsafe.As<float, int>(ref value);
@@ -464,7 +464,7 @@ namespace System.Text.Json.Serialization.Tests
             string json;
             char fillChar = 'x';
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             json = string.Create(stringLength, fillChar, (chars, fillChar) =>
             {
                 chars.Fill(fillChar);

@@ -60,6 +60,11 @@ enum SPMI_TARGET_ARCHITECTURE
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
 void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 
+inline bool IsSpmiTarget32Bit()
+{
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_X86) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM);
+}
+
 inline bool IsSpmiTarget64Bit()
 {
     return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
