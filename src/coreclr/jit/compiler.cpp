@@ -2878,7 +2878,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.disAsm = true;
             }
 
-            if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
+            if (JitConfig.JitDisasmSpilled())
             {
                 opts.disAsmSpilled = true;
             }

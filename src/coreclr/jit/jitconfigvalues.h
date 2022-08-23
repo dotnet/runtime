@@ -190,6 +190,7 @@ CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDis
 CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
                                                                        // disassembled.
+CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)  // Display native code when any register spilling occurs
 CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
 CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
 CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
