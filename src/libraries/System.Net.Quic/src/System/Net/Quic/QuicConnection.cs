@@ -392,6 +392,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw new InvalidOperationException(SR.net_quic_accept_not_allowed);
         }
 
+        GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
             return await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -400,6 +401,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             throw;
+        }
+        finally
+        {
+            keepObject.Free();
         }
     }
 
