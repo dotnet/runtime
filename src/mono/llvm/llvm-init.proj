@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">linux</MonoLLVMHostOS>
-    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' AND '$(BuildArchitecture)' != 'arm64'">osx.10.12</MonoLLVMHostOS>
-    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' AND '$(BuildArchitecture)' == 'arm64'">osx.11.0</MonoLLVMHostOS>
+    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">osx.10.12</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$(OS)' == 'Windows_NT'">win</MonoLLVMHostOS>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
@@ -41,6 +40,20 @@
                       PackageArch="$(BuildArchitecture)"
                       Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
     <_PackageReferenceDeduplicated Include="@(PackageReference->Distinct())" />
+  </ItemGroup>
+  <ItemGroup Condition="'%(_PackageReferenceDeduplicated.Identity)' == 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'">
+    <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
+    <_PackageReferenceDeduplicated Include="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                                   Version="$(MonoLLVMToolsVersion)"
+                                   PackageArch="arm64"/>
+  </ItemGroup>
+  <ItemGroup Condition="'%(_PackageReferenceDeduplicated.Identity)' == 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'">
+    <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
+    <_PackageReferenceDeduplicated Include="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                                   Version="$(MonoLLVMSDKVersion)"
+                                   PackageArch="arm64"/>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Remove="@(PackageReference)" />
     <PackageReference Include="@(_PackageReferenceDeduplicated)" />
   </ItemGroup>
