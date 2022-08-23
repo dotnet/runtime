@@ -120,29 +120,31 @@ These can be set in one of three ways:
 
 ## Specifying method names
 
-The complete syntax for specifying a single method name (for a flag that takes a method name, such as `COMPlus_JitDump`) is:
+Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
+* The environment variable is a space-separated list of patterns that can be quoted if they need to contain spaces.
+* Patterns can contain * and ? wildcards matching respectively any characters and any 1 character.
+* If the pattern contains a : character, then the string matched against is prefixed with `ClassName:`.
+* If the patter ncontains a ( character, then the string matched against is suffixed with its signature.
 
+In particular, the matching is done against strings of the following format which coincides with how the JIT displays method signatures:
 ```
-[[<Namespace>.]<ClassName>::]<MethodName>[([<types>)]
-```
-
-For example
-
-```
-System.Object::ToString(System.Object)
-```
-
-The namespace, class name, and argument types are optional, and if they are not present, default to a wildcard. Thus stating:
-
-```
-Main
+[<ClassName>:]<MethodName>[([<types>)]
 ```
 
-will match all methods named Main from any class and any number of arguments.
+In debug builds the class name is allowed to contain the namespace as well and the JIT will try to match both with and without the namespace.
 
-`<types>` is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, `Main(Foo, Bar)` and `Main(int, int)` will both match any main method with two arguments.
+The following are equivalent:
+* `WriteLine`
+* `*:WriteLine`
+* `*:WriteLine(*)`
 
-The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In particular `*` by itself indicates every method.
+So are the following:
+* `*`
+* `*:*`
+* `*:*(*)`
+
+The following will only match the string overload of `Console.WriteLine`:
+* `Console:WriteLine(String)`
 
 ## Useful COMPlus variables
 

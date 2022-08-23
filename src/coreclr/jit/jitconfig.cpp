@@ -113,8 +113,6 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
 
                 str++;
             }
-
-            return false;
         }
 
         if (*str == '\0')
@@ -154,8 +152,6 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
                                      /* includeThis */ false);
         }
 
-        // printf("Matching pattern \"%.*s\" on \"%s\"\n", name->m_patternEnd - name->m_patternStart,
-        // name->m_patternStart, nameStr);
         if (matchGlob(name->m_patternStart, name->m_patternEnd, nameStr))
         {
             return true;
@@ -169,7 +165,7 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
             if (methName != nullptr)
             {
                 const char* nsSep = methName;
-                while ((nsSep > nameStr) && *nsSep != '.')
+                while ((nsSep > nameStr) && (*nsSep != '.'))
                     nsSep--;
 
                 if ((nsSep != nameStr) && matchGlob(name->m_patternStart, name->m_patternEnd, nsSep + 1))
