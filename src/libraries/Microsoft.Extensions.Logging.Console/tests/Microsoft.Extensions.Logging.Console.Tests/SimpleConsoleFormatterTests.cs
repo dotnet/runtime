@@ -33,10 +33,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
 
             // For Android/iOS/tvOS/MacCatalyst default color behavior, enables the color
-            var colBehavior = colorBehavior == LoggerColorBehavior.Default && (PlatformDetection.IsAndroid || PlatformDetection.IsAppleMobile) ? LoggerColorBehavior.Enabled : colorBehavior;
+            colorBehavior = colorBehavior == LoggerColorBehavior.Default && (PlatformDetection.IsAndroid || PlatformDetection.IsAppleMobile) ? LoggerColorBehavior.Enabled : colorBehavior;
 
             // Assert
-            switch (colBehavior)
+            switch (colorBehavior)
             {
                 case LoggerColorBehavior.Enabled:
                     Assert.Equal(2, sink.Writes.Count);
