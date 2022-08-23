@@ -203,7 +203,7 @@ namespace System.Formats.Tar
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
             buffer = TrimEndingNullsAndSpaces(buffer);
-            buffer = TrimTrailingNullsAndSpaces(buffer);
+            buffer = TrimLeadingNullsAndSpaces(buffer);
 
             if (buffer.Length == 0)
             {
@@ -249,7 +249,7 @@ namespace System.Formats.Tar
             return buffer.Slice(0, trimmedLength);
         }
 
-        private static ReadOnlySpan<byte> TrimTrailingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
         {
             int newStart = 0;
             while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
