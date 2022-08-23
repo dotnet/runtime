@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <clrconfignocache.h>
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
@@ -338,8 +339,9 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
             // This is the old fast heap env var for backwards compatibility for VS4Mac.
-            char* fastHeapDumps = getenv("COMPlus_DbgEnableFastHeapDumps");
-            if (fastHeapDumps != nullptr && strcmp(fastHeapDumps, "1") == 0)
+            CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
+            DWORD val = 0;
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
                 minidumpType = MiniDumpNormal;
             }
@@ -347,9 +349,8 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             // enumeration of the low level data structures and adds all the loader allocator heaps
             // instead. The above original env var didn't generate a complete enough heap dump on
             // Linux and this new one does.
-            fastHeapDumps = getenv("COMPlus_EnableFastHeapDumps");
-            fastHeapDumps = fastHeapDumps != nullptr ? fastHeapDumps : getenv("DOTNET_EnableFastHeapDumps");
-            if (fastHeapDumps != nullptr && strcmp(fastHeapDumps, "1") == 0)
+            fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
                 flags = CLRDATA_ENUM_MEM_HEAP2;
             }

@@ -311,8 +311,9 @@ typedef enum CLRDataEnumMemoryFlags
     CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,   // generating skinny mini-dump
     CLRDATA_ENUM_MEM_HEAP = 0x1,                        // generating heap dump
     CLRDATA_ENUM_MEM_TRIAGE = 0x2,                      // generating triage mini-dump
-    CLRDATA_ENUM_MEM_HEAP2 = 0x3,                       // generating heap dump faster with less memory usage
-
+    /* Generate heap dumps faster with less memory usage than CLRDATA_ENUM_MEM_HEAP by adding
+       the loader heaps instead of traversing all the individual runtime data structures. */
+    CLRDATA_ENUM_MEM_HEAP2 = 0x3,
     /* More bits to be added here later */
 } CLRDataEnumMemoryFlags;
 
