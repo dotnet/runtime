@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -32,46 +33,49 @@ namespace ILLink.CodeFix
 		protected async Task BaseRegisterCodeFixesAsync (CodeFixContext context)
 		{
 			var document = context.Document;
+			var diagnostic = context.Diagnostics.First ();
+			var codeFixTitle = CodeFixTitle.ToString ();
+
 			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
 				return;
-			var diagnostic = context.Diagnostics.First ();
+
 			SyntaxNode targetNode = root.FindNode (diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 			if (FindAttributableParent (targetNode, AttributableParentTargets) is not SyntaxNode attributableNode)
 				return;
 
-			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
-				return;
-			if (model.GetSymbolInfo (targetNode).Symbol is not { } targetSymbol)
-				return;
-			if (model.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
-				return;
-			// N.B. May be null for FieldDeclaration, since field declarations can declare multiple variables
-			var attributableSymbol = model.GetDeclaredSymbol (attributableNode);
-
-			var attributeArguments = GetAttributeArguments (attributableSymbol, targetSymbol, SyntaxGenerator.GetGenerator (document), diagnostic);
-			var codeFixTitle = CodeFixTitle.ToString ();
-
 			context.RegisterCodeFix (CodeAction.Create (
 				title: codeFixTitle,
 				createChangedDocument: ct => AddAttributeAsync (
-					document, attributableNode, attributeArguments, attributeSymbol, ct),
+					document, diagnostic, targetNode, attributableNode, ct),
 				equivalenceKey: codeFixTitle), diagnostic);
 		}
 
-		private static async Task<Document> AddAttributeAsync (
+		private async Task<Document> AddAttributeAsync (
 			Document document,
+			Diagnostic diagnostic,
 			SyntaxNode targetNode,
-			SyntaxNode[] attributeArguments,
-			ITypeSymbol attributeSymbol,
+			SyntaxNode attributableNode,
 			CancellationToken cancellationToken)
 		{
+			if (await document.GetSemanticModelAsync (cancellationToken).ConfigureAwait (false) is not { } model)
+				return document;
+			if (model.GetSymbolInfo (targetNode, cancellationToken).Symbol is not { } targetSymbol)
+				return document;
+			if (model.Compilation.GetBestTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
+				return document;
+
+			// N.B. May be null for FieldDeclaration, since field declarations can declare multiple variables
+			var attributableSymbol = model.GetDeclaredSymbol (attributableNode, cancellationToken);
+
+			var attributeArguments = GetAttributeArguments (attributableSymbol, targetSymbol, SyntaxGenerator.GetGenerator (document), diagnostic);
+
 			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
 			var generator = editor.Generator;
 			var attribute = generator.Attribute (
 				generator.TypeExpression (attributeSymbol), attributeArguments)
 				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
 
-			editor.AddAttribute (targetNode, attribute);
+			editor.AddAttribute (attributableNode, attribute);
 			return editor.GetChangedDocument ();
 		}
 
