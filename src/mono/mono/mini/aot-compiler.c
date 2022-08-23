@@ -12737,7 +12737,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
-	g_string_append_printf (str, "%s%s %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+	g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";
