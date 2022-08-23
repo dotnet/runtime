@@ -20,12 +20,10 @@ namespace System.Diagnostics
         private readonly SourceLevels _switchLevel;
         private readonly string _sourceName;
         internal volatile bool _initCalled;   // Whether we've called Initialize already.
+        internal volatile bool _configInitializing;
         private StringDictionary? _attributes;
 
-        public TraceSource(string name)
-            : this(name, SourceLevels.Off)
-        {
-        }
+        public TraceSource(string name) : this(name, SourceLevels.Off) { }
 
         public TraceSource(string name, SourceLevels defaultLevel)
         {
@@ -76,18 +74,37 @@ namespace System.Diagnostics
                     if (_initCalled)
                         return;
 
-                    NoConfigInit();
+                    if (_configInitializing)
+                        return;
 
+                    _configInitializing = true;
+
+                    NoConfigInit_BeforeEvent();
+
+                    InitializingTraceSourceEventArgs e = new InitializingTraceSourceEventArgs(this);
+                    OnInitializing(e);
+
+                    if (!e.WasInitialized)
+                    {
+                        NoConfigInit_AfterEvent();
+                    }
+
+                    _configInitializing = false;
                     _initCalled = true;
                 }
             }
-        }
 
-        private void NoConfigInit()
-        {
-            _internalSwitch = new SourceSwitch(_sourceName, _switchLevel.ToString());
-            _listeners = new TraceListenerCollection();
-            _listeners.Add(new DefaultTraceListener());
+            void NoConfigInit_BeforeEvent()
+            {
+                _listeners = new TraceListenerCollection();
+                _internalSwitch = new SourceSwitch(_sourceName, _switchLevel.ToString());
+            }
+
+            void NoConfigInit_AfterEvent()
+            {
+                Debug.Assert(_listeners != null);
+                _listeners.Add(new DefaultTraceListener());
+            }
         }
 
         public void Close()
@@ -165,6 +182,8 @@ namespace System.Diagnostics
                 Initialize();
                 return;
             }
+
+            OnInitializing(new InitializingTraceSourceEventArgs(this));
         }
 
         [Conditional("TRACE")]
@@ -467,27 +486,40 @@ namespace System.Diagnostics
         {
             get
             {
-                // Ensure that config is loaded
                 Initialize();
-
                 return _attributes ??= new StringDictionary();
             }
         }
 
-        public string Name
+        /// <summary>
+        /// The default level assigned in the constructor.
+        /// </summary>
+        public SourceLevels DefaultLevel => _switchLevel;
+
+        /// <summary>
+        ///  Occurs when a <see cref="TraceSource"/> needs to be initialized.
+        /// </summary>
+        public static event EventHandler<InitializingTraceSourceEventArgs>? Initializing;
+
+        internal void OnInitializing(InitializingTraceSourceEventArgs e)
         {
-            get
+            Initializing?.Invoke(this, e);
+
+            TraceUtils.VerifyAttributes(Attributes, GetSupportedAttributes(), this);
+
+            foreach (TraceListener listener in Listeners)
             {
-                return _sourceName;
+                TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
             }
         }
+
+        public string Name => _sourceName;
 
         public TraceListenerCollection Listeners
         {
             get
             {
                 Initialize();
-
                 return _listeners!;
             }
         }
@@ -498,7 +530,6 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-
                 return _internalSwitch!;
             }
             set

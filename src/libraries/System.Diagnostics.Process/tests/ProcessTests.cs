@@ -23,9 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        // -rwxr-xr-x (755 octal)
         const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
                                                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+                                                   UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         private class FinalizingProcess : Process
         {
@@ -1827,7 +1828,7 @@ namespace System.Diagnostics.Tests
                 SetPrivateFieldValue(process, "_haveExitTime", true);
                 SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
 
-                SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
+                SetPrivateFieldValue(process, "_processInfo", Type.GetType("System.Diagnostics.ProcessInfo, System.Diagnostics.Process").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
                 SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
                 SetPrivateFieldValue(process, "_modules",  new ProcessModuleCollection(Array.Empty<ProcessModule>()));
 

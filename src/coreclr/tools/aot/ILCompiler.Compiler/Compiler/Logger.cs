@@ -26,6 +26,7 @@ namespace ILCompiler
         private readonly CompilerGeneratedState _compilerGeneratedState;
 
         private readonly HashSet<int> _suppressedWarnings;
+        private readonly HashSet<string> _suppressedCategories;
 
         private readonly bool _isSingleWarn;
         private readonly HashSet<string> _singleWarnEnabledAssemblies;
@@ -44,7 +45,8 @@ namespace ILCompiler
             IEnumerable<int> suppressedWarnings,
             bool singleWarn,
             IEnumerable<string> singleWarnEnabledModules,
-            IEnumerable<string> singleWarnDisabledModules)
+            IEnumerable<string> singleWarnDisabledModules,
+            IEnumerable<string> suppressedCategories)
         {
             _logWriter = writer;
             _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
@@ -53,15 +55,16 @@ namespace ILCompiler
             _isSingleWarn = singleWarn;
             _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
+            _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
         }
 
-        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
-            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories)
         {
         }
 
         public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose)
-            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
+            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>())
         {
         }
 
@@ -140,6 +143,8 @@ namespace ILCompiler
 
         public void LogError(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
             LogError(new MessageOrigin(origin), id, args);
+
+        internal bool IsWarningSubcategorySuppressed(string category) => _suppressedCategories.Contains(category);
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {

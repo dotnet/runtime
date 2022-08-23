@@ -15,9 +15,24 @@ using static System.Net.Http.Functional.Tests.TestHelper;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    public sealed class InvokerConnectTest_Http2 : ConnectTest_Http2
+    {
+        public InvokerConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+    }
+
+    public sealed class HttpClientConnectTest_Http2 : ConnectTest_Http2
+    {
+        public HttpClientConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+    }
+
     public class ConnectTest_Http2 : ClientWebSocketTestBase
     {
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
 
         [Theory]
         [InlineData(false)]
@@ -80,6 +95,59 @@ namespace System.Net.WebSockets.Client.Tests
             }, new Http2Options() { WebSocketEndpoint = true }
             );
         }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [Theory]
+        [MemberData(nameof(SecureEchoServersAndBoolean))]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11Server_DowngradeFail(Uri server, bool useHandler)
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
+                Task t;
+                if (useHandler)
+                {
+                    var handler = new SocketsHttpHandler();
+                    t = cws.ConnectAsync(server, new HttpMessageInvoker(handler), cts.Token);
+                }
+                else
+                {
+                    t = cws.ConnectAsync(server, cts.Token);
+                }
+                var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+                Assert.IsType<HttpRequestException>(ex.InnerException);
+                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                Assert.Equal(WebSocketState.Closed, cws.State);
+            }
+        }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [Theory]
+        [MemberData(nameof(EchoServersAndBoolean))]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server, bool useHandler)
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionOrLower;
+                if (useHandler)
+                {
+                    var handler = new SocketsHttpHandler();
+                    await cws.ConnectAsync(server, new HttpMessageInvoker(handler), cts.Token);
+                }
+                else
+                {
+                    await cws.ConnectAsync(server, cts.Token);
+                }
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
+
 
         [Theory]
         [InlineData(false)]

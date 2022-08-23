@@ -59,7 +59,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         OwnProperties = 4,
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
-        WithProperties = 32
+        WithProperties = 32,
+        JustMyCode = 64
     }
 
     internal enum CommandSet {
@@ -2366,19 +2367,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static bool IsPrimitiveType(string simplifiedClassName)
             => s_primitiveTypeNames.Contains(simplifiedClassName);
-
-    }
-
-    internal static class HelperExtensions
-    {
-        public static void AddRange(this JArray arr, JArray addedArr)
-        {
-            foreach (var item in addedArr)
-                arr.Add(item);
-        }
-
-        public static bool IsNullValuedObject(this JObject obj)
-            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
 
     }
 }

@@ -22,6 +22,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class CertificateSetup : IDisposable
     {
         public readonly X509Certificate2 serverCert;
@@ -29,8 +31,8 @@ namespace System.Net.Quic.Tests
 
         public CertificateSetup()
         {
-            System.Net.Security.Tests.TestHelper.CleanupCertificates(nameof(MsQuicTests));
-            (serverCert, serverChain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true);
+            Configuration.Certificates.CleanupCertificates(nameof(MsQuicTests));
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true);
         }
 
         public void Dispose()
@@ -58,7 +60,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithCertificateChain()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost", longChain: true);
             try
             {
                 X509Certificate2 rootCA = chain[chain.Count - 1];
@@ -389,7 +391,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithCertificateForDifferentName_Throws()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost");
             try
             {
                 var quicOptions = new QuicListenerOptions()
@@ -437,7 +439,7 @@ namespace System.Net.Quic.Tests
         {
             var ipAddress = IPAddress.Parse(ipString);
 
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost");
             try
             {
                 var listenerOptions = new QuicListenerOptions()

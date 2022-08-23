@@ -288,5 +288,43 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(512)]
+        [InlineData(512 + 1)]
+        [InlineData(512 + 512 - 1)]
+        public async Task BlockAlignmentPadding_DoesNotAffectNextEntries_Async(int contentSize)
+        {
+            byte[] fileContents = new byte[contentSize];
+            Array.Fill<byte>(fileContents, 0x1);
+
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file");
+                entry1.DataStream = new MemoryStream(fileContents);
+                await writer.WriteEntryAsync(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
+                await writer.WriteEntryAsync(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry e = await reader.GetNextEntryAsync();
+            Assert.Equal(contentSize, e.Length);
+
+            byte[] buffer = new byte[contentSize];
+            while (e.DataStream.Read(buffer) > 0) ;
+            AssertExtensions.SequenceEqual(fileContents, buffer);
+
+            e = await reader.GetNextEntryAsync();
+            Assert.Equal(0, e.Length);
+
+            e = await reader.GetNextEntryAsync();
+            Assert.Null(e);
+        }
     }
 }

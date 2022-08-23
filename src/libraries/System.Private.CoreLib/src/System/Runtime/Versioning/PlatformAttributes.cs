@@ -132,12 +132,12 @@ namespace System.Runtime.Versioning
 #else
     internal
 #endif
-        sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
+        sealed class ObsoletedOSPlatformAttribute : OSPlatformAttribute
     {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName)
+        public ObsoletedOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
-        public ObsoletedInOSPlatformAttribute(string platformName, string? message) : base(platformName)
+        public ObsoletedOSPlatformAttribute(string platformName, string? message) : base(platformName)
         {
             Message = message;
         }

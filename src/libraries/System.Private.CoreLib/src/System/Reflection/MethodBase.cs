@@ -150,7 +150,7 @@ namespace System.Reflection
             BindingFlags invokeAttr
         )
         {
-            Debug.Assert(!parameters.IsEmpty);
+            Debug.Assert(parameters.Length > 0);
 
             ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -159,6 +159,40 @@ namespace System.Reflection
                 bool isValueType = false;
                 object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
+
+                // Convert a Type.Missing to the default value.
+                if (ReferenceEquals(arg, Type.Missing))
+                {
+                    paramInfos ??= GetParametersNoCopy();
+                    ParameterInfo paramInfo = paramInfos[i];
+
+                    if (paramInfo.DefaultValue == DBNull.Value)
+                    {
+                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                    }
+
+                    arg = paramInfo.DefaultValue;
+
+                    if (sigType.IsNullableOfT)
+                    {
+                        copyBackArg = ParameterCopyBackAction.CopyNullable;
+
+                        if (arg is not null)
+                        {
+                            // For nullable Enum types, the ParameterInfo.DefaultValue returns a raw value which
+                            // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                            Type argumentType = sigType.GetGenericArguments()[0];
+                            if (argumentType.IsEnum)
+                            {
+                                arg = Enum.ToObject(argumentType, arg);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        copyBackArg = ParameterCopyBackAction.Copy;
+                    }
+                }
 
                 if (arg is null)
                 {
@@ -183,43 +217,10 @@ namespace System.Reflection
                         // Fast path when the value's type matches the signature type of a byref parameter.
                         copyBackArg = ParameterCopyBackAction.Copy;
                     }
-                    else if (!ReferenceEquals(arg, Type.Missing))
+                    else
                     {
                         // Slow path that supports type conversions.
                         isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                    }
-                    else
-                    {
-                        // Convert Type.Missing to the default value.
-                        paramInfos ??= GetParametersNoCopy();
-                        ParameterInfo paramInfo = paramInfos[i];
-
-                        if (paramInfo.DefaultValue == DBNull.Value)
-                        {
-                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                        }
-
-                        arg = paramInfo.DefaultValue;
-                        if (ReferenceEquals(arg?.GetType(), sigType))
-                        {
-                            // Fast path when the default value's type matches the signature type.
-                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                        }
-                        else
-                        {
-                            if (arg != null && sigType.IsNullableOfT)
-                            {
-                                // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
-                                // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
-                                Type argumentType = sigType.GetGenericArguments()[0];
-                                if (argumentType.IsEnum)
-                                {
-                                    arg = Enum.ToObject(argumentType, arg);
-                                }
-                            }
-
-                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                        }
                     }
                 }
 
@@ -241,7 +242,7 @@ namespace System.Reflection
                     Debug.Assert(arg != null);
                     Debug.Assert(
                         arg.GetType() == sigType ||
-                        (sigType.IsPointer && arg.GetType() == typeof(IntPtr)) ||
+                        (sigType.IsPointer && (arg.GetType() == typeof(IntPtr) || arg.GetType() == typeof(UIntPtr))) ||
                         (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
                         ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
 #endif

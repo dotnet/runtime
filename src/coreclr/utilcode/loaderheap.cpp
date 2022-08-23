@@ -1304,14 +1304,17 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart, IsExecutable());
         if (pData == NULL)
         {
-            _ASSERTE(!"Unable to commit a loaderheap page");
             return FALSE;
         }
 
         if (IsInterleaved())
         {
             // Commit a data page after the code page
-            ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+            void* pDataRW = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+            if (pDataRW == NULL)
+            {
+                return FALSE;
+            }
 
             ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
             m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);

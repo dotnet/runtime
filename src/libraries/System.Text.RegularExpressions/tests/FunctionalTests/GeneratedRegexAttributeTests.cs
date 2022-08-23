@@ -16,26 +16,44 @@ namespace System.Text.RegularExpressions.Tests
         {
             GeneratedRegexAttribute a;
 
-            if (matchTimeoutMilliseconds == -1)
+            foreach (string cultureName in new string[] { string.Empty, "en-US" })
             {
-                if (options == RegexOptions.None)
+                if (matchTimeoutMilliseconds == -1)
                 {
-                    a = new GeneratedRegexAttribute(pattern);
+                    if (options == RegexOptions.None)
+                    {
+                        a = new GeneratedRegexAttribute(pattern);
+                        Assert.Equal(pattern, a.Pattern);
+                        Assert.Equal(RegexOptions.None, a.Options);
+                        Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
+                        Assert.Equal(string.Empty, a.CultureName);
+                    }
+
+                    a = new GeneratedRegexAttribute(pattern, options);
                     Assert.Equal(pattern, a.Pattern);
-                    Assert.Equal(RegexOptions.None, a.Options);
+                    Assert.Equal(options, a.Options);
                     Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
+                    Assert.Equal(string.Empty, a.CultureName);
+
+                    a = new GeneratedRegexAttribute(pattern, options, cultureName);
+                    Assert.Equal(pattern, a.Pattern);
+                    Assert.Equal(options, a.Options);
+                    Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
+                    Assert.Equal(cultureName, a.CultureName);
                 }
 
-                a = new GeneratedRegexAttribute(pattern, options);
+                a = new GeneratedRegexAttribute(pattern, options, matchTimeoutMilliseconds);
                 Assert.Equal(pattern, a.Pattern);
                 Assert.Equal(options, a.Options);
-                Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
-            }
+                Assert.Equal(matchTimeoutMilliseconds, a.MatchTimeoutMilliseconds);
+                Assert.Equal(string.Empty, a.CultureName);
 
-            a = new GeneratedRegexAttribute(pattern, options, matchTimeoutMilliseconds);
-            Assert.Equal(pattern, a.Pattern);
-            Assert.Equal(options, a.Options);
-            Assert.Equal(matchTimeoutMilliseconds, a.MatchTimeoutMilliseconds);
+                a = new GeneratedRegexAttribute(pattern, options, matchTimeoutMilliseconds, cultureName);
+                Assert.Equal(pattern, a.Pattern);
+                Assert.Equal(options, a.Options);
+                Assert.Equal(matchTimeoutMilliseconds, a.MatchTimeoutMilliseconds);
+                Assert.Equal(cultureName, a.CultureName);
+            }
         }
     }
 }

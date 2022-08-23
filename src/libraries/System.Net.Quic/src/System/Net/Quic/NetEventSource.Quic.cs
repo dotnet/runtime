@@ -7,12 +7,11 @@ using System.Net.Quic;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.Quic")]
-    internal sealed partial class NetEventSource : EventSource
+    internal sealed partial class NetEventSource
     {
-        static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
+        static partial void AdditionalCustomizedToString(object value, ref string? result)
         {
-            MsQuicSafeHandle? safeHandle = value as MsQuicSafeHandle;
-            if (safeHandle is not null)
+            if (value is MsQuicSafeHandle safeHandle)
             {
                 result = safeHandle.ToString();
             }

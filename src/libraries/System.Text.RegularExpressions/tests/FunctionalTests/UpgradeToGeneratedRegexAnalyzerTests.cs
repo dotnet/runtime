@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions.Generator;
@@ -107,7 +108,7 @@ partial class Program
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
         {
-            foreach(string method in new[] { "Count",  "EnumerateMatches", "IsMatch", "Match", "Matches", "Split"})
+            foreach (string method in new[] { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split" })
             {
                 yield return new object[] { @"using System;
 using System.Text.RegularExpressions;
@@ -559,7 +560,7 @@ public partial class Program
 
             foreach (bool includeRegexOptions in new[] { true, false })
             {
-                foreach (string methodName in new[] { "Count", "EnumerateMatches" , "IsMatch", "Match", "Matches", "Split" })
+                foreach (string methodName in new[] { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split" })
                 {
                     if (includeRegexOptions)
                     {
@@ -921,6 +922,101 @@ public partial class A
 ";
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
+
+        public static IEnumerable<object[]> DetectsCurrentCultureTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                foreach (bool useInlineIgnoreCase in new[] { true, false })
+                {
+                    string pattern = useInlineIgnoreCase ? "\"(?:(?>abc)(?:(?s)d|e)(?:(?:(?xi)ki)*))\"" : "\"abc\"";
+                    string options = useInlineIgnoreCase ? "RegexOptions.None" : "RegexOptions.IgnoreCase";
+
+                    // Test using current culture
+                    yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"{pattern}, {options}, \"{CultureInfo.CurrentCulture.Name}" + @""")]
+    private static partial Regex MyRegex();
+}" };
+
+                    // Test using CultureInvariant which should default to the 2 parameter constructor
+                    options = useInlineIgnoreCase ? "RegexOptions.CultureInvariant" : "RegexOptions.IgnoreCase | RegexOptions.CultureInvariant";
+                    yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"{pattern}, {options}" + @")]
+    private static partial Regex MyRegex();
+}" };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> NoOptionsCultureTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                // Test no options passed in
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"(?i)abc\"") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"\"(?i)abc\", RegexOptions.None, \"{CultureInfo.CurrentCulture.Name}" + @""")]
+    private static partial Regex MyRegex();
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DetectsCurrentCultureTestData))]
+        [MemberData(nameof(NoOptionsCultureTestData))]
+        public async Task DetectsCurrentCulture(string test, string fixedSource)
+            => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
 
         #region Test helpers
 

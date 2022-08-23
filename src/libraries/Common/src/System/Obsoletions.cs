@@ -150,5 +150,8 @@ namespace System
 
         internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
         internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
+
+        internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
+        internal const string XmlSecureResolverDiagId = "SYSLIB0047";
     }
 }

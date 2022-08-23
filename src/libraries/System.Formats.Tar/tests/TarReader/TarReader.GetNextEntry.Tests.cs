@@ -250,5 +250,43 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal("Substituted", streamReader.ReadLine());
             }
         }
+
+        [Theory]
+        [InlineData(512)]
+        [InlineData(512 + 1)]
+        [InlineData(512 + 512 - 1)]
+        public void BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize)
+        {
+            byte[] fileContents = new byte[contentSize];
+            Array.Fill<byte>(fileContents, 0x1);
+
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file");
+                entry1.DataStream = new MemoryStream(fileContents);
+                writer.WriteEntry(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
+                writer.WriteEntry(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry e = reader.GetNextEntry();
+            Assert.Equal(contentSize, e.Length);
+
+            byte[] buffer = new byte[contentSize];
+            while (e.DataStream.Read(buffer) > 0) ;
+            AssertExtensions.SequenceEqual(fileContents, buffer);
+
+            e = reader.GetNextEntry();
+            Assert.Equal(0, e.Length);
+
+            e = reader.GetNextEntry();
+            Assert.Null(e);
+        }
     }
 }

@@ -219,7 +219,10 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             object GetScope(ICacheEntry entry)
             {
-                return entry.GetType()
+                // Use Type.GetType so that trimming can know what type we operate on
+                Type cacheEntryType = Type.GetType("Microsoft.Extensions.Caching.Memory.CacheEntry, Microsoft.Extensions.Caching.Memory");
+                Assert.Equal(cacheEntryType, entry.GetType());
+                return cacheEntryType
                     .GetField("_previous", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(entry);
             }

@@ -15,8 +15,21 @@ namespace System.Formats.Tar.Tests
 
         // Default values are what a TarEntry created with its constructor will set
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
-        private const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
-        protected const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
+        protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+
+        protected readonly UnixFileMode CreateDirectoryDefaultMode; // Mode of directories created using Directory.CreateDirectory(string).
+        protected readonly UnixFileMode UMask;
+
+        // Mode assumed for files and directories on Windows.
+        protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+
+        // Permissions used by tests. User has all permissions to avoid permission errors.
+        protected const UnixFileMode UserAll = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+        protected const UnixFileMode TestPermission1 = UserAll | UnixFileMode.GroupRead;
+        protected const UnixFileMode TestPermission2 = UserAll | UnixFileMode.GroupExecute;
+        protected const UnixFileMode TestPermission3 = UserAll | UnixFileMode.OtherRead;
+        protected const UnixFileMode TestPermission4 = UserAll | UnixFileMode.OtherExecute;
+
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
         protected const int DefaultDeviceMajor = 0;
@@ -104,6 +117,12 @@ namespace System.Formats.Tar.Tests
         protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
 
         protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
+
+        protected TarTestsBase()
+        {
+            CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
+            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777", 8);
+        }
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
@@ -362,6 +381,86 @@ namespace System.Formats.Tar.Tests
                 yield return new object[] { format, TarEntryType.SymbolicLink };
                 yield return new object[] { format, TarEntryType.HardLink };
             }
+        }
+
+        public static IEnumerable<object[]> GetFormatsAndFiles()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.V7RegularFile, TarEntryType.Directory })
+            {
+                yield return new object[] { TarEntryFormat.V7, entryType };
+            }
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+                {
+                    yield return new object[] { format, entryType };
+                }
+            }
+        }
+
+        protected static void SetUnixFileMode(string path, UnixFileMode mode)
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                File.SetUnixFileMode(path, mode);
+            }
+        }
+
+        protected static void AssertEntryModeFromFileSystemEquals(TarEntry entry, UnixFileMode fileMode)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                // Windows files don't have a mode. Set the expected value.
+                fileMode = DefaultWindowsMode;
+            }
+            Assert.Equal(fileMode, entry.Mode);
+        }
+
+        protected void AssertFileModeEquals(string path, UnixFileMode archiveMode)
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                UnixFileMode expectedMode = archiveMode & ~UMask;
+
+                UnixFileMode actualMode = File.GetUnixFileMode(path);
+                // Ignore SetGroup: it may have been added to preserve group ownership.
+                if ((expectedMode & UnixFileMode.SetGroup) == 0)
+                {
+                    actualMode &= ~UnixFileMode.SetGroup;
+                }
+
+                Assert.Equal(expectedMode, actualMode);
+            }
+        }
+
+        protected (string, string, TarEntry) Prepare_Extract(TempDirectory root, TarEntryFormat format, TarEntryType entryType)
+        {
+            string entryName = entryType.ToString();
+            string destination = Path.Join(root.Path, entryName);
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, entryName);
+            Assert.NotNull(entry);
+            entry.Mode = TestPermission1;
+
+            return (entryName, destination, entry);
+        }
+
+        protected void Verify_Extract(string destination, TarEntry entry, TarEntryType entryType)
+        {
+            if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+            {
+                Assert.True(File.Exists(destination));
+            }
+            else if (entryType is TarEntryType.Directory)
+            {
+                Assert.True(Directory.Exists(destination));
+            }
+            else
+            {
+                Assert.True(false, "Unchecked entry type.");
+            }
+
+            AssertFileModeEquals(destination, TestPermission1);
         }
     }
 }

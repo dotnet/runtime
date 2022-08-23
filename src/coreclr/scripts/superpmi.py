@@ -1634,11 +1634,12 @@ class SuperPMIReplayAsmDiffs:
                             async def create_one_artifact(jit_path: str, location: str, flags) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
-                                with open(item_path, 'w') as file_handle:
-                                    logging.debug("%sGenerating %s", print_prefix, item_path)
-                                    logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE, env=env)
-                                    await proc.communicate()
+                                modified_env = env.copy()
+                                modified_env['COMPlus_JitStdOutFile'] = item_path
+                                logging.debug("%sGenerating %s", print_prefix, item_path)
+                                logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
+                                proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
+                                await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
                                     generated_txt = file_handle.read()
                                 return generated_txt
@@ -1955,9 +1956,12 @@ class SuperPMIReplayThroughputDiff:
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
-                    delta_instructions = diff_instructions - base_instructions
-                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
-                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    if base_instructions != 0 and diff_instructions != 0:
+                        delta_instructions = diff_instructions - base_instructions
+                        logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                        tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
 
@@ -3088,7 +3092,7 @@ def process_base_jit_path_arg(coreclr_args):
 
 def get_pintools_path(coreclr_args):
     """ Get the local path where we expect pintools for this OS to be located
-    
+
     Returns:
         A path to the folder.
     """
@@ -3096,7 +3100,7 @@ def get_pintools_path(coreclr_args):
 
 def get_pin_exe_path(coreclr_args):
     """ Get the local path where we expect the pin executable to be located
-    
+
     Returns:
         A path to the executable.
     """
@@ -3106,7 +3110,7 @@ def get_pin_exe_path(coreclr_args):
 
 def get_inscount_pintool_path(coreclr_args):
     """ Get the local path where we expect the clrjit inscount pintool to be located
-    
+
     Returns:
         A path to the pintool library.
     """
@@ -3974,7 +3978,7 @@ def main(args):
         logging.info("SuperPMI throughput diff")
         logging.debug("------------------------------------------------------------")
         logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
-        
+
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 

@@ -388,7 +388,7 @@ Arguments:
 
                 m_RestartFrame = true;
                 m_TrapAddr = ReturnAddress -
-                    FIELD_OFFSET(AMD64_KTRAP_FRAME, Rip);
+                    offsetof(AMD64_KTRAP_FRAME, Rip);
 
                 if ((Status = m_Services->
                      ReadAllMemory(ReturnAddress,
@@ -1269,7 +1269,7 @@ GetFullUnwindInfoSize(_In_ PVOID InfoHeader)
 {
     PAMD64_UNWIND_INFO UnwindInfo = (PAMD64_UNWIND_INFO)InfoHeader;
 
-    DWORD UnwindInfoSize = FIELD_OFFSET(AMD64_UNWIND_INFO, UnwindCode) +
+    DWORD UnwindInfoSize = offsetof(AMD64_UNWIND_INFO, UnwindCode) +
         UnwindInfo->CountOfCodes * sizeof(AMD64_UNWIND_CODE);
 
     // An extra alignment code and function entry may be added on to handle
