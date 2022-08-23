@@ -142,32 +142,39 @@ namespace System
             return Utc;
         }
 
+        private static TimeSpan GetCacheLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
+        {
+                CachedData cachedData = s_cachedData;
+                return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+        }
+
         private static TimeSpan? _localUtcOffset;
         private static object _localUtcOffsetLock = new();
         private static Thread? _loadAndroidTZData;
         // Shortcut for TimeZoneInfo.Local.GetUtcOffset
+        // On Android, loading AndroidTZData while obtaining cachedData.Local is expensive for startup.
+        // We introduce a fast result for GetLocalUtcOffset that relies on the date time offset being
+        // passed into monovm_initialize(_preparsed) from Java in seconds as LOCAL_DATE_TIME_OFFSET.
+        // However, to handle timezone changes during the app lifetime, AndroidTZData needs to be loaded.
+        // The fast path is initially used, and we start a background thread to get cachedData.Local
         internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
-            if (_localUtcOffset != null)
-            {
-                CachedData cachedData = s_cachedData;
-                return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
-            }
+            if (_localUtcOffset != null) // The background thread finished, the cache is loaded.
+                return GetCacheLocalUtcOffset(dateTime, flags);
 
-            if (_localUtcOffset == null && _loadAndroidTZData == null)
+            if (_localUtcOffset == null && _loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
             {
                 lock (_localUtcOffsetLock)
                 {
+                    // GetLocalUtcOffset may be called multiple times before a cache is loaded and a background thread is running,
+                    // once the lock is available, check for a cache and background thread.
                     if (_localUtcOffset != null)
-                    {
-                        CachedData cachedData = s_cachedData;
-                        return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
-                    }
+                        return GetCacheLocalUtcOffset(dateTime, flags);
+
                     if (_loadAndroidTZData == null)
                     {
                         _loadAndroidTZData = new Thread(() => {
-                            CachedData cachedData = s_cachedData;
-                            _localUtcOffset = cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+                            _localUtcOffset = GetCacheLocalUtcOffset(dateTime, flags);
                             Thread.Sleep(1000);
                         });
                         _loadAndroidTZData.IsBackground = true;
@@ -178,9 +185,9 @@ namespace System
 
             object? localDateTimeOffset = AppContext.GetData("LOCAL_DATE_TIME_OFFSET");
             if (localDateTimeOffset == null)
-                throw new Exception("LOCAL_DATE_TIME_OFFSET NOT SET");
-            long localDateTimeOffsetTicks = Convert.ToInt32(localDateTimeOffset) * 10000000; // 10^7 ticks per second
+                return GetCacheLocalUtcOffset(dateTime, flags); // If no offset property provided through monovm app context, default
 
+            long localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
             TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
             return offset;
         }
