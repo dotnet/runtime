@@ -7559,6 +7559,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         if (!bIsGCMarker)
         {
             VEH_ACTION action = CLRVectoredExceptionHandler(pExceptionInfo);
+
+#ifdef FEATURE_EH_FUNCLETS
             if (VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION == action)
             {
                 //
@@ -7567,6 +7569,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
+#endif // FEATURE_EH_FUNCLETS
 
             if (VEH_EXECUTE_HANDLER == action)
             {
