@@ -341,6 +341,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         // code:LoaderHeap::UnlockedReservePages adds a range for the entire reserved region, instead
         // of updating the RangeList when pages are committed.  But in that case, the committed region of
         // memory will be enumerated by the LoaderHeap anyway, so it's OK if this fails
+        EMEM_OUT(("MEM: RangeListBlock %p - %p\n", range->start, range->end));
         DacEnumMemoryRegion(range->start, size, false);
     }
 }
@@ -1933,8 +1934,6 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    DAC_ENUM_DTHIS();
-
     PTR_LoaderHeapBlock block = m_pFirstBlock;
     while (block.IsValid())
     {
@@ -1946,6 +1945,7 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
         TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
         TSIZE_T size = block->dwVirtualSize;
+        EMEM_OUT(("MEM: UnlockedLoaderHeap %p - %p\n", addr, addr + size));
         DacEnumMemoryRegion(addr, size, false);
 
         block = block->pNext;
