@@ -7551,6 +7551,14 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
+    void eeFormatMethodName(char**            buffer,
+                            size_t            bufferMax,
+                            const char*       className,
+                            const char*       methodName,
+                            CORINFO_SIG_INFO* sig,
+                            bool              includeReturnType,
+                            bool              includeThis);
+
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);

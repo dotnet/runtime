@@ -3016,8 +3016,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #else  // DEBUG
     if (!JitConfig.JitDisasm().isEmpty())
     {
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        const char* className;
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, &className);
+
         if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
         {
             opts.disAsm = true;

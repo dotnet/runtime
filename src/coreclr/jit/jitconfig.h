@@ -18,14 +18,10 @@ public:
         struct MethodName
         {
             MethodName* m_next;
-            int         m_methodNameStart;
-            int         m_methodNameLen;
-            bool        m_methodNameWildcardAtStart;
-            bool        m_methodNameWildcardAtEnd;
-            int         m_classNameStart;
-            int         m_classNameLen;
-            bool        m_classNameWildcardAtEnd;
-            int         m_numArgs;
+            const char* m_patternStart;
+            const char* m_patternEnd;
+            bool        m_containsClassName;
+            bool        m_containsSignature;
         };
 
         char*       m_list;
