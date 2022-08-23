@@ -59,9 +59,9 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
-            if (options.Window <= TimeSpan.Zero)
+            if (options.Window < TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
             }
 
             _options = new FixedWindowRateLimiterOptions
