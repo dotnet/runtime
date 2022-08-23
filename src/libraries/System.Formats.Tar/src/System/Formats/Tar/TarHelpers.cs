@@ -368,7 +368,7 @@ namespace System.Formats.Tar
                     throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
-            throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupported, entryType, archiveFormat));
+            throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat));
         }
     }
 }

@@ -408,11 +408,12 @@ namespace System.Formats.Tar
                     TarEntryType.LongPath or
                     TarEntryType.MultiVolume or
                     TarEntryType.RenamedOrSymlinked or
-                    TarEntryType.SparseFile or
                     TarEntryType.TapeVolume => TarEntryFormat.Gnu,
 
                     // V7 is the only one that uses 'V7RegularFile'.
                     TarEntryType.V7RegularFile => TarEntryFormat.V7,
+
+                    TarEntryType.SparseFile => throw new NotSupportedException(string.Format(SR.TarEntryTypeNotSupported, header._typeFlag)),
 
                     // We can quickly determine the *minimum* possible format if the entry type
                     // is the POSIX 'RegularFile', although later we could upgrade it to PAX or GNU
