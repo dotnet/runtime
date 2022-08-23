@@ -225,33 +225,20 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
 
-    const char* appctx_keys[4];
+    const char* appctx_keys[3];
     appctx_keys[0] = "RUNTIME_IDENTIFIER";
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_keys[2] = "LOCAL_DATE_TIME_OFFSET";
-    appctx_keys[3] = "KERNEL_MONOTONIC_CLOCK";
 
-    const char* appctx_values[4];
+    const char* appctx_values[3];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
-    char buffer_one[32];
-    snprintf (buffer_one, sizeof(buffer_one), "%d", local_date_time_offset);
-    appctx_values[2] = strdup (buffer_one);
-    char buffer_two[64];
-    struct timespec ts;
-    int result = clock_gettime (CLOCK_MONOTONIC, &ts);
-    int64_t kernel_monotonic_clock;
-    if (result == 0)
-    {
-        kernel_monotonic_clock = (int64_t)(ts.tv_sec * (int64_t)(1000000000)) + (int64_t)(ts.tv_nsec);
-        snprintf (buffer_two, sizeof(buffer_two), "%ld", kernel_monotonic_clock);
-    }
-    const char* mitch_two = strdup (buffer_two);
-    appctx_values[3] = mitch_two;
+    char local_date_time_offset_buffer[32];
+    snprintf (local_date_time_offset_buffer, sizeof(local_date_time_offset_buffer), "%d", local_date_time_offset);
+    appctx_values[2] = strdup (local_date_time_offset_buffer);
 
     MonoCoreLocalTime mclt = {
         local_date_time_offset,
-        kernel_monotonic_clock,
     };
     MonoCoreRuntimeProperties mcrp = {
         &mclt,
@@ -275,7 +262,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
         free (file_path);
     }
 
-    monovm_initialize_preparsed(&mcrp, 4, appctx_keys, appctx_values);
+    monovm_initialize_preparsed(&mcrp, 3, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);

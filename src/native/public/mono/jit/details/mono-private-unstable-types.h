@@ -47,7 +47,6 @@ typedef struct {
 
 typedef struct {
 	uint64_t current_local_time;
-	uint64_t kernel_monotonic_clock;
 } MonoCoreLocalTime;
 
 typedef struct {

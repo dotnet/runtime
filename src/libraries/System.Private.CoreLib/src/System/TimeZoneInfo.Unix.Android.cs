@@ -177,14 +177,10 @@ namespace System
             }
 
             object? localDateTimeOffset = AppContext.GetData("LOCAL_DATE_TIME_OFFSET");
-            int localDateTimeOffsetSeconds;
-            if (localDateTimeOffset != null)
-                localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
-            else
-            {
-                throw new Exception ("LOCAL_DATE_TIME_OFFSET NOT SET");
-            }
-            long localDateTimeOffsetTicks = localDateTimeOffsetSeconds * 10000000; // 10^7 ticks per second
+            if (localDateTimeOffset == null)
+                throw new Exception("LOCAL_DATE_TIME_OFFSET NOT SET");
+            long localDateTimeOffsetTicks = Convert.ToInt32(localDateTimeOffset) * 10000000; // 10^7 ticks per second
+
             TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
             return offset;
         }
