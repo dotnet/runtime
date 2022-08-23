@@ -6,7 +6,7 @@
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) --web-server-use-cop -- $(MSBuildProjectName).dll</RunScriptCommand>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
@@ -28,5 +28,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
   </ItemGroup>
-  
+
 </Project>
