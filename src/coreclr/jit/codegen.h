@@ -1454,7 +1454,10 @@ protected:
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar);
+    void genStackPointerCheck(bool      doStackPointerCheck,
+                              unsigned  lvaStackPointerVar,
+                              ssize_t   offset = 0,
+                              regNumber regTmp = REG_NA);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG

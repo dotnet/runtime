@@ -103,7 +103,8 @@ PhaseStatus Compiler::fgMorphInit()
 #if defined(DEBUG) && defined(TARGET_X86)
     if (opts.compStackCheckOnCall)
     {
-        lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaCallSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason::CallSpCheck);
         lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         madeChanges                        = true;
     }
@@ -16625,12 +16626,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
 
             // Since the parameter in this position is really a pointer, its type is TYP_BYREF.
             varDsc->lvType = TYP_BYREF;
-
-            // Since this previously was a TYP_STRUCT and we have changed it to a TYP_BYREF
-            // make sure that the following flag is not set as these will force SSA to
-            // exclude tracking/enregistering these LclVars. (see SsaBuilder::IncludeInSsa)
-            //
-            varDsc->lvOverlappingFields = 0; // This flag could have been set, clear it.
 
             // The struct parameter may have had its address taken, but the pointer parameter
             // cannot -- any uses of the struct parameter's address are uses of the pointer

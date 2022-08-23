@@ -402,7 +402,8 @@ enum class DoNotEnregisterReason
     OneAsgRetyping,       // fgMorphOneAsgBlockOp prevents this local from being enregister.
     SwizzleArg,           // the local is passed using LCL_FLD as another type.
     BlockOpRet,           // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,        // the local is used to do SP check
+    ReturnSpCheck,        // the local is used to do SP check on return from function
+    CallSpCheck,          // the local is used to do SP check on every call
     SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
     HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
 };
@@ -529,10 +530,9 @@ public:
                                   // 32-bit target.  For implicit byref parameters, this gets hijacked between
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
-    unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
-    unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
-    unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
+    unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
+    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
+    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -4145,9 +4145,7 @@ private:
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
 
-#if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
-#endif
 
 #ifdef DEBUG
     static LONG jitNestingLevel;
@@ -9505,6 +9503,7 @@ public:
     }
 
     const char* compGetTieringName(bool wantShortName = false) const;
+    const char* compGetPgoSourceName() const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt() const
@@ -10020,6 +10019,7 @@ public:
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
         unsigned m_returnSpCheck;
+        unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;

@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50575", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51398", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
             // Arrange
@@ -32,6 +30,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
             {
                 logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
             }
+
+            // For Android/iOS/tvOS/MacCatalyst default color behavior, enables the color
+            colorBehavior = colorBehavior == LoggerColorBehavior.Default && (PlatformDetection.IsAndroid || PlatformDetection.IsAppleMobile) ? LoggerColorBehavior.Enabled : colorBehavior;
 
             // Assert
             switch (colorBehavior)
