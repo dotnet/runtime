@@ -41,13 +41,13 @@
                       Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
     <_PackageReferenceDeduplicated Include="@(PackageReference->Distinct())" />
   </ItemGroup>
-  <ItemGroup Condition="'%(_PackageReferenceDeduplicated.Identity)' == 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'">
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'))">
     <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
     <_PackageReferenceDeduplicated Include="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                                    Version="$(MonoLLVMToolsVersion)"
                                    PackageArch="arm64"/>
   </ItemGroup>
-  <ItemGroup Condition="'%(_PackageReferenceDeduplicated.Identity)' == 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'">
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'))">
     <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
     <_PackageReferenceDeduplicated Include="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
                                    Version="$(MonoLLVMSDKVersion)"
