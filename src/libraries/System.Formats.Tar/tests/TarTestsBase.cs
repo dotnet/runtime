@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -88,6 +90,117 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
 
+        private static readonly string[] V7TestCaseNames = new[]
+        {
+            "file",
+            "file_hardlink",
+            "file_symlink",
+            "folder_file",
+            "folder_file_utf8",
+            "folder_subfolder_file",
+            "foldersymlink_folder_subfolder_file",
+            "many_small_files"
+        };
+
+        private static readonly string[] UstarTestCaseNames = new[]
+        {
+            "longpath_splitable_under255",
+            "specialfiles" };
+
+        private static readonly string[] PaxAndGnuTestCaseNames = new[]
+        {
+            "file_longsymlink",
+            "longfilename_over100_under255",
+            "longpath_over255"
+        };
+
+        private static readonly string[] GoLangTestCaseNames = new[]
+        {
+            "empty",
+            "file-and-dir",
+            "gnu-incremental",
+            "gnu-long-nul",
+            "gnu-multi-hdrs",
+            "gnu-nil-sparse-data",
+            "gnu-nil-sparse-hole",
+            "gnu-not-utf8",
+            "gnu-sparse-big",
+            "gnu-utf8",
+            "gnu",
+            "hardlink",
+            "hdr-only",
+            "invalid-go17",
+            "issue10968",
+            "issue11169",
+            "issue12435",
+            "neg-size",
+            "nil-uid",
+            "pax-bad-hdr-file",
+            "pax-bad-mtime-file",
+            "pax-global-records",
+            "pax-multi-hdrs",
+            "pax-nil-sparse-data",
+            "pax-nil-sparse-hole",
+            "pax-nul-path",
+            "pax-nul-xattrs",
+            "pax-path-hdr",
+            "pax-pos-size-file",
+            "pax-records",
+            "pax-sparse-big",
+            "pax",
+            "sparse-formats",
+            "star",
+            "trailing-slash",
+            "ustar-file-devs",
+            "ustar-file-reg",
+            "ustar",
+            "v7",
+            "writer-big-long",
+            "writer-big",
+            "writer",
+            "xattrs"
+        };
+
+        private static readonly string[] NodeTarTestCaseNames = new[]
+        {
+            "bad-cksum",
+            "body-byte-counts",
+            "dir",
+            "emptypax",
+            "file",
+            "global-header",
+            "links-invalid",
+            "links-strip",
+            "links",
+            "long-paths",
+            "long-pax",
+            "next-file-has-long",
+            "null-byte",
+            "path-missing",
+            "trailing-slash-corner-case",
+            "utf8"
+        };
+
+        private static readonly string[] RsTarTestCaseNames = new[]
+        {
+            "7z_long_path",
+            "directory",
+            "duplicate_dirs",
+            "empty_filename",
+            "file_times",
+            "link",
+            "pax_size",
+            "pax",
+            "pax2",
+            "reading_files",
+            "simple_missing_last_header",
+            "simple",
+            "spaces",
+            "sparse-1",
+            "sparse",
+            "xattrs"
+        };
+
         protected enum CompressionMethod
         {
             // Archiving only, no compression
@@ -121,30 +234,41 @@ namespace System.Formats.Tar.Tests
         protected TarTestsBase()
         {
             CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
-            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777", 8);
+            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777",
+            8);
         }
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
+            Path.Join(Directory.GetCurrentDirectory(), "unarchived",
+            testCaseName);
 
         protected static string GetTarFilePath(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
+            => GetTarFilePath(compressionMethod, format.ToString(), testCaseName);
+
+        protected static string GetTarFilePath(CompressionMethod compressionMethod, string testFolderName, string testCaseName)
         {
             (string compressionMethodFolder, string fileExtension) = compressionMethod switch
             {
-                CompressionMethod.Uncompressed => ("tar", ".tar"),
-                CompressionMethod.GZip => ("targz", ".tar.gz"),
+                CompressionMethod.Uncompressed => ("tar",
+            ".tar"),
+                CompressionMethod.GZip => ("targz",
+            ".tar.gz"),
                 _ => throw new InvalidOperationException($"Unexpected compression method: {compressionMethod}"),
             };
 
-            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, format.ToString(), testCaseName + fileExtension);
+            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, testFolderName, testCaseName + fileExtension);
         }
 
         // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
         protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName) =>
-            GetMemoryStream(GetTarFilePath(compressionMethod, format, testCaseName));
+            GetTarMemoryStream(compressionMethod, format.ToString(), testCaseName);
+
+        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, string testFolderName, string testCaseName) =>
+            GetMemoryStream(GetTarFilePath(compressionMethod, testFolderName, testCaseName));
 
         protected static string GetStrangeTarFilePath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "strange", testCaseName + ".tar");
+            Path.Join(Directory.GetCurrentDirectory(), "strange",
+            testCaseName + ".tar");
 
         protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
             GetMemoryStream(GetStrangeTarFilePath(testCaseName));
@@ -461,6 +585,72 @@ namespace System.Formats.Tar.Tests
             }
 
             AssertFileModeEquals(destination, TestPermission1);
+        }
+
+        public static IEnumerable<object[]> GetNodeTarTestCaseNames()
+        {
+            foreach (string name in NodeTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetGoLangTarTestCaseNames()
+        {
+            foreach (string name in GoLangTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetRsTarTestCaseNames()
+        {
+            foreach (string name in RsTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetV7TestCaseNames()
+        {
+            foreach (string name in V7TestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetUstarTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames))
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetPaxAndGnuTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames).Concat(PaxAndGnuTestCaseNames))
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static bool ShouldSkipGoLangAsset(string testCaseName)
+        {
+            return testCaseName is
+                "gnu-multi-hdrs" or // More than one consecutive LongPath metadata entry found
+                "hdr-only" or //
+                "invalid-go17" or //
+                "issue10968" or //
+                "issue11169" or //
+                "issue12435" or //
+                "neg-size" or //
+                "pax-multi-hdrs" or // More than one consecutive extended attributes header found
+                "pax-path-hdr" or //
+                "sparse-formats" or //
+                "v7" or //
+                "writer-big-long" or //
+                "writer-big";
         }
     }
 }
