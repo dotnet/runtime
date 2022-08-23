@@ -19,7 +19,6 @@ namespace System.Formats.Tar
         private readonly bool _leaveOpen;
         private TarEntry? _previouslyReadEntry;
         private List<Stream>? _dataStreamsToDispose;
-        private bool _readFirstEntry;
         private bool _reachedEndMarkers;
 
         internal Stream _archiveStream;
@@ -44,7 +43,6 @@ namespace System.Formats.Tar
 
             _previouslyReadEntry = null;
             _isDisposed = false;
-            _readFirstEntry = false;
             _reachedEndMarkers = false;
         }
 
@@ -124,11 +122,6 @@ namespace System.Formats.Tar
             TarHeader? header = TryGetNextEntryHeader(copyData);
             if (header != null)
             {
-                if (!_readFirstEntry)
-                {
-                    _readFirstEntry = true;
-                }
-
                 TarEntry entry = header._format switch
                 {
                     TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
@@ -282,11 +275,6 @@ namespace System.Formats.Tar
             TarHeader? header = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(false);
             if (header != null)
             {
-                if (!_readFirstEntry)
-                {
-                    _readFirstEntry = true;
-                }
-
                 TarEntry entry = header._format switch
                 {
                     TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
