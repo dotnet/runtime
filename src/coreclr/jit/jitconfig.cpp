@@ -323,6 +323,11 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
 // strstr that is length-limited, this implementation is not intended to be used on hot paths
 static size_t strnstr(const char* pSrc, size_t srcSize, const char* needle, size_t needleSize)
 {
+    if (srcSize < needleSize)
+    {
+        return -1;
+    }
+
     for (size_t srcPos = 0; srcPos <= srcSize - needleSize; srcPos++)
     {
         if (strncmp(pSrc + srcPos, needle, needleSize) == 0)
