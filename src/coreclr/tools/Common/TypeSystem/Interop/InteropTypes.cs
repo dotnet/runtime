@@ -139,7 +139,7 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsInt128Type(TypeSystemContext context, TypeDesc type)
         {
-            return IsCoreNamedType(context, type, "System", "Int128") || IsCoreNamedType(context, type, "System", "UInt128");
+            return type is DefType defType && defType.IsInt128OrHasInt128Fields;
         }
 
         public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)
