@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal sealed unsafe partial class _IOCompletionCallback
+    internal sealed unsafe partial class IOCompletionCallbackHelper
     {
         private readonly IOCompletionCallback _ioCompletionCallback;
         private readonly ExecutionContext _executionContext;
@@ -14,7 +14,7 @@ namespace System.Threading
         private uint _numBytes; // No. of bytes transferred
         private NativeOverlapped* _pNativeOverlapped;
 
-        public _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
+        public IOCompletionCallbackHelper(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
         {
             _ioCompletionCallback = ioCompletionCallback;
             _executionContext = executionContext;
@@ -24,8 +24,8 @@ namespace System.Threading
         private static readonly ContextCallback IOCompletionCallback_Context_Delegate = IOCompletionCallback_Context;
         private static void IOCompletionCallback_Context(object? state)
         {
-            _IOCompletionCallback helper = (_IOCompletionCallback)state!;
-            Debug.Assert(helper != null, "_IOCompletionCallback cannot be null");
+            IOCompletionCallbackHelper helper = (IOCompletionCallbackHelper)state!;
+            Debug.Assert(helper != null, "IOCompletionCallbackHelper cannot be null");
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
         }
 
@@ -33,7 +33,7 @@ namespace System.Threading
         {
             Debug.Assert(pNativeOverlapped != null);
 
-            OverlappedData overlapped = OverlappedData.GetOverlappedFromNative(pNativeOverlapped);
+            Overlapped overlapped = Overlapped.GetOverlappedFromNative(pNativeOverlapped);
             object? callback = overlapped._callback;
             if (callback is IOCompletionCallback iocb)
             {
@@ -49,8 +49,8 @@ namespace System.Threading
             }
 
             // We got here because of Pack
-            Debug.Assert(callback is _IOCompletionCallback);
-            var helper = (_IOCompletionCallback)callback;
+            Debug.Assert(callback is IOCompletionCallbackHelper);
+            var helper = (IOCompletionCallbackHelper)callback;
             helper._errorCode = errorCode;
             helper._numBytes = numBytes;
             helper._pNativeOverlapped = pNativeOverlapped;
