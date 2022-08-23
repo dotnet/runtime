@@ -90,24 +90,25 @@ namespace System.Text.RegularExpressions.Tests
             try
             {
                 /*lang=regex*/
-                string pattern = @"abc|cd";
+                string pattern = @".*(the|he)";
 
                 ViewDGML(pattern, "DFA");
                 ViewDGML(pattern, "DFA_DotStar", addDotStar: true);
+                ViewDGML(pattern, "NFA", nfa: true);
+                ViewDGML(pattern, "NFA_DotStar", nfa: true, addDotStar: true);
 
-                ViewDGML(pattern, "NFA", nfa: true, maxStates: 12);
-                ViewDGML(pattern, "NFA_DotStar", nfa: true, addDotStar: true, maxStates: 12);
-
-                static void ViewDGML(string pattern, string name, bool nfa = false, bool addDotStar = false, bool reverse = false, int maxStates = -1, int maxLabelLength = 20)
+                static void ViewDGML(string pattern, string name, bool nfa = false, bool addDotStar = false, int maxLabelLength = 20)
                 {
                     var regex = new Regex(pattern, RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
-                    if (regex.GetType().GetMethod("SaveDGML", BindingFlags.NonPublic | BindingFlags.Instance) is MethodInfo saveDgml)
+                    if (TryExplore(regex, nfa, addDotStar))
                     {
                         var sw = new StringWriter();
-                        saveDgml.Invoke(regex, new object[] { sw, nfa, addDotStar, reverse, maxStates, maxLabelLength });
-                        string path = Path.Combine(DgmlOutputDirectoryPath, $"{name}.dgml");
-                        File.WriteAllText(path, sw.ToString());
-                        Console.WriteLine(path);
+                        if (TrySaveDGML(regex, sw, maxLabelLength))
+                        {
+                            string path = Path.Combine(DgmlOutputDirectoryPath, $"{name}.dgml");
+                            File.WriteAllText(path, sw.ToString());
+                            Console.WriteLine(path);
+                        }
                     }
                 }
             }
@@ -121,45 +122,45 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("ann", new string[] { "nna" }, true)]
         public void TestDGMLGeneration(string pattern, string[] expectedDgmlFragments, bool exploreAsNFA)
         {
-            StringWriter sw = new StringWriter();
             var re = new Regex(pattern, RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
             if (TryExplore(re, exploreAsNFA))
             {
+                StringWriter sw = new StringWriter();
                 if (TrySaveDGML(re, sw, maxLabelLength: -1))
-            {
-                string str = sw.ToString();
-                Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", str);
-                Assert.Contains("DirectedGraph", str);
-                foreach (string fragment in expectedDgmlFragments)
                 {
-                    Assert.Contains(fragment, str);
+                    string str = sw.ToString();
+                    Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", str);
+                    Assert.Contains("DirectedGraph", str);
+                    foreach (string fragment in expectedDgmlFragments)
+                    {
+                        Assert.Contains(fragment, str);
+                    }
                 }
             }
-            }
+        }
 
-            static bool TryExplore(Regex regex, bool exploreAsNFA)
+        private static bool TryExplore(Regex regex, bool exploreAsNFA, bool includeDotStarred = true, bool includeReverse = true, bool includeOriginal = true)
+        {
+            MethodInfo explore = regex.GetType().GetMethod("Explore", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (explore is not null)
             {
-                MethodInfo saveDgml = regex.GetType().GetMethod("Explore", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (saveDgml is not null)
-                {
-                    saveDgml.Invoke(regex, new object[] { true, true, true, !exploreAsNFA, exploreAsNFA});
-                    return true;
-                }
-
-                return false;
+                explore.Invoke(regex, new object[] { includeDotStarred, includeReverse, includeOriginal, !exploreAsNFA, exploreAsNFA });
+                return true;
             }
 
-            static bool TrySaveDGML(Regex regex, TextWriter writer, int maxLabelLength)
+            return false;
+        }
+
+        private static bool TrySaveDGML(Regex regex, TextWriter writer, int maxLabelLength)
+        {
+            MethodInfo saveDgml = regex.GetType().GetMethod("SaveDGML", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (saveDgml is not null)
             {
-                MethodInfo saveDgml = regex.GetType().GetMethod("SaveDGML", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (saveDgml is not null)
-                {
-                    saveDgml.Invoke(regex, new object[] { writer, maxLabelLength });
-                    return true;
-                }
-
-                return false;
+                saveDgml.Invoke(regex, new object[] { writer, maxLabelLength });
+                return true;
             }
+
+            return false;
         }
 
         #region Random input generation tests

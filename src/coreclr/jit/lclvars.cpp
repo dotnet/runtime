@@ -1482,11 +1482,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         compFloatingPointUsed = true;
     }
 
-    if (typeHnd != NO_CLASS_HANDLE)
-    {
-        varDsc->lvOverlappingFields = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(typeHnd));
-    }
-
 #if FEATURE_IMPLICIT_BYREFS
     varDsc->lvIsImplicitByRef = 0;
 #endif // FEATURE_IMPLICIT_BYREFS
@@ -3073,8 +3068,6 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #endif // not TARGET_64BIT
 
     unsigned classAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-
-    varDsc->lvOverlappingFields = StructHasOverlappingFields(classAttribs);
 
     // Check whether this local is an unsafe value type and requires GS cookie protection.
     // GS checks require the stack to be re-ordered, which can't be done with EnC.
@@ -7930,10 +7923,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");
 #endif // !TARGET_64BIT
-    if (varDsc->lvOverlappingFields)
-    {
-        printf(" overlapping-fields");
-    }
 
     if (compGSReorderStackLayout && !varDsc->lvRegister)
     {
