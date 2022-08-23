@@ -543,7 +543,7 @@ getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFile
 	if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
 		return FALSE;
 
-	uint64_t temp = 0;
+	size_t temp = 0;
 	size_t usage = 0;
 
 	gboolean result = readMemoryValueFromFile(mem_usage_filename, &temp);
@@ -551,7 +551,7 @@ getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFile
 		if (temp > SIZE_T_MAX)
 			usage = SIZE_T_MAX;
 		else
-			usage = (size_t)temp;
+			usage = temp;
 	}
 
 	free(mem_usage_filename);
