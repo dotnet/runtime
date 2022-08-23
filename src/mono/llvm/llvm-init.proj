@@ -40,7 +40,11 @@
                       PackageArch="$(BuildArchitecture)"
                       Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
     <_PackageReferenceDeduplicated Include="@(PackageReference->Distinct())" />
+    <!-- Remove packages which don't exist-->
+    <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
+    <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
   </ItemGroup>
+  <!-- Exchange packages where needed -->
   <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'))">
     <_PackageReferenceDeduplicated Remove="runtime.osx.10.12-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
     <_PackageReferenceDeduplicated Include="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
