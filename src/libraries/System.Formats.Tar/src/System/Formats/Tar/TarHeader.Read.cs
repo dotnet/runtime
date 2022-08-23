@@ -199,6 +199,10 @@ namespace System.Formats.Tar
                 case TarEntryType.HardLink:
                 case TarEntryType.SymbolicLink:
                     // No data section
+                    if (_size > 0)
+                    {
+                        throw new FormatException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                    }
                     break;
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile: // Treated as regular file
@@ -257,6 +261,10 @@ namespace System.Formats.Tar
                 case TarEntryType.HardLink:
                 case TarEntryType.SymbolicLink:
                     // No data section
+                    if (_size > 0)
+                    {
+                        throw new FormatException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                    }
                     break;
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile: // Treated as regular file
