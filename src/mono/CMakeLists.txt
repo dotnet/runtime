@@ -594,52 +594,32 @@ if(LLVM_PREFIX)
     message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
 
-  if(CMAKE_CROSSCOMPILING)
-    # Can't run llvm-config, hardcode results
-    set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
+  set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
 
-    # llvm-config --mono-api-version
-    file(STRINGS ${llvm_config_path} llvm_api_version_line REGEX "MONO_API_VERSION ")
-    string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
+  # llvm-config --mono-api-version
+  file(STRINGS ${llvm_config_path} llvm_api_version_line REGEX "MONO_API_VERSION ")
+  string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
-    # llvm-config --cflags
-    set(llvm_cflags "")
-    set(llvm_cxxflags "")
-    set(llvm_includedir "${LLVM_PREFIX}/include")
+  # llvm-config --cflags
+  set(llvm_cflags "")
+  set(llvm_cxxflags "")
+  set(llvm_includedir "${LLVM_PREFIX}/include")
 
-    # llvm-config --system-libs
-    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+  # llvm-config --system-libs
+  set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
-    # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
+  # llvm-config --libs analysis core bitwriter mcjit orcjit
+  set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
 
-    # Check codegen libs and add needed libraries.
-    set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
-    if("${llvm_extra}" STREQUAL "")
-      message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
-    endif()
-
-    set(llvm_libs ${llvm_core_libs} ${llvm_extra})
-    list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
-    list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-  else()
-    set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config${EXE_SUFFIX})
-    if (NOT EXISTS ${LLVM_CONFIG})
-      message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
-    endif()
-
-    execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if (NOT ${llvm_config_res} EQUAL 0)
-      message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
-    endif()
-    execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --includedir OUTPUT_VARIABLE llvm_includedir OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libfiles analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
-    separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
+  # Check codegen libs and add needed libraries.
+  set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
+  if("${llvm_extra}" STREQUAL "")
+    message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
+
+  set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+  list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
+  list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
   if (${llvm_api_version} LESS 1100)
     message(FATAL_ERROR "LLVM version too old.")
