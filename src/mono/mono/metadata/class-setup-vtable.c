@@ -1018,8 +1018,6 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 
 	/* Collect potentially conflicting overrides which are introduced by default interface methods */
 	if (prev_override) {
-		ERROR_DECL (error);
-
 		g_assert (prev_override->klass == prev_override_class);
 
 		if (!*conflict_map)
