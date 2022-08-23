@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Formats.Tar
 {
