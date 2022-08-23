@@ -103,7 +103,8 @@ PhaseStatus Compiler::fgMorphInit()
 #if defined(DEBUG) && defined(TARGET_X86)
     if (opts.compStackCheckOnCall)
     {
-        lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaCallSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason::CallSpCheck);
         lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         madeChanges                        = true;
     }
