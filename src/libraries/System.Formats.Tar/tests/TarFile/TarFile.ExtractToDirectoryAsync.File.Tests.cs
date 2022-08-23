@@ -191,8 +191,10 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public async Task UnixFileModes_Async()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UnixFileModes_Async(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -223,27 +225,36 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(outOfOrderDir);
             }
 
-            await TarFile.ExtractToDirectoryAsync(archivePath, destination.Path, overwriteFiles: false);
-
             string dirPath = Path.Join(destination.Path, "dir");
+            string filePath = Path.Join(destination.Path, "file");
+            string missingParentPath = Path.Join(destination.Path, "missing_parent");
+            string missingParentDirPath = Path.Join(missingParentPath, "dir");
+            string outOfOrderDirPath = Path.Join(destination.Path, "out_of_order_parent");
+
+            if (overwrite)
+            {
+                File.OpenWrite(filePath).Dispose();
+                Directory.CreateDirectory(dirPath);
+                Directory.CreateDirectory(missingParentDirPath);
+                Directory.CreateDirectory(outOfOrderDirPath);
+            }
+
+            await TarFile.ExtractToDirectoryAsync(archivePath, destination.Path, overwriteFiles: overwrite);
+
             Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
             AssertFileModeEquals(dirPath, TestPermission1);
 
-            string filePath = Path.Join(destination.Path, "file");
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             AssertFileModeEquals(filePath, TestPermission2);
 
-            // Missing parents are created with DefaultDirectoryMode.
-            string missingParentPath = Path.Join(destination.Path, "missing_parent");
+            // Missing parents are created with CreateDirectoryDefaultMode.
             Assert.True(Directory.Exists(missingParentPath), $"{missingParentPath}' does not exist.");
-            AssertFileModeEquals(missingParentPath, DefaultDirectoryMode);
+            AssertFileModeEquals(missingParentPath, CreateDirectoryDefaultMode);
 
-            string missingParentDirPath = Path.Join(missingParentPath, "dir");
             Assert.True(Directory.Exists(missingParentDirPath), $"{missingParentDirPath}' does not exist.");
             AssertFileModeEquals(missingParentDirPath, TestPermission3);
 
             // Directory modes that are out-of-order are still applied.
-            string outOfOrderDirPath = Path.Join(destination.Path, "out_of_order_parent");
             Assert.True(Directory.Exists(outOfOrderDirPath), $"{outOfOrderDirPath}' does not exist.");
             AssertFileModeEquals(outOfOrderDirPath, TestPermission4);
         }

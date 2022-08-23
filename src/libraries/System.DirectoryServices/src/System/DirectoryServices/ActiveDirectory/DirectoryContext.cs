@@ -693,7 +693,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr tempHandle = global::Interop.Kernel32.LoadLibrary(systemPath + "\\ntdsapi.dll");
             if (tempHandle == (IntPtr)0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             else
             {

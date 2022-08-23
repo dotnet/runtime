@@ -185,7 +185,7 @@ def build_and_run(coreclr_args, output_mch_name):
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
                          f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
                          " COMPlus_ZapDisable:1  COMPlus_ReadyToRun:0 " \
-                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
+                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:

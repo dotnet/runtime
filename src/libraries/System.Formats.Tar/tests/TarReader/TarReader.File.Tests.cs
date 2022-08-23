@@ -124,5 +124,31 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
         public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat) =>
             Read_Archive_LongPath_Over255_Internal(format, testFormat);
+
+        [Fact]
+        public void Read_NodeTarArchives_Successfully()
+        {
+            string nodeTarPath = Path.Join(Directory.GetCurrentDirectory(), "tar", "node-tar");
+            foreach (string file in Directory.EnumerateFiles(nodeTarPath, "*.tar", SearchOption.AllDirectories))
+            {
+                using FileStream sourceStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var reader = new TarReader(sourceStream);
+
+                TarEntry? entry = null;
+                while (true)
+                {
+                    Exception ex = Record.Exception(() => entry = reader.GetNextEntry());
+                    Assert.Null(ex);
+
+                    if (entry is null) break;
+
+                    ex = Record.Exception(() => entry.Name);
+                    Assert.Null(ex);
+
+                    ex = Record.Exception(() => entry.Length);
+                    Assert.Null(ex);
+                }
+            }
+        }
     }
 }
