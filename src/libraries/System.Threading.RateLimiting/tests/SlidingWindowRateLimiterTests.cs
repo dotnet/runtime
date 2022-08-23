@@ -39,53 +39,43 @@ namespace System.Threading.RateLimiting.Test
         {
             Assert.Throws<ArgumentException>(
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = -1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                Window = TimeSpan.FromMinutes(2),
-                SegmentsPerWindow = 1,
-                AutoReplenishment = false
-            }));
+                {
+                    PermitLimit = -1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.FromMinutes(2),
+                    SegmentsPerWindow = 1,
+                    AutoReplenishment = false
+                }));
             Assert.Throws<ArgumentException>(
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = -1,
-                Window = TimeSpan.FromMinutes(2),
-                SegmentsPerWindow = 1,
-                AutoReplenishment = false
-            }));
-            Assert.Throws<ArgumentException>(
-                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                Window = TimeSpan.FromMinutes(2),
-                SegmentsPerWindow = -1,
-                AutoReplenishment = false
-            }));
-            Assert.Throws<ArgumentException>(
-                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                Window = TimeSpan.MinValue,
-                SegmentsPerWindow = 1,
-                AutoReplenishment = false
-            }));
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = -1,
+                    Window = TimeSpan.FromMinutes(2),
+                    SegmentsPerWindow = 1,
+                    AutoReplenishment = false
+                }));
             Assert.Throws<ArgumentException>(
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
                     QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                     QueueLimit = 1,
-                    Window = TimeSpan.Zero,
+                    Window = TimeSpan.FromMinutes(2),
+                    SegmentsPerWindow = -1,
+                    AutoReplenishment = false
+                }));
+            Assert.Throws<ArgumentException>(
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.MinValue,
                     SegmentsPerWindow = 1,
-                    AutoReplenishment = false,
+                    AutoReplenishment = false
                 }));
             Assert.Throws<ArgumentException>(
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
