@@ -31,13 +31,6 @@ DbgTransportSession *g_pDbgTransport = NULL;
 #include "ddmarshalutil.h"
 #endif // !RIGHT_SIDE_COMPILE
 
-// No real work done in the constructor. Use Init() instead.
-DbgTransportSession::DbgTransportSession()
-{
-    m_ref = 1;
-    m_eState = SS_Closed;
-}
-
 DbgTransportSession::~DbgTransportSession()
 {
     DbgTransportLog(LC_Proxy, "DbgTransportSession::~DbgTransportSession() called");
