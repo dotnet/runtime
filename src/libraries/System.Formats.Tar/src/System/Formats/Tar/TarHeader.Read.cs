@@ -311,6 +311,8 @@ namespace System.Formats.Tar
             {
                 MemoryStream copiedData = new MemoryStream();
                 TarHelpers.CopyBytes(archiveStream, copiedData, _size);
+                // Reset position pointer so the user can do the first DataStream read from the beginning
+                copiedData.Position = 0;
                 return copiedData;
             }
 
@@ -336,6 +338,8 @@ namespace System.Formats.Tar
             {
                 MemoryStream copiedData = new MemoryStream();
                 await TarHelpers.CopyBytesAsync(archiveStream, copiedData, size, cancellationToken).ConfigureAwait(false);
+                // Reset position pointer so the user can do the first DataStream read from the beginning
+                copiedData.Position = 0;
                 return copiedData;
             }
 
