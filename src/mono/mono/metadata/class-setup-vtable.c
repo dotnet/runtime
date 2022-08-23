@@ -932,7 +932,8 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		context = mono_class_get_context (klass);
 		type_token = mono_class_get_generic_class (klass)->container_class->type_token;
 	} else {
-		context = (MonoGenericContext *) mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		MonoGenericContainer *container = mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		context = container ? &container->context : NULL;
 		type_token = klass->type_token;
 	}
 
