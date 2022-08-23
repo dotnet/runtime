@@ -290,10 +290,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(512)]
-        [InlineData(512 + 1)]
-        [InlineData(512 + 512 - 1)]
-        public async Task BlockAlignmentPadding_DoesNotAffectNextEntries_Async(int contentSize)
+        [InlineData(512, false)]
+        [InlineData(512, true)]
+        [InlineData(512 + 1, false)]
+        [InlineData(512 + 1, true)]
+        [InlineData(512 + 512 - 1, false)]
+        [InlineData(512 + 512 - 1, true)]
+        public async Task BlockAlignmentPadding_DoesNotAffectNextEntries_Async(int contentSize, bool copyData)
         {
             byte[] fileContents = new byte[contentSize];
             Array.Fill<byte>(fileContents, 0x1);
@@ -313,17 +316,17 @@ namespace System.Formats.Tar.Tests
             using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
             using var reader = new TarReader(unseekable);
 
-            TarEntry e = await reader.GetNextEntryAsync();
+            TarEntry e = await reader.GetNextEntryAsync(copyData);
             Assert.Equal(contentSize, e.Length);
 
             byte[] buffer = new byte[contentSize];
             while (e.DataStream.Read(buffer) > 0) ;
             AssertExtensions.SequenceEqual(fileContents, buffer);
 
-            e = await reader.GetNextEntryAsync();
+            e = await reader.GetNextEntryAsync(copyData);
             Assert.Equal(0, e.Length);
 
-            e = await reader.GetNextEntryAsync();
+            e = await reader.GetNextEntryAsync(copyData);
             Assert.Null(e);
         }
     }
