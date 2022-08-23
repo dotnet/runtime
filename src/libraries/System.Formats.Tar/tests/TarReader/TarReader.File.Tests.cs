@@ -125,33 +125,38 @@ namespace System.Formats.Tar.Tests
         public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat) =>
             Read_Archive_LongPath_Over255_Internal(format, testFormat);
 
-        [Theory]
-        [InlineData("node-tar")]
-        [InlineData("tar-rs")]
-        public void Read_TestArchives_Successfully(string subset)
+        public static IEnumerable<object[]> GetTarFiles(string subset)
         {
-            string nodeTarPath = Path.Join(Directory.GetCurrentDirectory(), "tar", subset);
-            foreach (string file in Directory.EnumerateFiles(nodeTarPath, "*.tar", SearchOption.AllDirectories))
+            string path = Path.Join(Directory.GetCurrentDirectory(), "tar", subset);
+            foreach (string file in Directory.EnumerateFiles(path, "*.tar", SearchOption.AllDirectories))
             {
-                using FileStream sourceStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using var reader = new TarReader(sourceStream);
+                yield return new object[] { file };
+            }
+        }
 
-                TarEntry? entry = null;
-                while ((entry = reader.GetNextEntry()) != null)
+        [Theory]
+        [MemberData(nameof(GetTarFiles), "node-tar")]
+        [MemberData(nameof(GetTarFiles), "tar-rs")]
+        public void Read_TestArchives_Successfully(string file)
+        {
+            using FileStream sourceStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var reader = new TarReader(sourceStream);
+
+            TarEntry? entry = null;
+            while ((entry = reader.GetNextEntry()) != null)
+            {
+                Assert.NotNull(entry.Name);
+                Assert.True(Enum.IsDefined(entry.EntryType));
+                Assert.True(Enum.IsDefined(entry.Format));
+
+                if (entry.EntryType == TarEntryType.Directory)
+                    continue;
+
+                var ds = entry.DataStream;
+                if (ds != null && ds.Length > 0)
                 {
-                    Assert.NotNull(entry.Name);
-                    Assert.True(Enum.IsDefined(entry.EntryType));
-                    Assert.True(Enum.IsDefined(entry.Format));
-
-                    if (entry.EntryType == TarEntryType.Directory)
-                        continue;
-
-                    var ds = entry.DataStream;
-                    if (ds != null && ds.Length > 0)
-                    {
-                        using var memoryStream = new MemoryStream();
-                        ds.CopyTo(memoryStream);
-                    }
+                    using var memoryStream = new MemoryStream();
+                    ds.CopyTo(memoryStream);
                 }
             }
         }
