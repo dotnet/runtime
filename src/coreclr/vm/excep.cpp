@@ -6849,8 +6849,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         return VEH_CONTINUE_SEARCH;
     }
 
-    VEH_ACTION retVal = VEH_NO_ACTION;
-
     // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
     // on WIN64
     //
@@ -6861,12 +6859,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         CantAllocHolder caHolder;
     }
 
-    retVal = CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
-
-    //
-        //END_ENTRYPOINT_VOIDRET;
-    //
-    return retVal;
+    return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 }
 
 VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)
