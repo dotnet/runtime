@@ -6723,27 +6723,16 @@ bool ShouldHandleManagedFault(
 
 #ifndef TARGET_UNIX
 
-LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo);
-
-enum VEH_ACTION
-{
-    VEH_NO_ACTION = 0,
-    VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION,
-    VEH_CONTINUE_EXECUTION,
-    VEH_CONTINUE_SEARCH,
-    VEH_EXECUTE_HANDLER
-};
-
-
+VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo);
 VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExceptionInfo);
 
-LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
+VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
     // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
     // will block forever.
     if (g_fForbidEnterEE)
     {
-        return EXCEPTION_CONTINUE_SEARCH;
+        return VEH_CONTINUE_SEARCH;
     }
 
 
@@ -6833,7 +6822,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
             pExceptionInfo->ContextRecord->Rip = hijackArgs.ReturnAddress;
         }
 
-        return EXCEPTION_CONTINUE_EXECUTION;
+        return VEH_CONTINUE_EXECUTION;
     }
 #endif
 
@@ -6857,10 +6846,10 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         //
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
-        return EXCEPTION_CONTINUE_SEARCH;
+        return VEH_CONTINUE_SEARCH;
     }
 
-    LONG retVal = 0;
+    VEH_ACTION retVal = VEH_NO_ACTION;
 
     // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
     // on WIN64
@@ -6880,7 +6869,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     return retVal;
 }
 
-LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)
+VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)
 {
     //
     // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
@@ -6914,27 +6903,16 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
         action = CLRVectoredExceptionHandlerPhase3(pExceptionInfo);
     }
 
-    if (action == VEH_CONTINUE_EXECUTION)
+    if ((action == VEH_CONTINUE_EXECUTION) || (action == VEH_CONTINUE_SEARCH) || (action == VEH_EXECUTE_HANDLER))
     {
-        return EXCEPTION_CONTINUE_EXECUTION;
-    }
-
-    if (action == VEH_CONTINUE_SEARCH)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    if (action == VEH_EXECUTE_HANDLER)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
+        return action;
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
 
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
-        HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-        return EXCEPTION_CONTINUE_EXECUTION;
+        return action;
     }
 
 #endif // defined(FEATURE_EH_FUNCLETS)
@@ -6954,7 +6932,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
         // the choice to break the no-trigger region after taking all necessary precautions.
         if (IsDebuggerFault(pExceptionRecord, pExceptionInfo->ContextRecord, pExceptionRecord->ExceptionCode, GetThreadNULLOk()))
         {
-            return EXCEPTION_CONTINUE_EXECUTION;
+            return VEH_CONTINUE_EXECUTION;
         }
     }
 
@@ -6986,11 +6964,11 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
         {
             // The breakpoint was not ours.  Someone else can handle it.  (Or if not, we'll get it again as
             //  an unhandled exception.)
-            return EXCEPTION_CONTINUE_SEARCH;
+            return VEH_CONTINUE_SEARCH;
         }
 
         // The breakpoint was from managed or the runtime.  Handle it.
-        return UserBreakpointFilter(pExceptionInfo);
+        return (VEH_ACTION)UserBreakpointFilter(pExceptionInfo);
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -7008,15 +6986,11 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
     if (fShouldHandleManagedFault)
     {
-        //
-        // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
-        //
-        HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-        return EXCEPTION_CONTINUE_EXECUTION;
-}
+        return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
+    }
 #endif // defined(FEATURE_EH_FUNCLETS)
 
-    return EXCEPTION_EXECUTE_HANDLER;
+    return VEH_EXECUTE_HANDLER;
 }
 
 /*
@@ -7583,13 +7557,31 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     if (pThread || fExceptionInEE)
     {
         if (!bIsGCMarker)
-            result = CLRVectoredExceptionHandler(pExceptionInfo);
-        else
-            result = EXCEPTION_CONTINUE_EXECUTION;
-
-        if (EXCEPTION_EXECUTE_HANDLER == result)
         {
-            result = EXCEPTION_CONTINUE_SEARCH;
+            VEH_ACTION action = CLRVectoredExceptionHandler(pExceptionInfo);
+            if (VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION == action)
+            {
+                //
+                // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
+                //
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                return EXCEPTION_CONTINUE_EXECUTION;
+            }
+
+            if (VEH_EXECUTE_HANDLER == action)
+            {
+                result = EXCEPTION_CONTINUE_SEARCH;
+            }
+            else
+            {
+                _ASSERTE((action == VEH_CONTINUE_EXECUTION) || (action == VEH_CONTINUE_SEARCH));
+                result = (LONG)action;
+            }
+
+        }
+        else
+        {
+            result = EXCEPTION_CONTINUE_EXECUTION;
         }
 
 #ifdef _DEBUG
