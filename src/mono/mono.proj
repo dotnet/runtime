@@ -203,13 +203,17 @@
 
   <!-- Mono runtime build -->
   <Target Name="BuildMonoRuntime">
+    <PropertyGroup>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+    </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=&quot;$(MonoObjDir)out&quot;"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
-      <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(TargetArchitecture)" />
+      <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
       <_MonoCMakeArgs Condition="'$(BuildDarwinFrameworks)' == 'true'" Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
@@ -641,6 +645,7 @@
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
+      <_MonoSkipInitCompiler>true</_MonoSkipInitCompiler>
       <MonoAotAbi>wasm32-unknown-none</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
@@ -760,6 +765,8 @@
     <PropertyGroup>
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
@@ -775,7 +782,7 @@
       <!-- Link in only the components neeeded for AOT compilation -->
       <MonoAOTCMakeArgs Include="-DAOT_COMPONENTS=1 -DSTATIC_COMPONENTS=1;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
-      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(TargetArchitecture)" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- thread suspend -->
