@@ -16,8 +16,8 @@ namespace Sample
             return 0;
         }
 
-        [DllImport("fibonacci")]
-        public static extern int Fibonacci(int n);
+        [LibraryImport("fibonacci")]
+        public static partial int Fibonacci(int n);
 
         [JSImport("Sample.Test.add", "main.js")]
         internal static partial int Add(int a, int b);
