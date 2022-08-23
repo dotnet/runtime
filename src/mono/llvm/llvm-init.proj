@@ -29,17 +29,20 @@
                       PackageArch="$(BuildArchitecture)"
                       Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                      Version="$(MonoLLVMToolsVersion)"
+                      Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != '' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'wasm'" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                     Version="$(MonoLLVMToolsVersion)"
-                     PackageArch="$(RealTargetArchitecture)"
-                     Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != 'x86' and '$(RealTargetArchitecture)' != 'wasm'" />
+                      Version="$(MonoLLVMSDKVersion)"
+                      PackageArch="$(RealTargetArchitecture)"
+                      Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != 'x86' and '$(RealTargetArchitecture)' != 'wasm'" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                     Version="$(MonoLLVMToolsVersion)"
-                     PackageArch="$(BuildArchitecture)"
-                     Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
+                      Version="$(MonoLLVMSDKVersion)"
+                      PackageArch="$(BuildArchitecture)"
+                      Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
+    <_PackageReferenceDeduplicated Include="@(PackageReference->Distinct())" />
+    <PackageReference Remove="@(PackageReference)" />
+    <PackageReference Include="@(_PackageReferenceDeduplicated)" />
   </ItemGroup>
 
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
