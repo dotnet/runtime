@@ -47,8 +47,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
                     Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
                     break;
-                case LoggerColorBehavior.Disabled:
                 case LoggerColorBehavior.Default:
+                case LoggerColorBehavior.Disabled:
                     Assert.Equal(1, sink.Writes.Count);
                     write = sink.Writes[0];
                     Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
