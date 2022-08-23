@@ -1,16 +1,12 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-rc.1.22408.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-rc.1.22419.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>c04d1340510269c5cd07a285abb097f587924d5b</Sha>
+      <Sha>e269add83f4fe1b4ce3b7fbce0575728239f801b</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22406.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>dc012a715ceb9b5d5258f2fda77520586af5a36a</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-rc.1.22411.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>216093204c415b6e37dfadfcbcf183881b443636</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -51,6 +47,14 @@
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22355.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.0-rc.1.22418.6">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>eb3232eb90aac35a31134464fc498a5f1ddb239f</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.0-rc.1.22418.6">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>eb3232eb90aac35a31134464fc498a5f1ddb239f</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>

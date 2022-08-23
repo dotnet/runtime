@@ -580,7 +580,16 @@ namespace Internal.TypeSystem
             // between base type and the current type.
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
             LayoutInt offsetBias = LayoutInt.Zero;
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture == TargetArchitecture.X86)
+
+            // The following conditional statement mimics the behavior of MethodTableBuilder::PlaceInstanceFields;
+            // the fundamental difference between CoreCLR native runtime and Crossgen2 regarding field placement is
+            // that the native runtime doesn't count the method table pointer at the beginning of reference types as a 'field'
+            // so that the first field in a class has offset 0 while its 'real' offset from the 'this' pointer is LayoutPointerSize.
+            // On ARM32, native runtime employs a special logic internally calculating the field offsets relative to the 'this'
+            // pointer (the Crossgen2 way) to ensure 8-alignment for longs and doubles as required by the ARM32 ISA. Please note
+            // that for 16-alignment used by Vector128 this logic actually ensures that the fields are 16-misaligned
+            // (they are 16-aligned after the 4-byte or 8-byte method table pointer).
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture != TargetArchitecture.ARM)
             {
                 offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
