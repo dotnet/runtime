@@ -380,12 +380,12 @@ namespace System.Formats.Tar
         private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
         {
             bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
-            return ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
+            return TarHelpers.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
         }
 
         private static string GetEntryNameForBaseDirectory(string name)
         {
-            return ArchivingUtils.EntryFromPath(name, appendPathSeparator: true);
+            return TarHelpers.EntryFromPath(name, appendPathSeparator: true);
         }
 
         // Extracts an archive into the specified directory.
