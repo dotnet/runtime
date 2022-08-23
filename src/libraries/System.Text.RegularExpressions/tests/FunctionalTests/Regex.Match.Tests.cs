@@ -1278,6 +1278,47 @@ namespace System.Text.RegularExpressions.Tests
             Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public void Nonbacktracking_TimeoutCheckNotEOF()
+        {
+            // First figure out how many characters the innermost matching loop of NonBacktracking looks at between
+            // timeout checks. This makes the test more robust, as the value isn't exposed and we'd have to set it as
+            // a constant here.
+            Regex timeoutPattern = new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1));
+            // Function for comparing the left hand side to the internal chars matched per timeout check in NonBacktracking
+            int IsCharsPerTimeoutCheck(int candidate, int dummy)
+            {
+                try
+                {
+                    timeoutPattern.Match(new string('a', candidate));
+                    try
+                    {
+                        timeoutPattern.Match(new string('a', candidate + 1));
+                    }
+                    catch (RegexMatchTimeoutException)
+                    {
+                        // Only the higher check timed out, number of chars per timeout check found
+                        return 0;
+                    }
+                    // Neither check timed out, chars per timeout check is higher
+                    return -1;
+                }
+                catch (RegexMatchTimeoutException)
+                {
+                    // Candidate times out, chars per timeout check is lower
+                    return 1;
+                }
+            }
+            int charsPerTimeoutCheck = Array.BinarySearch(Enumerable.Range(0, 2048).ToArray(), -1, Comparer<int>.Create(IsCharsPerTimeoutCheck));
+            Assert.True(charsPerTimeoutCheck >= 0);
+
+            // Now that the limit is known, do the actual test
+            Regex testPattern = new Regex("^a*b$", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromHours(1));
+            string input = string.Concat(new string('a', charsPerTimeoutCheck - 1), "bc");
+            // Checking for timeout just before the 'c' shouldn't allow the $ anchor to match
+            Assert.False(testPattern.IsMatch(input));
+        }
+
         public static IEnumerable<object[]> Match_Advanced_TestData()
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
