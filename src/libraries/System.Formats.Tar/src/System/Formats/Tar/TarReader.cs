@@ -307,7 +307,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!_reachedEndMarkers);
 
-            TarHeader? header = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Unknown);
+            TarHeader? header = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true);
 
             if (header == null)
             {
@@ -349,7 +349,7 @@ namespace System.Formats.Tar
 
             Debug.Assert(!_reachedEndMarkers);
 
-            TarHeader? header = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, cancellationToken).ConfigureAwait(false);
+            TarHeader? header = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true, cancellationToken).ConfigureAwait(false);
             if (header == null)
             {
                 return null;
@@ -385,9 +385,10 @@ namespace System.Formats.Tar
         // and returns the actual entry with the processed extended attributes saved in the _extendedAttributes dictionary.
         private bool TryProcessExtendedAttributesHeader(TarHeader extendedAttributesHeader, bool copyData, [NotNullWhen(returnValue: true)] out TarHeader? actualHeader)
         {
-            actualHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Pax);
+            // Don't process the data block of the actual entry just yet, because there's a slim chance
+            // that the extended attributes contain a size that we need to override in the header
+            actualHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false);
 
-            // Now get the actual entry
             if (actualHeader == null)
             {
                 return false;
@@ -405,6 +406,9 @@ namespace System.Formats.Tar
             // Replace all the attributes representing standard fields with the extended ones, if any
             actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
 
+            // We retrieved the extended attributes, now we can read the data, and always with the right size
+            actualHeader.ProcessDataBlock(_archiveStream, copyData);
+
             return true;
         }
 
@@ -414,8 +418,9 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Now get the actual entry
-            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, cancellationToken).ConfigureAwait(false);
+            // Don't process the data block of the actual entry just yet, because there's a slim chance
+            // that the extended attributes contain a size that we need to override in the header
+            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false, cancellationToken).ConfigureAwait(false);
             if (actualHeader == null)
             {
                 return null;
@@ -439,6 +444,9 @@ namespace System.Formats.Tar
             // Replace all the attributes representing standard fields with the extended ones, if any
             actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
 
+            // We retrieved the extended attributes, now we can read the data, and always with the right size
+            actualHeader.ProcessDataBlock(_archiveStream, copyData);
+
             return actualHeader;
         }
 
@@ -448,7 +456,7 @@ namespace System.Formats.Tar
         {
             finalHeader = new(TarEntryFormat.Gnu);
 
-            TarHeader? secondHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu);
+            TarHeader? secondHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true);
 
             // Get the second entry, which is the actual entry
             if (secondHeader == null)
@@ -466,7 +474,7 @@ namespace System.Formats.Tar
             if ((header._typeFlag is TarEntryType.LongLink && secondHeader._typeFlag is TarEntryType.LongPath) ||
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
-                TarHeader? thirdHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu);
+                TarHeader? thirdHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true);
 
                 // Get the third entry, which is the actual entry
                 if (thirdHeader == null)
@@ -525,7 +533,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // Get the second entry, which is the actual entry
-            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, cancellationToken).ConfigureAwait(false);
+            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
             if (secondHeader == null)
             {
                 return null;
@@ -544,7 +552,7 @@ namespace System.Formats.Tar
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
                 // Get the third entry, which is the actual entry
-                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, cancellationToken).ConfigureAwait(false);
+                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
                 if (thirdHeader == null)
                 {
                     return null;
