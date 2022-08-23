@@ -15,42 +15,37 @@
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx.11.0'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(TargetArchitecture)"
+                      Condition="'$(TargetArchitecture)' != '' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'wasm'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(RealTargetArchitecture)"
+                      Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != 'x86' and '$(RealTargetArchitecture)' != 'wasm'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(BuildArchitecture)"
+                      Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(TargetArchitecture)"
+                      Condition="'$(TargetArchitecture)' != '' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'wasm'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                     Version="$(MonoLLVMToolsVersion)"
+                     PackageArch="$(RealTargetArchitecture)"
+                     Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != 'x86' and '$(RealTargetArchitecture)' != 'wasm'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                     Version="$(MonoLLVMToolsVersion)"
+                     PackageArch="$(BuildArchitecture)"
+                     Condition="'$(BuildArchitecture)' != '' and '$(BuildArchitecture)' != 'x86' and '$(BuildArchitecture)' != 'wasm'" />
+  </ItemGroup>
+
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
     <ItemGroup>
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(TargetArchitecture)" />
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(RealTargetArchitecture)" />
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(BuildArchitecture)" />
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(TargetArchitecture)" />
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(RealTargetArchitecture)" />
-      <LLVMPackage Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                   Version="$(MonoLLVMToolsVersion)"
-                   PackageArch="$(BuildArchitecture)" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
-      <LLVMPackage Remove="runtime.$(MonoLLVMHostOS)-.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="%(LLVMPackage.Identity)"
-                        Version="%(LLVMPackage.Version)" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(LLVMPackage.Identity)).ToLowerInvariant())\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-%(LLVMPackage.PackageArch)\**"
-                 FileArch="%(LLVMPackage.PackageArch)" />
+      <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
+                 FileArch="%(PackageReference.PackageArch)" />
     </ItemGroup>
     <Message Importance="high" Text="Copying @(LLVMFiles) to $(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)" />
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
