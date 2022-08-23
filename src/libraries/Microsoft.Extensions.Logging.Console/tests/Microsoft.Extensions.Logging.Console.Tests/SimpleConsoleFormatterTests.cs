@@ -32,11 +32,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
             }
 
+            // For Android/iOS/tvOS/MacCatalyst default color behavior, enables the color
+            var colBehavior = colorBehavior == LoggerColorBehavior.Default && (PlatformDetection.IsAndroid || PlatformDetection.IsAppleMobile) ? LoggerColorBehavior.Enabled : colorBehavior;
+
             // Assert
-            switch (colorBehavior)
+            switch (colBehavior)
             {
                 case LoggerColorBehavior.Enabled:
-                case LoggerColorBehavior.Default:
                     Assert.Equal(2, sink.Writes.Count);
                     var write = sink.Writes[0];
                     Assert.Equal(ConsoleColor.Black, write.BackgroundColor);
@@ -46,6 +48,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
                     break;
                 case LoggerColorBehavior.Disabled:
+                case LoggerColorBehavior.Default:
                     Assert.Equal(1, sink.Writes.Count);
                     write = sink.Writes[0];
                     Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
