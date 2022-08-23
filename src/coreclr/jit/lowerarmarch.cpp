@@ -1799,9 +1799,9 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     GenTree* addr = indirNode->Addr();
 
-    if ((addr->OperGet() == GT_LEA))
+    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
     {
-        bool makeContained = IsSafeToContainMem(indirNode, addr);
+        bool makeContained = true;
 
 #ifdef TARGET_ARM
         // ARM floating-point load/store doesn't support a form similar to integer
@@ -1832,12 +1832,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         {
             MakeSrcContained(indirNode, addr);
         }
-#ifdef TARGET_ARM64
-        else if (addr->AsAddrMode()->HasIndex())
-        {
-            addr->AsAddrMode()->Index()->ClearContained();
-        }
-#endif
     }
     else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
