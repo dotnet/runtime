@@ -13,7 +13,7 @@
     <NativeFileReference Include="fibonacci.c" />
   </ItemGroup>
   <PropertyGroup>
-    <_SampleProject>Wasm.Native.Sample.csproj</_SampleProject>
+    <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
   </PropertyGroup>
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

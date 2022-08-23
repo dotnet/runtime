@@ -4,6 +4,6 @@ int Fibonacci(int n) {
 		tempf = fnow + fnext;
 		fnow = fnext;
 		fnext = tempf;
-		}
-		return fnext;	
+	}
+	return fnext;	
 }
