@@ -14382,9 +14382,13 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
 
         // DefinesLocal can return true for some BLK op uses, so
         // check what gets assigned only when we're at an assignment.
-        if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclVarTree))
+        //
+        // If the tree is a block op we've already done the kills
+        // over in MorphInitBlockHelper::PrepareDst().
+        //
+        if (tree->OperIsSsaDef() && !tree->OperIsBlk() && tree->DefinesLocal(this, &lclVarTree))
         {
-            unsigned lclNum = lclVarTree->GetLclNum();
+            const unsigned lclNum = lclVarTree->GetLclNum();
             noway_assert(lclNum < lvaCount);
             fgKillDependentAssertions(lclNum DEBUGARG(tree));
         }
@@ -14392,14 +14396,6 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
 
     /* If this tree makes a new assertion - make it available */
     optAssertionGen(tree);
-
-    // For struct copies & inits, also use the original tree
-    // to generate assertions.
-    //
-    if ((oldTree != nullptr) && oldTree->OperIsBlkOp())
-    {
-        optAssertionGen(oldTree);
-    }
 
 DONE:;
 
