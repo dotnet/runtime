@@ -203,6 +203,12 @@ namespace System.Formats.Tar
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
             buffer = TrimEndingNullsAndSpaces(buffer);
+            buffer = TrimTrailingNullsAndSpaces(buffer);
+
+            if (buffer.Length == 0)
+            {
+                return T.Zero;
+            }
 
             T octalFactor = T.CreateTruncating(8u);
             T value = T.Zero;
@@ -241,6 +247,17 @@ namespace System.Formats.Tar
             }
 
             return buffer.Slice(0, trimmedLength);
+        }
+
+        private static ReadOnlySpan<byte> TrimTrailingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
+            int newStart = 0;
+            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
+            {
+                newStart++;
+            }
+
+            return buffer.Slice(newStart);
         }
 
         // Returns the ASCII string contained in the specified buffer of bytes,
