@@ -335,6 +335,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
+        public SafeSslContextHandle? SslContextHandle;
 
         public bool IsServer
         {
@@ -431,6 +432,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Disconnect();
             }
+
+            SslContextHandle?.DangerousRelease();
 
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);
