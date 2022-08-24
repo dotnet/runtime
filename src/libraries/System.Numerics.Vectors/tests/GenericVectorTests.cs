@@ -848,13 +848,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void VectorHalfEqualsNaNTest()
-        {
-            var nan = new Vector<Half>(Half.NaN);
-            Assert.True(nan.Equals(nan));
-        }
-
-        [Fact]
         public void VectorDoubleEqualsNonCanonicalNaNTest()
         {
             var cast = BitConverter.DoubleToUInt64Bits(double.NaN);
@@ -898,39 +891,6 @@ namespace System.Numerics.Tests
             var pnan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ sign));
             var snan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ mant));
             var psnan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ sign ^ mant));
-
-            Assert.True(nan.Equals(nan));
-            Assert.True(nan.Equals(pnan));
-            Assert.True(nan.Equals(snan));
-            Assert.True(nan.Equals(psnan));
-
-            Assert.True(pnan.Equals(nan));
-            Assert.True(pnan.Equals(pnan));
-            Assert.True(pnan.Equals(snan));
-            Assert.True(pnan.Equals(psnan));
-
-            Assert.True(snan.Equals(nan));
-            Assert.True(snan.Equals(pnan));
-            Assert.True(snan.Equals(snan));
-            Assert.True(snan.Equals(psnan));
-
-            Assert.True(psnan.Equals(nan));
-            Assert.True(psnan.Equals(pnan));
-            Assert.True(psnan.Equals(snan));
-            Assert.True(psnan.Equals(psnan));
-        }
-
-        [Fact]
-        public void VectorHalfEqualsNonCanonicalNaNTest()
-        {
-            ushort cast = BitConverter.HalfToUInt16Bits(Half.NaN);
-            ushort one = BitConverter.HalfToUInt16Bits(Half.One);
-            ushort sign = (ushort)(one ^ BitConverter.HalfToUInt16Bits((Half)(-1f)));
-            ushort mant = (ushort)(one ^ BitConverter.HalfToUInt16Bits((Half)1.2f));
-            var nan = new Vector<Half>(Half.NaN);
-            var pnan = new Vector<Half>(BitConverter.UInt16BitsToHalf((ushort)(cast ^ sign)));
-            var snan = new Vector<Half>(BitConverter.UInt16BitsToHalf((ushort)(cast ^ mant)));
-            var psnan = new Vector<Half>(BitConverter.UInt16BitsToHalf((ushort)(cast ^ sign ^ mant)));
 
             Assert.True(nan.Equals(nan));
             Assert.True(nan.Equals(pnan));
