@@ -2973,7 +2973,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
             emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
-            if (i + 2 >= slots)
+            if ((i + 2) == slots)
             {
                 attrSrcAddr = EA_8BYTE;
                 attrDstAddr = EA_8BYTE;
@@ -3020,7 +3020,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                 // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
                 if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
-                    if (i + 2 >= slots)
+                    if ((i + 2) == slots)
                     {
                         attrSrcAddr = EA_8BYTE;
                         attrDstAddr = EA_8BYTE;
@@ -5195,8 +5195,8 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, spDelta);
-        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+        GetEmitter()->emitIns_I_la(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
 
