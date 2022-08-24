@@ -187,8 +187,8 @@ IF NOT DEFINED DoLink (
       <DoBatchDisasmCheck>False</DoBatchDisasmCheck>
       <DoBatchDisasmCheck Condition="'$(DisasmCheck)' == 'True' And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">True</DoBatchDisasmCheck>
 
-      <DisasmCheckFile Condition="'$(DisasmCheckFile)' == ''>$(MSBuildProjectName).cs</DisasmCheckFile>
-      <DisasmCheckFunctions Condition="'$(DisasmCheckFunctions)' == ''>Main</DisasmCheckFunctions>
+      <DisasmCheckFile Condition="'$(DisasmCheckFile)' == ''">$(MSBuildProjectName).cs</DisasmCheckFile>
+      <DisasmCheckFunctions Condition="'$(DisasmCheckFunctions)' == ''">Main</DisasmCheckFunctions>
 
       <BatchDisasmOutputFile>$(__OutputDir)\__jit_disasm.out</BatchDisasmOutputFile>
 
