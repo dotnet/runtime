@@ -27,6 +27,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -45,10 +46,11 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - src/mono/wasm/debugger/*
+      - src/mono/wasm/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
@@ -65,9 +67,15 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: runtimetests
       include:
       - src/tests/*
+      exclude:
+      # wasm runtime changes will trigger all wasm jobs anyway
+      - src/mono/wasm/*
+      - src/tests/BuildWasmApps/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: installer
       include:
       - docs/manpages/*
@@ -86,6 +94,7 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
     # Specifically runtime directories which are higher risk of
@@ -104,6 +113,9 @@ jobs:
     - subset: coreclr_jit
       include:
       - src/coreclr/jit/*
+      exclude:
+      - src/mono/*
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: wasmbuildtests
       include:
       - src/tasks/*
@@ -126,6 +138,8 @@ jobs:
       - eng/Versions.props
       - src/mono/wasm/emscripten-version.txt
       - src/libraries/sendtohelix*
+      exclude:
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: wasmdebuggertests
       include:
       - src/mono/wasm/debugger/*
@@ -134,6 +148,8 @@ jobs:
       - src/tests/BuildWasmApps/Wasm.Debugger.Tests/*
       - eng/testing/ProvisioningVersions.props
       - src/mono/mono/*
+      exclude:
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: allwasm
       include:
       - eng/Version.Details.xml
@@ -148,6 +164,8 @@ jobs:
       - src/mono/wasm/runtime/*
       - src/mono/wasm/test-main.js
       - src/mono/wasm/wasm.proj
+      exclude:
+      - eng/pipelines/common/evaluate-default-paths.yml
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
