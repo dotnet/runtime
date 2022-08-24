@@ -43,7 +43,7 @@ UPDATE_GC_SHADOW macro BASENAME, REFREG, DESTREG
     jb      &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&
     add     DESTREG, [g_GCShadow]
     cmp     DESTREG, [g_GCShadowEnd]
-    ja      &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&
+    jae     &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&
 
     ;; Update the shadow heap.
     mov     [DESTREG], REFREG
