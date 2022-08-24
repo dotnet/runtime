@@ -319,7 +319,7 @@
     <value>The value must be greater than zero.</value>
   </data>
   <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
-    <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
+    <value>Cannot advance past the end of the buffer, which has a size of {0} and a maximum size of {1}.</value>
   </data>
   <data name="InvalidComparison" xml:space="preserve">
     <value>Cannot compare the value of a token type '{0}' to text.</value>

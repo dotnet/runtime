@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text.Encodings.Web;
+using System.Text.Json.Tests;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -145,6 +148,76 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
             JsonSerializer.Serialize(new object(), options);
+        }
+
+        /// <summary>
+        /// Also see <see cref="Utf8JsonWriterTests.WriteLargeJsonToStreamWithoutFlushing"/>
+        /// </summary>
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(Utf8JsonWriterTests.IsX64))]
+        [OuterLoop]
+        public static void SerializeLargeListOfObjects()
+        {
+            Dto dto = new()
+            {
+                Prop1 = int.MaxValue,
+                Prop2 = int.MinValue,
+                Prop3 = "AC",
+                Prop4 = 500,
+                Prop5 = int.MaxValue / 2,
+                Prop6 = 250.5M / 3,
+                Prop7 = 250.5M / 3,
+                Prop8 = 250.5M / 3,
+                Prop9 = 250.5M / 3,
+                Prop10 = 250.5M / 3,
+                Prop11 = 150.6M / 3,
+                Prop12 = 150.6M / 3,
+                Prop13 = DateTimeOffset.Now,
+                Prop14 = DateTimeOffset.Now,
+                Prop15 = DateTimeOffset.Now,
+                Prop16 = DateTimeOffset.Now,
+                Prop17 = 3,
+                Prop18 = DateTime.Now,
+                Prop19 = DateTime.Now,
+                Prop20 = 25000,
+                Prop21 = DateTime.Now
+            };
+
+            List<Dto> items = Enumerable.Repeat(dto, 3_000_000).ToList();
+
+            try
+            {
+                JsonSerializer.Serialize(items);
+            }
+            catch (OutOfMemoryException ex)
+            {
+                Assert.Contains("Cannot advance past the end of the buffer, which has a size of", ex.ToString());
+            }
+        }
+
+        class Dto
+        {
+            public int Prop1 { get; set; }
+            public int Prop2 { get; set; }
+            public string Prop3 { get; set; }
+            public int Prop4 { get; set; }
+            public long Prop5 { get; set; }
+            public decimal Prop6 { get; set; }
+            public decimal Prop7 { get; set; }
+            public decimal Prop8 { get; set; }
+            public decimal Prop9 { get; set; }
+            public decimal Prop10 { get; set; }
+            public decimal Prop11 { get; set; }
+            public decimal Prop12 { get; set; }
+            public DateTimeOffset Prop13 { get; set; }
+            public DateTimeOffset Prop14 { get; set; }
+            public DateTimeOffset Prop15 { get; set; }
+            public DateTimeOffset Prop16 { get; set; }
+            public int Prop17 { get; set; }
+            public DateTime Prop18 { get; set; }
+            public DateTime Prop19 { get; set; }
+            public int Prop20 { get; set; }
+            public DateTime Prop21 { get; set; }
         }
     }
 }

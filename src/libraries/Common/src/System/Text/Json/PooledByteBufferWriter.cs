@@ -127,6 +127,11 @@ namespace System.Text.Json
             Debug.Assert(_index <= _rentedBuffer.Length - count);
 
             _index += count;
+
+            if ((uint)_index > int.MaxValue)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_BufferWriterAdvancedTooFar(_rentedBuffer.Length);
+            }
         }
 
         public Memory<byte> GetMemory(int sizeHint = 0)
@@ -218,6 +223,13 @@ namespace System.Text.Json
         public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity)
         {
             throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowOutOfMemoryException_BufferWriterAdvancedTooFar(int bufferSize)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferWriterAdvancedTooFar, bufferSize, int.MaxValue));
         }
     }
 }
