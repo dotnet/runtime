@@ -164,7 +164,7 @@
     <BDN_Partition Include="Partition29" Index="29" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'techempower'">
     <HelixWorkItem Include="@(Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
@@ -183,4 +183,15 @@
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(CollectionName)' == 'techempower'">
+    <HelixWorkItem Include="@(BDN_Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(DotNetHostBinDir)dotnet$(ExeSuffix) run --project $(SuperPMIDirectory)/superpmi_techempower.csproj -- --python $(Python) --dotnet-cli-path $(DotNetHostBinDir)dotnet$(ExeSuffix) --tfm $(NetCoreAppCurrent) --rid win-x64 --spmi-script-path $(SuperPMIDirectory)/superpmi.py --mch-output-path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch --core-run-path $(SuperPMIDirectory)\corerun$(ExeSuffix) --workspace-path $(SuperPMIDirectory)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
+
 </Project>

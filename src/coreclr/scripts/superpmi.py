@@ -286,6 +286,7 @@ collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pas
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
+collect_parser.add_argument("--dont_redirect_stdout", action="store_true", help="Don't redirect stdout and stderr during collection")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -819,10 +820,15 @@ class SuperPMICollect:
                 assert isinstance(self.collection_args, list)
 
                 command = [self.collection_command, ] + self.collection_args
-                proc = subprocess.Popen(command, env=collection_command_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                stdout_output, _ = proc.communicate()
-                for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
-                    logging.debug(line)
+
+                if self.coreclr_args.dont_redirect_stdout:
+                    proc = subprocess.Popen(command, env=collection_command_env)
+                    proc.wait()
+                else:
+                    proc = subprocess.Popen(command, env=collection_command_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    stdout_output, _ = proc.communicate()
+                    for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
+                        logging.debug(line)
 
                 elapsed_time = datetime.datetime.now() - begin_time
                 logging.debug("Done. Elapsed time: %s", elapsed_time)
@@ -3444,6 +3450,11 @@ def setup_args(args):
                             "crossgen2",
                             lambda unused: True,
                             "Unable to set crossgen2")
+
+        coreclr_args.verify(args,
+                            "dont_redirect_stdout",
+                            lambda unused: True,
+                            "Unable to set dont_redirect_stdout")
 
         coreclr_args.verify(args,
                             "assemblies",

@@ -175,3 +175,18 @@ jobs:
       liveLibrariesBuildConfig: Release
       collectionType: run
       collectionName: benchmarks
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+    buildConfig: checked
+    platforms:
+    # testing win-x64 only for now
+    - windows_x64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: run
+      collectionName: techempower
