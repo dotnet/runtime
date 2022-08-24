@@ -2044,11 +2044,6 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 //    The argument is live on entry to the function
 //    (or is untracked and therefore assumed live)
 //
-// Notes:
-//    This relies on a method in regAlloc.cpp that is shared between LSRA
-//    and regAlloc.  It is further abstracted here because regState is updated
-//    separately for tracked and untracked variables in LSRA.
-//
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -2204,7 +2199,7 @@ void LinearScan::buildIntervals()
             RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
             pos->setRegOptional(true);
         }
-        else if (varTypeIsStruct(argDsc->lvType))
+        else if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
@@ -2236,7 +2231,7 @@ void LinearScan::buildIntervals()
     {
         LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
 
-        if (argDsc->lvPromotedStruct())
+        if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)

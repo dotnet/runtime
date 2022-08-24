@@ -981,23 +981,7 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize; // (exact) size of the type in bytes
-
-    // Is this a promoted struct?
-    // This method returns true only for structs (including SIMD structs), not for
-    // locals that are split on a 32-bit target.
-    // It is only necessary to use this:
-    //   1) if only structs are wanted, and
-    //   2) if Lowering has already been done.
-    // Otherwise lvPromoted is valid.
-    bool lvPromotedStruct()
-    {
-#if !defined(TARGET_64BIT)
-        return (lvPromoted && !varTypeIsLong(lvType));
-#else  // defined(TARGET_64BIT)
-        return lvPromoted;
-#endif // defined(TARGET_64BIT)
-    }
+    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
 

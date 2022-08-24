@@ -3606,7 +3606,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     //
     if (tree->OperIs(GT_LCL_FLD))
     {
-        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromotedStruct())
+        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromoted)
         {
             return nullptr;
         }
