@@ -2828,6 +2828,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                         op2->ClearContained();
                     }
                 }
+                else
+                {
+                    castOp->ClearContained();
+                }
+
                 cmp->AsOp()->gtOp1 = castOp;
 
                 BlockRange().Remove(cast);
@@ -5352,6 +5357,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 #ifdef TARGET_ARM64
     if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
     {
+        index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
         MakeSrcContained(addrMode, index);
     }
 
@@ -6111,6 +6117,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
         // The parent was replaced, clear contain and regOpt flag.
         shift->gtOp2->ClearContained();
     }
+
     ContainCheckShiftRotate(shift);
 
 #ifdef TARGET_ARM64
@@ -6129,13 +6136,13 @@ void Lowering::LowerShift(GenTreeOp* shift)
             unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
             unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
                                                                   : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
-            assert(!cast->CastOp()->isContained());
 
             // It has to be an upcast and CNS must be in [1..srcBits) range
             if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
             {
                 JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
                 shift->ChangeOper(GT_BFIZ);
+                cast->CastOp()->ClearContained(); // Uncontain any memory operands.
                 MakeSrcContained(shift, cast);
             }
         }
