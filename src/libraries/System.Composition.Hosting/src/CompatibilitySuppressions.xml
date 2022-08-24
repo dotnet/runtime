@@ -3,7 +3,7 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Composition.Hosting.Core.CompositeActivator.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.Composition.Hosting.dll</Left>
+    <Left>lib/netstandard2.0/System.Composition.Hosting.dll</Left>
     <Right>lib/net7.0/System.Composition.Hosting.dll</Right>
   </Suppression>
 </Suppressions>

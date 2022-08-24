@@ -3,7 +3,7 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Microsoft.Extensions.DependencyInjection.ObjectFactory.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll</Left>
+    <Left>lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll</Right>
   </Suppression>
 </Suppressions>

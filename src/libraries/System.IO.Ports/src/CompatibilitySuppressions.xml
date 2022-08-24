@@ -3,19 +3,19 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.IO.Ports.SerialDataReceivedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.IO.Ports.dll</Left>
+    <Left>lib/netstandard2.0/System.IO.Ports.dll</Left>
     <Right>lib/net7.0/System.IO.Ports.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.IO.Ports.SerialErrorReceivedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.IO.Ports.dll</Left>
+    <Left>lib/netstandard2.0/System.IO.Ports.dll</Left>
     <Right>lib/net7.0/System.IO.Ports.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.IO.Ports.SerialPinChangedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.IO.Ports.dll</Left>
+    <Left>lib/netstandard2.0/System.IO.Ports.dll</Left>
     <Right>lib/net7.0/System.IO.Ports.dll</Right>
   </Suppression>
 </Suppressions>

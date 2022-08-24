@@ -3,7 +3,7 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Microsoft.Extensions.Caching.Memory.PostEvictionDelegate.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Right>
   </Suppression>
 </Suppressions>
