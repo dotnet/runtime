@@ -58,5 +58,25 @@ namespace System.Text.RegularExpressions.Symbolic
                 DefaultSymbolicRegexSafeSizeThreshold :
                 safeSizeThresholdInt;
         }
+
+        /// <summary>
+        /// The number of characters the match start and end finding phases loop over between timeout checks.
+        /// </summary>
+        /// <remarks>
+        /// The timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
+        /// catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
+        /// still check the timeout now and again to provide some semblance of the behavior a developer experiences with
+        /// the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
+        /// </remarks>
+        internal const int CharsPerTimeoutCheckStartEnd = 1_000;
+
+        /// <summary>
+        /// The number of characters the subcapture finding phase loops over between timeout checks.
+        /// </summary>
+        /// <remarks>
+        /// Finding subcaptures is slower than finding the start and end of the top level match. To give better accuracy this
+        /// number is set lower than <see cref="CharsPerTimeoutCheckStartEnd"/>.
+        /// </remarks>
+        internal const int CharsPerTimeoutCheckSubcaptures = 100;
     }
 }

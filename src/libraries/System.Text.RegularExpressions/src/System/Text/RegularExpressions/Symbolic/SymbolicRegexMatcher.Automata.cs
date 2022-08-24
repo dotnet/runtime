@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private int[]?[] _nfaDelta = Array.Empty<int[]>();
 
         /// <summary>
-        /// The transition function for <see cref="FindSubcaptures(ReadOnlySpan{char}, int, int, PerThreadData)"/>,
+        /// The transition function for <see cref="FindSubcaptures(ReadOnlySpan{char}, int, long, int, PerThreadData)"/>,
         /// which is an NFA mode with additional state to track capture start and end positions.
         /// Each entry is an array of pairs of target state and effects to be applied when taking the transition.
         /// If the entry is null then the transition has not been computed yet.

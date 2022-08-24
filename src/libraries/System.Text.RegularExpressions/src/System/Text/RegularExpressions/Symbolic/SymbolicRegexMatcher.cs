@@ -390,10 +390,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 matchStart = matchEnd < startat ?
                     startat : (_pattern._info.ContainsLineAnchor, _pattern._info.ContainsSomeAnchor) switch
                     {
-                        (true, true) => FindStartPosition<FullInputReader, FullNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
-                        (true, false) => FindStartPosition<FullInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
-                        (false, true) => FindStartPosition<NoZAnchorInputReader, FullNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
-                        (false, false) => FindStartPosition<NoZAnchorInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
+                        (true, true) => FindStartPosition<FullInputReader, FullNullabilityHandler>(input, matchEnd, timeoutOccursAt, matchStartLowBoundary, perThreadData),
+                        (true, false) => FindStartPosition<FullInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, timeoutOccursAt, matchStartLowBoundary, perThreadData),
+                        (false, true) => FindStartPosition<NoZAnchorInputReader, FullNullabilityHandler>(input, matchEnd, timeoutOccursAt, matchStartLowBoundary, perThreadData),
+                        (false, false) => FindStartPosition<NoZAnchorInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, timeoutOccursAt, matchStartLowBoundary, perThreadData),
                     };
             }
 
@@ -409,8 +409,8 @@ namespace System.Text.RegularExpressions.Symbolic
             else
             {
                 Registers endRegisters = _pattern._info.ContainsLineAnchor ?
-                    FindSubcaptures<FullInputReader>(input, matchStart, matchEnd, perThreadData) :
-                    FindSubcaptures<NoZAnchorInputReader>(input, matchStart, matchEnd, perThreadData);
+                    FindSubcaptures<FullInputReader>(input, matchStart, timeoutOccursAt, matchEnd, perThreadData) :
+                    FindSubcaptures<NoZAnchorInputReader>(input, matchStart, timeoutOccursAt, matchEnd, perThreadData);
                 return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
@@ -442,14 +442,9 @@ namespace System.Text.RegularExpressions.Symbolic
             while (true)
             {
                 // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
-                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop. Note that
-                // the timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
-                // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
-                // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
-                // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
-                const int CharsPerTimeoutCheck = 1_000;
-                int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
-                    pos + CharsPerTimeoutCheck :
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                int innerLoopLength = _checkTimeout && input.Length - pos > SymbolicRegexThresholds.CharsPerTimeoutCheckStartEnd ?
+                    pos + SymbolicRegexThresholds.CharsPerTimeoutCheckStartEnd :
                     input.Length;
 
                 bool done = currentState.NfaState is not null ?
@@ -591,10 +586,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </remarks>
         /// <param name="input">The input text.</param>
         /// <param name="i">The ending position to walk backwards from. <paramref name="i"/> points one past the last character of the match.</param>
+        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
         /// <param name="matchStartBoundary">The initial starting location discovered in phase 1, a point we must not walk earlier than.</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
         /// <returns>The found starting position for the match.</returns>
-        private int FindStartPosition<TInputReader, TNullabilityHandler>(ReadOnlySpan<char> input, int i, int matchStartBoundary, PerThreadData perThreadData)
+        private int FindStartPosition<TInputReader, TNullabilityHandler>(ReadOnlySpan<char> input, int i, long timeoutOccursAt, int matchStartBoundary, PerThreadData perThreadData)
             where TInputReader : struct, IInputReader
             where TNullabilityHandler : struct, INullabilityHandler
         {
@@ -611,24 +607,40 @@ namespace System.Text.RegularExpressions.Symbolic
             // Walk backwards to the furthest accepting state of the reverse pattern but no earlier than matchStartBoundary.
             while (true)
             {
-                // Run the DFA or NFA traversal backwards from the current point using the current state.
-                bool done = currentState.NfaState is not null ?
-                    FindStartPositionDeltas<NfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, matchStartBoundary, ref currentState, ref lastStart) :
-                    FindStartPositionDeltas<DfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, matchStartBoundary, ref currentState, ref lastStart);
+                // Run the DFA or NFA traversal backwards from the current point using the current state. If timeouts are being checked,
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                int innerLoopStartBoundary = _checkTimeout && i - matchStartBoundary > SymbolicRegexThresholds.CharsPerTimeoutCheckStartEnd ?
+                    i - SymbolicRegexThresholds.CharsPerTimeoutCheckStartEnd :
+                    matchStartBoundary;
 
-                // If we found the starting position, we're done.
-                if (done)
+                bool done = currentState.NfaState is not null ?
+                    FindStartPositionDeltas<NfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, innerLoopStartBoundary, ref currentState, ref lastStart) :
+                    FindStartPositionDeltas<DfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, innerLoopStartBoundary, ref currentState, ref lastStart);
+
+                // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
+                // there is no more input available, then the whole search is done.
+                if (done || i <= matchStartBoundary)
                 {
                     break;
                 }
 
-                // We didn't find the starting position but we did exit out of the backwards traversal.  That should only happen
-                // if we were unable to transition, which should only happen if we were in DFA mode and exceeded our graph size.
-                // Upgrade to NFA mode and continue.
-                Debug.Assert(i >= matchStartBoundary);
-                NfaMatchingState nfaState = perThreadData.NfaState;
-                nfaState.InitializeFrom(this, GetState(currentState.DfaStateId));
-                currentState = new CurrentState(nfaState);
+                // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
+                // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
+                // input available.
+                if (i > innerLoopStartBoundary)
+                {
+                    // Because there was still more input available, a failure to transition in DFA mode must be the cause
+                    // of the early exit. Upgrade to NFA mode.
+                    NfaMatchingState nfaState = perThreadData.NfaState;
+                    nfaState.InitializeFrom(this, GetState(currentState.DfaStateId));
+                    currentState = new CurrentState(nfaState);
+                }
+
+                // Check for a timeout before continuing.
+                if (_checkTimeout)
+                {
+                    CheckTimeout(timeoutOccursAt);
+                }
             }
 
             Debug.Assert(lastStart != -1, "We expected to find a starting position but didn't.");
@@ -663,18 +675,17 @@ namespace System.Text.RegularExpressions.Symbolic
                         lastStart = pos;
                     }
 
-                    // If we are past the start threshold or if the state is a dead end, bail; we should have already
-                    // found a valid starting location.
-                    if (pos <= startThreshold || flags.IsDeadend())
+                    // If the state is a dead end, bail; we should have already found a valid starting location.
+                    if (flags.IsDeadend())
                     {
                         Debug.Assert(lastStart != -1);
                         return true;
                     }
 
-                    // Try to transition with the next character, the one before the current position.
-                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    // If we are not past the start threshold, try to transition with the next character, the one before the current position.
+                    if (pos <= startThreshold || !TStateHandler.TryTakeTransition(this, ref state, positionId))
                     {
-                        // Return false to indicate the search didn't finish.
+                        // Return false to indicate the search possibly didn't finish.
                         return false;
                     }
 
@@ -693,10 +704,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Run the pattern on a match to record the capture starts and ends.</summary>
         /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
+        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
         /// <param name="iEnd">exclusive end position</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
         /// <returns>the final register values, which indicate capture starts and ends</returns>
-        private Registers FindSubcaptures<TInputReader>(ReadOnlySpan<char> input, int i, int iEnd, PerThreadData perThreadData)
+        private Registers FindSubcaptures<TInputReader>(ReadOnlySpan<char> input, int i, long timeoutOccursAt, int iEnd, PerThreadData perThreadData)
             where TInputReader : struct, IInputReader
         {
             // Pick the correct start state based on previous character kind.
@@ -722,54 +734,68 @@ namespace System.Text.RegularExpressions.Symbolic
 
             while ((uint)i < (uint)iEnd)
             {
-                Debug.Assert(next.Count == 0);
+                // If timeouts are being checked, we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                int innerLoopEnd = _checkTimeout && iEnd - i > SymbolicRegexThresholds.CharsPerTimeoutCheckSubcaptures ?
+                    i + SymbolicRegexThresholds.CharsPerTimeoutCheckSubcaptures :
+                    iEnd;
 
-                // i is guaranteed to be within bounds, so the position ID is a minterm ID
-                int mintermId = TInputReader.GetPositionId(this, input, i);
-
-                foreach ((int sourceId, Registers sourceRegisters) in current.Values)
+                while ((uint)i < (uint)innerLoopEnd)
                 {
-                    // Get or create the transitions
-                    int offset = DeltaOffset(sourceId, mintermId);
-                    (int, DerivativeEffect[])[] transitions = _capturingNfaDelta[offset] ??
-                        CreateNewCapturingTransition(sourceId, mintermId, offset);
+                    Debug.Assert(next.Count == 0);
 
-                    // Take the transitions in their prioritized order
-                    for (int j = 0; j < transitions.Length; ++j)
+                    // i is guaranteed to be within bounds, so the position ID is a minterm ID
+                    int mintermId = TInputReader.GetPositionId(this, input, i);
+
+                    foreach ((int sourceId, Registers sourceRegisters) in current.Values)
                     {
-                        (int targetStateId, DerivativeEffect[] effects) = transitions[j];
+                        // Get or create the transitions
+                        int offset = DeltaOffset(sourceId, mintermId);
+                        (int, DerivativeEffect[])[] transitions = _capturingNfaDelta[offset] ??
+                            CreateNewCapturingTransition(sourceId, mintermId, offset);
 
-                        // Try to add the state and handle the case where it didn't exist before. If the state already
-                        // exists, then the transition can be safely ignored, as the existing state was generated by a
-                        // higher priority transition.
-                        if (next.Add(targetStateId, out int index))
+                        // Take the transitions in their prioritized order
+                        for (int j = 0; j < transitions.Length; ++j)
                         {
-                            // Avoid copying the registers on the last transition from this state, reusing the registers instead
-                            Registers newRegisters = j != transitions.Length - 1 ? sourceRegisters.Clone() : sourceRegisters;
-                            newRegisters.ApplyEffects(effects, i);
-                            next.Update(index, targetStateId, newRegisters);
+                            (int targetStateId, DerivativeEffect[] effects) = transitions[j];
 
-                            int coreStateId = GetCoreStateId(targetStateId);
-                            StateFlags flags = _stateFlagsArray[coreStateId];
-                            Debug.Assert(!flags.IsDeadend());
-
-                            if (flags.IsNullable() || (flags.CanBeNullable() && GetState(coreStateId).IsNullableFor(GetCharKind<TInputReader>(input, i + 1))))
+                            // Try to add the state and handle the case where it didn't exist before. If the state already
+                            // exists, then the transition can be safely ignored, as the existing state was generated by a
+                            // higher priority transition.
+                            if (next.Add(targetStateId, out int index))
                             {
-                                // No lower priority transitions from this or other source states are taken because the
-                                // backtracking engines would return the match ending here.
-                                goto BreakNullable;
+                                // Avoid copying the registers on the last transition from this state, reusing the registers instead
+                                Registers newRegisters = j != transitions.Length - 1 ? sourceRegisters.Clone() : sourceRegisters;
+                                newRegisters.ApplyEffects(effects, i);
+                                next.Update(index, targetStateId, newRegisters);
+
+                                int coreStateId = GetCoreStateId(targetStateId);
+                                StateFlags flags = _stateFlagsArray[coreStateId];
+                                Debug.Assert(!flags.IsDeadend());
+
+                                if (flags.IsNullable() || (flags.CanBeNullable() && GetState(coreStateId).IsNullableFor(GetCharKind<TInputReader>(input, i + 1))))
+                                {
+                                    // No lower priority transitions from this or other source states are taken because the
+                                    // backtracking engines would return the match ending here.
+                                    goto BreakNullable;
+                                }
                             }
                         }
                     }
+
+                BreakNullable:
+                    // Swap the state sets and prepare for the next character
+                    SparseIntMap<Registers> tmp = current;
+                    current = next;
+                    next = tmp;
+                    next.Clear();
+                    i++;
                 }
 
-            BreakNullable:
-                // Swap the state sets and prepare for the next character
-                SparseIntMap<Registers> tmp = current;
-                current = next;
-                next = tmp;
-                next.Clear();
-                i++;
+                // Check for a timeout before continuing.
+                if (_checkTimeout)
+                {
+                    CheckTimeout(timeoutOccursAt);
+                }
             }
 
             Debug.Assert(current.Count > 0);
