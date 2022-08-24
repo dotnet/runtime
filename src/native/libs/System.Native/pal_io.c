@@ -1481,7 +1481,8 @@ static int16_t ConvertLockType(int16_t managedLockType)
 
 uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
-#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    // Don't use statfs on Apple systems, as for them it returns version-specific file system ids.
+#if (HAVE_STATFS_VFS || HAVE_STATFS_MOUNT) && !(defined(__APPLE__) && !HAVE_NON_LEGACY_STATFS)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
