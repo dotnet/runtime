@@ -68,7 +68,7 @@ namespace InteropTestsWebsite
                                 var basePath = Path.GetDirectoryName(typeof(Program).Assembly.Location);
                                 var certPath = Path.Combine(basePath!, "Certs", "server1.pfx");
 
-                                listenOptions.UseHttps(certPath, "1111");
+                                listenOptions.UseHttps(certPath, "PLACEHOLDER");
                             }
                             listenOptions.Protocols = httpProtocols;
                         }
