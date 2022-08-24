@@ -1255,13 +1255,13 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
     // Call to the vectored handler to give other parts of the Runtime a chance to jump in and take over an
     // exception before we do too much with it. The most important point in the vectored handler is not to toggle
     // the GC mode.
-    DWORD filter = CLRVectoredExceptionHandler(&ptrs);
+    VEH_ACTION filter = CLRVectoredExceptionHandler(&ptrs);
 
-    if (filter == (DWORD) EXCEPTION_CONTINUE_EXECUTION)
+    if (filter == VEH_CONTINUE_EXECUTION)
     {
         return ExceptionContinueExecution;
     }
-    else if (filter == EXCEPTION_CONTINUE_SEARCH)
+    else if (filter == VEH_CONTINUE_SEARCH)
     {
         return ExceptionContinueSearch;
     }
