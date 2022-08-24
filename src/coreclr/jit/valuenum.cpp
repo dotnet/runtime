@@ -8319,19 +8319,25 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            unsigned lhsLclSize = lvaLclExactSize(lhsLclNum);
-            unsigned storeSize  = lhs->GetLayout(this)->GetSize();
+            ClassLayout* const layout    = lhs->GetLayout(this);
+            unsigned           storeSize = layout->GetSize();
 
             ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())
             {
-                ValueNum initObjVN = ValueNumStore::NoVN;
-                if (isEntire && rhs->IsIntegralConst(0))
+                ValueNum   initObjVN  = ValueNumStore::NoVN;
+                bool const isZeroInit = rhs->IsIntegralConst(0);
+                if (isEntire && isZeroInit)
                 {
                     // Note that it is possible to see pretty much any kind of type for the local
                     // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
                     initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetStructHnd())
                                                                      : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
+                }
+                else if (isZeroInit)
+                {
+                    initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout->GetClassHandle())
+                                                               : vnStore->VNZeroForType(lhs->TypeGet());
                 }
                 else
                 {

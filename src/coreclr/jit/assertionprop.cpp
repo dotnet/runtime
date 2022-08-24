@@ -3389,6 +3389,17 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             }
             break;
 
+        case O2K_ZEROOBJ:
+            if (varTypeIsStruct(tree))
+            {
+                newTree->BashToZeroConst(TYP_INT);
+            }
+            else
+            {
+                newTree->BashToZeroConst(genActualType(tree));
+            }
+            break;
+
         default:
             return nullptr;
     }
@@ -3768,8 +3779,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
+    BitVecOps::Iter      iter(apTraits, assertions);
+    unsigned             index         = 0;
+    bool                 onlyConstProp = false;
+    GenTreeLclVarCommon* workingTree   = tree;
     while (iter.NextElem(&index))
     {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
@@ -3778,18 +3791,37 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
             break;
         }
 
-        // See if the variable is equal to another variable.
-        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        // See if the variable is equal to another variable or a constant.
+        //
+        AssertionDsc* const curAssertion = optGetAssertion(assertionIndex);
         if (!curAssertion->CanPropLclVar())
         {
             continue;
         }
 
-        // Copy prop.
-        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
+        // Copy prop
+        //
+        if (!onlyConstProp && (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
-            // Perform copy assertion prop.
-            GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            GenTree* const newTree = optCopyAssertionProp(curAssertion, workingTree, stmt DEBUGARG(assertionIndex));
+            if (newTree != nullptr)
+            {
+                // Rescan the table looking for possible constants
+                //
+                onlyConstProp = true;
+                index         = 0;
+                workingTree   = newTree->AsLclVarCommon();
+            }
+
+            continue;
+        }
+
+        // Constant prop
+        //
+        if (curAssertion->op1.lcl.lclNum == tree->GetLclNum())
+        {
+            GenTree* const newTree = optConstantAssertionProp(curAssertion, workingTree, stmt DEBUGARG(assertionIndex));
+
             if (newTree != nullptr)
             {
                 return newTree;
@@ -3799,7 +3831,7 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         continue;
     }
 
-    return nullptr;
+    return onlyConstProp ? workingTree : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -3820,7 +3852,101 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 //
 GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt)
 {
-    GenTree* rhs = asg->gtGetOp2();
+    GenTree* const rhs = asg->gtGetOp2();
+
+    // If we're assigning a value to a lcl/field that already has
+    // that value, suppress the assignment.
+    //
+    // For now we just check for zero.
+    //
+    // In particular we want to make sure that for struct S the
+    // "redundant init" pattern
+    //
+    //   S s = new S();
+    //   s.field = 0;
+    //
+    // does not kill the zerobj assertion for s.
+    //
+    if (optLocalAssertionProp)
+    {
+        GenTreeLclVarCommon* lhsVarTree = nullptr;
+        if (asg->OperIsSsaDef() && asg->DefinesLocal(this, &lhsVarTree))
+        {
+            unsigned const       lhsLclNum      = lhsVarTree->GetLclNum();
+            LclVarDsc* const     lhsLclDsc      = lvaGetDesc(lhsLclNum);
+            bool const           lhsLclIsStruct = varTypeIsStruct(lhsLclDsc->TypeGet());
+            AssertionIndex const lhsIndex =
+                optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lhsLclNum, lhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT,
+                                                   0, assertions);
+            if (lhsIndex != NO_ASSERTION_INDEX)
+            {
+                AssertionDsc* const lhsAssertion = optGetAssertion(lhsIndex);
+                if ((lhsAssertion->assertionKind == OAK_EQUAL) && (lhsAssertion->op2.u1.iconVal == 0))
+                {
+                    bool canOptimize = false;
+
+                    // LHS is zero. Is RHS a literal zero? If so we don't need the assignment.
+                    //
+                    // The latter part of the if below is a heuristic.
+                    //
+                    // If we elimiate the assignment for integral lclVars it can lead to
+                    // unnecessary cloning. We need to make sure `optExtractInitTestIncr`
+                    // still sees constant loop iter lower bounds.
+                    //
+                    if (rhs->IsIntegralConst(0) && (lhsLclIsStruct || varTypeIsGC(lhsVarTree)))
+                    {
+                        JITDUMP(
+                            "[%06u] is assigning a constant zero to a struct field or gc local that is already zero\n",
+                            dspTreeID(asg));
+                        INDEBUG(optPrintAssertion(lhsAssertion));
+                        canOptimize = true;
+                    }
+
+                    // LHS is zero. Is RHS known to be zero from prior assertions?
+                    //
+                    if (!canOptimize && rhs->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                    {
+                        unsigned const       rhsLclNum      = rhs->AsLclVarCommon()->GetLclNum();
+                        LclVarDsc* const     rhsLclDsc      = lvaGetDesc(rhsLclNum);
+                        bool const           rhsLclIsStruct = varTypeIsStruct(rhsLclDsc->TypeGet());
+                        AssertionIndex const rhsIndex =
+                            optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, rhsLclNum,
+                                                               rhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT, 0,
+                                                               assertions);
+                        if (rhsIndex != NO_ASSERTION_INDEX)
+                        {
+                            AssertionDsc* const rhsAssertion = optGetAssertion(rhsIndex);
+
+                            if ((rhsAssertion->assertionKind == OAK_EQUAL) && (rhsAssertion->op2.u1.iconVal == 0))
+                            {
+                                INDEBUG(optPrintAssertion(lhsAssertion));
+                                INDEBUG(optPrintAssertion(rhsAssertion));
+                                JITDUMP("[%06u] is assigning zero to local that is already zero\n", dspTreeID(asg));
+                                canOptimize = true;
+                            }
+                        }
+                    }
+
+                    if (canOptimize)
+                    {
+                        GenTree* list = nullptr;
+                        gtExtractSideEffList(asg, &list, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
+
+                        if (list != nullptr)
+                        {
+                            return optAssertionProp_Update(list, asg, stmt);
+                        }
+
+                        asg->gtBashToNOP();
+                        return optAssertionProp_Update(asg, asg, stmt);
+                    }
+                }
+            }
+        }
+    }
+
+    // If we couldn't remove the assign, see if we can simplify it to an init.
+    //
     if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
     {
         if (optZeroObjAssertionProp(rhs, assertions))
