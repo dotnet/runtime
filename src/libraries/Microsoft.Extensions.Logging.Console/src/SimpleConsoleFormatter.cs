@@ -15,6 +15,10 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
+        private static readonly bool _isAndroidOrAppleMobile = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
         private IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
@@ -158,12 +162,8 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            bool isAndroidOrAppleMobile = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
             bool disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
-                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || isAndroidOrAppleMobile));
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || _isAndroidOrAppleMobile));
             if (disableColors)
             {
                 return new ConsoleColors(null, null);
