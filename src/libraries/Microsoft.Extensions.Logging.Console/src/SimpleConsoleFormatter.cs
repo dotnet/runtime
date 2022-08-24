@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.Logging.Console
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
         private static readonly bool _isAndroidOrAppleMobile = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
-                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
+                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
+                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
+                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
         private IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
