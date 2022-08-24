@@ -11047,6 +11047,8 @@ DONE_MORPHING_CHILDREN:
                 if (optimizedTree != nullptr)
                 {
                     tree = optimizedTree;
+                    if (tree->IsIntegralConst())
+                        return tree;
                 }
             }
             break;
@@ -12356,8 +12358,12 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
 
     GenTree* op1 = div->gtGetOp1();
     GenTree* op2 = div->gtGetOp2();
+
+    // Folds cascade of DIVs/UDIVs into one DIV/UDIV and a multiplication
+    // of root and child values
     if (op1->OperIs(GT_UDIV, GT_DIV) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst())
     {
+
         GenTree* chOp1 = op1->gtGetOp1();
         GenTree* chOp2 = op1->gtGetOp2();
 
@@ -12368,8 +12374,19 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         int64_t root_val  = op2->AsIntConCommon()->IntegralValue();
 
         // Make sure it is not folded into overflow
+        // If it is going to overflow, then result of such a division
+        // is 0
         if ((upperBound / child_val) < root_val)
-            return nullptr;
+        {
+            GenTree* ret = gtNewZeroConNode(TYP_INT);
+            fgUpdateConstTreeValueNumber(ret);
+
+            DEBUG_DESTROY_NODE(div);
+
+            INDEBUG(ret->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return ret;
+        }
 
         div->gtOp1 = chOp1;
         div->gtOp1->SetVNsFromNode(op1);
