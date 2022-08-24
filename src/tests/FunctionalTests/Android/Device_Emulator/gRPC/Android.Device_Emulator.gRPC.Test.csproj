@@ -52,8 +52,6 @@
     <PackageReference Include="Grpc.Core" Version="$(GrpcCoreVersion)" PrivateAssets="All" />
     <PackageReference Include="Grpc.Net.Client" Version="$(GrpcDotnetClientVersion)" />
     <PackageReference Include="Grpc.Tools" Version="$(GrpcToolsVersion)" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
-    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <Target Name="BuildServerDockerImage" AfterTargets="Build" Condition="'$(BuildGrpcServerDockerImage)' == 'true'">

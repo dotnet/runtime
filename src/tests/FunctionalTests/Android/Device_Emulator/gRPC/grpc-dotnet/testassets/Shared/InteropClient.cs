@@ -21,7 +21,6 @@ using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Testing;
-using Microsoft.Extensions.Logging;
 using Empty = Grpc.Testing.Empty;
 using System.Security.Authentication;
 
@@ -47,32 +46,19 @@ namespace Grpc.Shared.TestAssets
         internal const string CompressionRequestAlgorithmMetadataKey = "grpc-internal-encoding-request";
 
         private readonly ClientOptions options;
-        private readonly ILoggerFactory loggerFactory;
-        private readonly ILogger<InteropClient> logger;
 
-        public InteropClient(ClientOptions options, ILoggerFactory loggerFactory)
+        public InteropClient(ClientOptions options)
         {
             this.options = options;
-            this.loggerFactory = loggerFactory;
-            this.logger = loggerFactory.CreateLogger<InteropClient>();
         }
 
         public async Task Run()
         {
             var channel = HttpClientCreateChannel();
 
-            try
-            {
-                var message = "Running " + options.TestCase;
-                logger.LogInformation(message);
-                await RunTestCaseAsync(channel, options);
-                logger.LogInformation("Passed!");
-            }
-            catch (Exception ex)
-            {
-                logger.LogInformation(ex, "Failed!");
-                throw;
-            }
+            var message = "Running " + options.TestCase;
+            await RunTestCaseAsync(channel, options);
+
             await channel.ShutdownAsync();
         }
 
@@ -104,7 +90,6 @@ namespace Grpc.Shared.TestAssets
             {
                 Credentials = credentials,
                 HttpHandler = httpMessageHandler,
-                LoggerFactory = loggerFactory
             });
 
             return new GrpcChannelWrapper(channel);

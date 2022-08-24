@@ -3,8 +3,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 // The code of the tests is cloned from https://github.com/grpc/grpc-dotnet
 using Grpc.Shared.TestAssets;
@@ -79,18 +77,15 @@ void Log(string testName, string status)
 
 sealed class InteropClientWrapper
 {
-    private readonly InteropClient interopClient;
+    private readonly InteropClient _interopClient;
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Grpc.Testing.TestService.TestServiceClient", "Android.Device_Emulator.gRPC.Test")]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Grpc.Testing.UnimplementedService.UnimplementedServiceClient", "Android.Device_Emulator.gRPC.Test")]
     public InteropClientWrapper(ClientOptions options)
     {
-        interopClient = new InteropClient(
-            options,
-            Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance
-        );
+        _interopClient = new InteropClient(options);
     }
 
     public Task Run()
-        => interopClient.Run();
+        => _interopClient.Run();
 }
