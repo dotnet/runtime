@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Interop.UnitTests
 {
-    internal static partial class CodeSnippets
+    internal partial class CodeSnippets : ICustomMarshallingSignatureTestProvider
     {
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
@@ -151,10 +151,11 @@ partial interface INativeAPI
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method({modifier} {typeName} value);
 }}" + NativeInterfaceUsage();
-        public static string BasicReturnType(string typeName) => $@"
+        public static string BasicReturnType(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
 readonly record struct NoCasting {{}}
 partial interface INativeAPI
@@ -182,12 +183,10 @@ partial interface INativeAPI
         [MarshalUsing(typeof({marshallerTypeName}))] out {typeName} pOut);
 }}" + NativeInterfaceUsage();
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
-        public static string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType, string preDeclaration = "") => $@"
+        public static string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-{preDeclaration}
-
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
@@ -204,11 +203,10 @@ partial interface INativeAPI
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
 }}" + NativeInterfaceUsage();
-        public static string MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType, string preDeclaration = "") => $@"
+        public static string MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-{preDeclaration}
 
 [assembly:DisableRuntimeMarshalling]
 
@@ -227,11 +225,10 @@ partial interface INativeAPI
         out int pOutSize
         );
 }}" + NativeInterfaceUsage();
-        public static string MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType, string preDeclaration = "") => $@"
+        public static string MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-{preDeclaration}
 
 [assembly:DisableRuntimeMarshalling]
 

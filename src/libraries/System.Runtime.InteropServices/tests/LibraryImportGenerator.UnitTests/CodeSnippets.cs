@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Interop.UnitTests
 {
-    internal static partial class CodeSnippets
+    internal partial class CodeSnippets : ICustomMarshallingSignatureTestProvider
     {
         /// <summary>
         /// Partially define attribute for pre-.NET 7.0
@@ -933,8 +933,37 @@ partial class Test
     public static partial int[] Method();
 }}
 ";
+        public static string CustomElementMarshallingDuplicateElementIndirectionDepth => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] TestCollection<int> p);
+}}
+"
+                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
+                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.In
+                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
 
-        public static string RecursiveCountElementNameOnReturnValue => $@"
+        public static string CustomElementMarshallingUnusedElementIndirectionDepth => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 2)] TestCollection<int> p);
+}}
+"
+            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
+            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.In
+            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
+
+    public static string RecursiveCountElementNameOnReturnValue => $@"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {DisableRuntimeMarshalling}
