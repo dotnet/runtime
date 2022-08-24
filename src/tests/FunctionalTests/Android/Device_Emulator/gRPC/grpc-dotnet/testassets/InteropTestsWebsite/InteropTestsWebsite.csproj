@@ -23,7 +23,7 @@
     </None>
   </ItemGroup>
 
-  <Import Project="..\..\..\..\..\..\..\..\..\eng\Versions.props" />
+  <Import Project="Versions.props" />
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="$(GrpcAspNetCoreVersion)" />

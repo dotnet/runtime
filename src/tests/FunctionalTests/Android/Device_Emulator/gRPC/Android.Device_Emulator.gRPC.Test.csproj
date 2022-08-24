@@ -54,6 +54,7 @@
   </ItemGroup>
 
   <Target Name="BuildServerDockerImage" AfterTargets="Build" Condition="'$(BuildGrpcServerDockerImage)' == 'true'">
+    <Exec Command="cp $(RepoRoot)eng/Versions.props grpc-dotnet/testassets/InteropTestsWebsite/" />
     <Exec Command="docker build -t grpc-server:latest grpc-dotnet/testassets/" />
     <Exec Command="mkdir -p $(ArtifactsObjDir)/grpcserver/docker/" />
     <Exec Command="docker save -o $(ArtifactsObjDir)/grpcserver/docker/grpcserver.tar grpc-server:latest" />
