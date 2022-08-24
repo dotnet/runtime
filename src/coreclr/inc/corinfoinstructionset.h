@@ -128,41 +128,89 @@ enum CORINFO_InstructionSet
 struct CORINFO_InstructionSetFlags
 {
 private:
-    uint64_t _flags = 0;
+    static const int32_t FlagsFieldCount = 1;
+    static const int32_t BitsPerFlagsField = sizeof(uint64_t) * 8;
+    uint64_t _flags[FlagsFieldCount] = { };
+
+
+    static uint32_t GetFlagsFieldIndex(CORINFO_InstructionSet instructionSet)
+    {
+        uint32_t bitIndex = (uint32_t)instructionSet;
+        return (uint32_t)(bitIndex / (uint32_t)BitsPerFlagsField);
+    }
+
+    static uint64_t GetRelativeBitMask(CORINFO_InstructionSet instructionSet)
+    {
+        return ((uint64_t)1) << (instructionSet & 0x3F);
+    }
+
 public:
+
+    const int GetInstructionFlagsFieldCount() const
+    {
+        return FlagsFieldCount;
+    }
+
     void AddInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        _flags = _flags | (((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        _flags[index] |= GetRelativeBitMask(instructionSet);
     }
 
     void RemoveInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        _flags = _flags & ~(((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        uint64_t bitIndex = GetRelativeBitMask(instructionSet);
+        _flags[index] &= ~bitIndex;
     }
 
     bool HasInstructionSet(CORINFO_InstructionSet instructionSet) const
     {
-        return _flags & (((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        uint64_t bitIndex = GetRelativeBitMask(instructionSet);
+        return ((_flags[index] & bitIndex) != 0);
     }
 
     bool Equals(CORINFO_InstructionSetFlags other) const
     {
-        return _flags == other._flags;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            if (_flags[i] != other._flags[i])
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     void Add(CORINFO_InstructionSetFlags other)
     {
-        _flags |= other._flags;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            _flags[i] |= other._flags[i];
+        }
     }
 
     bool IsEmpty() const
     {
-        return _flags == 0;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            if (_flags[i] != 0)
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     void Reset()
     {
-        _flags = 0;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            _flags[i] = 0;
+        }
     }
 
     void Set64BitInstructionSetVariants()
@@ -230,14 +278,9 @@ public:
 
     }
 
-    uint64_t GetFlagsRaw()
+    uint64_t* GetFlagsRaw()
     {
         return _flags;
-    }
-
-    void SetFromFlagsRaw(uint64_t flags)
-    {
-        _flags = flags;
     }
 };
 
