@@ -1624,9 +1624,8 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-#if (defined(__APPLE__))
-    // Don't use returned file system id on Apple systems, as for them it's version-specific.
-    // Instead, just map the name.
+#if defined(__APPLE__)
+    // On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
     return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
 #else
     // On Linux, f_type is signed. This causes some filesystem types to be represented as
