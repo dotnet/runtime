@@ -3,7 +3,10 @@
 
 using SerializationTypes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -193,6 +196,105 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal((string)x[0], (string)y[0]);
         Assert.Equal((string)x[1], (string)y[1]);
     }
+
+// ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
+// pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
+// but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
+// horizon that it's not worth the trouble.
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
+    public static void Xml_ReadOnlyCollection()
+    {
+        ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
+
+#if ReflectionOnly
+        // Expect exception when _using_ the serializer
+        var serializer = new XmlSerializer(typeof(ReadOnlyCollection<string>));
+        var ex = Assert.Throws<InvalidOperationException>(() => Serialize(roc, null, () => serializer));
+        Assert.Equal("There was an error generating the XML document.", ex.Message);
+        Assert.NotNull(ex.InnerException);
+        Assert.IsType<InvalidOperationException>(ex.InnerException);
+        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.InnerException.Message);
+#else
+        // Expect exception when _creating_ the serializer
+        var ex = Assert.Throws<InvalidOperationException>(() => new XmlSerializer(typeof(ReadOnlyCollection<string>)));
+        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.Message);
+#endif
+    }
+
+    [Theory]
+    [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
+    public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
+    {
+        XmlSerializer serializer;
+
+        // Some collections implement the required enumerator/Add combo (ImmutableList, ImmutableArray) and some don't (ImmutableStack,
+        // ImmutableQueue). If they do not, they will throw upon serializer construction in RefEmit mode. They should throw when
+        // first using the serializer in Reflection mode.
+#if ReflectionOnly
+        serializer = new XmlSerializer(type);
+        if (createException != null)
+        {
+            var ex = Assert.Throws(createException, () => Serialize(collection, expectedXml, () => serializer));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
+#else
+        if (createException != null)
+        {
+            var ex = Assert.Throws(createException, () => serializer = new XmlSerializer(type));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
+        serializer = new XmlSerializer(type);
+#endif
+
+        // If they do meet the signature requirement, they may succeed or fail depending on whether their Add/Indexer explicitly throw
+        // or not. (ImmutableArray throws. ImmutableList does not - it returns a new copy instead... which gets ignored and is thus
+        // essentially a silent failure.) Serializing out to a string first should work though.
+        string serializedValue = Serialize(collection, expectedXml, () => serializer);
+
+        if (addException != null)
+        {
+            var ex = Assert.Throws(addException, () => Deserialize(serializer, serializedValue));
+            if (exMsg != null)
+                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+            return;
+        }
+
+        // In this case, we can execute everything without exception. But since our calls to '.Add()' do nothing, we end up
+        // with an empty collection
+        var rttCollection = Deserialize(serializer, serializedValue);
+        Assert.NotNull(rttCollection);
+        Assert.Empty((IEnumerable)rttCollection);
+    }
+    public static IEnumerable<object[]> Xml_ImmutableCollections_MemberData()
+    {
+        string arrayOfInt = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>42</int></ArrayOfInt>";
+        string arrayOfAny = "<?xml version=\"1.0\" encoding=\"utf-8\"?><ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><anyType /></ArrayOfAnyType>";
+
+#if ReflectionOnly
+        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
+        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(InvalidOperationException), null, null, "is not supported because it implements IDictionary." };
+#else
+        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Parameterless constructor is required for collections and enumerators." };
+        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Parameterless constructor is required for collections and enumerators." };
+        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, null, arrayOfInt };
+        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
+        // IDictionary types are denied right from the start with a NotSupportedExcpetion
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(NotSupportedException), null, null, "is not supported because it implements IDictionary." };
+#endif
+    }
+#endif  // !XMLSERIALIZERGENERATORTESTS
 
     [Fact]
     public static void Xml_EnumAsRoot()
@@ -715,7 +817,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
         var deserializedObj = SerializeAndDeserialize(obj,
-@"<?xml version=""1.0"" encoding=""utf-16""?>
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
 <TimeSpanProperty>PT0.001S</TimeSpanProperty>
 </TypeWithTimeSpanProperty>");
@@ -955,7 +1057,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
-@"<?xml version=""1.0"" encoding=""utf-16""?>
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <P1>foo</P1>
   <P2>1</P2>
@@ -963,6 +1065,31 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(deserializedObj);
         Assert.Equal(obj.P1, deserializedObj.P1);
         Assert.StrictEqual(obj.P2, deserializedObj.P2);
+    }
+
+    [Fact]
+    public static void Xml_SerializedFormat()
+    {
+        var obj = new SimpleType { P1 = "foo", P2 = 1 };
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        using (MemoryStream ms = new MemoryStream())
+        {
+            serializer.Serialize(ms, obj);
+
+            // No BOM?
+            byte[] expectedBytes = new byte[] { (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l' };
+            byte[] firstBytes = new byte[5];
+            ms.Position = 0;
+            ms.Read(firstBytes, 0, firstBytes.Length);
+            Assert.Equal(expectedBytes, firstBytes);
+
+            // Human readable?
+            ms.Position = 0;
+            string nl = Environment.NewLine;
+            string actualFormatting = new StreamReader(ms).ReadToEnd();
+            string expectedFormatting = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>{nl}<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{ nl}</SimpleType>";
+            Assert.Equal(expectedFormatting, actualFormatting);
+        }
     }
 
     [Fact]
@@ -1987,6 +2114,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(!weakRef.IsAlive);
     }
 
+    [Fact]
+    public static void ValidateXElement()
+    {
+        XElement xe = new XElement("Root");
+        XElementWrapper wrapper = new XElementWrapper() { Value = xe };
+
+        XElementWrapper retWrapper = SerializeAndDeserialize<XElementWrapper>(wrapper, null, () => new XmlSerializer(typeof(XElementWrapper)), true);
+
+        Assert.NotNull(retWrapper);
+        Assert.NotNull(retWrapper.Value);
+        Assert.Equal("Root", retWrapper.Value.Name);
+        Assert.Equivalent(wrapper, retWrapper);
+    }
+
+    [Fact]
+    public static void ValidateXElementStruct()
+    {
+
+        XElement ele = new XElement("Test");
+        XElementStruct xstruct;
+        xstruct.xelement = ele;
+
+        XElementStruct rets = SerializeAndDeserialize<XElementStruct>(xstruct, null, () => new XmlSerializer(typeof(XElementStruct)), true);
+
+        Assert.NotNull(rets.xelement);
+        Assert.NotNull(rets.xelement.Name);
+        Assert.Equal("Test", rets.xelement.Name);
+    }
+
+    [Fact]
+    public static void ValidateXElementArray()
+    {
+        XElementArrayWrapper xarray = new XElementArrayWrapper
+        {
+            xelements = new XElement[] { new XElement("Root"), new XElement("Member") }
+        };
+
+        XElementArrayWrapper retarray = SerializeAndDeserialize<XElementArrayWrapper>(xarray, null, () => new XmlSerializer(typeof(XElementArrayWrapper)), true);
+
+        Assert.NotNull(retarray);
+        Assert.True(retarray.xelements.Length == 2);
+        Assert.Equal("Root", retarray.xelements[0].Name);
+        Assert.Equal("Member", retarray.xelements[1].Name);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
@@ -2203,5 +2375,56 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
+    }
+
+    private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
+    bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
+    {
+        XmlSerializer serializer = (serializerFactory != null) ? serializerFactory() : new XmlSerializer(typeof(T));
+
+        using (MemoryStream ms = new MemoryStream())
+        {
+            if (xns == null)
+            {
+                serializer.Serialize(ms, value);
+            }
+            else
+            {
+                serializer.Serialize(ms, value, xns);
+            }
+
+            ms.Position = 0;
+
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+
+            if (!skipStringCompare)
+            {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+                Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                    Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
+            }
+
+            return actualOutput;
+        }
+    }
+
+    private static object? Deserialize(XmlSerializer serializer, string xmlInput)
+    {
+        using (Stream stream = StringToStream(xmlInput))
+        {
+            return serializer.Deserialize(stream);
+        }
+    }
+
+    private static Stream StringToStream(string input)
+    {
+        MemoryStream ms = new MemoryStream();
+        StreamWriter sw = new StreamWriter(ms);
+
+        sw.Write(input);
+        sw.Flush();
+        ms.Position = 0;
+
+        return ms;
     }
 }

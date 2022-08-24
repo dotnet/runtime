@@ -7828,6 +7828,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             pMTCanonical->EnumMemoryRegions(flags);
         }
+        else
+        {
+            DacLogMessage("MT %p invalid canonical MT %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pMTCanonical));
+        }
     }
     else
     {
@@ -7845,6 +7849,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                 DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
             }
             pClass->EnumMemoryRegions(flags, this);
+        }
+        else
+        {
+            DacLogMessage("MT %p invalid class %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pClass));
         }
     }
 
@@ -7896,7 +7904,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pWriteableData.EnumMem();
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         DispatchMap * pMap = GetDispatchMap();
         if (pMap != NULL)

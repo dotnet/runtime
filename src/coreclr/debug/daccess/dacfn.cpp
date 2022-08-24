@@ -471,6 +471,7 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
         g_dacImpl->m_instances.ReturnAlloc(inst);
         if (throwEx)
         {
+            DacLogMessage("DacReadAll(%p, %08x) FAILED %08x\n", addr, size, status);
             DacError(status);
         }
         return NULL;

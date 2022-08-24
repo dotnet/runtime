@@ -77,6 +77,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         // set preemptive mode
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        ClearState(TSF_Redirected);
+#endif //FEATURE_SUSPEND_REDIRECTION
+
         RedhawkGCInterface::WaitForGCCompletion();
 
         // must be in cooperative mode when checking the trap flag
@@ -587,6 +591,14 @@ void Thread::Hijack()
         return;
     }
 
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    // if the thread is redirected, leave it as-is.
+    if (IsStateSet(TSF_Redirected))
+    {
+        return;
+    }
+#endif //FEATURE_SUSPEND_REDIRECTION
+
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
     PalHijack(m_hPalThread, this);
@@ -806,6 +818,8 @@ bool Thread::Redirect()
     if (!PalSetThreadContext(m_hPalThread, redirectionContext))
         return false;
 
+    // the thread will now inevitably try to suspend
+    SetState(TSF_Redirected);
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
@@ -887,53 +901,14 @@ void Thread::UnhijackWorker()
     m_uHijackedReturnValueFlags         = 0;
 }
 
-// @TODO: it would be very, very nice if we did not have to bleed knowledge of hijacking
-// and hijack state to other components in the runtime. For now, these are only used
-// when getting EH info during exception dispatch. We should find a better way to encapsulate
-// this.
 bool Thread::IsHijacked()
 {
-    // Note: this operation is only valid from the current thread. If one thread invokes
-    // this on another then it may be racing with other changes to the thread's hijack state.
-    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(((ThreadStore::GetCurrentThread() == this) && IsCurrentThreadInCooperativeMode()) ||
+        ThreadStore::GetCurrentThread()->IsGCSpecial() ||
+        ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread()
+    );
 
     return m_pvHijackedReturnAddress != NULL;
-}
-
-//
-// WARNING: This method must ONLY be called during stackwalks when we believe that all threads are
-// synchronized and there is no other thread racing with us trying to apply hijacks.
-//
-bool Thread::DangerousCrossThreadIsHijacked()
-{
-    // If we have a CachedTransitionFrame available, then we're in the proper state.  Otherwise, this method
-    // was called from an improper state.
-    ASSERT(GetTransitionFrame() != NULL);
-    return m_pvHijackedReturnAddress != NULL;
-}
-
-void * Thread::GetHijackedReturnAddress()
-{
-    // Note: this operation is only valid from the current thread. If one thread invokes
-    // this on another then it may be racing with other changes to the thread's hijack state.
-    ASSERT(IsHijacked());
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-
-    return m_pvHijackedReturnAddress;
-}
-
-void * Thread::GetUnhijackedReturnAddress(void ** ppvReturnAddressLocation)
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-
-    void * pvReturnAddress;
-    if (m_ppvHijackedReturnAddressLocation == ppvReturnAddressLocation)
-        pvReturnAddress = m_pvHijackedReturnAddress;
-    else
-        pvReturnAddress = *ppvReturnAddressLocation;
-
-    ASSERT(GetRuntimeInstance()->IsManaged(pvReturnAddress));
-    return pvReturnAddress;
 }
 
 void Thread::SetState(ThreadStateFlags flags)

@@ -338,7 +338,7 @@ Note if a Tier0 method is recursive and has loops there can be some interesting 
 
 ### Seeing which OSR methods are created
 
-* `DOTNET_DumpJittedMethods=1` will specially mark OSR methods with the inspiring IL offsets.
+* `DOTNET_JitDisasmSummary=1` will specially mark OSR methods with the inspiring IL offsets.
 
 For example, running a libraries test with some stressful OSR settings, there ended up being 699 OSR methods jitted out of 160675 total methods. Grepping for OSR in the dump output, the last few lines were:
 

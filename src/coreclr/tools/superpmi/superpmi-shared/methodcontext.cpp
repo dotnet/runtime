@@ -1241,7 +1241,14 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, jitflags->GetFlagsRaw());
+
+    uint64_t *raw = jitflags->GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = jitflags->GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        printf("%016llX", raw[i]);
+    }
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -2701,6 +2708,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     CorInfoTypeWithMod temp = (CorInfoTypeWithMod)value.result;
     *exceptionCode          = (DWORD)value.exceptionCode;
     return temp;
+}
+
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
 }
 
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
@@ -6964,10 +7007,19 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     len -= t;
 
     // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw());
     buff += t;
     len -= t;
+
+    uint64_t *raw = corJitFlags.GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = corJitFlags.GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        t = sprintf_s(buff, len, " %016llX", raw[i]);
+        buff += t;
+        len -= t;
+    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];

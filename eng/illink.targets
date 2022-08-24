@@ -256,6 +256,8 @@
       <LinkerNoWarn>$(LinkerNoWarn);IL2062;IL2063;IL2064;IL2065;IL2066</LinkerNoWarn>
       <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
       <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn>
+      <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
+      <LinkerNoWarn>$(LinkerNoWarn);IL2121</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>

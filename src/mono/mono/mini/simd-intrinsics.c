@@ -718,6 +718,13 @@ emit_hardware_intrinsics (
 		if (!info)
 			goto support_probe_complete;
 		id = info->id;
+
+#ifdef TARGET_ARM64
+		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
+			goto support_probe_complete;
+		}
+#endif
+
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
@@ -986,7 +993,7 @@ is_element_type_primitive (MonoType *vector_type)
 
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
+{	
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
@@ -3296,6 +3303,7 @@ static SimdIntrinsic bmi2_methods [] = {
 static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
+	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
 

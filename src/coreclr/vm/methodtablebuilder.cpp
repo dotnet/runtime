@@ -9907,21 +9907,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
-            else if (strcmp(nameSpace, g_SystemNS) == 0)
-            {
-                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-
-                // These types correspond to fundamental data types in the underlying ABIs:
-                // * Int128:  __int128
-                // * UInt128: unsigned __int128
-
-                if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
-                {
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
-                }
-            }
-#endif // UNIX_AMD64_ABI || TARGET_ARM64
         }
 
         if (g_pNullableClass != NULL)
@@ -10004,6 +9989,30 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
+        }
+        else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+        {
+            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+            pLayout->SetIsInt128OrHasInt128Fields(TRUE);
+#ifdef TARGET_ARM
+            // No such type exists for the Procedure Call Standard for ARM. We will default
+            // to the same alignment as __m128, which is supported by the ABI.
+
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+#elif defined(TARGET_64BIT) || defined(TARGET_X86)
+
+            // These types correspond to fundamental data types in the underlying ABIs:
+            // * Int128:  __int128
+            // * UInt128: unsigned __int128
+            //
+            // This behavior matches the ABI standard on various Unix platforms
+            // On Windows, no standard for Int128 has been established yet, 
+            // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
+            // even on X86
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#else
+#error Unknown architecture
+#endif // TARGET_64BIT
         }
     }
     else

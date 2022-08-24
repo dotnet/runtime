@@ -238,6 +238,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task SendFileGetsCanceledByDispose(bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.

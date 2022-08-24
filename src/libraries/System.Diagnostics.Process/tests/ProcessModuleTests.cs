@@ -38,7 +38,8 @@ namespace System.Diagnostics.Tests
             Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains(RemoteExecutor.HostRunnerName));
         }
 
-        [Fact]
+        // Single-file executables don't have libcoreclr or libSystem.Native
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [PlatformSpecific(TestPlatforms.Linux)] // OSX only includes the main module
         public void TestModulesContainsUnixNativeLibs()
         {

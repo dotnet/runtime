@@ -303,6 +303,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(AcceptGetsCanceledByDispose_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task AcceptGetsCanceledByDispose(IPAddress loopback, bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.

@@ -465,9 +465,9 @@ namespace ILCompiler
                 // ObjectGetTypeFlowDependencies don't need to be conditional in that case. They'll be added as needed.
             }
 
-            // Ensure fields can be consistently reflection set & get.
             if (type.HasInstantiation && !type.IsTypeDefinition && !IsReflectionBlocked(type))
             {
+                // Ensure fields can be consistently reflection set & get.
                 foreach (FieldDesc field in type.GetFields())
                 {
                     // Tiny optimization: no get/set for literal fields since they only exist in metadata
@@ -481,7 +481,24 @@ namespace ILCompiler
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                         factory.ReflectableField(field),
                         factory.ReflectableField(field.GetTypicalFieldDefinition()),
-                        "GetType called on the interface"));
+                        "Fields have same reflectability"));
+                }
+
+                // Ensure methods can be consistently reflection-accessed
+                foreach (MethodDesc method in type.GetMethods())
+                {
+                    if (IsReflectionBlocked(method))
+                        continue;
+
+                    // Generic methods need to be instantiated over something.
+                    if (method.HasInstantiation)
+                        continue;
+
+                    dependencies ??= new CombinedDependencyList();
+                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                        factory.ReflectableMethod(method),
+                        factory.ReflectableMethod(method.GetTypicalMethodDefinition()),
+                        "Methods have same reflectability"));
                 }
             }
         }

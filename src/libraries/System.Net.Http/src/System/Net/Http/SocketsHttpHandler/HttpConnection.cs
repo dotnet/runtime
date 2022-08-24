@@ -236,7 +236,8 @@ namespace System.Net.Http
 
         private bool CheckKeepAliveTimeoutExceeded()
         {
-            // We only honor a Keep-Alive timeout on HTTP/1.0 responses.
+            // We intentionally honor the Keep-Alive timeout on all HTTP/1.X versions, not just 1.0. This is to maximize compat with
+            // servers that use a lower idle timeout than the client, but give us a hint in the form of a Keep-Alive timeout parameter.
             // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
             return _keepAliveTimeoutSeconds != 0 &&
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
@@ -555,7 +556,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
-                _allowedReadLineBytes = (int)Math.Min(int.MaxValue, _pool.Settings._maxResponseHeadersLength * 1024L);
+                _allowedReadLineBytes = _pool.Settings.MaxResponseHeadersByteLength;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -663,11 +664,6 @@ namespace System.Net.Http
                         break;
                     }
                     ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
-                }
-
-                if (response.Version.Minor == 0)
-                {
-                    ProcessHttp10KeepAliveHeader(response);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -1124,47 +1120,56 @@ namespace System.Net.Http
             }
             else
             {
-                // Request headers returned on the response must be treated as custom headers.
                 string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+
+                if (descriptor.Equals(KnownHeaders.KeepAlive))
+                {
+                    // We are intentionally going against RFC to honor the Keep-Alive header even if
+                    // we haven't received a Keep-Alive connection token to maximize compat with servers.
+                    connection.ProcessKeepAliveHeader(headerValue);
+                }
+
+                // Request headers returned on the response must be treated as custom headers.
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
             }
         }
 
-        private void ProcessHttp10KeepAliveHeader(HttpResponseMessage response)
+        private void ProcessKeepAliveHeader(string keepAlive)
         {
-            if (response.Headers.NonValidated.TryGetValues(KnownHeaders.KeepAlive.Name, out HeaderStringValues keepAliveValues))
-            {
-                string keepAlive = keepAliveValues.ToString();
-                var parsedValues = new UnvalidatedObjectCollection<NameValueHeaderValue>();
+            var parsedValues = new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
-                if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+            if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+            {
+                foreach (NameValueHeaderValue nameValue in parsedValues)
                 {
-                    foreach (NameValueHeaderValue nameValue in parsedValues)
+                    // The HTTP/1.1 spec does not define any parameters for the Keep-Alive header, so we are using the de facto standard ones - timeout and max.
+                    if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrEmpty(nameValue.Value) &&
+                            HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
+                            timeout >= 0)
                         {
-                            if (!string.IsNullOrEmpty(nameValue.Value) &&
-                                HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
-                                timeout >= 0)
-                            {
-                                if (timeout == 0)
-                                {
-                                    _connectionClose = true;
-                                }
-                                else
-                                {
-                                    _keepAliveTimeoutSeconds = timeout;
-                                }
-                            }
-                        }
-                        else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (nameValue.Value == "0")
+                            // Some servers are very strict with closing the connection exactly at the timeout.
+                            // Avoid using the connection if it is about to exceed the timeout to avoid resulting request failures.
+                            const int OffsetSeconds = 1;
+
+                            if (timeout <= OffsetSeconds)
                             {
                                 _connectionClose = true;
                             }
+                            else
+                            {
+                                _keepAliveTimeoutSeconds = timeout - OffsetSeconds;
+                            }
+                        }
+                    }
+                    else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (nameValue.Value == "0")
+                        {
+                            _connectionClose = true;
                         }
                     }
                 }
@@ -1550,7 +1555,7 @@ namespace System.Net.Http
             }
 
             string message = readingHeader
-                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L)
+                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength)
                 : SR.net_http_chunk_too_large;
 
             throw new HttpRequestException(message);
@@ -1651,7 +1656,7 @@ namespace System.Net.Http
         {
             if (_allowedReadLineBytes < 0)
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L));
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
             }
         }
 

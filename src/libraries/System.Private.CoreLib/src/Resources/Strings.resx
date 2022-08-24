@@ -2714,6 +2714,9 @@
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
   </data>
+  <data name="IO_MaxAttemptsReached" xml:space="preserve">
+    <value>Unable to complete the operation after the maximum number of attempts.</value>
+  </data>
   <data name="Lazy_CreateValue_NoParameterlessCtorForT" xml:space="preserve">
     <value>The lazily-initialized type does not have a public, parameterless constructor.</value>
   </data>
@@ -3957,10 +3960,10 @@
     <value>Must not be greater than the length of the buffer.</value>
   </data>
   <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
-    <value>{0} is missing structure marshalling data. To enable structure marshalling data, add a MarshalStructure directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+    <value>'{0}' is missing structure marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
-    <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+    <value>'{0}' is missing delegate marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
     <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
@@ -3994,5 +3997,8 @@
   </data>
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
+  </data>
+  <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
+    <value>The value may not contain directory separator characters.</value>
   </data>
 </root>

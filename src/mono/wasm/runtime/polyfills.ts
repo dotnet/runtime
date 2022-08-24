@@ -1,9 +1,11 @@
-import Configuration from "consts:configuration";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { afterUpdateGlobalBufferAndViews } from "./memory";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { afterThreadInitTLS } from "./pthreads/worker";
+import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
 
 let node_fs: any | undefined = undefined;
@@ -144,7 +146,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
     anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (Configuration === "Debug") {
+    if (BuildConfiguration === "Debug") {
         console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
@@ -173,16 +175,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // threads
     if (MonoWasmThreads) {
         if (replacements.pthreadReplacements) {
-            const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-            replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-                originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-                afterLoadWasmModuleToWorker(worker);
-            };
-            const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-            replacements.pthreadReplacements.threadInitTLS = (): void => {
-                originalThreadInitTLS();
-                afterThreadInitTLS();
-            };
+            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
         }
     }
 
