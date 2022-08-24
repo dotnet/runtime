@@ -687,42 +687,53 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
+    // (see eg impFixupStructReturnType).
     //
-    // (see eg impFixupStructReturnType)
+    // TODO-Cleanup: this constraint only exists for multi-reg **struct**
+    // returns, it does not exist for LONGs. However, enabling substitution
+    // for them on all 32 bit targets is a CQ regression due to some bad
+    // interaction between decomposition and RA.
     //
     if (compMethodReturnsMultiRegRetType() && fsv.GetParentNode()->OperIs(GT_RETURN))
     {
-        if (!fwdSubNode->OperIs(GT_LCL_VAR))
-        {
-            JITDUMP(" parent is multi-reg return, fwd sub node is not lcl var\n");
-            return false;
-        }
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_X86)
         if (fwdSubNode->TypeGet() == TYP_LONG)
         {
-            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
+            JITDUMP(" TYP_LONG fwd sub node, target is x86\n");
             return false;
         }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+#endif // defined(TARGET_X86)
 
-        GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
-        unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
-
-        // These may later turn into indirections and the backend does not support
-        // those as sources of multi-reg returns.
-        //
-        if (lvaIsImplicitByRefLocal(fwdLclNum))
+        if (!fwdSubNode->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
-            return false;
+#ifdef TARGET_ARM
+            if (!fwdSubNode->TypeIs(TYP_LONG))
+#endif // TARGET_ARM
+            {
+                JITDUMP(" parent is multi-reg struct return, fwd sub node is not lcl var\n");
+                return false;
+            }
         }
+        else if (varTypeIsStruct(fwdSubNode))
+        {
+            GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+            unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+            // These may later turn into indirections and the backend does not support
+            // those as sources of multi-reg returns.
+            //
+            if (lvaIsImplicitByRefLocal(fwdLclNum))
+            {
+                JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
+                return false;
+            }
 
-        JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
-        fwdVarDsc->lvIsMultiRegRet = true;
-        fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
+            LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+
+            JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
+            fwdVarDsc->lvIsMultiRegRet = true;
+            fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
+        }
     }
 
     // If the initial has truncate on store semantics, we need to replicate
