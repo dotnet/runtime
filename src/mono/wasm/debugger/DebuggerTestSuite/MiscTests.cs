@@ -1086,5 +1086,17 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task SetBreakpointInProjectWithChineseCharactereInPath()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+        }
     }
 }

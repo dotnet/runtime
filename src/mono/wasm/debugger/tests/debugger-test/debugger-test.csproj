@@ -21,6 +21,7 @@
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\debugger-test-chinese-char-in-path-ㄨ\debugger-test-chinese-char-in-path-ㄨ.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
     <ProjectReference Include="..\debugger-test-without-debug-symbols-to-load\debugger-test-without-debug-symbols-to-load.csproj" Private="true" />
     <ProjectReference Include="..\debugger-test-with-non-user-code-class\debugger-test-with-non-user-code-class.csproj" Private="true" />
@@ -53,6 +54,7 @@
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-chinese-char-in-path-ㄨ.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols-to-load.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
