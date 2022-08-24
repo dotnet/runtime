@@ -390,6 +390,12 @@ public sealed partial class QuicStream
     /// <param name="errorCode">The error code with which to abort the stream, this value is application protocol (layer above QUIC) dependent.</param>
     public void Abort(QuicAbortDirection abortDirection, long errorCode)
     {
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Aborting {abortDirection} with {errorCode}");
+        }
+
         if (_disposed == 1)
         {
             return;
@@ -453,6 +459,11 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event START_COMPLETE with {data.Status} and PeerAccepted={data.PeerAccepted}");
+        }
+
         _id = unchecked((long)data.ID);
         if (StatusSucceeded(data.Status))
         {
@@ -478,6 +489,12 @@ public sealed partial class QuicStream
             new ReadOnlySpan<QUIC_BUFFER>(data.Buffers, (int) data.BufferCount),
             (int) data.TotalBufferLength,
             data.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN));
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event RECEIVE with {data.BufferCount} buffers and total count of {data.TotalBufferLength}. totalCopied={totalCopied}");
+        }
+
         if (totalCopied < data.TotalBufferLength)
         {
             Volatile.Write(ref _receivedNeedsEnable, 1);
@@ -488,8 +505,14 @@ public sealed partial class QuicStream
         data.TotalBufferLength = totalCopied;
         return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
     }
+
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event SEND_COMPLETE with canceled {data.Canceled}");
+        }
+
         _sendBuffers.Reset();
         if (data.Canceled == 0)
         {
@@ -500,6 +523,11 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventPeerSendShutdown()
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event PEER_SEND_SHUTDOWN.");
+        }
+
         // Same as RECEIVE with FIN flag. Remember that no more RECEIVE events will come.
         // Don't set the task to its final state yet, but wait for all the buffered data to get consumed first.
         _receiveBuffers.SetFinal();
@@ -508,16 +536,31 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event PEER_SEND_ABORTED with {data.ErrorCode}");
+        }
+
         _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerReceiveAborted(ref PEER_RECEIVE_ABORTED data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {data.ErrorCode}");
+        }
+
         _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventSendShutdownComplete(ref SEND_SHUTDOWN_COMPLETE data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {data.Graceful}");
+        }
+
         if (data.Graceful != 0)
         {
             _sendTcs.TrySetResult(final: true);
@@ -527,6 +570,11 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE data)
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event SHUTDOWN_COMPLETE with {data.ConnectionShutdown}");
+        }
+
         if (data.ConnectionShutdown != 0)
         {
             bool shutdownByApp = data.ConnectionShutdownByApp != 0;
@@ -555,7 +603,21 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventPeerAccepted()
     {
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Received event PEER_ACCEPTED");
+        }
+
         _startedTcs.TrySetResult();
+        return QUIC_STATUS_SUCCESS;
+    }
+
+    private int HandleOtherEvent(QUIC_STREAM_EVENT_TYPE type)
+    {
+        if (NetEventSource.Log.IsEnabled())
+        {
+                NetEventSource.Info(this, $"{this} Received event {type}");
+        }
         return QUIC_STATUS_SUCCESS;
     }
 
@@ -571,7 +633,7 @@ public sealed partial class QuicStream
             QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE => HandleEventSendShutdownComplete(ref streamEvent.SEND_SHUTDOWN_COMPLETE),
             QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE => HandleEventShutdownComplete(ref streamEvent.SHUTDOWN_COMPLETE),
             QUIC_STREAM_EVENT_TYPE.PEER_ACCEPTED => HandleEventPeerAccepted(),
-            _ => QUIC_STATUS_SUCCESS
+            _ => HandleOtherEvent(streamEvent.Type)
         };
 
 #pragma warning disable CS3016
@@ -593,11 +655,6 @@ public sealed partial class QuicStream
 
         try
         {
-            // Process the event.
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(instance, $"{instance} Received event {streamEvent->Type}");
-            }
             return instance.HandleStreamEvent(ref *streamEvent);
         }
         catch (Exception ex)
