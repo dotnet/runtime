@@ -190,7 +190,7 @@ IF NOT DEFINED DoLink (
       <DisasmCheckFile Condition="'$(DisasmCheckFile)' == ''">$(MSBuildProjectName).cs</DisasmCheckFile>
       <DisasmCheckFunctions Condition="'$(DisasmCheckFunctions)' == ''">Main</DisasmCheckFunctions>
 
-      <BatchDisasmOutputFile>$(__OutputDir)\__jit_disasm.out</BatchDisasmOutputFile>
+      <BatchDisasmOutputFile>%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmOutputRedir></BatchDisasmOutputRedir>
       <BatchDisasmOutputRedir Condition="'$(DoBatchDisasmCheck)' == 'True'">&gt; "$(BatchDisasmOutputFile)"</BatchDisasmOutputRedir>
