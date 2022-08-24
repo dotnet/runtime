@@ -56,9 +56,10 @@ namespace Microsoft.Interop
             InteropAttributeData interopAttributeData,
             StubEnvironment env,
             IGeneratorDiagnostics diagnostics,
+            AttributeData signatureWideMarshallingAttributeData,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, interopAttributeData, diagnostics, env);
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, interopAttributeData, diagnostics, env, signatureWideMarshallingAttributeData);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -99,7 +100,12 @@ namespace Microsoft.Interop
             };
         }
 
-        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, InteropAttributeData interopAttributeData, IGeneratorDiagnostics diagnostics, StubEnvironment env)
+        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
+            IMethodSymbol method,
+            InteropAttributeData interopAttributeData,
+            IGeneratorDiagnostics diagnostics,
+            StubEnvironment env,
+            AttributeData signatureWideMarshallingAttributeData)
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
@@ -136,7 +142,7 @@ namespace Microsoft.Interop
                     new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
                     new ArrayMarshallingInfoProvider(env.Compilation),
                     new CharMarshallingInfoProvider(defaultInfo),
-                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, null!, defaultInfo),
+                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, signatureWideMarshallingAttributeData, defaultInfo),
                     new BooleanMarshallingInfoProvider(),
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));
 

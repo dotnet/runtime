@@ -18,6 +18,7 @@ namespace Microsoft.Interop
         }
 
         public bool CanParseAttributeType(INamedTypeSymbol attributeType) => attributeType.ToDisplayString() == TypeNames.NativeMarshallingAttribute;
+
         public MarshallingInfo? ParseAttribute(AttributeData attributeData, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             Debug.Assert(attributeData.AttributeClass!.ToDisplayString() == TypeNames.NativeMarshallingAttribute);
@@ -38,7 +39,6 @@ namespace Microsoft.Interop
                 attributeData,
                 useSiteAttributes,
                 marshallingInfoCallback,
-                false,
                 indirectionDepth,
                 countInfo,
                 _diagnostics,

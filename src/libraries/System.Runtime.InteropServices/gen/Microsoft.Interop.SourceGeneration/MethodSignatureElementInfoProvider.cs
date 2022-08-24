@@ -23,7 +23,9 @@ namespace Microsoft.Interop
             _method = method;
             _useSiteAttributeParsers = useSiteAttributeParsers;
         }
+
         public string FindNameForParamIndex(int paramIndex) => paramIndex >= _method.Parameters.Length ? string.Empty : _method.Parameters[paramIndex].Name;
+
         public bool TryGetInfoForElementName(AttributeData attrData, string elementName, GetMarshallingInfoCallback marshallingInfoCallback, IElementInfoProvider rootProvider, out TypePositionInfo info)
         {
             if (elementName == CountElementCountInfo.ReturnValueElementName)
@@ -54,6 +56,7 @@ namespace Microsoft.Interop
             info = null;
             return false;
         }
+
         public bool TryGetInfoForParamIndex(AttributeData attrData, int paramIndex, GetMarshallingInfoCallback marshallingInfoCallback, IElementInfoProvider rootProvider, out TypePositionInfo info)
         {
             if (paramIndex >= _method.Parameters.Length)

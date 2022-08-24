@@ -16,6 +16,7 @@ namespace Microsoft.Interop
         {
             _defaultMarshallingInfo = defaultMarshallingInfo;
         }
+
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_Char;
 
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)

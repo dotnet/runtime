@@ -11,9 +11,10 @@ namespace Microsoft.Interop
     public sealed class BooleanMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_Boolean;
+
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
-            // We explicitly don't support marshalling bool without any marshalling info
+            // We intentionally don't support marshalling bool with no marshalling info
             // as treating bool as a non-normalized 1-byte value is generally not a good default.
             // Additionally, that default is different than the runtime marshalling, so by explicitly
             // blocking bool marshalling without additional info, we make it a little easier

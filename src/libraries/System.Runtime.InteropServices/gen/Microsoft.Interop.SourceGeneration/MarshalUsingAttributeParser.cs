@@ -51,7 +51,6 @@ namespace Microsoft.Interop
                 attributeData,
                 useSiteAttributes,
                 marshallingInfoCallback,
-                false,
                 indirectionDepth,
                 countInfo,
                 _diagnostics,

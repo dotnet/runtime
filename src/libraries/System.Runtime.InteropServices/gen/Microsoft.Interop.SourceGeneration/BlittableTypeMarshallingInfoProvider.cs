@@ -16,6 +16,7 @@ namespace Microsoft.Interop
         {
             _compilation = compilation;
         }
+
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type is INamedTypeSymbol { IsUnmanagedType: true } unmanagedType
                 && unmanagedType.IsConsideredBlittable();
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)

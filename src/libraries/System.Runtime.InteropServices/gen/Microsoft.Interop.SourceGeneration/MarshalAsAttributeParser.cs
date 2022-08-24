@@ -37,6 +37,7 @@ namespace Microsoft.Interop
             _diagnostics = diagnostics;
             _defaultInfo = defaultInfo;
         }
+
         public bool CanParseAttributeType(INamedTypeSymbol attributeType) => attributeType.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute;
 
         UseSiteAttributeData IUseSiteAttributeParser.ParseAttribute(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)

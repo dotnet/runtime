@@ -46,7 +46,6 @@ namespace Microsoft.Interop
                         _stringMarshallingCustomAttribute,
                         useSiteAttributes,
                         marshallingInfoCallback,
-                        true,
                         indirectionDepth,
                         countInfo,
                         _diagnostics,

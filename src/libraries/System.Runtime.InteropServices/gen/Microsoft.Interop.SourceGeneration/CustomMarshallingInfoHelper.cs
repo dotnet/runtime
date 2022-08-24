@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public static class CustomMarshallingInfoHelper
+    internal static class CustomMarshallingInfoHelper
     {
         public static MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
@@ -15,7 +15,6 @@ namespace Microsoft.Interop
             AttributeData attrData,
             UseSiteAttributeProvider useSiteAttributeProvider,
             GetMarshallingInfoCallback getMarshallingInfoCallback,
-            bool isMarshalUsingAttribute,
             int indirectionDepth,
             CountInfo parsedCountInfo,
             IGeneratorDiagnostics diagnostics,
@@ -41,6 +40,10 @@ namespace Microsoft.Interop
                 // Update the entry point type with the type arguments based on the managed type
                 if (type is IArrayTypeSymbol arrayManagedType)
                 {
+                    // Generally, we require linear collection marshallers to have "arity of managed type + 1" arity.
+                    // However, arrays aren't "generic" over their element type as they're generics, but we want to treat the element type
+                    // as a generic type parameter. As a result, we require an arity of 2 for array marshallers, 1 for the array element type,
+                    // and 1 for the native element type (the required additional type parameter for linear collection marshallers).
                     if (entryPointType.Arity != 2)
                     {
                         diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());

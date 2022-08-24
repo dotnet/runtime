@@ -232,7 +232,7 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CustomCollections()
         {
-            //// Custom collection marshalling
+            // Custom collection marshalling
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.ByValue<byte>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.ByValue<sbyte>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.ByValue<short>() };
