@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Marshalling information provider for <c>char</c> elements without any marshalling information on the element itself.
+    /// </summary>
     public sealed class CharMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly DefaultMarshallingInfo _defaultMarshallingInfo;

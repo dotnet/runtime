@@ -9,6 +9,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// This class suppports parsing a System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute.
+    /// </summary>
     public sealed class MarshalUsingAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;

@@ -10,6 +10,10 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Marshalling information provider for single-dimensional zero-based array types using the <c>System.Runtime.InteropServices.Marshalling.ArrayMarshaller</c> and <c>System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller</c>
+    /// built-in types.
+    /// </summary>
     public sealed class ArrayMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;

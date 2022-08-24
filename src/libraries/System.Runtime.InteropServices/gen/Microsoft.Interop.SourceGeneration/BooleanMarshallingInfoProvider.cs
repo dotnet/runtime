@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Marshalling information provider for <c>bool</c> elements without any marshalling information.
+    /// </summary>
     public sealed class BooleanMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_Boolean;

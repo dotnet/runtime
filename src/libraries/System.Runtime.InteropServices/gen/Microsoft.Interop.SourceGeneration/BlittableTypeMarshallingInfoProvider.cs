@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Marshalling information provider for unmanaged types that may be blittable.
+    /// </summary>
     public sealed class BlittableTypeMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;

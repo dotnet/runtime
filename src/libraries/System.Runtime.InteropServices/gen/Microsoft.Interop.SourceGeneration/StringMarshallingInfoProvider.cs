@@ -8,6 +8,11 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+
+    /// <summary>
+    /// This class supports generating marshalling info for the <see cref="string"/> type.
+    /// This includes support for the <c>System.Runtime.InteropServices.StringMarshalling</c> enum.
+    /// </summary>
     public sealed class StringMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;
