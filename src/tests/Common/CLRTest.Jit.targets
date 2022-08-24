@@ -182,7 +182,7 @@ IF NOT DEFINED DoLink (
   </Target>
 
   <Target Name="GetDisasmCheckCommands"
-          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPreCommands);$(BatchDisasmCheckPostCommands)>
+          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPreCommands);$(BatchDisasmCheckPostCommands)">
     <PropertyGroup>
       <DoBatchDisasmCheck>False</DoBatchDisasmCheck>
       <DoBatchDisasmCheck Condition="'$(DisasmCheck)' == 'True' And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">True</DoBatchDisasmCheck>
