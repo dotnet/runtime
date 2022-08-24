@@ -45,11 +45,15 @@
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
-
     <!-- All the test projects are partitioned into the test groups as defined below.
          Each of the test groups is meant to be built by a separate MSBuild invocation with specified $(__TestGroupToBuild) property. -->
-
     <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '0' ">
+
+      <!-- Fast filter to avoid files with Pri1 projects, this isn't completely accurate, but its close -->
+      <Pri1Projects Include="@(AllProjects)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('%(AllProjects.FullPath)')), '&lt;CLRTestPriority&gt;1&lt;/CLRTestPriority&gt;'))" />
+
+      <AllProjects Remove="@(Pri1Projects)" />
+
       <!-- Group number k consists of all the test projects P such that _GroupStartsWith(k) <= P.Identity < _GroupStartsWith(k+1).
            In other words, ItemGroup _GroupStartsWith defines boundaries between the test groups. -->
 
