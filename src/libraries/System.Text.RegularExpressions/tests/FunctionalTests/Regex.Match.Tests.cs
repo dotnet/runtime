@@ -1279,7 +1279,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void Nonbacktracking_TimeoutCheckNotEOF()
+        public void NonBacktracking_NoEndAnchorMatchAtTimeoutCheck()
         {
             // First figure out how many characters the innermost matching loop of NonBacktracking looks at between
             // timeout checks. This makes the test more robust, as the value isn't exposed and we'd have to set it as
