@@ -363,19 +363,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_ARM64
         case GT_TEST_EQ:
         case GT_TEST_NE:
+            // On ARM64 genCodeForCompare does not consume its own operands because
+            // genCodeForBinary also has this behavior and it can end up calling
+            // genCodeForCompare when generating compare chains for GT_AND.
+            // Thus, we must do it here.
+            genConsumeOperands(treeNode->AsOp());
 #endif // TARGET_ARM64
             genCodeForCompare(treeNode->AsOp());
             break;
 
 #ifdef TARGET_ARM64
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
-            genCodeForConditional(treeNode->AsConditional());
+            genCodeForSelect(treeNode->AsConditional());
             break;
 #endif
 

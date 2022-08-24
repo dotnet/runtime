@@ -95,7 +95,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
-    ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
+    ASSERT(!pThreadToWalk->IsHijacked());
 
     if (pInitialTransitionFrame == INTERRUPTED_THREAD_MARKER)
     {
@@ -1463,7 +1463,7 @@ UnwindOutOfCurrentManagedFrame:
     else
     {
         // if the thread is safe to walk, it better not have a hijack in place.
-        ASSERT((ThreadStore::GetCurrentThread() == m_pThread) || !m_pThread->DangerousCrossThreadIsHijacked());
+        ASSERT(!m_pThread->IsHijacked());
 
         SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.GetAddrOfIP())));
 

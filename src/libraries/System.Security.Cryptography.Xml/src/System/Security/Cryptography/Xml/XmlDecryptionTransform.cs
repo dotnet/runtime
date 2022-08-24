@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Xml
         {
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
             document.Load(xmlReader);
             _containingDocument = document;

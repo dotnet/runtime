@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-// This test case is ported from S.N.Vector counterpart 
-// https://github.com/dotnet/coreclr/blob/master/tests/src/JIT/SIMD/VectorUnused.cs
+// This test case is ported from S.N.Vector counterpart
+// https://github.com/dotnet/runtime/blob/main/src/tests/JIT/SIMD/VectorUnused.cs
 
 using System;
 using System.Runtime.Intrinsics;

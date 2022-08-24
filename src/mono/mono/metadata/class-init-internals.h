@@ -10,8 +10,16 @@
 void
 mono_class_setup_interface_id_nolock (MonoClass *klass);
 
+void
+mono_class_setup_invalidate_interface_offsets (MonoClass *klass);
+
+enum {
+	MONO_SETUP_ITF_OFFSETS_OVERWRITE = 0x01,
+	MONO_SETUP_ITF_OFFSETS_BITMAP_ONLY = 0x02,
+};
+
 int
-mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gboolean overwrite);
+mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, int setup_itf_offsets_flags);
 
 int
 mono_class_setup_count_virtual_methods (MonoClass *klass);

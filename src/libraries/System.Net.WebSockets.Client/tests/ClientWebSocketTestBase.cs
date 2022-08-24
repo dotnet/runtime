@@ -26,6 +26,11 @@ namespace System.Net.WebSockets.Client.Tests
             new object[] { o[0], false },
             new object[] { o[0], true }
         }).ToArray();
+        public static readonly object[][] SecureEchoServersAndBoolean = new object[][]
+        {
+            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, false },
+            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, true }
+        };
 
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;

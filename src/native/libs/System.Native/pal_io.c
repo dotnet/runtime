@@ -794,6 +794,13 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
     return result;
 }
 
+char* SystemNative_MkdTemp(char* pathTemplate)
+{
+    char* result = NULL;
+    while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;

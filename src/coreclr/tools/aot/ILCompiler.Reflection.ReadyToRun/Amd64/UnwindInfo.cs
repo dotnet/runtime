@@ -8,7 +8,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_OP_CODES
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_OP_CODES
     /// </summary>
     public enum UnwindOpCodes
     {
@@ -27,7 +27,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_OP_CODES
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_OP_CODES
     /// </summary>
     public enum UnwindFlags
     {
@@ -38,7 +38,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_CODE
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_CODE
     /// </summary>
     public class UnwindCode
     {
@@ -59,7 +59,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public UnwindCode() { }
 
         /// <summary>
-        /// Unwinde code parsing is based on <a href="https://github.com/dotnet/coreclr/blob/master/src/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
+        /// Unwinde code parsing is based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
         /// </summary>
         public UnwindCode(byte[] image, ref int frameOffset, ref int offset)
         {
@@ -150,7 +150,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_INFO
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/win64unwind.h">src\inc\win64unwind.h</a> _UNWIND_INFO
     /// </summary>
     public class UnwindInfo : BaseUnwindInfo
     {

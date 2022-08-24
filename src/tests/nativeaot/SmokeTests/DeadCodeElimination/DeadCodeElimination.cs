@@ -19,6 +19,7 @@ class Program
         TestUnusedDefaultInterfaceMethod.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
+        TestTypeEquals.Run();
 
         return 100;
     }
@@ -308,6 +309,24 @@ class Program
 
             ThrowIfNotPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker1));
             ThrowIfPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker2));
+        }
+    }
+
+    class TestTypeEquals
+    {
+        sealed class Never { }
+
+        static Type s_type = null;
+
+        public static void Run()
+        {
+            // This was asserting the BCL because Never would not have reflection metadata
+            // despite the typeof
+            Console.WriteLine(s_type == typeof(Never));
+
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+#endif
         }
     }
 

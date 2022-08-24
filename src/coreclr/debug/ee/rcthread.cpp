@@ -476,7 +476,7 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     // Fill out the struct.
 #ifdef FEATURE_INTEROP_DEBUGGING
     pDebuggerRuntimeOffsets->m_genericHijackFuncAddr = Debugger::GenericHijackFunc;
-    // Set flares - these only exist for interop debugging.
+    // the following 6 flares only exist for interop debugging.
     pDebuggerRuntimeOffsets->m_signalHijackStartedBPAddr = (void*) SignalHijackStartedFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffStartBPAddr = (void*) ExceptionForRuntimeHandoffStartFlare;
     pDebuggerRuntimeOffsets->m_excepForRuntimeHandoffCompleteBPAddr = (void*) ExceptionForRuntimeHandoffCompleteFlare;
@@ -485,6 +485,16 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     pDebuggerRuntimeOffsets->m_notifyRSOfSyncCompleteBPAddr = (void*) NotifyRightSideOfSyncCompleteFlare;
     pDebuggerRuntimeOffsets->m_debuggerWordTLSIndex = g_debuggerWordTLSIndex;
 #endif // FEATURE_INTEROP_DEBUGGING
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#ifdef TARGET_WINDOWS
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = (void*) SetThreadContextNeededFlare;
+#else
+    #error Platform not supported
+#endif
+#else
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = NULL;
+#endif
 
     pDebuggerRuntimeOffsets->m_pPatches = DebuggerController::GetPatchTable();
     pDebuggerRuntimeOffsets->m_pPatchTableValid = (BOOL*)DebuggerController::GetPatchTableValidAddr();

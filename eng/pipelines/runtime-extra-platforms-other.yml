@@ -86,12 +86,13 @@ jobs:
     - windows_arm64
     - Linux_x64
     - Linux_arm64
+    - Linux_musl_x64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
-      nameSuffix: NativeAOT_Libs_Passing
+      nameSuffix: NativeAOT_Libs
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
-      timeoutInMinutes: 240
+      timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:

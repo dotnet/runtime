@@ -2714,6 +2714,9 @@
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
   </data>
+  <data name="IO_MaxAttemptsReached" xml:space="preserve">
+    <value>Unable to complete the operation after the maximum number of attempts.</value>
+  </data>
   <data name="Lazy_CreateValue_NoParameterlessCtorForT" xml:space="preserve">
     <value>The lazily-initialized type does not have a public, parameterless constructor.</value>
   </data>
@@ -3994,5 +3997,8 @@
   </data>
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
+  </data>
+  <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
+    <value>The value may not contain directory separator characters.</value>
   </data>
 </root>

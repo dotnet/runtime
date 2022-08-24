@@ -115,5 +115,17 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract void IdleDurationUpdatesWhenChangingFromActive();
+
+        [Fact]
+        public abstract void GetStatisticsReturnsNewInstances();
+
+        [Fact]
+        public abstract Task GetStatisticsHasCorrectValues();
+
+        [Fact]
+        public abstract Task GetStatisticsWithZeroPermitCount();
+
+        [Fact]
+        public abstract void GetStatisticsThrowsAfterDispose();
     }
 }
