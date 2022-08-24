@@ -46,7 +46,6 @@
       ProtoRoot="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Proto\grpc\testing\"
       GrpcServices="Client" />
 
-
     <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
     <PackageReference Include="Grpc.Auth" Version="$(GrpcAuthVersion)" />
     <PackageReference Include="Grpc.Core" Version="$(GrpcCoreVersion)" PrivateAssets="All" />

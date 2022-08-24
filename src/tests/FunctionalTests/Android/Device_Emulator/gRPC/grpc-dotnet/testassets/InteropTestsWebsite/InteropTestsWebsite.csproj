@@ -22,8 +22,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  
-  <Import Project="Versions.props" />
+
+  <Import Project="..\..\..\..\..\..\..\..\..\eng\Versions.props" />
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="$(GrpcAspNetCoreVersion)" />
