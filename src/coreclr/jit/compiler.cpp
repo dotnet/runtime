@@ -3211,6 +3211,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
+    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+
+#ifdef DEBUG
+    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
+    {
+        CLRRandom rng;
+        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
+        opts.compCollect64BitCounts = rng.Next(2) == 0;
+    }
+#endif
+
 #ifdef DEBUG
 
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK

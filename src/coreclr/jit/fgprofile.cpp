@@ -570,7 +570,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = 1;
     schemaElem.Other               = 0;
-    schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+    schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
     schemaElem.ILOffset = offset;
@@ -1314,7 +1314,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = 1;
         schemaElem.Other               = targetKey;
-        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+        schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
         schemaElem.ILOffset = sourceKey;
@@ -1503,7 +1503,7 @@ public:
             schemaElem.Other |= ICorJitInfo::HandleHistogram32::DELEGATE_FLAG;
         }
 
-        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+        schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         schemaElem.ILOffset = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
