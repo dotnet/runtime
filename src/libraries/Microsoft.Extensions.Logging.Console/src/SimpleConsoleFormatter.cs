@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -157,8 +158,12 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
+            bool isAndroidOrAppleMobile = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
+                                          || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
             bool disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
-                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && !ConsoleUtils.EmitAnsiColorCodes);
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || isAndroidOrAppleMobile));
             if (disableColors)
             {
                 return new ConsoleColors(null, null);
