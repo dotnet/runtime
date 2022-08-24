@@ -228,7 +228,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     const char* appctx_keys[3];
     appctx_keys[0] = "RUNTIME_IDENTIFIER";
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
-    appctx_keys[2] = "LOCAL_DATE_TIME_OFFSET";
+    appctx_keys[2] = "System.TimeZoneInfo.LocalDateTimeOffset";
 
     const char* appctx_values[3];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;

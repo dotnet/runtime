@@ -183,7 +183,7 @@ namespace System
                 }
             }
 
-            object? localDateTimeOffset = AppContext.GetData("LOCAL_DATE_TIME_OFFSET");
+            object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
             if (localDateTimeOffset == null)
                 return GetCacheLocalUtcOffset(dateTime, flags); // If no offset property provided through monovm app context, default
 
