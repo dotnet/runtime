@@ -12,8 +12,44 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+    public sealed class InvokerMemorySendReceiveLocalTest : InvokerMemorySendReceiveTest
+    {
+        public InvokerMemorySendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
+        
+        protected override (Uri, Task) GetServer(string version, bool useSsl)
+        {
+            if (version == "2.0")
+            {
+                return WebSocketHelper.GetEchoHttp2LoopbackServer(new Http2Options() { WebSocketEndpoint = true, UseSsl = useSsl });
+            }
+            else
+            {
+                // TODO: GetEchoHttp11LoopbackServer
+                return base.GetServer(version, useSsl);
+            }
+        }
+    }
 
-    public sealed class InvokerMemorySendReceiveTest : MemorySendReceiveTest
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    public sealed class InvokerMemorySendReceiveOuterTest : InvokerMemorySendReceiveTest
+    {
+        public InvokerMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override (Uri, Task) GetServer(string version, bool useSsl)
+        {
+            if (useSsl)
+            {
+                return (Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, Task.CompletedTask);
+            }
+            else
+            {
+                return (Test.Common.Configuration.WebSockets.RemoteEchoServer, Task.CompletedTask);
+            }
+        }
+    }
+
+    public abstract class InvokerMemorySendReceiveTest : MemorySendReceiveTest
     {
         public InvokerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -417,6 +453,49 @@ namespace System.Net.WebSockets.Client.Tests
                 Array.Reverse(receiveBuffer);
                 Assert.Equal<byte>(sendBuffer, receiveBuffer);
             }
+        }
+
+        [InlineData("2.0", false)]
+        [InlineData("2.0", true)]
+        [InlineData("1.0", false)]
+        [InlineData("1.0", true)]
+        [ConditionalTheory(nameof(WebSocketsSupported))]
+        public async Task SendReceive_Concurrent_Success_Base(string version, bool useSsl)
+        {
+            Uri uri;
+            Task serverTask;
+
+            (uri, serverTask) = GetServer(version, useSsl);
+
+
+            Task clientTask = Task.Run( async () =>
+            {
+                using (ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output, version))
+                {
+                    CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                    byte[] receiveBuffer = new byte[10];
+                    byte[] sendBuffer = new byte[10];
+                    for (int i = 0; i < sendBuffer.Length; i++)
+                    {
+                        sendBuffer[i] = (byte)i;
+                    }
+
+                    for (int i = 0; i < sendBuffer.Length; i++)
+                    {
+                        Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
+                        Task send = SendAsync(cws, new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                        await Task.WhenAll(receive, send);
+                        Assert.Equal(1, receive.Result.Count);
+                    }
+                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
+
+                    Array.Reverse(receiveBuffer);
+                    Assert.Equal<byte>(sendBuffer, receiveBuffer);
+                }
+            });
+
+            await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2).ConfigureAwait(false);
         }
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]

@@ -1024,4 +1024,74 @@ namespace System.Net.Test.Common
             throw new NotImplementedException();
         }
     }
+
+    public sealed class Http2Stream : Stream
+    {
+        private readonly Http2LoopbackConnection _connection;
+        private readonly int _streamId;
+        private bool _readEnded;
+        private ReadOnlyMemory<byte> _leftoverReadData;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+
+        public Http2Stream(Http2LoopbackConnection connection, int streamId)
+        {
+            _connection = connection;
+            _streamId = streamId;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!_leftoverReadData.IsEmpty)
+            {
+                int read = Math.Min(buffer.Length, _leftoverReadData.Length);
+                _leftoverReadData.Span.Slice(0, read).CopyTo(buffer.Span);
+                _leftoverReadData = _leftoverReadData.Slice(read);
+                return read;
+            }
+
+            if (_readEnded)
+            {
+                return 0;
+            }
+
+            DataFrame dataFrame = (DataFrame)await _connection.ReadDataFrameAsync();
+            Assert.Equal(_streamId, dataFrame.StreamId);
+            _leftoverReadData = dataFrame.Data;
+            _readEnded = dataFrame.EndStreamFlag;
+
+            return await ReadAsync(buffer, cancellationToken);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await _connection.SendResponseDataAsync(_streamId, buffer, endStream: false);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        protected override void Dispose(bool disposing) => DisposeAsync().GetAwaiter().GetResult();
+
+        public override async ValueTask DisposeAsync()
+        {
+            await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true);
+        }
+
+        public override void Flush() { }
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+        public override void SetLength(long value) => throw new NotImplementedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+        public override long Length => throw new NotImplementedException();
+        public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    }
+
 }

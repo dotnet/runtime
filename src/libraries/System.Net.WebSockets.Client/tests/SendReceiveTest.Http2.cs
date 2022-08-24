@@ -25,6 +25,7 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ReceiveNoThrowAfterSend_NoSsl(bool useHandler)
         {
+            var clientMessage = new byte[] { 2, 3, 4 };
             var serverMessage = new byte[] { 4, 5, 6 };
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -43,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
                         await cws.ConnectAsync(uri, cts.Token);
                     }
 
-                    await cws.SendAsync(new byte[] { 2, 3, 4 }, WebSocketMessageType.Binary, true, cts.Token);
+                    await cws.SendAsync(clientMessage, WebSocketMessageType.Binary, true, cts.Token);
 
                     var readBuffer = new byte[serverMessage.Length];
                     await cws.ReceiveAsync(readBuffer, cts.Token);
@@ -56,6 +57,15 @@ namespace System.Net.WebSockets.Client.Tests
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 // send status 200 OK to establish websocket
                 await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+
+                var webSocketStream = new Http2Stream(connection, streamId);
+                using WebSocket websocket = WebSocket.CreateFromStream(webSocketStream, true, null, TimeSpan.FromSeconds(30));
+
+                Assert.Equal(WebSocketState.Open, websocket.State);
+
+                Memory<byte> buffer = new byte[3];
+                ValueWebSocketReceiveResult result = await websocket.ReceiveAsync(buffer, default);
+                Assert.Equal(clientMessage, buffer);
 
                 // send reply
                 byte binaryMessageType = 2;
