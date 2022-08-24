@@ -144,6 +144,7 @@ namespace System.Text.Json.Serialization.Tests
             options.MakeReadOnly();
             Assert.True(options.IsReadOnly);
             options.MakeReadOnly(); // Is idempotent operation
+            Assert.True(options.IsReadOnly);
 
             Assert.Throws<InvalidOperationException>(() => options.MaxDepth = 13);
             Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new JsonStringEnumConverter()));
@@ -151,6 +152,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = null);
 
             options.MakeReadOnly(); // Is still idempotent operation
+            Assert.True(options.IsReadOnly);
         }
 
         [Fact]
