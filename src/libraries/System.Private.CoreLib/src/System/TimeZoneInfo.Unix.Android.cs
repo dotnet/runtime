@@ -174,8 +174,8 @@ namespace System
                     if (_loadAndroidTZData == null)
                     {
                         _loadAndroidTZData = new Thread(() => {
-                            _localUtcOffset = GetCacheLocalUtcOffset(dateTime, flags);
                             Thread.Sleep(1000);
+                            _localUtcOffset = GetCacheLocalUtcOffset(dateTime, flags);
                         });
                         _loadAndroidTZData.IsBackground = true;
                         _loadAndroidTZData.Start();
