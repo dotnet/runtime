@@ -1300,7 +1300,7 @@ namespace System.Text.RegularExpressions.Tests
                     return 1;
                 }
             }
-            int charsPerTimeoutCheck = Array.BinarySearch(Enumerable.Range(0, 2048).ToArray(), -1, Comparer<int>.Create(IsCharsPerTimeoutCheck));
+            int charsPerTimeoutCheck = Array.BinarySearch(Enumerable.Range(0, 16_000).ToArray(), -1, Comparer<int>.Create(IsCharsPerTimeoutCheck));
             Assert.True(charsPerTimeoutCheck >= 0);
 
             // Now that the limit is known, do the actual test
