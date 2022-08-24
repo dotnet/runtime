@@ -59,18 +59,6 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# WebAssembly legs
-#
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_firefox
-    browser: firefox
-    # ff tests are unstable currently
-    shouldContinueOnError: true
-    alwaysRun: ${{ variables.isRollingBuild }}
-
-#
 # Build the whole product using Mono
 #
 - template: /eng/pipelines/common/platform-matrix.yml
