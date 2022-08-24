@@ -4,7 +4,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
+#if !WINHTTPHANDLER_TEST
 using System.Net.Quic;
+#endif
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -91,8 +93,10 @@ namespace System.Net.Http.Functional.Tests
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
                 }
                 // Ignore errors caused by the client
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+#if !WINHTTPHANDLER_TEST
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+#endif
             });
         }
 
@@ -141,8 +145,10 @@ namespace System.Net.Http.Functional.Tests
                     await server.HandleRequestAsync(headers: headers);
                 }
                 // Ignore errors caused by the client
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+#if !WINHTTPHANDLER_TEST
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+#endif
             });
         }
     }
