@@ -531,9 +531,9 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            if (!Options.IsImmutable)
+            if (!Options.IsReadOnly)
             {
-                Options.InitializeForMetadataGeneration();
+                Options.MakeReadOnly();
             }
 
             PropertyInfoForTypeInfo.EnsureChildOf(this);

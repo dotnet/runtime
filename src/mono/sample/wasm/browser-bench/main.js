@@ -8,13 +8,79 @@ import { dotnet, exit } from './dotnet.js'
 let runBenchmark;
 let setTasks;
 let getFullJsonResults;
+let legacyExportTargetInt;
+let jsExportTargetInt;
+let legacyExportTargetString;
+let jsExportTargetString;
+
+function runLegacyExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetInt(i);
+    }
+}
+
+function runJSExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetInt(i);
+    }
+}
+
+function runLegacyExportString(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetString("A" + i);
+    }
+}
+
+function runJSExportString(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetString("A" + i);
+    }
+}
+
+function importTargetInt(value) {
+    return value + 1;
+}
+
+function importTargetString(value) {
+    return value + "A";
+}
+
+async function importTargetTask(value) {
+    await value;
+    return;
+}
+
+function importTargetThrows(value) {
+    throw new Error("test" + value);
+}
 
 class MainApp {
-    async init({ getAssemblyExports }) {
+    async init({ getAssemblyExports, setModuleImports, BINDING }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
+
+        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
+        jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
+        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
+        jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
+
+        setModuleImports("main.js", {
+            Sample: {
+                Test: {
+                    runLegacyExportInt,
+                    runJSExportInt,
+                    runLegacyExportString,
+                    runJSExportString,
+                    importTargetInt,
+                    importTargetString,
+                    importTargetTask,
+                    importTargetThrows,
+                }
+            }
+        });
+
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');

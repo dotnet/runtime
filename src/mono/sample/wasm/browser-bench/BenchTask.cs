@@ -41,6 +41,7 @@ public abstract class BenchTask
 
     public abstract class Measurement
     {
+        protected int currentStep = 0;
         public abstract string Name { get; }
 
         public virtual int InitialSamples { get { return 10; } }
@@ -64,7 +65,6 @@ public abstract class BenchTask
         {
             DateTime start = DateTime.Now;
             DateTime end;
-            int i = 0;
             try
             {
                 // run one to eliminate possible startup overhead and do GC collection
@@ -76,7 +76,7 @@ public abstract class BenchTask
                 GC.Collect();
 
                 start = DateTime.Now;
-                for (i = 0; i < InitialSamples; i++)
+                for (currentStep = 0; currentStep < InitialSamples; currentStep++)
                     if (HasRunStepAsync)
                         await RunStepAsync();
                     else
@@ -87,7 +87,7 @@ public abstract class BenchTask
                 int steps = CalculateSteps(milliseconds, initTs);
 
                 start = DateTime.Now;
-                for (i = 0; i < steps; i++)
+                for (currentStep = 0; currentStep < steps; currentStep++)
                 {
                     if (HasRunStepAsync)
                         await RunStepAsync();
@@ -105,7 +105,7 @@ public abstract class BenchTask
                 end = DateTime.Now;
                 var ts = end - start;
                 Console.WriteLine(ex);
-                return new Result { span = ts, steps = i + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
+                return new Result { span = ts, steps = currentStep + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
             }
         }
     }
