@@ -1304,9 +1304,9 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(charsPerTimeoutCheck >= 0);
 
             // Now that the limit is known, do the actual test
-            Regex testPattern = new Regex("^a*b$", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromHours(1));
-            string input = string.Concat(new string('a', charsPerTimeoutCheck - 1), "bc");
-            // Checking for timeout just before the 'c' shouldn't allow the $ anchor to match
+            Regex testPattern = new Regex("^a*$", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromHours(1));
+            string input = string.Concat(new string('a', charsPerTimeoutCheck), 'b');
+            // Checking for timeout just before the 'b' shouldn't allow the $ anchor to match
             Assert.False(testPattern.IsMatch(input));
         }
 
