@@ -1672,7 +1672,7 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            if (In && !Out && !IsManagedByRef)
+            if (In && !Out && !IsManagedByRef && MarshallerType == MarshallerType.Argument)
             {
                 TypeDesc marshallerIn = MarshallerIn;
 
