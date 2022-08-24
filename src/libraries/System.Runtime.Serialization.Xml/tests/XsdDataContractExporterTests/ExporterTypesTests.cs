@@ -69,16 +69,26 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
         }
 
+        public static IEnumerable<object[]> GetDynamicallyVersionedTypesTestNegativeData()
+        {
+            // Need this case in a member data because inline data only accepts constant expressions
+            yield return new object[] {
+                typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection),
+                typeof(InvalidDataContractException),
+                $@"System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+CollectionWithoutParameterlessCtor`1[[System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+Person, System.Runtime.Serialization.Xml.Tests, Version={Reflection.Assembly.GetExecutingAssembly().GetName().Version.Major}.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51]] does not have a default constructor."
+            };
+        }
+
         [Theory]
         [SkipOnPlatform(TestPlatforms.Browser, "Inconsistent and unpredictable results.")]  // TODO - Why does 'TypeWithReadWriteCollectionAndNoCtorOnCollection' only cause an exception sometimes, but not all the time? What's special about wasm here?
         [InlineData(typeof(NoDataContractWithoutParameterlessConstructor), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
         [InlineData(typeof(DataContractWithInvalidMember), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
         [InlineData(typeof(SerializableWithInvalidMember), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
-        [InlineData(typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection), typeof(InvalidDataContractException), @"System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+CollectionWithoutParameterlessCtor`1[[System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+Person, System.Runtime.Serialization.Xml.Tests, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51]] does not have a default constructor.")]
         // Yes, the exception type for this next one is different. It was different in NetFx as well.
         [InlineData(typeof(ArrayContainer), typeof(InvalidOperationException), @"DataContract for type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+ArrayB' cannot be added to DataContractSet since type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+ArrayA' with the same data contract name 'Array' in namespace 'http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests' is already present and the contracts are not equivalent.")]
         [InlineData(typeof(KeyValueNameSame), typeof(InvalidDataContractException), @"The collection data contract type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+KeyValueNameSame' specifies the same value 'MyName' for both the KeyName and the ValueName properties. This is not allowed. Consider changing either the KeyName or the ValueName property.")]
         [InlineData(typeof(AnyWithRoot), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+AnyWithRoot' cannot specify an XmlRootAttribute attribute because its IsAny setting is 'true'. This type must write all its contents including the root element. Verify that the IXmlSerializable implementation is correct.")]
+        [MemberData(nameof(GetDynamicallyVersionedTypesTestNegativeData))]
         public void TypesTest_Negative(Type badType, Type exType, string exMsg = null)
         {
             XsdDataContractExporter exporter = new XsdDataContractExporter();
