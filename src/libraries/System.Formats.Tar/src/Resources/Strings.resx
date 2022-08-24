@@ -205,6 +205,9 @@
     <value>The entry is a symbolic link or a hard link but the LinkName field is null or empty.</value>
   </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
+    <value>Entry type '{0}' not supported.</value>
+  </data>
+  <data name="TarEntryTypeNotSupportedInFormat" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
   </data>
   <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">
@@ -254,5 +257,8 @@
   </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="TarInvalidNumber" xml:space="preserve">
+    <value>Unable to parse number.</value>
   </data>
 </root>
