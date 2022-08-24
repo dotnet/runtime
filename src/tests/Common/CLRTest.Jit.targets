@@ -181,6 +181,32 @@ IF NOT DEFINED DoLink (
     </PropertyGroup>
   </Target>
 
+  <Target Name="GetDisasmCheckCommands"
+          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPreCommands);$(BatchDisasmCheckPostCommands)>
+    <PropertyGroup>
+      <DoBatchDisasmCheck>False</DoBatchDisasmCheck>
+      <DoBatchDisasmCheck Condition="'$(DisasmCheck)' == 'True' And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">True</DoBatchDisasmCheck>
+
+      <DisasmCheckFile Condition="'$(DisasmCheckFile)' == ''>$(MSBuildProjectName).cs</DisasmCheckFile>
+      <DisasmCheckFunctions Condition="'$(DisasmCheckFunctions)' == ''>Main</DisasmCheckFunctions>
+
+      <BatchDisasmOutputFile>$(__OutputDir)\__jit_disasm.out</BatchDisasmOutputFile>
+
+      <BatchDisasmOutputRedir></BatchDisasmOutputRedir>
+      <BatchDisasmOutputRedir Condition="'$(DoBatchDisasmCheck)' == 'True'">&gt; "$(BatchDisasmOutputFile)"</BatchDisasmOutputRedir>
+
+      <BatchDisasmCheckPreCommands></BatchDisasmCheckPreCommands>
+      <BatchDisasmCheckPreCommands Condition="'$(DoBatchDisasmCheck)' == 'True'"><![CDATA[
+set COMPlus_JitDisasm="$(DisasmCheckFunctions)"
+      ]]></BatchDisasmCheckPreCommands>
+
+      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
+      <BatchDisasmCheckPostCommands Condition="'$(DoBatchDisasmCheck)' == 'True'"><![CDATA[
+FileCheck.exe "$(DisasmCheckFile)" < "$(BatchDisasmOutputFile)"
+      ]]></BatchDisasmCheckPostCommands>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="$(RunWithGcStress) != ''" >
     <CLRTestBatchPreCommands>
 <![CDATA[

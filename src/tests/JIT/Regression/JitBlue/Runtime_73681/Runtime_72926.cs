@@ -12,6 +12,7 @@ public class Program
     }
 
     // CHECK: Assembly listing for method Program::CallFoo
+    // CHECK: todo - Remove this when the infrastructure is working!
     // CHECK-NOT: CORINFO_HELP
     // CHECK: Total bytes
     [MethodImpl(MethodImplOptions.NoInlining)]
