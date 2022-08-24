@@ -557,7 +557,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
         ClassLayout* layout  = src->GetLayout(comp);
         var_types    regType = layout->GetRegisterType();
-        srcIsLocal |= src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr();
 
         if (regType == TYP_UNDEF)
         {
@@ -605,18 +604,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // !TARGET_X86
             }
 
-            if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
-            {
-                // TODO-ADDR: always perform this transformation in local morph and delete this code.
-                GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-                BlockRange().Remove(lclAddrNode);
-
-                src->ChangeOper(GT_LCL_FLD);
-                src->AsLclFld()->SetLclNum(lclAddrNode->GetLclNum());
-                src->AsLclFld()->SetLclOffs(lclAddrNode->GetLclOffs());
-                src->AsLclFld()->SetLayout(layout);
-            }
-            else if (src->OperIs(GT_LCL_VAR))
+            if (src->OperIs(GT_LCL_VAR))
             {
                 comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
                                                    DEBUGARG(DoNotEnregisterReason::IsStructArg));
