@@ -108,13 +108,13 @@ namespace System
 
             if (dstEEType.IsPointer)
             {
-                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out IntPtr dstIntPtr);
+                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
                 {
                     dstObject = null;
                     return exception;
                 }
-                dstObject = dstIntPtr;
+                dstObject = dstPtr;
                 return null;
             }
 
@@ -215,11 +215,11 @@ namespace System
             return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out IntPtr dstIntPtr)
+        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
-            if (srcObject is IntPtr srcIntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
-                dstIntPtr = srcIntPtr;
+                dstPtr = srcObject;
                 return null;
             }
 
@@ -227,12 +227,12 @@ namespace System
             {
                 if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
                 {
-                    dstIntPtr = srcPointer.GetPointerValue();
+                    dstPtr = srcPointer.GetPointerValue();
                     return null;
                 }
             }
 
-            dstIntPtr = IntPtr.Zero;
+            dstPtr = null;
             return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
         }
 

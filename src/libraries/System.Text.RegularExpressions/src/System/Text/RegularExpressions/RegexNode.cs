@@ -1377,7 +1377,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
-        public (char Char, string? String, string? SetChars)? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
+        /// <returns>
+        /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
+        /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
+        /// </returns>
+        public (char Char, string? String, string? SetChars, bool Negated)? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
         {
             Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
 
@@ -1390,31 +1394,23 @@ namespace System.Text.RegularExpressions
                     {
                         case RegexNodeKind.One:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when node.M > 0:
-                            if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Ch))
-                            {
-                                return (node.Ch, null, null);
-                            }
-                            break;
+                            return (node.Ch, null, null, false);
+
+                        case RegexNodeKind.Notone:
+                        case RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy when node.M > 0:
+                            return (node.Ch, null, null, true);
 
                         case RegexNodeKind.Multi:
-                            if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Str.AsSpan()))
-                            {
-                                return ('\0', node.Str, null);
-                            }
-                            break;
+                            return ('\0', node.Str, null, false);
 
                         case RegexNodeKind.Set:
                         case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy when node.M > 0:
                             Span<char> setChars = stackalloc char[maxSetCharacters];
                             int numChars;
-                            if (!RegexCharClass.IsNegated(node.Str!) &&
-                                (numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
+                            if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
                             {
                                 setChars = setChars.Slice(0, numChars);
-                                if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(setChars))
-                                {
-                                    return ('\0', null, setChars.ToString());
-                                }
+                                return ('\0', null, setChars.ToString(), RegexCharClass.IsNegated(node.Str!));
                             }
                             break;
 

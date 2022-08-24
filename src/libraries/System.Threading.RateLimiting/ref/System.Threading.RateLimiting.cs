@@ -14,7 +14,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int permitCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
     }
     public sealed partial class ConcurrencyLimiterOptions
     {
@@ -33,7 +33,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
     }
     public sealed partial class FixedWindowRateLimiterOptions
@@ -78,8 +78,8 @@ namespace System.Threading.RateLimiting
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits(TResource resource);
-        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(System.Func<TOuter, TResource> keyAdapter) { throw null; }
+        public abstract System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics(TResource resource);
+        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(System.Func<TOuter, TResource> keyAdapter, bool leaveOpen) { throw null; }
     }
     public enum QueueProcessingOrder
     {
@@ -98,7 +98,15 @@ namespace System.Threading.RateLimiting
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits();
+        public abstract System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics();
+    }
+    public partial class RateLimiterStatistics
+    {
+        public RateLimiterStatistics() { }
+        public long CurrentAvailablePermits { get { throw null; } set { } }
+        public long CurrentQueuedCount { get { throw null; } set { } }
+        public long TotalFailedLeases { get { throw null; } set { } }
+        public long TotalSuccessfulLeases { get { throw null; } set { } }
     }
     public abstract partial class RateLimitLease : System.IDisposable
     {
@@ -146,7 +154,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
     }
     public sealed partial class SlidingWindowRateLimiterOptions
@@ -169,7 +177,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int tokenCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
     }
     public sealed partial class TokenBucketRateLimiterOptions

@@ -3,7 +3,6 @@
 
 import cwraps from "./cwraps";
 import { Module, runtimeHelpers } from "./imports";
-import { MonoConfig } from "./types";
 import { VoidPtr } from "./types/emscripten";
 
 let num_icu_assets_loaded_successfully = 0;
@@ -30,7 +29,7 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 // "auto" will use "icu" if any ICU data archives have been loaded,
 //  otherwise "invariant".
 export function mono_wasm_globalization_init(): void {
-    const config = Module.config as MonoConfig;
+    const config = runtimeHelpers.config;
     let invariantMode = false;
     if (!config.globalizationMode)
         config.globalizationMode = "auto";

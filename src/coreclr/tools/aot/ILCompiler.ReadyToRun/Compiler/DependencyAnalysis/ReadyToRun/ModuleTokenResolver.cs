@@ -27,8 +27,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly ConcurrentDictionary<EcmaType, ModuleToken> _typeToRefTokens = new ConcurrentDictionary<EcmaType, ModuleToken>();
 
-        private readonly ConcurrentDictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new ConcurrentDictionary<FieldDesc, ModuleToken>();
-
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
         private Func<IEcmaModule, int> _moduleIndexLookup;
@@ -127,36 +125,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
-        {
-            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
-            {
-                return new ModuleToken(ecmaField.Module, ecmaField.Handle);
-            }
-
-            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            FieldDesc canonField = field;
-            if (owningCanonType != field.OwningType)
-            {
-                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
-            }
-
-            ModuleToken token;
-            if (_fieldToRefTokens.TryGetValue(canonField, out token))
-            {
-                return token;
-            }
-
-            if (throwIfNotFound)
-            {
-                throw new NotImplementedException(field.ToString());
-            }
-            else
-            {
-                return default(ModuleToken);
-            }
-        }
-
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
             if (token.TokenType == CorTokenType.mdtMethodSpec)
@@ -186,35 +154,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EntityHandle owningTypeHandle = memberRef.Parent;
             AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
             memberRef.DecodeFieldSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
-        }
-
-        public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
-        {
-            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field.OwningType is EcmaType)
-            {
-                // We don't need to store handles within the current compilation group
-                // as we can read them directly from the ECMA objects.
-                return;
-            }
-
-            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            FieldDesc canonField = field;
-            if (owningCanonType != field.OwningType)
-            {
-                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
-            }
-
-            SetModuleTokenForTypeSystemEntity(_fieldToRefTokens, canonField, token);
-
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForFieldReference(owningCanonType, token);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
         }
 
         // Add TypeSystemEntity -> ModuleToken mapping to a ConcurrentDictionary. Using CompareTo sort the token used, so it will

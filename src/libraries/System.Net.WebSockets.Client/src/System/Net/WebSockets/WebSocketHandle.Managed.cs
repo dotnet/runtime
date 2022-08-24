@@ -53,7 +53,8 @@ namespace System.Net.WebSockets
 
             bool disposeResponse = false;
 
-            bool tryDowngrade = false;
+            // force non-secure request to 1.1 whenever it is possible as HttpClient does
+            bool tryDowngrade = uri.Scheme == UriScheme.Ws && (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
             try
             {
 
@@ -63,7 +64,7 @@ namespace System.Net.WebSockets
                     {
                         HttpRequestMessage request;
                         if (!tryDowngrade && options.HttpVersion >= HttpVersion.Version20
-                            || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                            || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && uri.Scheme == UriScheme.Wss))
                         {
                             if (options.HttpVersion > HttpVersion.Version20 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                             {

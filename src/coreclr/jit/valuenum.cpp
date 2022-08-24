@@ -4656,7 +4656,7 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
     {
         assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (genTypeSize(indType) == indSize));
 
-        value = VNForBitCast(value, indType);
+        value = VNForBitCast(value, indType, indSize);
 
         JITDUMP("    VNForLoadStoreBitcast returns ");
         JITDUMPEXEC(m_pComp->vnPrint(value, 1));
@@ -5250,6 +5250,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //
 // Note:
 //    If "vn" corresponds to (x > y), the resulting VN corresponds to
+//    VRK_Inferred           (x ? y) (NoVN)
 //    VRK_Same               (x > y)
 //    VRK_Swap               (y < x)
 //    VRK_Reverse            (x <= y)
@@ -5265,6 +5266,11 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
     if (vrk == VN_RELATION_KIND::VRK_Same)
     {
         return vn;
+    }
+
+    if (vrk == VN_RELATION_KIND::VRK_Inferred)
+    {
+        return NoVN;
     }
 
     if (vn == NoVN)
@@ -5385,6 +5391,8 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 {
     switch (vrk)
     {
+        case VN_RELATION_KIND::VRK_Inferred:
+            return "inferred";
         case VN_RELATION_KIND::VRK_Same:
             return "same";
         case VN_RELATION_KIND::VRK_Reverse:
@@ -6838,9 +6846,15 @@ void ValueNumStore::vnDumpCast(Compiler* comp, ValueNum castVN)
 void ValueNumStore::vnDumpBitCast(Compiler* comp, VNFuncApp* bitCast)
 {
     var_types srcType    = TypeOfVN(bitCast->m_args[0]);
-    var_types castToType = static_cast<var_types>(ConstantValue<int>(bitCast->m_args[1]));
+    unsigned  size       = 0;
+    var_types castToType = DecodeBitCastType(bitCast->m_args[1], &size);
 
-    printf("BitCast<%s <- %s>(", varTypeName(castToType), varTypeName(srcType));
+    printf("BitCast<%s", varTypeName(castToType));
+    if (castToType == TYP_STRUCT)
+    {
+        printf("<%u>", size);
+    }
+    printf(" <- %s>(", varTypeName(srcType));
     comp->vnPrint(bitCast->m_args[0], 0);
     printf(")");
 }
@@ -9558,7 +9572,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
 //
 void Compiler::fgValueNumberBitCast(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_BITCAST);
+    assert(tree->OperIs(GT_BITCAST));
 
     ValueNumPair srcVNPair  = tree->gtGetOp1()->gtVNPair;
     var_types    castToType = tree->TypeGet();
@@ -9567,10 +9581,66 @@ void Compiler::fgValueNumberBitCast(GenTree* tree)
     ValueNumPair srcExcVNPair;
     vnStore->VNPUnpackExc(srcVNPair, &srcNormVNPair, &srcExcVNPair);
 
-    ValueNumPair resultNormVNPair = vnStore->VNPairForBitCast(srcNormVNPair, castToType);
+    ValueNumPair resultNormVNPair = vnStore->VNPairForBitCast(srcNormVNPair, castToType, genTypeSize(castToType));
     ValueNumPair resultExcVNPair  = srcExcVNPair;
 
     tree->gtVNPair = vnStore->VNPWithExc(resultNormVNPair, resultExcVNPair);
+}
+
+//------------------------------------------------------------------------
+// EncodeBitCastType: Encode the target type of a bitcast.
+//
+// In most cases, it is sufficient to simply encode the numerical value of
+// "castToType", as "size" will be implicitly encoded in the source VN's
+// type. There is one instance where this is not true: small structs, as
+// numbering, much like IR, does not support "true" small types. Thus, we
+// encode structs (all of them, for simplicity) specially.
+//
+// Arguments:
+//    castToType - The target type
+//    size       - Its size
+//
+// Return Value:
+//    Value number representing the target type.
+//
+ValueNum ValueNumStore::EncodeBitCastType(var_types castToType, unsigned size)
+{
+    if (castToType != TYP_STRUCT)
+    {
+        assert(size == genTypeSize(castToType));
+        return VNForIntCon(castToType);
+    }
+
+    assert(size != 0);
+    return VNForIntCon(TYP_COUNT + size);
+}
+
+//------------------------------------------------------------------------
+// DecodeBitCastType: Decode the target type of a bitcast.
+//
+// Decodes VNs produced by "EncodeBitCastType".
+//
+// Arguments:
+//    castToTypeVN - VN representing the target type
+//    pSize        - [out] parameter for the size of the target type
+//
+// Return Value:
+//    The target type.
+//
+var_types ValueNumStore::DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize)
+{
+    unsigned encodedType = ConstantValue<unsigned>(castToTypeVN);
+
+    if (encodedType < TYP_COUNT)
+    {
+        var_types castToType = static_cast<var_types>(encodedType);
+
+        *pSize = genTypeSize(castToType);
+        return castToType;
+    }
+
+    *pSize = encodedType - TYP_COUNT;
+    return TYP_STRUCT;
 }
 
 //------------------------------------------------------------------------
@@ -9579,6 +9649,7 @@ void Compiler::fgValueNumberBitCast(GenTree* tree)
 // Arguments:
 //    srcVN      - (VN of) the value being cast from
 //    castToType - The type being cast to
+//    size       - Size of the target type
 //
 // Return Value:
 //    The value number representing "IND<castToType>(ADDR(srcVN))". Notably,
@@ -9591,7 +9662,7 @@ void Compiler::fgValueNumberBitCast(GenTree* tree)
 //    process, and "VNF_BitCast" is that function. See also the notes for
 //    "VNForLoadStoreBitCast".
 //
-ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
+ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size)
 {
     // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
     // This ensures we do not end up with pathologically long chains of
@@ -9620,18 +9691,18 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
         return VNZeroForType(castToType);
     }
 
-    return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
+    return VNForFunc(castToType, VNF_BitCast, srcVN, EncodeBitCastType(castToType, size));
 }
 
 //------------------------------------------------------------------------
 // VNPairForBitCast: VNForBitCast applied to a ValueNumPair.
 //
-ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType)
+ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size)
 {
     ValueNum srcLibVN = srcVNPair.GetLiberal();
     ValueNum srcConVN = srcVNPair.GetConservative();
 
-    ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType);
+    ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType, size);
     ValueNum bitCastConVN;
 
     if (srcVNPair.BothEqual())
@@ -9640,7 +9711,7 @@ ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types c
     }
     else
     {
-        bitCastConVN = VNForBitCast(srcConVN, castToType);
+        bitCastConVN = VNForBitCast(srcConVN, castToType, size);
     }
 
     return ValueNumPair(bitCastLibVN, bitCastConVN);
@@ -9750,7 +9821,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         useEntryPointAddrAsArg0 = false;
     }
 
-    CallArg* curArg = &*args->Args().begin();
+    CallArg* curArg = args->Args().begin().GetArg();
     if (nArgs == 0)
     {
         if (generateUniqueVN)

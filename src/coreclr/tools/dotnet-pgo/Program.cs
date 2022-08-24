@@ -1299,7 +1299,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     bool matched = false;
                     bool mismatch = false;
                     bool mismatchHandled = false;
-                    foreach (var debugEntry in ecmaModule.PEReader.ReadDebugDirectory())
+                    foreach (DebugDirectoryEntry debugEntry in ecmaModule.PEReader.SafeReadDebugDirectory())
                     {
                         if (debugEntry.Type == DebugDirectoryEntryType.CodeView)
                         {
@@ -1626,7 +1626,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                     if (data->ProcessId != p.ProcessID)
                                         continue;
 
-                                    Span<LbrEntry32> lbr32 = data->Entries(e.EventDataLength);
+                                    Span<LbrEntry32> lbr32 = LbrTraceEventData32.Entries(ref *data, e.EventDataLength);
                                     correlator.AttributeSampleToLbrRuns(lbr32);
                                 }
                                 else
@@ -1640,7 +1640,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                     if (data->ProcessId != p.ProcessID)
                                         continue;
 
-                                    Span<LbrEntry64> lbr64 = data->Entries(e.EventDataLength);
+                                    Span<LbrEntry64> lbr64 = LbrTraceEventData64.Entries(ref *data, e.EventDataLength);
                                     correlator.AttributeSampleToLbrRuns(lbr64);
                                 }
                             }

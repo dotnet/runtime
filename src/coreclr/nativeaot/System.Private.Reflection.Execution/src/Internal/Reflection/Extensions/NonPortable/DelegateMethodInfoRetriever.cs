@@ -29,7 +29,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 // This is a special kind of delegate where the invoke method is "ObjectArrayThunk". Typically,
                 // this will be a delegate that points the LINQ Expression interpreter. We could manufacture
                 // a MethodInfo based on the delegate's Invoke signature, but let's just throw for now.
-                throw new PlatformNotSupportedException(SR.DelegateGetMethodInfo_ObjectArrayDelegate);
+                throw new NotSupportedException(SR.DelegateGetMethodInfo_ObjectArrayDelegate);
             }
 
             if (originalLdFtnResult == (IntPtr)0)
@@ -64,7 +64,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
                         if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out _, out genericMethodTypeArgumentHandles))
-                            throw new MissingMetadataException(SR.DelegateGetMethodInfo_NoInstantiation);
+                            throw new NotSupportedException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }
             }
@@ -77,9 +77,9 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                     string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
                     if (methodDisplayString == null)
-                        throw new MissingMetadataException(SR.DelegateGetMethodInfo_NoDynamic);
+                        throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
                     else
-                        throw new MissingMetadataException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
+                        throw new NotSupportedException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
                 }
             }
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);

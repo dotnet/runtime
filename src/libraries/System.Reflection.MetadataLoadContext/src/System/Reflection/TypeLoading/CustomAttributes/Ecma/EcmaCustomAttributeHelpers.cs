@@ -172,7 +172,7 @@ namespace System.Reflection.TypeLoading.Ecma
         //
         // Logic ported from ParseNativeTypeInfo()
         //
-        // https://github.com/dotnet/coreclr/blob/ab9b4511180d1dfde09d1480c29a7bbacf3587dd/src/vm/mlinfo.cpp#L512
+        // https://github.com/dotnet/runtime/blob/b908ecf514f32c7ba7d59ecc28fa3fdd64a10a1a/src/coreclr/vm/mlinfo.cpp#L469
         //
         public static MarshalAsAttribute ToMarshalAsAttribute(this BlobHandle blobHandle, EcmaModule module)
         {

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../imports";
-
-/// pthread_t in C
-export type pthread_ptr = number;
+import { MonoConfig } from "../../types";
+import { pthread_ptr } from "./types";
 
 export interface PThreadInfo {
     readonly pthread_id: pthread_ptr;
@@ -42,6 +41,29 @@ export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
     }
     const xmsg = x as MonoThreadMessage;
     return typeof (xmsg.type) === "string" && typeof (xmsg.cmd) === "string";
+}
+
+// message from the main thread to the pthread worker that passes the MonoConfig to the worker
+export interface MonoThreadMessageApplyMonoConfig extends MonoThreadMessage {
+    type: "pthread";
+    cmd: "apply_mono_config";
+    config: string;
+}
+
+export function isMonoThreadMessageApplyMonoConfig(x: unknown): x is MonoThreadMessageApplyMonoConfig {
+    if (!isMonoThreadMessage(x)) {
+        return false;
+    }
+    const xmsg = x as MonoThreadMessageApplyMonoConfig;
+    return xmsg.type === "pthread" && xmsg.cmd === "apply_mono_config" && typeof (xmsg.config) === "string";
+}
+
+export function makeMonoThreadMessageApplyMonoConfig(config: MonoConfig): MonoThreadMessageApplyMonoConfig {
+    return {
+        type: "pthread",
+        cmd: "apply_mono_config",
+        config: JSON.stringify(config)
+    };
 }
 
 /// Messages sent using the worker object's postMessage() method ///

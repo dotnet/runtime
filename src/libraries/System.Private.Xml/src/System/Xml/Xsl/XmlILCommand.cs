@@ -83,7 +83,7 @@ namespace System.Xml.Xsl
             Debug.Assert(results != null);
 
             // Ensure that dataSources is always non-null
-            dataSources ??= XmlNullResolver.Singleton;
+            dataSources ??= XmlResolver.ThrowingResolver;
 
             _delExec(new XmlQueryRuntime(_staticData, defaultDocument, dataSources, argumentList, results));
         }

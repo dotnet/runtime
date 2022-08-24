@@ -1,4 +1,3 @@
-const MONO = {}, BINDING = {}, INTERNAL = {}, IMPORTS = {};
 let ENVIRONMENT_IS_GLOBAL = false;
 var require = require || undefined;
 var __dirname = __dirname || '';

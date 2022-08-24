@@ -221,7 +221,9 @@ namespace Wasm.Build.Tests
             // App arguments
             if (envVars != null)
             {
-                var setenv = string.Join(' ', envVars.Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
+                var setenv = string.Join(' ', envVars
+                                                .Where(ev => ev.Key != "PATH")
+                                                .Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
                 args.Append($" {setenv}");
             }
 
@@ -359,7 +361,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
+            sb.Append($" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -381,7 +383,7 @@ namespace Wasm.Build.Tests
 
                 // check that we are using the correct runtime pack!
 
-                if (options.ExpectSuccess)
+                if (options.ExpectSuccess && options.AssertAppBundle)
                 {
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
                     AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -550,8 +552,7 @@ namespace Wasm.Build.Tests
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
-                "dotnet.js",
-                "dotnet-crypto-worker.js"
+                "dotnet.js"
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
@@ -938,6 +939,7 @@ namespace Wasm.Build.Tests
         bool    HasIcudt                  = true,
         bool    UseCache                  = true,
         bool    ExpectSuccess             = true,
+        bool    AssertAppBundle           = true,
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,

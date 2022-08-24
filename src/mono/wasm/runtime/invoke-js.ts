@@ -11,7 +11,7 @@ import { Int32Ptr } from "./types/emscripten";
 import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_wasm_symbolicate_string } from "./debug";
+import { mono_wasm_symbolicate_string } from "./logging";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
@@ -31,7 +31,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const closure: any = { fn, marshal_exception_to_cs, signature };
         const bound_js_function_name = "_bound_js_" + js_function_name.replace(/\./g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
+        let body = `//# sourceURL=https://dotnet.generated.invalid/${bound_js_function_name} \n`;
         let converter_names = "";
 
 

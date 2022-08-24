@@ -3280,6 +3280,10 @@ public:
 #endif
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+#endif
+
     //
     // Shim  callbacks to simulate fake attach events.
     //

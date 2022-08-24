@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
                     exception = errorCode.ToCryptographicException();
                     return default(bool?);
                 }

@@ -2854,6 +2854,8 @@ size_t     gc_heap::expand_mechanisms_per_heap[max_expand_mechanisms_count];
 
 size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
 
+mark_queue_t gc_heap::mark_queue;
+
 #endif // MULTIPLE_HEAPS
 
 /* end of per heap static initialization */
@@ -20850,6 +20852,8 @@ BOOL gc_heap::should_proceed_with_gc()
             // The no_gc mode was already in progress yet we triggered another GC,
             // this effectively exits the no_gc mode.
             restore_data_for_no_gc();
+            
+            memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
         }
         else
             return should_proceed_for_no_gc();
@@ -23453,7 +23457,7 @@ BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_ge
         {
             return FALSE;
         }
-        set_marked(o);
+        set_marked (o);
         return TRUE;
     }
     return FALSE;
@@ -23777,14 +23781,31 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
     }
 }
 
-//#define PREFETCH
+// enable on processors known to have a useful prefetch instruction
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
+#define PREFETCH
+#endif
+
 #ifdef PREFETCH
-__declspec(naked) void __fastcall Prefetch(void* addr)
+inline void Prefetch(void* addr)
 {
-   __asm {
-       PREFETCHT0 [ECX]
-        ret
-    };
+#ifdef TARGET_WINDOWS
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+
+#ifndef _MM_HINT_T0
+#define _MM_HINT_T0 1
+#endif
+    _mm_prefetch((const char*)addr, _MM_HINT_T0);
+#elif defined(TARGET_ARM64)
+    __prefetch((const char*)addr);
+#endif //defined(TARGET_AMD64) || defined(TARGET_X86)
+
+#elif defined(TARGET_UNIX) || defined(TARGET_OSX)
+    __builtin_prefetch(addr);
+#else //!(TARGET_WINDOWS || TARGET_UNIX || TARGET_OSX)
+    UNREFERENCED_PARAMETER(addr);
+#endif //TARGET_WINDOWS
 }
 #else //PREFETCH
 inline void Prefetch (void* addr)
@@ -23838,6 +23859,114 @@ inline
 BOOL ref_p (uint8_t* r)
 {
     return (straight_ref_p (r) || partial_object_p (r));
+}
+
+mark_queue_t::mark_queue_t() : curr_slot_index(0)
+{
+    for (size_t i = 0; i < slot_count; i++)
+    {
+        slot_table[i] = nullptr;
+    }
+}
+
+// place an object in the mark queue
+// returns a *different* object or nullptr
+// if a non-null object is returned, that object is newly marked
+// object o *must* be in a condemned generation
+FORCEINLINE
+uint8_t *mark_queue_t::queue_mark(uint8_t *o)
+{
+    Prefetch (o);
+
+    // while the prefetch is taking effect, park our object in the queue
+    // and fetch an object that has been sitting in the queue for a while
+    // and where (hopefully) the memory is already in the cache
+    size_t slot_index = curr_slot_index;
+    uint8_t* old_o = slot_table[slot_index];
+    slot_table[slot_index] = o;
+
+    curr_slot_index = (slot_index + 1) % slot_count;
+    if (old_o == nullptr)
+        return nullptr;
+
+    // this causes us to access the method table pointer of the old object
+    BOOL already_marked = marked (old_o);
+    if (already_marked)
+    {
+        return nullptr;
+    }
+    set_marked (old_o);
+    return old_o;
+}
+
+// place an object in the mark queue
+// returns a *different* object or nullptr
+// if a non-null object is returned, that object is newly marked
+// check first whether the object o is indeed in a condemned generation
+FORCEINLINE
+uint8_t *mark_queue_t::queue_mark(uint8_t *o, int condemned_gen)
+{
+#ifdef USE_REGIONS
+    if (!is_in_heap_range (o))
+    {
+        return nullptr;
+    }
+    if (condemned_gen != max_generation && gc_heap::get_region_gen_num (o) > condemned_gen)
+    {
+        return nullptr;
+    }
+    return queue_mark(o);
+#else //USE_REGIONS
+    assert (condemned_gen == -1);
+
+#ifdef MULTIPLE_HEAPS
+    if (o)
+    {
+        gc_heap* hp = gc_heap::heap_of_gc (o);
+        assert (hp);
+        if ((o >= hp->gc_low) && (o < hp->gc_high))
+            return queue_mark (o);
+    }
+#else //MULTIPLE_HEAPS
+    if ((o >= gc_heap::gc_low) && (o < gc_heap::gc_high))
+        return queue_mark (o);
+#endif //MULTIPLE_HEAPS
+    return nullptr;
+#endif //USE_REGIONS
+}
+
+// retrieve a newly marked object from the queue
+// returns nullptr if there is no such object
+uint8_t* mark_queue_t::get_next_marked()
+{
+    size_t slot_index = curr_slot_index;
+    size_t empty_slot_count = 0;
+    while (empty_slot_count < slot_count)
+    {
+        uint8_t* o = slot_table[slot_index];
+        slot_table[slot_index] = nullptr;
+        slot_index = (slot_index + 1) % slot_count;
+        if (o != nullptr)
+        {
+            BOOL already_marked = marked (o);
+            if (!already_marked)
+            {
+                set_marked (o);
+                curr_slot_index = slot_index;
+                return o;
+            }
+        }
+        empty_slot_count++;
+    }
+    return nullptr;
+}
+
+void mark_queue_t::verify_empty()
+{
+    for (size_t slot_index = 0; slot_index < slot_count; slot_index++)
+    {
+        assert(slot_table[slot_index] == nullptr);
+    }
 }
 
 void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL)
@@ -23899,9 +24028,8 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
 
                     go_through_object_cl (method_table(oo), oo, s, ppslot,
                                           {
-                                              uint8_t* o = *ppslot;
-                                              Prefetch(o);
-                                              if (gc_mark (o, gc_low, gc_high, condemned_gen))
+                                              uint8_t* o = mark_queue.queue_mark(*ppslot, condemned_gen);
+                                              if (o != nullptr)
                                               {
                                                   if (full_p)
                                                   {
@@ -23997,9 +24125,8 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
                     go_through_object (method_table(oo), oo, s, ppslot,
                                        start, use_start, (oo + s),
                                        {
-                                           uint8_t* o = *ppslot;
-                                           Prefetch(o);
-                                           if (gc_mark (o, gc_low, gc_high,condemned_gen))
+                                           uint8_t* o = mark_queue.queue_mark(*ppslot, condemned_gen);
+                                           if (o != nullptr)
                                            {
                                                 if (full_p)
                                                 {
@@ -24438,7 +24565,8 @@ gc_heap::mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
         snoop_stat.objects_checked_count++;
 #endif //SNOOP_STATS
 
-        if (gc_mark1 (o))
+        o = mark_queue.queue_mark (o);
+        if (o != nullptr)
         {
             m_boundary (o);
             size_t s = size (o);
@@ -24446,8 +24574,8 @@ gc_heap::mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
             {
                 go_through_object_cl (method_table(o), o, s, poo,
                                         {
-                                            uint8_t* oo = *poo;
-                                            if (gc_mark (oo, gc_low, gc_high, condemned_gen))
+                                            uint8_t* oo = mark_queue.queue_mark(*poo, condemned_gen);
+                                            if (oo != nullptr)
                                             {
                                                 m_boundary (oo);
                                                 add_to_promoted_bytes (oo, thread);
@@ -24482,6 +24610,45 @@ void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
     }
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
+}
+
+void gc_heap::drain_mark_queue ()
+{
+    int condemned_gen =
+#ifdef USE_REGIONS
+        settings.condemned_generation;
+#else
+        -1;
+#endif //USE_REGIONS
+
+#ifdef MULTIPLE_HEAPS
+    THREAD_FROM_HEAP;
+#else
+    const int thread = 0;
+#endif //MULTIPLE_HEAPS
+
+    uint8_t* o;
+    while ((o = mark_queue.get_next_marked()) != nullptr)
+    {
+        m_boundary (o);
+        size_t s = size (o);
+        add_to_promoted_bytes (o, s, thread);
+        if (contain_pointers_or_collectible (o))
+        {
+            go_through_object_cl (method_table(o), o, s, poo,
+                                    {
+                                        uint8_t* oo = mark_queue.queue_mark(*poo, condemned_gen);
+                                        if (oo != nullptr)
+                                        {
+                                            m_boundary (oo);
+                                            add_to_promoted_bytes (oo, thread);
+                                            if (contain_pointers_or_collectible (oo))
+                                                mark_object_simple1 (oo, oo THREAD_NUMBER_ARG);
+                                        }
+                                    }
+                );
+        }
+    }
 }
 
 #ifdef BACKGROUND_GC
@@ -25660,6 +25827,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         if (GCScan::GcDhUnpromotedHandlesExist(sc))
             s_fUnpromotedHandles = TRUE;
 
+        drain_mark_queue();
+
         // Synchronize all the threads so we can read our state variables safely. The shared variable
         // s_fScanRequired, indicating whether we should scan the tables or terminate the loop, will be set by
         // a single thread inside the join.
@@ -25760,6 +25929,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         // objects now appear to be promoted and we should set the flag.
         if (process_mark_overflow(condemned_gen_number))
             fUnscannedPromotions = true;
+
+        drain_mark_queue();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
@@ -25872,6 +26043,11 @@ void gc_heap::verify_region_to_generation_map()
             generation *gen = hp->generation_of (gen_number);
             for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
             {
+                if (heap_segment_read_only_p (region))
+                {
+                    // the region to generation map doesn't cover read only segments
+                    continue;
+                }
                 size_t region_index_start = get_basic_region_index_for_address (get_region_start (region));
                 size_t region_index_end = get_basic_region_index_for_address (heap_segment_reserved (region));
                 int gen_num = min (gen_number, soh_gen2);
@@ -26187,6 +26363,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         if ((condemned_gen_number == max_generation) && (num_sizedrefs > 0))
         {
             GCScan::GcScanSizedRefs(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
+            drain_mark_queue();
             fire_mark_event (ETW::GC_ROOT_SIZEDREF, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26210,12 +26387,14 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         GCScan::GcScanRoots(GCHeap::Promote,
                                 condemned_gen_number, max_generation,
                                 &sc);
+        drain_mark_queue();
         fire_mark_event (ETW::GC_ROOT_STACK, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef BACKGROUND_GC
         if (gc_heap::background_running_p())
         {
             scan_background_roots (GCHeap::Promote, heap_number, &sc);
+            drain_mark_queue();
             fire_mark_event (ETW::GC_ROOT_BGC, current_promoted_bytes, last_promoted_bytes);
         }
 #endif //BACKGROUND_GC
@@ -26223,6 +26402,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #ifdef FEATURE_PREMORTEM_FINALIZATION
         dprintf(3, ("Marking finalization data"));
         finalize_queue->GcScanRoots(GCHeap::Promote, heap_number, 0);
+        drain_mark_queue();
         fire_mark_event (ETW::GC_ROOT_FQ, current_promoted_bytes, last_promoted_bytes);
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
@@ -26230,6 +26410,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         GCScan::GcScanHandles(GCHeap::Promote,
                                     condemned_gen_number, max_generation,
                                     &sc);
+        drain_mark_queue();
         fire_mark_event (ETW::GC_ROOT_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
         if (!full_p)
@@ -26341,6 +26522,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             update_old_card_survived();
 #endif //USE_REGIONS
 
+            drain_mark_queue();
             fire_mark_event (ETW::GC_ROOT_OLDER, current_promoted_bytes, last_promoted_bytes);
         }
     }
@@ -26349,6 +26531,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     if (do_mark_steal_p)
     {
         mark_steal();
+        drain_mark_queue();
         fire_mark_event (ETW::GC_ROOT_STEAL, current_promoted_bytes, last_promoted_bytes);
     }
 #endif //MH_SC_MARK
@@ -26362,6 +26545,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // handle table has been fully promoted.
     GCScan::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
     scan_dependent_handles(condemned_gen_number, &sc, true);
+    drain_mark_queue();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26444,12 +26628,14 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     dprintf (3, ("Finalize marking"));
     finalize_queue->ScanForFinalization (GCHeap::Promote, condemned_gen_number, mark_only_p, __this);
+    drain_mark_queue();
     fire_mark_event (ETW::GC_ROOT_NEW_FQ, current_promoted_bytes, last_promoted_bytes);
     GCToEEInterface::DiagWalkFReachableObjects(__this);
 
     // Scan dependent handles again to promote any secondaries associated with primaries that were promoted
     // for finalization. As before scan_dependent_handles will also process any mark stack overflow.
     scan_dependent_handles(condemned_gen_number, &sc, false);
+    drain_mark_queue();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
@@ -26585,6 +26771,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
 
     finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
+
+    mark_queue.verify_empty();
 
     dprintf(2,("---- End of mark phase ----"));
 }
@@ -31411,9 +31599,12 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
 
     int plan_gen_num = heap_segment_plan_gen_num (region);
-    generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
-    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
-        generation_allocation_size (generation_of (plan_gen_num))));
+    if (plan_gen_num < heap_segment_gen_num (region))
+    {
+        generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
+        dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
+            generation_allocation_size (generation_of (plan_gen_num))));
+    }
 }
 
 inline
@@ -31927,7 +32118,7 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
                 assert (candidate < tree);
                 candidate = tree;
                 tree = tree + cn;
-                Prefetch (tree - 8);
+                Prefetch (&((plug_and_pair*)tree)[-1].m_pair.left);
                 continue;
             }
             else
@@ -31938,7 +32129,7 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
             if ((cn = node_left_child (tree)) != 0)
             {
                 tree = tree + cn;
-                Prefetch (tree - 8);
+                Prefetch (&((plug_and_pair*)tree)[-1].m_pair.left);
                 continue;
             }
             else

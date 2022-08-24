@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Marshaller for ANSI strings
+    /// Represents a marshaller for ANSI strings.
     /// </summary>
     [CLSCompliant(false)]
     [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(AnsiStringMarshaller))]
@@ -14,10 +14,10 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class AnsiStringMarshaller
     {
         /// <summary>
-        /// Convert a string to an unmanaged version.
+        /// Converts a string to an unmanaged version.
         /// </summary>
-        /// <param name="managed">A managed string</param>
-        /// <returns>An unmanaged string</returns>
+        /// <param name="managed">The managed string to convert.</param>
+        /// <returns>An unmanaged string.</returns>
         public static byte* ConvertToUnmanaged(string? managed)
         {
             if (managed is null)
@@ -32,17 +32,17 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Convert an unmanaged string to a managed version.
+        /// Converts an unmanaged string to a managed version.
         /// </summary>
-        /// <param name="unmanaged">An unmanaged string</param>
-        /// <returns>A managed string</returns>
+        /// <param name="unmanaged">The unmanaged string to convert.</param>
+        /// <returns>A managed string.</returns>
         public static string? ConvertToManaged(byte* unmanaged)
             => Marshal.PtrToStringAnsi((IntPtr)unmanaged);
 
         /// <summary>
-        /// Free the memory for the unmanaged string.
+        /// Frees the memory for the unmanaged string.
         /// </summary>
-        /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
+        /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
         public static void Free(byte* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public ref struct ManagedToUnmanagedIn
         {
             /// <summary>
-            /// Requested buffer size for optimized marshalling.
+            /// Gets the requested buffer size for optimized marshalling.
             /// </summary>
             public static int BufferSize => 0x100;
 
@@ -60,10 +60,10 @@ namespace System.Runtime.InteropServices.Marshalling
             private bool _allocated;
 
             /// <summary>
-            /// Initialize the marshaller with a managed string and requested buffer.
+            /// Initializes the marshaller with a managed string and requested buffer.
             /// </summary>
-            /// <param name="managed">The managed string</param>
-            /// <param name="buffer">A request buffer of at least size, <see cref="BufferSize"/>.</param>
+            /// <param name="managed">The managed string to initialize the marshaller with.</param>
+            /// <param name="buffer">A request buffer of at least size <see cref="BufferSize"/>.</param>
             public void FromManaged(string? managed, Span<byte> buffer)
             {
                 _allocated = false;
@@ -93,13 +93,13 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             /// <summary>
-            /// Convert the current manage string to an unmanaged string.
+            /// Converts the current managed string to an unmanaged string.
             /// </summary>
-            /// <returns>The unmanaged string</returns>
+            /// <returns>The converted unmanaged string.</returns>
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>
-            /// Free any allocated unmanaged string.
+            /// Frees any allocated unmanaged string memory.
             /// </summary>
             public void Free()
             {

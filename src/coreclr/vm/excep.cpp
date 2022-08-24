@@ -5637,7 +5637,7 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
     CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
 
-    _ASSERTE(pParam->OneShot && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
+    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
 
     if (pParam->OneShot == TRUE)
     {
@@ -6533,64 +6533,50 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-struct SavedExceptionInfo
+static void FixContextForFaultingExceptionFrame(
+    EXCEPTION_POINTERS* ep,
+    EXCEPTION_RECORD* pOriginalExceptionRecord,
+    CONTEXT* pOriginalExceptionContext)
 {
-    EXCEPTION_RECORD m_ExceptionRecord;
-    CONTEXT m_ExceptionContext;
-    CrstStatic m_Crst;
+    WRAPPER_NO_CONTRACT;
 
-    void SaveExceptionRecord(EXCEPTION_RECORD *pExceptionRecord)
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t erSize = offsetof(EXCEPTION_RECORD, ExceptionInformation) +
-            pExceptionRecord->NumberParameters * sizeof(pExceptionRecord->ExceptionInformation[0]);
-        memcpy(&m_ExceptionRecord, pExceptionRecord, erSize);
+    // don't copy param args as have already supplied them on the throw
+    memcpy((void*) ep->ExceptionRecord,
+           (void*) pOriginalExceptionRecord,
+           offsetof(EXCEPTION_RECORD, ExceptionInformation)
+          );
 
-    }
+    ReplaceExceptionContextRecord(ep->ContextRecord, pOriginalExceptionContext);
 
-    void SaveContext(CONTEXT *pContext)
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef CONTEXT_EXTENDED_REGISTERS
+    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+}
 
-        size_t contextSize = offsetof(CONTEXT, ExtendedRegisters);
-        if ((pContext->ContextFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
-            contextSize += sizeof(pContext->ExtendedRegisters);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#else // !CONTEXT_EXTENDED_REGISTERS
-
-        size_t contextSize = sizeof(CONTEXT);
-        memcpy(&m_ExceptionContext, pContext, contextSize);
-
-#endif // !CONTEXT_EXTENDED_REGISTERS
-    }
-
-    DEBUG_NOINLINE void Enter()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Enter();
-    }
-
-    DEBUG_NOINLINE void Leave()
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        m_Crst.Leave();
-    }
-
-    void Init()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Crst.Init(CrstSavedExceptionInfo, CRST_UNSAFE_ANYMODE);
-    }
+struct HandleManagedFaultFilterParam
+{
+    // It's possible for our filter to be called more than once if some other first-pass
+    // handler lets an exception out.  We need to make sure we only fix the context for
+    // the first exception we see.  This flag takes care of that.
+    BOOL fFilterExecuted;
+    EXCEPTION_RECORD *pOriginalExceptionRecord;
+    CONTEXT *pOriginalExceptionContext;
 };
 
-void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
-                        CONTEXT*                        pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread)
+static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HandleManagedFaultFilterParam *pParam = (HandleManagedFaultFilterParam *) pv;
+
+    if (!pParam->fFilterExecuted)
+    {
+        FixContextForFaultingExceptionFrame(ep, pParam->pOriginalExceptionRecord, pParam->pOriginalExceptionContext);
+        pParam->fFilterExecuted = TRUE;
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6602,9 +6588,24 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
 
-    SEHException exception(pExceptionRecord);
-    OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
-    RaiseTheExceptionInternalOnly(managedException, FALSE);
+    HandleManagedFaultFilterParam param;
+    param.fFilterExecuted = FALSE;
+    param.pOriginalExceptionRecord = pExceptionRecord;
+    param.pOriginalExceptionContext = pContext;
+
+    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
+    {
+        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+
+        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
+
+        RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
+            pRecord->NumberParameters, pRecord->ExceptionInformation);
+    }
+    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
+    {
+    }
+    PAL_ENDTRY
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6932,11 +6933,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
-        HandleManagedFault(pExceptionInfo->ExceptionRecord,
-                           pExceptionInfo->ContextRecord,
-                           NULL, // establisher frame (x86 only)
-                           NULL  // pThread           (x86 only)
-                           );
+        HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
@@ -7014,11 +7011,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
         //
         // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
         //
-        HandleManagedFault(pExceptionInfo->ExceptionRecord,
-                           pExceptionInfo->ContextRecord,
-                           NULL, // establisher frame (x86 only)
-                           NULL  // pThread           (x86 only)
-                           );
+        HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
         return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif // defined(FEATURE_EH_FUNCLETS)
@@ -7439,18 +7432,9 @@ public:
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {
     //
-    // HandleManagedFault will take a Crst that causes an unbalanced
-    // notrigger scope, and this contract will whack the thread's
-    // ClrDebugState to what it was on entry in the dtor, which causes
-    // us to assert when we finally release the Crst later on.
+    // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
+    // static contracts, but currently this is all WRAPPER_NO_CONTRACT.
     //
-//    CONTRACTL
-//    {
-//        NOTHROW;
-//        GC_NOTRIGGER;
-//        MODE_ANY;
-//    }
-//    CONTRACTL_END;
 
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -7574,7 +7558,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         if (currentStackBase != stopPoint)
         {
             CantAllocHolder caHolder;
-            STRESS_LOG2(LF_EH, LL_INFO100, "In CLRVectoredExceptionHandler: mismatch of cached and current stack-base indicating use of Fibers, return with EXCEPTION_CONTINUE_SEARCH: current = %p; cache = %p\n",
+            STRESS_LOG2(LF_EH, LL_INFO100, "CLRVectoredExceptionShim: mismatch of cached and current stack-base "
+                "indicating use of Fibers, return with EXCEPTION_CONTINUE_SEARCH: current = %p; cache = %p\n",
                 currentStackBase, stopPoint);
             return EXCEPTION_CONTINUE_SEARCH;
         }
@@ -8325,7 +8310,7 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 #if defined(TARGET_X86)
                                                        EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
 #elif defined(FEATURE_EH_FUNCLETS)
-                                                       ULONG64 pEstablisherFrame
+                                                       PVOID pEstablisherFrame
 #else
 #error Unsupported platform
 #endif
@@ -10581,7 +10566,6 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
 
 // Given an exception code, this method returns a BOOL to indicate if the
 // code belongs to a corrupting exception or not.
-/* static */
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
 {
     CONTRACTL

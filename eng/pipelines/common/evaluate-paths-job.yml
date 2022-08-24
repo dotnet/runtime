@@ -50,3 +50,10 @@ jobs:
               - --includepaths '${{ join('+', path.include) }}'
             - ${{ if ne(path.exclude[0], '') }}:
               - --excludepaths '${{ join('+', path.exclude) }}'
+
+    - template: evaluate-changed-darc-deps.yml
+      parameters:
+        arguments:
+        # The commit that we're building is always a merge commit that is merging into the target branch.
+        # So the first parent of the commit is on the target branch and the second parent is on the source branch.
+        - --difftarget HEAD^1
