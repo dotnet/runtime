@@ -62,6 +62,11 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
+        packagerid|-packagerid)
+            __PackageRid="$2"
+            __ShiftArgs=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
@@ -74,6 +79,7 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
+__PackageRid="${__PackageRid:-$__DistroRid}"
 __DistroRidLower="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
 __BinDir="$__RootBinDir/bin/$__DistroRidLower.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/$__DistroRidLower.$__BuildType"
@@ -81,7 +87,7 @@ __IntermediatesDir="$__RootBinDir/obj/$__DistroRidLower.$__BuildType"
 export __BinDir __IntermediatesDir __RuntimeFlavor
 
 __CMakeArgs="-DCLI_CMAKE_HOST_VER=\"$__host_ver\" -DCLI_CMAKE_COMMON_HOST_VER=\"$__apphost_ver\" -DCLI_CMAKE_HOST_FXR_VER=\"$__fxr_ver\" $__CMakeArgs"
-__CMakeArgs="-DCLI_CMAKE_HOST_POLICY_VER=\"$__policy_ver\" -DCLI_CMAKE_PKG_RID=\"$__DistroRid\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
+__CMakeArgs="-DCLI_CMAKE_HOST_POLICY_VER=\"$__policy_ver\" -DCLI_CMAKE_PKG_RID=\"$__PackageRid\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
 __CMakeArgs="-DRUNTIME_FLAVOR=\"$__RuntimeFlavor\" $__CMakeArgs"
 __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 

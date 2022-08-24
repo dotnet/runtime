@@ -231,7 +231,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(__DistroRid.ToLowerInvariant()).$(Configuration)', 'corehost'))</DotNetHostBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
