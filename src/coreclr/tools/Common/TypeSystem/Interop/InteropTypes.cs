@@ -137,11 +137,6 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
         }
 
-        public static bool IsInt128Type(TypeSystemContext context, TypeDesc type)
-        {
-            return type is DefType defType && defType.IsInt128OrHasInt128Fields;
-        }
-
         public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector128`1");
