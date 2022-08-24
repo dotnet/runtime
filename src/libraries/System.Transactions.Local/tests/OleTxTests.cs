@@ -13,6 +13,7 @@ namespace System.Transactions.Tests;
 #nullable enable
 
 [PlatformSpecific(TestPlatforms.Windows)]
+[SkipOnMono("COM Interop not supported on Mono")]
 public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(1);
