@@ -21,9 +21,13 @@
     <None Include="..\Certs\InteropTests\*.*" LinkBase="Certs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  
+  <Import Project="Versions.props" />
 
-    <PackageReference Include="Grpc.AspNetCore" Version="2.46.0" />
-    <PackageReference Include="Grpc.AspNetCore.Web" Version="2.46.0" />
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="$(GrpcAspNetCoreVersion)" />
+    <PackageReference Include="Grpc.AspNetCore.Web" Version="$(GrpcAspNetCoreWebVersion)" />
   </ItemGroup>
 
 </Project>

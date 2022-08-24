@@ -165,6 +165,8 @@
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <!-- Android gRPC client tests -->
     <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
+    <GrpcAspNetCoreVersion>2.46.0</GrpcAspNetCoreVersion>
+    <GrpcAspNetCoreWebVersion>2.46.0</GrpcAspNetCoreWebVersion>
     <GrpcAuthVersion>2.46.3</GrpcAuthVersion>
     <GrpcCoreVersion>2.46.3</GrpcCoreVersion>
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
