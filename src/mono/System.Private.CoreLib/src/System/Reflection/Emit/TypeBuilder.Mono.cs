@@ -824,24 +824,21 @@ namespace System.Reflection.Emit
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
-                        fb.ResolveUserTypes();
+                    fb?.ResolveUserTypes();
                 }
             }
             if (methods != null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
-                        mb.ResolveUserTypes();
+                    mb?.ResolveUserTypes();
                 }
             }
             if (ctors != null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
-                        cb.ResolveUserTypes();
+                    cb?.ResolveUserTypes();
                 }
             }
         }

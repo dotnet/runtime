@@ -103,8 +103,7 @@ namespace System.Runtime.InteropServices.JavaScript {
         }
 
         internal static void Install () {
-            if (MainThreadSynchronizationContext == null)
-                MainThreadSynchronizationContext = new JSSynchronizationContext(Thread.CurrentThread);
+            MainThreadSynchronizationContext ??= new JSSynchronizationContext(Thread.CurrentThread);
 
             SynchronizationContext.SetSynchronizationContext(MainThreadSynchronizationContext);
             MainThreadSynchronizationContext.AwaitNewData();
