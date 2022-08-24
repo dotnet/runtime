@@ -59,13 +59,13 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# WebAssembly legs - run windows builds. Also, debugger tests which are currently
-# unstable
+# WebAssembly legs - library tests, Wasm.Build.Tests, and debugger tests
 #
 - template: /eng/pipelines/common/templates/wasm-library-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
       - WasmTestOnBrowser
@@ -78,12 +78,14 @@ jobs:
     nameSuffix: _AOT
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -91,6 +93,7 @@ jobs:
     platforms:
       - Browser_wasm
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml

@@ -20,6 +20,8 @@
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
 #endif
+    IMPORT HijackHandler
+    IMPORT ThrowControlForThread
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -1027,6 +1029,31 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
         MEND
 
+
+; ------------------------------------------------------------------
+;
+; Helpers for ThreadAbort exceptions
+;
+
+        NESTED_ENTRY RedirectForThreadAbort2,,HijackHandler
+        PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+
+        ; stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
+
+        ; On entry:
+        ;
+        ; x0 = address of FaultingExceptionFrame
+        ;
+        ; Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              ThrowControlForThread
+
+        ; ThrowControlForThread doesn't return.
+        EMIT_BREAKPOINT
+
+        NESTED_END RedirectForThreadAbort2
+
+        GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub

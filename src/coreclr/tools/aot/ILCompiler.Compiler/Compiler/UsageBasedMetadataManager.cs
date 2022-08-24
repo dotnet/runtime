@@ -26,6 +26,7 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
 
 namespace ILCompiler
 {
@@ -54,6 +55,8 @@ namespace ILCompiler
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
         private readonly List<FieldDesc> _fieldsWithRuntimeMapping = new List<FieldDesc>();
         private readonly List<ReflectableCustomAttribute> _customAttributesWithMetadata = new List<ReflectableCustomAttribute>();
+
+        internal IReadOnlyDictionary<string, bool> FeatureSwitches { get; }
 
         private readonly HashSet<ModuleDesc> _rootEntireAssembliesExaminedModules = new HashSet<ModuleDesc>();
 
@@ -87,6 +90,7 @@ namespace ILCompiler
             Logger = logger;
 
             _featureSwitchHashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(featureSwitchValues));
+            FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
@@ -215,6 +219,36 @@ namespace ILCompiler
         {
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(factory.FieldMetadata(field.GetTypicalFieldDefinition()), "Reflectable field");
+        }
+
+        internal override void GetDependenciesDueToModuleUse(ref DependencyList dependencies, NodeFactory factory, ModuleDesc module)
+        {
+            dependencies ??= new DependencyList();
+            if (module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
+            {
+                dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Module with a static constructor");
+            }
+            if (module is EcmaModule ecmaModule)
+            {
+                PEMemoryBlock resourceDirectory = ecmaModule.PEReader.GetSectionData(ecmaModule.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+
+                foreach (var resourceHandle in ecmaModule.MetadataReader.ManifestResources)
+                {
+                    ManifestResource resource = ecmaModule.MetadataReader.GetManifestResource(resourceHandle);
+
+                    // Don't try to process linked resources or resources in other assemblies
+                    if (!resource.Implementation.IsNil)
+                    {
+                        continue;
+                    }
+
+                    string resourceName = ecmaModule.MetadataReader.GetString(resource.Name);
+                    if (resourceName == "ILLink.Descriptors.xml")
+                    {
+                        dependencies.Add(factory.EmbeddedTrimmingDescriptor(ecmaModule), "Embedded descriptor file");
+                    }
+                }
+            }
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -431,9 +465,9 @@ namespace ILCompiler
                 // ObjectGetTypeFlowDependencies don't need to be conditional in that case. They'll be added as needed.
             }
 
-            // Ensure fields can be consistently reflection set & get.
             if (type.HasInstantiation && !type.IsTypeDefinition && !IsReflectionBlocked(type))
             {
+                // Ensure fields can be consistently reflection set & get.
                 foreach (FieldDesc field in type.GetFields())
                 {
                     // Tiny optimization: no get/set for literal fields since they only exist in metadata
@@ -447,7 +481,24 @@ namespace ILCompiler
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                         factory.ReflectableField(field),
                         factory.ReflectableField(field.GetTypicalFieldDefinition()),
-                        "GetType called on the interface"));
+                        "Fields have same reflectability"));
+                }
+
+                // Ensure methods can be consistently reflection-accessed
+                foreach (MethodDesc method in type.GetMethods())
+                {
+                    if (IsReflectionBlocked(method))
+                        continue;
+
+                    // Generic methods need to be instantiated over something.
+                    if (method.HasInstantiation)
+                        continue;
+
+                    dependencies ??= new CombinedDependencyList();
+                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                        factory.ReflectableMethod(method),
+                        factory.ReflectableMethod(method.GetTypicalMethodDefinition()),
+                        "Methods have same reflectability"));
                 }
             }
         }
@@ -702,12 +753,12 @@ namespace ILCompiler
             }
         }
 
-        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection)
             {
-                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
+                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(parent))).ProcessAttributeDataflow(attributeCtor, decodedValue);
             }
 
             return null;
@@ -926,6 +977,11 @@ namespace ILCompiler
                 // but that's OK since the node factory will only add actually one node.
                 methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
             }
+
+            // Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
+            // data-flow scan of the user-defined method which uses this compiler-generated method.
+            if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                return;
 
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);

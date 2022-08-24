@@ -27,7 +27,7 @@ extern "C" {
 
 /***************************************************************************/
 /* Note that this constructor does not set the LocalSig, but has the
-   advantage that it does not have any dependancy on EE structures.
+   advantage that it does not have any dependency on EE structures.
    inside the EE use the FunctionDesc constructor */
 
 void __stdcall DecoderInit(void *pThis, COR_ILMETHOD *header)

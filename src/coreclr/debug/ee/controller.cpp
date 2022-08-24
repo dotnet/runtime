@@ -5555,7 +5555,7 @@ bool DebuggerStepper::TrapStepInto(ControllerStackInfo *info,
     // If we're calling from managed code, this should either succeed
     // or become an ecall into mscorwks.
     // @Todo - what about stubs in mscorwks.
-    // @todo - if this fails, we want to provde as much info as possible.
+    // @todo - if this fails, we want to provide as much info as possible.
     if (!g_pEEInterface->TraceStub(ip, &trace)
         || !g_pEEInterface->FollowTrace(&trace))
     {

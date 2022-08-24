@@ -21,7 +21,7 @@ parameters:
 steps:
   # There is a global.json in the runtime repo, but it sets the version to 7.xxx preview. This creates a local global.json to allow the running of 6.0 version.
   - script: |
-      echo '' > ./global.json 
+      echo '{}' > ./global.json 
     displayName: Create global.json
     workingDirectory: $(Build.SourcesDirectory)
 

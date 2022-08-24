@@ -209,9 +209,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
-    DllImportEntry(ThreadPool_GetCompletedWorkItemCount)
-    DllImportEntry(ThreadPool_RequestWorkerThread)
-    DllImportEntry(ThreadPool_PerformGateActivities)
+    DllImportEntry(ThreadNative_Abort)
+    DllImportEntry(ThreadNative_ResetAbort)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif

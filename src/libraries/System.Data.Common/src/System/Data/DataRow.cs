@@ -110,7 +110,7 @@ namespace System.Data
 
         private void RowErrorChanged()
         {
-            // We don't know wich record was used by view index. try to use both.
+            // We don't know which record was used by view index. try to use both.
             if (_oldRecord != -1)
             {
                 _table.RecordChanged(_oldRecord);

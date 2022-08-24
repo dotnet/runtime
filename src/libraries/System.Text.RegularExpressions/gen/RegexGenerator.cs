@@ -46,10 +46,10 @@ namespace System.Text.RegularExpressions.Generator
             IncrementalValueProvider<ImmutableArray<object>> codeOrDiagnostics =
                 context.SyntaxProvider
 
-                // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
+                // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
                 .ForAttributeWithMetadataName(
                     context,
-                    RegexGeneratorAttributeName,
+                    GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax,
                     GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)

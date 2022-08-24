@@ -155,6 +155,24 @@ $FuncName
     MEND
 
 ;-----------------------------------------------------------------------------
+; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+; before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+; is misaligned.
+;
+    MACRO
+        CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        add     x9, sp, xzr
+        tst     x9, #15
+        beq     %F0
+        EMIT_BREAKPOINT
+0
+#endif
+    MEND
+
+;-----------------------------------------------------------------------------
 ; The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
 ; base address to be passed in $reg
 ;

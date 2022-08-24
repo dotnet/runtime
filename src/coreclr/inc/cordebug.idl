@@ -2797,7 +2797,7 @@ interface ICorDebugProcess : ICorDebugController
      * Any managed breakpoints will be automatically stripped from the returned buffer.
      * No adjustments will be made for Native breakpoints set by ICorDebugProcess2::SetUnmanagedBreakpoint
      *
-     * No caching of process memory is peformed.
+     * No caching of process memory is performed.
      * These parameters have the same semantics as kernel32!ReadProcessMemory.
      * The entire range must be read for the function to return success.
      */
@@ -3587,7 +3587,7 @@ interface ICorDebugStepper : IUnknown
      *
      * It should be noted that if one doesn't use a stepper to enter a
      * method (for example, the main() method of C++), then one
-     * won't neccessarily step over prologs,etc.
+     * won't necessarily step over prologs,etc.
      *
      * By default, STOP_OTHER_UNMAPPED will be used.
      *

@@ -64,6 +64,15 @@ namespace ILCompiler.DependencyAnalysis
                 if (defaultCtor == null)
                     continue;
 
+                // We only place default constructors of reflection-blocked types in this table.
+                // At runtime, the type loader will search both this table and the invoke map
+                // for default constructor info. If the ctor is reflectable, we would have
+                // expected dataflow analysis to ensure there's a reflectable method for it.
+                // If we don't find a reflectable method for the ctor of a non-blocked type
+                // there would have to be a dataflow analysis warning.
+                if (!factory.MetadataManager.IsReflectionBlocked(defaultCtor))
+                    continue;
+
                 defaultCtor = defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                 ISymbolNode typeNode = factory.NecessaryTypeSymbol(type);

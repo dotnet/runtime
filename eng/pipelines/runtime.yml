@@ -263,7 +263,7 @@ jobs:
       isSingleFile: true
       nameSuffix: NativeAOT
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -284,6 +284,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: clrTools
+      timeoutInMinutes: 120
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -359,6 +360,7 @@ jobs:
   parameters:
     platforms:
       - Browser_wasm
+    buildAndRunWasi: true
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
       - normal
@@ -371,7 +373,6 @@ jobs:
       - Browser_wasm
     nameSuffix: _EAT
     runAOT: false
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # AOT Library tests

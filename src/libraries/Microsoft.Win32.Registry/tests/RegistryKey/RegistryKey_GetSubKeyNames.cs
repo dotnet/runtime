@@ -34,7 +34,7 @@ namespace Microsoft.Win32.RegistryTests
             string[] expectedSubKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
             foreach (var subKeyName in expectedSubKeyNames)
             {
-                TestRegistryKey.CreateSubKey(subKeyName);
+                TestRegistryKey.CreateSubKey(subKeyName).Dispose();
             }
 
             Assert.Equal(expectedSubKeyNames, TestRegistryKey.GetSubKeyNames());

@@ -335,7 +335,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return arguments;
         }
 
-        // alwayc called under a lock
+        // always called under a lock
         private bool RequiresActivation()
         {
             // If we have any imports then we need activation

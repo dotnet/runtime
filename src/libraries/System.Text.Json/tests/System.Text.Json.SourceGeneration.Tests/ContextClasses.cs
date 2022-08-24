@@ -117,6 +117,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal partial class DictionaryTypeContext : JsonSerializerContext { }
 
     [JsonSerializable(typeof(JsonMessage))]
+    [JsonSerializable(typeof(PublicClassWithDifferentAccessibilitiesProperties))]
+    [JsonSerializable(typeof(JsonConverter))]
+    [JsonSerializable(typeof(JsonSerializerOptions))]
     public partial class PublicContext : JsonSerializerContext { }
 
     [JsonSerializable(typeof(JsonMessage))]

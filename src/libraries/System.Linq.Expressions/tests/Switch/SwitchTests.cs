@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Tests
         private delegate void TwoOutAction(int input, ref int x, ref int y);
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        public void JumpBetweenCases(bool useIntepreter)
+        public void JumpBetweenCases(bool useInterpreter)
         {
             LabelTarget label = Expression.Label();
             ParameterExpression xParam = Expression.Parameter(typeof(int).MakeByRefType());
@@ -983,7 +983,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.SwitchCase(
                         Expression.Block(Expression.Label(label), Expression.Assign(yParam, Expression.Constant(2)), Expression.Empty()),
                         Expression.Constant(1))), inpParam, xParam, yParam);
-            TwoOutAction act = lambda.Compile(useIntepreter);
+            TwoOutAction act = lambda.Compile(useInterpreter);
             int x = 0;
             int y = 0;
             act(2, ref x, ref y);

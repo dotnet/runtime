@@ -14,6 +14,6 @@ public partial class MyClass
         return text;
     }
 
-    [JSImport("node.process.version")]
+    [JSImport("node.process.version", "main.mjs")]
     internal static partial string GetNodeVersion();
 }

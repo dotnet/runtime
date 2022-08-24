@@ -630,7 +630,7 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        public void CreateContiner_GenericExportWithDependencyConstructorHasConvention_Success()
+        public void CreateContainer_GenericExportWithDependencyConstructorHasConvention_Success()
         {
             var conventions = new ConventionBuilder();
 

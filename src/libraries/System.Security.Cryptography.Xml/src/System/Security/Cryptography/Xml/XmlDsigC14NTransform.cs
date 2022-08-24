@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInput(object obj)
         {
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), BaseURI));
+            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             if (obj is Stream)
             {
                 _cXml = new CanonicalXml((Stream)obj, _includeComments, resolver, BaseURI);

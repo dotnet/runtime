@@ -258,7 +258,7 @@ namespace System.Reflection.Emit.Tests
 
         private void VerifyMethodSignature(TypeBuilder type, MethodBuilder method, Type desiredReturnType)
         {
-            Type ret = type.CreateTypeInfo().AsType();
+            Type ret = type.CreateType();
             MethodInfo methodInfo = method.GetBaseDefinition();
             Type actualReturnType = methodInfo.ReturnType;
 

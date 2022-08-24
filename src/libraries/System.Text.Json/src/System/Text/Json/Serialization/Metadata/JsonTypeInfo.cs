@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
@@ -25,6 +24,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
         private JsonPropertyInfoList? _properties;
+
+        /// <summary>
+        /// Indices of required properties.
+        /// </summary>
+        internal int NumberOfRequiredProperties { get; private set; }
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -266,8 +270,8 @@ namespace System.Text.Json.Serialization.Metadata
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 
-        // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
-        internal bool HasSerializeHandler { get; private protected set; }
+        // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
+        internal bool CanUseSerializeHandler { get; private protected set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
@@ -527,13 +531,15 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            if (!Options.IsImmutable)
+            if (!Options.IsReadOnly)
             {
-                Options.InitializeForMetadataGeneration();
+                Options.MakeReadOnly();
             }
 
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
+
+            CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
 
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
@@ -627,8 +633,6 @@ namespace System.Text.Json.Serialization.Metadata
             return new CustomJsonTypeInfo<T>(converter, options);
         }
 
-        private static MethodInfo? s_createJsonTypeInfo;
-
         /// <summary>
         /// Creates a blank <see cref="JsonTypeInfo"/> instance.
         /// </summary>
@@ -666,9 +670,25 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
-            return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
-                .InvokeNoWrapExceptions(null, new object[] { options })!;
+            JsonTypeInfo jsonTypeInfo;
+            JsonConverter converter = DefaultJsonTypeInfoResolver.GetConverterForType(type, options, resolveJsonConverterAttribute: false);
+
+            if (converter.TypeToConvert == type)
+            {
+                // For performance, avoid doing a reflection-based instantiation
+                // if the converter type matches that of the declared type.
+                jsonTypeInfo = converter.CreateCustomJsonTypeInfo(options);
+            }
+            else
+            {
+                Type jsonTypeInfoType = typeof(CustomJsonTypeInfo<>).MakeGenericType(type);
+                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { converter, options })!;
+            }
+
+            Debug.Assert(jsonTypeInfo.Type == type);
+            return jsonTypeInfo;
         }
 
         /// <summary>
@@ -878,13 +898,21 @@ namespace System.Text.Json.Serialization.Metadata
                 ExtensionDataProperty.EnsureConfigured();
             }
 
+            int numberOfRequiredProperties = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
+                if (jsonPropertyInfo.IsRequired)
+                {
+                    jsonPropertyInfo.RequiredPropertyIndex = numberOfRequiredProperties++;
+                }
+
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
             }
+
+            NumberOfRequiredProperties = numberOfRequiredProperties;
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)
@@ -967,7 +995,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static bool IsByRefLike(Type type)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return type.IsByRefLike;
 #else
             if (!type.IsValueType)

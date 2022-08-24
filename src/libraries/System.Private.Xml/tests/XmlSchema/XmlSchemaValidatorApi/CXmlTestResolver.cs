@@ -86,12 +86,6 @@ namespace System.Xml.Tests
             _resolver = new XmlUrlResolver();
         }
 
-        public CXmlTestResolver(string securityUri)
-            : base()
-        {
-            _resolver = new XmlSecureResolver(new XmlUrlResolver(), securityUri);
-        }
-
         // -----------------
         // Events
         // -----------------

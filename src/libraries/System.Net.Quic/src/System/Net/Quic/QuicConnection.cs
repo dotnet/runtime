@@ -285,7 +285,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 options.ClientAuthenticationOptions.TargetHost,
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
-                options.ClientAuthenticationOptions.RemoteCertificateValidationCallback);
+                options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
+                options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options);
 
             IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(options.ClientAuthenticationOptions.TargetHost ?? host ?? address?.ToString());
@@ -327,7 +328,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 targetHost: null,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
                 options.ServerAuthenticationOptions.CertificateRevocationCheckMode,
-                options.ServerAuthenticationOptions.RemoteCertificateValidationCallback);
+                options.ServerAuthenticationOptions.RemoteCertificateValidationCallback,
+                options.ServerAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options, targetHost);
 
             unsafe
@@ -345,7 +347,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// Create an outbound uni/bidirectional <see cref="QuicStream" />.
     /// In case the connection doesn't have any available stream capacity, i.e.: the peer limits the concurrent stream count,
-    /// the operation will pend until the stream can be opened (other stream gets closed or peer increases the limit).
+    /// the operation will pend until the stream can be opened (other stream gets closed or peer increases the stream limit).
     /// </summary>
     /// <param name="type">The type of the stream, i.e. unidirectional or bidirectional.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
@@ -405,7 +407,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Closes the connection with the application provided code, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#immediate-close">RFC 9000: Connection Termination</see> for more details.
     /// </summary>
     /// <remarks>
-    /// Connection close is not graceful in regards to its streams, i.e.: calling <see cref="CloseAsync(long, CancellationToken)"/> will immediately abort all streams associated with this connection.
+    /// Connection close is not graceful in regards to its streams, i.e.: calling <see cref="CloseAsync(long, CancellationToken)"/> will immediately close all streams associated with this connection.
     /// Make sure, that all streams have been closed and all their data consumed before calling this method;
     /// otherwise, all the data that were received but not consumed yet, will be lost.
     ///

@@ -1860,7 +1860,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
 //
 // Arguments:
 //    funcMetaDataToken - the functions methodDef token in this module
-//    enCVerison        - The new version number of this function
+//    enCVersion        - The new version number of this function
 //    ppFunction        - Output param for the new instance - optional
 //
 // Assumptions:

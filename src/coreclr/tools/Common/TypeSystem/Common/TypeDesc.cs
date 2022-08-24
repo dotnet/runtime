@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
         }
 #endif
 
-        // The most frequently used type properties are cached here to avoid excesive virtual calls
+        // The most frequently used type properties are cached here to avoid excessive virtual calls
         private TypeFlags _typeFlags;
 
         /// <summary>

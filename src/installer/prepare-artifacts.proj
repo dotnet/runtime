@@ -133,7 +133,7 @@
       </ItemsToPush>
 
       <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
-        <RelativeBlobPath>$(InstallersRelativePath)workloads/$(SdkBandVersion)/%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath>$(InstallersRelativePath)workloads/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
@@ -222,11 +222,13 @@
         Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
-      <!-- Workloads VS insertion artifacts produced by src/workloads/workloads.csproj -->
+      <!--
+        Workloads VS insertion artifacts produced by src/workloads/workloads.csproj. Only grab
+        the zip artifacts as they're grouped by SDK feature band which correlates with specific VS versions.
+      -->
       <WorkloadsVSInsertionFile
         Include="
-          $(DownloadDirectory)*\workloads-vs\**\*.json;
-          $(DownloadDirectory)*\workloads-vs\**\*.msi" />
+          $(DownloadDirectory)*\workloads-vs\**\*.zip"/>
 
       <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"

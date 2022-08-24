@@ -68,7 +68,7 @@ namespace System.Xml.Serialization
             GenerateInitCallbacksMethod();
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
-            return this.typeBuilder.CreateTypeInfo()!.AsType();
+            return this.typeBuilder.CreateType();
         }
 
         [RequiresUnreferencedCode("calls GenerateTypeElement")]

@@ -10,7 +10,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfodecoder.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfodecoder.h
 // ******************************************************************************
 
 #ifndef _GC_INFO_DECODER_
@@ -157,7 +157,7 @@ inline BOOL IS_ALIGNED( void* val, size_t alignment )
 
 typedef void (*GCEnumCallback)(
     void *          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
 );
 

@@ -44,6 +44,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         [Theory]
         [MemberData(nameof(ConstructorsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void SingleArgumentConstructorTest(XmlWriterTraceListener listener, string expectedName)
         {
             Assert.Equal(expectedName, listener.Name);

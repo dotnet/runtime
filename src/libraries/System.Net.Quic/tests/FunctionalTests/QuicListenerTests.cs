@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net.Security;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -83,6 +85,64 @@ namespace System.Net.Quic.Tests
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             Exception exception = await Assert.ThrowsAsync<Exception>(async () => await listener.AcceptConnectionAsync());
             Assert.Equal(expectedMessage, exception.Message);
+        }
+
+        [Fact]
+        public async Task ListenOnAlreadyUsedPort_Throws_AddressInUse()
+        {
+            // bind a UDP socket to block a port
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            s.Bind(new IPEndPoint(IPAddress.Any, 0));
+
+            // Try to create a listener on the same port.
+            await AssertThrowsQuicExceptionAsync(QuicError.AddressInUse, async () => await CreateQuicListener((IPEndPoint)s.LocalEndPoint));
+        }
+
+        [Fact]
+        public async Task TwoListenersOnSamePort_DisjointAlpn_Success()
+        {
+            await using QuicListener listener1 = await CreateQuicListener();
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ListenEndPoint = listener1.LocalEndPoint;
+            listenerOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) => 
+            {
+                var options = CreateQuicServerOptions();
+                options.ServerAuthenticationOptions.ApplicationProtocols[0] = listenerOptions.ApplicationProtocols[0];
+                return ValueTask.FromResult(options);
+            };
+            await using QuicListener listener2 = await CreateQuicListener(listenerOptions);
+
+            Assert.Equal(listener1.LocalEndPoint, listener2.LocalEndPoint);
+
+            // Test making a connection to first listener
+            ValueTask<QuicConnection> connectTask1 = CreateQuicConnection(listener1.LocalEndPoint);
+            await using QuicConnection serverConnection1 = await listener1.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Test making a connection to second listener
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener1.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols[0] = listenerOptions.ApplicationProtocols[0];
+            ValueTask<QuicConnection> connectTask2 = CreateQuicConnection(clientOptions);
+            await using QuicConnection serverConnection2 = await listener2.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection clientConnection2 = await connectTask2.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        public async Task TwoListenersOnSamePort_SameAlpn_Throws()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+
+            //
+            // TODO: MsQuic returns QUIC_STATUS_INVALID_STATE in this case, returning
+            // ADDRESS_IN_USE could be confusing because you can actually bind two listeners
+            // to the same port (see TwoListenersOnSamePort_DisjointAlpn_Success). It may be better
+            // to add a new error code to identify this case
+            //
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73045")]
+            //
+            await AssertThrowsQuicExceptionAsync(QuicError.InternalError, async () => await CreateQuicListener(listener.LocalEndPoint));
         }
     }
 }

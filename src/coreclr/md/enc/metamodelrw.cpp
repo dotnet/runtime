@@ -1391,7 +1391,7 @@ CMiniMdRW::InitOnMem(
     BYTE    *pBuf = const_cast<BYTE*>(reinterpret_cast<const BYTE*>(pvBuf));
     int      i;
 
-    // post contruction initialize the embedded lookuptable struct
+    // post construction initialize the embedded lookuptable struct
     for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
     {
         if (m_TableDefs[ixTbl].m_iKey < m_TableDefs[ixTbl].m_cCols)
@@ -2805,7 +2805,7 @@ CMiniMdRW::PreSaveFull()
         SORTER(FieldMarshal, Parent);
         sortFieldMarshal.Sort();
 
-        // Always sort the MethodSematics
+        // Always sort the MethodSemantics
         _ASSERTE(!CanHaveCustomAttribute(TBL_MethodSemantics));
         SORTER(MethodSemantics, Association);
         sortMethodSemantics.Sort();
