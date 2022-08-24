@@ -767,8 +767,7 @@
     <PropertyGroup>
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(RealTargetArchitecture)' == ''">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
     <ItemGroup>
@@ -865,8 +864,7 @@
       <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
     </PropertyGroup>
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(RealTargetArchitecture)' == ''">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
 
