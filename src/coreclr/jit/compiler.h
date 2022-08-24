@@ -9293,6 +9293,9 @@ public:
         // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
         bool compJitEarlyExpandMDArrays;
 
+        // Collect 64 bit counts for PGO data.
+        bool compCollect64BitCounts;
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
