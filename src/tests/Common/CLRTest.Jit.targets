@@ -197,7 +197,7 @@ IF NOT DEFINED DoLink (
 
       <BatchDisasmCheckPreCommands></BatchDisasmCheckPreCommands>
       <BatchDisasmCheckPreCommands Condition="'$(DoBatchDisasmCheck)' == 'True'"><![CDATA[
-set COMPlus_JitDisasm="$(DisasmCheckFunctions)"
+set DOTNET_JitDisasm="$(DisasmCheckFunctions)"
       ]]></BatchDisasmCheckPreCommands>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
