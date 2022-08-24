@@ -328,8 +328,9 @@ private:
         // We need to force all assignments from multi-reg nodes into the "lcl = node()" form.
         if (inlinee->IsMultiRegNode())
         {
-            // Special case: we already have a local, the only thing to do is mark it appropriately.
-            if (dst->OperIs(GT_LCL_VAR))
+            // Special case: we already have a local, the only thing to do is mark it appropriately. Except
+            // if it may turn into an indirection.
+            if (dst->OperIs(GT_LCL_VAR) && !m_compiler->lvaIsImplicitByRefLocal(dst->AsLclVar()->GetLclNum()))
             {
                 m_compiler->lvaGetDesc(dst->AsLclVar())->lvIsMultiRegRet = true;
             }
