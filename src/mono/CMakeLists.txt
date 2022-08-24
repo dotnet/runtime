@@ -613,7 +613,7 @@ if(LLVM_PREFIX)
 
   # Check codegen libs and add needed libraries.
   set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
-  if("${llvm_extra}" STREQUAL "")
+  if("${llvm_extra}" STREQUAL "" AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
     message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
 
