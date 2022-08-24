@@ -281,7 +281,7 @@ void MorphInitBlockHelper::PrepareDst()
 // PropagateAssertions: propagate assertions based on the original tree
 //
 // Notes:
-//    Once the init or copy tree is morphed, assertion gen can no 
+//    Once the init or copy tree is morphed, assertion gen can no
 //    longer recognize what it means.
 //
 //    So we generate assertions based on the original tree.

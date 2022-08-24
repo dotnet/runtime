@@ -1636,8 +1636,29 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 //
                 //  Copy Assertions
                 //
+                case GT_OBJ:
+                case GT_BLK:
+                {
+                    GenTree* const addr = op2->AsIndir()->Addr();
+
+                    if (addr->OperIs(GT_ADDR))
+                    {
+                        GenTree* const base = addr->AsOp()->gtOp1;
+
+                        if (base->OperIs(GT_LCL_VAR))
+                        {
+                            // layout compat?
+                            op2 = base;
+                            goto IS_COPY;
+                        }
+                    }
+
+                    goto DONE_ASSERTION;
+                }
+
                 case GT_LCL_VAR:
                 {
+                IS_COPY:
                     //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     //

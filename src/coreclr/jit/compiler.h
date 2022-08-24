@@ -5758,7 +5758,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -5777,7 +5777,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
-    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
@@ -5793,7 +5793,7 @@ public:
 private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-    void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone = false DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
 

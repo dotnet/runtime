@@ -5499,7 +5499,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
-            return fgMorphSmpOp(tree);
+            return fgMorphSmpOp(tree, /* mac */ nullptr);
         }
     }
 
@@ -9770,16 +9770,23 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
     return nullptr;
 }
 
-/*****************************************************************************
- *
- *  Transform the given GTK_SMPOP tree for code generation.
- */
-
+//------------------------------------------------------------------------
+// fgMorphSmpOp: morph a GTK_SMPOP tree
+//
+// Arguments:
+//    tree - tree to morph
+//    mac  - address context for morphing
+//    optAssertionPropDone - [out, optional] set true if local assertions
+//       were killed/genned while morphing this tree
+//
+// Returns:
+//    Tree, possibly updated
+//
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
-GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
+GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone)
 {
     ALLOCA_CHECK();
     assert(tree->OperKind() & GTK_SMPOP);
@@ -11712,7 +11719,7 @@ DONE_MORPHING_CHILDREN:
         return tree;
     }
 
-    tree = fgMorphSmpOpOptional(tree->AsOp());
+    tree = fgMorphSmpOpOptional(tree->AsOp(), optAssertionPropDone);
 
     return tree;
 }
@@ -13098,8 +13105,18 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
-
-GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
+//-------------------------------------------------------------
+// fgMorphSmpOpOptional: optional post-order morping of some SMP trees
+//
+// Arguments:
+//   tree - tree to morph
+//   optAssertionPropDone - [out, optional] set true if local assertions were
+//      killed/genned by the optional morphing
+//
+// Returns:
+//    Tree, possibly updated
+//
+GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone)
 {
     genTreeOps oper = tree->gtOper;
     GenTree*   op1  = tree->gtOp1;
@@ -13198,6 +13215,14 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
             if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
             {
+                // Block ops handle assertion kill/gen specially.
+                // See PrepareDst and PropagateAssertions
+                //
+                if (optAssertionPropDone != nullptr)
+                {
+                    *optAssertionPropDone = true;
+                }
+
                 if (tree->OperIsCopyBlkOp())
                 {
                     return fgMorphCopyBlock(tree);
@@ -14018,6 +14043,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 #endif
 
+    bool optAssertionPropDone = false;
+
 /*-------------------------------------------------------------------------
  * fgMorphTree() can potentially replace a tree with another, and the
  * caller has to store the return value correctly.
@@ -14080,10 +14107,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         PREFAST_ASSUME(tree != nullptr);
     }
 
-    /* Save the original un-morphed tree for fgMorphTreeDone */
-
-    GenTree* oldTree = tree;
-
     /* Figure out what kind of a node we have */
 
     unsigned kind = tree->OperKind();
@@ -14108,7 +14131,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     if (kind & GTK_SMPOP)
     {
-        tree = fgMorphSmpOp(tree, mac);
+        tree = fgMorphSmpOp(tree, mac, &optAssertionPropDone);
         goto DONE;
     }
 
@@ -14220,7 +14243,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 DONE:
 
-    fgMorphTreeDone(tree, oldTree DEBUGARG(thisMorphNum));
+    fgMorphTreeDone(tree, optAssertionPropDone DEBUGARG(thisMorphNum));
 
     return tree;
 }
@@ -14313,20 +14336,24 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
     }
 }
 
-/*****************************************************************************
- *
- *  This function is called to complete the morphing of a tree node
- *  It should only be called once for each node.
- *  If DEBUG is defined the flag GTF_DEBUG_NODE_MORPHED is checked and updated,
- *  to enforce the invariant that each node is only morphed once.
- *  If local assertion prop is enabled the result tree may be replaced
- *  by an equivalent tree.
- *
- */
-
-void Compiler::fgMorphTreeDone(GenTree* tree,
-                               GenTree* oldTree /* == NULL */
-                               DEBUGARG(int morphNum))
+//------------------------------------------------------------------------
+// fgMorphTreeDone: complete the morphing of a tree node
+//
+// Arguments:
+//   tree - the tree after morphing
+//   optAssertionPropDone - true if local assertion prop was done already
+//   morphNum - counts invocations of fgMorphTree
+//
+// Notes:
+//  This function is called to complete the morphing of a tree node
+//  It should only be called once for each node.
+//  If DEBUG is defined the flag GTF_DEBUG_NODE_MORPHED is checked and updated,
+//  to enforce the invariant that each node is only morphed once.
+//
+//  When local assertion prop is active assertions are killed and generated
+//  based on tree (unless optAssertionPropDone is true).
+//
+void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum))
 {
 #ifdef DEBUG
     if (verbose && treesBeforeAfterMorph)
@@ -14342,36 +14369,27 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         return;
     }
 
-    if ((oldTree != nullptr) && (oldTree != tree))
-    {
-        /* Ensure that we have morphed this node */
-        assert((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) && "ERROR: Did not morph this node!");
-
 #ifdef DEBUG
-        TransferTestDataToNode(oldTree, tree);
+    if ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0)
+    {
+        assert("ERROR: Did not morph this node!");
+    }
+    tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
-    }
-    else
+
+    // note "tree" may generate new assertions that we
+    // miss if we do them early... perhaps we should skip
+    // kills but rerun gens.
+    //
+    if (tree->OperIsConst() || !optLocalAssertionProp || optAssertionPropDone)
     {
-        // Ensure that we haven't morphed this node already
-        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
+        return;
     }
 
-    if (tree->OperIsConst())
-    {
-        goto DONE;
-    }
-
-    if (!optLocalAssertionProp)
-    {
-        goto DONE;
-    }
-
-    /* Do we have any active assertions? */
-
+    // Kill active assertions
+    //
     if (optAssertionCount > 0)
     {
-        /* Is this an assignment to a local variable */
         GenTreeLclVarCommon* lclVarTree = nullptr;
 
         // The check below will miss LIR-style assignments.
@@ -14383,10 +14401,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         // DefinesLocal can return true for some BLK op uses, so
         // check what gets assigned only when we're at an assignment.
         //
-        // If the tree is a block op we've already done the kills
-        // over in MorphInitBlockHelper::PrepareDst().
-        //
-        if (tree->OperIsSsaDef() && !tree->OperIsBlk() && tree->DefinesLocal(this, &lclVarTree))
+        if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclVarTree))
         {
             const unsigned lclNum = lclVarTree->GetLclNum();
             noway_assert(lclNum < lvaCount);
@@ -14394,15 +14409,9 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         }
     }
 
-    /* If this tree makes a new assertion - make it available */
+    // Generate new assertions
+    //
     optAssertionGen(tree);
-
-DONE:;
-
-#ifdef DEBUG
-    /* Mark this node as being morphed */
-    tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
 }
 
 //------------------------------------------------------------------------
