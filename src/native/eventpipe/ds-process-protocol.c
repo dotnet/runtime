@@ -91,7 +91,7 @@ static
 uint16_t
 process_info_payload_get_size (DiagnosticsProcessInfoPayload *payload)
 {
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	// uint64_t ProcessId;  -> 8 bytes
@@ -137,7 +137,7 @@ process_info_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (process_info_payload_get_size (process_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -205,7 +205,7 @@ static
 uint16_t
 process_info_2_payload_get_size (DiagnosticsProcessInfo2Payload *payload)
 {
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	// uint64_t ProcessId;  -> 8 bytes
@@ -261,7 +261,7 @@ process_info_2_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (process_info_2_payload_get_size (process_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -388,7 +388,7 @@ env_info_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (env_info_payload_get_size (env_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -420,7 +420,7 @@ env_info_stream_env_block (
 	EP_ASSERT (payload != NULL);
 	EP_ASSERT (stream != NULL);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;

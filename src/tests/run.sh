@@ -11,7 +11,7 @@ function print_usage {
     echo 'Optional arguments:'
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
-    echo '  <arch>                           : One of x64, x86, arm, arm64, wasm. Defaults to current architecture.'
+    echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
     echo '  Android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
@@ -59,6 +59,12 @@ function check_cpu_architecture {
             ;;
         aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"

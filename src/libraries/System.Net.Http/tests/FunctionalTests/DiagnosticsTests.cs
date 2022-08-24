@@ -849,7 +849,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(UseSocketsHttpHandler_WithIdFormat_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_HeadersAreInjectedOnRedirects(bool useSocketsHttpHandler, ActivityIdFormat idFormat)
         {
             Activity parent = new Activity("parent");
@@ -934,7 +933,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(SocketsHttpHandlerPropagators_WithIdFormat_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed(DistributedContextPropagator propagator, ActivityIdFormat idFormat)
         {
             Activity parent = new Activity("parent");
@@ -944,8 +942,8 @@ namespace System.Net.Http.Functional.Tests
             await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using var handler = new SocketsHttpHandler { ActivityHeadersPropagator = propagator };
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    handler.ActivityHeadersPropagator = propagator;
                     using var client = new HttpClient(handler);
                     var request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
                     await client.SendAsync(TestAsync, request);
@@ -1140,20 +1138,9 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default, bool useSocketsHttpHandler = false)
         {
-            HttpMessageHandler handler;
-            if (useSocketsHttpHandler)
-            {
-                var socketsHttpHandler = new SocketsHttpHandler();
-                socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-                handler = socketsHttpHandler;
-            }
-            else
-            {
-                handler = new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates
-                };
-            }
+            HttpMessageHandler handler = useSocketsHttpHandler
+                ? CreateSocketsHttpHandler(allowAllCertificates: true)
+                : CreateHttpClientHandler(allowAllCertificates: true);
 
             using var client = new HttpClient(handler);
             var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);

@@ -248,7 +248,7 @@ struct _TableSegmentHeader
     /*
      * Commit Line
      *
-     * Index of the first uncommited block in the segment.
+     * Index of the first uncommitted block in the segment.
      */
     uint8_t bCommitLine;
 
@@ -566,7 +566,7 @@ void QuickSort(uintptr_t *pData, int left, int right, PFNCOMPARE pfnCompare);
  *
  * Returns:
  *  <0 - handle P should be freed before handle Q
- *  =0 - handles are eqivalent for free order purposes
+ *  =0 - handles are equivalent for free order purposes
  *  >0 - handle Q should be freed before handle P
  *
  */

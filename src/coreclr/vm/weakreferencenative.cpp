@@ -280,7 +280,7 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
         }
     }
 
-    // If we were able to get an IUnkown identity for the object, then we can find or create an associated RCW for it.
+    // If we were able to get an IUnknown identity for the object, then we can find or create an associated RCW for it.
     if (!pTargetIdentity.IsNull())
     {
         if (wrapperId != ComWrappersNative::InvalidWrapperId)

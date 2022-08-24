@@ -472,7 +472,7 @@ namespace Microsoft.Test.ModuleCore
         public override void Write(char[] ch)
         {
             //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly
-            //writes 1 char at a time, which means \r\n is written sperately and then gets fixed
+            //writes 1 char at a time, which means \r\n is written separately and then gets fixed
             //up to be two carriage returns!
             if (ch != null)
             {

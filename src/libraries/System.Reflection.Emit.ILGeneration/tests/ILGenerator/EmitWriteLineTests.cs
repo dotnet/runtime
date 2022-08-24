@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator1.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType1 = type1.CreateTypeInfo().AsType();
+            Type createdType1 = type1.CreateType();
             FieldInfo createdField = createdType1.GetField("field1");
 
             TypeBuilder type2 = module.DefineType("C2", TypeAttributes.Public);
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value from meth1

@@ -94,9 +94,9 @@ class Program
 {
     static int Main(string[] args)
     {
-        var contaner = new G();
-        contaner.RegisterNamedObjectType<B>();
-        contaner.Register<B, D>();
+        var container = new G();
+        container.RegisterNamedObjectType<B>();
+        container.Register<B, D>();
         return 100;
     }
 }

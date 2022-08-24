@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
         //The string size used when verifying NewLine
         private const int NEWLINE_TESTING_STRING_SIZE = 4;
 
-        //The string size used when veryifying encoding
+        //The string size used when verifying encoding
         private const int ENCODING_STRING_SIZE = 4;
 
         //The string size used for large string testing

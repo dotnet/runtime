@@ -1054,7 +1054,7 @@ TerminateProcess along with PAL_Terminate and PAL_Initialize
 
 Return value :
     TRUE if critical section existed (and was acquired)
-    FALSE if critical section doens't exist yet
+    FALSE if critical section doesn't exist yet
 --*/
 BOOL PALInitLock(void)
 {

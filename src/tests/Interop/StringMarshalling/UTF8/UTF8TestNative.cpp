@@ -274,7 +274,7 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
     {
        CoreClrFree(*s);
     }
-    // overwrite the orginal
+    // overwrite the original
     *s = (LPSTR)(CoreClrAlloc(sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';

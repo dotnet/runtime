@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
     {
         /// <summary>
-        /// This is public from an EventSource consumer point of view, but since these defintions
+        /// This is public from an EventSource consumer point of view, but since these definitions
         /// are not needed outside this class
         /// </summary>
         public static class Keywords

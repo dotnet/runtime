@@ -334,7 +334,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     // The thing to remember about shared memory vfork() is the documentation is way out of date.
     // It does the following things:
     // * creates a new process in the memory space of the calling process.
-    // * blocks the calling thread (not process!) in an uninterruptable sleep
+    // * blocks the calling thread (not process!) in an uninterruptible sleep
     // * sets up the process records so the following happen:
     //   + execve() replaces the memory space in the child and unblocks the parent
     //   + process exit by any means unblocks the parent
@@ -374,7 +374,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // equally confused.
         // Remove all signals, then restore signal mask.
         // Since we are in a vfork() child, the only safe signal values are SIG_DFL and SIG_IGN.  See man 3 libthr on BSD.
-        // "The implementation interposes the user-installed signal(3) handlers....to pospone signal delivery to threads
+        // "The implementation interposes the user-installed signal(3) handlers....to postpone signal delivery to threads
         // which entered (libthr-internal) critical sections..."  We want to pass SIG_DFL anyway.
         sigset_t junk_signal_set;
         struct sigaction sa_default;

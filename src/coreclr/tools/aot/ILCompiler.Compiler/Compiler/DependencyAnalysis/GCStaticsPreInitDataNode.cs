@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                 TypePreinit.ISerializableValue val = _preinitializationInfo.GetFieldValue(field);
                 int currentOffset = builder.CountBytes;
                 if (val != null)
-                    val.WriteFieldData(ref builder, field, factory);
+                    val.WriteFieldData(ref builder, factory);
                 else
                     builder.EmitZeroPointer();
                 Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);

@@ -22,10 +22,7 @@ namespace Microsoft.NET.Build.Tasks
         {
             get
             {
-                if (_logger == null)
-                {
-                    _logger = new LogAdapter(base.Log);
-                }
+                _logger ??= new LogAdapter(base.Log);
 
                 return _logger;
             }

@@ -465,6 +465,10 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case 8: ret |= INTRIN_vector64; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
+
+	if (!strcmp ("Vector4", m_class_get_name (klass)) || !strcmp ("Vector2", m_class_get_name (klass)))
+		return ret | INTRIN_float32;
+
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
 	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= INTRIN_int8; break;
@@ -744,7 +748,7 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 		 */
 		/* SIMD types have size 16 in mono_class_value_size () */
 		if (m_class_is_simd_type (klass))
-			nfields = 16/ esize;
+			nfields = 16 / esize;
 		size = nfields;
 		eltypes = g_new (LLVMTypeRef, size);
 		for (i = 0; i < size; ++i)
@@ -1419,9 +1423,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind && LLVMGetTypeKind (stype) == LLVMIntegerTypeKind)
 			return LLVMBuildIntToPtr (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMIntegerTypeKind)
 			return LLVMBuildPtrToInt (ctx->builder, v, dtype, "");
 
 		if (mono_arch_is_soft_float ()) {
@@ -4088,6 +4092,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
+		case LLVMArgAsFpArgs:
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
@@ -4789,6 +4794,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE));
+
+		load_name = "process_call_fp_struct";
+		should_promote_to_value = is_simd;
 		break;
 	case LLVMArgVtypeByVal:
 		/*
@@ -5391,7 +5399,7 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 
 	g_assert (ctx->cfg->deopt);
 
-	/* This code is not executed becase the landing pad transitions to the intepreter */
+	/* This code is not executed because the landing pad transitions to the interpreter */
 
 	if (!(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags & MONO_EXCEPTION_CLAUSE_FAULT)) {
 		if (bb->in_scount == 1) {
@@ -5989,10 +5997,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgAsIArgs:
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval;
+				LLVMValueRef retval, elem;
+				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 
-				g_assert (addresses [ins->sreg1]);
-				retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+				if (is_simd) {
+					g_assert (lhs);
+					retval = LLVMConstNull(ret_type);
+
+					int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+					for (int i = 0; i < len; i++)
+					{
+						elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
+						retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
+					}
+				} else{
+					g_assert (addresses [ins->sreg1]);
+					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+				}
 				LLVMBuildRet (builder, retval);
 				break;
 			}
@@ -8635,7 +8656,7 @@ MONO_RESTORE_WARNING
 
 		case OP_SSE_MOVLPS_STORE:
 		case OP_SSE_MOVHPS_STORE: {
-			/* Store two floats from the low/hight part of rhs into lhs */
+			/* Store two floats from the low/high part of rhs into lhs */
 			LLVMValueRef addr = lhs;
 			LLVMValueRef addr1 = convert (ctx, addr, pointer_type (LLVMFloatType ()));
 			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, const_int32 (4), IntPtrType ()), ""), pointer_type (LLVMFloatType ()));
@@ -9453,7 +9474,8 @@ MONO_RESTORE_WARNING
 
 			LLVMValueRef value;
 			if (LLVMGetTypeKind (LLVMTypeOf (lhs)) != LLVMVectorTypeKind) {
-				LLVMValueRef bitcasted = LLVMBuildBitCast (ctx->builder, lhs, pointer_type (vec_type), "");
+				// FIXME: Handle this in simd-intrinsics.c
+				LLVMValueRef bitcasted = convert (ctx, lhs, pointer_type (vec_type));
 				value = mono_llvm_build_aligned_load (builder, vec_type, bitcasted, "", FALSE, 1);
 			} else {
 				value = LLVMBuildBitCast (ctx->builder, lhs, vec_type, "");
@@ -12701,7 +12723,7 @@ add_intrinsics (LLVMModuleRef module)
 {
 	int i;
 
-	/* Emit declarations of instrinsics */
+	/* Emit declarations of intrinsics */
 	/*
 	 * It would be nicer to emit only the intrinsics actually used, but LLVM's Module
 	 * type doesn't seem to do any locking.
@@ -13437,7 +13459,7 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 	// We rely on being able to see all of the references in the graph.
 	// This is ensured by the function mono_aot_can_specialize. Everything in
 	// all_specializable is a function that can be specialized, and is the resulting
-	// node in the graph after all of the subsitutions are done.
+	// node in the graph after all of the substitutions are done.
 	//
 	// Anything disrupting the direct calls made with self-init will break this optimization.
 

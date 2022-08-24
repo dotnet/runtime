@@ -475,7 +475,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
-            // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
+            // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
             pCollectibleLoaderAllocator->SetupManagedTracking(pKeepAlive);
             createdNewAssemblyLoaderAllocator = TRUE;
 
@@ -2132,21 +2132,28 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p Assembly\n", dac_cast<TADDR>(this)));
 
-    if (m_pDomain.IsValid())
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        m_pDomain->EnumMemoryRegions(flags, true);
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    if (m_pClassLoader.IsValid())
+    else
     {
-        m_pClassLoader->EnumMemoryRegions(flags);
-    }
-    if (m_pModule.IsValid())
-    {
-        m_pModule->EnumMemoryRegions(flags, true);
-    }
-    if (m_pPEAssembly.IsValid())
-    {
-        m_pPEAssembly->EnumMemoryRegions(flags);
+        if (m_pDomain.IsValid())
+        {
+            m_pDomain->EnumMemoryRegions(flags, true);
+        }
+        if (m_pClassLoader.IsValid())
+        {
+            m_pClassLoader->EnumMemoryRegions(flags);
+        }
+        if (m_pModule.IsValid())
+        {
+            m_pModule->EnumMemoryRegions(flags, true);
+        }
+        if (m_pPEAssembly.IsValid())
+        {
+            m_pPEAssembly->EnumMemoryRegions(flags);
+        }
     }
 }
 

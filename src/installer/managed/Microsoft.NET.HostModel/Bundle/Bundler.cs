@@ -232,7 +232,7 @@ namespace Microsoft.NET.HostModel.Bundle
         ///
         /// Files in fileSpecs that are not bundled within the single file bundle,
         /// and should be published as separate files are marked as "IsExcluded" by this method.
-        /// This doesn't include unbundled files that should be dropped, and not publised as output.
+        /// This doesn't include unbundled files that should be dropped, and not published as output.
         /// </param>
         /// <returns>
         /// The full path the generated bundle file

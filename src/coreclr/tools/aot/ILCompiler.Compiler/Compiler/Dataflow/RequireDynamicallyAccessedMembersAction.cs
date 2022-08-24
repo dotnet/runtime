@@ -27,7 +27,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         public partial bool TryResolveTypeNameAndMark(string typeName, bool needsAssemblyName, out TypeProxy type)
         {
-            if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext.Origin, needsAssemblyName, _memberWithRequirements, out TypeDesc? foundType))
+            if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext, needsAssemblyName, _memberWithRequirements, out TypeDesc? foundType))
             {
                 type = new(foundType);
                 return true;

@@ -201,7 +201,7 @@ namespace System.Xml
         //     XmlBoundElement be = ...;
         //     XmlElement e = be;
         //     GetRowFromElement( be ); // Calls GetRowFromElement( XmlBoundElement )
-        //     GetRowFromElement( e );  // Calls GetRowFromElement( XmlElement ), in spite of e beeing an instance of XmlBoundElement
+        //     GetRowFromElement( e );  // Calls GetRowFromElement( XmlElement ), in spite of e being an instance of XmlBoundElement
         internal static DataRow? GetRowFromElement(XmlElement? e) => (e as XmlBoundElement)?.Row;
 
         internal static DataRow? GetRowFromElement(XmlBoundElement be) => be.Row;

@@ -116,7 +116,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
         // will stop it (default SIGTTOU action).
         // We change SIGTTOU's disposition to get EINTR instead.
         // This thread may be used to run a signal handler, which may write to
-        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitely
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         InstallTTOUHandlerForConsole(ttou_handler);
@@ -149,7 +149,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool distinguishNewLines)
 {
     if (!g_hasTty)
     {
@@ -168,7 +168,15 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (!forChild)
     {
-        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
+        if (distinguishNewLines)
+        {
+            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
+        }
+        else
+        {
+            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
+        }
+
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
@@ -212,13 +220,13 @@ void UninitializeTerminal()
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(int32_t distinguishNewLines, uint8_t minChars, uint8_t decisecondsTimeout)
 {
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, distinguishNewLines);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -256,7 +264,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
         // Avoid configuring the terminal: only change terminal settings when our process has changed them.
         if (g_terminalConfigured)
         {
-            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
+            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* distinguishNewLines */ false);
         }
 
         // Redo "Application mode" when there are no more children using the terminal.
@@ -364,9 +372,9 @@ void SystemNative_GetControlCharacters(
     }
 }
 
-int32_t SystemNative_StdinReady()
+int32_t SystemNative_StdinReady(int32_t distinguishNewLines)
 {
-    SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
+    SystemNative_InitializeConsoleBeforeRead(distinguishNewLines, /* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -394,7 +402,7 @@ int32_t SystemNative_GetSignalForBreak()
     return g_signalForBreak;
 }
 
-int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
+int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distinguishNewLines)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
@@ -402,7 +410,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, distinguishNewLines))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

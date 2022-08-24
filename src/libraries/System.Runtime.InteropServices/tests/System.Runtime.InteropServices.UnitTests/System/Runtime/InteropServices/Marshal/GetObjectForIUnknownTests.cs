@@ -34,9 +34,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new KeyValuePair<string, int>("key", 10) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForIUnknown_Valid_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForIUnknown_ValidPointer_ReturnsExpected(object o)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);
@@ -58,8 +57,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForIUnknown(IntPtr.Zero));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForIUnknown_NullPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.GetObjectForIUnknown(IntPtr.Zero));

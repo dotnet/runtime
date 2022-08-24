@@ -24,14 +24,12 @@ namespace System.Net.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public sealed class HttpWebRequestTest_Async : HttpWebRequestTest
     {
         public HttpWebRequestTest_Async(ITestOutputHelper output) : base(output) { }
         protected override Task<WebResponse> GetResponseAsync(HttpWebRequest request) => request.GetResponseAsync();
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public sealed class HttpWebRequestTest_Sync : HttpWebRequestTest
     {
         public HttpWebRequestTest_Sync(ITestOutputHelper output) : base(output) { }
@@ -326,7 +324,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1367,7 +1364,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task GetResponseAsync_GetResponseStream_ContainsHost(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1414,7 +1410,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task GetResponseAsync_PostRequestStream_ContainsData(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1460,7 +1455,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(bool useSsl)
         {
@@ -1501,7 +1495,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
         {
@@ -1521,7 +1514,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1621,7 +1613,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task ResponseUri_GetResponseAsync_ExpectSameUri(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1645,7 +1636,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task SimpleScenario_UseGETVerb_Success(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1662,7 +1652,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task SimpleScenario_UsePOSTVerb_Success(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1685,7 +1674,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(bool useSsl)
         {
             const string ContentType = "text/plain; charset=utf-8";

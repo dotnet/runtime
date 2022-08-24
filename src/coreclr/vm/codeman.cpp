@@ -292,7 +292,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
     ULONG usedSpace = unwindInfo->cTableCurCount - unwindInfo->cDeletedEntries;
     ULONG desiredSpace = usedSpace * 5 / 4 + 1;        // Increase by 20%
-    // Be more aggresive if we used all of our space;
+    // Be more aggressive if we used all of our space;
     if (usedSpace == unwindInfo->cTableMaxCount)
         desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
 
@@ -1300,7 +1300,7 @@ void EEJitManager::SetCpuInfo()
     LIMITED_METHOD_CONTRACT;
 
     //
-    // NOTE: This function needs to be kept in sync with compSetProcesor() in jit\compiler.cpp
+    // NOTE: This function needs to be kept in sync with compSetProcessor() in jit\compiler.cpp
     //
 
     CORJIT_FLAGS CPUCompileFlags;
@@ -3476,36 +3476,6 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
     PREFIX_ASSUME(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
-    VarKind k = hasNoVars;
-
-    // In the vast majority of cases the code under the "if" below
-    // will not be executed.
-    //
-    // First grab the representative instantiations.  For code
-    // shared by multiple generic instantiations these are the
-    // canonical (representative) instantiation.
-    if (TypeFromToken(typeTok) == mdtTypeSpec)
-    {
-        PCCOR_SIGNATURE pSig;
-        ULONG cSig;
-        IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(typeTok, &pSig, &cSig));
-
-        SigPointer psig(pSig, cSig);
-        k = psig.IsPolyType(&typeContext);
-
-        // Grab the active class and method instantiation.  This exact instantiation is only
-        // needed in the corner case of "generic" exception catching in shared
-        // generic code.  We don't need the exact instantiation if the token
-        // doesn't contain E_T_VAR or E_T_MVAR.
-        if ((k & hasSharableVarsMask) != 0)
-        {
-            Instantiation classInst;
-            Instantiation methodInst;
-            pCf->GetExactGenericInstantiations(&classInst, &methodInst);
-            SigTypeContext::InitTypeContext(pMD,classInst, methodInst,&typeContext);
-        }
-    }
-
     return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
                                                        ClassLoader::ReturnNullIfNotFound);
 }
@@ -3586,7 +3556,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
     //       code buffer itself. As a result, we might leak the CodeHeap if jitting fails after
     //       the code buffer is allocated.
     //
-    //       However, it appears non-trival to fix this.
+    //       However, it appears non-trivial to fix this.
     //       Here are some of the reasons:
     //       (1) AllocCode calls in AllocCodeRaw to alloc code buffer in the CodeHeap. The exact size
     //           of the code buffer is not known until the alignment is calculated deep on the stack.
@@ -5707,8 +5677,8 @@ DWORD NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(PTR_CORCOM
     COUNT_T start = 0;
     COUNT_T end = numLookupEntries - 2;
 
-    // The last entry in the lookup table (end-1) points to a sentinal entry.
-    // The sentinal entry helps to determine the number of EH clauses for the last table entry.
+    // The last entry in the lookup table (end-1) points to a sentinel entry.
+    // The sentinel entry helps to determine the number of EH clauses for the last table entry.
     _ASSERTE(pExceptionLookupTable->ExceptionLookupEntry(numLookupEntries-1)->MethodStartRVA == (DWORD)-1);
 
     // Binary search the lookup table
@@ -5909,7 +5879,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
     PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE pExceptionLookupTable = dac_cast<PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE>(pLayout->GetRvaData(pExceptionInfoDir->VirtualAddress));
 
     COUNT_T numLookupTableEntries = (COUNT_T)(pExceptionInfoDir->Size / sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY));
-    // at least 2 entries (1 valid entry + 1 sentinal entry)
+    // at least 2 entries (1 valid entry + 1 sentinel entry)
     _ASSERTE(numLookupTableEntries >= 2);
 
     DWORD methodStartRVA = (DWORD)(JitTokenToStartAddress(MethodToken) - JitTokenToModuleBase(MethodToken));
@@ -6001,38 +5971,7 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     PREFIX_ASSUME(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
-    VarKind k = hasNoVars;
-
     mdToken typeTok = pEHClause->ClassToken;
-
-    // In the vast majority of cases the code un der the "if" below
-    // will not be executed.
-    //
-    // First grab the representative instantiations.  For code
-    // shared by multiple generic instantiations these are the
-    // canonical (representative) instantiation.
-    if (TypeFromToken(typeTok) == mdtTypeSpec)
-    {
-        PCCOR_SIGNATURE pSig;
-        ULONG cSig;
-        IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(typeTok, &pSig, &cSig));
-
-        SigPointer psig(pSig, cSig);
-        k = psig.IsPolyType(&typeContext);
-
-        // Grab the active class and method instantiation.  This exact instantiation is only
-        // needed in the corner case of "generic" exception catching in shared
-        // generic code.  We don't need the exact instantiation if the token
-        // doesn't contain E_T_VAR or E_T_MVAR.
-        if ((k & hasSharableVarsMask) != 0)
-        {
-            Instantiation classInst;
-            Instantiation methodInst;
-            pCf->GetExactGenericInstantiations(&classInst,&methodInst);
-            SigTypeContext::InitTypeContext(pMD,classInst, methodInst,&typeContext);
-        }
-    }
-
     return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
                                                           ClassLoader::ReturnNullIfNotFound);
 }

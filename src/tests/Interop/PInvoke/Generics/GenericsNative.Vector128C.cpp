@@ -10,7 +10,7 @@
     #include <emmintrin.h>
 
     typedef __m128i Vector128C;
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     #if defined(_MSC_VER)
         #if defined(TARGET_ARM64)
             #include <arm64_neon.h>

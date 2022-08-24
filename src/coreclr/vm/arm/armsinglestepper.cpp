@@ -226,7 +226,7 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
     // If we encounter an exception while emulating an instruction (currently this can only happen if we A/V
     // trying to read a value from memory) then we abandon emulation and fall back to the copy instruction
     // mechanism. When we run the execution buffer the exception should be raised and handled as normal (we
-    // still peform context fixup in this case but we don't attempt to alter any exception code other than
+    // still perform context fixup in this case but we don't attempt to alter any exception code other than
     // EXCEPTION_BREAKPOINT to EXCEPTION_SINGLE_STEP). There is a very small timing window here where another
     // thread could alter memory protections to avoid the A/V when we run the instruction for real but the
     // liklihood of this happening (in managed code no less) is judged sufficiently small that it's not worth

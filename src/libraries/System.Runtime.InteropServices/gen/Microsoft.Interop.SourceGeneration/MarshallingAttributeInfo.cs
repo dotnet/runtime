@@ -132,8 +132,7 @@ namespace Microsoft.Interop
     /// </summary>
     public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo EntryPointType,
-        CustomTypeMarshallers Marshallers,
-        bool IsPinnableManagedType) : MarshallingInfo;
+        CustomTypeMarshallers Marshallers) : MarshallingInfo;
 
     /// <summary>
     /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute for a linear collection
@@ -141,12 +140,10 @@ namespace Microsoft.Interop
     public sealed record NativeLinearCollectionMarshallingInfo(
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers,
-        bool IsPinnableManagedType,
         CountInfo ElementCountInfo,
         ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
-            Marshallers,
-            IsPinnableManagedType);
+            Marshallers);
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
@@ -550,14 +547,14 @@ namespace Microsoft.Interop
                 return NoMarshallingInfo.Instance;
             }
 
-            if (!entryPointType.IsStatic)
+            if (!(entryPointType.IsStatic && entryPointType.TypeKind == TypeKind.Class)
+                && entryPointType.TypeKind != TypeKind.Struct)
             {
-                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStatic), entryPointType.ToDisplayString(), type.ToDisplayString());
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStaticClassOrStruct), entryPointType.ToDisplayString(), type.ToDisplayString());
                 return NoMarshallingInfo.Instance;
             }
 
             ManagedTypeInfo entryPointTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType);
-            bool isPinnableManagedType = !isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null;
 
             bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType);
             if (isLinearCollectionMarshalling)
@@ -575,18 +572,19 @@ namespace Microsoft.Interop
                         arrayManagedType.ElementType,
                         entryPointType.TypeArguments.Last());
                 }
-                else if (type is INamedTypeSymbol namedManagedType)
+                else if (type is INamedTypeSymbol namedManagedCollectionType && entryPointType.IsUnboundGenericType)
                 {
-                    // Entry point type for linear collection marshalling must have the arity of the managed type + 1
-                    // for the element unmanaged type placeholder
-                    if (entryPointType.Arity != namedManagedType.Arity + 1)
+                    if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                        namedManagedCollectionType,
+                        entryPointType,
+                        isLinearCollectionMarshalling,
+                        (type, entryPointType) => _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                        out ITypeSymbol resolvedEntryPointType))
                     {
-                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());
                         return NoMarshallingInfo.Instance;
                     }
 
-                    entryPointType = entryPointType.ConstructedFrom.Construct(
-                        namedManagedType.TypeArguments.Add(entryPointType.TypeArguments.Last()).ToArray());
+                    entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
                 }
                 else
                 {
@@ -596,20 +594,36 @@ namespace Microsoft.Interop
 
                 int maxIndirectionDepthUsedLocal = maxIndirectionDepthUsed;
                 Func<ITypeSymbol, MarshallingInfo> getMarshallingInfoForElement = (ITypeSymbol elementType) => GetMarshallingInfo(elementType, new Dictionary<int, AttributeData>(), 1, ImmutableHashSet<string>.Empty, ref maxIndirectionDepthUsedLocal);
-                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(entryPointType, type, _compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? marshallers))
+                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(entryPointType, type, _compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? collectionMarshallers))
                 {
                     maxIndirectionDepthUsed = maxIndirectionDepthUsedLocal;
                     return new NativeLinearCollectionMarshallingInfo(
                         entryPointTypeInfo,
-                        marshallers.Value,
-                        isPinnableManagedType,
+                        collectionMarshallers.Value,
                         parsedCountInfo,
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
                 }
+                return NoMarshallingInfo.Instance;
             }
-            else if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, _compilation, out CustomTypeMarshallers? marshallers))
+
+            if (type is INamedTypeSymbol namedManagedType && entryPointType.IsUnboundGenericType)
             {
-                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value, isPinnableManagedType);
+                if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                    namedManagedType,
+                    entryPointType,
+                    isLinearCollectionMarshalling,
+                    (type, entryPointType) => _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                    out ITypeSymbol resolvedEntryPointType))
+                {
+                    return NoMarshallingInfo.Instance;
+                }
+
+                entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
+            }
+
+            if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, _compilation, out CustomTypeMarshallers? marshallers))
+            {
+                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
             }
             return NoMarshallingInfo.Instance;
         }
@@ -754,7 +768,6 @@ namespace Microsoft.Interop
                     return new NativeLinearCollectionMarshallingInfo(
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
                         marshallers.Value,
-                        IsPinnableManagedType: false,
                         countInfo,
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()));
                 }
@@ -797,8 +810,7 @@ namespace Microsoft.Interop
                 {
                     return new NativeMarshallingAttributeInfo(
                         EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(stringMarshaller),
-                        Marshallers: marshallers.Value,
-                        IsPinnableManagedType: false);
+                        Marshallers: marshallers.Value);
                 }
             }
 
@@ -816,7 +828,7 @@ namespace Microsoft.Interop
             }
             else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
             {
-                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the fowarder downlevel.
+                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the forwarder downlevel.
                 return new MissingSupportMarshallingInfo();
             }
             else

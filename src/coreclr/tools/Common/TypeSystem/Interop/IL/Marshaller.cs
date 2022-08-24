@@ -85,7 +85,7 @@ namespace Internal.TypeSystem.Interop
         }
 
         /// <summary>
-        ///  Indicates whether cleanup is necessay if this marshaller is used
+        ///  Indicates whether cleanup is necessary if this marshaller is used
         ///  as an element of an array marshaller
         /// </summary>
         internal virtual bool CleanupRequired

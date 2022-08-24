@@ -4,9 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using FluentAssertions;
 using Xunit;
@@ -170,36 +168,30 @@ namespace Microsoft.NET.HostModel.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ItGeneratesExecutableImage()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
-            {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+            using TestDirectory testDirectory = TestDirectory.Create();
+            string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+            string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+            string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-                chmod(sourceAppHostMock, Convert.ToInt32("755", 8)) // match installed permissions: -rwxr-xr-x
-                    .Should()
-                    .NotBe(-1);
+            // strip executable permissions from this AppHost template binary
+            File.SetUnixFileMode(sourceAppHostMock, UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
 
-                GetLastError()
-                    .Should()
-                    .NotBe(4); // EINTR
+            // -rwxr-xr-x
+            const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
-                GetFilePermissionValue(sourceAppHostMock)
-                    .Should()
-                    .Be(Convert.ToInt32("755", 8));
+            HostWriter.CreateAppHost(
+                sourceAppHostMock,
+                destinationFilePath,
+                appBinaryFilePath,
+                windowsGraphicalUserInterface: true);
 
-                HostWriter.CreateAppHost(
-                    sourceAppHostMock,
-                    destinationFilePath,
-                    appBinaryFilePath,
-                    windowsGraphicalUserInterface: true);
-
-                GetFilePermissionValue(destinationFilePath)
-                    .Should()
-                    .Be(Convert.ToInt32("755", 8));
-            }
-
-            int GetLastError() => Marshal.GetLastWin32Error();
+            // assert that the generated app has executable permissions
+            // despite different permissions on the template binary.
+            File.GetUnixFileMode(destinationFilePath)
+                .Should()
+                .Be(expectedPermissions);
         }
 
         [Fact]
@@ -369,64 +361,6 @@ namespace Microsoft.NET.HostModel.Tests
             0, 0, 0, 2, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
             0, 112, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 3, 0, 96, 193, 0, 0, 24,
             0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0 };
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int chmod(string pathname, int mode);
-
-        private static int GetFilePermissionValue(string path)
-        {
-            int modeValue = FileStatusProvider.GetFileMode(path);
-
-            // st_mode is typically a 16-bits value, high 4 bits are filetype and low 12
-            // bits are permission. we will clear first 20 bits (a byte and a nibble) with
-            // the following mask:
-            modeValue &= 0x1ff;
-
-            modeValue
-                .Should()
-                .BeInRange(0, 511);
-
-            return modeValue;
-        }
-
-        private static class FileStatusProvider
-        {
-            private static FieldInfo s_fileSystem_fileStatusField, s_fileStatus_fileCacheField, s_fileStatusModeField;
-
-            static FileStatusProvider()
-            {
-                if (!OperatingSystem.IsWindows())
-                {
-                    try
-                    {
-                        s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatus_fileCacheField = s_fileSystem_fileStatusField.FieldType.GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatusModeField = s_fileStatus_fileCacheField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Cannot setup _fileStatus via private reflection from libraries. Verify if the FileSystem._fileStatus._fileCache.Mode chain is intact, otherwise adjust this implementation", ex);
-                    }
-                }
-            }
-
-            public static int GetFileMode(string path)
-            {
-                try
-                {
-                    var fileInfo = new FileInfo(path);
-                    _ = fileInfo.IsReadOnly; // this is to implicitly initialize FileInfo -> FileSystem -> fileCache instance
-
-                    return (int)s_fileStatusModeField.GetValue(
-                               s_fileStatus_fileCacheField.GetValue(
-                                   s_fileSystem_fileStatusField.GetValue(fileInfo)));
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Cannot get stat (2) st_mode via private reflection from libraries. Verify if the FileSystem._fileStatus.Initialize logic is exercised via FileInfo.IsReadOnly in FileStatus.Unix.cs, otherwise adjust this implementation.", ex);
-                }
-            }
-        }
 
         private class TestDirectory : IDisposable
         {

@@ -395,7 +395,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
-        public void MultiThreadedComponentDependencyResolutionWhichSucceeeds()
+        public void MultiThreadedComponentDependencyResolutionWhichSucceeds()
         {
             sharedTestState.RunComponentResolutionMultiThreadedTest(sharedTestState.ComponentWithNoDependencies, sharedTestState.ComponentWithResources)
                 .Should().Pass()
@@ -408,7 +408,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
-        public void MultiThreadedComponentDependencyResolutionWhithFailures()
+        public void MultiThreadedComponentDependencyResolutionWithFailures()
         {
             var componentWithNoDependencies = sharedTestState.ComponentWithNoDependencies.Copy();
 

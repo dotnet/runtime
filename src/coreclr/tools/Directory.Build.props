@@ -4,6 +4,8 @@
     <IsShipping>false</IsShipping>
     <SignAssembly>false</SignAssembly>
     <RunAnalyzers>false</RunAnalyzers>
+    <!-- None of the tools is localized. Strip System.CommandLine localized resources from the output. -->
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
   </PropertyGroup>
   
   <!-- MSBuild doesn't understand the Checked configuration -->

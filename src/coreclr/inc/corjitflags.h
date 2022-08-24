@@ -31,7 +31,7 @@ public:
         CORJIT_FLAG_DEBUG_CODE              = 2, // generate "debuggable" code (no code-mangling optimizations)
         CORJIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
-        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
+        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necessarily debuggable code)
         CORJIT_FLAG_ENABLE_CFG              = 6, // generate control-flow guard checks
         CORJIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
@@ -202,9 +202,19 @@ public:
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    uint64_t GetInstructionSetFlagsRaw()
+    uint64_t* GetInstructionSetFlagsRaw()
     {
         return instructionSetFlags.GetFlagsRaw();
+    }
+
+    CORINFO_InstructionSetFlags GetInstructionSetFlags()
+    {
+        return instructionSetFlags;
+    }
+
+    const int GetInstructionFlagsFieldCount()
+    {
+        return instructionSetFlags.GetInstructionFlagsFieldCount();
     }
 
 private:

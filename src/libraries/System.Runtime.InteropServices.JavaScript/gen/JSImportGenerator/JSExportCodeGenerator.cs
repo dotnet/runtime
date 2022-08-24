@@ -207,8 +207,15 @@ namespace Microsoft.Interop.JavaScript
                 statements.Add(statement);
                 statements.AddRange(_marshallers.ManagedReturnMarshaller.Generator.Generate(_marshallers.ManagedReturnMarshaller.TypeInfo, _context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             }
+            return TryStatement(SingletonList(CatchClause()
+                        .WithDeclaration(CatchDeclaration(IdentifierName(Constants.ExceptionGlobal)).WithIdentifier(Identifier("ex")))
+                        .WithBlock(Block(SingletonList<StatementSyntax>(
+                            ExpressionStatement(InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(Constants.ArgumentException), IdentifierName(Constants.ToJSMethod)))
+                            .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(IdentifierName("ex")))))))))))
+                .WithBlock(Block(statements));
 
-            return Block(statements);
         }
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()

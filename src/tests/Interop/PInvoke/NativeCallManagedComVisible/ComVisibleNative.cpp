@@ -37,7 +37,7 @@ public:
 
 //
 // IInterfaceComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("52E5F852-BD3E-4DF2-8826-E1EC39557943")) IInterfaceComImport : IUnknown
 {
@@ -51,7 +51,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceComImport(IUnknown* pUnk
 
 //
 // IInterfaceVisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("8FDE13DC-F917-44FF-AAC8-A638FD27D647")) IInterfaceVisibleTrue : IUnknown
 {
@@ -65,7 +65,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrue(IUnknown* pU
 
 //
 // IInterfaceVisibleFalse
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("0A2EF649-371D-4480-B0C7-07F455C836D3")) IInterfaceVisibleFalse : IUnknown
 {
@@ -79,7 +79,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleFalse(IUnknown* p
 
 //
 // IInterfaceWithoutVisible
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("FB504D72-39C4-457F-ACF4-3E5D8A31AAE4")) IInterfaceWithoutVisible : IUnknown
 {
@@ -93,7 +93,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceWithoutVisible(IUnknown*
 
 //
 // IInterfaceNotPublic
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("11320010-13FA-4B40-8580-8CF92EE70774")) IInterfaceNotPublic : IUnknown
 {
@@ -107,7 +107,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceNotPublic(IUnknown* pUnk
 
 //
 // IInterfaceVisibleTrueNoGuid
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("ad50a327-d23a-38a4-9d6e-b32b32acf572")) IInterfaceVisibleTrueNoGuid : IUnknown
 {
@@ -126,7 +126,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrueNoGuid(IUnkno
 
 //
 // IInterfaceVisibleTrueNoGuidGenericInterface
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("384f0b5c-28d0-368c-8c7e-5e31a84a5c84")) IInterfaceVisibleTrueNoGuidGenericInterface : IUnknown
 {
@@ -162,7 +162,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrueNoGuidGeneric
 
 //
 // IInterfaceNotVisibleNoGuid
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("b45587ec-9671-35bc-8b8e-f6bfb18a4d3a")) IInterfaceNotVisibleNoGuid : IUnknown
 {
@@ -177,7 +177,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceNotVisibleNoGuid(IUnknow
 
 //
 // IInterfaceGenericVisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("BA4B32D4-1D73-4605-AD0A-900A31E75BC3")) IInterfaceGenericVisibleTrue : IUnknown
 {
@@ -191,7 +191,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceGenericVisibleTrue(IUnkn
 
 //
 // IInterfaceComImport_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("943759D7-3552-43AD-9C4D-CC2F787CF36E")) IInterfaceComImport_ComImport : IUnknown
 {
@@ -205,7 +205,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceComImport_ComImport(IUnk
 
 //
 // IInterfaceVisibleTrue_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("75DE245B-0CE3-4B07-8761-328906C750B7")) IInterfaceVisibleTrue_ComImport : IUnknown
 {
@@ -219,7 +219,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrue_ComImport(IU
 
 //
 // IInterfaceVisibleFalse_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("C73D96C3-B005-42D6-93F5-E30AEE08C66C")) IInterfaceVisibleFalse_ComImport : IUnknown
 {
@@ -233,7 +233,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleFalse_ComImport(I
 
 //
 // IInterfaceVisibleTrue_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("60B3917B-9CC2-40F2-A975-CD6898DA697F")) IInterfaceVisibleTrue_VisibleTrue : IUnknown
 {
@@ -247,7 +247,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrue_VisibleTrue(
 
 //
 // IInterfaceVisibleFalse_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("2FC59DDB-B1D0-4678-93AF-6A48E838B705")) IInterfaceVisibleFalse_VisibleTrue : IUnknown
 {
@@ -261,7 +261,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleFalse_VisibleTrue
 
 //
 // IInterfaceVisibleTrue_VisibleFalse
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("C82C25FC-FBAD-4EA9-BED1-343C887464B5")) IInterfaceVisibleTrue_VisibleFalse : IUnknown
 {
@@ -275,7 +275,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceVisibleTrue_VisibleFalse
 
 //
 // IInterfaceNotPublic_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("8A4C1691-5615-4762-8568-481DC671F9CE")) IInterfaceNotPublic_VisibleTrue : IUnknown
 {
@@ -294,7 +294,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_InterfaceNotPublic_VisibleTrue(IU
 
 //
 // INestedInterfaceComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("1D927BC5-1530-4B8E-A183-995425CE4A0A")) INestedInterfaceComImport : IUnknown
 {
@@ -308,7 +308,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceComImport(IUnknown
 
 //
 // INestedInterfaceVisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("39209692-2568-4B1E-A6C8-A5C7F141D278")) INestedInterfaceVisibleTrue : IUnknown
 {
@@ -322,7 +322,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleTrue(IUnkno
 
 //
 // INestedInterfaceVisibleFalse
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("1CE4B033-4927-447A-9F91-998357B32ADF")) INestedInterfaceVisibleFalse : IUnknown
 {
@@ -336,7 +336,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleFalse(IUnkn
 
 //
 // INestedInterfaceWithoutVisible
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("C770422A-C363-49F1-AAA1-3EC81A452816")) INestedInterfaceWithoutVisible : IUnknown
 {
@@ -350,7 +350,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceWithoutVisible(IUn
 
 //
 // INestedInterfaceNotPublic
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("F776FF8A-0673-49C2-957A-33C2576062ED")) INestedInterfaceNotPublic : IUnknown
 {
@@ -364,7 +364,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceNotPublic(IUnknown
 
 //
 // INestedInterfaceNestedInClass
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("B31B4EC1-3B59-41C4-B3A0-CF89638CB837")) INestedInterfaceNestedInClass : IUnknown
 {
@@ -378,7 +378,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceNestedInClass(IUnk
 
 //
 // INestedInterfaceNestedInClassNoGuid
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("486bcec9-904d-3445-871c-e7084a52eb1a")) INestedInterfaceNestedInClassNoGuid : IUnknown
 {
@@ -392,7 +392,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceNestedInClassNoGui
 
 //
 // INestedInterfaceVisibleTrueNoGuid
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("0ea2cb33-db9f-3655-9240-47ef1dea0f1e")) INestedInterfaceVisibleTrueNoGuid : IUnknown
 {
@@ -406,7 +406,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleTrueNoGuid(
 
 //
 // INestedInterfaceGenericVisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("CAFBD2FF-710A-4E83-9229-42FA16963424")) INestedInterfaceGenericVisibleTrue : IUnknown
 {
@@ -420,7 +420,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceGenericVisibleTrue
 
 //
 // INestedInterfaceComImport_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("C57D849A-A1A9-4CDC-A609-789D79F9332C")) INestedInterfaceComImport_ComImport : IUnknown
 {
@@ -434,7 +434,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceComImport_ComImpor
 
 //
 // INestedInterfaceVisibleTrue_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("81F28686-F257-4B7E-A47F-57C9775BE2CE")) INestedInterfaceVisibleTrue_ComImport : IUnknown
 {
@@ -448,7 +448,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleTrue_ComImp
 
 //
 // INestedInterfaceVisibleFalse_ComImport
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("FAAB7E6C-8548-429F-AD34-0CEC3EBDD7B7")) INestedInterfaceVisibleFalse_ComImport : IUnknown
 {
@@ -462,7 +462,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleFalse_ComIm
 
 //
 // INestedInterfaceVisibleTrue_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("BEFD79A9-D8E6-42E4-8228-1892298460D7")) INestedInterfaceVisibleTrue_VisibleTrue : IUnknown
 {
@@ -476,7 +476,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleTrue_Visibl
 
 //
 // INestedInterfaceVisibleFalse_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("5C497454-EA83-4F79-B990-4EB28505E801")) INestedInterfaceVisibleFalse_VisibleTrue : IUnknown
 {
@@ -490,7 +490,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleFalse_Visib
 
 //
 // INestedInterfaceVisibleTrue_VisibleFalse
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("A17CF08F-EEC4-4EA5-B12C-5A603101415D")) INestedInterfaceVisibleTrue_VisibleFalse : IUnknown
 {
@@ -504,7 +504,7 @@ extern "C" DLL_EXPORT HRESULT _stdcall CCWTest_NestedInterfaceVisibleTrue_Visibl
 
 //
 // INestedInterfaceNotPublic_VisibleTrue
-// Interface definition and auxiliar function that will call the managed COM.
+// Interface definition and auxiliary function that will call the managed COM.
 //
 struct __declspec(uuid("40B723E9-E1BE-4F55-99CD-D2590D191A53")) INestedInterfaceNotPublic_VisibleTrue : IUnknown
 {

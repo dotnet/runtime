@@ -120,6 +120,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71242")]
         public void ThrowDuringProcessLog_ShutsDownGracefully()
         {
             var console = new TimesWriteCalledConsole();

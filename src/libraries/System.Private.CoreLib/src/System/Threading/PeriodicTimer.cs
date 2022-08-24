@@ -63,6 +63,7 @@ namespace System.Threading
             _state.Signal(stopping: true);
         }
 
+        /// <summary>Ensures that resources are freed and other cleanup operations are performed when the garbage collector reclaims the <see cref="PeriodicTimer" /> object.</summary>
         ~PeriodicTimer() => Dispose();
 
         /// <summary>Core implementation for the periodic timer.</summary>

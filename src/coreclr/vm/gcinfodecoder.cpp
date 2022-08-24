@@ -1810,7 +1810,7 @@ bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
     _ASSERTE(regNum >= 0 && regNum <= 31);
 
-    return (regNum <= 21 && regNum >= 4);
+    return (regNum <= 21 && ((regNum >= 4) || (regNum == 1)));
 }
 
 bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)

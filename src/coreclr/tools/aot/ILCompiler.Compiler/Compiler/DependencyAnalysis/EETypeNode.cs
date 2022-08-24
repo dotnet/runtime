@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (maximallyConstructableType != this)
             {
-                // MethodTable upgrading from necessary to constructed if some template instantation exists that matches up
+                // MethodTable upgrading from necessary to constructed if some template instantiation exists that matches up
                 // This ensures we don't end up having two EETypes in the system (one is this necessary type, and another one
                 // that was dynamically created at runtime).
                 if (CanonFormTypeMayExist)
@@ -382,8 +382,10 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
 
+                                MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
                                 // If the interface method is used virtually, the implementation body is used
-                                result.Add(new CombinedDependencyListEntry(factory.CanonicalEntrypoint(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
                             }
                             else
                             {
@@ -547,11 +549,8 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _type);
 
                 // If necessary MethodTable is the highest load level, consider this a module use
-                if (_type is MetadataType mdType
-                    && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-                {
-                    dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-                }
+                if(_type is MetadataType mdType)
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
 
             return dependencies;
@@ -882,7 +881,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly && !declVTable.HasFixedSlots)
                 return;
 
-            // Inteface types don't place anything else in their physical vtable.
+            // Interface types don't place anything else in their physical vtable.
             // Interfaces have logical slots for their methods but since they're all abstract, they would be zero.
             // We place default implementations of interface methods into the vtable of the interface-implementing
             // type, pretending there was an extra virtual slot.

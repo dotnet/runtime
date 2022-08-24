@@ -18,13 +18,13 @@
     <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator</PackageProjectUrl>
-    <Description>LibraryImportGenerator</Description>
-    <PackageTags>LibraryImportGenerator, analyzers</PackageTags>
+    <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/ComInterfaceGenerator</PackageProjectUrl>
+    <Description>ComInterfaceGenerator</Description>
+    <PackageTags>ComInterfaceGenerator, analyzers</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

@@ -581,7 +581,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // (we have now a LoaderAllocator with 0-n DomainAssembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
-        // It would be useful to reduce duplication and also establish clear responsibilites
+        // It would be useful to reduce duplication and also establish clear responsibilities
         // for LoaderAllocator::Destroy, Assembly::Terminate, LoaderAllocator::Terminate
         // and LoaderAllocator::~LoaderAllocator. We need to establish how these
         // cleanup paths interact with app-domain unload and process tear-down, too.
@@ -1445,6 +1445,7 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
+    EMEM_OUT(("MEM: %p LoaderAllocator\n", dac_cast<TADDR>(this)));
     if (m_pLowFrequencyHeap.IsValid())
     {
         m_pLowFrequencyHeap->EnumMemoryRegions(flags);
@@ -1461,9 +1462,27 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pPrecodeHeap->EnumMemoryRegions(flags);
     }
-    if (m_pPrecodeHeap.IsValid())
+    if (m_pExecutableHeap.IsValid())
     {
-        m_pPrecodeHeap->EnumMemoryRegions(flags);
+        m_pExecutableHeap->EnumMemoryRegions(flags);
+    }
+#ifdef FEATURE_READYTORUN
+    if (m_pDynamicHelpersHeap.IsValid())
+    {
+        m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
+    }
+#endif
+    if (m_pFixupPrecodeHeap.IsValid())
+    {
+        m_pFixupPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pNewStubPrecodeHeap.IsValid())
+    {
+        m_pNewStubPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pVirtualCallStubManager.IsValid())
+    {
+        m_pVirtualCallStubManager->EnumMemoryRegions(flags);
     }
 }
 #endif //DACCESS_COMPILE

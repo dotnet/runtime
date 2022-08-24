@@ -81,7 +81,7 @@ namespace System.Reflection.Emit.Tests
 
             CustomAttributeBuilder attribute = new CustomAttributeBuilder(constructor, new object[] { 4 }, new FieldInfo[] { field }, new object[] { "hello" });
             method.SetCustomAttribute(attribute);
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             object[] attributes = createdType.GetMethod("TestMethod").GetCustomAttributes(false).ToArray();
             Assert.Equal(1, attributes.Length);

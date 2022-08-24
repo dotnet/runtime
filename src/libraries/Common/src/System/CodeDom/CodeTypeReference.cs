@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#nullable enable
-
 #if CODEDOM
 namespace System.CodeDom
 #else
@@ -70,7 +68,7 @@ namespace System.Runtime.Serialization
             Options = codeTypeReferenceOption;
         }
 
-        public CodeTypeReference(string typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
+        public CodeTypeReference(string? typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
         {
             Initialize(typeName, codeTypeReferenceOption);
         }

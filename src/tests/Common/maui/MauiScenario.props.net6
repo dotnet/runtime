@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.*-*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.*-*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.*-*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.*-*" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.*-*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.*-*" />
+  </ItemGroup>
+</Project>

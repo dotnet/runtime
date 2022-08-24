@@ -991,7 +991,7 @@ public:
         }
         else
         {
-            // Forward interop. Use StubTarget siganture
+            // Forward interop. Use StubTarget signature
             PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
             DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
 
@@ -3326,6 +3326,12 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
+                if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
+                {
+                    // Int128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
                 // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
@@ -4119,7 +4125,8 @@ namespace
         //
         for (int i = 0; i < pParams->m_nParamTokens; ++i)
         {
-            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            if (paramInfos[i].cbNativeType > 0)
+                memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
             pBlobParams += paramInfos[i].cbNativeType;
         }
 
@@ -5456,7 +5463,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetNDirectTarget(pvTarget);

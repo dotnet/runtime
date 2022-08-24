@@ -20,12 +20,14 @@
 #include "ssabuilder.h"
 #include "treelifeupdater.h"
 
-/**************************************************************************************
- *
- * Corresponding to the live definition pushes, pop the stack as we finish a sub-paths
- * of the graph originating from the block. Refer SSA renaming for any additional info.
- * "curSsaName" tracks the currently live definitions.
- */
+//------------------------------------------------------------------------------
+// optBlockCopyPropPopStacks: pop copy prop stack
+//
+// Notes:
+//    Corresponding to the live definition pushes, pop the stack as we finish a sub-paths
+//    of the graph originating from the block. Refer SSA renaming for any additional info.
+//    "curSsaName" tracks the currently live definitions.
+//
 void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
 {
     for (Statement* const stmt : block->Statements())
@@ -57,6 +59,9 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------------
+// optDumpCopyPropStacks: dump copy prop stack
+//
 void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
 {
     JITDUMP("{ ");
@@ -72,18 +77,25 @@ void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
         }
         else
         {
-            // A promoted field was asigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
+            // A promoted field was assigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
             JITDUMP("%d-[%06d]:V%02u(V%02u) ", iter.Get(), dspTreeID(lclVar), ssaLclNum, lclVar->GetLclNum());
         }
     }
     JITDUMP("}\n\n");
 }
 #endif
-/*******************************************************************************************************
- *
- * Given the "lclVar" and "copyVar" compute if the copy prop will be beneficial.
- *
- */
+//------------------------------------------------------------------------------
+// optCopyProp_LclVarScore: compute if the copy prop will be beneficial
+//
+// Arguments:
+//    lclVarDsc  - variable that is target of a potential copy prop
+//    copyVarDsc - variable that is source of a potential copy prop
+//    preferOp2  - true if ...??
+//
+// Returns:
+//    "score" indicating relative profitability of the copy
+//      (non-negative: favorable)
+//
 int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2)
 {
     int score = 0;
@@ -129,13 +141,17 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 //    lclNum      -  The local number of said tree
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
 //
-void Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
+// Returns:
+//    true if any changes were made
+//
+bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
 {
     assert((lclNum != BAD_VAR_NUM) && (optIsSsaLocal(tree) == lclNum) && ((tree->gtFlags & GTF_VAR_DEF) == 0));
     assert(tree->gtVNPair.BothDefined());
 
-    LclVarDsc* varDsc   = lvaGetDesc(lclNum);
-    ValueNum   lclDefVN = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    bool       madeChanges = false;
+    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
+    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
     for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
@@ -245,8 +261,12 @@ void Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
             DISPNODE(tree);
         }
 #endif
+
+        madeChanges = true;
         break;
     }
+
+    return madeChanges;
 }
 
 //------------------------------------------------------------------------------
@@ -353,7 +373,10 @@ void Compiler::optCopyPropPushDef(GenTree*             defNode,
 //    block       -  Block the tree belongs to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
 //
-void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
+// Returns:
+//    true if any copy prop was done
+//
+bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
 {
 #ifdef DEBUG
     JITDUMP("Copy Assertion for " FMT_BB "\n", block->bbNum);
@@ -366,6 +389,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
 
     // We are not generating code so we don't need to deal with liveness change
     TreeLifeUpdater<false> treeLifeUpdater(this);
+    bool                   madeChanges = false;
 
     // There are no definitions at the start of the block. So clear it.
     compCurLifeTree = nullptr;
@@ -413,49 +437,49 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                     continue;
                 }
 
-                optCopyProp(stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
+                madeChanges |= optCopyProp(stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
             }
         }
     }
+
+    return madeChanges;
 }
 
-/**************************************************************************************
- *
- * This stage performs value numbering based copy propagation. Since copy propagation
- * is about data flow, we cannot find them in assertion prop phase. In assertion prop
- * we can identify copies that like so: if (a == b) else, i.e., control flow assertions.
- *
- * To identify data flow copies, we follow a similar approach to SSA renaming. We walk
- * each path in the graph keeping track of every live definition. Thus when we see a
- * variable that shares the VN with a live definition, we'd replace this variable with
- * the variable in the live definition.
- *
- * We do this to be in conventional SSA form. This can very well be changed later.
- *
- * For example, on some path in the graph:
- *    a0 = x0
- *    :            <- other blocks
- *    :
- *    a1 = y0
- *    :
- *    :            <- other blocks
- *    b0 = x0, we cannot substitute x0 with a0, because currently our backend doesn't
- * treat lclNum and ssaNum together as a variable, but just looks at lclNum. If we
- * substituted x0 with a0, then we'd be in general SSA form.
- *
- */
-void Compiler::optVnCopyProp()
+//------------------------------------------------------------------------------
+// optVnCopyProp: value numbering based copy propagation
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//
+//   This phase performs value numbering based copy propagation. Since copy propagation
+//   is about data flow, we cannot find them in assertion prop phase. In assertion prop
+//   we can identify copies that like so: if (a == b) else, i.e., control flow assertions.
+//
+//   To identify data flow copies, we follow a similar approach to SSA renaming. We walk
+//   each path in the graph keeping track of every live definition. Thus when we see a
+//   variable that shares the VN with a live definition, we'd replace this variable with
+//   the variable in the live definition.
+//
+//   We do this to be in conventional SSA form. This can very well be changed later.
+//
+//   For example, on some path in the graph:
+//      a0 = x0
+//      :            <- other blocks
+//      :
+//      a1 = y0
+//      :
+//      :            <- other blocks
+//      b0 = x0, we cannot substitute x0 with a0, because currently our backend doesn't
+//   treat lclNum and ssaNum together as a variable, but just looks at lclNum. If we
+//   substituted x0 with a0, then we'd be in general SSA form.
+//
+PhaseStatus Compiler::optVnCopyProp()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optVnCopyProp()\n");
-    }
-#endif
-
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
@@ -464,17 +488,25 @@ void Compiler::optVnCopyProp()
     {
         // The map from lclNum to its recently live definitions as a stack.
         LclNumToLiveDefsMap m_curSsaName;
+        bool                m_madeChanges = false;
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree)
+            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            , m_madeChanges(false)
         {
+        }
+
+        bool MadeChanges() const
+        {
+            return m_madeChanges;
         }
 
         void PreOrderVisit(BasicBlock* block)
         {
             // TODO-Cleanup: Move this function from Compiler to this class.
-            m_compiler->optBlockCopyProp(block, &m_curSsaName);
+            m_madeChanges |= m_compiler->optBlockCopyProp(block, &m_curSsaName);
         }
 
         void PostOrderVisit(BasicBlock* block)
@@ -507,4 +539,6 @@ void Compiler::optVnCopyProp()
     // Tracked variable count increases after CopyProp, so don't keep a shorter array around.
     // Destroy (release) the varset.
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::UninitVal());
+
+    return visitor.MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

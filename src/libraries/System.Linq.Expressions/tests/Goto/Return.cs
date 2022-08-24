@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public void UpdateDiferentValueIsDifferent()
+        public void UpdateDifferentValueIsDifferent()
         {
             LabelTarget target = Expression.Label(typeof(int));
             GotoExpression ret = Expression.Return(target, Expression.Constant(0));

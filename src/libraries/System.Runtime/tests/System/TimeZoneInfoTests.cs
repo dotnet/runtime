@@ -2327,7 +2327,7 @@ namespace System.Tests
 
         private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
 
-        [RegexGenerator(IanaAbbreviationPattern)]
+        [GeneratedRegex(IanaAbbreviationPattern)]
         private static partial Regex IanaAbbreviationRegex();
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
@@ -2477,23 +2477,106 @@ namespace System.Tests
 
         private static byte[] timeZoneFileContents = new byte[]
         {
-            0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x5A, 0x69, 0x66,
-            0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0C, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x08, 0x00, 0x00, 0x0E, 0x10, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x4C,
-            0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00,
-            // POSIX Rule
+            //
+            // Start of v1 Header
+            //
+
+                        // Magic bytes "TZif"
+            /* 0000 */  0x54, 0x5A, 0x69, 0x66,
+
+                        // Version "2".
+            /* 0004 */  0x32,
+
+                        // Fifteen bytes containing zeros reserved for future use.
+            /* 0005 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // The number of UT/local indicators stored in the file
+            /* 0014 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of standard/wall indicators stored in the file
+            /* 0018 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of leap seconds for which data entries are stored in the file
+            /* 001c */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of transition times for which data entries are stored in the file
+            /* 0020 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of local time types for which data entries are stored in the file (must not be zero)
+            /* 0024 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of bytes of time zone abbreviation strings stored in the file
+            /* 0028 */  0x00, 0x00, 0x00, 0x00,
+
+            //
+            // End of v1 Header
+            //
+
+                       // Padding for times count (time type count = 1 * 6 (sizeof(ttinfo)))
+                       // struct ttinfo {
+                       //     int32_t        tt_utoff;
+                       //     unsigned char  tt_isdst;
+                       //     unsigned char  tt_desigidx;
+                       // };
+            /* 002C */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+            //
+            // Start of v2 header
+            //
+
+                        //  Magic bytes "TZif"
+            /* 0032 */  0x54, 0x5A, 0x69, 0x66,
+
+                        // Version "2"
+            /* 0036 */  0x32,
+
+                        // Reserved Bytes
+            /* 0037 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // The number of UT/local indicators stored in the file
+            /* 0046 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of standard/wall indicators stored in the file
+            /* 004A */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of leap seconds for which data entries are stored in the file
+            /* 004E */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of transition times for which data entries are stored in the file
+            /* 0052 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of local time types for which data entries are stored in the file (must not be zero)
+            /* 0056 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of bytes of time zone abbreviation strings stored in the file
+            /* 005A */  0x00, 0x00, 0x00, 0x0C,
+
+                        //  Transition 0 # seconds
+            /* 005E */  0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // transition table[0] has the locale time types index
+            /* 0065 */  0x00,
+
+                        // ttinfo table[0]: <UtcOffset:-00:30:20, IsDst::00, TZ Abbre Index: 00>
+            /* 0066 */  0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00,
+
+                        // Zone abbreviation strings: "LMT+01+00"
+            /* 0072 */  0x4C, 0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00,
+
+                        // standard/wall indicators values [0, 0, 0, 0, 0]
+            /* 007E */  0x00,
+
+                        // UT/local indicators [0, 0, 0, 0, 0]
+            /* 007F */  0x00,
+            // POSIX Rule: <+00>0<+01>,0/0,J365/25
             // 0x0A, 0x3C, 0x2B, 0x30, 0x30, 0x3E, 0x30, 0x3C, 0x2B, 0x30, 0x31,
             // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
         };
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64134")]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // https://github.com/dotnet/runtime/issues/73031 is the tracking issue to investigate the test failure on Android.
+        private static bool CanRunNJulianRuleTest => !PlatformDetection.IsLinuxBionic && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(CanRunNJulianRuleTest))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
         [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]

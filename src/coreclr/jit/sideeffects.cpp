@@ -234,7 +234,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     assert(isMemoryAccess || isLclVarAccess);
 
     // Now that we've determined whether or not this access is a read or a write and whether the accessed location is
-    // memory or a lclVar, determine whther or not the location is addressable and udpate the alias set.
+    // memory or a lclVar, determine whether or not the location is addressable and update the alias set.
     const bool isAddressableLocation = isMemoryAccess || compiler->lvaTable[lclNum].IsAddressExposed();
 
     if (!isWrite)

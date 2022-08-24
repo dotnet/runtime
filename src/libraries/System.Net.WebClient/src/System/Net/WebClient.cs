@@ -1186,7 +1186,7 @@ namespace System.Net
                 "POST";
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         private static string? UrlEncode(string? str)
         {
             if (str == null)

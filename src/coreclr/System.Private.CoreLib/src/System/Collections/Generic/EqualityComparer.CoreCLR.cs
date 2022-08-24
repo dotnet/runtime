@@ -14,7 +14,7 @@ namespace System.Collections.Generic
         public static EqualityComparer<T> Default { [Intrinsic] get; } = (EqualityComparer<T>)ComparerHelpers.CreateDefaultEqualityComparer(typeof(T));
     }
 
-    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>?
     {
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
@@ -30,7 +30,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] != null && array[i]!.Equals(value)) return i;
                 }
             }
             return -1;
@@ -50,7 +50,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] != null && array[i]!.Equals(value)) return i;
                 }
             }
             return -1;

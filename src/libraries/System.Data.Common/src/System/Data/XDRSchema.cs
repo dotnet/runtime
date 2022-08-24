@@ -279,7 +279,7 @@ namespace System.Data
             if (index < 0)
             {
 #if DEBUG
-                // Let's check that we realy don't have this name:
+                // Let's check that we really don't have this name:
                 foreach (NameType nt in s_mapNameTypeXdr)
                 {
                     Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");

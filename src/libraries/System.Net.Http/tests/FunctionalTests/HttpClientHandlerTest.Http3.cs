@@ -31,11 +31,20 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        private async Task AssertProtocolErrorAsync(long errorCode, Func<Task> task)
+        {
+            Exception outerEx = await Assert.ThrowsAnyAsync<Exception>(task);
+            _output.WriteLine(outerEx.ToString());
+            Assert.IsType<HttpRequestException>(outerEx);
+            HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            Assert.Equal(errorCode, protocolEx.ErrorCode);
+        }
+
         [Theory]
-        [InlineData(10)] // 2 bytes settings value.
-        [InlineData(100)] // 4 bytes settings value.
-        [InlineData(10_000_000)] // 8 bytes settings value.
-        public async Task ClientSettingsReceived_Success(int headerSizeLimit)
+        [InlineData(10, 10240)] // 2 bytes settings value.
+        [InlineData(100, 102400)] // 4 bytes settings value.
+        [InlineData(10_000_000, int.MaxValue)] // 8 bytes settings value.
+        public async Task ClientSettingsReceived_Success(int headerSizeLimit, int expectedHeaderSizeLimitBytes)
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
@@ -49,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
                 await using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
-                    Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
+                    Assert.Equal(expectedHeaderSizeLimitBytes, connection.MaxHeaderListSize);
 
                     await requestStream.ReadRequestDataAsync();
                     await requestStream.SendResponseAsync();
@@ -298,7 +307,159 @@ namespace System.Net.Http.Functional.Tests
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact
                 };
 
-                await Assert.ThrowsAsync<HttpRequestException>(async () => await client.SendAsync(request));
+                await AssertProtocolErrorAsync(UnexpectedFrameErrorCode, () => client.SendAsync(request));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ServerClosesConnection_ThrowsHttpProtocolException()
+        {
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                await connection.CloseAsync(GeneralProtocolError);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ServerClosesStream_ThrowsHttpProtocolException()
+        {
+            // normally, the server should not use this code when resetting the stream, but we should still check if we behave sanely...
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                stream.Abort(GeneralProtocolError);
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task SendAsync_RequestRejected_ClientRetries()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
+                    stream.Abort(0x10B); // H3_REQUEST_REJECTED
+                    await stream.DisposeAsync();
+                    // shutdown the connection gracefully via GOAWAY frame for good measure
+                    await connection1.ShutdownAsync(true);
+                }
+
+                // expect second connection to be established by the client
+                await using (Http3LoopbackConnection connection2 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection2.AcceptRequestStreamAsync();
+                    await stream.HandleRequestAsync();
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+
+        [Fact]
+        public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
+        {
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                await stream.ReadRequestBodyAsync();
+                await stream.SendResponseHeadersAsync();
+                await stream.SendDataFrameAsync(new byte[1024]);
+                await semaphore.WaitAsync();
+                await connection.CloseAsync(GeneralProtocolError);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+                await stream.ReadAsync(new byte[1024]);
+                semaphore.Release();
+                var ex = await Assert.ThrowsAsync<HttpProtocolException>(async () => await stream.ReadAsync(new byte[1024]));
+                Assert.Equal(GeneralProtocolError, ex.ErrorCode);
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
@@ -596,10 +757,23 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotEmpty(content);
         }
 
-        [OuterLoop]
         [Theory]
+        [OuterLoop]
         [MemberData(nameof(InteropUris))]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        public Task Public_Interop_Upgrade_Request3OrLower_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(InteropUris))]
+        public Task Public_Interop_Upgrade_Request2OrHigher_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher);
+        }
+
+        private async Task Public_Interop_Upgrade_Core(string uri, Version requestVersion, HttpVersionPolicy policy)
         {
             // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
             // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
@@ -611,8 +785,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 try
@@ -636,8 +810,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
@@ -854,6 +1028,39 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task AltSvcNotUsed_AltUsedHeaderNotPresent()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Http3LoopbackConnection connection = null;
+            HttpRequestData requestData = null;
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                requestData = await connection.ReadRequestDataAsync(readBody: false);
+                Assert.NotNull(connection);
+                Assert.Equal(0, requestData.GetHeaderValueCount("alt-used"));
+                await connection.SendResponseAsync();
+            });
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+
+            await serverTask;
+            await connection.DisposeAsync();
+        }
+
+        [Fact]
         public async Task Alpn_NonH3_NegotiationFailure()
         {
             var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
@@ -880,6 +1087,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+
                 Assert.IsType<AuthenticationException>(ex.InnerException);
 
                 clientDone.Release();
@@ -887,6 +1095,36 @@ namespace System.Net.Http.Functional.Tests
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
+
+        [Fact]
+        public async Task Alpn_NonH3_FailureEstablishConnection()
+        {
+            var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpRequestMessage request2 = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+
+            // second request should throw the same exception as inner as the first one
+            HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
+
+            Assert.Equal(ex, ex2.InnerException);
+        }
+
 
         private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
         {
@@ -1317,6 +1555,135 @@ namespace System.Net.Http.Functional.Tests
             await serverStream.DisposeAsync();
             Assert.NotNull(connection);
             await connection.DisposeAsync();
+        }
+
+        [Fact]
+        public async Task ServerSendsTrailingHeaders_Success()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                await using Http3LoopbackStream requestStream = await connection.AcceptRequestStreamAsync();
+
+                await requestStream.ReadRequestDataAsync();
+                await requestStream.SendResponseAsync(isFinal: false);
+                await requestStream.SendResponseHeadersAsync(null, new[] { new HttpHeaderData("MyHeader", "MyValue") });
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+
+                (string key, IEnumerable<string> value) = Assert.Single(response.TrailingHeaders);
+                Assert.Equal("MyHeader", key);
+                Assert.Equal("MyValue", Assert.Single(value));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ServerClosesOutboundControlStream_ClientClosesConnection(bool graceful)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                // wait for incoming request
+                await using Http3LoopbackStream requestStream = await connection.AcceptRequestStreamAsync();
+
+                // abort the control stream
+                if (graceful)
+                {
+                    await connection.OutboundControlStream.SendResponseBodyAsync(Array.Empty<byte>(), isFinal: true);
+                }
+                else
+                {
+                    connection.OutboundControlStream.Abort(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                }
+
+                // wait for client task before tearing down the requestStream and connection
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        [Fact]
+        public async Task ServerClosesInboundControlStream_ClientClosesConnection()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                // wait for incoming request
+                (Http3LoopbackStream controlStream, Http3LoopbackStream requestStream) = await connection.AcceptControlAndRequestStreamAsync();
+
+                await using (controlStream)
+                await using (requestStream)
+                {
+                    controlStream.Abort(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                    // wait for client task before tearing down the requestStream and connection
+                    await semaphore.WaitAsync();
+                }
+
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
         private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)

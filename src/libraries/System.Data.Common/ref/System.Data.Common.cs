@@ -2796,6 +2796,7 @@ namespace System.Data.SqlTypes
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
         public override string ToString() { throw null; }
+        public static SqlBinary WrapBytes(byte[] bytes) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBoolean>
@@ -3147,6 +3148,8 @@ namespace System.Data.SqlTypes
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public int WriteTdsValue(System.Span<uint> destination) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDouble>
@@ -3501,7 +3504,9 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public bool Equals(System.Data.SqlTypes.SqlMoney other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
+        public static System.Data.SqlTypes.SqlMoney FromTdsValue(long value) { throw null; }
         public override int GetHashCode() { throw null; }
+        public long GetTdsValue() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }

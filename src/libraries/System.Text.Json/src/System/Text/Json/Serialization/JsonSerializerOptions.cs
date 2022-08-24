@@ -17,6 +17,7 @@ namespace System.Text.Json
     /// <summary>
     /// Provides options to be used with <see cref="JsonSerializer"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public sealed partial class JsonSerializerOptions
     {
         internal const int BufferSizeDefault = 16 * 1024;
@@ -73,7 +74,7 @@ namespace System.Text.Json
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
-        private volatile bool _isLockedInstance;
+        private volatile bool _isReadOnly;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -175,12 +176,14 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets or sets a <see cref="JsonTypeInfo"/> contract resolver.
+        /// Gets or sets the <see cref="JsonTypeInfo"/> contract resolver used by this instance.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
         /// <remarks>
-        /// When used with the reflection-based <see cref="JsonSerializer"/> APIs,
-        /// a <see langword="null"/> setting be equivalent to and replaced by the reflection-based
-        /// <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver" />.
+        /// The property will be populated automatically once used with one of the <see cref="JsonSerializer"/> methods.
         /// </remarks>
         public IJsonTypeInfoResolver? TypeInfoResolver
         {
@@ -599,20 +602,35 @@ namespace System.Text.Json
                     new ReflectionEmitCachingMemberAccessor() :
                     new ReflectionMemberAccessor();
 #elif NETFRAMEWORK
-                new ReflectionEmitCachingMemberAccessor();
+                    new ReflectionEmitCachingMemberAccessor();
 #else
-                new ReflectionMemberAccessor();
+                    new ReflectionMemberAccessor();
 #endif
 
-        internal bool IsLockedInstance
+        /// <summary>
+        /// Specifies whether the current instance has been locked for modification.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="JsonSerializerOptions"/> instance can be locked either if
+        /// it has been passed to one of the <see cref="JsonSerializer"/> methods,
+        /// has been associated with a <see cref="JsonSerializerContext"/> instance,
+        /// or a user explicitly called the <see cref="MakeReadOnly"/> method on the instance.
+        /// </remarks>
+        public bool IsReadOnly => _isReadOnly;
+
+        /// <summary>
+        /// Locks the current instance for further modification.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The instance does not specify a <see cref="TypeInfoResolver"/> setting.</exception>
+        /// <remarks>This method is idempotent.</remarks>
+        public void MakeReadOnly()
         {
-            get => _isLockedInstance;
-            set
+            if (_typeInfoResolver is null)
             {
-                Debug.Assert(value, "cannot unlock options instances");
-                Debug.Assert(_typeInfoResolver != null, "cannot lock without a resolver.");
-                _isLockedInstance = true;
+                ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsNoTypeInfoResolverSpecified();
             }
+
+            _isReadOnly = true;
         }
 
         /// <summary>
@@ -626,18 +644,12 @@ namespace System.Text.Json
             // the default resolver to gain access to the default converters.
             DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
             _typeInfoResolver ??= defaultResolver;
-            IsLockedInstance = true;
+            MakeReadOnly();
+            _isInitializedForReflectionSerializer = true;
         }
 
-        internal void InitializeForMetadataGeneration()
-        {
-            if (_typeInfoResolver is null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
-            }
-
-            IsLockedInstance = true;
-        }
+        internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
+        private volatile bool _isInitializedForReflectionSerializer;
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
@@ -702,9 +714,9 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            if (_isLockedInstance)
+            if (_isReadOnly)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_typeInfoResolver as JsonSerializerContext);
+                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsReadOnly(_typeInfoResolver as JsonSerializerContext);
             }
         }
 
@@ -718,7 +730,7 @@ namespace System.Text.Json
                 _options = options;
             }
 
-            protected override bool IsLockedInstance => _options.IsLockedInstance;
+            protected override bool IsImmutable => _options.IsReadOnly;
             protected override void VerifyMutable() => _options.VerifyMutable();
         }
 
@@ -729,10 +741,12 @@ namespace System.Text.Json
             var options = new JsonSerializerOptions
             {
                 TypeInfoResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance(),
-                IsLockedInstance = true
+                _isReadOnly = true
             };
 
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
+
+        private string DebuggerDisplay => $"TypeInfoResolver = {TypeInfoResolver?.GetType()?.Name}, IsImmutable = {IsReadOnly}";
     }
 }

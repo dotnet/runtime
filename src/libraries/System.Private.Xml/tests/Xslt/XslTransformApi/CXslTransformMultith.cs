@@ -61,7 +61,7 @@ namespace System.Xml.Tests
         [InlineData("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml")]
         //[Variation("Boolean Expression OR", Params = new object[] { "xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml" })]
         [InlineData("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml")]
-        //[Variation("FormatNubmer function", Params = new object[] { "xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml" })]
+        //[Variation("FormatNumber function", Params = new object[] { "xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml" })]
         [InlineData("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml")]
         //[Variation("Position() function", Params = new object[] { "xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml" })]
         [InlineData("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml")]

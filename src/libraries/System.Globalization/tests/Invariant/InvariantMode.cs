@@ -864,6 +864,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IndexOf_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74179", TestRuntimes.Mono)]
         public void TestIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
             foreach (string cul in s_cultureNames)
@@ -911,6 +912,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(LastIndexOf_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74179", TestRuntimes.Mono)]
         public void TestLastIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
             foreach (string cul in s_cultureNames)
@@ -925,7 +927,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(result, compareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
-                // Filter differences betweeen string-based and Span-based LastIndexOf
+                // Filter differences between string-based and Span-based LastIndexOf
                 // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)

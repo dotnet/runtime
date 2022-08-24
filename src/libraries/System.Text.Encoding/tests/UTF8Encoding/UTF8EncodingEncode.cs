@@ -172,7 +172,7 @@ namespace System.Text.Tests
         public static unsafe void GetBytes_ValidASCIIUnicode()
         {
             Encoding encoding = Encoding.UTF8;
-            // Bytes has enough capacity to accomodate result
+            // Bytes has enough capacity to accommodate result
             string s = "T\uD83D\uDE01est";
             Assert.Equal(4, encoding.GetBytes(s, 0, 2, new byte[4], 0));
             Assert.Equal(5, encoding.GetBytes(s, 0, 3, new byte[5], 0));
@@ -200,7 +200,7 @@ namespace System.Text.Tests
         public static unsafe void GetBytes_InvalidASCIIUnicode()
         {
             Encoding encoding = Encoding.UTF8;
-            // Bytes does not have enough capacity to accomodate result
+            // Bytes does not have enough capacity to accommodate result
             string s = "T\uD83D\uDE01est";
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 2, new byte[3], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));

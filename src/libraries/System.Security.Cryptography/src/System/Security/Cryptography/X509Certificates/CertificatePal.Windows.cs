@@ -277,7 +277,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                     Interop.Crypt32.DATA_BLOB* pValue = value ? &blob : (Interop.Crypt32.DATA_BLOB*)null;
                     if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, pValue))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
             }
         }
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(pFriendlyName, checked(2 * ((uint)friendlyName.Length + 1)));
                         if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, &blob))
-                            throw Marshal.GetLastWin32Error().ToCryptographicException();
+                            throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
                     finally
                     {
@@ -475,14 +475,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal SafeCertContextHandle CertContext
+        internal SafeCertContextHandle GetCertContext()
         {
-            get
-            {
-                SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
-                GC.KeepAlive(_certContext);
-                return certContext;
-            }
+            SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
+            GC.KeepAlive(_certContext);
+            return certContext;
         }
 
         private static Interop.Crypt32.CertNameType MapNameType(X509NameType nameType)
@@ -530,9 +527,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // We need to delete any associated key container upon disposition. Thus, replace the safehandle we got with a safehandle whose
                 // Release() method performs the key container deletion.
-                SafeCertContextHandle oldCertContext = certContext;
-                certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
-                GC.KeepAlive(oldCertContext);
+                using (SafeCertContextHandle oldCertContext = certContext)
+                {
+                    certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
+                }
             }
             _certContext = certContext;
         }

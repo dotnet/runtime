@@ -65,7 +65,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #pragma warning disable 56518 // The Binary reader cannot be disposed or it would close the underlying stream
 
             // Initializes a CfgSerializedHeader from a Stream.
-            // If the data does not represent a cfg then UnsuportedFormatException is thrown.
+            // If the data does not represent a cfg then UnsupportedFormatException is thrown.
             // This isn't a conclusive validity check, but is enough to determine if it's a CFG or not.
             // For a complete check CheckValidCfgFormat is used.
             internal CfgSerializedHeader(Stream stream)
@@ -107,8 +107,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 pWeights = br.ReadUInt32();
                 cTags = br.ReadInt32();
                 tags = br.ReadUInt32();
-                ulReservered1 = br.ReadUInt32();
-                ulReservered2 = br.ReadUInt32();
+                ulReserved1 = br.ReadUInt32();
+                ulReserved2 = br.ReadUInt32();
 
                 if (pszWords > SP_SPCFGSERIALIZEDHEADER_500)
                 {
@@ -122,8 +122,8 @@ namespace System.Speech.Internal.SrgsCompiler
                     GrammarOptions = (GrammarOptions)br.ReadUInt32();
                     cBasePath = br.ReadUInt32();
                     GrammarMode = br.ReadUInt32();
-                    ulReservered3 = br.ReadUInt32();
-                    ulReservered4 = br.ReadUInt32();
+                    ulReserved3 = br.ReadUInt32();
+                    ulReserved4 = br.ReadUInt32();
                 }
                 // Else SAPI 5.0 syntax grammar - parameters set to zero
             }
@@ -187,9 +187,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
             internal uint tags;
 
-            internal uint ulReservered1;
+            internal uint ulReserved1;
 
-            internal uint ulReservered2;
+            internal uint ulReserved2;
 
             internal int cScripts;
 
@@ -211,9 +211,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
             internal uint GrammarMode;
 
-            internal uint ulReservered3;
+            internal uint ulReserved3;
 
-            internal uint ulReservered4;
+            internal uint ulReserved4;
         }
 
         internal class CfgProperty

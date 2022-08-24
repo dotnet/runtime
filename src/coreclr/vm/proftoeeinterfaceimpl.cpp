@@ -90,7 +90,7 @@
 //             on startup). If a profiler later attaches and calls these functions, then the
 //             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
 //    * COMPlus_TestOnlyEnableICorProfilerInfo:
-//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo inteface,
+//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo interface,
 //             which would otherwise be disallowed for attaching profilers
 //    * COMPlus_TestOnlyAllowedEventMask
 //         * If a profiler needs to work around the restrictions of either
@@ -566,6 +566,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo12)
     {
         *pInterface = static_cast<ICorProfilerInfo12 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo13)
+    {
+        *pInterface = static_cast<ICorProfilerInfo13 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -2239,7 +2243,7 @@ HRESULT GetCodeInfoFromCodeStart(
     ///////////////////////////////////
     // Get the code region info for this function. This is a multi step process.
     //
-    // MethodDesc ==> Code Address ==> JitMananger ==>
+    // MethodDesc ==> Code Address ==> JitManager ==>
     // MethodToken ==> MethodRegionInfo
     //
     // (Our caller handled the first step: MethodDesc ==> Code Address.)
@@ -3942,7 +3946,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
         "**PROF: GetModuleInfo 0x%p.\n",
         moduleId));
 
-    // Paramter validation is taken care of in GetModuleInfo2.
+    // Parameter validation is taken care of in GetModuleInfo2.
 
     return GetModuleInfo2(
         moduleId,
@@ -4334,7 +4338,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     // Don't return rewritten IL, use the new API to get that.
     pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId, FALSE);
 
-    // Method not overriden - get the original copy of the IL by going to metadata
+    // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
     {
         HRESULT hr = S_OK;
@@ -7454,6 +7458,131 @@ void ProfToEEInterfaceImpl::EventPipeCallbackHelper(EventPipeProvider *provider,
     }
 };
 
+HRESULT ProfToEEInterfaceImpl::CreateHandle(
+    ObjectID object,
+    COR_PRF_HANDLE_TYPE type,
+    ObjectHandleID* pHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: CreateHandle.\n"));
+
+    if (object == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    AppDomain* appDomain = GetAppDomain();
+    if (appDomain == NULL)
+    {
+        return E_FAIL;
+    }
+
+    OBJECTHANDLE handle;
+    switch(type)
+    {
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK:
+            handle = appDomain->CreateLongWeakHandle(ObjectToOBJECTREF(object));
+        break;
+
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_STRONG:
+            handle = appDomain->CreateStrongHandle(ObjectToOBJECTREF(object));
+        break;
+
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_PINNED:
+            handle = appDomain->CreatePinningHandle(ObjectToOBJECTREF(object));
+        break;
+
+        default:
+        {
+            *pHandle = NULL;
+            return E_INVALIDARG;
+        }
+        break;
+    }
+
+    *pHandle = (ObjectHandleID)handle;
+
+    return (handle == NULL) ? E_FAIL : S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::DestroyHandle(
+    ObjectHandleID handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: DestroyHandle.\n"));
+
+    if (handle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Destroying a given handle seems to require its type...
+    // Would it be possible to call GCHandleManager::DestroyHandleOfUnknownType
+    // or DestroyTypedHandle() without performance penalty?
+    DestroyTypedHandle((OBJECTHANDLE)handle);
+
+    return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
+    ObjectHandleID handle,
+    ObjectID* pObject)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: GetObjectIDFromHandle.\n"));
+
+    if (handle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pObject == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    *pObject = (ObjectID)OBJECTREFToObject(ObjectFromHandle((OBJECTHANDLE)handle));
+
+    return S_OK;
+}
 
 
 /*
@@ -7900,7 +8029,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
-// HelperMethodFrames are intialized. However, sometimes we need to be able to specify
+// HelperMethodFrames are initialized. However, sometimes we need to be able to specify
 // that we should not enter the host while initializing, so we need to initialize such
 // frames more directly. This small helper function directly forces the initialization,
 // and ensures we don't enter the host as a result if we're executing in an asynchronous
@@ -9541,7 +9670,7 @@ typedef struct _COR_PRF_ELT_INFO_INTERNAL
 
 //---------------------------------------------------------------------------------------
 //
-// ProfilingGetFunctionEnter3Info provides frame information and argument infomation of
+// ProfilingGetFunctionEnter3Info provides frame information and argument information of
 // the function ELT callback is inspecting.  It is called either by the profiler or the
 // C helper function.
 //
@@ -9745,7 +9874,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionEnter3Info(FunctionID functionId,     
 
 //---------------------------------------------------------------------------------------
 //
-// ProfilingGetFunctionLeave3Info provides frame information and return value infomation
+// ProfilingGetFunctionLeave3Info provides frame information and return value information
 // of the function ELT callback is inspecting.  It is called either by the profiler or the
 // C helper function.
 //

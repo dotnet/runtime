@@ -143,7 +143,7 @@ namespace BundleTests.Helpers
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
-        public static string GenerateBundle(Bundler bundler, string sourceDir, string outputDir, bool copyExludedFiles=true)
+        public static string GenerateBundle(Bundler bundler, string sourceDir, string outputDir, bool copyExcludedFiles=true)
         {
             // Convert sourceDir to absolute path
             sourceDir = Path.GetFullPath(sourceDir);
@@ -162,7 +162,7 @@ namespace BundleTests.Helpers
 
             var singleFile = bundler.GenerateBundle(fileSpecs);
 
-            if (copyExludedFiles)
+            if (copyExcludedFiles)
             {
                 foreach (var spec in fileSpecs)
                 {
@@ -181,7 +181,7 @@ namespace BundleTests.Helpers
         // Bundle to a single-file
         // In several tests, the single-file bundle is created explicitly using Bundle API
         // instead of the SDK via /p:PublishSingleFile=true.
-        // This is necessary when the test needs the latest changes in the AppHost, 
+        // This is necessary when the test needs the latest changes in the AppHost,
         // which may not (yet) be available in the SDK.
         public static Bundler BundleApp(TestProjectFixture fixture,
                                         out string singleFile,

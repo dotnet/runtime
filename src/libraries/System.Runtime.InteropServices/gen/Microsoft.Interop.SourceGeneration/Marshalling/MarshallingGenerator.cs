@@ -119,7 +119,7 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
-        /// to an identifer for the managed value.
+        /// to an identifier for the managed value.
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>

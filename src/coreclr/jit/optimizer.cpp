@@ -53,6 +53,9 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 //    that doesn't dominate all the return blocks has its weight dropped in half
 //    (but only if the first block *does* dominate all the returns).
 //
+// Returns:
+//    Suitable phase status
+//
 // Notes:
 //    Depends on dominators, and fgReturnBlocks being set.
 //
@@ -62,18 +65,16 @@ PhaseStatus Compiler::optSetBlockWeights()
     assert(fgDomsComputed);
     assert(fgReturnBlocksComputed);
 
-#ifdef DEBUG
-    bool changed = false;
-#endif
-
+    bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
     for (BasicBlock* const block : Blocks())
     {
         /* Blocks that can't be reached via the first block are rarely executed */
-        if (!fgReachable(fgFirstBB, block))
+        if (!fgReachable(fgFirstBB, block) && !block->isRunRarely())
         {
+            madeChanges = true;
             block->bbSetRunRarely();
         }
 
@@ -113,7 +114,7 @@ PhaseStatus Compiler::optSetBlockWeights()
                     //
                     if (!blockDominatesAllReturns)
                     {
-                        INDEBUG(changed = true);
+                        madeChanges = true;
 
                         // TODO-Cleanup: we should use:
                         //    block->scaleBBWeight(0.5);
@@ -127,19 +128,7 @@ PhaseStatus Compiler::optSetBlockWeights()
         }
     }
 
-#if DEBUG
-    if (changed && verbose)
-    {
-        printf("\nAfter optSetBlockWeights:\n");
-        fgDispBasicBlocks();
-        printf("\n");
-    }
-
-    /* Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date */
-    fgDebugCheckBBlist();
-#endif
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -572,14 +561,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
+    if ((skipUnmarkLoop == false) &&                  // If we want to unmark this loop...
         block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
         block->bbJumpDest->isLoopHead() &&            // to a loop head...
         (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
         (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
         fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
-        fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
+        fgReachable(block->bbJumpDest, block))        // Block's destination (target of back edge) can reach block...
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
@@ -1497,7 +1486,7 @@ namespace
 //             within this loop.
 //   BOTTOM  - the lexically last block in the loop (i.e. the block from which we jump to the top)
 //   EXIT    - the predecessor of loop's unique exit edge, if it has a unique exit edge; else nullptr
-//   ENTRY   - the entry in the loop (not necessarly the TOP), but there must be only one entry
+//   ENTRY   - the entry in the loop (not necessarily the TOP), but there must be only one entry
 //
 //   We (currently) require the body of a loop to be a contiguous (in bbNext order) sequence of basic blocks.
 //   When the loop is identified, blocks will be moved out to make it a compact contiguous region if possible,
@@ -4732,7 +4721,7 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 //   the loop to the following:
 //
 //          ...
-//          ..stmts..               // duplicated cond block statments
+//          ..stmts..               // duplicated cond block statements
 //          cond                    // duplicated cond
 //          jfalse done
 //          // else fall-through
@@ -5018,13 +5007,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     assert(foundCondTree);
 
-    // Flag the block that received the copy as potentially having an array/vtable
-    // reference, nullcheck, object allocation if the block copied from did;
-    // this is a conservative guess.
-    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ))
-    {
-        bNewCond->bbFlags |= copyFlags;
-    }
+    // Flag the block that received the copy as potentially having various constructs.
+    bNewCond->bbFlags |= bTest->bbFlags & BBF_COPY_PROPAGATE;
 
     bNewCond->bbJumpDest = bTest->bbNext;
     bNewCond->inheritWeight(block);
@@ -5079,11 +5063,12 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     if (allProfileWeightsAreValid)
     {
-        // Update the weight for bTest
+        // Update the weight for bTest. Normally, this reduces the weight of the bTest, except in odd
+        // cases of stress modes with inconsistent weights.
         //
         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
                 weightNext);
-        bTest->bbWeight = weightNext;
+        bTest->inheritWeight(block->bbNext);
 
         // Determine the new edge weights.
         //
@@ -6341,7 +6326,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
 
-    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK));
+    preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
@@ -9558,7 +9543,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
 
     if ((foldOp == GT_AND || cmpOp == GT_NE) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
-        // x == 1 && y == 1: Skip cases where x or y is greather than 1, e.g., x=3, y=1
+        // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
         // x == 1 || y == 1: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
         return false;
@@ -9789,7 +9774,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
 //      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
 //      in order to skip below cases when compTree is not boolean expression:
-//          - x == 1 && y == 1 ==> (x&y)!=0: Skip cases where x or y is greather than 1, e.g., x=3, y=1
+//          - x == 1 && y == 1 ==> (x&y)!=0: Skip cases where x or y is greater than 1, e.g., x=3, y=1
 //          - x == 1 || y == 1 ==> (x|y)!=0: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
 //          - x == 0 || y == 0 ==> (x&y)==0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
 //
@@ -9898,7 +9883,7 @@ PhaseStatus Compiler::optOptimizeBools()
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
 
 //------------------------------------------------------------------------------------------
-// optRemoveRedundantZeroInits: Remove redundant zero intializations.
+// optRemoveRedundantZeroInits: Remove redundant zero initializations.
 //
 // Notes:
 //    This phase iterates over basic blocks starting with the first basic block until there is no unique
@@ -10122,7 +10107,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
-                                // the prolog and this explicit intialization. Therefore, it doesn't
+                                // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
@@ -10239,6 +10224,13 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
         }
     }
 
+    // Unmark any preheader
+    //
+    if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
+    {
+        loop.lpHead->bbFlags &= ~BBF_LOOP_PREHEADER;
+    }
+
     loop.lpFlags |= LPFLG_REMOVED;
 
 #ifdef DEBUG
@@ -10251,4 +10243,15 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
+}
+
+ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+{
+    if (optLocalAssertionProp)
+    {
+        return ValueNumStore::NoVN;
+    }
+
+    assert(vnStore != nullptr);
+    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
 }

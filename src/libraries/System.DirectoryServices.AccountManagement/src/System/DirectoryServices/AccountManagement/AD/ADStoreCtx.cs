@@ -382,7 +382,7 @@ namespace System.DirectoryServices.AccountManagement
                 EnablePrincipalIfNecessary(p);
 
                 // If they set CannotChangePassword then we need to set it here after the object is already created.
-                SetPasswordSecurityifNeccessary(p);
+                SetPasswordSecurityifNecessary(p);
 
                 // Load in the StoreKey
                 Debug.Assert(p.Key == null); // since it was previously unpersisted
@@ -471,7 +471,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private void SetPasswordSecurityifNeccessary(Principal p)
+        private void SetPasswordSecurityifNecessary(Principal p)
         {
             if (p.GetChangeStatusForProperty(PropertyNames.PwdInfoCannotChangePassword))
             {
@@ -757,7 +757,7 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
 
-                    // If the base objects RDN prefix is not the same as the dervied class then we need to set both
+                    // If the base objects RDN prefix is not the same as the derived class then we need to set both
                     if (defaultRdn != rdnPrefix)
                     {
                         baseObjectRdnPrefix = defaultRdn;
@@ -1457,7 +1457,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (sr == null)
                     {
-                        // no match so we better do a root level search in case we are targetting a domain where
+                        // no match so we better do a root level search in case we are targeting a domain where
                         // the user is not an FSP.
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): No match");
@@ -1476,7 +1476,7 @@ namespace System.DirectoryServices.AccountManagement
                             return new EmptySet();
                     }
 
-                    // Now that we found the corresponding principal, the rest is very similiar to the plain GetGroupsMemberOf()
+                    // Now that we found the corresponding principal, the rest is very similar to the plain GetGroupsMemberOf()
                     // case, exception we're working with search results (SearchResult/ResultPropertyValueCollection) rather
                     // than DirectoryEntry/PropertyValueCollection.
                     string principalDN = (string)sr.Properties["distinguishedName"][0];

@@ -479,7 +479,7 @@ HRESULT StgIO::Read(                    // Return code.
     // Get the data based on type.
     switch (m_iType)
     {
-        // For data on file, there are two possiblities:
+        // For data on file, there are two possibilities:
         // (1) We have an in memory backing store we should use, or
         // (2) We just need to read from the file.
         case STGIO_HFILE:

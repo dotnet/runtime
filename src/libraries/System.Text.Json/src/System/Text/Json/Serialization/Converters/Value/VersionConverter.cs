@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class VersionConverter : JsonConverter<Version>
     {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
         private const int MinimumVersionLength = 3; // 0.0
 
         private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
                 ThrowHelper.ThrowFormatException(DataType.TimeSpan);
@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             Span<char> span = stackalloc char[MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);

@@ -1,23 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-
-    <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">$(DefineConstants);Unix</DefineConstants>
+    <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <UseAndroidCrypto>true</UseAndroidCrypto>
     <XUnitSingleThreadedMode>true</XUnitSingleThreadedMode>
     <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
+             Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
              Link="Common\System\IO\ConnectedStreams.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
@@ -186,6 +195,10 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AsymmetricSignatureFormatter.cs"
              Link="CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
@@ -284,8 +297,68 @@
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\Cert.cs" />
+    <Compile Include="X509Certificates\CertTests.cs" />
+    <Compile Include="X509Certificates\ChainHolder.cs" />
     <Compile Include="X509Certificates\ChainPolicyTests.cs" />
+    <Compile Include="X509Certificates\ChainTests.cs" />
+    <Compile Include="X509Certificates\CollectionImportTests.cs" />
+    <Compile Include="X509Certificates\CollectionTests.cs" />
+    <Compile Include="X509Certificates\ContentTypeTests.cs" />
+    <Compile Include="X509Certificates\CrlDistPointBuilderTests.cs" />
+    <Compile Include="X509Certificates\CtorTests.cs" />
+    <Compile Include="X509Certificates\DSAOther.cs" />
+    <Compile Include="X509Certificates\DynamicChainTests.cs" />
+    <Compile Include="X509Certificates\ECDsaOther.cs" />
+    <Compile Include="X509Certificates\ExportTests.cs" />
+    <Compile Include="X509Certificates\ImportTests.cs" />
+    <Compile Include="X509Certificates\FindTests.cs" />
+    <Compile Include="X509Certificates\LoadFromFileTests.cs" />
+    <Compile Include="X509Certificates\MatchesHostnameTests.cs" />
+    <Compile Include="X509Certificates\NameTests.cs" />
+    <Compile Include="X509Certificates\PfxFormatTests.cs" />
+    <Compile Include="X509Certificates\PfxFormatTests.SingleCertGenerator.cs" />
+    <Compile Include="X509Certificates\PfxFormatTests_Collection.cs" />
+    <Compile Include="X509Certificates\PfxFormatTests_SingleCert.cs" />
+    <Compile Include="X509Certificates\PfxTests.cs" />
+    <Compile Include="X509Certificates\PropsTests.cs" />
+    <Compile Include="X509Certificates\PublicKeyTests.cs" />
+    <Compile Include="X509Certificates\RSAOther.cs" />
+    <Compile Include="X509Certificates\SignatureSupport.cs" />
+    <Compile Include="X509Certificates\TempFileHolder.cs" />
+    <Compile Include="X509Certificates\TestData.cs" />
+    <Compile Include="X509Certificates\TestDataGenerator.cs" />
+    <Compile Include="X509Certificates\TestEnvironmentConfiguration.cs" />
+    <Compile Include="X509Certificates\TestFiles.cs" />
+    <Compile Include="X509Certificates\X509Certificate2PemTests.cs" />
+    <Compile Include="X509Certificates\X500DistinguishedNameEncodingTests.cs" />
     <Compile Include="X509Certificates\X500DistinguishedNameBuilderTests.cs" />
+    <Compile Include="X509Certificates\X500DistinguishedNameTests.cs" />
+    <Compile Include="X509Certificates\X509StoreTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\AuthorityInformationAccessTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\AuthorityKeyIdentifierTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\BasicConstraintsTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\ComprehensiveTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\EnhancedKeyUsageTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\KeyUsageTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\SubjectAlternativeNameTests.cs" />
+    <Compile Include="X509Certificates\ExtensionsTests\SubjectKeyIdentifierTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\CertificateRequestApiTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\CertificateRequestChainTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\CertificateRequestLoadTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\CertificateRequestUsageTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\CrlBuilderTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\DSAX509SignatureGenerator.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\EccTestData.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\PrivateKeyAssociationTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\SubjectAltNameBuilderTests.cs" />
+    <Compile Include="X509Certificates\CertificateCreation\X509Sha1SignatureGenerators.cs" />
+    <Compile Include="X509Certificates\RevocationTests\AiaTests.cs" />
+    <Compile Include="X509Certificates\RevocationTests\DynamicRevocationTests.cs" />
+    <Compile Include="X509Certificates\RevocationTests\TimeoutTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
@@ -299,6 +372,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
+    <Compile Include="X509Certificates\X509StoreMutableTests.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
              Link="Common\Interop\Android\Interop.Libraries.cs" />
@@ -306,12 +382,99 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
+    <Compile Include="X509Certificates\X509StoreMutableTests.Android.cs" />
+    <Compile Include="X509Certificates\RevocationTests\DynamicRevocationTests.Android.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <Compile Include="AesTests.Browser.cs" />
+  <ItemGroup Condition="'$(UseAndroidCrypto)' != 'true'">
+    <Compile Include="X509Certificates\RevocationTests\DynamicRevocationTests.Default.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' != 'OSX'">
+    <Compile Include="X509Certificates\X509StoreMutableTests.iOS.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' == 'OSX'">
+    <Compile Include="X509Certificates\X509StoreMutableTests.OSX.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFData.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFData.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFError.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFError.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFString.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFString.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
+             Link="Common\Interop\OSX\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.CheckX509Hostname_IntPtr.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.CheckX509Hostname_IntPtr.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="X509Certificates\HostnameMatchTests.Unix.cs" />
+    <Compile Include="X509Certificates\X509FilesystemTests.Unix.cs" />
+    <Compile Include="X509Certificates\X509StoreTests.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertQueryObjectType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertQueryObjectType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FormatType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.FormatType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  <Compile Include="X509Certificates\InteropTests.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
+    <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
   </ItemGroup>
 </Project>

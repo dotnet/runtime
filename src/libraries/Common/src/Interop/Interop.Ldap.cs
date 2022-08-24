@@ -263,6 +263,8 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 public void OnInvoked() => GC.KeepAlive(_managed);
+
+                public void Free() {}
             }
         }
 #else

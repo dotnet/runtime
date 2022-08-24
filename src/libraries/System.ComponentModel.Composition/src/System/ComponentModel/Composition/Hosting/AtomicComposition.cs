@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
     ///
     /// Secondly, state is added in the form of queries associated with an object key.  The
     /// key represents a unique object the state is being held on behalf of.  The quieries are
-    /// accessed throught the Query methods which provide automatic chaining to execute queries
+    /// accessed through the Query methods which provide automatic chaining to execute queries
     /// across the target atomicComposition and its inner atomicComposition as appropriate.
     ///
     /// Lastly, when a nested atomicComposition is created for a given outer the outer atomicComposition is locked.

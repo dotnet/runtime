@@ -3,15 +3,15 @@
 
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
 import { marshal_exception_to_cs, generate_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, JSMarshalerArguments as JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature as JSFunctionSignature, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
+import { get_signature_argument_count, JavaScriptMarshalerArgSize, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
 import { setI32 } from "./memory";
-import { wrap_error_root } from "./method-calls";
-import { conv_string_root } from "./strings";
-import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "./types";
+import { conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { IMPORTS, INTERNAL, runtimeHelpers } from "./imports";
+import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_symbolicate_string } from "./logging";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
@@ -23,15 +23,15 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const js_function_name = conv_string_root(function_name_root)!;
         const js_module_name = conv_string_root(module_name_root)!;
-        if (runtimeHelpers.config.diagnostic_tracing) {
-            console.trace(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
+        if (runtimeHelpers.diagnosticTracing) {
+            console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
         }
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
         const args_count = get_signature_argument_count(signature);
 
         const closure: any = { fn, marshal_exception_to_cs, signature };
         const bound_js_function_name = "_bound_js_" + js_function_name.replace(/\./g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
+        let body = `//# sourceURL=https://dotnet.generated.invalid/${bound_js_function_name} \n`;
         let converter_names = "";
 
 
@@ -103,6 +103,12 @@ export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHand
     bound_fn(args);
 }
 
+export function mono_wasm_set_module_imports(module_name: string, moduleImports: any) {
+    importedModules.set(module_name, moduleImports);
+    if (runtimeHelpers.diagnosticTracing)
+        console.debug(`MONO_WASM: added module imports '${module_name}'`);
+}
+
 function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
     mono_assert(function_name && typeof function_name === "string", "function_name must be string");
 
@@ -132,7 +138,9 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     const fn = scope[fname];
 
     mono_assert(typeof (fn) === "function", () => `${function_name} must be a Function but was ${typeof fn}`);
-    return fn;
+
+    // if the function was already bound to some object it would stay bound to original object. That's good.
+    return fn.bind(scope);
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -172,18 +180,46 @@ export async function dynamic_import(module_name: string, module_url: string): P
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
-        if (runtimeHelpers.config.diagnostic_tracing)
-            console.trace(`MONO_WASM: importing ES6 module '${module_name}' from '${module_url}'`);
-        promise = import(module_url);
+        if (runtimeHelpers.diagnosticTracing)
+            console.debug(`MONO_WASM: importing ES6 module '${module_name}' from '${module_url}'`);
+        promise = import(/* webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
     const module = await promise;
     if (newPromise) {
         importedModules.set(module_name, module);
-        if (runtimeHelpers.config.diagnostic_tracing)
-            console.trace(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
+        if (runtimeHelpers.diagnosticTracing)
+            console.debug(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
     }
     return module;
 }
 
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
+    let res = "unknown exception";
+    if (ex) {
+        res = ex.toString();
+        const stack = ex.stack;
+        if (stack) {
+            // Some JS runtimes insert the error message at the top of the stack, some don't,
+            //  so normalize it by using the stack as the result if it already contains the error
+            if (stack.startsWith(res))
+                res = stack;
+            else
+                res += "\n" + stack;
+        }
+
+        res = mono_wasm_symbolicate_string(res);
+    }
+    if (is_exception) {
+        Module.setValue(is_exception, 1, "i32");
+    }
+    return res;
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
+    const res = _wrap_error_flag(is_exception, ex);
+    js_string_to_mono_string_root(res, <any>result);
+}

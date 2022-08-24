@@ -211,7 +211,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     if (pCurrentBinder == NULL)
     {
         AssemblyBinder* pExpectedBinder = pFile->GetAssemblyBinder();
-        // We should aways have the binding context in the PEAssembly.
+        // We should always have the binding context in the PEAssembly.
         _ASSERTE(pExpectedBinder != NULL);
         SetBinder(pExpectedBinder);
     }

@@ -233,6 +233,9 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        /// <summary>
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
+        /// </summary>
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails
         {

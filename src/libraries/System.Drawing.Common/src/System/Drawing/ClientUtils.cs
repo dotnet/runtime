@@ -125,7 +125,7 @@ namespace System.Drawing
 
             public override int GetHashCode() => base.GetHashCode();
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             private static WeakRefObject? CreateWeakRefObject(object? value)
             {
                 if (value == null)
