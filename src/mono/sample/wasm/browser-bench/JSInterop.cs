@@ -30,6 +30,7 @@ namespace Sample
                 new JSExportStringMeasurement(),
                 new JSImportIntMeasurement(),
                 new JSImportStringMeasurement(),
+                new JSImportManyArgsMeasurement(),
                 new JSImportTaskMeasurement(),
                 new JSImportTaskFailMeasurement(),
                 new JSImportFailMeasurement(),
@@ -82,7 +83,10 @@ namespace Sample
             public override string Name => "JSImportInt";
             public override void RunStep()
             {
-                ImportsExportsHelper.ImportTargetInt(10000);
+                for (var i = 0; i < 10000; i++)
+                {
+                    ImportsExportsHelper.ImportTargetInt(currentStep);
+                }
             }
         }
 
@@ -92,39 +96,64 @@ namespace Sample
             public override string Name => "JSImportString";
             public override void RunStep()
             {
-                ImportsExportsHelper.ImportTargetString("A" + currentStep);
+                for (var i = 0; i < 10000; i++)
+                {
+                    ImportsExportsHelper.ImportTargetString(i + "A" + currentStep);
+                }
+            }
+        }
+
+        public class JSImportManyArgsMeasurement : BenchTask.Measurement
+        {
+            private DateTime start = DateTime.Now;
+            public override int InitialSamples => 10;
+            public override string Name => "JSImportManyArgs";
+            public override void RunStep()
+            {
+                for (var i = 0; i < 10000; i++)
+                {
+                    ImportsExportsHelper.ImportTargetManyArgs(currentStep, currentStep + 1, "interned", i + "A" + currentStep, IntPtr.Zero, true, 1L, null, 3.14, start);
+                }
             }
         }
 
         public class JSImportTaskMeasurement : BenchTask.Measurement
         {
+            public override bool HasRunStepAsync => true;
             public override int InitialSamples => 10;
             public override string Name => "JSImportTask";
             public override async Task RunStepAsync()
             {
-                TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
-                var promise = ImportsExportsHelper.ImportTargetTask(tcs.Task);
-                tcs.SetResult(currentStep);
-                await promise;
+                for (var i = 0; i < 10000; i++)
+                {
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    var promise = ImportsExportsHelper.ImportTargetTask(tcs.Task);
+                    tcs.SetResult(currentStep);
+                    await promise;
+                }
             }
         }
 
         public class JSImportTaskFailMeasurement : BenchTask.Measurement
         {
+            public override bool HasRunStepAsync => true;
             public override int InitialSamples => 10;
             public override string Name => "JSImportTaskFail";
             public override async Task RunStepAsync()
             {
-                TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
-                var promise = ImportsExportsHelper.ImportTargetTask(tcs.Task);
-                tcs.SetException(new Exception("test"));
-                try
+                for (var i = 0; i < 10000; i++)
                 {
-                    await promise;
-                }
-                catch (Exception)
-                {
-                    // no action
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    var promise = ImportsExportsHelper.ImportTargetTask(tcs.Task);
+                    tcs.SetException(new Exception("test"));
+                    try
+                    {
+                        await promise;
+                    }
+                    catch (Exception)
+                    {
+                        // no action
+                    }
                 }
             }
         }
@@ -135,13 +164,16 @@ namespace Sample
             public override string Name => "JSImportFail";
             public override void RunStep()
             {
-                try
+                for (var i = 0; i < 10000; i++)
                 {
-                    ImportsExportsHelper.ImportTargetThrows(currentStep);
-                }
-                catch (Exception)
-                {
-                    // no action
+                    try
+                    {
+                        ImportsExportsHelper.ImportTargetThrows(currentStep);
+                    }
+                    catch (Exception)
+                    {
+                        // no action
+                    }
                 }
             }
         }
@@ -178,6 +210,12 @@ namespace Sample
         {
             return value + 1;
         }
+
+        [JSImport("Sample.Test.importTargetManyArgs", "main.js")]
+        public static partial double ImportTargetManyArgs(int arg1, int arg2, string arg3, string arg4, IntPtr arg5, bool arg6,
+            [JSMarshalAs<JSType.Number>] long arg7, int? arg8, double arg9,
+            [JSMarshalAs<JSType.Date>] DateTime arg10);
+
 
         [JSExport]
         public static int JSExportTargetInt(int value)
