@@ -22,6 +22,12 @@ namespace System.Text.Json
 
         private const int MinimumBufferSize = 256;
 
+#if NETCOREAPP
+        private static readonly int MaximumBufferSize = Array.MaxLength;
+#else
+        private const int MaximumBufferSize = int.MaxValue;
+#endif
+
         private PooledByteBufferWriter()
         {
         }
@@ -125,17 +131,16 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer != null);
             Debug.Assert(count >= 0);
             Debug.Assert(_index <= _rentedBuffer.Length - count);
-
             _index += count;
         }
 
-        public Memory<byte> GetMemory(int sizeHint = 0)
+        public Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
-        public Span<byte> GetSpan(int sizeHint = 0)
+        public Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
@@ -168,12 +173,7 @@ namespace System.Text.Json
         private void CheckAndResizeBuffer(int sizeHint)
         {
             Debug.Assert(_rentedBuffer != null);
-            Debug.Assert(sizeHint >= 0);
-
-            if (sizeHint == 0)
-            {
-                sizeHint = MinimumBufferSize;
-            }
+            Debug.Assert(sizeHint > 0);
 
             int availableSpace = _rentedBuffer.Length - _index;
 
@@ -184,10 +184,10 @@ namespace System.Text.Json
 
                 int newSize = currentLength + growBy;
 
-                if ((uint)newSize > int.MaxValue)
+                if ((uint)newSize > MaximumBufferSize)
                 {
                     newSize = currentLength + sizeHint;
-                    if ((uint)newSize > int.MaxValue)
+                    if ((uint)newSize > MaximumBufferSize)
                     {
                         ThrowHelper.ThrowOutOfMemoryException_BufferMaximumSizeExceeded((uint)newSize);
                     }
@@ -200,9 +200,9 @@ namespace System.Text.Json
                 Debug.Assert(oldBuffer.Length >= _index);
                 Debug.Assert(_rentedBuffer.Length >= _index);
 
-                Span<byte> previousBuffer = oldBuffer.AsSpan(0, _index);
-                previousBuffer.CopyTo(_rentedBuffer);
-                previousBuffer.Clear();
+                Span<byte> oldBufferAsSpan = oldBuffer.AsSpan(0, _index);
+                oldBufferAsSpan.CopyTo(_rentedBuffer);
+                oldBufferAsSpan.Clear();
                 ArrayPool<byte>.Shared.Return(oldBuffer);
             }
 
