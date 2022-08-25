@@ -91,21 +91,21 @@ struct changed_seg
 const int max_saved_changed_segs = 128;
 
 changed_seg saved_changed_segs[max_saved_changed_segs];
-int saved_changed_segs_count = -1;
+uint64_t saved_changed_segs_count = ~0ull;
 
 void record_changed_seg (uint8_t* start, uint8_t* end,
                          size_t current_gc_index,
                          bgc_state current_bgc_state,
                          changed_seg_state changed_state)
 {
-#ifdef MULTIPLE_HEAPS
-    int segs_index = Interlocked::Increment(&saved_changed_segs_count);
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    uint64_t segs_count = Interlocked::Increment(&saved_changed_segs_count);
 #else
-    int segs_index = ++saved_changed_segs_count;
-#endif //MULTIPLE_HEAPS
+    uint64_t segs_count = ++saved_changed_segs_count;
+#endif //MULTIPLE_HEAPS && USE_REGIONS
 
     static_assert((max_saved_changed_segs & (max_saved_changed_segs - 1)) == 0, "Size must be a power of two");
-    segs_index &= max_saved_changed_segs - 1;
+    unsigned int segs_index = segs_count & (max_saved_changed_segs - 1);
 
     saved_changed_segs[segs_index].start = start;
     saved_changed_segs[segs_index].end = end;
