@@ -49,12 +49,6 @@ namespace MonoTests.System.Runtime.Caching
 {
     public class MemoryCacheTest
     {
-        private readonly ITestOutputHelper _output;
-        public MemoryCacheTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-
         public static bool SupportsPhysicalMemoryMonitor
         {
             get
@@ -1324,12 +1318,6 @@ namespace MonoTests.System.Runtime.Caching
 
     public class MemoryCacheTestExpires11
     {
-        private readonly ITestOutputHelper _output;
-        public MemoryCacheTestExpires11(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-
         [Fact]
         [OuterLoop] // makes long wait
         public async Task TimedExpirationAsync()
