@@ -19,17 +19,27 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			RedundantSuppressionOnType.Test ();
 			RedundantSuppressionOnMethod.Test ();
 			RedundantSuppressionOnNestedType.Test ();
+
 			RedundantSuppressionOnPropertyGet.Test ();
 			RedundantSuppressionOnProperty.Test ();
+			RedundantSuppressionOnPropertyWithOnlyGet.Test ();
+			RedundantSuppressionOnPropertyWithOnlySet.Test ();
+			RedundantSuppressionOnPropertyAccessedByReflection.Test ();
+
 			RedundantSuppressionOnEventAdd.Test ();
 			RedundantSuppressionOnEvent.Test ();
+			RedundantSuppressionOnEventAccessedByReflection.Test ();
+
 			MultipleRedundantSuppressions.Test ();
 			RedundantAndUsedSuppressions.Test ();
+
 			DoNotReportNonLinkerSuppressions.Test ();
 			DoNotReportSuppressionsOnMethodsConvertedToThrow.Test ();
+
 			SuppressRedundantSuppressionWarning.Test ();
-			RedundantSuppressionWithRUC.Test ();
 			DoNotReportUnnecessaryRedundantWarningSuppressions.Test ();
+
+			RedundantSuppressionWithRUC.Test ();
 		}
 
 		public static Type TriggerUnrecognizedPattern ()
@@ -101,6 +111,58 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			public static void Test ()
 			{
 				var property = TrimmerCompatibleProperty;
+				TrimmerCompatibleProperty = "test";
+			}
+
+			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[UnconditionalSuppressMessage ("Test", "IL2071")]
+			public static string TrimmerCompatibleProperty {
+				get {
+					return TrimmerCompatibleMethod ();
+				}
+				set {
+					value = TrimmerCompatibleMethod ();
+				}
+			}
+		}
+
+		public class RedundantSuppressionOnPropertyWithOnlyGet
+		{
+			public static void Test ()
+			{
+				var property = TrimmerCompatibleProperty;
+			}
+
+			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[UnconditionalSuppressMessage ("Test", "IL2071")]
+			public static string TrimmerCompatibleProperty {
+				get {
+					return TrimmerCompatibleMethod ();
+				}
+			}
+		}
+
+		public class RedundantSuppressionOnPropertyWithOnlySet
+		{
+			public static void Test ()
+			{
+				TrimmerCompatibleProperty = "test";
+			}
+
+			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[UnconditionalSuppressMessage ("Test", "IL2071")]
+			public static string TrimmerCompatibleProperty {
+				set {
+					value = TrimmerCompatibleMethod ();
+				}
+			}
+		}
+
+		public class RedundantSuppressionOnPropertyAccessedByReflection
+		{
+			public static void Test ()
+			{
+				typeof (RedundantSuppressionOnPropertyAccessedByReflection).GetProperty ("TrimmerCompatibleProperty");
 			}
 
 			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
@@ -116,7 +178,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		{
 			public static void Test ()
 			{
-				Event += EventSubscriber;
+				TrimmerCompatibleEvent += EventSubscriber;
 			}
 
 			static void EventSubscriber (object sender, EventArgs e)
@@ -124,7 +186,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			}
 
-			static event EventHandler<EventArgs> Event {
+			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
 				[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
 				[UnconditionalSuppressMessage ("Test", "IL2072")]
 				add { TrimmerCompatibleMethod (); }
@@ -136,7 +198,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		{
 			public static void Test ()
 			{
-				Event += EventSubscriber;
+				TrimmerCompatibleEvent += EventSubscriber;
 			}
 
 			static void EventSubscriber (object sender, EventArgs e)
@@ -146,7 +208,22 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			static event EventHandler<EventArgs> Event {
+			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
+				add { TrimmerCompatibleMethod (); }
+				remove { }
+			}
+		}
+
+		public class RedundantSuppressionOnEventAccessedByReflection
+		{
+			public static void Test ()
+			{
+				typeof (RedundantSuppressionOnEventAccessedByReflection).GetEvent ("TrimmerCompatibleEvent");
+			}
+
+			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[UnconditionalSuppressMessage ("Test", "IL2072")]
+			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
 				add { TrimmerCompatibleMethod (); }
 				remove { }
 			}
@@ -240,7 +317,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			public static void Test ()
 			{
 				MethodMarkedRUC ();
-
 			}
 
 			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
