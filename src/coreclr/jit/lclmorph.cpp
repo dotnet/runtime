@@ -293,6 +293,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     {
         None,
         Nop,
+        BitCast,
         LclVar,
         LclFld
     };
@@ -898,9 +899,11 @@ private:
     {
         assert(val.IsLocation());
 
-        ClassLayout*   indirLayout = nullptr;
-        IndirTransform transform   = SelectLocalIndirTransform(val, user, &indirLayout);
-        GenTree*       indir       = val.Node();
+        ClassLayout*         indirLayout = nullptr;
+        IndirTransform       transform   = SelectLocalIndirTransform(val, user, &indirLayout);
+        GenTree*             indir       = val.Node();
+        unsigned             lclNum      = val.LclNum();
+        GenTreeLclVarCommon* lclNode     = nullptr;
 
         switch (transform)
         {
@@ -913,16 +916,26 @@ private:
                 m_stmtModified = true;
                 return;
 
+            case IndirTransform::BitCast:
+                indir->ChangeOper(GT_BITCAST);
+                indir->gtGetOp1()->ChangeOper(GT_LCL_VAR);
+                indir->gtGetOp1()->ChangeType(m_compiler->lvaGetDesc(lclNum)->TypeGet());
+                indir->gtGetOp1()->AsLclVar()->SetLclNum(lclNum);
+                lclNode = indir->gtGetOp1()->AsLclVarCommon();
+                break;
+
             case IndirTransform::LclVar:
                 indir->ChangeOper(GT_LCL_VAR);
-                indir->AsLclVar()->SetLclNum(val.LclNum());
+                indir->AsLclVar()->SetLclNum(lclNum);
+                lclNode = indir->AsLclVarCommon();
                 break;
 
             case IndirTransform::LclFld:
                 indir->ChangeOper(GT_LCL_FLD);
-                indir->AsLclFld()->SetLclNum(val.LclNum());
+                indir->AsLclFld()->SetLclNum(lclNum);
                 indir->AsLclFld()->SetLclOffs(val.Offset());
                 indir->AsLclFld()->SetLayout(indirLayout);
+                lclNode = indir->AsLclVarCommon();
 
                 // Promoted locals aren't currently handled here so partial access can't be
                 // later be transformed into a LCL_VAR and the variable cannot be enregistered.
@@ -933,14 +946,13 @@ private:
                 unreached();
         }
 
-        GenTreeLclVarCommon* lclNode      = indir->AsLclVarCommon();
-        GenTreeFlags         lclNodeFlags = GTF_EMPTY;
+        GenTreeFlags lclNodeFlags = GTF_EMPTY;
 
-        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == lclNode))
+        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
         {
             lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
-            unsigned lhsSize = lclNode->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(lclNode);
+            unsigned lhsSize = indir->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(indir);
             unsigned lclSize = m_compiler->lvaLclExactSize(val.LclNum());
             if (lhsSize != lclSize)
             {
@@ -996,10 +1008,6 @@ private:
                 return IndirTransform::None;
             }
 
-            // For primitives, for now, we will support the simplest transformation: exact type
-            // match. This could in future be improved, for example, "IND<byte>(ADDR(int))" as
-            // an R-value is equivalent to "CAST<byte>(int)". Likewise we could/should support
-            // "BITCAST"s here.
             if (indir->TypeGet() == varDsc->TypeGet())
             {
                 return IndirTransform::LclVar;
@@ -1026,6 +1034,16 @@ private:
             {
                 assert(varTypeIsSmall(indir));
                 return IndirTransform::LclVar;
+            }
+
+            // Turn this into a bitcast if we can.
+            if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+            {
+                // TODO-ADDR: enable this optimization for all users and all targets.
+                if (user->OperIs(GT_RETURN) && (genTypeSize(indir) <= TARGET_POINTER_SIZE))
+                {
+                    return IndirTransform::BitCast;
+                }
             }
 
             return IndirTransform::LclFld;
