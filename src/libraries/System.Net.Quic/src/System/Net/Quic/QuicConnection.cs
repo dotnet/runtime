@@ -242,7 +242,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             if (address is not null)
             {
                 QuicAddr quicAddress = new IPEndPoint(address, port).ToQuicAddr();
-                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
+                _handle.SafeCall(handle => MsQuicHelpers.SetMsQuicParameter(handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress));
             }
             // RemoteEndPoint is DnsEndPoint containing hostname that is different from requested SNI.
             // --> Resolve the hostname and set the IP directly, use requested SNI in ConnectionStart.
@@ -257,7 +257,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 }
 
                 QuicAddr quicAddress = new IPEndPoint(addresses[0], port).ToQuicAddr();
-                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
+                _handle.SafeCall(handle => MsQuicHelpers.SetMsQuicParameter(handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress));
             }
             // RemoteEndPoint is DnsEndPoint containing hostname that is the same as the requested SNI.
             // --> Let MsQuic resolve the hostname/SNI, give address family hint is specified in DnsEndPoint.
@@ -276,7 +276,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             if (options.LocalEndPoint is not null)
             {
                 QuicAddr quicAddress = options.LocalEndPoint.ToQuicAddr();
-                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
+                _handle.SafeCall(handle => MsQuicHelpers.SetMsQuicParameter(handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress));
             }
 
             _sslConnectionOptions = new SslConnectionOptions(
@@ -294,13 +294,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 unsafe
                 {
-                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
-                        _handle.QuicHandle,
+                    _handle.SafeCall(handle => ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
+                        handle.QuicHandle,
                         _configuration.QuicHandle,
                         (ushort)addressFamily,
                         (sbyte*)targetHostPtr,
                         (ushort)port),
-                        "ConnectionStart failed");
+                        "ConnectionStart failed"));
                 }
             }
             finally
@@ -334,10 +334,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             unsafe
             {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
-                    _handle.QuicHandle,
+                _handle.SafeCall(handle => ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
+                    handle.QuicHandle,
                     _configuration.QuicHandle),
-                    "ConnectionSetConfiguration failed");
+                    "ConnectionSetConfiguration failed"));
             }
         }
 
@@ -359,7 +359,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicStream? stream = null;
         try
         {
-            stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
+            stream = _handle.SafeCall(handle => new QuicStream((MsQuicContextSafeHandle)handle, type, _defaultStreamErrorCode));
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -392,6 +392,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw new InvalidOperationException(SR.net_quic_accept_not_allowed);
         }
 
+        GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
             return await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -400,6 +401,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             throw;
+        }
+        finally
+        {
+            keepObject.Free();
         }
     }
 
@@ -425,10 +430,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             unsafe
             {
-                MsQuicApi.Api.ApiTable->ConnectionShutdown(
-                    _handle.QuicHandle,
+                _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->ConnectionShutdown(
+                    handle.QuicHandle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
-                    (ulong)errorCode);
+                    (ulong)errorCode));
             }
         }
 
@@ -469,8 +474,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
     {
-        _shutdownTcs.TrySetResult();
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
@@ -577,10 +582,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             unsafe
             {
-                MsQuicApi.Api.ApiTable->ConnectionShutdown(
-                    _handle.QuicHandle,
+                _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->ConnectionShutdown(
+                    handle.QuicHandle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
-                    (ulong)_defaultCloseErrorCode);
+                    (ulong)_defaultCloseErrorCode));
             }
         }
 
