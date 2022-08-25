@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -25,7 +26,14 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
-    public QUIC_HANDLE* QuicHandle => (QUIC_HANDLE*)DangerousGetHandle();
+    public QUIC_HANDLE* QuicHandle
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(IsInvalid, this);
+            return (QUIC_HANDLE*)DangerousGetHandle();
+        }
+    }
 
     public MsQuicSafeHandle(QUIC_HANDLE* handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType)
         : base((IntPtr)handle, ownsHandle: true)
@@ -41,8 +49,9 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
     protected override bool ReleaseHandle()
     {
-        _releaseAction(QuicHandle);
+        QUIC_HANDLE* quicHandle = QuicHandle;
         SetHandle(IntPtr.Zero);
+        _releaseAction(quicHandle);
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -50,6 +59,44 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         }
 
         return true;
+    }
+
+    public TResult SafeCall<TResult>(Func<MsQuicSafeHandle, TResult> call)
+    {
+        ObjectDisposedException.ThrowIf(IsInvalid, this);
+        bool success = false;
+        try
+        {
+            DangerousAddRef(ref success);
+            Debug.Assert(success);
+            return call(this);
+        }
+        finally
+        {
+            if (success)
+            {
+                DangerousRelease();
+            }
+        }
+    }
+
+    public void SafeCall(Action<MsQuicSafeHandle> call)
+    {
+        ObjectDisposedException.ThrowIf(IsInvalid, this);
+        bool success = false;
+        try
+        {
+            DangerousAddRef(ref success);
+            Debug.Assert(success);
+            call(this);
+        }
+        finally
+        {
+            if (success)
+            {
+                DangerousRelease();
+            }
+        }
     }
 
     public override string ToString() => _traceId ??= $"[{s_typeName[(int)_type]}][0x{DangerousGetHandle():X11}]";

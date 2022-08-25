@@ -90,6 +90,7 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
+    private object _sendBuffersLock = new object();
 
     private readonly long _defaultErrorCode;
 
@@ -220,9 +221,9 @@ public sealed partial class QuicStream
         {
             unsafe
             {
-                int status = MsQuicApi.Api.ApiTable->StreamStart(
-                    _handle.QuicHandle,
-                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+                int status = _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamStart(
+                    handle.QuicHandle,
+                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT));
                 if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
                 {
                     _startedTcs.TrySetException(exception);
@@ -297,9 +298,9 @@ public sealed partial class QuicStream
         {
             unsafe
             {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(
-                    _handle.QuicHandle,
-                    1),
+                ThrowHelper.ThrowIfMsQuicError(_handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(
+                    handle.QuicHandle,
+                    1)),
                 "StreamReceivedSetEnabled failed");
             }
         }
@@ -360,19 +361,23 @@ public sealed partial class QuicStream
             return valueTask;
         }
 
-        _sendBuffers.Initialize(buffer);
-        unsafe
+        lock (_sendBuffersLock)
         {
-            int status = MsQuicApi.Api.ApiTable->StreamSend(
-                _handle.QuicHandle,
-                _sendBuffers.Buffers,
-                (uint)_sendBuffers.Count,
-                completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                null);
-            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            _sendBuffers.Initialize(buffer);
+            unsafe
             {
-                _sendBuffers.Reset();
-                _sendTcs.TrySetException(exception, final: true);
+                int status = _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamSend(
+                    handle.QuicHandle,
+                    _sendBuffers.Buffers,
+                    (uint)_sendBuffers.Count,
+                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                    null));
+                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                {
+                    _sendBuffers.Reset();
+                    _sendTcs.TrySetException(exception, final: true);
+                }
             }
         }
 
@@ -423,10 +428,10 @@ public sealed partial class QuicStream
 
         unsafe
         {
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamShutdown(
-                _handle.QuicHandle,
+            ThrowHelper.ThrowIfMsQuicError(_handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamShutdown(
+                handle.QuicHandle,
                 flags,
-                (ulong)errorCode),
+                (ulong)errorCode)),
                 "StreamShutdown failed");
         }
     }
@@ -446,10 +451,10 @@ public sealed partial class QuicStream
         {
             unsafe
             {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamShutdown(
-                    _handle.QuicHandle,
+                ThrowHelper.ThrowIfMsQuicError(_handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamShutdown(
+                    handle.QuicHandle,
                     QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
-                    default),
+                    default)),
                     "StreamShutdown failed");
             }
         }
@@ -510,7 +515,10 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Received event SEND_COMPLETE with {nameof(data.Canceled)}={data.Canceled}");
         }
 
-        _sendBuffers.Reset();
+        lock (_sendBuffersLock)
+        {
+            _sendBuffers.Reset();
+        }
         if (data.Canceled == 0)
         {
             _sendTcs.TrySetResult();
@@ -708,15 +716,18 @@ public sealed partial class QuicStream
         await valueTask.ConfigureAwait(false);
         _handle.Dispose();
 
-        // TODO: memory leak if not disposed
-        _sendBuffers.Dispose();
+        lock (_sendBuffersLock)
+        {
+            // TODO: memory leak if not disposed
+            _sendBuffers.Dispose();
+        }
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
-            int status = MsQuicApi.Api.ApiTable->StreamShutdown(
-                _handle.QuicHandle,
+            int status = _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamShutdown(
+                handle.QuicHandle,
                 flags,
-                (ulong)errorCode);
+                (ulong)errorCode));
             if (StatusFailed(status))
             {
                 if (NetEventSource.Log.IsEnabled())
