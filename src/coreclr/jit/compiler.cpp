@@ -3211,6 +3211,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
+#ifdef TARGET_64BIT
     opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
 
 #ifdef DEBUG
@@ -3220,6 +3221,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
         opts.compCollect64BitCounts = rng.Next(2) == 0;
     }
+#endif
+#else
+    opts.compCollect64BitCounts = false;
 #endif
 
 #ifdef DEBUG
