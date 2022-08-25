@@ -162,7 +162,7 @@ namespace Mono.Linker
 			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
 				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
 
-			if (context.IsWarningSuppressed (code, origin))
+			if (context.IsWarningSuppressed (code, subcategory, origin))
 				return Empty;
 
 			if (version > context.WarnVersion)
@@ -182,7 +182,7 @@ namespace Mono.Linker
 			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
 				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
 
-			if (context.IsWarningSuppressed ((int) id, origin))
+			if (context.IsWarningSuppressed ((int) id, subcategory, origin))
 				return Empty;
 
 			if (version > context.WarnVersion)

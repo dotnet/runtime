@@ -163,6 +163,8 @@ namespace Mono.Linker
 
 		public HashSet<int> NoWarn { get; set; }
 
+		public bool NoTrimWarn { get; set; }
+
 		public Dictionary<int, bool> WarnAsError { get; set; }
 
 		public bool GeneralWarnAsError { get; set; }
@@ -700,8 +702,11 @@ namespace Mono.Linker
 			_cachedWarningMessageContainers.Clear ();
 		}
 
-		public bool IsWarningSuppressed (int warningCode, MessageOrigin origin)
+		public bool IsWarningSuppressed (int warningCode, string subcategory, MessageOrigin origin)
 		{
+			if (subcategory == MessageSubCategory.TrimAnalysis && NoTrimWarn)
+				return true;
+
 			// This warning was turned off by --nowarn.
 			if (NoWarn.Contains (warningCode))
 				return true;
