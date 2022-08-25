@@ -390,12 +390,6 @@ public sealed partial class QuicStream
     /// <param name="errorCode">The error code with which to abort the stream, this value is application protocol (layer above QUIC) dependent.</param>
     public void Abort(QuicAbortDirection abortDirection, long errorCode)
     {
-
-        if (NetEventSource.Log.IsEnabled())
-        {
-            NetEventSource.Info(this, $"{this} Aborting {abortDirection} with {errorCode}");
-        }
-
         if (_disposed == 1)
         {
             return;
@@ -421,6 +415,11 @@ public sealed partial class QuicStream
         if (flags == QUIC_STREAM_SHUTDOWN_FLAGS.NONE)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Aborting {abortDirection} with {errorCode}");
         }
 
         unsafe
@@ -461,7 +460,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event START_COMPLETE with {data.Status} and PeerAccepted={data.PeerAccepted}");
+            NetEventSource.Info(this, $"{this} Received event START_COMPLETE with {nameof(data.Status)}={data.Status} and {nameof(data.PeerAccepted)}={data.PeerAccepted}");
         }
 
         _id = unchecked((long)data.ID);
@@ -492,7 +491,7 @@ public sealed partial class QuicStream
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event RECEIVE with {data.BufferCount} buffers and total count of {data.TotalBufferLength}. totalCopied={totalCopied}");
+            NetEventSource.Info(this, $"{this} Received event RECEIVE with {nameof(data.BufferCount)}={data.BufferCount}, {nameof(data.TotalBufferLength)}={data.TotalBufferLength} and {nameof(totalCopied)}={totalCopied}");
         }
 
         if (totalCopied < data.TotalBufferLength)
@@ -505,12 +504,11 @@ public sealed partial class QuicStream
         data.TotalBufferLength = totalCopied;
         return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE data)
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event SEND_COMPLETE with canceled {data.Canceled}");
+            NetEventSource.Info(this, $"{this} Received event SEND_COMPLETE with {nameof(data.Canceled)}={data.Canceled}");
         }
 
         _sendBuffers.Reset();
@@ -538,7 +536,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event PEER_SEND_ABORTED with {data.ErrorCode}");
+            NetEventSource.Info(this, $"{this} Received event PEER_SEND_ABORTED with {nameof(data.ErrorCode)}={data.ErrorCode}");
         }
 
         _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
@@ -548,7 +546,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {data.ErrorCode}");
+            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {nameof(data.ErrorCode)}={data.ErrorCode}");
         }
 
         _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
@@ -558,7 +556,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {data.Graceful}");
+            NetEventSource.Info(this, $"{this} Received event PEER_RECEIVE_ABORTED with {nameof(data.Graceful)}={data.Graceful}");
         }
 
         if (data.Graceful != 0)
@@ -572,7 +570,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event SHUTDOWN_COMPLETE with {data.ConnectionShutdown}");
+            NetEventSource.Info(this, $"{this} Received event SHUTDOWN_COMPLETE with  {nameof(data.ConnectionShutdown)}={data.ConnectionShutdown}");
         }
 
         if (data.ConnectionShutdown != 0)
@@ -612,12 +610,13 @@ public sealed partial class QuicStream
         return QUIC_STATUS_SUCCESS;
     }
 
-    private int HandleOtherEvent(QUIC_STREAM_EVENT_TYPE type)
+    private int HandleStreamEvent(QUIC_STREAM_EVENT_TYPE type)
     {
         if (NetEventSource.Log.IsEnabled())
         {
                 NetEventSource.Info(this, $"{this} Received event {type}");
         }
+
         return QUIC_STATUS_SUCCESS;
     }
 
@@ -633,7 +632,7 @@ public sealed partial class QuicStream
             QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE => HandleEventSendShutdownComplete(ref streamEvent.SEND_SHUTDOWN_COMPLETE),
             QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE => HandleEventShutdownComplete(ref streamEvent.SHUTDOWN_COMPLETE),
             QUIC_STREAM_EVENT_TYPE.PEER_ACCEPTED => HandleEventPeerAccepted(),
-            _ => HandleOtherEvent(streamEvent.Type)
+            _ => HandleStreamEvent(streamEvent.Type)
         };
 
 #pragma warning disable CS3016
