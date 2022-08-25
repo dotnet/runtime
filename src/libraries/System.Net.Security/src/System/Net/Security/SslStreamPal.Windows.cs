@@ -12,6 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
+using static Interop;
 
 namespace System.Net.Security
 {
@@ -47,12 +48,7 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        public static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> protocols)
-        {
-            return Interop.Sec_Application_Protocols.ToByteArray(protocols);
-        }
-
-        public static SecurityStatusPal AcceptSecurityContext(
+        public static unsafe SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -67,8 +63,23 @@ namespace System.Net.Security
 
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
-                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                int protocolLenngth = Sec_Application_Protocols.GetProtocolLength(sslAuthenticationOptions.ApplicationProtocols);
+                int bufferLength = sizeof(Sec_Application_Protocols) + protocolLenngth;
+
+                Span<byte> alpnBuffer;
+                if (bufferLength <= 64)
+                {
+                    // workaround for CS8350
+                    byte* tmp = stackalloc byte[bufferLength];
+                    alpnBuffer= new Span<byte>(tmp, bufferLength);
+                }
+                else
+                {
+                    alpnBuffer = new byte[bufferLength];
+                }
+
+                Sec_Application_Protocols.SetProtocols(alpnBuffer, sslAuthenticationOptions.ApplicationProtocols, protocolLenngth);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
@@ -87,7 +98,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(
+        public static unsafe SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -103,8 +114,23 @@ namespace System.Net.Security
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
-                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                int protocolLenngth = Sec_Application_Protocols.GetProtocolLength(sslAuthenticationOptions.ApplicationProtocols);
+                int bufferLength = sizeof(Sec_Application_Protocols) + protocolLenngth;
+
+                Span<byte> alpnBuffer;
+                if (bufferLength <= 64)
+                {
+                    // workaround for CS8350
+                    byte* tmp = stackalloc byte[bufferLength];
+                    alpnBuffer = new Span<byte>(tmp, bufferLength);
+                }
+                else
+                {
+                    alpnBuffer = new byte[bufferLength];
+                }
+
+                Sec_Application_Protocols.SetProtocols(alpnBuffer, sslAuthenticationOptions.ApplicationProtocols, protocolLenngth);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
