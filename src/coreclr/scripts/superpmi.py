@@ -1838,7 +1838,9 @@ class SuperPMIReplayAsmDiffs:
                     if base > 0:
                         pct = " ({}{:.2f}%)".format(plus_if_positive, (diff - base) / base * 100)
 
-                    return "{}{:,d} B{}".format(plus_if_positive, diff - base, pct)
+                    #return "{}{:,d} B{}".format(plus_if_positive, diff - base, pct)
+                    color = "red" if diff > base else "green"
+                    return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
 
                 diffed_contexts = sum(int(diff_metrics["Total"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
                 diffed_minopts_contexts = sum(int(diff_metrics["MinOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
@@ -1846,14 +1848,16 @@ class SuperPMIReplayAsmDiffs:
                 missing_base_contexts = sum(int(base_metrics["Total"]["Missing compiles"]) for (_, base_metrics, _, _, _) in asm_diffs)
                 missing_diff_contexts = sum(int(diff_metrics["Total"]["Missing compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
 
-                write_fh.write("Diffs are based on {:,d} contexts ({:,d} minopts, {:,d} optimized).\n".format(
+                write_fh.write("Diffs are based on <span style=\"color:#66ccff\">{:,d}</span> contexts (<span style=\"color:#66ccff\">{:,d}</span> minopts, <span style=\"color:#66ccff\">{:,d}</span> optimized).\n".format(
                     diffed_contexts, diffed_minopts_contexts, diffed_opts_contexts))
 
-                write_fh.write("{:,d} contexts missed with the base JIT and {:,d} missed with the diff JIT.\n\n".format(missing_base_contexts, missing_diff_contexts))
+                color_base = "orange" if missing_base_contexts > 0 else "green"
+                color_diff = "orange" if missing_diff_contexts > 0 else "green"
+                write_fh.write("<span style=\"color:{}\">{:,d}</span> contexts missed with the base JIT and <span style=\"color:{}\">{:,d}</span> missed with the diff JIT.\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     # First write an overview table
-                    write_fh.write("|Collection|Overall|MinOpts|Opts|\n")
+                    write_fh.write("|Collection|Overall (bytes)|MinOpts (bytes)|Opts (bytes)|\n")
                     write_fh.write("|---|---|---|---|\n")
                     for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                         if not has_diffs:
@@ -2117,7 +2121,8 @@ class SuperPMIReplayThroughputDiff:
                     return check("Total") or check("MinOpts") or check("Opts")
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
-                    return "{}{:.2f}%".format(plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
+                    color = "red" if diff_instructions > base_instructions else "green"
+                    return "<span style=\"color:{}\">{}{:.2f}%</span>".format(color, plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
 
                 if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
                     write_fh.write("|Collection|Overall|MinOpts|Opts|\n")
