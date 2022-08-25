@@ -180,6 +180,9 @@ namespace System.Threading
 
                 Debug.Assert(GCHandleCountRef(pNativeOverlapped) == handleCount);
 
+                // Tracing needs _pNativeOverlapped to be initialized
+                _pNativeOverlapped = pNativeOverlapped;
+
 #if FEATURE_PERFTRACING
 #if !(TARGET_BROWSER && !FEATURE_WASM_THREADS)
                 if (NativeRuntimeEventSource.Log.IsEnabled())
@@ -187,14 +190,17 @@ namespace System.Threading
 #endif
 #endif
 
-                NativeOverlapped* pRet = _pNativeOverlapped = pNativeOverlapped;
+                NativeOverlapped* pRet = pNativeOverlapped;
                 pNativeOverlapped = null;
                 return pRet;
             }
             finally
             {
                 if (pNativeOverlapped != null)
+                {
+                    _pNativeOverlapped = null;
                     FreeNativeOverlapped(pNativeOverlapped);
+                }
             }
         }
 
