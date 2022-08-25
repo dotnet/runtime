@@ -23,6 +23,8 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
+        private readonly CustomComparer comparer = new();
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
@@ -33,7 +35,8 @@ namespace System.Text.Json.SourceGeneration
                     (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(classDeclarations.Collect());
+                context.CompilationProvider.Combine(classDeclarations.Collect())
+                .WithComparer(comparer);
 
             context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
@@ -60,6 +63,19 @@ namespace System.Text.Json.SourceGeneration
 
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
+            }
+        }
+
+        private class CustomComparer : IEqualityComparer<(Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right)>
+        {
+            public bool Equals((Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) x, (Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) y)
+            {
+                return x.Right.Equals(y.Right);
+            }
+
+            public int GetHashCode((Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) obj)
+            {
+                return obj.Right.GetHashCode();
             }
         }
 

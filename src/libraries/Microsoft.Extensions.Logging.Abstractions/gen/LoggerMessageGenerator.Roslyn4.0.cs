@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggerMessageGenerator : IIncrementalGenerator
     {
+        private readonly CustomComparer comparer = new();
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
@@ -28,7 +29,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 .Where(static m => m is not null);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(classDeclarations.Collect());
+                context.CompilationProvider.Combine(classDeclarations.Collect())
+                .WithComparer(comparer);
 
             context.RegisterSourceOutput(compilationAndClasses, static (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
@@ -51,6 +53,19 @@ namespace Microsoft.Extensions.Logging.Generators
                 string result = e.Emit(logClasses, context.CancellationToken);
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
+            }
+        }
+
+        private class CustomComparer : IEqualityComparer<(Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right)>
+        {
+            public bool Equals((Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) x, (Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) y)
+            {
+                return x.Right.Equals(y.Right);
+            }
+
+            public int GetHashCode((Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) obj)
+            {
+                return obj.Right.GetHashCode();
             }
         }
     }
