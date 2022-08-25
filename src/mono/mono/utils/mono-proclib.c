@@ -200,7 +200,7 @@ int
 mono_cpu_limit (void)
 {
 #if defined(HOST_WIN32)
-       return mono_cpu_count();
+	return mono_cpu_count ();
 #else
        static int limit = -1;  /* Value will be cached for future calls */
 
@@ -210,17 +210,17 @@ mono_cpu_limit (void)
         * and that limit
         */
        if (limit == -1) {
-               char *dotnetProcCnt = getenv("DOTNET_PROCESSOR_COUNT");
+               char *dotnetProcCnt = getenv ("DOTNET_PROCESSOR_COUNT");
                if (dotnetProcCnt != NULL) {
                        errno = 0;
-                       limit = strtol(dotnetProcCnt, NULL, 0);
+                       limit = strtol (dotnetProcCnt, NULL, 0);
                        if ((errno == 0) && (limit > 0))        /* If it's in range and positive */
-                               return (limit);
+                               return limit;
                }
-               limit = mono_cpu_count();
+               limit = mono_cpu_count ();
 #if HAVE_CGROUP_SUPPORT
                int count = 0;
-               if (mono_get_cpu_limit(&count))
+               if (mono_get_cpu_limit (&count))
                        limit = (limit < count ? limit : count);
 #endif
        }
@@ -228,7 +228,7 @@ mono_cpu_limit (void)
        /*
         * Just return the cached value
         */
-       return (limit);
+       return limit;
 #endif
 }
 
