@@ -161,13 +161,12 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         STRINGREF refMesgString;
         EXCEPTIONREF refExceptionForWatsonBucketing;
         STRINGREF refErrorSourceString;
-    } gc{};
-
-    GCPROTECT_BEGIN(gc);
-
+    } gc;
     gc.refMesgString = refMesgString;
     gc.refExceptionForWatsonBucketing = refExceptionForWatsonBucketing;
     gc.refErrorSourceString = refErrorSourceString;
+
+    GCPROTECT_BEGIN(gc);
 
     // Managed code injected FailFast maps onto the unmanaged version
     // (EEPolicy::HandleFatalError) in the following manner: the exit code is

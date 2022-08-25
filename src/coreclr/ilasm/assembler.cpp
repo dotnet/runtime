@@ -1026,7 +1026,7 @@ void Assembler::EmitByte(int val)
 void Assembler::NewSEHDescriptor(void) //sets m_SEHD
 {
     m_SEHDstack.PUSH(m_SEHD);
-    m_SEHD = new SEH_Descriptor;
+    m_SEHD = new (nothrow) SEH_Descriptor();
     if(m_SEHD == NULL) report->error("Failed to allocate SEH descriptor\n");
 }
 /**************************************************************************/
@@ -1886,7 +1886,7 @@ void Assembler::ResetEvent(__inout_z __inout char* szName, mdToken typeSpec, DWO
         report->error("Event '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    if((m_pCurEvent = new (nothrow) EventDescriptor))
+    if((m_pCurEvent = new (nothrow) EventDescriptor()))
     {
         m_pCurEvent->m_tdClass = m_pCurClass->m_cl;
         m_pCurEvent->m_szName = szName;
@@ -1942,7 +1942,7 @@ void Assembler::ResetProp(__inout_z __inout char * szName, BinStr* bsType, DWORD
         report->error("Property '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    m_pCurProp = new (nothrow) PropDescriptor;
+    m_pCurProp = new (nothrow) PropDescriptor();
     if(m_pCurProp == NULL)
     {
         report->error("Failed to allocate Property Descriptor\n");
