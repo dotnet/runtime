@@ -60,6 +60,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Const ERROR_OPERATION_ABORTED As Integer = 995
         Friend Const ERROR_CANCELLED As Integer = 1223
 
+        ' Error code from SHFileOperationW function (shellapi.h)
+        Friend Const DE_ACCESSDENIEDSRC As Integer = 120
+        Friend Const DE_PATHTOODEEP As Integer = 121
+        Friend Const DE_INVALIDFILES As Integer = 124
+        Friend Const DE_FILENAMETOOLONG As Integer = 129
+        Friend Const DE_ERROR_MAX As Integer = 183
+
         ''' ;New
         ''' <summary>
         ''' FxCop violation: Avoid uninstantiated internal class.

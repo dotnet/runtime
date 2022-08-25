@@ -1719,7 +1719,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     Throw New OperationCanceledException()
                 End If
             ElseIf Result <> 0 Then
-                ThrowWinIOError(Result)
+                ThrowWinIOError(ToWinIOErrorCode(Result))
             End If
         End Sub
 
@@ -1904,6 +1904,26 @@ Namespace Microsoft.VisualBasic.FileIO
                     Throw New System.ComponentModel.InvalidEnumArgumentException("showUI", showUI, GetType(UIOption))
             End Select
         End Function
+
+#If TARGET_WINDOWS Then
+        ''' <summary>
+        ''' Convert SHFileOperation error code to Win IO error code.
+        ''' </summary>
+        ''' <param name="errorCode">SHFileOperation error code.</param>
+        ''' <returns>Win IO error code.</returns>
+        Private Shared Function ToWinIOErrorCode(ByVal errorCode As Integer) As Integer
+            Select Case errorCode
+                Case NativeTypes.DE_ACCESSDENIEDSRC
+                    Return NativeTypes.ERROR_ACCESS_DENIED
+                Case NativeTypes.DE_INVALIDFILES
+                    Return NativeTypes.ERROR_FILE_NOT_FOUND
+                Case NativeTypes.DE_PATHTOODEEP, NativeTypes.DE_FILENAMETOOLONG, NativeTypes.DE_ERROR_MAX
+                    Return NativeTypes.ERROR_FILENAME_EXCED_RANGE
+                Case Else
+                    Return errorCode
+            End Select
+        End Function
+#End If
 
         ''' <summary>
         ''' Verify that the given argument value is a valid DeleteDirectoryOption. If not, throw InvalidEnumArgumentException.
