@@ -120,7 +120,7 @@ These can be set in one of three ways:
 
 ## Specifying method names
 
-Some environment variables such as `DOTNET_JitDump` take a set of patterns specifying method names. The matching works in the following way:
+Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
 * The environment variable is a space-separated list of patterns that can be quoted if they need to contain spaces.
 * Patterns can contain * and ? wildcards matching respectively any characters and any 1 character.
 * If the pattern contains a ':' character, then the string matched against is prefixed with `ClassName:`.
