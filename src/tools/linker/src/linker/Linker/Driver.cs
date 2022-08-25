@@ -505,6 +505,10 @@ namespace Mono.Linker
 						context.WarningSuppressionWriter = new WarningSuppressionWriter (context, fileOutputKind);
 						continue;
 
+					case "--notrimwarn":
+						context.NoTrimWarn = true;
+						continue;
+
 					case "--nowarn":
 						if (!GetStringParam (token, out string? noWarnArgument))
 							return -1;
