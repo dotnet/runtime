@@ -341,7 +341,6 @@ set(VM_SOURCES_WKS
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
-    nativeoverlapped.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
     objectlist.cpp
@@ -444,8 +443,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    nativeoverlapped.h
-    nativelibrarynative.h
     objectlist.h
     olevariant.h
     pendingload.h

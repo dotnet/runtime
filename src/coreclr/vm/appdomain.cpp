@@ -52,8 +52,6 @@
 #include "appdomain.inl"
 #include "typeparse.h"
 
-#include "nativeoverlapped.h"
-
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
