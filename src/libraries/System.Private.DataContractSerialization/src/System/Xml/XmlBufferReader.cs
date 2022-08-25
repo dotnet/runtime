@@ -373,10 +373,10 @@ namespace System.Xml
             => BitConverter.IsLittleEndian ? ReadRawBytes<long>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>());
 
         public float ReadSingle()
-            => ReadRawBytes<float>();
+            => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(4, out int offset).AsSpan(offset, 4));
 
         public double ReadDouble()
-            => ReadRawBytes<double>();
+            => BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(8, out int offset).AsSpan(offset, 8));
 
         public decimal ReadDecimal()
         {
@@ -964,10 +964,10 @@ namespace System.Xml
             => (ulong)GetInt64(offset);
 
         public float GetSingle(int offset)
-            => ReadRawBytes<float>(offset);
+            => BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, 4));
 
         public double GetDouble(int offset)
-            => ReadRawBytes<double>(offset);
+            => BinaryPrimitives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, 8));
 
         public decimal GetDecimal(int offset)
         {
