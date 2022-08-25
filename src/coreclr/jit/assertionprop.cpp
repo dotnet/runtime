@@ -6168,29 +6168,26 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     return nextStmt;
 }
 
-/*****************************************************************************
- *
- *   The entry point for assertion propagation
- */
-
-void Compiler::optAssertionPropMain()
+//------------------------------------------------------------------------------
+// optAssertionPropMain: assertion propagation phase
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::optAssertionPropMain()
 {
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optAssertionPropMain()\n");
-        printf("Blocks/Trees at start of phase\n");
-        fgDispBasicBlocks(true);
-    }
-#endif
 
     optAssertionInit(false);
 
     noway_assert(optAssertionCount == 0);
+    bool madeChanges = false;
+
+    // Assertion prop can speculatively create trees.
+    INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
     // First discover all value assignments and record them in the table.
     for (BasicBlock* const block : Blocks())
@@ -6206,13 +6203,16 @@ void Compiler::optAssertionPropMain()
             if (fgRemoveRestOfBlock)
             {
                 fgRemoveStmt(block, stmt);
-                stmt = stmt->GetNextStmt();
+                stmt        = stmt->GetNextStmt();
+                madeChanges = true;
                 continue;
             }
             else
             {
                 // Perform VN based assertion prop before assertion gen.
                 Statement* nextStmt = optVNAssertionPropCurStmt(block, stmt);
+                madeChanges |= optAssertionPropagatedCurrentStmt;
+                INDEBUG(madeChanges |= (baseTreeID != compGenTreeID));
 
                 // Propagation resulted in removal of the remaining stmts, perform it.
                 if (fgRemoveRestOfBlock)
@@ -6249,7 +6249,7 @@ void Compiler::optAssertionPropMain()
         {
             block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
-        return;
+        return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -6319,7 +6319,8 @@ void Compiler::optAssertionPropMain()
             if (fgRemoveRestOfBlock)
             {
                 fgRemoveStmt(block, stmt);
-                stmt = stmt->GetNextStmt();
+                stmt        = stmt->GetNextStmt();
+                madeChanges = true;
                 continue;
             }
 
@@ -6365,6 +6366,7 @@ void Compiler::optAssertionPropMain()
 #endif
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
+                madeChanges = true;
             }
 
             // Check if propagation removed statements starting from current stmt.
@@ -6375,8 +6377,5 @@ void Compiler::optAssertionPropMain()
         optAssertionPropagatedCurrentStmt = false; // clear it back as we are done with stmts.
     }
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

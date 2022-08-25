@@ -1328,6 +1328,7 @@ public:
 
     HRESULT EnumMemCollectImages();
     HRESULT EnumMemCLRStatic(CLRDataEnumMemoryFlags flags);
+    HRESULT EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRHeapCrticalStatic(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);

@@ -2722,9 +2722,9 @@ BAILOUT:
     // Update local variable to reflect the new stack pointer.
     if (compiler->opts.compStackCheckOnRet)
     {
-        noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
+        assert(compiler->lvaReturnSpCheck != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif
@@ -5582,9 +5582,9 @@ void CodeGen::genCall(GenTreeCall* call)
     // Store the stack pointer so we can check it after the call.
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
-        noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
+        assert(compiler->lvaCallSpCheck != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
@@ -5714,30 +5714,9 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)
-    if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
-    {
-        noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
-        if (!call->CallerPop() && (stackArgBytes != 0))
-        {
-            // ECX is trashed, so can be used to compute the expected SP. We saved the value of SP
-            // after pushing all the stack arguments, but the caller popped the arguments, so we need
-            // to do some math to figure a good comparison.
-            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-            GetEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_ARG_0, stackArgBytes);
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_ARG_0, compiler->lvaCallSpCheck, 0);
-        }
-        else
-        {
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
-        }
-
-        BasicBlock* sp_check = genCreateTempLabel();
-        GetEmitter()->emitIns_J(INS_je, sp_check);
-        instGen(INS_BREAKPOINT);
-        genDefineTempLabel(sp_check);
-    }
+    // REG_ARG_0 (ECX) is trashed, so can be used as a temporary register.
+    genStackPointerCheck(compiler->opts.compStackCheckOnCall && (call->gtCallType == CT_USER_FUNC),
+                         compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -6773,27 +6752,25 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //    cast - The GT_CAST node
 //
 // Assumptions:
-//    The cast node is not a contained node and must have an assigned register.
 //    Neither the source nor target type can be a floating point type.
 //    On x86 casts to (U)BYTE require that the source be in a byte register.
 //
-// TODO-XArch-CQ: Allow castOp to be a contained node without an assigned register.
-//
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    genConsumeRegs(cast->gtGetOp1());
+    genConsumeRegs(cast->CastOp());
 
-    const regNumber srcReg = cast->gtGetOp1()->GetRegNum();
+    GenTree* const  src    = cast->CastOp();
+    const regNumber srcReg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
     const regNumber dstReg = cast->GetRegNum();
     emitter*        emit   = GetEmitter();
 
-    assert(genIsValidIntReg(srcReg));
     assert(genIsValidIntReg(dstReg));
 
     GenIntCastDesc desc(cast);
 
     if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
+        assert(genIsValidIntReg(srcReg));
         genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
@@ -6804,33 +6781,51 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     switch (desc.ExtendKind())
     {
         case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+        case GenIntCastDesc::LOAD_ZERO_EXTEND_SMALL_INT:
             ins     = INS_movzx;
             insSize = desc.ExtendSrcSize();
             break;
         case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+        case GenIntCastDesc::LOAD_SIGN_EXTEND_SMALL_INT:
             ins     = INS_movsx;
             insSize = desc.ExtendSrcSize();
             break;
 #ifdef TARGET_64BIT
         case GenIntCastDesc::ZERO_EXTEND_INT:
+        case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
             ins     = INS_mov;
             insSize = 4;
             canSkip = compiler->opts.OptimizationEnabled() && emit->AreUpper32BitsZero(srcReg);
             break;
         case GenIntCastDesc::SIGN_EXTEND_INT:
+        case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
             ins     = INS_movsxd;
             insSize = 4;
             break;
 #endif
-        default:
-            assert(desc.ExtendKind() == GenIntCastDesc::COPY);
+        case GenIntCastDesc::COPY:
             ins     = INS_mov;
             insSize = desc.ExtendSrcSize();
             canSkip = true;
             break;
+        case GenIntCastDesc::LOAD_SOURCE:
+            ins     = ins_Load(src->TypeGet());
+            insSize = genTypeSize(src);
+            break;
+
+        default:
+            unreached();
     }
 
-    emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
+    if (srcReg != REG_NA)
+    {
+        emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
+    }
+    else
+    {
+        assert(src->isUsedFromMemory());
+        inst_RV_TT(ins, EA_ATTR(insSize), dstReg, src);
+    }
 
     genProduceReg(cast);
 }

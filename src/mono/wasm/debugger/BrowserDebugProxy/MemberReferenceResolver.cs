@@ -403,10 +403,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     memberAccessValues.TryGetValue(argParm.Identifier.Text, out indexObject);
 
                                     // x[a]
-                                    if (indexObject == null)
-                                    {
-                                        indexObject = await Resolve(argParm.Identifier.Text, token);
-                                    }
+                                    indexObject ??= await Resolve(argParm.Identifier.Text, token);
                                     elementIdxStr += indexObject["value"].ToString();
                                 }
                                 // FixMe: indexing with expressions, e.g. x[a + 1]

@@ -1001,8 +1001,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                             methods[entryRow] = methodInfo;
 
-                            if (source != null)
-                                source.AddMethod(methodInfo);
+                            source?.AddMethod(methodInfo);
 
                             typeInfo.Methods.Add(methodInfo);
                         }
@@ -1061,8 +1060,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
                     methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
 
-                    if (source != null)
-                        source.AddMethod(methodInfo);
+                    source?.AddMethod(methodInfo);
 
                     typeInfo.Methods.Add(methodInfo);
                 }

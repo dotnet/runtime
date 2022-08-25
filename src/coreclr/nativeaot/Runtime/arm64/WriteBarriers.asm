@@ -54,7 +54,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         adrp    x12, g_lowest_address
         ldr     x12, [x12, g_lowest_address]
         subs    $destReg, $destReg, x12
-        blt     %ft0
+        blo     %ft0
 
         adrp    x12, $g_GCShadow
         ldr     x12, [x12, $g_GCShadow]
@@ -63,7 +63,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         adrp    x12, $g_GCShadowEnd
         ldr     x12, [x12, $g_GCShadowEnd]
         cmp     $destReg, x12
-        bgt     %ft0
+        bhs     %ft0
 
         ;; Update the shadow heap.
         str     $refReg, [$destReg]
@@ -127,12 +127,12 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         adrp    x12, g_ephemeral_low
         ldr     x12, [x12, g_ephemeral_low]
         cmp     $refReg, x12
-        blt     %ft0
+        blo     %ft0
 
         adrp    x12, g_ephemeral_high
         ldr     x12, [x12, g_ephemeral_high]
         cmp     $refReg, x12
-        bge     %ft0
+        bhs     %ft0
 
         ;; Set this object's card, if it hasn't already been set.
         adrp    x12, g_card_table
@@ -170,12 +170,14 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         adrp    x12, g_lowest_address
         ldr     x12, [x12, g_lowest_address]
         cmp     $destReg, x12
-        blt     %ft0
 
         adrp    x12, g_highest_address
         ldr     x12, [x12, g_highest_address]
-        cmp     $destReg, x12
-        bgt     %ft0
+
+        ;; If $destReg >= g_lowest_address, compare $destReg to g_highest_address.
+        ;; Otherwise, set the C flag (0x2) to take the next branch.
+        ccmp    $destReg, x12, #0x2, hs
+        bhs     %ft0
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg, $trashReg
 
