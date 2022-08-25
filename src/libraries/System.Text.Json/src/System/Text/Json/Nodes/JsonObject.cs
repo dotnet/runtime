@@ -78,7 +78,7 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) =>
+        public bool TryGetPropertyValue(string propertyName, [NotNullWhen(true)] out JsonNode? jsonNode) =>
             ((IDictionary<string, JsonNode?>)this).TryGetValue(propertyName, out jsonNode);
 
         /// <inheritdoc/>
