@@ -2368,10 +2368,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
-#ifdef UNIX_AMD64_ABI
-    opts.compNeedToAlignFrame = false;
-#endif // UNIX_AMD64_ABI
-    memset(&opts, 0, sizeof(opts));
+    opts = {};
 
     if (compIsForInlining())
     {

@@ -733,15 +733,17 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
     LOADERHANDLE retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         LOADERALLOCATORREF loaderAllocator;
         PTRARRAYREF handleTable;
         PTRARRAYREF handleTableOld;
     } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
+    gc.value = NULL;
+    gc.loaderAllocator = NULL;
+    gc.handleTable = NULL;
+    gc.handleTableOld = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -903,14 +905,16 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
 
     OBJECTREF retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         OBJECTREF compare;
         OBJECTREF previous;
     } gc;
+    gc.value = NULL;
+    gc.compare = NULL;
+    gc.previous = NULL;
 
-    ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
     gc.value = valueUNSAFE;

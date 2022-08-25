@@ -13662,8 +13662,8 @@ gc_heap::init_semi_shared()
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
 
-    memset (&last_ephemeral_gc_info, 0, sizeof (last_ephemeral_gc_info));
-    memset (&last_full_blocking_gc_info, 0, sizeof (last_full_blocking_gc_info));
+    last_ephemeral_gc_info = {};
+    last_full_blocking_gc_info = {};
 #ifdef BACKGROUND_GC
     memset (&last_bgc_info, 0, sizeof (last_bgc_info));
 #endif //BACKGROUND_GC
@@ -14029,7 +14029,7 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     memset (committed_by_oh_per_heap, 0, sizeof (committed_by_oh_per_heap));
-#endif    
+#endif
 
     g_heaps [h_number] = this;
 
@@ -20852,7 +20852,7 @@ BOOL gc_heap::should_proceed_with_gc()
             // The no_gc mode was already in progress yet we triggered another GC,
             // this effectively exits the no_gc mode.
             restore_data_for_no_gc();
-            
+
             memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
         }
         else
@@ -28763,7 +28763,7 @@ uint8_t* gc_heap::find_next_marked (uint8_t* x, uint8_t* end,
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::init_bucket_info()
 {
-    memset (bucket_info, 0, sizeof (bucket_info));
+    *bucket_info = {};
 }
 
 void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
