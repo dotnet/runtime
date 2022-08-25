@@ -1307,8 +1307,6 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     }
     CONTRACTL_END;
 
-    INDEBUG(*pcfThisFrame = {});
-
     // Clear various flags
     pcfThisFrame->isFrameless = false;
     pcfThisFrame->isInterrupted = false;
@@ -1395,7 +1393,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
     CONTRACTL_END;
 
-    INDEBUG(*pcfThisFrame = {});
     pcfThisFrame->pRD = pRD;
 
     // Clear various flags
