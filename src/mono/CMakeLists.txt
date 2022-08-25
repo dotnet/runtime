@@ -601,12 +601,17 @@ if(LLVM_PREFIX)
   string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
   # llvm-config --cflags
-  set(llvm_cflags "")
-  set(llvm_cxxflags "")
+  set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I{LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
-  # llvm-config --system-libs
-  set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # llvm-config --system-libs
+    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    # llvm-config --system-libs
+    set(llvm_system_libs "-lz" "-lm")
+  endif()
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
   set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
