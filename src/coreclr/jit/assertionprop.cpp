@@ -3437,16 +3437,16 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
         return false;
     }
 
-    const unsigned lclNum         = tree->AsLclVar()->GetLclNum();
-    AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
-    if (assertionIndex == NO_ASSERTION_INDEX)
+    // No ZEROOBJ assertions for simd.
+    //
+    if (varTypeIsSIMD(tree))
     {
         return false;
     }
 
-    // TODO: create proper simd zero constant
-    //
-    if (varTypeIsSIMD(tree))
+    const unsigned lclNum         = tree->AsLclVar()->GetLclNum();
+    AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
+    if (assertionIndex == NO_ASSERTION_INDEX)
     {
         return false;
     }
@@ -3456,14 +3456,7 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
-    if (varTypeIsStruct(tree))
-    {
-        tree->BashToZeroConst(TYP_INT);
-    }
-    else
-    {
-        tree->BashToZeroConst(tree->TypeGet());
-    }
+    tree->BashToZeroConst(TYP_INT);
 
     JITDUMP(" =>\n");
     DISPNODE(tree);
