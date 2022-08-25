@@ -702,6 +702,8 @@ namespace PInvokeTests
             public float f2;
             [MarshalAs(UnmanagedType.LPStr)]
             public String f3;
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String f4;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -713,6 +715,8 @@ namespace PInvokeTests
             public float f2;
             [MarshalAs(UnmanagedType.LPStr)]
             public String f3;
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String f4;
         }
 
         // A second struct with the same name but nested. Regression test against native types being mangled into
@@ -824,15 +828,16 @@ namespace PInvokeTests
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             ThrowIfNotEquals(true, StructTest(ss), "Struct marshalling scenario1 failed.");
 
             StructTest_ByRef(ref ss);
-            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "Struct marshalling scenario2 failed.");
+            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && ss.f4.Equals("Ipmb"), "Struct marshalling scenario2 failed.");
 
             SequentialStruct ss2 = new SequentialStruct();
             StructTest_ByOut(out ss2);
-            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456"), "Struct marshalling scenario3 failed.");
+            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456") && ss2.f4.Equals("789"), "Struct marshalling scenario3 failed.");
 
             NesterOfSequentialStruct.SequentialStruct ss3 = new NesterOfSequentialStruct.SequentialStruct();
             ss3.f1 = 10.0f;
@@ -861,6 +866,7 @@ namespace PInvokeTests
                 ssa[i].f1 = i;
                 ssa[i].f2 = i*i;
                 ssa[i].f3 = i.LowLevelToString();
+                ssa[i].f4 = "u8" + i.LowLevelToString();
             }
             ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
 
@@ -923,9 +929,10 @@ namespace PInvokeTests
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             ClassTest(ss);
-            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "LayoutClassPtr marshalling scenario1 failed.");
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && ss.f4.Equals("Ipmb"), "LayoutClassPtr marshalling scenario1 failed.");
         }
 
 #if OPTIMIZED_MODE_WITHOUT_SCANNER
@@ -955,20 +962,22 @@ namespace PInvokeTests
             sc.f1 = 1;
             sc.f2 = 10.0f;
             sc.f3 = "Hello";
+            sc.f4 = "Hola";
 
             AsAnyTest(sc);
-            ThrowIfNotEquals(true, sc.f1 == 2 && sc.f2 == 11.0 && sc.f3.Equals("Ifmmp"), "AsAny marshalling scenario1 failed.");
+            ThrowIfNotEquals(true, sc.f1 == 2 && sc.f2 == 11.0 && sc.f3.Equals("Ifmmp") && sc.f4.Equals("Ipmb"), "AsAny marshalling scenario1 failed.");
 
             SequentialStruct ss = new SequentialStruct();
             ss.f0 = 100;
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             object o = ss;
             AsAnyTest(o);
             ss = (SequentialStruct)o;
-            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "AsAny marshalling scenario2 failed.");
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && sc.f4.Equals("Ipmb"), "AsAny marshalling scenario2 failed.");
         }
 
         private static void TestLayoutClass()
