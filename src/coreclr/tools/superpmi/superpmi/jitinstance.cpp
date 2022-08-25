@@ -298,7 +298,7 @@ extern "C" DLLEXPORT NOINLINE void Instrumentor_GetInsCount(UINT64* result)
     }
 }
 
-JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics)
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics, CORJIT_FLAGS* jitFlags)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -309,6 +309,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         int                 mcIndex;
         bool                collectThroughput;
         MetricsSummary*     metrics;
+        CORJIT_FLAGS*       jitFlags;
     } param;
     param.pThis             = this;
     param.result            = RESULT_SUCCESS; // assume success
@@ -316,6 +317,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
     param.metrics           = metrics;
+    param.jitFlags          = jitFlags;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -335,6 +337,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         CORINFO_OS os             = CORINFO_WINNT;
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags, &os);
+        pParam->pThis->mc->repGetJitFlags(pParam->jitFlags, sizeof(*pParam->jitFlags));
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Start();
@@ -436,7 +439,6 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     {
         metrics->SuccessfulCompiles++;
         metrics->NumExecutedInstructions += static_cast<long long>(insCountAfter - insCountBefore);
-
     }
     else
     {

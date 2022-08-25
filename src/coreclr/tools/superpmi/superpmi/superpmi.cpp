@@ -269,8 +269,8 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
-    MetricsSummary totalBaseMetrics;
-    MetricsSummary totalDiffMetrics;
+    MetricsSummaries totalBaseMetrics;
+    MetricsSummaries totalDiffMetrics;
 
     while (true)
     {
@@ -367,18 +367,32 @@ int __cdecl main(int argc, char* argv[])
         }
 
         MetricsSummary baseMetrics;
+        CORJIT_FLAGS jitFlags;
         jittedCount++;
         st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
+        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics, &jitFlags);
         st3.Stop();
         LogDebug("Method %d compiled%s in %fms, result %d",
             reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
 
-        totalBaseMetrics.AggregateFrom(baseMetrics);
+        bool isMinOpts =
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT) ||
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
 
-        if ((res == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+        MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.Opts;
+        MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.Opts;
+
+        totalBaseMetrics.Total.AggregateFrom(baseMetrics);
+
+        if (res == JitInstance::RESULT_SUCCESS)
         {
-            mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+            totalBaseMetricsOpts.AggregateFrom(baseMetrics);
+
+            if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+            {
+                mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+            }
         }
 
         MetricsSummary diffMetrics;
@@ -392,16 +406,21 @@ int __cdecl main(int argc, char* argv[])
             mc->cr = new CompileResult();
 
             st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics);
+            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics, &jitFlags);
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
 
-            totalDiffMetrics.AggregateFrom(diffMetrics);
+            totalDiffMetrics.Total.AggregateFrom(diffMetrics);
 
-            if ((res2 == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+            if (res2 == JitInstance::RESULT_SUCCESS)
             {
-                mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+                totalDiffMetricsOpts.AggregateFrom(diffMetrics);
+
+                if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+                {
+                    mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+                }
             }
 
             if (res2 == JitInstance::RESULT_ERROR)
@@ -542,11 +561,17 @@ int __cdecl main(int argc, char* argv[])
                 {
                     InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
 
-                    totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
-                    totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+                    totalBaseMetrics.Total.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetrics.Total.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
 
-                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
-                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+                    totalBaseMetricsOpts.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetricsOpts.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.Total.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.Total.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+
+                    totalBaseMetricsOpts.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetricsOpts.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }
