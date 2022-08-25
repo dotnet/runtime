@@ -565,7 +565,7 @@ $(BashCLRTestExitCodeCheck)
       File="$(ExecutionBashScriptPath)"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
-    <Exec Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
+    <Exec Condition="'$(SkipChmodOfGeneratedCommandScript)' != 'true'" Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
   </Target>
 
 </Project>
