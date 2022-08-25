@@ -19,14 +19,13 @@ namespace Mono.Linker
 		public class Suppression
 		{
 			public SuppressMessageInfo SuppressMessageInfo { get; }
-			public bool Used { get; set; }
+			public bool Used { get; set; } = false;
 			public CustomAttribute OriginAttribute { get; }
 			public ICustomAttributeProvider Provider { get; }
 
-			public Suppression (SuppressMessageInfo suppressMessageInfo, bool used, CustomAttribute originAttribute, ICustomAttributeProvider provider)
+			public Suppression (SuppressMessageInfo suppressMessageInfo, CustomAttribute originAttribute, ICustomAttributeProvider provider)
 			{
 				SuppressMessageInfo = suppressMessageInfo;
-				Used = used;
 				OriginAttribute = originAttribute;
 				Provider = provider;
 			}
@@ -270,7 +269,7 @@ namespace Mono.Linker
 				if (!TryDecodeSuppressMessageAttributeData (ca, out var info))
 					continue;
 
-				yield return new Suppression (info, used: false, originAttribute: ca, provider);
+				yield return new Suppression (info, originAttribute: ca, provider);
 			}
 		}
 
@@ -297,13 +296,13 @@ namespace Mono.Linker
 
 				var scope = info.Scope?.ToLower ();
 				if (info.Target == null && (scope == "module" || scope == null)) {
-					yield return new Suppression (info, used: false, originAttribute: instance, provider);
+					yield return new Suppression (info, originAttribute: instance, provider);
 					continue;
 				}
 
 				switch (scope) {
 				case "module":
-					yield return new Suppression (info, used: false, originAttribute: instance, provider);
+					yield return new Suppression (info, originAttribute: instance, provider);
 					break;
 
 				case "type":
@@ -312,7 +311,7 @@ namespace Mono.Linker
 						break;
 
 					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module, _context))
-						yield return new Suppression (info, used: false, originAttribute: instance, result);
+						yield return new Suppression (info, originAttribute: instance, result);
 
 					break;
 				default:
