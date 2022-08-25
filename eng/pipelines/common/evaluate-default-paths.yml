@@ -113,9 +113,6 @@ jobs:
     - subset: coreclr_jit
       include:
       - src/coreclr/jit/*
-      exclude:
-      - src/mono/*
-      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: wasmbuildtests
       include:
       - src/tasks/*
