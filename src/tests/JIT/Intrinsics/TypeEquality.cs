@@ -51,21 +51,21 @@ class X
 
    // Demoing architecture prefixes..
 
-   // X64: Assembly listing for method X:Is():bool
+   // CHECK: Assembly listing for method X:Is():bool
+
    // X64: call CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
    // X64: call [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
    // X64: call CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
    // X64: call [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
    // X64: call [System.Type:op_Equality(System.Type,System.Type):bool]
-   // X64: ; Total bytes of code
 
-   // ARM64: Assembly listing for method X:Is():bool
    // ARM64: bl CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
    // ARM64: bl [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
    // ARM64: bl CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
    // ARM64: bl [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
    // ARM64: bl [System.Type:op_Equality(System.Type,System.Type):bool]
-   // ARM64: ; Total bytes of code
+
+   // CHECK: ; Total bytes of code
    [MethodImpl(MethodImplOptions.NoInlining)]
    public static bool Is<P,Q>()
    {
