@@ -2019,10 +2019,10 @@
             <Issue>These tests are not supposed to be run with mono.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/Emit/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/36113</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/InvokeConsumer/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/36113</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/**">
             <Issue>needs triage</Issue>
