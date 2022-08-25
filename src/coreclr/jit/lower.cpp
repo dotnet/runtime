@@ -2787,14 +2787,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
-            // the result of bool returning calls.
+            // situations.
             //
             bool removeCast =
 #ifdef TARGET_ARM64
-                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
+                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) && !castOp->isContained() &&
 #endif
-                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIs(GT_OR, GT_XOR, GT_AND)
+                (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
