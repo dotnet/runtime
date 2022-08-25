@@ -16669,7 +16669,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
     {
         lcl = AsLclVar();
     }
-    else if (OperIs(GT_OBJ))
+    else if (OperIsIndir())
     {
         GenTree* addr = AsIndir()->Addr();
 
