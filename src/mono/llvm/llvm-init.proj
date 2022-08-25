@@ -65,7 +65,8 @@
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
     <ItemGroup>
       <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
-                 FileArch="%(PackageReference.PackageArch)" />
+                 FileArch="%(PackageReference.PackageArch)"
+                 Condition="!Exists('$(MonoLLVMDir)\%(PackageReference.PackageArch)')"/>
     </ItemGroup>
     <Message Importance="high" Text="Copying @(LLVMFiles) to $(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)" />
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
