@@ -1639,17 +1639,23 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 case GT_OBJ:
                 case GT_BLK:
                 {
+                    // TODO-ADDR: delete once local morph folds SIMD-typed indirections.
+                    //
                     GenTree* const addr = op2->AsIndir()->Addr();
 
                     if (addr->OperIs(GT_ADDR))
                     {
                         GenTree* const base = addr->AsOp()->gtOp1;
 
-                        if (base->OperIs(GT_LCL_VAR))
+                        if (base->OperIs(GT_LCL_VAR) && varTypeIsStruct(base))
                         {
-                            // layout compat?
-                            op2 = base;
-                            goto IS_COPY;
+                            ClassLayout* const varLayout = base->GetLayout(this);
+                            ClassLayout* const objLayout = op2->GetLayout(this);
+                            if (ClassLayout::AreCompatible(varLayout, objLayout))
+                            {
+                                op2 = base;
+                                goto IS_COPY;
+                            }
                         }
                     }
 
