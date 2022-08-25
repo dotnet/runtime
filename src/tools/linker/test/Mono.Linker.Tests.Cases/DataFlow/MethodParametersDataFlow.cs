@@ -43,6 +43,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestParameterOverwrite (typeof (TestType));
 
+			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
+
 			WriteCapturedParameter.Test ();
 		}
 
@@ -236,6 +238,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = _fieldWithMethods;
 			type.GetFields ();
 		}
+
+		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
+		{
+ 		}
 
 		class WriteCapturedParameter
 		{

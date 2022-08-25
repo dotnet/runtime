@@ -44,6 +44,9 @@
     <Content Include="build/Microsoft.NET.ILLink.targets" PackagePath="build/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="build/6.0_suppressions.xml" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
