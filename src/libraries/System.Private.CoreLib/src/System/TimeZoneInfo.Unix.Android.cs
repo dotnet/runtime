@@ -107,7 +107,7 @@ namespace System
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
             }
-            if (name[0] == 'G' && name[1] == 'M' && name[2] == 'T')
+            if (name.Length >= 3 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T')
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
             }
@@ -144,13 +144,13 @@ namespace System
 
         private static TimeSpan GetCacheLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
-                CachedData cachedData = s_cachedData;
-                return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+            CachedData cachedData = s_cachedData;
+            return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
         }
 
-        private static TimeSpan? _localUtcOffset;
-        private static object _localUtcOffsetLock = new();
-        private static Thread? _loadAndroidTZData;
+        private static bool s_androidTZDataLoaded;
+        private static object s_localUtcOffsetLock = new();
+        private static Thread? s_loadAndroidTZData;
         // Shortcut for TimeZoneInfo.Local.GetUtcOffset
         // On Android, loading AndroidTZData while obtaining cachedData.Local is expensive for startup.
         // We introduce a fast result for GetLocalUtcOffset that relies on the date time offset being
@@ -159,26 +159,33 @@ namespace System
         // The fast path is initially used, and we start a background thread to get cachedData.Local
         internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
-            if (_localUtcOffset != null) // The background thread finished, the cache is loaded.
-                return GetCacheLocalUtcOffset(dateTime, flags);
-
-            if (_localUtcOffset == null && _loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
+            if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
             {
-                lock (_localUtcOffsetLock)
+                s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
+                return GetCacheLocalUtcOffset(dateTime, flags);
+            }
+
+            if (!s_androidTZDataLoaded && s_loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
+            {
+                lock (s_localUtcOffsetLock)
                 {
                     // GetLocalUtcOffset may be called multiple times before a cache is loaded and a background thread is running,
                     // once the lock is available, check for a cache and background thread.
-                    if (_localUtcOffset != null)
-                        return GetCacheLocalUtcOffset(dateTime, flags);
-
-                    if (_loadAndroidTZData == null)
+                    if (s_androidTZDataLoaded)
                     {
-                        _loadAndroidTZData = new Thread(() => {
+                        s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
+                        return GetCacheLocalUtcOffset(dateTime, flags);
+                    }
+                    if (s_loadAndroidTZData == null)
+                    {
+                        s_loadAndroidTZData = new Thread(() => {
                             Thread.Sleep(1000);
-                            _localUtcOffset = GetCacheLocalUtcOffset(dateTime, flags);
+                            CachedData cachedData = s_cachedData;
+                            _ = cachedData.Local;
+                            s_androidTZDataLoaded = true;
                         });
-                        _loadAndroidTZData.IsBackground = true;
-                        _loadAndroidTZData.Start();
+                        s_loadAndroidTZData.IsBackground = true;
+                        s_loadAndroidTZData.Start();
                     }
                 }
             }
@@ -187,7 +194,7 @@ namespace System
             if (localDateTimeOffset == null)
                 return GetCacheLocalUtcOffset(dateTime, flags); // If no offset property provided through monovm app context, default
 
-            long localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
+            int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
             TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
             return offset;
         }
