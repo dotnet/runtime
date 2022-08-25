@@ -1474,7 +1474,7 @@ namespace Internal.TypeSystem.Interop
             get
             {
                 return MarshalDirection == MarshalDirection.Forward
-                    && MarshallerType != MarshallerType.Field
+                    && MarshallerType == MarshallerType.Argument
                     && !IsManagedByRef
                     && In
                     && !Out;
@@ -1672,7 +1672,11 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            if (In && !Out && !IsManagedByRef)
+            if (MarshalDirection == MarshalDirection.Forward
+                && MarshallerType == MarshallerType.Argument
+                && !IsManagedByRef
+                && In
+                && !Out)
             {
                 TypeDesc marshallerIn = MarshallerIn;
 
