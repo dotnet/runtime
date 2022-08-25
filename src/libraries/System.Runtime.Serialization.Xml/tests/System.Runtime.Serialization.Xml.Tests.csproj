@@ -47,6 +47,7 @@
     <None Include="XsdDataContractExporterTests\SerializationTypes\NullableTypes.cs" />
     <None Include="XsdDataContractExporterTests\SerializationTypes\PartialTrust.cs" />
     <None Include="XsdDataContractExporterTests\SerializationTypes\SerializableTypes.cs" />
+    <Compile Include="System.Xml\XmlBinaryNodeType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />

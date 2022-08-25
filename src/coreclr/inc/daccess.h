@@ -2466,7 +2466,7 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 
 // Helper macro for tracking EnumMemoryRegions progress.
 #if 0
-#define EMEM_OUT(args) DacWarning args
+#define EMEM_OUT(args) DacLogMessage args
 #else
 #define EMEM_OUT(args)
 #endif

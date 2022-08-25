@@ -621,25 +621,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
 
-struct TPIndex
-{
-    DWORD m_dwIndex;
-    TPIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit TPIndex (DWORD id)
-    : m_dwIndex(id)
-    {}
-    BOOL operator==(const TPIndex& tpindex) const
-    {
-        return m_dwIndex == tpindex.m_dwIndex;
-    }
-    BOOL operator!=(const TPIndex& tpindex) const
-    {
-        return m_dwIndex != tpindex.m_dwIndex;
-    }
-};
-
 // Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
 // neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
 // can be reused.

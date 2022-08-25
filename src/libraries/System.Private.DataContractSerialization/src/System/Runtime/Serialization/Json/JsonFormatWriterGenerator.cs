@@ -25,12 +25,14 @@ namespace System.Runtime.Serialization.Json
             _helper = new CriticalHelper();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
         {
             return _helper.GenerateClassWriter(classContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal JsonFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
         {
@@ -50,6 +52,7 @@ namespace System.Runtime.Serialization.Json
             private int _typeIndex = 1;
             private int _childElementIndex;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
@@ -76,6 +79,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatClassWriterDelegate)_ilg.EndMethod();
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal JsonFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
@@ -105,6 +109,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
                 MethodInfo signature = CodeGenerator.GetInvokeMethod(delegateType);
@@ -192,6 +197,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void WriteClass(ClassDataContract classContract)
             {
@@ -221,6 +227,7 @@ namespace System.Runtime.Serialization.Json
                 InvokeOnSerialized(classContract);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private int WriteMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal, ClassDataContract derivedMostClassContract)
             {
@@ -296,6 +303,7 @@ namespace System.Runtime.Serialization.Json
                 return memberValue;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void WriteCollection(CollectionDataContract collectionContract)
             {
@@ -499,6 +507,7 @@ namespace System.Runtime.Serialization.Json
                 static MethodInfo MakeIncrementCollectionCountGenericMethod(Type itemType) => XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(itemType);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private bool TryWritePrimitive(Type type, LocalBuilder? value, MemberInfo? memberInfo, LocalBuilder? arrayItemIndex, LocalBuilder? name, int nameIndex)
             {
@@ -546,6 +555,7 @@ namespace System.Runtime.Serialization.Json
                 return true;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private bool TryWritePrimitiveArray(Type type, Type itemType, LocalBuilder value, LocalBuilder itemName)
             {
@@ -612,6 +622,7 @@ namespace System.Runtime.Serialization.Json
                     JsonGlobals.objectString /* value */);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void WriteValue(LocalBuilder memberValue)
             {
@@ -707,6 +718,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(methodInfo);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder UnwrapNullableObject(LocalBuilder memberValue)// Leaves !HasValue on stack
             {

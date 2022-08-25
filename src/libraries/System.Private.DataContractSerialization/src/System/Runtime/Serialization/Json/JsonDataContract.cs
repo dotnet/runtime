@@ -18,6 +18,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected JsonDataContract(DataContract traditionalDataContract)
         {
@@ -65,12 +66,14 @@ namespace System.Runtime.Serialization.Json
             return result;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
         {
             return JsonDataContractCriticalHelper.GetJsonDataContract(traditionalDataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object? ReadJsonValue(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
@@ -80,12 +83,14 @@ namespace System.Runtime.Serialization.Json
             return deserializedObject;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             return TraditionalDataContract.ReadXmlValue(jsonReader, context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void WriteJsonValue(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -94,6 +99,7 @@ namespace System.Runtime.Serialization.Json
             PopKnownDataContracts(context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -151,6 +157,7 @@ namespace System.Runtime.Serialization.Json
             private readonly DataContract _traditionalDataContract;
             private readonly string _typeName;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal JsonDataContractCriticalHelper(DataContract traditionalDataContract)
             {
@@ -165,6 +172,7 @@ namespace System.Runtime.Serialization.Json
 
             internal virtual string TypeName => _typeName;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
             {
@@ -214,6 +222,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static JsonDataContract CreateJsonDataContract(int id, DataContract traditionalDataContract)
             {
@@ -278,6 +287,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void AddCollectionItemContractsToKnownDataContracts()
             {

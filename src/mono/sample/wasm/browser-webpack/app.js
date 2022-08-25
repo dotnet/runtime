@@ -1,11 +1,12 @@
-import createDotnetRuntime from '@microsoft/dotnet-runtime'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import { dotnet } from '@microsoft/dotnet-runtime'
 import _ from 'underscore'
 
 async function dotnetMeaning() {
     try {
-        const { getAssemblyExports } = await createDotnetRuntime({
-            configSrc: "./mono-config.json"
-        });
+        const { getAssemblyExports } = await dotnet.create();
 
         const exports = await getAssemblyExports("Wasm.Browser.WebPack.Sample");
         const meaningFunction = exports.Sample.Test.Main;

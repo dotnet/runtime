@@ -701,7 +701,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int Token { get; }
         internal string Namespace { get; }
         internal bool IsCompilerGenerated { get; }
+        private bool NonUserCode { get; }
         public string FullName { get; }
+        internal bool IsNonUserCode => assembly.pdbMetadataReader == null || NonUserCode;
         public List<MethodInfo> Methods { get; } = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
@@ -769,8 +771,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                 var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                if (attributeName == nameof(CompilerGeneratedAttribute))
-                    IsCompilerGenerated = true;
+                switch (attributeName)
+                {
+                    case nameof(CompilerGeneratedAttribute):
+                        IsCompilerGenerated = true;
+                        break;
+                    case nameof(DebuggerNonUserCodeAttribute):
+                        NonUserCode = true;
+                        break;
+                }
             }
 
             void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)
@@ -992,8 +1001,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                             methods[entryRow] = methodInfo;
 
-                            if (source != null)
-                                source.AddMethod(methodInfo);
+                            source?.AddMethod(methodInfo);
 
                             typeInfo.Methods.Add(methodInfo);
                         }
@@ -1052,8 +1060,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
                     methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
 
-                    if (source != null)
-                        source.AddMethod(methodInfo);
+                    source?.AddMethod(methodInfo);
 
                     typeInfo.Methods.Add(methodInfo);
                 }

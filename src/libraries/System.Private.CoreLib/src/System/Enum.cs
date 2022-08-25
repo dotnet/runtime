@@ -436,7 +436,7 @@ namespace System
             int ulValuesLength = ulValues.Length;
             ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
             return ulValuesLength <= NumberOfValuesThreshold ?
-                SpanHelpers.IndexOf(ref start, ulValue, ulValuesLength) :
+                SpanHelpers.IndexOfValueType(ref Unsafe.As<ulong, long>(ref start), (long)ulValue, ulValuesLength) :
                 SpanHelpers.BinarySearch(ref start, ulValuesLength, ulValue);
         }
 

@@ -32,6 +32,7 @@ class HostBuilder implements DotnetHostBuilder {
         config: runtimeHelpers.config,
     };
 
+    // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             Object.assign(this.moduleConfig!, moduleConfig);
@@ -42,6 +43,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withConsoleForwarding(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -55,6 +57,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withAsyncFlushOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -68,6 +71,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withExitCodeLogging(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -81,6 +85,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withElementOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -94,6 +99,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     //  todo fallback later by debugLevel
     withWaitingForDebugger(level: number): DotnetHostBuilder {
         try {
@@ -217,16 +223,20 @@ class HostBuilder implements DotnetHostBuilder {
             throw err;
         }
     }
-    
+
     withApplicationArgumentsFromQuery(): DotnetHostBuilder {
         try {
-            if (typeof globalThis.URLSearchParams != "undefined") {
-                const params = new URLSearchParams(window.location.search);
-                const values = params.getAll("arg");
-                return this.withApplicationArguments(...values);
+            if (!globalThis.window) {
+                throw new Error("Missing window to the query parameters from");
             }
-            
-            throw new Error("URLSearchParams is supported");
+
+            if (typeof globalThis.URLSearchParams == "undefined") {
+                throw new Error("URLSearchParams is supported");
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const values = params.getAll("arg");
+            return this.withApplicationArguments(...values);
         } catch (err) {
             mono_exit(1, err);
             throw err;

@@ -1131,6 +1131,11 @@ namespace
                     *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
                     return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
                 }
+                if (pMT->IsInt128OrHasInt128Fields())
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
                 *pMTOut = pMT;
                 return MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS;
             }
@@ -2281,6 +2286,18 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
+                }
+
+                // * Int128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // * UInt128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // The field layout is correct, so field scenarios work, but these should not be passed by value as parameters
+                if (!IsFieldScenario() && !m_byref)
+                {
+                    if (m_pMT->IsInt128OrHasInt128Fields())
+                    {
+                        m_resID = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                        IfFailGoto(E_FAIL, lFail);
+                    }
                 }
 
                 if (!m_pMT->HasLayout())

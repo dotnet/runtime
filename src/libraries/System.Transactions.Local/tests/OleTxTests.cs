@@ -13,10 +13,14 @@ namespace System.Transactions.Tests;
 #nullable enable
 
 [PlatformSpecific(TestPlatforms.Windows)]
-public class OleTxTests
+[SkipOnMono("COM Interop not supported on Mono")]
+public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
 {
-    //private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(1);
+
+    public OleTxTests(OleTxFixture fixture)
+    {
+    }
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     [InlineData(Phase1Vote.Prepared, Phase1Vote.Prepared, EnlistmentOutcome.Committed, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
@@ -24,12 +28,12 @@ public class OleTxTests
     [InlineData(Phase1Vote.ForceRollback, Phase1Vote.Prepared, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
     public void Two_durable_enlistments_commit(Phase1Vote vote1, Phase1Vote vote2, EnlistmentOutcome expectedOutcome1, EnlistmentOutcome expectedOutcome2, TransactionStatus expectedTxStatus)
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         try
         {
@@ -57,12 +61,12 @@ public class OleTxTests
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void Two_durable_enlistments_rollback()
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         var enlistment1 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Aborted);
         var enlistment2 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Aborted);
@@ -85,12 +89,12 @@ public class OleTxTests
     [InlineData(2)]
     public void Volatile_and_durable_enlistments(int volatileCount)
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         if (volatileCount > 0)
         {
@@ -118,7 +122,7 @@ public class OleTxTests
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Promotion()
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
@@ -131,7 +135,7 @@ public class OleTxTests
         // 3. The main process will then notify the 1st external process to commit (as the main's transaction is delegated to it).
         // 4. At that point the MSDTC Commit will be triggered; enlistments on both the 1st and 2nd processes will be notified
         //    to commit, and the transaction status will reflect the committed status in the main process.
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         string propagationTokenFilePath = Path.GetTempFileName();
         string exportCookieFilePath = Path.GetTempFileName();
@@ -212,7 +216,7 @@ public class OleTxTests
 
         static void Remote1(string propagationTokenFilePath)
         {
-            var tx = new CommittableTransaction();
+            using var tx = new CommittableTransaction();
 
             var outcomeEvent = new AutoResetEvent(false);
             var enlistment = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent);
@@ -244,7 +248,7 @@ public class OleTxTests
         {
             // Load the export cookie and enlist durably
             byte[] exportCookie = File.ReadAllBytes(exportCookieFilePath);
-            var tx = TransactionInterop.GetTransactionFromExportCookie(exportCookie);
+            using var tx = TransactionInterop.GetTransactionFromExportCookie(exportCookie);
 
             // Now enlist durably. This triggers promotion of the first PSPE, reading the propagation token.
             var outcomeEvent = new AutoResetEvent(false);
@@ -297,7 +301,7 @@ public class OleTxTests
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Recovery()
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
@@ -305,7 +309,7 @@ public class OleTxTests
         // We are going to spin up an external process to also enlist in the transaction, and then to crash when it
         // receives the commit notification. We will then initiate the recovery flow.
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         var outcomeEvent1 = new AutoResetEvent(false);
         var enlistment1 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent1);
@@ -367,7 +371,7 @@ public class OleTxTests
         static void EnlistAndCrash(string propagationTokenText, string resourceManagerIdentifierGuid, string recoveryInformationFilePath)
         {
             byte[] propagationToken = Convert.FromBase64String(propagationTokenText);
-            var tx = TransactionInterop.GetTransactionFromTransmitterPropagationToken(propagationToken);
+            using var tx = TransactionInterop.GetTransactionFromTransmitterPropagationToken(propagationToken);
 
             var crashingEnlistment = new CrashingEnlistment(recoveryInformationFilePath);
             tx.EnlistDurable(Guid.Parse(resourceManagerIdentifierGuid), crashingEnlistment, EnlistmentOptions.None);
@@ -409,12 +413,12 @@ public class OleTxTests
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void TransmitterPropagationToken()
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         Assert.Equal(Guid.Empty, tx.TransactionInformation.DistributedIdentifier);
 
@@ -430,12 +434,12 @@ public class OleTxTests
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void GetExportCookie()
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        if (!Environment.Is64BitProcess)
         {
             return; // Temporarily skip on 32-bit where we have an issue
         }
 
-        var tx = new CommittableTransaction();
+        using var tx = new CommittableTransaction();
 
         var whereabouts = TransactionInterop.GetWhereabouts();
 
@@ -471,6 +475,49 @@ public class OleTxTests
                 }
 
                 Thread.Sleep(100);
+            }
+        }
+    }
+
+    public class OleTxFixture
+    {
+        public OleTxFixture()
+        {
+            if (!Environment.Is64BitProcess)
+            {
+                return; // Temporarily skip on 32-bit where we have an issue
+            }
+
+            // In CI, we sometimes get XACT_E_TMNOTAVAILABLE on the very first attempt to connect to MSDTC;
+            // this is likely due to on-demand slow startup of MSDTC. Perform pre-test connecting with retry
+            // to ensure that MSDTC is properly up when the first test runs.
+            int nRetries = 5;
+
+            while (true)
+            {
+                try
+                {
+                    using var tx = new CommittableTransaction();
+
+                    var enlistment1 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
+                    var enlistment2 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
+
+                    tx.EnlistDurable(Guid.NewGuid(), enlistment1, EnlistmentOptions.None);
+                    tx.EnlistDurable(Guid.NewGuid(), enlistment2, EnlistmentOptions.None);
+
+                    tx.Commit();
+
+                    return;
+                }
+                catch (TransactionException e) when (e.InnerException is TransactionManagerCommunicationException)
+                {
+                    if (--nRetries == 0)
+                    {
+                        throw;
+                    }
+
+                    Thread.Sleep(100);
+                }
             }
         }
     }
