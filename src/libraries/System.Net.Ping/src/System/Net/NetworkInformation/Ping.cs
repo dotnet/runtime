@@ -136,7 +136,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        // Cancels pending async requests, closes the handles.
         private void InternalDispose()
         {
             _disposeRequested = true;
@@ -488,6 +487,8 @@ namespace System.Net.NetworkInformation
                 IPAddress address = await getAddress(getAddressArg, _timeoutOrCancellationSource.Token).ConfigureAwait(false);
 
                 Task<PingReply> pingTask = SendPingAsyncCore(address, buffer, timeout, options);
+                // Note: we set the cancellation-based timeout only after resolving the address and initiating the ping with the
+                // intent that the timeout applies solely to the ping operation rather than to any setup steps.
                 _timeoutOrCancellationSource.CancelAfter(timeout);
                 return await pingTask.ConfigureAwait(false);
             }
