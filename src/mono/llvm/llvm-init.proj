@@ -66,8 +66,10 @@
     <ItemGroup>
       <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
                  FileArch="%(PackageReference.PackageArch)" />
+      <!-- Horrible but easy workaround for osx.10.12-x64 vs osx.11.0-arm64 -->
+      <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\osx.11.0-arm64\**"
+                 FileArch="%(PackageReference.PackageArch)" />
     </ItemGroup>
-    <Message Importance="high" Text="Copying @(LLVMFiles) to $(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)" />
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
