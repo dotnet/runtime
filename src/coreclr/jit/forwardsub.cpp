@@ -114,16 +114,14 @@ PhaseStatus Compiler::fgForwardSub()
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
-    else
-    {
-        CLRRandom rng;
-        rng.Init(info.compMethodHash() ^ 0x12345678);
-        if (rng.Next(10) == 0)
-        {
-            return PhaseStatus::MODIFIED_NOTHING;
-        }
-    }
 #endif
+
+    CLRRandom rng;
+    rng.Init(info.compILCodeSize ^ info.compILlocalsCount ^ 0x12345678);
+    if (rng.Next(10) == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     bool changed = false;
 
