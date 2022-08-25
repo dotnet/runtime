@@ -11,6 +11,12 @@ using System.Runtime.CompilerServices;
 class X<Q>
 {
    [MethodImpl(MethodImplOptions.NoInlining)]
+   // CHECK: Assembly listing for method X`1[__Canon][System.__Canon]:Is(System.Object):bool
+   // CHECK: call CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+   // CHECK: call [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
+   // CHECK: call System.Object:GetType():System.Type:this
+   // CHECK: call [System.Type:op_Equality(System.Type,System.Type):bool]
+   // CHECK: ; Total bytes of code
    public static bool Is(object o)
    {
         return typeof(Q) == o.GetType();
@@ -43,6 +49,13 @@ class X
        return o.GetType() == typeof(Q);
    }
 
+   // X64: Assembly listing for method X:Is():bool
+   // X64: call CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+   // X64: call [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
+   // X64: call CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+   // X64: call [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
+   // X64: call [System.Type:op_Equality(System.Type,System.Type):bool]
+   // X64: ; Total bytes of code
    [MethodImpl(MethodImplOptions.NoInlining)]
    public static bool Is<P,Q>()
    {

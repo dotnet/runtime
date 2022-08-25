@@ -6,13 +6,14 @@ using System.Runtime.CompilerServices;
 
 public class Program
 {
-    public static void Main()
+    public static int Main()
     {
         Console.WriteLine(CallFoo(new C()));
+	return 100;
     }
 
-    // CHECK: Assembly listing for method Program::CallFoo
-    // CHECK: todo - Remove this when the infrastructure is working!
+    // CHECK: Assembly listing for method Program:CallFoo
+    // This is testing that a constrained.callvirt through a T variable doesn't use a helper lookup.
     // CHECK-NOT: CORINFO_HELP
     // CHECK: Total bytes
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -3,8 +3,11 @@
     <OutputType>Exe</OutputType>
     <DebugType>None</DebugType>
     <Optimize />
+    <DisasmCheckFunctions>P:* Q:*</DisasmCheckFunctions>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TypeEquality.cs" />
+    <Compile Include="TypeEquality.cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
   </ItemGroup>
 </Project>
