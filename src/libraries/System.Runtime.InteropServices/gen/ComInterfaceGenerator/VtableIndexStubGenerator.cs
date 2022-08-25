@@ -228,6 +228,7 @@ namespace Microsoft.Interop
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+            INamedTypeSymbol iUnmanagedInterfaceTypeType = environment.Compilation.GetTypeByMetadataName(TypeNames.IUnmanagedInterfaceType_Metadata)!;
             // Get any attributes of interest on the method
             AttributeData? virtualMethodIndexAttr = null;
             AttributeData? lcidConversionAttr = null;
@@ -310,14 +311,14 @@ namespace Microsoft.Interop
             var typeKeyOwner = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
             ManagedTypeInfo typeKeyType = SpecialTypeInfo.Byte;
 
-            IFieldSymbol? typeKeyField = symbol.ContainingType.GetMembers("TypeKey").OfType<IFieldSymbol>().FirstOrDefault(f => f.IsStatic);
-            if (typeKeyField is null)
+            INamedTypeSymbol? iUnmanagedInterfaceTypeInstantiation = symbol.ContainingType.AllInterfaces.FirstOrDefault(iface => SymbolEqualityComparer.Default.Equals(iface.OriginalDefinition, iUnmanagedInterfaceTypeType));
+            if (iUnmanagedInterfaceTypeInstantiation is null)
             {
                 // Report invalid configuration
             }
             else
             {
-                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(typeKeyField.Type);
+                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[0]);
             }
 
             return new IncrementalStubGenerationContext(

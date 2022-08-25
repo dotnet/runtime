@@ -29,7 +29,18 @@ namespace System.Runtime.InteropServices
 
     public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
     {
-        VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
+        protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
+
+        public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<T>
+        {
+            return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
+        }
     }
 
+
+    public interface IUnmanagedInterfaceType<T> where T : IEquatable<T>
+    {
+        public abstract static T TypeKey { get; }
+    }
 }

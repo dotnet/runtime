@@ -117,7 +117,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>
             {
-                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider<<typeKeyType>>)this).GetVirtualMethodTableInfoForKey(<containingTypeName>.TypeKey)
+                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider<<typeKeyType>>)this).GetVirtualMethodTableInfoForKey<<containingTypeName>>();
                 ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -141,15 +141,12 @@ namespace Microsoft.Interop
                                             TypeArgumentList(
                                                 SingletonSeparatedList(typeKeyType.Syntax))),
                                         ThisExpression())),
-                                IdentifierName("GetVirtualMethodTableInfoForKey")))
+                                GenericName(
+                                    Identifier("GetVirtualMethodTableInfoForKey"),
+                                    TypeArgumentList(
+                                        SingletonSeparatedList(containingTypeName)))))
                         .WithArgumentList(
-                            ArgumentList(
-                                SingletonSeparatedList(
-                                    Argument(
-                                        MemberAccessExpression(
-                                            SyntaxKind.SimpleMemberAccessExpression,
-                                            containingTypeName,
-                                            IdentifierName("TypeKey"))))))))
+                            ArgumentList())))
             };
 
             GeneratedStatements statements = GeneratedStatements.Create(

@@ -18,9 +18,9 @@ namespace ComInterfaceGenerator.Tests
         {
             public readonly record struct NoCasting;
 
-            internal partial interface IStaticMethodTable
+            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<NoCasting>
             {
-                public static readonly NoCasting TypeKey = default;
+                static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
 
                 [VirtualMethodIndex(0, ImplicitThisParameter = false)]
                 int Add(int x, int y);

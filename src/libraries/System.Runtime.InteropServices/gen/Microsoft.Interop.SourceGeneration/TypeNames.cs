@@ -32,6 +32,8 @@ namespace Microsoft.Interop
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
 
+        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`1";
+
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
         public const string System_ReadOnlySpan_Metadata = "System.ReadOnlySpan`1";
