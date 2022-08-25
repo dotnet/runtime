@@ -28,9 +28,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [InlineData(Phase1Vote.ForceRollback, Phase1Vote.Prepared, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
     public void Two_durable_enlistments_commit(Phase1Vote vote1, Phase1Vote vote2, EnlistmentOutcome expectedOutcome1, EnlistmentOutcome expectedOutcome2, TransactionStatus expectedTxStatus)
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         using var tx = new CommittableTransaction();
@@ -61,9 +63,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void Two_durable_enlistments_rollback()
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         using var tx = new CommittableTransaction();
@@ -89,9 +93,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [InlineData(2)]
     public void Volatile_and_durable_enlistments(int volatileCount)
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         using var tx = new CommittableTransaction();
@@ -122,9 +128,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Promotion()
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         // This simulates the full promotable flow, as implemented for SQL Server.
@@ -301,9 +309,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Recovery()
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         // We are going to spin up an external process to also enlist in the transaction, and then to crash when it
@@ -413,9 +423,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void TransmitterPropagationToken()
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         using var tx = new CommittableTransaction();
@@ -434,9 +446,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void GetExportCookie()
     {
-        if (!Environment.Is64BitProcess)
+        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
         {
-            return; // Temporarily skip on 32-bit where we have an issue
+            // Temporarily skip on 32-bit where we have an issue
+            // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+            return;
         }
 
         using var tx = new CommittableTransaction();
@@ -483,9 +497,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     {
         public OleTxFixture()
         {
-            if (!Environment.Is64BitProcess)
+            if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
             {
-                return; // Temporarily skip on 32-bit where we have an issue
+                // Temporarily skip on 32-bit where we have an issue
+                // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
+                return;
             }
 
             // In CI, we sometimes get XACT_E_TMNOTAVAILABLE on the very first attempt to connect to MSDTC;
