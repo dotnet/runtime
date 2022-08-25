@@ -410,7 +410,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// 3. the property metadata for the root-level value.
         /// For example, for a property returning <see cref="List{T}"/> where T is a string,
         /// a JsonTypeInfo will be created with .Type=typeof(string) and .PropertyInfoForTypeInfo=JsonPropertyInfo{string}.
-        /// Without this property, methods that have a JsonPropertyInfo argument would also likely need to add an argument for JsonTypeInfo.
         /// </remarks>
         internal JsonPropertyInfo PropertyInfoForTypeInfo { get; }
 
