@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Lazy`2&lt;0&gt;:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>lib/netstandard2.0/System.ComponentModel.Composition.dll</Left>
+    <Right>lib/net6.0/System.ComponentModel.Composition.dll</Right>
+  </Suppression>
+</Suppressions>

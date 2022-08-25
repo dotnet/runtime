@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
+    <Right>right</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Caching.Memory.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Caching.Memory.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.Binder.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.Binder.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.CommandLine.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.CommandLine.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.EnvironmentVariables.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.EnvironmentVariables.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.FileExtensions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.FileExtensions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.Ini.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.Ini.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.Json.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.Json.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.UserSecrets.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.UserSecrets.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Configuration.Xml.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Configuration.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.DependencyInjection.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.DependencyInjection.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.FileProviders.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.FileProviders.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.FileProviders.Composite.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.FileProviders.Composite.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.FileProviders.Physical.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.FileProviders.Physical.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.FileSystemGlobbing.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.FileSystemGlobbing.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Hosting.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Hosting.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Hosting.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Hosting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Http.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Http.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Net.Http, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Http.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Http.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.Abstractions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.Configuration.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.Configuration.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.Console.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.Debug.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.Debug.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Diagnostics.Tracing, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Logging.TraceSource.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Options.DataAnnotations.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Options.DataAnnotations.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Options.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/Microsoft.Extensions.Primitives.dll</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Diagnostics.TraceSource, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.IO.Pipelines.dll</Left>
+    <Right>lib/net7.0/System.IO.Pipelines.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Memory, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
+    <Left>ref/net7.0/System.IO.Pipelines.dll</Left>
+    <Right>lib/net7.0/System.IO.Pipelines.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+</Suppressions>

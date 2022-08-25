@@ -837,4 +837,16 @@
     <Right>lib/netstandard2.0/System.Drawing.Common.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Drawing.Graphics.GetContextInfo:[T:System.ComponentModel.EditorBrowsableAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Drawing.Graphics.GetContextInfo:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
 </Suppressions>
