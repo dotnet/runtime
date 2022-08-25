@@ -37,17 +37,24 @@ using System.Diagnostics;
 using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using MonoTests.Common;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Runtime.Versioning;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace MonoTests.System.Runtime.Caching
 {
     public class MemoryCacheTest
     {
+        private readonly ITestOutputHelper _output;
+        public MemoryCacheTest(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         public static bool SupportsPhysicalMemoryMonitor
         {
             get
@@ -303,7 +310,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
         public void Contains(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -323,9 +330,14 @@ namespace MonoTests.System.Runtime.Caching
 
             var cip = new CacheItemPolicy();
             cip.Priority = CacheItemPriority.NotRemovable;
-            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(50);
+            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(100);
             mc.Set("key", "value", cip);
-            Assert.True(mc.Contains("key"));
+            // 100ms should be plenty of time, but just in case, let's watch for getting scheduled off the clock for a bit here,
+            // and if it seems to be a problem, we can disable again and re-investigate.
+            if (DateTimeOffset.Now < cip.AbsoluteExpiration)
+                Assert.True(mc.Contains("key"));
+            else
+                Assert.True(mc.Contains("key"), "Warning: Thread was somehow delayed beyond cache item expiration time.");
 
             // wait past cip.AbsoluteExpiration
             Thread.Sleep(500);
@@ -1312,6 +1324,12 @@ namespace MonoTests.System.Runtime.Caching
 
     public class MemoryCacheTestExpires11
     {
+        private readonly ITestOutputHelper _output;
+        public MemoryCacheTestExpires11(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         [OuterLoop] // makes long wait
         public async Task TimedExpirationAsync()
@@ -1333,7 +1351,7 @@ namespace MonoTests.System.Runtime.Caching
 
             cip = new CacheItemPolicy();
             cip.RemovedCallback = removedCb;
-            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(20);
+            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(70);
             mc.Set("key1", "value1", cip);
 
             cip = new CacheItemPolicy();
