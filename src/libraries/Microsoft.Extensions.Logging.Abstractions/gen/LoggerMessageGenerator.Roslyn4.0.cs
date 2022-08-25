@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Logging.Generators
     public partial class LoggerMessageGenerator : IIncrementalGenerator
     {
         private readonly CustomComparer comparer = new();
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
