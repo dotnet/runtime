@@ -25,7 +25,7 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
 #if DEBUG
-            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            if (state.Current.JsonTypeInfo.Converter.ConverterStrategy != ConverterStrategy.Object)
             {
                 string objTypeName = obj?.GetType().FullName ?? "<null>";
                 Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
