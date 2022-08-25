@@ -365,7 +365,7 @@
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
     </ItemGroup>
     <!-- iOS/tvOS specific options -->
-    <PropertyGroup Condition="'$(RealTargetArchitecture)' == '' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')">
+    <PropertyGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCCOption>CC="$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"</_MonoCCOption>
       <_MonoCXXOption>CXX="$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++"</_MonoCXXOption>
       <_MonoSkipInitCompiler>true</_MonoSkipInitCompiler>
