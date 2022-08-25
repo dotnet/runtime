@@ -237,13 +237,6 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     snprintf (local_date_time_offset_buffer, sizeof(local_date_time_offset_buffer), "%d", local_date_time_offset);
     appctx_values[2] = strdup (local_date_time_offset_buffer);
 
-    MonoCoreLocalTime mclt = {
-        local_date_time_offset,
-    };
-    MonoCoreRuntimeProperties mcrp = {
-        &mclt,
-    };
-
     char *file_name = RUNTIMECONFIG_BIN_FILE;
     int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
     char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
@@ -262,7 +255,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
         free (file_path);
     }
 
-    monovm_initialize_preparsed(&mcrp, 3, appctx_keys, appctx_values);
+    monovm_initialize(3, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);

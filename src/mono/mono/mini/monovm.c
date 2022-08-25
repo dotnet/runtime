@@ -18,7 +18,6 @@ static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;
 static MonoCoreLookupPaths *platform_resource_roots;
-static MonoCoreLocalTime *local_time;
 
 static void
 mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a)
@@ -221,7 +220,6 @@ monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int p
 	trusted_platform_assemblies = parsed_properties->trusted_platform_assemblies;
 	app_paths = parsed_properties->app_paths;
 	native_lib_paths = parsed_properties->native_dll_search_directories;
-	local_time = parsed_properties->local_time;
 	mono_loader_install_pinvoke_override (parsed_properties->pinvoke_override);
 
 	finish_initialization ();
