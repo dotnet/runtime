@@ -411,26 +411,9 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                bool isBlittable = MarshalUtils.IsBlittableType(type);
-
-                // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
-                // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
-                // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
-                // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-                // We can't block these types for field scenarios for back-compat reasons.
-
-                if (type.HasInstantiation && !isField && (!isBlittable
-                    || InteropTypes.IsSystemSpan(context, type)
-                    || InteropTypes.IsSystemReadOnlySpan(context, type)
-                    || InteropTypes.IsSystemNullable(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector256T(context, type)
-                    || InteropTypes.IsSystemNumericsVectorT(context, type)))
+                if (!IsValidForGenericMarshalling(type, context, isField))
                 {
-                    // Generic types cannot be marshaled.
+                    // Generic types cannot be marshalled.
                     return MarshallerKind.Invalid;
                 }
 
@@ -440,7 +423,7 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (isBlittable)
+                if (MarshalUtils.IsBlittableType(type))
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
                         return MarshallerKind.Invalid;
@@ -868,8 +851,45 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        private static bool IsValidForGenericMarshalling(
+            TypeDesc type,
+            TypeSystemContext context,
+            bool isFieldScenario,
+            bool builtInMarshallingEnabled = true)
+        {
+            // Not generic, so passes "generic" test
+            if (!type.HasInstantiation)
+                return true;
+
+            // We can't block generic types for field scenarios for back-compat reasons.
+            if (isFieldScenario)
+                return true;
+
+            // Built-in marshalling considers the blittability for a generic type.
+            if (builtInMarshallingEnabled && !MarshalUtils.IsBlittableType(type))
+                return false;
+
+            // Generics (blittable when built-in is enabled) are allowed to be marshalled with the following exceptions:
+            // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+            // * Span<T>: Not supported by built-in marshalling
+            // * ReadOnlySpan<T>: Not supported by built-in marshalling
+            // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+            // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+            // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+            // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+            return !InteropTypes.IsSystemNullable(context, type)
+                && !InteropTypes.IsSystemSpan(context, type)
+                && !InteropTypes.IsSystemReadOnlySpan(context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(context, type)
+                && !InteropTypes.IsSystemNumericsVectorT(context, type);
+        }
+
         internal static MarshallerKind GetDisabledMarshallerKind(
-            TypeDesc type)
+            TypeDesc type,
+            TypeSystemContext context,
+            bool isFieldScenario)
         {
             // Get the underlying type for enum types.
             TypeDesc underlyingType = type.UnderlyingType;
@@ -893,7 +913,10 @@ namespace Internal.TypeSystem.Interop
             else if (underlyingType.IsValueType)
             {
                 var defType = (DefType)underlyingType;
-                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields && !defType.IsInt128OrHasInt128Fields)
+                if (!defType.ContainsGCPointers
+                    && !defType.IsAutoLayoutOrHasAutoLayoutFields
+                    && !defType.IsInt128OrHasInt128Fields
+                    && IsValidForGenericMarshalling(defType, context, isFieldScenario, builtInMarshallingEnabled: false))
                 {
                     return MarshallerKind.BlittableValue;
                 }

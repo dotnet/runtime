@@ -344,9 +344,9 @@ namespace Internal.TypeSystem.Interop
             PInvokeFlags flags,
             bool isReturn)
         {
-            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType);
-
             TypeSystemContext context = parameterType.Context;
+            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType, context, marshallerType is MarshallerType.Field);
+
             // Create the marshaller based on MarshallerKind
             Marshaller marshaller = CreateMarshaller(marshallerKind);
             marshaller.Context = context;
