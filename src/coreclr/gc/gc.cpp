@@ -24659,12 +24659,7 @@ void gc_heap::set_background_overflow_p (uint8_t* oo)
     heap_segment* overflow_region = get_region_info_for_address (oo);
     overflow_region->flags |= heap_segment_flags_overflow;
     dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
-#ifdef MULTIPLE_HEAPS
-    gc_heap* overflow_heap = heap_segment_heap (overflow_region);
-#else
-    gc_heap* overflow_heap = nullptr;
-#endif
-    overflow_heap->background_overflow_p = TRUE;
+    background_overflow_p = TRUE;
 }
 #endif //USE_REGIONS
 
@@ -25311,13 +25306,13 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
             fire_overflow_event (min_add, max_add, total_marked_objects, i);
-            if (small_object_segments)
+            if (i >= soh_gen2)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
+                small_object_segments = FALSE;
             }
 
             total_marked_objects = 0;
-            small_object_segments = FALSE;
         }
     }
 }
@@ -33980,23 +33975,35 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
             if (!s_fScanRequired)
             {
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+                BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
                 uint8_t* all_heaps_max = 0;
                 uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
                 int i;
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    // in the regions case, compute the OR of all the per-heap flags
+                    if (g_heaps[i]->background_overflow_p)
+                        all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
                     if (all_heaps_max < g_heaps[i]->background_max_overflow_address)
                         all_heaps_max = g_heaps[i]->background_max_overflow_address;
                     if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                         all_heaps_min = g_heaps[i]->background_min_overflow_address;
+#endif //USE_REGIONS
                 }
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
                     g_heaps[i]->background_max_overflow_address = all_heaps_max;
                     g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
                 }
-#endif //!USE_REGIONS
             }
 
             dprintf(2, ("Starting all gc thread mark stack overflow processing"));
@@ -34740,15 +34747,24 @@ void gc_heap::background_mark_phase ()
 
     enable_preemptive ();
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#if defined(MULTIPLE_HEAPS)
     bgc_t_join.join(this, gc_join_concurrent_overflow);
     if (bgc_t_join.joined())
     {
+#ifdef USE_REGIONS
+        BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
         uint8_t* all_heaps_max = 0;
         uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
         int i;
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            // in the regions case, compute the OR of all the per-heap flags
+            if (g_heaps[i]->background_overflow_p)
+                all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
             dprintf (3, ("heap %d overflow max is %Ix, min is %Ix",
                 i,
                 g_heaps[i]->background_max_overflow_address,
@@ -34757,17 +34773,21 @@ void gc_heap::background_mark_phase ()
                 all_heaps_max = g_heaps[i]->background_max_overflow_address;
             if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                 all_heaps_min = g_heaps[i]->background_min_overflow_address;
-
+#endif //USE_REGIONS
         }
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
             g_heaps[i]->background_max_overflow_address = all_heaps_max;
             g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
         }
         dprintf(3, ("Starting all bgc threads after updating the overflow info"));
         bgc_t_join.restart();
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //MULTIPLE_HEAPS
 
     disable_preemptive (true);
 
