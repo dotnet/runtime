@@ -47,7 +47,7 @@ static bool FilePrintf(HANDLE hFile, const char* fmt, ...)
     va_start(args, fmt);
 
     char buffer[4096];
-    int len = vsprintf_s(buffer, fmt, args);
+    int len = vsprintf_s(buffer, ARRAYSIZE(buffer), fmt, args);
     DWORD numWritten;
     bool result =
         WriteFile(hFile, buffer, static_cast<DWORD>(len), &numWritten, nullptr) && (numWritten == static_cast<DWORD>(len));
