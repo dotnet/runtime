@@ -205,6 +205,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Condition="'$(TrimmerDefaultAction)' != '' And $([MSBuild]::VersionGreaterThan('$(TargetFrameworkVersion)', '6.0'))"
              Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and will be ignored. Use TrimMode instead." />
 
+    <!-- Use a sidecar file to suppress warnings when targeting net6.0, for changes that added or changed warnings. -->
+    <ItemGroup Condition="$([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">
+      <_ILLinkSuppressions Include="$(MSBuildThisFileDirectory)6.0_suppressions.xml" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(_ILLinkSuppressions->Count())' != '0'">
+      <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --link-attributes "@(_ILLinkSuppressions->'%(Identity)', '" --link-attributes "')"</_ExtraTrimmerArgs>
+    </PropertyGroup>
+
     <!-- Set up TrimMode and TrimmerDefaultAction. -->
     <PropertyGroup>
       <TrimMode Condition="'$(TrimMode)' == '' And $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">copyused</TrimMode>

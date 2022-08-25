@@ -1145,7 +1145,7 @@ namespace ILLink.Shared.TrimAnalysis
 						_requireDynamicallyAccessedMembersAction.Invoke (instanceValue, _annotations.GetMethodThisParameterValue (calledMethod));
 					}
 					for (int argumentIndex = 0; argumentIndex < argumentValues.Count; argumentIndex++) {
-						if (calledMethod.ParameterReferenceKind (argumentIndex) == ReferenceKind.Out)
+						if (argumentIndex >= calledMethod.GetParametersCount () || calledMethod.ParameterReferenceKind (argumentIndex) == ReferenceKind.Out)
 							continue;
 						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[argumentIndex], _annotations.GetMethodParameterValue (calledMethod, argumentIndex));
 					}
