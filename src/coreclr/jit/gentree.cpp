@@ -252,7 +252,9 @@ void GenTree::InitNodeSize()
     }
 
     GenTree::s_gtNodeSizes[GT_CALL]          = TREE_NODE_SZ_LARGE;
+#ifndef HOST_64BIT
     GenTree::s_gtNodeSizes[GT_CNS_VEC]       = TREE_NODE_SZ_LARGE;
+#endif
     GenTree::s_gtNodeSizes[GT_CAST]          = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FTN_ADDR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
@@ -300,7 +302,11 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeLngCon)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeDblCon)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeStrCon)       <= TREE_NODE_SZ_SMALL);
+#ifdef HOST_64BIT
+    static_assert_no_msg(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_SMALL);
+#else
     static_assert_no_msg(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_LARGE); // *** large node
+#endif
     static_assert_no_msg(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
@@ -2897,8 +2903,6 @@ AGAIN:
                         unreached();
                     }
                 }
-
-                add = genTreeHashAdd(ulo32(add), vecCon->GetSimdBaseType());
                 break;
             }
 
@@ -7086,9 +7090,9 @@ GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
     return node;
 }
 
-GenTreeVecCon* Compiler::gtNewVconNode(var_types type, CorInfoType simdBaseJitType)
+GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
 {
-    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type, simdBaseJitType);
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
     return vecCon;
 }
 
@@ -7106,45 +7110,36 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
             allBitsSet = gtNewLconNode(-1);
             break;
 
-        default:
-            noway_assert(!"Bad type in gtNewAllBitsSetConNode");
-            allBitsSet = nullptr;
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+            allBitsSet                                 = gtNewVconNode(type);
+            allBitsSet->AsVecCon()->gtSimd32Val.i64[0] = -1;
+            allBitsSet->AsVecCon()->gtSimd32Val.i64[1] = -1;
+            allBitsSet->AsVecCon()->gtSimd32Val.i64[2] = -1;
+            allBitsSet->AsVecCon()->gtSimd32Val.i64[3] = -1;
             break;
+#endif // FEATURE_SIMD
+
+        default:
+            unreached();
     }
 
     return allBitsSet;
 }
 
-GenTree* Compiler::gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType)
-{
-    assert(varTypeIsSIMD(type));
-    assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
-
-    GenTreeVecCon* vecCon = gtNewVconNode(type, simdBaseJitType);
-
-    vecCon->gtSimd32Val.i64[0] = -1;
-    vecCon->gtSimd32Val.i64[1] = -1;
-    vecCon->gtSimd32Val.i64[2] = -1;
-    vecCon->gtSimd32Val.i64[3] = -1;
-
-    return vecCon;
-}
-
 GenTree* Compiler::gtNewZeroConNode(var_types type)
 {
     GenTree* zero;
+
     switch (type)
     {
         case TYP_INT:
-            zero = gtNewIconNode(0);
-            break;
-
-        case TYP_BYREF:
-            FALLTHROUGH;
-
         case TYP_REF:
-            zero         = gtNewIconNode(0);
-            zero->gtType = type;
+        case TYP_BYREF:
+            zero = gtNewIconNode(0, type);
             break;
 
         case TYP_LONG:
@@ -7152,13 +7147,19 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 
         case TYP_FLOAT:
-            zero         = gtNewDconNode(0.0);
-            zero->gtType = type;
+        case TYP_DOUBLE:
+            zero = gtNewDconNode(0.0, type);
             break;
 
-        case TYP_DOUBLE:
-            zero = gtNewDconNode(0.0);
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+            zero                          = gtNewVconNode(type);
+            zero->AsVecCon()->gtSimd32Val = {};
             break;
+#endif // FEATURE_SIMD
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
@@ -7170,21 +7171,10 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 #endif // FEATURE_SIMD
 
         default:
-            noway_assert(!"Bad type in gtNewZeroConNode");
-            zero = nullptr;
-            break;
+            unreached();
     }
+
     return zero;
-}
-
-GenTree* Compiler::gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType)
-{
-    assert(varTypeIsSIMD(type));
-    assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
-
-    GenTreeVecCon* vecCon = gtNewVconNode(type, simdBaseJitType);
-    vecCon->gtSimd32Val   = {};
-    return vecCon;
 }
 
 GenTree* Compiler::gtNewOneConNode(var_types type)
@@ -7204,15 +7194,13 @@ GenTree* Compiler::gtNewOneConNode(var_types type)
 
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            one         = gtNewDconNode(1.0);
-            one->gtType = type;
+            one = gtNewDconNode(1.0, type);
             break;
 
         default:
-            noway_assert(!"Bad type in gtNewOneConNode");
-            one = nullptr;
-            break;
+            unreached();
     }
+
     return one;
 }
 
@@ -8164,7 +8152,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
         case GT_CNS_VEC:
         {
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), tree->AsVecCon()->GetSimdBaseJitType());
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd32Val   = tree->AsVecCon()->gtSimd32Val;
             copy                  = vecCon;
             break;
@@ -8344,7 +8332,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_CNS_VEC:
             {
-                GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), tree->AsVecCon()->GetSimdBaseJitType());
+                GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
                 vecCon->gtSimd32Val   = tree->AsVecCon()->gtSimd32Val;
                 copy                  = vecCon;
                 goto DONE;
@@ -17251,22 +17239,6 @@ bool GenTreeVecCon::HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd
 }
 #endif // FEATURE_HW_INTRINSICS
 
-//----------------------------------------------------------------------------------------------
-// GetSimdBaseType: Gets the var_type for the SimdBaseJitType of a GenTreeVecCon node
-//
-//  Returns:
-//     the var_type for the SimdBaseJitType of a GenTreeVecCon
-var_types GenTreeVecCon::GetSimdBaseType() const
-{
-    CorInfoType simdBaseJitType = GetSimdBaseJitType();
-
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNKNOWN;
-    }
-    return JitType2PreciseVarType(simdBaseJitType);
-}
-
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
 //
@@ -17438,6 +17410,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_SIMD:
                 structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->GetSimdBaseJitType());
                 break;
+            case GT_CNS_VEC:
+                structHnd = gtGetCanonicalStructHandleForSIMD(tree->TypeGet());
+                break;
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
@@ -17445,20 +17420,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                                                          tree->AsHWIntrinsic()->IsSimdAsHWIntrinsic());
                 break;
 #endif
-            case GT_CNS_VEC:
-            {
-#if defined(FEATURE_HW_INTRINSICS)
-                structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsVecCon()->GetSimdBaseJitType());
-#endif // FEATURE_HW_INTRINSICS
-
-#if defined(FEATURE_SIMD)
-                if (structHnd == NO_CLASS_HANDLE)
-                {
-                    structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsVecCon()->GetSimdBaseJitType());
-                }
-#endif // FEATURE_SIMD
-                break;
-            }
             default:
                 break;
         }
@@ -18905,11 +18866,11 @@ GenTree* Compiler::gtNewSimdAbsNode(
             impCloneExpr(op1Dup1, &op1Dup2, clsHnd, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for vector abs"));
 
         // op1 = op1 < Zero
-        tmp = gtNewZeroConNode(type, simdBaseJitType);
+        tmp = gtNewZeroConNode(type);
         op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         // tmp = Zero - op1Dup1
-        tmp = gtNewZeroConNode(type, simdBaseJitType);
+        tmp = gtNewZeroConNode(type);
         tmp = gtNewSimdBinOpNode(GT_SUB, type, tmp, op1Dup1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         // result = ConditionalSelect(op1, tmp, op1Dup2)
@@ -20360,6 +20321,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewAllBitsSetConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -20371,8 +20333,6 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 simdBaseType    = TYP_LONG;
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
-
-            op2 = gtNewAllBitsSetConNode(simdType, simdBaseJitType);
             break;
         }
 #elif defined(TARGET_ARM64)
@@ -20401,6 +20361,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewAllBitsSetConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -20412,8 +20373,6 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 simdBaseType    = TYP_LONG;
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
-
-            op2 = gtNewAllBitsSetConNode(simdType, simdBaseJitType);
             break;
         }
 #else
@@ -20484,6 +20443,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewZeroConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -20495,8 +20455,6 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                 simdBaseType    = TYP_LONG;
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
-
-            op2 = gtNewZeroConNode(simdType, simdBaseJitType);
             break;
         }
 
@@ -20529,6 +20487,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewZeroConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -20540,8 +20499,6 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                 simdBaseType    = TYP_LONG;
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
-
-            op2 = gtNewZeroConNode(simdType, simdBaseJitType);
             break;
         }
 
@@ -21615,7 +21572,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     {
         // AllBitsSet represents indices that are always "out of range" which means zero should be
         // selected for every element. We can special-case this down to just returning a zero node
-        return gtNewZeroConNode(type, simdBaseJitType);
+        return gtNewZeroConNode(type);
     }
 
     if (op2->IsVectorZero())
@@ -21734,7 +21691,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
                                                          isSimdAsHWIntrinsic);
 
-            op2                          = gtNewVconNode(TYP_SIMD16, simdBaseJitType);
+            op2                          = gtNewVconNode(TYP_SIMD16);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
 
             op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
@@ -21743,7 +21700,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             GenTree* op1Upper = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
                                                          simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
-            op2                          = gtNewVconNode(TYP_SIMD16, simdBaseJitType);
+            op2                          = gtNewVconNode(TYP_SIMD16);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
 
             op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
@@ -21760,7 +21717,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
                 vecCns.u32[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
             }
 
-            op2                          = gtNewVconNode(type, simdBaseJitType);
+            op2                          = gtNewVconNode(type);
             op2->AsVecCon()->gtSimd32Val = vecCns;
 
             // swap the operands to match the encoding requirements
@@ -21782,7 +21739,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         {
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-            op2                          = gtNewVconNode(type, simdBaseJitType);
+            op2                          = gtNewVconNode(type);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
 
             return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize,
@@ -21829,10 +21786,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     {
         assert(!compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
-        op2                          = gtNewVconNode(type, simdBaseJitType);
+        op2                          = gtNewVconNode(type);
         op2->AsVecCon()->gtSimd16Val = mskCns.v128[0];
 
-        GenTree* zero = gtNewZeroConNode(type, simdBaseJitType);
+        GenTree* zero = gtNewZeroConNode(type);
         retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
@@ -21874,7 +21831,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     // VectorTableLookup is only valid on byte/sbyte
     simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-    op2                          = gtNewVconNode(type, simdBaseJitType);
+    op2                          = gtNewVconNode(type);
     op2->AsVecCon()->gtSimd16Val = vecCns;
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
@@ -22108,7 +22065,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
             }
-            op2 = gtNewZeroConNode(type, simdBaseJitType);
+            op2 = gtNewZeroConNode(type);
 
             // Zero - op1
             return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
@@ -22117,7 +22074,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
         case GT_NOT:
         {
             assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
-            op2 = gtNewAllBitsSetConNode(type, simdBaseJitType);
+            op2 = gtNewAllBitsSetConNode(type);
             return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         }
 #elif defined(TARGET_ARM64)
@@ -22143,7 +22100,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
             else
             {
                 // Zero - op1
-                op2 = gtNewZeroConNode(type, simdBaseJitType);
+                op2 = gtNewZeroConNode(type);
                 return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             }
         }
@@ -22270,7 +22227,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
     }
     else
     {
-        tmp1 = gtNewZeroConNode(type, simdBaseJitType);
+        tmp1 = gtNewZeroConNode(type);
 
         if (varTypeIsSigned(simdBaseType))
         {
@@ -22446,7 +22403,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
     }
     else
     {
-        tmp1 = gtNewZeroConNode(type, simdBaseJitType);
+        tmp1 = gtNewZeroConNode(type);
 
         if (varTypeIsSigned(simdBaseType))
         {
@@ -22509,7 +22466,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
         assert(intrinsic != NI_Illegal);
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-        zero = gtNewZeroConNode(TYP_SIMD16, simdBaseJitType);
+        zero = gtNewZeroConNode(TYP_SIMD16);
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
                                         simdBaseJitType, 16, isSimdAsHWIntrinsic);
         return gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_GetLower, simdBaseJitType, simdSize,

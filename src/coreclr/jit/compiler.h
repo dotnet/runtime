@@ -2294,13 +2294,11 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
-    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
+    GenTreeVecCon* gtNewVconNode(var_types type);
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
-    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewZeroConNode(var_types type);
-    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 

@@ -363,7 +363,7 @@ void MorphInitBlockHelper::MorphStructCases()
         if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
             assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet());
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD
@@ -655,18 +655,15 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 break;
             case TYP_REF:
             case TYP_BYREF:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType, CORINFO_TYPE_FLOAT);
-                break;
 #endif // FEATURE_SIMD
+                assert(initPattern == 0);
+                src = m_comp->gtNewZeroConNode(fieldType);
+                break;
             default:
                 unreached();
         }

@@ -3211,7 +3211,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd8Val    = value;
 
             conValTree = vecCon;
@@ -3222,7 +3222,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd12Val   = value;
 
             conValTree = vecCon;
@@ -3233,7 +3233,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd16Val   = value;
 
             conValTree = vecCon;
@@ -3244,7 +3244,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd32Val   = value;
 
             conValTree = vecCon;

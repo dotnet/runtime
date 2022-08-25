@@ -3376,26 +3376,6 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
     };
 
-private:
-    // TODO-1stClassStructs: Tracking the size and base type should be unnecessary since the
-    // size should be `gtType` and the handle should be looked up at callsites where required
-
-    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-
-public:
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
-    }
-
-    var_types GetSimdBaseType() const;
-
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
 
@@ -3518,11 +3498,9 @@ public:
         }
     }
 
-    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
-        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
+    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
-        assert(gtSimdBaseJitType == simdBaseJitType);
     }
 
 #if DEBUGGABLE_GENTREE
