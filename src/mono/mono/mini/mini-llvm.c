@@ -9743,8 +9743,6 @@ MONO_RESTORE_WARNING
 
 			LLVMValueRef first_elem;
 
-			if (!strcmp(cfg->method->name, "IndexOf"))
-				printf("~~~%s\n", mono_method_get_full_name(cfg->method));
 #ifdef TARGET_ARM64
 			// MinAcross
 			LLVMTypeRef arg_t = LLVMTypeOf (cmp);
@@ -13639,7 +13637,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		g_hash_table_destroy (specializable);
 	}
 
-#if 1
+#if 0
 	{
 		char *verifier_err;
 
