@@ -5793,7 +5793,8 @@ public:
 private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone = false DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree);
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
 

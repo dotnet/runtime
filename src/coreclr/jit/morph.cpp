@@ -14107,9 +14107,13 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         PREFAST_ASSUME(tree != nullptr);
     }
 
+    /* Save the original un-morphed tree for fgMorphTreeDone */
+
+    GenTree* const oldTree = tree;
+
     /* Figure out what kind of a node we have */
 
-    unsigned kind = tree->OperKind();
+    unsigned const kind = tree->OperKind();
 
     /* Is this a constant node? */
 
@@ -14243,7 +14247,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 DONE:
 
-    fgMorphTreeDone(tree, optAssertionPropDone DEBUGARG(thisMorphNum));
+    const bool isNewTree = (oldTree != tree);
+    fgMorphTreeDone(tree, optAssertionPropDone, isNewTree DEBUGARG(thisMorphNum));
 
     return tree;
 }
@@ -14340,8 +14345,24 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
 // fgMorphTreeDone: complete the morphing of a tree node
 //
 // Arguments:
+//    tree - the tree after morphing
+//
+// Notes:
+//    Simple version where the tree has not been marked
+//    as morphed, and where assertion kill/gen has not yet been done.
+//
+void Compiler::fgMorphTreeDone(GenTree* tree)
+{
+    fgMorphTreeDone(tree, false, false);
+}
+
+//------------------------------------------------------------------------
+// fgMorphTreeDone: complete the morphing of a tree node
+//
+// Arguments:
 //   tree - the tree after morphing
 //   optAssertionPropDone - true if local assertion prop was done already
+//   isMorphedTree - true if caller should have marked tree as morphed
 //   morphNum - counts invocations of fgMorphTree
 //
 // Notes:
@@ -14353,7 +14374,7 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
 //  When local assertion prop is active assertions are killed and generated
 //  based on tree (unless optAssertionPropDone is true).
 //
-void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum))
+void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum))
 {
 #ifdef DEBUG
     if (verbose && treesBeforeAfterMorph)
@@ -14369,16 +14390,22 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
         return;
     }
 
-#ifdef DEBUG
-    if ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0)
+    if (isMorphedTree)
     {
-        assert("ERROR: Did not morph this node!");
+        // caller should have set the morphed flag
+        //
+        assert((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) && "ERROR: Did not morph this node!");
     }
-    tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+    else
+    {
+        // caller should not have set the morphed flag
+        //
+        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
+        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    }
 
-    // note "tree" may generate new assertions that we
-    // miss if we do them early... perhaps we should skip
+    // Note "tree" may generate new assertions that we
+    // miss if we did them early... perhaps we should skip
     // kills but rerun gens.
     //
     if (tree->OperIsConst() || !optLocalAssertionProp || optAssertionPropDone)
