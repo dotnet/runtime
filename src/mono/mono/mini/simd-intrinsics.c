@@ -1051,6 +1051,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+#elif TARGET_AMD64
+		if (!is_element_type_primitive (fsig->params [0])) 
+			return NULL;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
