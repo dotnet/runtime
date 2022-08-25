@@ -298,9 +298,9 @@ collect_parser.add_argument("--tiered_compilation", action="store_true", help="S
 
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
+collect_parser.add_argument("--clean", action="store_true", help="Clean the collection by removing contexts that fail to replay without error.")
 collect_parser.add_argument("--skip_collection_step", action="store_true", help="Do not run the collection step.")
 collect_parser.add_argument("--skip_merge_step", action="store_true", help="Do not run the merge step.")
-collect_parser.add_argument("--skip_clean_and_verify_step", action="store_true", help="Do not run the collection cleaning, TOC creation, and verifying step.")
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
 # Create a set of arguments common to all SuperPMI replay commands, namely basic replay and ASM diffs.
@@ -726,9 +726,15 @@ class SuperPMICollect:
                     else:
                         self.__merge_mch_files__()
 
-                if not self.coreclr_args.skip_clean_and_verify_step:
+                if self.coreclr_args.clean:
                     self.__create_clean_mch_file__()
-                    self.__create_toc__()
+                else:
+                    self.__copy_to_final_mch_file__()
+
+                self.__create_toc__()
+
+                if self.coreclr_args.clean:
+                    # There is no point to verify unless we have run the clean step.
                     self.__verify_final_mch__()
 
                 passed = True
@@ -938,7 +944,7 @@ class SuperPMICollect:
                     # -o:<output dll>
                     # -r:<Core_Root>\System.*.dll
                     # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\mscorlib.dll
+                    # -r:<Core_Root>\System.Private.CoreLib.dll
                     # -r:<Core_Root>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of complus_env
@@ -1114,6 +1120,26 @@ class SuperPMICollect:
             if os.path.isfile(self.base_fail_mcl_file):
                 os.remove(self.base_fail_mcl_file)
                 self.base_fail_mcl_file = None
+            if os.path.isfile(self.base_mch_file):
+                os.remove(self.base_mch_file)
+                self.base_mch_file = None
+
+    def __copy_to_final_mch_file__(self):
+        """ When not cleaning the MCH file, copy the base MCH file to the final MCH file location.
+
+        Notes:
+            # copy/move base file to final file
+            del <s_baseFailMclFile>
+        """
+
+        logging.info("Copy base MCH file to final MCH file")
+
+        shutil.copy2(self.base_mch_file, self.final_mch_file)
+
+        if not os.path.isfile(self.final_mch_file):
+            raise RuntimeError("Final mch file failed to be generated.")
+
+        if not self.coreclr_args.skip_cleanup:
             if os.path.isfile(self.base_mch_file):
                 os.remove(self.base_mch_file)
                 self.base_mch_file = None
@@ -3498,9 +3524,9 @@ def setup_args(args):
                             "Unable to set skip_merge_step.")
 
         coreclr_args.verify(args,
-                            "skip_clean_and_verify_step",
+                            "clean",
                             lambda unused: True,
-                            "Unable to set skip_clean_and_verify_step.")
+                            "Unable to set clean.")
 
         coreclr_args.verify(args,
                             "use_zapdisable",

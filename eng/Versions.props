@@ -31,21 +31,21 @@
     <MicrosoftCodeAnalysisVersion_3_11>3.11.0</MicrosoftCodeAnalysisVersion_3_11>
     <!-- Compatibility with VS 17.0/.NET SDK 6.0.1xx  -->
     <MicrosoftCodeAnalysisVersion_4_0>4.0.1</MicrosoftCodeAnalysisVersion_4_0>
-    <!-- Compatibility with VS 17.X/.NET SDK 7.0.1xx -->
+    <!-- Compatibility with VS 17.4/.NET SDK 7.0.1xx -->
     <!--
-      This version is a moving target until we ship.
+      The exact version is a moving target until we ship.
       It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
     -->
-    <MicrosoftCodeAnalysisVersion_4_X>4.3.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
+    <MicrosoftCodeAnalysisVersion_4_4>4.4.0-1.22369.1</MicrosoftCodeAnalysisVersion_4_4>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22403.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.3.0-2.final</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisVersion>4.4.0-1.final</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
@@ -165,11 +165,19 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
+    <!-- Android gRPC client tests -->
+    <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
+    <GrpcAspNetCoreVersion>2.46.0</GrpcAspNetCoreVersion>
+    <GrpcAspNetCoreWebVersion>2.46.0</GrpcAspNetCoreWebVersion>
+    <GrpcAuthVersion>2.46.3</GrpcAuthVersion>
+    <GrpcCoreVersion>2.46.3</GrpcCoreVersion>
+    <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
+    <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <!-- Uncomment to set a fixed version, else the latest is used -->
     <!--<SdkVersionForWorkloadTesting>7.0.100-rc.1.22402.35</SdkVersionForWorkloadTesting>-->
     <CompilerPlatformTestingVersion>1.1.2-beta1.22403.2</CompilerPlatformTestingVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220721.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220822.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>7.0.100-1.22415.4</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>

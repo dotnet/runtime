@@ -57,7 +57,7 @@ namespace System.Text.Json
         {
             JsonTypeInfo? typeInfo = null;
 
-            if (IsImmutable)
+            if (IsReadOnly)
             {
                 typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
                 if (ensureConfigured)
@@ -111,7 +111,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(IsImmutable);
+                Debug.Assert(IsReadOnly);
                 return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
@@ -127,7 +127,7 @@ namespace System.Text.Json
 
         private CachingContext? GetCachingContext()
         {
-            Debug.Assert(IsImmutable);
+            Debug.Assert(IsReadOnly);
 
             return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
@@ -178,7 +178,7 @@ namespace System.Text.Json
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                Debug.Assert(options.IsImmutable, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;

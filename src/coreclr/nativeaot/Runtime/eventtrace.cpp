@@ -4053,7 +4053,7 @@ void ETW::InfoLog::RuntimeInformation(INT32 type)
             USHORT vmBuildVersion = VER_PRODUCTBUILD;
             USHORT vmQfeVersion = VER_PRODUCTBUILD_QFE;
 
-            //version info for mscorlib.dll
+            //version info for System.Private.CoreLib.dll
             USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
             USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
             USHORT bclBuildVersion = VER_ASSEMBLYBUILD;

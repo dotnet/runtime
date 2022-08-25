@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Enumeration;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -278,12 +279,20 @@ namespace System.Formats.Tar
                 DirectoryInfo di = new(sourceDirectoryName);
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
+                bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
                 {
                     writer.WriteEntry(di.FullName, GetEntryNameForBaseDirectory(di.Name));
+                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0;
                 }
 
-                foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                if (skipBaseDirRecursion)
+                {
+                    // The base directory is a symlink, do not recurse into it
+                    return;
+                }
+
+                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
                 {
                     writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length));
                 }
@@ -325,16 +334,42 @@ namespace System.Formats.Tar
                 DirectoryInfo di = new(sourceDirectoryName);
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
+                bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
                 {
                     await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name), cancellationToken).ConfigureAwait(false);
+                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0;
                 }
 
-                foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                if (skipBaseDirRecursion)
+                {
+                    // The base directory is a symlink, do not recurse into it
+                    return;
+                }
+
+                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
                 {
                     await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
+        // making sure that directory symlinks do not get recursed.
+        private static IEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
+        {
+            return new FileSystemEnumerable<FileSystemInfo>(
+                directory: sourceDirectoryName,
+                transform: (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
+                options: new EnumerationOptions()
+                {
+                    RecurseSubdirectories = true
+                })
+            {
+                ShouldRecursePredicate = IsNotADirectorySymlink
+            };
+
+            static bool IsNotADirectorySymlink(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
         }
 
         // Determines what should be the base path for all the entries when creating an archive.
@@ -344,16 +379,13 @@ namespace System.Formats.Tar
         // Constructs the entry name used for a filesystem entry when creating an archive.
         private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
         {
-            int entryNameLength = file.FullName.Length - basePathLength;
-            Debug.Assert(entryNameLength > 0);
-
             bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
-            return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, appendPathSeparator: isDirectory);
+            return ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
         }
 
         private static string GetEntryNameForBaseDirectory(string name)
         {
-            return ArchivingUtils.EntryFromPath(name, 0, name.Length, appendPathSeparator: true);
+            return ArchivingUtils.EntryFromPath(name, appendPathSeparator: true);
         }
 
         // Extracts an archive into the specified directory.

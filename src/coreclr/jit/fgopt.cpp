@@ -539,28 +539,23 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //------------------------------------------------------------------------
 // fgComputeReachability: Compute the dominator and reachable sets.
 //
-// Use `fgReachable()` to check reachability, `fgDominate()` to check dominance.
+// Returns:
+//    Suitable phase status
 //
-// Also, compute the list of return blocks `fgReturnBlocks` and set of enter blocks `fgEnterBlks`.
-// Delete unreachable blocks.
+// Notes:
+//   Also computes the list of return blocks `fgReturnBlocks`
+//   and set of enter  blocks `fgEnterBlks`.
 //
-// Assumptions:
-//    Assumes the predecessor lists are computed and correct.
+//   Delete unreachable blocks.
 //
-void Compiler::fgComputeReachability()
+//   Assumes the predecessor lists are computed and correct.
+//
+//   Use `fgReachable()` to check reachability.
+//   Use `fgDominate()` to check dominance.
+//
+PhaseStatus Compiler::fgComputeReachability()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgComputeReachability\n");
-    }
-
-    fgVerifyHandlerTab();
-
-    // Make sure that the predecessor lists are accurate
     assert(fgComputePredsDone);
-    fgDebugCheckBBlist();
-#endif // DEBUG
 
     fgComputeReturnBlocks();
 
@@ -591,6 +586,8 @@ void Compiler::fgComputeReachability()
         return true;
     };
 
+    bool madeChanges = false;
+
     do
     {
         // Just to be paranoid, avoid infinite loops; fall back to minopts.
@@ -602,7 +599,7 @@ void Compiler::fgComputeReachability()
         // Walk the flow graph, reassign block numbers to keep them in ascending order.
         JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
         passNum++;
-        fgRenumberBlocks();
+        madeChanges |= fgRenumberBlocks();
 
         //
         // Compute fgEnterBlks
@@ -621,26 +618,17 @@ void Compiler::fgComputeReachability()
         //
 
         changed = fgRemoveUnreachableBlocks(canRemoveBlock);
+        madeChanges |= changed;
 
     } while (changed);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAfter computing reachability:\n");
-        fgDispBasicBlocks(verboseTrees);
-        printf("\n");
-    }
-
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist(true);
-#endif // DEBUG
 
     //
     // Now, compute the dominators
     //
 
     fgComputeDoms();
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -5933,6 +5921,12 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
     constexpr bool doTailDup   = false;
     constexpr bool isPhase     = true;
     const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+
+    // Dominator and reachability sets are no longer valid.
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
+
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

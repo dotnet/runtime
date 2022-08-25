@@ -612,20 +612,6 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
 
-DEFINE_CLASS_U(Threading,              OverlappedData, OverlappedDataObject)
-DEFINE_FIELD_U(_asyncResult,            OverlappedDataObject,       m_asyncResult)
-DEFINE_FIELD_U(_callback,               OverlappedDataObject,       m_callback)
-DEFINE_FIELD_U(_overlapped,             OverlappedDataObject,       m_overlapped)
-DEFINE_FIELD_U(_userObject,             OverlappedDataObject,       m_userObject)
-DEFINE_FIELD_U(_pNativeOverlapped,      OverlappedDataObject,       m_pNativeOverlapped)
-DEFINE_FIELD_U(_offsetLow,              OverlappedDataObject,       m_offsetLow)
-DEFINE_FIELD_U(_offsetHigh,             OverlappedDataObject,       m_offsetHigh)
-DEFINE_FIELD_U(_eventHandle,            OverlappedDataObject,       m_eventHandle)
-DEFINE_CLASS(OVERLAPPEDDATA,            Threading,              OverlappedData)
-
-DEFINE_CLASS(NATIVEOVERLAPPED,            Threading,              NativeOverlapped)
-
-
 DEFINE_CLASS(VOLATILE, Threading, Volatile)
 
 #define DEFINE_VOLATILE_METHODS(methodType, paramType) \

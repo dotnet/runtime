@@ -8545,7 +8545,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for mscorlib NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for SPCL NGen image), the extra complexity
     // is not worth it.
     //
 

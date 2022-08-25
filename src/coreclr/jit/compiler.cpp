@@ -34,9 +34,7 @@ extern ICorJitHost* g_jitHost;
 #define COLUMN_FLAGS (COLUMN_KINDS + 32)
 #endif
 
-#if defined(DEBUG)
 unsigned Compiler::jitTotalMethodCompiled = 0;
-#endif // defined(DEBUG)
 
 #if defined(DEBUG)
 LONG Compiler::jitNestingLevel = 0;
@@ -1838,8 +1836,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // Initialize this to the first phase to run.
     mostRecentlyActivePhase = PHASE_PRE_IMPORT;
 
-    // Initially, no phase checks are active.
+    // Initially, no phase checks are active, and all dumps are enabled.
     activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_ALL;
 
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
@@ -2270,10 +2269,9 @@ void Compiler::compSetProcessor()
     // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-
-    opts.compSupportsISA         = 0;
-    opts.compSupportsISAReported = 0;
-    opts.compSupportsISAExactly  = 0;
+    opts.compSupportsISA.Reset();
+    opts.compSupportsISAReported.Reset();
+    opts.compSupportsISAExactly.Reset();
 
 #if defined(TARGET_XARCH)
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -4082,8 +4080,9 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 //
 const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
 
     if (!opts.compMinOptsIsSet)
     {
@@ -4097,13 +4096,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 
     if (tier0)
     {
-        return "Tier0";
+        return instrumenting ? "Instrumented Tier0" : "Tier0";
     }
     else if (tier1)
     {
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            return "Tier1-OSR";
+            return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
@@ -4146,6 +4145,31 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     else
     {
         return wantShortName ? "Unknown" : "Unknown optimization level";
+    }
+}
+
+//------------------------------------------------------------------------
+// compGetPgoSourceName: get a string describing PGO source
+//
+// Returns:
+//   String describing describing PGO source (e.g. Dynamic, Static, etc)
+//
+const char* Compiler::compGetPgoSourceName() const
+{
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Static:
+            return "Static PGO";
+        case ICorJitInfo::PgoSource::Dynamic:
+            return "Dynamic PGO";
+        case ICorJitInfo::PgoSource::Blend:
+            return "Blend PGO";
+        case ICorJitInfo::PgoSource::Text:
+            return "Textual PGO";
+        case ICorJitInfo::PgoSource::Sampling:
+            return "Sample-based PGO";
+        default:
+            return "";
     }
 }
 
@@ -4786,19 +4810,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doRangeAnalysis)
             {
-                auto rangePhase = [this]() {
-                    RangeCheck rc(this);
-                    rc.OptimizeRangeChecks();
-                };
-
                 // Bounds check elimination via range analysis
                 //
-                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
+                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
+                //
+                // Note: this invalidates loops, dominators and reachability
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
@@ -4816,11 +4837,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
-
-#ifdef DEBUG
-    // Run this before we potentially tear down dominators.
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-#endif
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
@@ -4918,6 +4934,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
+    // The common phase checks and dumps are no longer relevant past this point.
+    //
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_NONE;
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -4953,9 +4974,31 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-#if defined(DEBUG)
-    ++Compiler::jitTotalMethodCompiled;
-#endif // defined(DEBUG)
+    unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
+
+    if (JitConfig.JitDisasmSummary() && !compIsForInlining())
+    {
+        char osrBuffer[20] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            sprintf_s(osrBuffer, 20, " @0x%x", info.compILEntry);
+        }
+
+#ifdef DEBUG
+        const char* fullName = info.compFullName;
+#else
+        const char* fullName  = eeGetMethodFullName(info.compMethodHnd);
+#endif
+
+        char debugPart[128] = {0};
+        INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
+
+        const bool hasProf = fgHaveProfileData();
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
+               compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
+               info.compILCodeSize, *methodCodeSize, debugPart);
+    }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -4977,25 +5020,32 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if FEATURE_LOOP_ALIGN
 
 //------------------------------------------------------------------------
-// placeLoopAlignInstructions: Iterate over all the blocks and determine
-//      the best position to place the 'align' instruction. Inserting 'align'
-//      instructions after an unconditional branch is preferred over inserting
-//      in the block before the loop. In case there are multiple blocks
-//      having 'jmp', the one that has lower weight is preferred.
-//      If the block having 'jmp' is hotter than the block before the loop,
-//      the align will still be placed after 'jmp' because the processor should
-//      be smart enough to not fetch extra instruction beyond jmp.
+// placeLoopAlignInstructions: determine where to place alignment padding
 //
-void Compiler::placeLoopAlignInstructions()
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    Iterate over all the blocks and determine
+//    the best position to place the 'align' instruction. Inserting 'align'
+//    instructions after an unconditional branch is preferred over inserting
+//    in the block before the loop. In case there are multiple blocks
+//    having 'jmp', the one that has lower weight is preferred.
+//    If the block having 'jmp' is hotter than the block before the loop,
+//    the align will still be placed after 'jmp' because the processor should
+//    be smart enough to not fetch extra instruction beyond jmp.
+//
+PhaseStatus Compiler::placeLoopAlignInstructions()
 {
     if (loopAlignCandidates == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
+    bool                   madeChanges           = false;
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
@@ -5005,6 +5055,7 @@ void Compiler::placeLoopAlignInstructions()
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
         fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
+        madeChanges = true;
     }
 
     int loopsToProcess = loopAlignCandidates;
@@ -5053,6 +5104,7 @@ void Compiler::placeLoopAlignInstructions()
                 if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
                 {
                     loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                    madeChanges = true;
                 }
                 else
                 {
@@ -5070,6 +5122,7 @@ void Compiler::placeLoopAlignInstructions()
 
             if (bbHavingAlign != nullptr)
             {
+                madeChanges = true;
                 bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
 
@@ -5085,6 +5138,8 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     assert(loopsToProcess == 0);
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #endif
 
@@ -6557,24 +6612,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
 #ifdef DEBUG
-    if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
-    {
-        enum
-        {
-            BUFSIZE = 20
-        };
-        char osrBuffer[BUFSIZE] = {0};
-        if (opts.IsOSR())
-        {
-            // Tiering name already includes "OSR", we just want the IL offset
-            //
-            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
-        }
-
-        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
-               info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), osrBuffer, compGetStressMessage());
-    }
     if (compIsForInlining())
     {
         compGenTreeID   = impInlineInfo->InlinerCompiler->compGenTreeID;
@@ -9986,6 +10023,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_returnSpCheck++;
                 break;
 
+            case DoNotEnregisterReason::CallSpCheck:
+                m_callSpCheck++;
+                break;
+
             case DoNotEnregisterReason::SimdUserForcesDep:
                 m_simdUserForcesDep++;
                 break;
@@ -10108,6 +10149,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
