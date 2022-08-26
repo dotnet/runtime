@@ -335,20 +335,19 @@ namespace System.Net.Sockets
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
             System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
-            Socket? sukru = _acceptSocket;
+            Socket? tempAcceptSocket = _acceptSocket;
             _acceptSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
-            if (sukru != null)
+            if (tempAcceptSocket != null)
             {
-                sukru.DisposeHandle();
-                sukru.CopyStateFromSource(_acceptSocket);
+                tempAcceptSocket.DisposeHandle();
+                tempAcceptSocket.CopyStateFromSource(_acceptSocket);
                 // We keep this socket to make clean-up.
                 Socket temp = _acceptSocket;
-                _acceptSocket = sukru;
+                _acceptSocket = tempAcceptSocket;
                 temp.ClearHandle();
                 temp.Dispose();
-                GC.SuppressFinalize(temp);
             }
             return SocketError.Success;
         }
