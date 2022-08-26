@@ -393,7 +393,9 @@ namespace System.Security.Cryptography.Cose
                 count++;
 
                 if (count > expectedLength)
+                {
                     return true;
+                }
             }
 
             bool retVal = count != expectedLength;
