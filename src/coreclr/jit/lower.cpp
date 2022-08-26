@@ -5367,12 +5367,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-            index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-
             if (IsSafeToContainMem(parent, index))
             {
                 // Check containment safety against the parent node - this will ensure that LEA with the contained
                 // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+                index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
                 MakeSrcContained(addrMode, index);
             }
         }
