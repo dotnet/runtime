@@ -2,7 +2,7 @@
 
 Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
 
-The rest of this document covers advanced topics only. Adding an explicit package references to 'Microsoft.DotNet.ILCompile' can generate warnings when publishing and is only supported on a narrow set of scenarios. When possible, use the SDK options to publish a native AOT application.
+The rest of this document covers advanced topics only. Adding an explicit package references to 'Microsoft.DotNet.ILCompile' will generate warning when publishing and it can run into version errors. When possible, use the PublishAot property to publish a native AOT application.
 
 ## Using daily builds
 

@@ -41,7 +41,7 @@
     <_PackageReferenceExceptILCompiler Include="@(PackageReference)" Exclude="Microsoft.DotNet.ILCompiler" />
     <_ILCompilerPackageReference Include="@(PackageReference)" Exclude="@(_PackageReferenceExceptILCompiler)" />
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" Condition="@(_ILCompilerPackageReference->'%(Identity)')=='Microsoft.DotNet.ILCompiler'">
-        <Warning Text="Adding an explicit package reference to 'Microsoft.DotNet.ILCompiler' works only on a narrow set of scenarios and can run into version errors if not properly used." />
+        <Warning Text="Set PublishAot property to true and delete explicit `Microsoft.DotNet.ILCompiler` package reference in your project file. Explicit Microsoft.DotNet.ILCompiler package reference can run into version errors." />
         <ILCompilerPackVersion>@(_ILCompilerPackageReference->'%(Version)')</ILCompilerPackVersion>
     </KnownILCompilerPack>
   </ItemGroup>
