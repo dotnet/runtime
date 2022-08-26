@@ -33,7 +33,21 @@ or by adding the following element to the project file:
 
 ## Cross-architecture compilation
 
-Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK support is not sufficient, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
+Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
+
+```xml
+    <PropertyGroup>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+```
+
+Targeting win-arm64 on a Windows x64 host machine,
+
+```bash
+> dotnet publish -r win-arm64 -c Release
+```
+
+To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK support is not sufficient (note that these scenarios will generate warnings for using explicit package references), in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.2.22103.2" />
 ```
