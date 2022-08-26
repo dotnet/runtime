@@ -84,11 +84,6 @@ internal static partial class Interop
                 data = data.Slice(1);
                 protocol.CopyTo(data);
                 data = data.Slice(protocol.Length);
-                //ReadOnlySpan<byte> protocol = applicationProtocols[i].Protocol.Span;
-
-                //buffer[index++] = (byte)protocol.Length;
-                //protocol.CopyTo(buffer.AsSpan(index));
-                //index += protocol.Length;
             }
         }
     }
