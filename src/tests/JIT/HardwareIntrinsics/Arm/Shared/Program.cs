@@ -10,17 +10,7 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        static TriggerOnProcessStart _trigger = new TriggerOnProcessStart();
-
-        class TriggerOnProcessStart
-        {
-            public TriggerOnProcessStart()
-            {
-                PrintSupportedIsa();
-            }
-        }
-
-        private static void PrintSupportedIsa()
+        public static void PrintSupportedIsa()
         {
             TestLibrary.TestFramework.LogInformation("Supported ISAs:");
             TestLibrary.TestFramework.LogInformation($"  AdvSimd:   {AdvSimd.IsSupported}");

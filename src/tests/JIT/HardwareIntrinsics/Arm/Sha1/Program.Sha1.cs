@@ -4,12 +4,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Sha1
 {
     public static partial class Program
     {
         static Program()
         {
+            JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
 
 
         }

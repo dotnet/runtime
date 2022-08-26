@@ -2565,18 +2565,21 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
   </PropertyGroup>
   <ItemGroup>");
 
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
+        testListFile.Write(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._");
+	testListFile.Write(groupName);
+    testListFile.WriteLine(@"
 {
     public static partial class Program
     {
         static Program()
         {
+            JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
 ");
 
         foreach (var input in inputs)
@@ -2635,6 +2638,7 @@ private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter rel
     {
         template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
+    template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{groupName}");
 
     File.WriteAllText(testFileName, template);
 }
