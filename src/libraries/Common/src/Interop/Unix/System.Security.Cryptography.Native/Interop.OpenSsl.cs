@@ -631,7 +631,7 @@ internal static partial class Interop
             return 0;
         }
 
-        internal static SafeX509Handle GetPeerCertificate(SafeSslHandle context)
+        internal static SafeX509Handle? GetPeerCertificate(SafeSslHandle context)
         {
             return Ssl.SslGetPeerCertificate(context);
         }
