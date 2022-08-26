@@ -133,6 +133,18 @@ struct ThreadLocalModule
             SUPPORTS_DAC;
             return dac_cast<PTR_BYTE>(this);
         }
+
+        struct DynamicEntryStaticBytes
+        {
+            DWORD m_bytes;
+        };
+
+        static void* operator new(size_t) = delete;
+
+        static void* operator new(size_t baseSize, DynamicEntryStaticBytes dataBlobSize)
+        {
+            return ::operator new(baseSize + dataBlobSize.m_bytes);
+        }
     };
     typedef DPTR(NormalDynamicEntry) PTR_NormalDynamicEntry;
 
