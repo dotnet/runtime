@@ -3570,7 +3570,7 @@ sorted_table::clear()
 inline
 size_t get_skewed_basic_region_index_for_address (uint8_t* address)
 {
-    assert ((g_gc_lowest_address <= address) && (address < g_gc_highest_address));
+    assert ((g_gc_lowest_address <= address) && (address <= g_gc_highest_address));
     size_t skewed_basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
     return skewed_basic_region_index;
 }
