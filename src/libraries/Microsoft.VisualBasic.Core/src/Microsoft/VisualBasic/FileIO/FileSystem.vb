@@ -1913,12 +1913,56 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <returns>Win IO error code.</returns>
         Private Shared Function ToWinIOErrorCode(ByVal errorCode As Integer) As Integer
             Select Case errorCode
+                Case NativeTypes.DE_SAMEFILE
+                    Return NativeTypes.ERROR_ALREADY_EXISTS
+                Case NativeTypes.DE_MANYSRC1DEST
+                    Return NativeTypes.ERROR_INVALID_PARAMETER
+                Case NativeTypes.DE_DIFFDIR
+                    Return NativeTypes.ERROR_NOT_SAME_DEVICE
+                Case NativeTypes.DE_ROOTDIR
+                    Return NativeTypes.ERROR_ACCESS_DENIED
+                Case NativeTypes.DE_OPCANCELLED
+                    Return NativeTypes.ERROR_CANCELLED
+                Case NativeTypes.DE_DESTSUBTREE
+                    Return NativeTypes.ERROR_BAD_PATHNAME
                 Case NativeTypes.DE_ACCESSDENIEDSRC
                     Return NativeTypes.ERROR_ACCESS_DENIED
+                Case NativeTypes.DE_PATHTOODEEP
+                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                Case NativeTypes.DE_MANYDEST
+                    Return NativeTypes.ERROR_INVALID_PARAMETER
                 Case NativeTypes.DE_INVALIDFILES
-                    Return NativeTypes.ERROR_FILE_NOT_FOUND
-                Case NativeTypes.DE_PATHTOODEEP, NativeTypes.DE_FILENAMETOOLONG, NativeTypes.DE_ERROR_MAX
-                    Return NativeTypes.ERROR_FILENAME_EXCED_RANGE
+                    Return NativeTypes.ERROR_BAD_PATHNAME
+                Case NativeTypes.DE_DESTSAMETREE
+                    Return NativeTypes.ERROR_INVALID_PARAMETER
+                Case NativeTypes.DE_FLDDESTISFILE
+                    Return NativeTypes.ERROR_ALREADY_EXISTS
+                Case NativeTypes.DE_FILEDESTISFLD
+                    Return NativeTypes.ERROR_ALREADY_EXISTS
+                Case NativeTypes.DE_FILENAMETOOLONG
+                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                Case NativeTypes.DE_DEST_IS_CDROM
+                    Return NativeTypes.ERROR_WRITE_FAULT
+                Case NativeTypes.DE_DEST_IS_DVD
+                    Return NativeTypes.ERROR_WRITE_FAULT
+                Case NativeTypes.DE_DEST_IS_CDRECORD
+                    Return NativeTypes.ERROR_WRITE_FAULT
+                Case NativeTypes.DE_FILE_TOO_LARGE
+                    Return NativeTypes.ERROR_DISK_FULL
+                Case NativeTypes.DE_SRC_IS_CDROM
+                    Return NativeTypes.ERROR_READ_FAULT
+                Case NativeTypes.DE_SRC_IS_DVD
+                    Return NativeTypes.ERROR_READ_FAULT
+                Case NativeTypes.DE_SRC_IS_CDRECORD
+                    Return NativeTypes.ERROR_READ_FAULT
+                Case NativeTypes.DE_ERROR_MAX
+                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                Case NativeTypes.DE_ERROR_UNKNOWN
+                    Return NativeTypes.ERROR_PATH_NOT_FOUND
+                Case NativeTypes.ERRORONDEST
+                    Return NativeTypes.ERROR_GEN_FAILURE
+                Case NativeTypes.DE_ROOTDIR_ERRORONDEST
+                    Return NativeTypes.ERROR_ACCESS_DENIED
                 Case Else
                     Return errorCode
             End Select
