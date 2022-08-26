@@ -42,54 +42,27 @@ void Lowering::LowerRotate(GenTree* tree)
 //    This involves:
 //    - Handling of contained immediates.
 //    - Widening operations of unsigneds.
-
+//
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    // Try to widen the ops if they are going into a local var.
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (storeLoc->gtOp1->gtOper == GT_CNS_INT))
+    // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
+    // we can widen the store, if profitable. This optimization is not relevant for register candidates.
+    //
+    // The widening is only (largely) profitable for 2 byte stores. We could widen bytes too but that
+    // would only be better when the constant is zero and reused, which we presume is not common enough.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && (genTypeSize(storeLoc) == 2) && storeLoc->Data()->IsCnsIntOrI())
     {
-        GenTreeIntCon* con  = storeLoc->gtOp1->AsIntCon();
-        ssize_t        ival = con->gtIconVal;
-
         LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-
-        if (varDsc->lvIsSIMDType())
+        if (varDsc->lvDoNotEnregister && !varDsc->lvIsStructField)
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
+            GenTreeIntCon* constNode  = storeLoc->Data()->AsIntCon();
+            ssize_t        constValue = constNode->IconValue();
+            constValue =
+                varTypeIsUnsigned(varDsc) ? static_cast<uint16_t>(constValue) : static_cast<int16_t>(constValue);
 
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-XArch-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
+            constNode->SetIconValue(constValue);
         }
     }
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
@@ -97,6 +70,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
