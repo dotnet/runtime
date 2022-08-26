@@ -69,14 +69,16 @@ get_method_image (MonoMethod *method)
 }
 
 
-
+static gboolean init_ilgen_after_component_init = false;
 MONO_API void
 mono_marshal_ilgen_init (void)
 {
-/* Some platforms need this initilization to happen early, some can wait for it lazily.*/
-#ifndef ENABLE_ILGEN
-  mono_component_marshal_ilgen ()->ilgen_init_internal();
-#endif
+  init_ilgen_after_component_init = true;
+}
+
+mono_marshal_should_init_ilgen_after_component_init()
+{
+	return init_ilgen_after_component_init;
 }
 
 /**

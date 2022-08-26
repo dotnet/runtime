@@ -13,4 +13,6 @@ mono_marshal_lightweight_init (void);
 MONO_API void
 mono_marshal_ilgen_init (void);
 
+gboolean mono_marshal_should_init_ilgen_after_component_init();
+
 #endif // __MONO_MARSHAL_LIGHTWEIGHT_H__
