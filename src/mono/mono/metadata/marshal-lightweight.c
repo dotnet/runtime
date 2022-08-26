@@ -68,6 +68,13 @@ get_method_image (MonoMethod *method)
 	return m_class_get_image (method->klass);
 }
 
+
+
+MONO_API void
+mono_marshal_ilgen_init (void){
+	mono_component_marshal_ilgen()->ilgen_init_internal();	
+}
+
 /**
  * mono_mb_strdup:
  * \param mb the MethodBuilder
