@@ -20200,18 +20200,25 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         return;
     }
 
-    GenTree* lclVarTree;
-
+    GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
-    if (isAddressInLocal && varTypeIsStruct(lclVarTree))
+    if (isAddressInLocal)
     {
-        inlCurArgInfo->argIsByRefToStructLocal = true;
-#ifdef FEATURE_SIMD
-        if (lvaTable[lclVarTree->AsLclVarCommon()->GetLclNum()].lvSIMDType)
+        LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
+
+        if (varTypeIsStruct(lclVarTree))
         {
-            pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
-        }
+            inlCurArgInfo->argIsByRefToStructLocal = true;
+#ifdef FEATURE_SIMD
+            if (varDsc->lvSIMDType)
+            {
+                pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
+            }
 #endif // FEATURE_SIMD
+        }
+
+        // Spilling code relies on correct aliasability annotations.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
