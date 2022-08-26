@@ -76,13 +76,6 @@ namespace System
             }
         }
 
-        // Shortcut for TimeZoneInfo.Local.GetUtcOffset
-        internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
-        {
-            CachedData cachedData = s_cachedData;
-            return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
-        }
-
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>

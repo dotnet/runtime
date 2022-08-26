@@ -312,6 +312,13 @@ namespace System
         public TimeSpan GetUtcOffset(DateTime dateTime) =>
             GetUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime, s_cachedData);
 
+        // Shortcut for TimeZoneInfo.Local.GetUtcOffset
+        internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
+        {
+            CachedData cachedData = s_cachedData;
+            return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+        }
+
         /// <summary>
         /// Returns the Universal Coordinated Time (UTC) Offset for the current TimeZoneInfo instance.
         /// </summary>
