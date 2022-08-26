@@ -22,11 +22,18 @@
     call bool .this::ProblemWithDevirtualization()
     brtrue DEVIRT_FAILED
 
+    call bool .this::ProblemWithCtors()
+    brtrue CTORS_FAILED
+
     ldc.i4 100
     ret
 
   DEVIRT_FAILED:
     ldc.i4 101
+    ret
+
+  CTORS_FAILED:
+    ldc.i4 102
     ret
   }
 
@@ -46,6 +53,25 @@
     ldc.i4 TRUE
     ret
   }
+
+  .method private static bool ProblemWithCtors() noinlining
+  {
+    ldc.i4 EXPECTED
+    ldc.i4 THRASHED
+    newobj instance void Struct::.ctor(int32, int32)
+    pop
+
+    ldsfld int32 Struct::StaticValue
+    ldc.i4 EXPECTED
+    bne.un FAILED
+
+    ldc.i4 FALSE
+    ret
+
+  FAILED:
+    ldc.i4 TRUE
+    ret
+  }
 }
 
 .class interface Interface
@@ -55,6 +81,8 @@
 
 .class sealed sequential Struct extends [System.Runtime]System.ValueType implements Interface
 {
+  .field public static int32 StaticValue
+
   .field public int32 Value
 
   .method public specialname void .ctor(int32 val)
@@ -62,6 +90,23 @@
     ldarg THIS
     ldarg val
     stfld int32 .this::Value
+
+    ret
+  }
+
+  .method public specialname void .ctor(int32 expected, int32 thrashed)
+  {
+    ldarg THIS
+    ldarg expected
+    stfld int32 .this::Value
+
+    ldarg THIS
+    ldfld int32 .this::Value
+    ldarg THIS
+    ldarg thrashed
+    stind.i4
+    stsfld int32 .this::StaticValue
+
     ret
   }
 
@@ -72,6 +117,7 @@
     ldarg THIS
     ldc.i4 THRASHED
     stind.i4
+
     ret
   }
 }
