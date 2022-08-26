@@ -53,6 +53,9 @@ async function main() {
     const btn = document.getElementById("startWork");
     btn.style.backgroundColor = "rgb(192,255,192)";
     btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
+
+    // only for CI purposes
+    console.log("WASM EXIT 0");
 }
 
 main();
