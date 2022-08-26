@@ -5363,14 +5363,18 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
 #ifdef TARGET_ARM64
 
-    // Check containment safety against the parent node - this will ensure that LEA with the contained
-    // index will itself always be contained. We do not support uncontained LEAs with contained indices.
-    if ((index != nullptr) && IsSafeToContainMem(parent, index))
+    if (index != nullptr)
     {
         if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-        index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-            MakeSrcContained(addrMode, index);
+            index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
+
+            if (IsSafeToContainMem(parent, index))
+            {
+                // Check containment safety against the parent node - this will ensure that LEA with the contained
+                // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+                MakeSrcContained(addrMode, index);
+            }
         }
         else if (index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) && index->gtGetOp2()->IsCnsIntOrI() &&
                  !varTypeIsStruct(targetType))
@@ -5387,8 +5391,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
                 (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
             {
-                // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
-                MakeSrcContained(addrMode, index);
+                if (IsSafeToContainMem(parent, index))
+                {
+                    // Check containment safety against the parent node - this will ensure that LEA with the contained
+                    // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+
+                    // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
+                    MakeSrcContained(addrMode, index);
+                }
             }
         }
     }
