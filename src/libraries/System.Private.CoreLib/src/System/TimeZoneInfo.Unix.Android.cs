@@ -160,10 +160,7 @@ namespace System
         internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
             if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
-            {
-                s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
                 return GetCacheLocalUtcOffset(dateTime, flags);
-            }
 
             if (!s_androidTZDataLoaded && s_loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
             {
@@ -172,17 +169,19 @@ namespace System
                     // GetLocalUtcOffset may be called multiple times before a cache is loaded and a background thread is running,
                     // once the lock is available, check for a cache and background thread.
                     if (s_androidTZDataLoaded)
-                    {
-                        s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
                         return GetCacheLocalUtcOffset(dateTime, flags);
-                    }
+
                     if (s_loadAndroidTZData == null)
                     {
                         s_loadAndroidTZData = new Thread(() => {
                             Thread.Sleep(1000);
                             CachedData cachedData = s_cachedData;
                             _ = cachedData.Local;
-                            s_androidTZDataLoaded = true;
+                            lock (s_localUtcOffsetLock)
+                            {
+                                s_androidTZDataLoaded = true;
+                                s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
+                            }
                         });
                         s_loadAndroidTZData.IsBackground = true;
                         s_loadAndroidTZData.Start();
