@@ -3,13 +3,13 @@
 
 import { dotnet, exit } from './dotnet.js'
 
-function wasmExit(exitCode, error) {
-    try {
-        exit(exitCode, error);
-    } finally {
-        // we need to log the 'WASM EXIT' for CI
-        console.log(`WASM EXIT ${exitCode}`);
-    }
+function wasm_exit(exit_code) {
+    var tests_done_elem = document.createElement("label");
+    tests_done_elem.id = "tests_done";
+    tests_done_elem.innerHTML = exit_code.toString();
+    document.body.appendChild(tests_done_elem);
+
+    console.log(`WASM EXIT ${exit_code}`);
 }
 
 let progressElement = null;
@@ -79,8 +79,10 @@ try {
     setEditable(inputElement, true);
     inputElement.addEventListener("change", onInputValueChanged(exports, inputElement));
 
-    let exitCode = await runMain(assemblyName, []);
-    wasmExit(exitCode);
+    let exit_code = await runMain(assemblyName, []);
+    wasm_exit(exit_code);
+    exit(exit_code);
 } catch (err) {
-    wasmExit(2, err);
+    wasm_exit(2);
+    exit(exit_code, err);
 }

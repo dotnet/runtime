@@ -3,6 +3,15 @@
 
 import { dotnet } from "./dotnet.js";
 
+function wasm_exit(exit_code) {
+    var tests_done_elem = document.createElement("label");
+    tests_done_elem.id = "tests_done";
+    tests_done_elem.innerHTML = exit_code.toString();
+    document.body.appendChild(tests_done_elem);
+
+    console.log(`WASM EXIT ${exit_code}`);
+}
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function doWork(startWork, stopWork, getIterationsDone) {
@@ -55,7 +64,7 @@ async function main() {
     btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 
     // only for CI purposes
-    console.log("WASM EXIT 0");
+    wasm_exit(0);
 }
 
 main();
