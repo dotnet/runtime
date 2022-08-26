@@ -50,6 +50,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablecore.cpp
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
+    ${GC_DIR}/softwarewritewatch.cpp
 )
 
 set(SERVER_GC_SOURCES
