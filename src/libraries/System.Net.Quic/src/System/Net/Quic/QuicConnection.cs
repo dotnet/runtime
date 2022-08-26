@@ -447,7 +447,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Error(this, $"{this} Received event CONNECTED {LocalEndPoint} -> {RemoteEndPoint}");
+            NetEventSource.Info(this, $"{this} Received event CONNECTED {LocalEndPoint} -> {RemoteEndPoint}");
         }
 
         _connectedTcs.TrySetResult();
@@ -558,7 +558,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         if (NetEventSource.Log.IsEnabled())
         {
-                NetEventSource.Info(this, $"{this} Received event {type}");
+            NetEventSource.Info(this, $"{this} Received event {type}");
         }
 
         return QUIC_STATUS_SUCCESS;

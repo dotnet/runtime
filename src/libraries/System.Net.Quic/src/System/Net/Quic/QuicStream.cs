@@ -460,7 +460,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Received event START_COMPLETE with {nameof(data.Status)}={data.Status} and {nameof(data.PeerAccepted)}={data.PeerAccepted}");
+            NetEventSource.Info(this, $"{this} Received event START_COMPLETE with {nameof(data.ID)}={data.ID}, {nameof(data.Status)}={data.Status} and {nameof(data.PeerAccepted)}={data.PeerAccepted}");
         }
 
         _id = unchecked((long)data.ID);
@@ -614,7 +614,7 @@ public sealed partial class QuicStream
     {
         if (NetEventSource.Log.IsEnabled())
         {
-                NetEventSource.Info(this, $"{this} Received event {type}");
+            NetEventSource.Info(this, $"{this} Received event {type}");
         }
 
         return QUIC_STATUS_SUCCESS;
