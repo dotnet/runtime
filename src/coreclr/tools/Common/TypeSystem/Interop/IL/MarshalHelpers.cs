@@ -411,7 +411,7 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (!IsValidForGenericMarshalling(type, context, isField))
+                if (!IsValidForGenericMarshalling(type, isField))
                 {
                     // Generic types cannot be marshalled.
                     return MarshallerKind.Invalid;
@@ -853,7 +853,6 @@ namespace Internal.TypeSystem.Interop
 
         private static bool IsValidForGenericMarshalling(
             TypeDesc type,
-            TypeSystemContext context,
             bool isFieldScenario,
             bool builtInMarshallingEnabled = true)
         {
@@ -877,18 +876,17 @@ namespace Internal.TypeSystem.Interop
             // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
             // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
             // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-            return !InteropTypes.IsSystemNullable(context, type)
-                && !InteropTypes.IsSystemSpan(context, type)
-                && !InteropTypes.IsSystemReadOnlySpan(context, type)
-                && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
-                && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
-                && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(context, type)
-                && !InteropTypes.IsSystemNumericsVectorT(context, type);
+            return !InteropTypes.IsSystemNullable(type.Context, type)
+                && !InteropTypes.IsSystemSpan(type.Context, type)
+                && !InteropTypes.IsSystemReadOnlySpan(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(type.Context, type)
+                && !InteropTypes.IsSystemNumericsVectorT(type.Context, type);
         }
 
         internal static MarshallerKind GetDisabledMarshallerKind(
             TypeDesc type,
-            TypeSystemContext context,
             bool isFieldScenario)
         {
             // Get the underlying type for enum types.
@@ -916,7 +914,7 @@ namespace Internal.TypeSystem.Interop
                 if (!defType.ContainsGCPointers
                     && !defType.IsAutoLayoutOrHasAutoLayoutFields
                     && !defType.IsInt128OrHasInt128Fields
-                    && IsValidForGenericMarshalling(defType, context, isFieldScenario, builtInMarshallingEnabled: false))
+                    && IsValidForGenericMarshalling(defType, isFieldScenario, builtInMarshallingEnabled: false))
                 {
                     return MarshallerKind.BlittableValue;
                 }
