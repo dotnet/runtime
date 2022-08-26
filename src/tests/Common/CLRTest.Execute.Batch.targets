@@ -285,7 +285,6 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Android' ">
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
