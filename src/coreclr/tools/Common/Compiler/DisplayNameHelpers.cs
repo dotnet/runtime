@@ -40,6 +40,7 @@ namespace ILCompiler
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
             }
+#if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
                 sb.Append(property.Name);
@@ -62,6 +63,7 @@ namespace ILCompiler
                     throw new NotSupportedException();
                 sb.Append(accessor);
             }
+#endif
             else
             {
                 sb.Append(method.Name);

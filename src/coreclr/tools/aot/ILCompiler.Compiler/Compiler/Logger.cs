@@ -200,13 +200,13 @@ namespace ILCompiler
             if (provider is TypeDesc type)
             {
                 var ecmaType = type.GetTypeDefinition() as EcmaType;
-                suppressions = ecmaType?.GetDecodedCustomAttributes(DiagnosticUtilities.CodeAnalysisNamespace, DiagnosticUtilities.UnconditionalSuppressMessageAttribute);
+                suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
             }
 
             if (provider is MethodDesc method)
             {
                 var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-                suppressions = ecmaMethod?.GetDecodedCustomAttributes(DiagnosticUtilities.CodeAnalysisNamespace, DiagnosticUtilities.UnconditionalSuppressMessageAttribute);
+                suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
             }
 
             if (suppressions != null)

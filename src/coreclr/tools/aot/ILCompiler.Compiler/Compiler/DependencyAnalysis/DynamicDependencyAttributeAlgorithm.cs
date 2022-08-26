@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
-            foreach (var attribute in method.GetDecodedCustomAttributes(DiagnosticUtilities.CodeAnalysisNamespace, DiagnosticUtilities.DynamicDependencyAttribute))
+            foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
                 IEnumerable<TypeSystemEntity> members;
 
