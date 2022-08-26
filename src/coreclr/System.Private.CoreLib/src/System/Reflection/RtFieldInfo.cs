@@ -203,7 +203,6 @@ namespace System.Reflection
                 fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
             }
 
-
             bool domainInitialized = false;
             if (declaringType is null)
             {
