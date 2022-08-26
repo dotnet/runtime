@@ -573,15 +573,9 @@ void DumpComTypes(void* GUICookie)
                                                                 &tkTypeDef,         // [OUT] TypeDef token within the file.
                                                                 &dwFlags)))         // [OUT] Flags.
                 {
-                    LocalComTypeDescr* pCTD = new LocalComTypeDescr;
-                    memset(pCTD,0,sizeof(LocalComTypeDescr));
-                    pCTD->tkComTypeTok = rComTypeTok[ix];
-                    pCTD->tkTypeDef = tkTypeDef;
-                    pCTD->tkImplementation = tkImplementation;
-                    pCTD->wzName = new WCHAR[ulNameLen+1];
+                    LocalComTypeDescr* pCTD = new LocalComTypeDescr(rComTypeTok[ix], tkTypeDef, tkImplementation, new WCHAR[ulNameLen+1], dwFlags);
                     memcpy(pCTD->wzName,wzName,ulNameLen*sizeof(WCHAR));
                     pCTD->wzName[ulNameLen] = 0;
-                    pCTD->dwFlags = dwFlags;
 
                     if (g_pLocalComType == NULL)
                     {

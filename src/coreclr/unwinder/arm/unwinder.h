@@ -3,17 +3,18 @@
 
 //
 
-#ifndef __unwinder_loongarch64__
-#define __unwinder_loongarch64__
+#ifndef __unwinder_arm__
+#define __unwinder_arm__
 
-#include "unwinder.h"
+#include "baseunwinder.h"
+
 
 //---------------------------------------------------------------------------------------
 //
 // See the comment for the base class code:OOPStackUnwinder.
 //
 
-class OOPStackUnwinderLoongarch64 : public OOPStackUnwinder
+class OOPStackUnwinderArm : public OOPStackUnwinder
 {
 public:
     // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.
@@ -48,4 +49,5 @@ protected:
          _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer);
 };
 
-#endif // __unwinder_loongarch64__
+#endif // __unwinder_arm__
+

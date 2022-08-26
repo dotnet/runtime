@@ -303,7 +303,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 96
 .endm
 
-.macro  ArmInterlockedOperationBarrier
+.macro  InterlockedOperationBarrier
     dmb ish
 .endm
 

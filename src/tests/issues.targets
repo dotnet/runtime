@@ -922,7 +922,14 @@
         </ExcludeList>
     </ItemGroup>
 
-      <!-- NativeAOT specific -->
+    <!-- All OSX targets on NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/DynamicGenerics/DynamicGenerics/*">
+            <Issue>https://github.com/dotnet/runtime/issues/73299</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
