@@ -4,20 +4,22 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
-using static Interop;
 
 namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
+        private static readonly byte[] s_http1 = Interop.Sec_Application_Protocols.ToByteArray(new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 });
+        private static readonly byte[] s_http2 = Interop.Sec_Application_Protocols.ToByteArray(new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 });
+        private static readonly byte[] s_http12 = Interop.Sec_Application_Protocols.ToByteArray(new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 });
+        private static readonly byte[] s_http21 = Interop.Sec_Application_Protocols.ToByteArray(new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 });
+
         private static readonly bool UseNewCryptoApi =
             // On newer Windows version we use new API to get TLS1.3.
             // API is supported since Windows 10 1809 (17763) but there is no reason to use at the moment.
@@ -63,23 +65,45 @@ namespace System.Net.Security
 
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                int protocolLenngth = Sec_Application_Protocols.GetProtocolLength(sslAuthenticationOptions.ApplicationProtocols);
-                int bufferLength = sizeof(Sec_Application_Protocols) + protocolLenngth;
+                var alpn = sslAuthenticationOptions.ApplicationProtocols;
 
-                Span<byte> alpnBuffer;
-                if (bufferLength <= 64)
+                if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
                 {
-                    // workaround for CS8350
-                    byte* tmp = stackalloc byte[bufferLength];
-                    alpnBuffer= new Span<byte>(tmp, bufferLength);
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http1, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
+                else if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http2)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http2, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
+                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+
+                }
+                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http21, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
                 }
                 else
                 {
-                    alpnBuffer = new byte[bufferLength];
-                }
+                    int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
+                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
 
-                Sec_Application_Protocols.SetProtocols(alpnBuffer, sslAuthenticationOptions.ApplicationProtocols, protocolLenngth);
-                inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                    Span<byte> alpnBuffer;
+                    if (bufferLength <= 64)
+                    {
+                        // workaround for CS8350
+                        byte* tmp = stackalloc byte[bufferLength];
+                        alpnBuffer = new Span<byte>(tmp, bufferLength);
+                    }
+                    else
+                    {
+                        alpnBuffer = new byte[bufferLength];
+                    }
+
+                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
@@ -114,23 +138,45 @@ namespace System.Net.Security
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                int protocolLenngth = Sec_Application_Protocols.GetProtocolLength(sslAuthenticationOptions.ApplicationProtocols);
-                int bufferLength = sizeof(Sec_Application_Protocols) + protocolLenngth;
+                var alpn = sslAuthenticationOptions.ApplicationProtocols;
 
-                Span<byte> alpnBuffer;
-                if (bufferLength <= 64)
+                if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
                 {
-                    // workaround for CS8350
-                    byte* tmp = stackalloc byte[bufferLength];
-                    alpnBuffer = new Span<byte>(tmp, bufferLength);
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http1, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
+                else if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http2)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http2, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
+                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+
+                }
+                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
+                {
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http21, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
                 }
                 else
                 {
-                    alpnBuffer = new byte[bufferLength];
-                }
+                    int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
+                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
 
-                Sec_Application_Protocols.SetProtocols(alpnBuffer, sslAuthenticationOptions.ApplicationProtocols, protocolLenngth);
-                inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                    Span<byte> alpnBuffer;
+                    if (bufferLength <= 64)
+                    {
+                        // workaround for CS8350
+                        byte* tmp = stackalloc byte[bufferLength];
+                        alpnBuffer = new Span<byte>(tmp, bufferLength);
+                    }
+                    else
+                    {
+                        alpnBuffer = new byte[bufferLength];
+                    }
+
+                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
+                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+                }
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
