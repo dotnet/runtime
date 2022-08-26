@@ -119,23 +119,23 @@ namespace System.Runtime.Serialization
     public partial class ObjectManager
     {
         public ObjectManager(System.Runtime.Serialization.ISurrogateSelector? selector, System.Runtime.Serialization.StreamingContext context) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public virtual void DoFixups() { }
         public virtual object? GetObject(long objectID) { throw null; }
         public virtual void RaiseDeserializationEvent() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RaiseOnDeserializingEvent(object obj) { }
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int index, long objectRequired) { }
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired) { }
         public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired) { }
         public virtual void RecordFixup(long objectToBeFixed, System.Reflection.MemberInfo member, long objectRequired) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public virtual void RegisterObject(object obj, long objectID) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo? info, long idOfContainingObj, System.Reflection.MemberInfo? member) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo? info, long idOfContainingObj, System.Reflection.MemberInfo? member, int[]? arrayIndex) { }
     }
     public abstract partial class SerializationBinder
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
     {
         public SerializationObjectManager(System.Runtime.Serialization.StreamingContext context) { }
         public void RaiseOnSerializedEvent() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj) { }
     }
     public partial class SurrogateSelector : System.Runtime.Serialization.ISurrogateSelector

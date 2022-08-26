@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
         internal const string RequiresUnreferencedCodeMessage = "BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.";
 
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         object Deserialize(Stream serializationStream);
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
