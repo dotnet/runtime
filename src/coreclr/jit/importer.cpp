@@ -16617,6 +16617,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                                lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
                                 op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
