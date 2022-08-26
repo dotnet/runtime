@@ -1378,6 +1378,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         // Codegen will need it for x86 scope info.
         varDsc->lvImplicitlyReferenced = 1;
 #endif // TARGET_X86
+        varDsc->lvHasLdAddrOp = 1;
 
         lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
 
