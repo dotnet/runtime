@@ -59,7 +59,7 @@ namespace System.Net.Security
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
-            InputSecurityBuffers inputBuffers = default;
+            scoped InputSecurityBuffers inputBuffers = default;
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
 
@@ -88,18 +88,7 @@ namespace System.Net.Security
                 {
                     int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
                     int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
-
-                    Span<byte> alpnBuffer;
-                    if (bufferLength <= 64)
-                    {
-                        // workaround for CS8350
-                        byte* tmp = stackalloc byte[bufferLength];
-                        alpnBuffer = new Span<byte>(tmp, bufferLength);
-                    }
-                    else
-                    {
-                        alpnBuffer = new byte[bufferLength];
-                    }
+                    scoped Span<byte> alpnBuffer = bufferLength <= 64 ? stackalloc byte[bufferLength] : new byte[bufferLength];
 
                     Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
@@ -133,7 +122,7 @@ namespace System.Net.Security
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
-            InputSecurityBuffers inputBuffers = default;
+            scoped InputSecurityBuffers inputBuffers = default;
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
@@ -161,18 +150,7 @@ namespace System.Net.Security
                 {
                     int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
                     int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
-
-                    Span<byte> alpnBuffer;
-                    if (bufferLength <= 64)
-                    {
-                        // workaround for CS8350
-                        byte* tmp = stackalloc byte[bufferLength];
-                        alpnBuffer = new Span<byte>(tmp, bufferLength);
-                    }
-                    else
-                    {
-                        alpnBuffer = new byte[bufferLength];
-                    }
+                    scoped Span<byte> alpnBuffer = bufferLength <= 64 ? stackalloc byte[bufferLength] : new byte[bufferLength];
 
                     Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
