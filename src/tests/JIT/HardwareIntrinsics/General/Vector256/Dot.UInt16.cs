@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void DotUInt16()
+        [Fact]
+        public static void DotUInt16()
         {
             var test = new VectorBinaryOpTest__DotUInt16();
 

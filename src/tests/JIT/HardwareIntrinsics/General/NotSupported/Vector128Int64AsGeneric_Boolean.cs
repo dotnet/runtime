@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void Vector128Int64AsGeneric_Boolean()
+        [Fact]
+        public static void Vector128Int64AsGeneric_Boolean()
         {
             bool succeeded = false;
 

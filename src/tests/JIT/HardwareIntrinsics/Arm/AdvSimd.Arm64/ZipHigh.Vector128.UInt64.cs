@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ZipHigh_Vector128_UInt64()
+        [Fact]
+        public static void ZipHigh_Vector128_UInt64()
         {
             var test = new SimpleBinaryOpTest__ZipHigh_Vector128_UInt64();
 

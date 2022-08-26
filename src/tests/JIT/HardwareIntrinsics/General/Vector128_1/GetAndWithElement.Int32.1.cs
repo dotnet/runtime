@@ -13,12 +13,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void GetAndWithElementInt321()
+        [Fact]
+        public static void GetAndWithElementInt321()
         {
             var test = new VectorGetAndWithElement__GetAndWithElementInt321();
 

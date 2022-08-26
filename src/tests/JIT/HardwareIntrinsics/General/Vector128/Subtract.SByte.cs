@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void SubtractSByte()
+        [Fact]
+        public static void SubtractSByte()
         {
             var test = new VectorBinaryOpTest__SubtractSByte();
 

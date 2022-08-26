@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void DivideInt16()
+        [Fact]
+        public static void DivideInt16()
         {
             var test = new VectorBinaryOpTest__DivideInt16();
 

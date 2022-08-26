@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ConvertToUInt64RoundToEvenScalar_Vector64_Double()
+        [Fact]
+        public static void ConvertToUInt64RoundToEvenScalar_Vector64_Double()
         {
             var test = new SimpleUnaryOpTest__ConvertToUInt64RoundToEvenScalar_Vector64_Double();
 

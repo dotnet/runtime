@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ShiftRightArithmeticNarrowingSaturateUnsignedScalar_Vector64_UInt16_5()
+        [Fact]
+        public static void ShiftRightArithmeticNarrowingSaturateUnsignedScalar_Vector64_UInt16_5()
         {
             var test = new ImmUnaryOpTest__ShiftRightArithmeticNarrowingSaturateUnsignedScalar_Vector64_UInt16_5();
 

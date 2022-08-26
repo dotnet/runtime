@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void LessThanSingle()
+        [Fact]
+        public static void LessThanSingle()
         {
             var test = new VectorBinaryOpTest__LessThanSingle();
 

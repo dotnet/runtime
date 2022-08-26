@@ -2504,7 +2504,9 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     // Too many tests may time out in CI or various stress modes
-    const int MaxGroupSize = 100;
+    // -- Disable this splitting as it is no longer known to be useful, but specifying the group size as a very large number
+    //    Instead simply run fewer tests in GC stress mode
+    const int MaxGroupSize = 1000000;
 
     var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
 
@@ -2543,7 +2545,6 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
     {
         debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -2554,7 +2555,6 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
 
         releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>

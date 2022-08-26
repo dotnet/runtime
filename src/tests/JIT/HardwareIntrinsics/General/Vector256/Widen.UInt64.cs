@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void WidenUInt64()
+        [Fact]
+        public static void WidenUInt64()
         {
             var test = new VectorWidenTest__WidenUInt64();
 

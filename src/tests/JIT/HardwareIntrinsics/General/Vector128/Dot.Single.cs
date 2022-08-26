@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void DotSingle()
+        [Fact]
+        public static void DotSingle()
         {
             var test = new VectorBinaryOpTest__DotSingle();
 
@@ -306,7 +308,7 @@ namespace JIT.HardwareIntrinsics.General
 
             actualResult += intermResult;
 
-            if (actualResult != result)
+            if ((actualResult > result + 0.1) || (actualResult < result - 0.1))
             {
                 succeeded = false;
             }
@@ -317,6 +319,7 @@ namespace JIT.HardwareIntrinsics.General
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation($"  actualResult: {actualResult}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

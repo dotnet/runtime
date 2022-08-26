@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void FusedMultiplySubtractByScalar_Vector64_Single()
+        [Fact]
+        public static void FusedMultiplySubtractByScalar_Vector64_Single()
         {
             var test = new SimpleTernaryOpTest__FusedMultiplySubtractByScalar_Vector64_Single();
 

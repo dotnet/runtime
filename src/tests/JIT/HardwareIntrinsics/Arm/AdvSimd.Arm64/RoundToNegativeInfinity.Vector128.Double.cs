@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void RoundToNegativeInfinity_Vector128_Double()
+        [Fact]
+        public static void RoundToNegativeInfinity_Vector128_Double()
         {
             var test = new SimpleUnaryOpTest__RoundToNegativeInfinity_Vector128_Double();
 

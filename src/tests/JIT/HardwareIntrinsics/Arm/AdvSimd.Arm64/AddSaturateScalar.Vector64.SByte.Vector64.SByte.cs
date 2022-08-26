@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void AddSaturateScalar_Vector64_SByte_Vector64_SByte()
+        [Fact]
+        public static void AddSaturateScalar_Vector64_SByte_Vector64_SByte()
         {
             var test = new SimpleBinaryOpTest__AddSaturateScalar_Vector64_SByte_Vector64_SByte();
 

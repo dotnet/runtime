@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void CreateScalarUnsafeUInt16()
+        [Fact]
+        public static void CreateScalarUnsafeUInt16()
         {
             var test = new VectorCreate__CreateScalarUnsafeUInt16();
 

@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void FusedMultiplyAddBySelectedScalar_Vector128_Single_Vector128_Single_3()
+        [Fact]
+        public static void FusedMultiplyAddBySelectedScalar_Vector128_Single_Vector128_Single_3()
         {
             var test = new SimpleTernaryOpTest__FusedMultiplyAddBySelectedScalar_Vector128_Single_Vector128_Single_3();
 

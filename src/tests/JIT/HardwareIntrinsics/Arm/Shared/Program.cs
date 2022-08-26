@@ -10,71 +10,14 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private const int PASS = 100;
-        private const int FAIL = 0;
-        private const int MaximumTestCountGCStress = 30;
+        static TriggerOnProcessStart _trigger = new TriggerOnProcessStart();
 
-        private static readonly IDictionary<string, Action> TestList;
-
-        public static int Main(string[] args)
+        class TriggerOnProcessStart
         {
-            var isPassing = true;
-
-            PrintSupportedIsa();
-
-            foreach (string testToRun in GetTestsToRun(args))
+            public TriggerOnProcessStart()
             {
-                TestLibrary.TestFramework.BeginTestCase(testToRun);
-
-                try
-                {
-                    TestList[testToRun].Invoke();
-                }
-                catch (Exception e)
-                {
-                    TestLibrary.TestFramework.LogError(e.GetType().ToString(), e.Message);
-                    TestLibrary.TestFramework.LogVerbose(e.StackTrace);
-                    isPassing = false;
-                }
-
-                TestLibrary.TestFramework.EndTestCase();
+                PrintSupportedIsa();
             }
-
-            return isPassing ? PASS : FAIL;
-        }
-
-        private static ICollection<string> GetTestsToRun(string[] args)
-        {
-            var testsToRun = new HashSet<string>();
-
-            for (var i = 0; i < args.Length; i++)
-            {
-                var testName = args[i];
-
-                if (testName.Equals("all", StringComparison.OrdinalIgnoreCase))
-                {
-                    break;
-                }
-
-                if (!TestList.Keys.Contains(testName, StringComparer.OrdinalIgnoreCase))
-                {
-                    PrintUsage();
-                }
-
-                testsToRun.Add(testName);
-            }
-
-            if (testsToRun.Count != 0)
-            {
-                return testsToRun;
-            }
-
-            if (TestLibrary.Utilities.IsGCStress)
-            {
-                return TestList.Keys.Take(MaximumTestCountGCStress).ToArray();
-            }
-
-            return TestList.Keys;
         }
 
         private static void PrintSupportedIsa()
@@ -89,24 +32,6 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.LogInformation($"  Sha1:      {Sha1.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sha256:    {Sha256.IsSupported}");
             TestLibrary.TestFramework.LogInformation(string.Empty);
-        }
-
-        private static void PrintUsage()
-        {
-            TestLibrary.TestFramework.LogInformation($@"Usage:
-{Environment.GetCommandLineArgs()[0]} [testName]
-
-  [testName]: The name of the function to test.
-              Defaults to 'all'.
-              Multiple can be specified.
-
-  Available Test Names:");
-            foreach (string testName in TestList.Keys)
-            {
-                TestLibrary.TestFramework.LogInformation($"    {testName}");
-            }
-
-            Environment.Exit(FAIL);
         }
     }
 }

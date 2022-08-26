@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void MinScalar_Vector64_Single()
+        [Fact]
+        public static void MinScalar_Vector64_Single()
         {
             var test = new SimpleBinaryOpTest__MinScalar_Vector64_Single();
 

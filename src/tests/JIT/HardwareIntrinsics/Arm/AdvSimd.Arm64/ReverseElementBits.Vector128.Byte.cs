@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ReverseElementBits_Vector128_Byte()
+        [Fact]
+        public static void ReverseElementBits_Vector128_Byte()
         {
             var test = new SimpleUnaryOpTest__ReverseElementBits_Vector128_Byte();
 

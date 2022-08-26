@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void MinNumberPairwiseScalar_Vector128_Double()
+        [Fact]
+        public static void MinNumberPairwiseScalar_Vector128_Double()
         {
             var test = new SimpleUnaryOpTest__MinNumberPairwiseScalar_Vector128_Double();
 

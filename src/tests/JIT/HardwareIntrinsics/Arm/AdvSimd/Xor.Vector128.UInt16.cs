@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void Xor_Vector128_UInt16()
+        [Fact]
+        public static void Xor_Vector128_UInt16()
         {
             var test = new SimpleBinaryOpTest__Xor_Vector128_UInt16();
 

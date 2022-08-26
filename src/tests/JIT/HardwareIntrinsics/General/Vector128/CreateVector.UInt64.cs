@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void CreateVectorUInt64()
+        [Fact]
+        public static void CreateVectorUInt64()
         {
             var test = new VectorCreate__CreateVectorUInt64();
 

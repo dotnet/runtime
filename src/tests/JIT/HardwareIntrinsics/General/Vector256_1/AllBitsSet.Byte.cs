@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void AllBitsSetByte()
+        [Fact]
+        public static void AllBitsSetByte()
         {
             var test = new VectorAllBitsSet__AllBitsSetByte();
 

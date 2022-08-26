@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void MultiplyBySelectedScalar_Vector128_Int32_Vector128_Int32_3()
+        [Fact]
+        public static void MultiplyBySelectedScalar_Vector128_Int32_Vector128_Int32_3()
         {
             var test = new ImmBinaryOpTest__MultiplyBySelectedScalar_Vector128_Int32_Vector128_Int32_3();
 

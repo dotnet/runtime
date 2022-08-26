@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void MultiplyWideningLowerAndAdd_Vector64_UInt32()
+        [Fact]
+        public static void MultiplyWideningLowerAndAdd_Vector64_UInt32()
         {
             var test = new SimpleTernaryOpTest__MultiplyWideningLowerAndAdd_Vector64_UInt32();
 

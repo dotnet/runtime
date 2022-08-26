@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void BitwiseAndByte()
+        [Fact]
+        public static void BitwiseAndByte()
         {
             var test = new VectorBinaryOpTest__BitwiseAndByte();
 
