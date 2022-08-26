@@ -25,6 +25,9 @@
     call bool .this::ProblemWithCtors()
     brtrue CTORS_FAILED
 
+    call bool .this::ProblemWithLocAlloc()
+    brtrue LOCALLOC_FAILED
+
     ldc.i4 100
     ret
 
@@ -34,6 +37,10 @@
 
   CTORS_FAILED:
     ldc.i4 102
+    ret
+
+  LOCALLOC_FAILED:
+    ldc.i4 103
     ret
   }
 
@@ -70,6 +77,36 @@
 
   FAILED:
     ldc.i4 TRUE
+    ret
+  }
+
+  .method private static bool ProblemWithLocAlloc() noinlining
+  {
+    sizeof valuetype Struct
+    localloc
+    call int32 .this::ReturnExpectedWithLocAlloc(void*)
+    ldc.i4 EXPECTED
+    bne.un FAILED
+
+    ldc.i4 FALSE
+    ret
+
+  FAILED:
+    ldc.i4 TRUE
+    ret
+  }
+
+  .method private static int32 ReturnExpectedWithLocAlloc(void* pLocAlloc)
+  {
+    ldarg pLocAlloc
+    ldc.i4 EXPECTED
+    stind.i4
+
+    ldarg pLocAlloc
+    ldfld int32 Struct::Value
+    ldarg pLocAlloc
+    ldc.i4 THRASHED
+    stind.i4
     ret
   }
 }
