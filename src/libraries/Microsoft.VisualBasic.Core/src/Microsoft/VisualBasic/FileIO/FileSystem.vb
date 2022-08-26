@@ -1928,7 +1928,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 Case NativeTypes.DE_ACCESSDENIEDSRC
                     Return NativeTypes.ERROR_ACCESS_DENIED
                 Case NativeTypes.DE_PATHTOODEEP
-                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                    Return NativeTypes.ERROR_FILENAME_EXCED_RANGE
                 Case NativeTypes.DE_MANYDEST
                     Return NativeTypes.ERROR_INVALID_PARAMETER
                 Case NativeTypes.DE_INVALIDFILES
@@ -1940,7 +1940,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 Case NativeTypes.DE_FILEDESTISFLD
                     Return NativeTypes.ERROR_ALREADY_EXISTS
                 Case NativeTypes.DE_FILENAMETOOLONG
-                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                    Return NativeTypes.ERROR_FILENAME_EXCED_RANGE
                 Case NativeTypes.DE_DEST_IS_CDROM
                     Return NativeTypes.ERROR_WRITE_FAULT
                 Case NativeTypes.DE_DEST_IS_DVD
@@ -1948,7 +1948,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 Case NativeTypes.DE_DEST_IS_CDRECORD
                     Return NativeTypes.ERROR_WRITE_FAULT
                 Case NativeTypes.DE_FILE_TOO_LARGE
-                    Return NativeTypes.ERROR_DISK_FULL
+                    Return NativeTypes.ERROR_FILE_TOO_LARGE
                 Case NativeTypes.DE_SRC_IS_CDROM
                     Return NativeTypes.ERROR_READ_FAULT
                 Case NativeTypes.DE_SRC_IS_DVD
@@ -1956,7 +1956,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 Case NativeTypes.DE_SRC_IS_CDRECORD
                     Return NativeTypes.ERROR_READ_FAULT
                 Case NativeTypes.DE_ERROR_MAX
-                    Return NativeTypes.ERROR_BUFFER_OVERFLOW
+                    Return NativeTypes.ERROR_FILENAME_EXCED_RANGE
                 Case NativeTypes.DE_ERROR_UNKNOWN
                     Return NativeTypes.ERROR_PATH_NOT_FOUND
                 Case NativeTypes.ERRORONDEST

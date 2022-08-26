@@ -63,9 +63,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Const ERROR_WRITE_FAULT As Integer = 29
         Friend Const ERROR_READ_FAULT As Integer = 30
         Friend Const ERROR_GEN_FAILURE As Integer = 31
-        Friend Const ERROR_DISK_FULL As Integer = 112
-        Friend Const ERROR_BUFFER_OVERFLOW As Integer = 111
         Friend Const ERROR_BAD_PATHNAME As Integer = 161
+        Friend Const ERROR_FILE_TOO_LARGE As Integer = 223
 
         ' Error code from SHFileOperationW function (shellapi.h)
         Friend Const DE_SAMEFILE As Integer = 113
