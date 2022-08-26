@@ -177,12 +177,12 @@ internal sealed unsafe class MsQuicApi
 
     public void SetContext(MsQuicSafeHandle handle, void* context)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->SetContext(handle.QuicHandle, context);
         }
         finally
@@ -196,12 +196,12 @@ internal sealed unsafe class MsQuicApi
 
     public void* GetContext(MsQuicSafeHandle handle)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->GetContext(handle.QuicHandle);
         }
         finally
@@ -215,12 +215,12 @@ internal sealed unsafe class MsQuicApi
 
     public void SetCallbackHandler(MsQuicSafeHandle handle, void* callback, void* context)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->SetCallbackHandler(handle.QuicHandle, callback, context);
         }
         finally
@@ -234,12 +234,12 @@ internal sealed unsafe class MsQuicApi
 
     public int SetParam(MsQuicSafeHandle handle, uint param, uint bufferLength, void* buffer)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->SetParam(handle.QuicHandle, param, bufferLength, buffer);
         }
         finally
@@ -253,12 +253,12 @@ internal sealed unsafe class MsQuicApi
 
     public int GetParam(MsQuicSafeHandle handle, uint param, uint* bufferLength, void* buffer)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->GetParam(handle.QuicHandle, param, bufferLength, buffer);
         }
         finally
@@ -272,12 +272,12 @@ internal sealed unsafe class MsQuicApi
 
     public void RegistrationShutdown(MsQuicSafeHandle handle, QUIC_CONNECTION_SHUTDOWN_FLAGS flags, ulong code)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->RegistrationShutdown(handle.QuicHandle, flags, code);
         }
         finally
@@ -291,12 +291,12 @@ internal sealed unsafe class MsQuicApi
 
     public int ConfigurationOpen(MsQuicSafeHandle regHandle, QUIC_BUFFER* alpnBuffers, uint alpnBuffersCount, QUIC_SETTINGS* settings, uint settingsSize, void* context, QUIC_HANDLE** configuration)
     {
-        ObjectDisposedException.ThrowIf(regHandle.IsInvalid, regHandle);
         bool success = false;
         try
         {
             regHandle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || regHandle.IsInvalid);
+            ObjectDisposedException.ThrowIf(regHandle.IsInvalid, regHandle);
             return ApiTable->ConfigurationOpen(regHandle.QuicHandle, alpnBuffers, alpnBuffersCount, settings, settingsSize, context, configuration);
         }
         finally
@@ -310,12 +310,12 @@ internal sealed unsafe class MsQuicApi
 
     public int ConfigurationLoadCredential(MsQuicSafeHandle handle, QUIC_CREDENTIAL_CONFIG* config)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->ConfigurationLoadCredential(handle.QuicHandle, config);
         }
         finally
@@ -329,12 +329,12 @@ internal sealed unsafe class MsQuicApi
 
     public int ListenerOpen(MsQuicSafeHandle handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_LISTENER_EVENT*, int> callback, void* context, QUIC_HANDLE** listener)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->ListenerOpen(handle.QuicHandle, callback, context, listener);
         }
         finally
@@ -348,12 +348,12 @@ internal sealed unsafe class MsQuicApi
 
     public int ListenerStart(MsQuicSafeHandle handle, QUIC_BUFFER* alpnBuffers, uint alpnBuffersCount, QuicAddr* localAddress)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->ListenerStart(handle.QuicHandle, alpnBuffers, alpnBuffersCount, localAddress);
         }
         finally
@@ -367,12 +367,12 @@ internal sealed unsafe class MsQuicApi
 
     public void ListenerStop(MsQuicSafeHandle handle)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->ListenerStop(handle.QuicHandle);
         }
         finally
@@ -386,12 +386,12 @@ internal sealed unsafe class MsQuicApi
 
     public int ConnectionOpen(MsQuicSafeHandle regHandle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_CONNECTION_EVENT*, int> callback, void* context, QUIC_HANDLE** connection)
     {
-        ObjectDisposedException.ThrowIf(regHandle.IsInvalid, regHandle);
         bool success = false;
         try
         {
             regHandle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || regHandle.IsInvalid);
+            ObjectDisposedException.ThrowIf(regHandle.IsInvalid, regHandle);
             return ApiTable->ConnectionOpen(regHandle.QuicHandle, callback, context, connection);
         }
         finally
@@ -405,12 +405,12 @@ internal sealed unsafe class MsQuicApi
 
     public void ConnectionShutdown(MsQuicSafeHandle handle, QUIC_CONNECTION_SHUTDOWN_FLAGS flags, ulong code)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->ConnectionShutdown(handle.QuicHandle, flags, code);
         }
         finally
@@ -424,16 +424,17 @@ internal sealed unsafe class MsQuicApi
 
     public int ConnectionStart(MsQuicSafeHandle handle, MsQuicSafeHandle configHandle, ushort family, sbyte* serverName, ushort serverPort)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
-        ObjectDisposedException.ThrowIf(configHandle.IsInvalid, configHandle);
         bool success = false;
         bool configSuccess = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             configHandle.DangerousAddRef(ref configSuccess);
-            Debug.Assert(configSuccess);
+            Debug.Assert(configSuccess || configHandle.IsInvalid);
+            ObjectDisposedException.ThrowIf(configHandle.IsInvalid, configHandle);
+
             return ApiTable->ConnectionStart(handle.QuicHandle, configHandle.QuicHandle, family, serverName, serverPort);
         }
         finally
@@ -451,16 +452,17 @@ internal sealed unsafe class MsQuicApi
 
     public int ConnectionSetConfiguration(MsQuicSafeHandle handle, MsQuicSafeHandle configHandle)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
-        ObjectDisposedException.ThrowIf(configHandle.IsInvalid, configHandle);
         bool success = false;
         bool configSuccess = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             configHandle.DangerousAddRef(ref configSuccess);
-            Debug.Assert(configSuccess);
+            Debug.Assert(configSuccess || configHandle.IsInvalid);
+            ObjectDisposedException.ThrowIf(configHandle.IsInvalid, configHandle);
+
             return ApiTable->ConnectionSetConfiguration(handle.QuicHandle, configHandle.QuicHandle);
         }
         finally
@@ -478,12 +480,12 @@ internal sealed unsafe class MsQuicApi
 
     public int StreamOpen(MsQuicSafeHandle connHandle, QUIC_STREAM_OPEN_FLAGS flags, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_STREAM_EVENT*, int> callback, void* context, QUIC_HANDLE** stream)
     {
-        ObjectDisposedException.ThrowIf(connHandle.IsInvalid, connHandle);
         bool success = false;
         try
         {
             connHandle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || connHandle.IsInvalid);
+            ObjectDisposedException.ThrowIf(connHandle.IsInvalid, connHandle);
             return ApiTable->StreamOpen(connHandle.QuicHandle, flags, callback, context, stream);
         }
         finally
@@ -497,12 +499,12 @@ internal sealed unsafe class MsQuicApi
 
     public int StreamStart(MsQuicSafeHandle handle, QUIC_STREAM_START_FLAGS flags)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->StreamStart(handle.QuicHandle, flags);
         }
         finally
@@ -516,12 +518,12 @@ internal sealed unsafe class MsQuicApi
 
     public int StreamShutdown(MsQuicSafeHandle handle, QUIC_STREAM_SHUTDOWN_FLAGS flags, ulong code)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->StreamShutdown(handle.QuicHandle, flags, code);
         }
         finally
@@ -535,12 +537,12 @@ internal sealed unsafe class MsQuicApi
 
     public int StreamSend(MsQuicSafeHandle handle, QUIC_BUFFER* buffers, uint buffersCount, QUIC_SEND_FLAGS flags, void* context)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->StreamSend(handle.QuicHandle, buffers, buffersCount, flags, context);
         }
         finally
@@ -554,12 +556,12 @@ internal sealed unsafe class MsQuicApi
 
     public void StreamReceiveComplete(MsQuicSafeHandle handle, ulong length)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             ApiTable->StreamReceiveComplete(handle.QuicHandle, length);
         }
         finally
@@ -573,12 +575,12 @@ internal sealed unsafe class MsQuicApi
 
     public int StreamReceiveSetEnabled(MsQuicSafeHandle handle, byte enabled)
     {
-        ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
         bool success = false;
         try
         {
             handle.DangerousAddRef(ref success);
-            Debug.Assert(success);
+            Debug.Assert(success || handle.IsInvalid);
+            ObjectDisposedException.ThrowIf(handle.IsInvalid, handle);
             return ApiTable->StreamReceiveSetEnabled(handle.QuicHandle, enabled);
         }
         finally

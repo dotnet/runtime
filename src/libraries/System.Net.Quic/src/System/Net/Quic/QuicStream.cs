@@ -526,7 +526,7 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Received event SEND_COMPLETE with {nameof(data.Canceled)}={data.Canceled}");
         }
 
-		// In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent WriteAsync to grab the next task
+        // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent WriteAsync to grab the next task
         // from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write
         lock (_sendBuffersLock)
         {
