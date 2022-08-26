@@ -92,7 +92,15 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             byte[] cborPayload = ByteUtils.HexToByteArray("D29F43A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB3640FF");
             CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(cborPayload));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
+            Assert.Null(ex.InnerException);
+        }
+
+        [Fact]
+        public void DecodeSign1_IndefiniteLengthArray_ShorterByOne()
+        {
+            byte[] cborPayload = ByteUtils.HexToByteArray("D29F43A10126A10442313154546869732069732074686520636F6E74656E742EFF");
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(cborPayload));
+            Assert.Null(ex.InnerException);
         }
     }
 }

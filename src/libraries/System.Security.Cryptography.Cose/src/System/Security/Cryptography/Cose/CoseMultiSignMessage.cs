@@ -804,7 +804,7 @@ namespace System.Security.Cryptography.Cose
                     bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
 
                     byte[] signature = bufferSpan.Slice(0, bytesWritten).ToArray();
-                    _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, _protectedHeaderAsBstr, encodedSignProtected, signature));
+                    _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
                 }
             }
             finally
@@ -877,7 +877,7 @@ namespace System.Security.Cryptography.Cose
                 bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
 
                 byte[] signature = buffer.AsSpan(0, bytesWritten).ToArray();
-                _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, _protectedHeaderAsBstr, encodedSignProtected, signature));
+                _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
             }
 
             ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
