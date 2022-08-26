@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
-using System.Threading;
 
 namespace System.Net.Quic;
 
@@ -20,27 +18,14 @@ internal unsafe struct MsQuicBuffers : IDisposable
     private QUIC_BUFFER* _buffers;
     // Number of QUIC_BUFFER instance currently allocated in _buffers, so that we can reuse the memory instead of reallocating.
     private int _count;
-    private bool _initialized;
-    private bool _disposed;
 
     public MsQuicBuffers()
     {
         _buffers = null;
         _count = 0;
-        _initialized=false;
-        _disposed = false;
     }
 
-    public QUIC_BUFFER* Buffers
-    {
-        get
-        {
-            ObjectDisposedException.ThrowIf(_disposed, typeof(MsQuicBuffers));
-            Debug.Assert(_initialized);
-            return _buffers;
-        }
-    }
-
+    public QUIC_BUFFER* Buffers => _buffers;
     public int Count => _count;
 
     private void FreeNativeMemory()
@@ -63,7 +48,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
 
     private void SetBuffer(int index, ReadOnlyMemory<byte> buffer)
     {
-        Debug.Assert(_buffers[index].Buffer == null);
         _buffers[index].Buffer = (byte*)NativeMemory.Alloc((nuint)buffer.Length, (nuint)sizeof(byte));
         _buffers[index].Length = (uint)buffer.Length;
         buffer.Span.CopyTo(_buffers[index].Span);
@@ -78,14 +62,11 @@ internal unsafe struct MsQuicBuffers : IDisposable
     /// <typeparam name="T">The type of the inputs.</typeparam>
     public void Initialize<T>(IList<T> inputs, Func<T, ReadOnlyMemory<byte>> toBuffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, typeof(MsQuicBuffers));
-        Debug.Assert(!_initialized);
         Reserve(inputs.Count);
         for (int i = 0; i < inputs.Count; ++i)
         {
             SetBuffer(i, toBuffer(inputs[i]));
         }
-        _initialized = true;
     }
 
     /// <summary>
@@ -95,21 +76,15 @@ internal unsafe struct MsQuicBuffers : IDisposable
     /// <param name="buffer">Buffer to be passed to MsQuic as QUIC_BUFFER*.</param>
     public void Initialize(ReadOnlyMemory<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, typeof(MsQuicBuffers));
-        Debug.Assert(!_initialized);
         Reserve(1);
         SetBuffer(0, buffer);
-        _initialized = true;
     }
 
     /// <summary>
     /// Release the native memory of individual buffers and allows reuse of this struct.
     /// </summary>
-    public void Reset() => Reset(disposing: false);
-
-    private void Reset(bool disposing)
+    public void Reset()
     {
-        ObjectDisposedException.ThrowIf(_disposed && !disposing, typeof(MsQuicBuffers));
         for (int i = 0; i < _count; ++i)
         {
             if (_buffers[i].Buffer is null)
@@ -121,7 +96,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
             NativeMemory.Free(buffer);
             _buffers[i].Length = 0;
         }
-        _initialized = false;
     }
 
     /// <summary>
@@ -129,8 +103,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
     /// </summary>
     public void Dispose()
     {
-        _disposed = true;
-        Reset(disposing: true);
+        Reset();
         FreeNativeMemory();
     }
 }
