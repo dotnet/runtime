@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace IntelHardwareIntrinsicTest
 {
@@ -15,7 +16,8 @@ namespace IntelHardwareIntrinsicTest
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        static unsafe void Test()
         {
             int testResult = Pass;
 
@@ -44,7 +46,7 @@ namespace IntelHardwareIntrinsicTest
                             Console.Write(item + ", ");
                         }
                         Console.WriteLine();
-                        return Fail;
+                        Assert.Fail("");
                     }
                     for (int i = 1; i < 4; i++)
                     {
@@ -56,7 +58,7 @@ namespace IntelHardwareIntrinsicTest
                                 Console.Write(item + ", ");
                             }
                             Console.WriteLine();
-                            return Fail;
+                            Assert.Fail("");
                         }
                     }
                     
@@ -69,7 +71,7 @@ namespace IntelHardwareIntrinsicTest
                             Console.Write(item + ", ");
                         }
                         Console.WriteLine();
-                        return Fail;
+                        Assert.Fail("");
                     }
                     for (int i = 1; i < 2; i++)
                     {
@@ -81,7 +83,7 @@ namespace IntelHardwareIntrinsicTest
                                 Console.Write(item + ", ");
                             }
                             Console.WriteLine();
-                            return Fail;
+                            Assert.Fail("");
                         }
                     }
 
@@ -90,7 +92,7 @@ namespace IntelHardwareIntrinsicTest
                         var ve = Avx.CompareScalar(vf1, vf2, (FloatComparisonMode)32);
                         Unsafe.Write(floatTable.outArrayPtr, ve);
                         Console.WriteLine("Avx CompareScalar failed on float with out-of-range argument:");
-                        return Fail;
+                        Assert.Fail("");
                     }
                     catch (ArgumentOutOfRangeException e)
                     {
@@ -102,7 +104,7 @@ namespace IntelHardwareIntrinsicTest
                         var ve = Avx.CompareScalar(vd1, vd2, (FloatComparisonMode)32);
                         Unsafe.Write(floatTable.outArrayPtr, ve);
                         Console.WriteLine("Avx CompareScalar failed on double with out-of-range argument:");
-                        return Fail;
+                        Assert.Fail("");
                     }
                     catch (ArgumentOutOfRangeException e)
                     {
@@ -114,7 +116,7 @@ namespace IntelHardwareIntrinsicTest
                         var ve = typeof(Avx).GetMethod(nameof(Avx.CompareScalar), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>), typeof(FloatComparisonMode) })
                                      .Invoke(null, new object[] {vf1, vf2, (FloatComparisonMode)32});
                         Console.WriteLine("Indirect-calling Avx CompareScalar failed on float with out-of-range argument:");
-                        return Fail;
+                        Assert.Fail("");
                     }
                     catch (System.Reflection.TargetInvocationException e)
                     {
@@ -125,7 +127,7 @@ namespace IntelHardwareIntrinsicTest
                         else
                         {
                             Console.WriteLine("Indirect-calling Avx CompareScalar failed on float with out-of-range argument:");
-                            return Fail;
+                            Assert.Fail("");
                         }
                     }
 
@@ -134,7 +136,7 @@ namespace IntelHardwareIntrinsicTest
                         var ve = typeof(Avx).GetMethod(nameof(Avx.CompareScalar), new Type[] { typeof(Vector128<Double>), typeof(Vector128<Double>), typeof(FloatComparisonMode) })
                                      .Invoke(null, new object[] {vd1, vd2, (FloatComparisonMode)32});
                         Console.WriteLine("Indirect-calling Avx CompareScalar failed on double with out-of-range argument:");
-                        return Fail;
+                        Assert.Fail("");
                     }
                     catch (System.Reflection.TargetInvocationException e)
                     {
@@ -145,13 +147,13 @@ namespace IntelHardwareIntrinsicTest
                         else
                         {
                             Console.WriteLine("Indirect-calling Avx CompareScalar failed on double with out-of-range argument:");
-                            return Fail;
+                            Assert.Fail("");
                         }
                     }
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public unsafe struct TestTable<T> : IDisposable where T : struct

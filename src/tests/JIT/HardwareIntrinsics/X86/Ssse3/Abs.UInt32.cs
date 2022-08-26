@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void AbsUInt32()
+        [Fact]
+        public static void AbsUInt32()
         {
             var test = new SimpleUnaryOpTest__AbsUInt32();
 

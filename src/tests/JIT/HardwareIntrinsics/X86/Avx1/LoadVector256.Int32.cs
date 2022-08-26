@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void LoadVector256Int32()
+        [Fact]
+        public static void LoadVector256Int32()
         {
             var test = new SimpleUnaryOpTest__LoadVector256Int32();
 

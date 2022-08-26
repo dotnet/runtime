@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void {Method}{RetBaseType}BinRes()
+        [Fact]
+        public static void {Method}{RetBaseType}BinRes()
         {
             var test = new ScalarTernOpBinResTest__{Method}{RetBaseType}();
 

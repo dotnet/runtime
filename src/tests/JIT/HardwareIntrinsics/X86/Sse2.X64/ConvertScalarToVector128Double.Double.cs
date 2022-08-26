@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ConvertScalarToVector128DoubleDouble()
+        [Fact]
+        public static void ConvertScalarToVector128DoubleDouble()
         {
             var test = new SimpleBinaryOpConvTest__ConvertScalarToVector128DoubleDouble();
 
