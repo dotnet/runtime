@@ -10,4 +10,7 @@
 MONO_API void
 mono_marshal_lightweight_init (void);
 
+MONO_API void
+mono_marshal_ilgen_init (void);
+
 #endif // __MONO_MARSHAL_LIGHTWEIGHT_H__
