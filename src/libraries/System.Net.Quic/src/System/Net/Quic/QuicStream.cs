@@ -398,7 +398,6 @@ public sealed partial class QuicStream
         QUIC_STREAM_SHUTDOWN_FLAGS flags = QUIC_STREAM_SHUTDOWN_FLAGS.NONE;
         if (abortDirection.HasFlag(QuicAbortDirection.Read))
         {
-            flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
             if (_receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true))
             {
                 flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
@@ -537,12 +536,12 @@ public sealed partial class QuicStream
                 (shutdownByApp: true, closedRemotely: true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
                 // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
                 (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
-                // It's remote shutdown by transport, we received a CONNECTION_CLOSE frame with a QUIC transport error code
+                // It's remote shutdown by transport, we received a CONNECTION_CLOSE frame with a QUIC transport error code, throw error based on the status.
                 // TODO: we should propagate the transport error code
                 // https://github.com/dotnet/runtime/issues/72666
                 (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, $"Shutdown by transport {data.ConnectionErrorCode}"),
-                // It's local shutdown by transport, due to some timeout
-                // TODO: we should propagate transport error code
+                // It's local shutdown by transport, most likely due to a timeout, throw error based on the status.
+                // TODO: we should propagate the transport error code
                 // https://github.com/dotnet/runtime/issues/72666
                 (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus),
             };
