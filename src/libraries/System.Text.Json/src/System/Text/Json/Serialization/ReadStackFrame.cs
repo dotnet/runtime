@@ -105,7 +105,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingDictionary()
         {
-            return (JsonTypeInfo.Converter.ConverterStrategy & ConverterStrategy.Dictionary) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingEnumerable()
         {
-            return (JsonTypeInfo.Converter.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -341,7 +341,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (KeyType != null)
                     {
-                        Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Dictionary);
+                        Debug.Assert(Kind == JsonTypeInfoKind.Dictionary);
 
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
