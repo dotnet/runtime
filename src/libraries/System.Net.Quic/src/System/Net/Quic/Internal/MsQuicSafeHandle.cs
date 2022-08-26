@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -47,6 +46,20 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         }
     }
 
+    public MsQuicSafeHandle(QUIC_HANDLE* handle, SafeHandleType safeHandleType)
+        : this(
+            handle,
+            safeHandleType switch
+            {
+                SafeHandleType.Registration => MsQuicApi.Api.ApiTable->RegistrationClose,
+                SafeHandleType.Configuration => MsQuicApi.Api.ApiTable->ConfigurationClose,
+                SafeHandleType.Listener => MsQuicApi.Api.ApiTable->ListenerClose,
+                SafeHandleType.Connection => MsQuicApi.Api.ApiTable->ConnectionClose,
+                SafeHandleType.Stream => MsQuicApi.Api.ApiTable->StreamClose,
+                _ => throw new ArgumentException($"Unexpected value: {safeHandleType}", nameof(safeHandleType))
+            },
+            safeHandleType) { }
+
     protected override bool ReleaseHandle()
     {
         QUIC_HANDLE* quicHandle = QuicHandle;
@@ -59,44 +72,6 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         }
 
         return true;
-    }
-
-    public TResult SafeCall<TResult>(Func<MsQuicSafeHandle, TResult> call)
-    {
-        ObjectDisposedException.ThrowIf(IsInvalid, this);
-        bool success = false;
-        try
-        {
-            DangerousAddRef(ref success);
-            Debug.Assert(success);
-            return call(this);
-        }
-        finally
-        {
-            if (success)
-            {
-                DangerousRelease();
-            }
-        }
-    }
-
-    public void SafeCall(Action<MsQuicSafeHandle> call)
-    {
-        ObjectDisposedException.ThrowIf(IsInvalid, this);
-        bool success = false;
-        try
-        {
-            DangerousAddRef(ref success);
-            Debug.Assert(success);
-            call(this);
-        }
-        finally
-        {
-            if (success)
-            {
-                DangerousRelease();
-            }
-        }
     }
 
     public override string ToString() => _traceId ??= $"[{s_typeName[(int)_type]}][0x{DangerousGetHandle():X11}]";
@@ -124,8 +99,8 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
-    public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
-        : base(handle, releaseAction, safeHandleType)
+    public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
+        : base(handle, safeHandleType)
     {
         _context = context;
         if (parent is not null)
