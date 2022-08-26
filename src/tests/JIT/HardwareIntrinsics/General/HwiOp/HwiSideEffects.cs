@@ -5,24 +5,16 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Tests that side effects induced by the HWI nodes are correctly accounted for.
 
 unsafe class HwiSideEffects
 {
-    public static int Main()
+    [Fact]
+    public static void TestProblemWithInterferenceChecks()
     {
-        if (ProblemWithInterferenceChecks(2) != 2)
-        {
-            return 101;
-        }
-
-        if (!ProblemWithThrowingLoads(null))
-        {
-            return 102;
-        }
-
-        return 100;
+        Assert.Equal((uint)2, ProblemWithInterferenceChecks(2));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -40,6 +32,12 @@ unsafe class HwiSideEffects
         }
 
         return x;
+    }
+
+    [Fact]
+    public static void TestProblemWithThrowingLoads()
+    {
+        Assert.True(ProblemWithThrowingLoads(null));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
