@@ -28,6 +28,9 @@
     call bool .this::ProblemWithLocAlloc()
     brtrue LOCALLOC_FAILED
 
+    call bool .this::ProblemWithCapturingCtors()
+    brtrue CAPTURING_CTORS_FAILED
+
     ldc.i4 100
     ret
 
@@ -41,6 +44,10 @@
 
   LOCALLOC_FAILED:
     ldc.i4 103
+    ret
+
+  CAPTURING_CTORS_FAILED:
+    ldc.i4 104
     ret
   }
 
@@ -109,6 +116,29 @@
     stind.i4
     ret
   }
+
+  .method private static bool ProblemWithCapturingCtors() noinlining
+  {
+    .locals (valuetype Closure closure)
+
+    ldc.i4 EXPECTED
+    ldloca closure
+    newobj instance void Struct::.ctor(int32, valuetype Closure&)
+    ldloc closure
+    ldfld valuetype Struct& Closure::StructRef
+    ldc.i4 THRASHED
+    stfld int32 Struct::Value
+    ldfld int32 Struct::Value
+    ldc.i4 EXPECTED
+    bne.un FAILED
+
+    ldc.i4 FALSE
+    ret
+
+  FAILED:
+    ldc.i4 TRUE
+    ret
+  }
 }
 
 .class interface Interface
@@ -122,7 +152,7 @@
 
   .field public int32 Value
 
-  .method public specialname void .ctor(int32 val)
+  .method public void .ctor(int32 val)
   {
     ldarg THIS
     ldarg val
@@ -131,7 +161,7 @@
     ret
   }
 
-  .method public specialname void .ctor(int32 expected, int32 thrashed)
+  .method public void .ctor(int32 expected, int32 thrashed)
   {
     ldarg THIS
     ldarg expected
@@ -147,6 +177,19 @@
     ret
   }
 
+  .method public void .ctor(int32 val, valuetype Closure& closureRef) noinlining
+  {
+    ldarg THIS
+    ldarg val
+    stfld int32 .this::Value
+
+    ldarg closureRef
+    ldarg THIS
+    stfld valuetype Struct& Closure::StructRef
+
+    ret
+  }
+
   .method public virtual int32 ReturnSelf()
   {
     ldarg THIS
@@ -157,4 +200,11 @@
 
     ret
   }
+}
+
+.class sealed Closure extends [System.Runtime]System.ValueType
+{
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (01 00 00 00)
+
+  .field public valuetype Struct& StructRef
 }
