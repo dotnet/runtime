@@ -15603,6 +15603,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             compSuppressedZeroInit       = true;
                         }
 
+                        // The constructor may store "this", with subsequent code mutating the underlying local
+                        // through the captured reference. To correctly spill the node we'll push onto the stack
+                        // in such a case, we must mark the temp as potentially aliased.
+                        lclDsc->lvHasLdAddrOp = true;
+
                         // Obtain the address of the temp
                         newObjThisPtr =
                             gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
