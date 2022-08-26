@@ -286,11 +286,6 @@ ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
 
-      <BatchCLRTestPreCommands><![CDATA[
-$(BatchDisasmCheckPreCommands)
-$(CLRTestBatchPreCommands)
-      ]]></BatchCLRTestPreCommands>
-
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Android' ">
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
@@ -353,7 +348,8 @@ $(CLRTestBatchPostCommands)
     </PropertyGroup>
     <PropertyGroup>
       <BatchEnvironmentVariables>
-@(CLRTestBatchEnvironmentVariable -> '%(Identity)', '%0d%0a')
+@(CLRTestBatchEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
+@(CLRTestEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
       </BatchEnvironmentVariables>
     </PropertyGroup>
 
@@ -451,7 +447,7 @@ set ExePath=$(InputAssemblyName)
 set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
 
 REM Precommands
-$(BatchCLRTestPreCommands)
+$(CLRTestBatchPreCommands)
 REM Launch
 $(BatchCLRTestLaunchCmds)
 REM PostCommands

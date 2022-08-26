@@ -3,11 +3,12 @@
     <OutputType>Exe</OutputType>
     <DebugType>None</DebugType>
     <Optimize />
-    <DisasmCheckFunctions>P:* Q:*</DisasmCheckFunctions>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeEquality.cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
+
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDisasm" Value="P:* Q:*" />
   </ItemGroup>
 </Project>

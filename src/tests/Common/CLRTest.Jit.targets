@@ -182,37 +182,28 @@ IF NOT DEFINED DoLink (
   </Target>
 
   <Target Name="GetDisasmCheckCommands"
-          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPreCommands);$(BatchDisasmCheckPostCommands)">
+          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPostCommands)">
     <ItemGroup>
       <BatchDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
-    <Error Text="Compile list may only contain at most one file marked with HasDisasmCheck"
-	   Condition="@(BatchDisasmCheckFile->Count()) &gt; 1" />
     <PropertyGroup>
       <DoBatchDisasmCheck>false</DoBatchDisasmCheck>
       <DoBatchDisasmCheck Condition="@(BatchDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</DoBatchDisasmCheck>
-
-      <DisasmCheckFunctions Condition="'$(DisasmCheckFunctions)' == ''">Main</DisasmCheckFunctions>
 
       <BatchDisasmOutputFile>%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmOutputRedir></BatchDisasmOutputRedir>
       <BatchDisasmOutputRedir Condition="'$(DoBatchDisasmCheck)' == 'true'">&gt; "$(BatchDisasmOutputFile)"</BatchDisasmOutputRedir>
 
-      <BatchDisasmCheckPreCommands></BatchDisasmCheckPreCommands>
-      <BatchDisasmCheckPreCommands Condition="'$(DoBatchDisasmCheck)' == 'true'"><![CDATA[
-set DOTNET_JitDisasm="$(DisasmCheckFunctions)"
-echo %(BatchDisasmCheckFile.FullPath)
-      ]]></BatchDisasmCheckPreCommands>
-
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(DoBatchDisasmCheck)' == 'true'"><![CDATA[
-FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(BatchDisasmCheckFile.FullPath)" < "$(BatchDisasmOutputFile)"
+@(BatchDisasmCheckFile -> 'FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BatchDisasmOutputFile)"
 IF NOT "!ERRORLEVEL!" == "0" (
   ECHO EXECUTION OF FILECHECK - FAILED
   Exit /b 1
 )
-      ]]></BatchDisasmCheckPostCommands>
+']]>)
+      </BatchDisasmCheckPostCommands>
     </PropertyGroup>
   </Target>
 
