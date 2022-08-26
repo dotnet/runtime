@@ -7,7 +7,7 @@
 #include "utilcode.h"
 #include "crosscomp.h"
 
-#include "unwinder_arm64.h"
+#include "unwinder.h"
 
 typedef struct _ARM64_KTRAP_FRAME {
 

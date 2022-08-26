@@ -7,7 +7,7 @@
 #include "utilcode.h"
 #include "crosscomp.h"
 
-#include "unwinder_loongarch64.h"
+#include "unwinder.h"
 
 typedef struct _LOONGARCH64_KTRAP_FRAME {
 

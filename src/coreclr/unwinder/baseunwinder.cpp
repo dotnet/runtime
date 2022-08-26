@@ -4,7 +4,7 @@
 //
 
 #include "stdafx.h"
-#include "unwinder.h"
+#include "baseunwinder.h"
 
 EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
                                       OUT UINT_PTR* pModuleBase,

@@ -6,7 +6,7 @@
 #ifndef __unwinder_i386_h__
 #define __unwinder_i386_h__
 
-#include "unwinder.h"
+#include "baseunwinder.h"
 
 #ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------

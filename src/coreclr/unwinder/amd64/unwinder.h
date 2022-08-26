@@ -6,7 +6,7 @@
 #ifndef __unwinder_amd64_h__
 #define __unwinder_amd64_h__
 
-#include "unwinder.h"
+#include "baseunwinder.h"
 
 
 //---------------------------------------------------------------------------------------

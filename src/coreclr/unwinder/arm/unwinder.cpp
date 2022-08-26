@@ -6,7 +6,7 @@
 #include "stdafx.h"
 #include "utilcode.h"
 
-#include "unwinder_arm.h"
+#include "unwinder.h"
 
 #define DBS_EXTEND64(x) ((DWORD64)x)
 #define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
