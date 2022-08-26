@@ -132,71 +132,76 @@ initDistroRidGlobal()
     local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
+    local packageRid="$4"
     local rootfsDir=""
-    if [ "$#" -ge 4 ]; then
-        rootfsDir="$4"
+    if [ "$#" -ge 5 ]; then
+        rootfsDir="$5"
     fi
 
-    if [ -n "${rootfsDir}" ]; then
-        # We may have a cross build. Check for the existence of the rootfsDir
-        if [ ! -e "${rootfsDir}" ]; then
-            echo "Error rootfsDir has been passed, but the location is not valid."
-            exit 1
-        fi
-    fi
-
-    initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
-
-    if [ "$buildArch" = "wasm" ]; then
-        __DistroRid=browser-wasm
-        export __DistroRid
-    fi
-
-    if [ -z "${__DistroRid}" ]; then
-        # The non-portable build rid was not set. Set the portable rid.
-
-        __PortableBuild=1
-        export __PortableBuild
-        local distroRid=""
-
-        # Check for musl-based distros (e.g Alpine Linux, Void Linux).
-        if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
-                strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
-            distroRid="linux-musl-${buildArch}"
-        fi
-
-        if [ -z "${distroRid}" ]; then
-            if [ "$targetOs" = "Linux" ]; then
-                distroRid="linux-$buildArch"
-            elif [ "$targetOs" = "linux-bionic" ]; then
-                distroRid="linux-bionic-$buildArch"
-            elif [ "$targetOs" = "OSX" ]; then
-                distroRid="osx-$buildArch"
-            elif [ "$targetOs" = "MacCatalyst" ]; then
-                distroRid="maccatalyst-$buildArch"
-            elif [ "$targetOs" = "tvOS" ]; then
-                distroRid="tvos-$buildArch"
-            elif [ "$targetOs" = "tvOSSimulator" ]; then
-                distroRid="tvossimulator-$buildArch"
-            elif [ "$targetOs" = "iOS" ]; then
-                distroRid="ios-$buildArch"
-            elif [ "$targetOs" = "iOSSimulator" ]; then
-                distroRid="iossimulator-$buildArch"
-            elif [ "$targetOs" = "Android" ]; then
-                distroRid="android-$buildArch"
-            elif [ "$targetOs" = "Browser" ]; then
-                distroRid="browser-$buildArch"
-            elif [ "$targetOs" = "FreeBSD" ]; then
-                distroRid="freebsd-$buildArch"
-            elif [ "$targetOs" = "illumos" ]; then
-                distroRid="illumos-$buildArch"
-            elif [ "$targetOs" = "Solaris" ]; then
-                distroRid="solaris-$buildArch"
+    if [ -n "$packageRid" ]; then
+        export __DistroRid=$packageRid
+    else
+        if [ -n "${rootfsDir}" ]; then
+            # We may have a cross build. Check for the existence of the rootfsDir
+            if [ ! -e "${rootfsDir}" ]; then
+                echo "Error rootfsDir has been passed, but the location is not valid."
+                exit 1
             fi
         fi
 
-        __DistroRid="${distroRid}"
-        export __DistroRid
+        initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+
+        if [ "$buildArch" = "wasm" ]; then
+            __DistroRid=browser-wasm
+            export __DistroRid
+        fi
+
+        if [ -z "${__DistroRid}" ]; then
+            # The non-portable build rid was not set. Set the portable rid.
+
+            __PortableBuild=1
+            export __PortableBuild
+            local distroRid=""
+
+            # Check for musl-based distros (e.g Alpine Linux, Void Linux).
+            if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
+                    strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
+                distroRid="linux-musl-${buildArch}"
+            fi
+
+            if [ -z "${distroRid}" ]; then
+                if [ "$targetOs" = "Linux" ]; then
+                    distroRid="linux-$buildArch"
+                elif [ "$targetOs" = "linux-bionic" ]; then
+                    distroRid="linux-bionic-$buildArch"
+                elif [ "$targetOs" = "OSX" ]; then
+                    distroRid="osx-$buildArch"
+                elif [ "$targetOs" = "MacCatalyst" ]; then
+                    distroRid="maccatalyst-$buildArch"
+                elif [ "$targetOs" = "tvOS" ]; then
+                    distroRid="tvos-$buildArch"
+                elif [ "$targetOs" = "tvOSSimulator" ]; then
+                    distroRid="tvossimulator-$buildArch"
+                elif [ "$targetOs" = "iOS" ]; then
+                    distroRid="ios-$buildArch"
+                elif [ "$targetOs" = "iOSSimulator" ]; then
+                    distroRid="iossimulator-$buildArch"
+                elif [ "$targetOs" = "Android" ]; then
+                    distroRid="android-$buildArch"
+                elif [ "$targetOs" = "Browser" ]; then
+                    distroRid="browser-$buildArch"
+                elif [ "$targetOs" = "FreeBSD" ]; then
+                    distroRid="freebsd-$buildArch"
+                elif [ "$targetOs" = "illumos" ]; then
+                    distroRid="illumos-$buildArch"
+                elif [ "$targetOs" = "Solaris" ]; then
+                    distroRid="solaris-$buildArch"
+                fi
+            fi
+
+            __DistroRid="${distroRid}"
+            export __DistroRid
+        fi
     fi
 
     if [ -z "$__DistroRid" ]; then

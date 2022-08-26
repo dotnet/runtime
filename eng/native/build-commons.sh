@@ -11,7 +11,7 @@ initTargetDistroRid()
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$packageRid" "$passedRootfsDir"
 }
 
 setup_dirs()
@@ -212,6 +212,7 @@ usage()
     echo "-gccx.y: optional argument to build using gcc version x.y."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
+    echo "-packagerid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
@@ -252,6 +253,8 @@ else
     __NumProc=1
   fi
 fi
+
+packageRid=''
 
 while :; do
     if [[ "$#" -le 0 ]]; then
@@ -394,6 +397,16 @@ while :; do
 
         wasm|-wasm)
             __TargetArch=wasm
+            ;;
+
+        packagerid|-packagerid)
+            if [[ -n "$2" ]]; then
+                packageRid="$2"
+                shift
+            else
+                echo "ERROR: 'packageRid' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         ppc64le|-ppc64le)
