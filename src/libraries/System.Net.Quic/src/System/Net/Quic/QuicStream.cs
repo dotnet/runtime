@@ -363,10 +363,21 @@ public sealed partial class QuicStream
 
         lock (_sendBuffersLock)
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
-            _sendBuffers.Initialize(buffer);
+            ObjectDisposedException.ThrowIf(_disposed == 1, this); // TODO: valueTask is left unobserved
             unsafe
             {
+                if (_sendBuffers.Count > 0 && _sendBuffers.Buffers[0].Buffer != null)
+                {
+                    // _sendBuffers are not reset, meaning SendComplete for the previous WriteAsync call didn't arrive yet.
+                    // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent
+                    // WriteAsync to grab the next task from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write.
+                    // This is not an "invalid nested call", because the previous task has finished. Best guess is to mimic OperationAborted as it will be from Abort
+                    // that would execute soon enough, if not already. Not final, because Abort should be the one to set final exception.
+                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: false);
+                    return valueTask;
+                }
+
+                _sendBuffers.Initialize(buffer);
                 int status = _handle.SafeCall(handle => MsQuicApi.Api.ApiTable->StreamSend(
                     handle.QuicHandle,
                     _sendBuffers.Buffers,
@@ -495,6 +506,8 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE data)
     {
+        // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent WriteAsync to grab the next task
+        // from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write
         lock (_sendBuffersLock)
         {
             _sendBuffers.Reset();
