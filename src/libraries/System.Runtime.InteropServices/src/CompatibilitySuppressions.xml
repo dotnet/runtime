@@ -1,12 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute.#ctor</Target>
-    <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
-    <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.AssemblyRegistrationFlags</Target>
     <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
@@ -45,6 +39,12 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute</Target>
+    <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
+    <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute.#ctor</Target>
     <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
     <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>
   </Suppression>

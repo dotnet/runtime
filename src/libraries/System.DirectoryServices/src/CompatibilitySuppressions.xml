@@ -9,7 +9,13 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.DirectoryServices.DirectoryEntry:[T:System.ComponentModel.TypeConverterAttribute]</Target>
-    <Left>ref/net7.0/System.DirectoryServices.dll</Left>
+    <Left>lib/net6.0/System.DirectoryServices.dll</Left>
+    <Right>runtimes/win/lib/net6.0/System.DirectoryServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryEntry:[T:System.ComponentModel.TypeConverterAttribute]</Target>
+    <Left>lib/net7.0/System.DirectoryServices.dll</Left>
     <Right>runtimes/win/lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
   <Suppression>
@@ -21,13 +27,7 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.DirectoryServices.DirectoryEntry:[T:System.ComponentModel.TypeConverterAttribute]</Target>
-    <Left>lib/net6.0/System.DirectoryServices.dll</Left>
-    <Right>runtimes/win/lib/net6.0/System.DirectoryServices.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.DirectoryServices.DirectoryEntry:[T:System.ComponentModel.TypeConverterAttribute]</Target>
-    <Left>lib/net7.0/System.DirectoryServices.dll</Left>
+    <Left>ref/net7.0/System.DirectoryServices.dll</Left>
     <Right>runtimes/win/lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
 </Suppressions>

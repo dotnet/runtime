@@ -2,13 +2,13 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)</Target>
+    <Target>F:System.Resources.ResourceManager.BaseNameField</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)</Target>
+    <Target>F:System.Resources.ResourceSet.Reader</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
@@ -20,13 +20,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.AppContext.remove_FirstChanceException(System.EventHandler{System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs})</Target>
+    <Target>M:System.AppContext.add_ProcessExit(System.EventHandler)</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.AppContext.add_ProcessExit(System.EventHandler)</Target>
+    <Target>M:System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)</Target>
+    <Left>ref/net7.0/System.Runtime.dll</Left>
+    <Right>lib/net7.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.AppContext.remove_FirstChanceException(System.EventHandler{System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs})</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
@@ -38,25 +44,37 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)</Target>
+    <Left>ref/net7.0/System.Runtime.dll</Left>
+    <Right>lib/net7.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)</Target>
+    <Left>ref/net7.0/System.Runtime.dll</Left>
+    <Right>lib/net7.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Environment.FailFast(System.String,System.Exception,System.String)</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.WeakReference.#ctor</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String,System.Object,System.Type)</Target>
+    <Target>M:System.Reflection.Module.GetModuleHandleImpl</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Serialization.SerializationInfo.get_DeserializationInProgress</Target>
+    <Left>ref/net7.0/System.Runtime.dll</Left>
+    <Right>lib/net7.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Serialization.SerializationInfo.StartDeserialization</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
@@ -74,25 +92,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationInfo.StartDeserialization</Target>
+    <Target>M:System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String,System.Object,System.Type)</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Resources.ResourceManager.BaseNameField</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Resources.ResourceSet.Reader</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Module.GetModuleHandleImpl</Target>
+    <Target>M:System.WeakReference.#ctor</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
@@ -117,12 +123,6 @@
   <Suppression>
     <DiagnosticId>CP0013</DiagnosticId>
     <Target>P:System.IO.FileSystemInfo.Name</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)</Target>
     <Left>ref/net7.0/System.Runtime.dll</Left>
     <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>

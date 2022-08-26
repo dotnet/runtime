@@ -249,14 +249,14 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
-    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+    <Left>ref/net6.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net6.0/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
-    <Left>ref/net6.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net6.0/System.Security.Cryptography.Xml.dll</Right>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
