@@ -16,6 +16,7 @@ namespace System.Runtime.Serialization
         public abstract System.Runtime.Serialization.StreamingContext Context { get; set; }
         public abstract System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the Type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
         public abstract object Deserialize(System.IO.Stream serializationStream);
         protected virtual object? GetNext(out long objID) { throw null; }
@@ -91,6 +92,7 @@ namespace System.Runtime.Serialization
         System.Runtime.Serialization.StreamingContext Context { get; set; }
         System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the Type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
         object Deserialize(System.IO.Stream serializationStream);
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -196,6 +198,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get { throw null; } set { } }
         public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the Type of objects being processed cannot be statically discovered.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
