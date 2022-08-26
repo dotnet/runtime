@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void InsertSelectedScalar_Vector64_Single_1_Vector128_Single_3()
+        [Fact]
+        public static void InsertSelectedScalar_Vector64_Single_1_Vector128_Single_3()
         {
             var test = new InsertSelectedScalarTest__InsertSelectedScalar_Vector64_Single_1_Vector128_Single_3();
 

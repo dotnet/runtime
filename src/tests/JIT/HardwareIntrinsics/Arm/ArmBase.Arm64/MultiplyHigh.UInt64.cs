@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void MultiplyHigh_UInt64()
+        [Fact]
+        public static void MultiplyHigh_UInt64()
         {
             var test = new ScalarBinaryOpTest__MultiplyHigh_UInt64();
 

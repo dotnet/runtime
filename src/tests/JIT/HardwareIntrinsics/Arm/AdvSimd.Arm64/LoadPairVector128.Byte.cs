@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void LoadPairVector128_Byte()
+        [Fact]
+        public static void LoadPairVector128_Byte()
         {
             var test = new LoadPairVector128_Byte();
 
