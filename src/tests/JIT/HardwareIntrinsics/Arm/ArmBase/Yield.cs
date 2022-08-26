@@ -14,10 +14,8 @@ namespace JIT.HardwareIntrinsics.Arm
     class Program
     {
         [Fact]
-        public static unsafe void Yield(string[] args)
+        public static unsafe void Yield()
         {
-            int testResult = ArmBase.IsSupported ? Pass : Fail;
-
             if (ArmBase.IsSupported)
             {
                 ArmBase.Yield();

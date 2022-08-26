@@ -308,7 +308,7 @@ namespace JIT.HardwareIntrinsics.General
 
             actualResult += intermResult;
 
-            if ((actualResult > result + 0.1) || (actualResult < result - 0.1))
+            if (actualResult != result)
             {
                 succeeded = false;
             }
@@ -319,7 +319,6 @@ namespace JIT.HardwareIntrinsics.General
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
-                TestLibrary.TestFramework.LogInformation($"  actualResult: {actualResult}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

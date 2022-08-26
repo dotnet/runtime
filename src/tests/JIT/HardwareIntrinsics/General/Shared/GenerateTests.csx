@@ -2154,6 +2154,34 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
+    var debugProjectFileName = Path.Combine("..", groupName, $"{groupName}_r.csproj");
+    var releaseProjectFileName = Path.Combine("..", groupName, $"{groupName}_ro.csproj");
+
+    using var debugProjectFile = new StreamWriter(debugProjectFileName, append: false);
+    using var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false);
+
+        debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>");
+
+        releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>");
+
 
     using (var testListFile = new StreamWriter(testListFileName, append: false))
     {
@@ -2173,17 +2201,28 @@ namespace JIT.HardwareIntrinsics.General
 
         foreach (var input in inputs)
         {
-            ProcessInput(testListFile, groupName, input);
+            ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
         }
 
         testListFile.WriteLine(@"            };
         }
     }
 }");
+
+        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
+
+        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
+
     }
 }
 
-private static void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter releaseProjectFile, StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
 {
     var testName = "";
 
@@ -2224,7 +2263,9 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
         testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["RetBaseType"]},");
     }
 
-    var testFileName = Path.Combine("..", groupName, $"{testName}.cs");
+    var fileName = $"{testName}.cs";
+
+    var testFileName = Path.Combine("..", groupName, fileName);
     var template = File.ReadAllText(input.templateFileName);
 
     foreach (var kvp in input.templateData)
@@ -2233,6 +2274,9 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
     }
 
     File.WriteAllText(testFileName, template);
+
+    debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
+    releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
 }
 
 ProcessInputs("Vector64", Vector64Inputs);

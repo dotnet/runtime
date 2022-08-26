@@ -2545,6 +2545,7 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
     {
         debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -2555,6 +2556,7 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
 
         releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -2575,7 +2577,7 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {");
+");
 
         foreach (var input in inputs)
         {
@@ -2594,7 +2596,7 @@ namespace JIT.HardwareIntrinsics.Arm
   </ItemGroup>
 </Project>");
 
-        testListFile.WriteLine(@"            };
+        testListFile.WriteLine(@"
         }
     }
 }");
@@ -2610,8 +2612,6 @@ private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter rel
     debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
     releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
 
-    // Ex: ["Add.Vector128.Single"] = Add_Vector128_Single
-    testListFile.WriteLine($@"                [""{fileName}""] = {testName},");
 
     var testFileName = Path.Combine("..", groupName, $"{fileName}.cs");
     var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
