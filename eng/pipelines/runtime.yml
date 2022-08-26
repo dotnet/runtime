@@ -694,6 +694,26 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - Linux_arm64
+    - OSX_arm64
+    jobParameters:
+      runtimeVariant: crossaot
+      dependsOn:
+      - mono_browser_offsets
+      monoCrossAOTTargetOS:
+      - Browser
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono release
 # Only when libraries or mono changed
