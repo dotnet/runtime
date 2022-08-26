@@ -12,7 +12,7 @@ public class Program
         return 100;
     }
 
-    // CHECK: Assembly listing for method Program:CallFoo
+    // CHECK-LABEL: Assembly listing for method Program:CallFoo
     // This is testing that a constrained.callvirt through a T variable doesn't use a helper lookup.
     // CHECK-NOT: CORINFO_HELP
     // CHECK: Total bytes
