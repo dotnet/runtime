@@ -38,6 +38,8 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 // Index for the fiber local storage of the attached thread pointer
 static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 
+static uint32_t g_mainThreadId = 0;
+
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
@@ -50,7 +52,13 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     if (lpFlsData != NULL)
     {
         // The current fiber is the home fiber of a thread, so the thread is shutting down
-        RuntimeThreadShutdown(lpFlsData);
+        // Do not do shutdown for the main thread though.
+        // other threads are terminated before the main one and could leave TLS locked,
+        // so we will likely deadlock
+        if (GetCurrentThreadId() != g_mainThreadId)
+        {
+            RuntimeThreadShutdown(lpFlsData);
+        }
     }
 }
 
@@ -137,6 +145,8 @@ void InitializeCurrentProcessCpuCount()
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
+    g_mainThreadId = GetCurrentThreadId();
+
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
