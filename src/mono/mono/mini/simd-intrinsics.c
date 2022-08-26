@@ -1055,7 +1055,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
 
-		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
+		// Works only for floats right now
+		if ( arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8 ) {
+			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
+			ins->inst_c0 = -OP_SSE_ANDN; // Swap operands flag for Vector128
+			return ins;
+		} else
+			return NULL;
+		
 #else
 		return NULL;
 #endif
