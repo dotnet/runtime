@@ -209,7 +209,7 @@ public:
 	~AsmMan()
 	{
 		if(m_pAssembly) delete m_pAssembly;
-		if(m_szScopeName) delete m_szScopeName;
+		if(m_szScopeName) delete[] m_szScopeName;
 		if(m_pGUID) delete m_pGUID;
 	};
 	void	SetErrorReporter(ErrorReporter* rpt) { report = rpt; };
