@@ -1917,10 +1917,10 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullPointer);
 
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                InteropTypes.GetPInvokeMarshal(Context).GetKnownMethod("GetFunctionPointerForDelegate",
-                new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.IntPtr),
-                    new TypeDesc[] { Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType }
-                ))));
+                InteropTypes.GetMarshal(Context).GetKnownMethod("GetFunctionPointerForDelegate",
+                new MethodSignature(MethodSignatureFlags.Static, 1, Context.GetWellKnownType(WellKnownType.IntPtr),
+                    new TypeDesc[] { Context.GetSignatureVariable(0, method: true) }
+                )).MakeInstantiatedMethod(ManagedType)));
 
             codeStream.Emit(ILOpcode.br, lDone);
 
@@ -1941,13 +1941,12 @@ namespace Internal.TypeSystem.Interop
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.dup);
             codeStream.Emit(ILOpcode.brfalse, lNullPointer);
-            codeStream.Emit(ILOpcode.ldtoken, _ilCodeStreams.Emitter.NewToken(ManagedType));
 
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                InteropTypes.GetPInvokeMarshal(Context).GetKnownMethod("GetDelegateForFunctionPointer",
-                new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType,
-                    new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr), Context.GetWellKnownType(WellKnownType.RuntimeTypeHandle) }
-                ))));
+                InteropTypes.GetMarshal(Context).GetKnownMethod("GetDelegateForFunctionPointer",
+                new MethodSignature(MethodSignatureFlags.Static, 1, Context.GetSignatureVariable(0, method: true),
+                    new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr) }
+                )).MakeInstantiatedMethod(ManagedType)));
 
             codeStream.Emit(ILOpcode.br, lDone);
 
