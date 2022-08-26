@@ -72,7 +72,7 @@ get_method_image (MonoMethod *method)
 
 MONO_API void
 mono_marshal_ilgen_init (void){
-	mono_component_marshal_ilgen()->ilgen_init_internal();	
+	/* Initilization is now done lazily, but this is still required for API compatibility. */
 }
 
 /**
