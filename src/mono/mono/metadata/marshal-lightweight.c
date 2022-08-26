@@ -76,6 +76,7 @@ mono_marshal_ilgen_init (void)
   init_ilgen_after_component_init = true;
 }
 
+gboolean
 mono_marshal_should_init_ilgen_after_component_init()
 {
 	return init_ilgen_after_component_init;
