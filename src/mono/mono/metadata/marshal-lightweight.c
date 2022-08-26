@@ -71,8 +71,12 @@ get_method_image (MonoMethod *method)
 
 
 MONO_API void
-mono_marshal_ilgen_init (void){
-	/* Initilization is now done lazily, but this is still required for API compatibility. */
+mono_marshal_ilgen_init (void)
+{
+/* Some platforms need this initilization to happen early, some can wait for it lazily.*/
+#ifndef ENABLE_ILGEN
+  mono_component_marshal_ilgen ()->ilgen_init_internal();
+#endif
 }
 
 /**
