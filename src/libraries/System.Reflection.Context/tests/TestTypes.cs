@@ -152,6 +152,8 @@ namespace System.Reflection.Context.Tests
 
     internal class SecondTestObject : TestObject
     {
+        [Test]
+        public int field = 2;
         public SecondTestObject(string a) : base(a)
         {
 
