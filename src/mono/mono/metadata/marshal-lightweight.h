@@ -5,6 +5,7 @@
  */
 #ifndef __MONO_MARSHAL_LIGHTWEIGHT_H__
 #define __MONO_MARSHAL_LIGHTWEIGHT_H__
+#include <glib.h>
 #include <mono/utils/mono-publib.h>
 
 MONO_API void
