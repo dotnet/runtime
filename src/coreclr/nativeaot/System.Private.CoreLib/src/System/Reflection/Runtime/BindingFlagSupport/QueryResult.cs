@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         /// <summary>
-        /// Returns a single member, null or throws AmbigousMatchException, for the Type.Get*(string name,...) family of apis.
+        /// Returns a single member, null or throws AmbiguousMatchException, for the Type.Get*(string name,...) family of apis.
         /// </summary>
         public M? Disambiguate()
         {

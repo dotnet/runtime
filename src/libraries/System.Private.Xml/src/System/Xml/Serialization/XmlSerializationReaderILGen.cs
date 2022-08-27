@@ -255,7 +255,7 @@ namespace System.Xml.Serialization
 
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
-            Type readerType = this.typeBuilder.CreateTypeInfo()!.AsType();
+            Type readerType = this.typeBuilder.CreateType();
             CreatedTypes.Add(readerType.Name, readerType);
         }
 
@@ -2176,7 +2176,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            if (member.IsList && !member.Mapping.ReadOnly && member.Mapping.TypeDesc.IsNullable)
+                            if (member.IsList && !member.Mapping.ReadOnly) //&& member.Mapping.TypeDesc.IsNullable) // nullable or not, we are likely to assign null in the next step if we don't do this initialization. So just do this.
                             {
                                 // we need to new the Collections and ArrayLists
                                 ILGenLoad(member.Source, typeof(object));
@@ -2704,10 +2704,10 @@ namespace System.Xml.Serialization
             WriteSourceBegin(source);
         }
 
-        [RegexGenerator("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
+        [GeneratedRegex("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
         private static partial Regex EnsureArrayIndexRegex();
 
-        [RegexGenerator("(?<a>[^[]+)[[](?<ia>.+)[]]")]
+        [GeneratedRegex("(?<a>[^[]+)[[](?<ia>.+)[]]")]
         private static partial Regex P0Regex();
 
         private void WriteSourceBegin(string source)
@@ -2881,7 +2881,8 @@ namespace System.Xml.Serialization
                 )!;
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
-            ilg.IfNot();
+            ilg.IfNot();    // if (!ReadNull()) { // EnterScope
+            ilg.EnterScope();
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -2976,11 +2977,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.Else();
+                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.Else();         // } else { EnterScope
+                ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
+            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 
@@ -3520,19 +3524,19 @@ namespace System.Xml.Serialization
             ReflectionAwareILGen.WriteLocalDecl(variableName, initValue);
         }
 
-        [RegexGenerator("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
+        [GeneratedRegex("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
         private static partial Regex UnknownNodeNullAnyTypeRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
         private static partial Regex UnknownNodeObjectEmptyRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
         private static partial Regex UnknownNodeObjectNullRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
         private static partial Regex UnknownNodeObjectRegex();
 
-        [RegexGenerator("paramsRead\\[(?<index>[0-9]+)\\]")]
+        [GeneratedRegex("paramsRead\\[(?<index>[0-9]+)\\]")]
         private static partial Regex ParamsReadRegex();
 
         private void ILGenElseString(string elseString)

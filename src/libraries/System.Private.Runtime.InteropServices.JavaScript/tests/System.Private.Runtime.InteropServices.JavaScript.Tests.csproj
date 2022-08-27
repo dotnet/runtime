@@ -18,7 +18,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\tests\System\Runtime\InteropServices\JavaScript\Utils.cs" Link="System\Runtime\InteropServices\JavaScript\Utils.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System\Runtime\InteropServices\JavaScript\Utils.cs" Link="System\Runtime\InteropServices\JavaScript\Utils.cs" />
   </ItemGroup>
 
   <ItemGroup>

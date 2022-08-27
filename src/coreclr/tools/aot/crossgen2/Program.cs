@@ -789,6 +789,7 @@ namespace ILCompiler
                         typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData,
+                        _commandLineOptions.SupportIbc,
                         crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);

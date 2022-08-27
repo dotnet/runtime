@@ -52,19 +52,6 @@ class ArgDestination;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
-//@GENERICS: flags returned from IsPolyType indicating the presence or absence of class and
-// method type parameters in a type whose instantiation cannot be determined at JIT-compile time
-enum VarKind
-{
-  hasNoVars = 0x0000,
-  hasClassVar = 0x0001,
-  hasMethodVar = 0x0002,
-  hasSharableClassVar = 0x0004,
-  hasSharableMethodVar = 0x0008,
-  hasAnyVarsMask = 0x0003,
-  hasSharableVarsMask = 0x000c
-};
-
 //---------------------------------------------------------------------------------------
 
 struct ScanContext;
@@ -256,21 +243,6 @@ public:
                                          MethodTable *pMTInterfaceMapOwner = NULL) const;
 
 public:
-        //------------------------------------------------------------------------
-        // Does this type contain class or method type parameters whose instantiation cannot
-        // be determined at JIT-compile time from the instantiations in the method context?
-        // Return a combination of hasClassVar and hasMethodVar flags.
-        //
-        // Example: class C<A,B> containing instance method m<T,U>
-        // Suppose that the method context is C<float,string>::m<double,object>
-        // Then the type Dict<!0,!!0> is considered to have *no* "polymorphic" type parameters because
-        // !0 is known to be float and !!0 is known to be double
-        // But Dict<!1,!!1> has polymorphic class *and* method type parameters because both
-        // !1=string and !!1=object are reference types and so code using these can be shared with
-        // other reference instantiations.
-        //------------------------------------------------------------------------
-        VarKind IsPolyType(const SigTypeContext *pTypeContext) const;
-
         //------------------------------------------------------------------------
         // Tests if the element type is a System.String. Accepts
         // either ELEMENT_TYPE_STRING or ELEMENT_TYPE_CLASS encoding.
@@ -1042,7 +1014,7 @@ class MetaSig
 
         // Is each set of constraints on the implementing method's type parameters a subset
         // of the corresponding set of constraints on the declared method's type parameters,
-        // given a subsitution for the latter's (class) type parameters.
+        // given a substitution for the latter's (class) type parameters.
         // This is used by the class loader to verify type safety of method overriding and interface implementation.
         static BOOL CompareMethodConstraints(const Substitution *pSubst1,
                                              Module *pModule1,

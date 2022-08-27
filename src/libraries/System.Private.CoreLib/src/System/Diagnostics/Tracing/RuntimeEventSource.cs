@@ -88,7 +88,7 @@ namespace System.Diagnostics.Tracing
                 // overhead by at all times even when counters aren't enabled.
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
-                _cpuTimeCounter ??= new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage", DisplayUnits = "%" };
+                _cpuTimeCounter ??= new PollingCounter("cpu-usage", this, RuntimeEventSourceHelper.GetCpuUsage) { DisplayName = "CPU Usage", DisplayUnits = "%" };
                 _workingSetCounter ??= new PollingCounter("working-set", this, () => ((double)Environment.WorkingSet / 1_000_000)) { DisplayName = "Working Set", DisplayUnits = "MB" };
                 _gcHeapSizeCounter ??= new PollingCounter("gc-heap-size", this, () => ((double)GC.GetTotalMemory(false) / 1_000_000)) { DisplayName = "GC Heap Size", DisplayUnits = "MB" };
                 _gen0GCCounter ??= new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };

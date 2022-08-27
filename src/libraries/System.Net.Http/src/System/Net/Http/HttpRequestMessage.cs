@@ -168,7 +168,7 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
-        internal bool IsWebSocketH2Request() => _version.Major == 2 && Method == HttpMethod.Connect && HasHeaders && string.Equals(Headers.Protocol, "websocket", StringComparison.OrdinalIgnoreCase);
+        internal bool IsExtendedConnectRequest => Method == HttpMethod.Connect && _headers?.Protocol != null;
 
         #region IDisposable Members
 

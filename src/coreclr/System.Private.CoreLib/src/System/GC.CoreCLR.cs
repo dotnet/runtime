@@ -19,11 +19,19 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
+    /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
+        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
         Default = 0,
+
+        /// <summary>Forces the garbage collection to occur immediately.</summary>
         Forced = 1,
+
+        /// <summary>Allows the garbage collector to determine whether the current time is optimal to reclaim objects.</summary>
         Optimized = 2,
+
+        /// <summary>Requests that the garbage collector decommit as much memory as possible.</summary>
         Aggressive = 3,
     }
 
@@ -785,7 +793,7 @@ namespace System
         }
 
         /// <summary>
-        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
+        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't necessarily have to be the same as the ones that are passed by the user.
         /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
         /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>

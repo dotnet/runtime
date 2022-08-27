@@ -175,8 +175,6 @@
 #include "stacksampler.h"
 #endif
 
-#include "win32threadpool.h"
-
 #include <shlwapi.h>
 
 #ifdef FEATURE_COMINTEROP
@@ -644,7 +642,6 @@ void EEStartupHelper()
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
-        ThreadpoolMgr::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -673,7 +670,6 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
 #endif // FEATURE_PERFTRACING
-        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -899,6 +895,7 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -1053,7 +1050,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
-// see code:#EEShutdown for a analagous routine run during shutdown.
+// see code:#EEShutdown for an analogous routine run during shutdown.
 //
 HRESULT EEStartup()
 {
@@ -1325,7 +1322,7 @@ part2:
         // instant process termination.
         if (g_fProcessDetach)
         {
-            // The assert below is a bit too aggresive and has generally brought cases that have been race conditions
+            // The assert below is a bit too aggressive and has generally brought cases that have been race conditions
             // and not easily reproed to validate a bug. A typical race scenario is when there are two threads,
             // T1 and T2, with T2 having taken a lock (e.g. SystemDomain lock), the OS terminates
             // T2 for some reason. Later, when we enter the shutdown thread, we would assert on such
@@ -1939,7 +1936,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         Thread * pThread = GetThreadNULLOk();
 
         // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-        // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+        // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
         // getting localized with a non-default thread-specific culture.
         // A canonical stack trace that gets here is a fatal error in the GC that comes through:
         // coreclr.dll!GetThreadUICultureNames
@@ -2069,7 +2066,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
     // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-    // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+    // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
     // getting localized with a non-default thread-specific culture.
     // A canonical stack trace that gets here is a fatal error in the GC that comes through:
     // coreclr.dll!GetThreadUICultureNames

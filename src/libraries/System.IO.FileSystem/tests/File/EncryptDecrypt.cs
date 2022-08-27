@@ -71,7 +71,14 @@ namespace System.IO.Tests
                 Assert.Equal(fileContentRead, File.ReadAllText(tmpFileName));
                 Assert.Equal(FileAttributes.Encrypted, (FileAttributes.Encrypted & File.GetAttributes(tmpFileName)));
 
-                File.Decrypt(tmpFileName);
+                // Sometimes Decrypt will fail with, eg.,
+                // System.IO.IOException : The process cannot access the file '...' because it is being used by another process.
+                // Assumption is that it just needs a little more time
+                RetryHelper.Execute(() =>
+                {
+                    File.Decrypt(tmpFileName);
+                }, maxAttempts: 30, backoffFunc: null, retryWhen: e => e.GetType() == typeof(IOException));
+
                 Assert.Equal(fileContentRead, File.ReadAllText(tmpFileName));
                 Assert.NotEqual(FileAttributes.Encrypted, (FileAttributes.Encrypted & File.GetAttributes(tmpFileName)));
             }

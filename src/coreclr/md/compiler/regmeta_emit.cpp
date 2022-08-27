@@ -1076,7 +1076,7 @@ HRESULT RegMeta::_DefineMethodSemantics(    // S_OK or error.
     USHORT      usAttr,                     // [IN] CorMethodSemanticsAttr.
     mdMethodDef md,                         // [IN] Method.
     mdToken     tkAssoc,                    // [IN] Association.
-    BOOL        bClear)                     // [IN] Specifies whether to delete the exisiting entries.
+    BOOL        bClear)                     // [IN] Specifies whether to delete the existing entries.
 {
     HRESULT             hr          = S_OK;
     MethodSemanticsRec *pRecord     = NULL;
@@ -1242,7 +1242,7 @@ HRESULT RegMeta::_SetImplements(        // S_OK or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && rTk);
     _ASSERTE(!m_bSaveOptimized && "Cannot change records after PreSave() and before Save().");
 
-    // Clear all exising InterfaceImpl records by setting the parent to Nil.
+    // Clear all existing InterfaceImpl records by setting the parent to Nil.
     if (bClear)
     {
         IfFailGo(m_pStgdb->m_MiniMd.GetInterfaceImplsForTypeDef(

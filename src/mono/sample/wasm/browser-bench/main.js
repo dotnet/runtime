@@ -3,18 +3,89 @@
 
 "use strict";
 
-import createDotnetRuntime from './dotnet.js'
+import { dotnet, exit } from './dotnet.js'
 
 let runBenchmark;
 let setTasks;
 let getFullJsonResults;
+let legacyExportTargetInt;
+let jsExportTargetInt;
+let legacyExportTargetString;
+let jsExportTargetString;
+
+function runLegacyExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetInt(i);
+    }
+}
+
+function runJSExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetInt(i);
+    }
+}
+
+function runLegacyExportString(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetString("A" + i);
+    }
+}
+
+function runJSExportString(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetString("A" + i);
+    }
+}
+
+function importTargetInt(value) {
+    return value + 1;
+}
+
+function importTargetString(value) {
+    return value + "A";
+}
+
+function importTargetManyArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+    return 1 + arg1 + arg2 + arg3.length + arg4.length + arg7 + arg9 + arg10.valueOf();
+}
+
+async function importTargetTask(value) {
+    await value;
+    return;
+}
+
+function importTargetThrows(value) {
+    throw new Error("test" + value);
+}
 
 class MainApp {
-    async init({ MONO }) {
-        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+    async init({ getAssemblyExports, setModuleImports, BINDING }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
+
+        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
+        jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
+        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
+        jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
+
+        setModuleImports("main.js", {
+            Sample: {
+                Test: {
+                    runLegacyExportInt,
+                    runJSExportInt,
+                    runLegacyExportString,
+                    runJSExportString,
+                    importTargetInt,
+                    importTargetString,
+                    importTargetManyArgs,
+                    importTargetTask,
+                    importTargetThrows,
+                }
+            }
+        });
+
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
@@ -94,26 +165,13 @@ try {
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-    const { MONO } = await createDotnetRuntime(() => ({
-        disableDotnet6Compatibility: true,
-        configSrc: "./mono-config.json",
-        onAbort: (error) => {
-            wasm_exit(1, error);
-        }
-    }));
-    await mainApp.init({ MONO });
+    const runtime = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
+
+    await mainApp.init(runtime);
 }
 catch (err) {
-    wasm_exit(1, err);
+    exit(1, err);
 }
-function wasm_exit(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    if (exit_code) tests_done_elem.style.background = "red";
-    document.body.appendChild(tests_done_elem);
-
-    if (reason) console.error(reason);
-    console.log(`WASM EXIT ${exit_code}`);
-};

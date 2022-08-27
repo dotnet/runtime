@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tests
 
             // Environment Variables are case-insensitive on Windows.
             // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
-            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
             p.StartInfo.Environment
@@ -504,22 +504,11 @@ namespace System.Diagnostics.Tests
                     throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
                 }
 
-                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
-                {
-                    SecurityIdentifier sid;
-                    if (Interop.ProcessTokenToSid(handle, out sid))
-                    {
-                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                        int indexOfDomain = actualUserName.IndexOf('\\');
-                        if (indexOfDomain != -1)
-                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
 
-                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.Equal(username, Helpers.GetProcessUserName(p));
+                bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.True(isProfileLoaded);
 
-                        Assert.Equal(username, actualUserName);
-                        Assert.True(isProfileLoaded);
-                    }
-                }
             }
             finally
             {

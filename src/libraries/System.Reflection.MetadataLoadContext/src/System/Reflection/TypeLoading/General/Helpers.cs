@@ -11,7 +11,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-        [return: NotNullIfNotNull("original")]
+        [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
         {
             if (original == null)

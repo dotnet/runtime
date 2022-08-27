@@ -111,8 +111,13 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR ep_rt_redefine
 
+#ifndef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+typedef uint32_t (*ep_rt_hash_map_hash_callback_t)(const void *);
+typedef bool (*ep_rt_hash_map_equal_callback_t)(const void *, const void *);
+#endif
+
 #define EP_RT_DECLARE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, ep_rt_hash_map_hash_callback_t hash_callback, ep_rt_hash_map_equal_callback_t eq_callback, void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, free) (hash_map_type *hash_map); \
 	static bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value); \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove_all) (hash_map_type *hash_map); \
@@ -349,6 +354,11 @@ EP_RT_DECLARE_HASH_MAP_REMOVE(metadata_labels_hash, ep_rt_metadata_labels_hash_m
 EP_RT_DECLARE_HASH_MAP(stack_hash, ep_rt_stack_hash_map_t, StackHashKey *, StackHashEntry *)
 EP_RT_DECLARE_HASH_MAP_ITERATOR(stack_hash, ep_rt_stack_hash_map_t, ep_rt_stack_hash_map_iterator_t, StackHashKey *, StackHashEntry *)
 
+#ifndef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+#define ep_rt_stack_hash_key_hash ep_stack_hash_key_hash
+#define ep_rt_stack_hash_key_equal ep_stack_hash_key_equal
+#endif
+
 /*
  * EventPipeProvider.
  */
@@ -391,10 +401,6 @@ static
 inline
 bool
 ep_rt_config_value_get_output_streaming (void);
-
-static
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void);
 
 /*
  * EventPipeSampleProfiler.

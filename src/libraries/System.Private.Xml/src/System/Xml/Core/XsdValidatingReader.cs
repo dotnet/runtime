@@ -165,7 +165,7 @@ namespace System.Xml
             : this(reader, xmlResolver, readerSettings, null)
         { }
 
-        [MemberNotNull("_validator")]
+        [MemberNotNull(nameof(_validator))]
         private void SetupValidator(XmlReaderSettings readerSettings, XmlReader reader, XmlSchemaObject? partialValidationType)
         {
             _validator = new XmlSchemaValidator(_coreReaderNameTable, readerSettings.Schemas, _thisNSResolver, readerSettings.ValidationFlags);

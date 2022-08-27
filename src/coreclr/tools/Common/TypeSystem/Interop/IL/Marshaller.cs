@@ -85,7 +85,7 @@ namespace Internal.TypeSystem.Interop
         }
 
         /// <summary>
-        ///  Indicates whether cleanup is necessay if this marshaller is used
+        ///  Indicates whether cleanup is necessary if this marshaller is used
         ///  as an element of an array marshaller
         /// </summary>
         internal virtual bool CleanupRequired
@@ -344,7 +344,7 @@ namespace Internal.TypeSystem.Interop
             PInvokeFlags flags,
             bool isReturn)
         {
-            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType);
+            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType, marshallerType is MarshallerType.Field);
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
@@ -1474,7 +1474,7 @@ namespace Internal.TypeSystem.Interop
             get
             {
                 return MarshalDirection == MarshalDirection.Forward
-                    && MarshallerType != MarshallerType.Field
+                    && MarshallerType == MarshallerType.Argument
                     && !IsManagedByRef
                     && In
                     && !Out;
@@ -1672,7 +1672,11 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            if (In && !Out && !IsManagedByRef)
+            if (MarshalDirection == MarshalDirection.Forward
+                && MarshallerType == MarshallerType.Argument
+                && !IsManagedByRef
+                && In
+                && !Out)
             {
                 TypeDesc marshallerIn = MarshallerIn;
 

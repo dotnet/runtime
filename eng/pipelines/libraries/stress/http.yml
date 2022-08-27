@@ -12,6 +12,7 @@ schedules:
     include:
     - main
     - release/6.0
+    - release/7.0
 
 variables:
   - template: ../variables.yml
@@ -97,7 +98,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre.Open
+    demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:
   - checkout: self

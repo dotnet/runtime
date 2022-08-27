@@ -729,7 +729,7 @@ namespace System.ComponentModel.Composition
 
             Assert.Equal("Contract", definition.ContractName);
             Assert.Equal("Value", part.GetExportedValue(definition));
-            Assert.Equal(1, definition.Metadata.Count); // containts type identity
+            Assert.Equal(1, definition.Metadata.Count); // contains type identity
         }
 
         [Fact]

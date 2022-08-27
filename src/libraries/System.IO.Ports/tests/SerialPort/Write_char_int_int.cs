@@ -241,7 +241,7 @@ namespace System.IO.Ports.Tests
                 {
                     com.Write(buffer, offset, count);
 
-                    Fail("ERROR!!!: No Excpetion was thrown");
+                    Fail("ERROR!!!: No Exception was thrown");
                 }
                 catch (Exception e)
                 {

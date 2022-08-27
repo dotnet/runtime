@@ -783,7 +783,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// Nothing to do - this throws at runtime
 							AddReturnValue (MultiValueLattice.Top);
 						} else if (typeNameValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers && valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes != 0) {
-							// Propagate the annotation from the type name to the return value. Annotation on a string value will be fullfilled whenever a value is assigned to the string with annotation.
+							// Propagate the annotation from the type name to the return value. Annotation on a string value will be fulfilled whenever a value is assigned to the string with annotation.
 							// So while we don't know which type it is, we can guarantee that it will fulfill the annotation.
 							AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes));
 						} else {
@@ -808,29 +808,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 				foreach (var value in instanceValue) {
 					if (value is SystemTypeValue typeValue) {
-						var genericParameterValues = GetGenericParameterValues (typeValue.RepresentedType.GetGenericParameters ());
-						if (!AnalyzeGenericInstantiationTypeArray (argumentValues[0], calledMethod, genericParameterValues)) {
-							bool hasUncheckedAnnotation = false;
-							foreach (var genericParameter in genericParameterValues) {
-								if (genericParameter.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None ||
-									(genericParameter.GenericParameter.HasDefaultConstructorConstraint () && !typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1"))) {
-									// If we failed to analyze the array, we go through the analyses again
-									// and intentionally ignore one particular annotation:
-									// Special case: Nullable<T> where T : struct
-									//  The struct constraint in C# implies new() constraints, but Nullable doesn't make a use of that part.
-									//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
-									//  without any good reason to do so.
-									hasUncheckedAnnotation = true;
-									break;
-								}
-							}
-							if (hasUncheckedAnnotation) {
-								_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericType, calledMethod.GetDisplayName ());
-							}
-						}
-
+						// Special case Nullable<T>
 						// Nullables without a type argument are considered SystemTypeValues
 						if (typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1")) {
+							// Note that we're not performing any generic parameter validation
+							// Special case: Nullable<T> where T : struct
+							//  The struct constraint in C# implies new() constraint, but Nullable doesn't make a use of that part.
+							//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
+							//  without any good reason to do so.
+
 							foreach (var argumentValue in argumentValues[0]) {
 								if ((argumentValue as ArrayValue)?.TryGetValueByIndex (0, out var underlyingMultiValue) == true) {
 									foreach (var underlyingValue in underlyingMultiValue) {
@@ -864,8 +850,13 @@ namespace ILLink.Shared.TrimAnalysis
 							}
 							// We want to skip adding the `value` to the return Value because we have already added Nullable<value>
 							continue;
+						} else {
+							// Any other type - perform generic parameter validation
+							var genericParameterValues = GetGenericParameterValues (typeValue.RepresentedType.GetGenericParameters ());
+							if (!AnalyzeGenericInstantiationTypeArray (argumentValues[0], calledMethod, genericParameterValues)) {
+								_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericType, calledMethod.GetDisplayName ());
+							}
 						}
-						// We haven't found any generic parameters with annotations, so there's nothing to validate.
 					} else if (value == NullValue.Instance) {
 						// At runtime this would throw - so it has no effect on analysis
 						AddReturnValue (MultiValueLattice.Top);
@@ -1187,7 +1178,7 @@ namespace ILLink.Shared.TrimAnalysis
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal linker error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					} else if (uniqueValue is SystemTypeValue) {
-						// SystemTypeValue can fullfill any requirement, so it's always valid
+						// SystemTypeValue can fulfill any requirement, so it's always valid
 						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
 					} else if (uniqueValue == NullValue.Instance) {
 						// NullValue can fulfill any requirements because reflection access to it will typically throw.
@@ -1228,7 +1219,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			bool hasRequirements = false;
 			foreach (var genericParameter in genericParameters) {
-				if (genericParameter.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
+				if (GetGenericParameterEffectiveMemberTypes (genericParameter) != DynamicallyAccessedMemberTypes.None) {
 					hasRequirements = true;
 					break;
 				}
@@ -1265,12 +1256,26 @@ namespace ILLink.Shared.TrimAnalysis
 						// https://github.com/dotnet/linker/issues/2428
 						// We need to report the target as "this" - as that was the previous behavior
 						// but with the annotation from the generic parameter.
-						var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, genericParameters[i].DynamicallyAccessedMemberTypes);
+						var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, GetGenericParameterEffectiveMemberTypes (genericParameters[i]));
 						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 					}
 				}
 			}
 			return true;
+
+			// Returns effective annotation of a generic parameter where it incorporates the constraint into the annotation.
+			// There are basically three cases where the constraint matters:
+			// - NeedsNew<SpecificType> - MarkStep will simply mark the default .ctor of SpecificType in this case, it has nothing to do with reflection
+			// - NeedsNew<TOuter> - this should be validated by the compiler/IL - TOuter must have matching constraints by definition, so nothing to validate
+			// - typeof(NeedsNew<>).MakeGenericType(typeOuter) - for this case we have to do it by hand as it's reflection. This is where this method helps.
+			static DynamicallyAccessedMemberTypes GetGenericParameterEffectiveMemberTypes (GenericParameterValue genericParameter)
+			{
+				DynamicallyAccessedMemberTypes result = genericParameter.DynamicallyAccessedMemberTypes;
+				if (genericParameter.GenericParameter.HasDefaultConstructorConstraint ())
+					result |= DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
+				return result;
+			}
 		}
 
 		void ValidateGenericMethodInstantiation (

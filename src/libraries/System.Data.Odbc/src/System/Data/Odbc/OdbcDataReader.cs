@@ -186,7 +186,7 @@ namespace System.Data.Odbc
 
         // HasRows
         //
-        // Use to detect wheter there are one ore more rows in the result without going through Read
+        // Use to detect whether there are one ore more rows in the result without going through Read
         // May be called at any time
         // Basically it calls Read and sets a flag so that the actual Read call will be skipped once
         //

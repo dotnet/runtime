@@ -131,7 +131,7 @@ public:
 // map can had methods from other modules both as keys and values.
 // - If module has code inlined from other modules we naturally get methods from other modules as keys in the map.
 // - During NGgen process, modules can generate code for generic classes and methods from other modules and
-//   embed them into the image (like List<MyStruct>.FindAll() might get embeded into module of MyStruct).
+//   embed them into the image (like List<MyStruct>.FindAll() might get embedded into module of MyStruct).
 //   In such cases values of the map can belong to other modules.
 //
 // Currently this map is created and updated by modules only during native image generation
@@ -172,9 +172,9 @@ typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 //
 //                  It is totally possible to have more than one ZapInlineeRecords with the same key, not only due hash collision, but also due to
 //                  the fact that we create one record for each (inlinee module / inliner module) pair.
-//                  For example: we have MyModule!MyType that uses mscorlib!List<T>. Let's say List<T>.ctor got inlined into
-//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for mscorlib!List<T>.ctor
-//                  one for MyModule and another one for mscorlib.
+//                  For example: we have MyModule!MyType that uses System.Private.CoreLib!List<T>. Let's say List<T>.ctor got inlined into
+//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for System.Private.CoreLib!List<T>.ctor
+//                  one for MyModule and another one for System.Private.CoreLib.
 //                  PersistentInlineTrackingMap.GetInliners() always reads all ZapInlineeRecords as long as they have the same key, few of them filtered out
 //                  as hash collisions others provide legitimate inlining information for methods from different modules.
 //

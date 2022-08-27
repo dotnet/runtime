@@ -27,7 +27,7 @@
 //     automatically since there are no bits free to store the state. However, under a debug build correct
 //     usage will be checked (at the expensive of extra storage space).
 //  5) The space saving made come at a runtime CPU cost to access the fields. Do not use this mechanism to
-//     compact fields that must be read on a perfomance critical path. If unsure, measure the performance of
+//     compact fields that must be read on a performance critical path. If unsure, measure the performance of
 //     this solution before committing to it.
 //
 // ============================================================================

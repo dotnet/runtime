@@ -445,7 +445,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    reg  - The register
 //    rmOp - The register/memory operand node
 //
@@ -532,7 +532,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //
 void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
@@ -554,7 +554,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    targetReg - The register allocated to the result
 //    op1Reg    - The register allocated to the first operand
 //    op2       - Another operand that maybe in register or memory
@@ -1425,7 +1425,6 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                assert(op1->TypeGet() == op2->TypeGet());
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
                 genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2);
             }

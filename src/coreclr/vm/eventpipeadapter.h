@@ -587,14 +587,14 @@ public:
 	static inline LPCGUID GetEventActivityID (EventPipeEventInstance *eventInstance)
 	{
 		STATIC_CONTRACT_NOTHROW;
-		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size missmatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
+		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size mismatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
 		return reinterpret_cast<LPCGUID>(ep_event_instance_get_activity_id_cref(eventInstance));
 	}
 
 	static inline LPCGUID GetEventRelativeActivityID (EventPipeEventInstance *eventInstance)
 	{
 		STATIC_CONTRACT_NOTHROW;
-		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size missmatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
+		static_assert(sizeof(GUID) == EP_ACTIVITY_ID_SIZE, "Size mismatch, sizeof(GUID) should be equal to EP_ACTIVITY_ID_SIZE");
 		return reinterpret_cast<LPCGUID>(ep_event_instance_get_related_activity_id_cref(eventInstance));
 	}
 

@@ -38,6 +38,15 @@ namespace ILCompiler
             }
         }
 
+        public MethodDesc RaiseMethod
+        {
+            get
+            {
+                MethodDefinitionHandle raiser = Definition.GetAccessors().Raiser;
+                return raiser.IsNil ? null : _type.EcmaModule.GetMethod(raiser);
+            }
+        }
+
         public MetadataType OwningType
         {
             get

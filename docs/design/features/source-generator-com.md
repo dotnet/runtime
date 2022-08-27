@@ -39,7 +39,7 @@ Alternatively, the generator that reads C++ could generate its own implementatio
 
 #### Win32Metadata winmd
 
-The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesireable for us to use as our source of truth:
+The Win32Metadata project provides a richly typed surface area for interop scenarios with Win32 APIs, but it has some serious limitations that make it undesirable for us to use as our source of truth:
 
 - The tooling only runs on Windows
 - The tooling is extremely focused on the Win32 API

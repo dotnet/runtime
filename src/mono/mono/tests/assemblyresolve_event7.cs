@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AssemblyResolveTest
 {
-	// This is a testing program for debuging one problem with name of resolving assembly
+	// This is a testing program for debugging one problem with name of resolving assembly
 	class Program
 	{
 		public static Dictionary<int, string> Original = new Dictionary<int, string>()

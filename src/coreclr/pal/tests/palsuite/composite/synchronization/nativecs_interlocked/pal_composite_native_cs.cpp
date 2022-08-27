@@ -24,7 +24,7 @@ int USE_PROCESS_COUNT = 0;
 int RELATION_ID =0;
 int g_counter = 0;
 int MAX_PATH = 256;
-LONGLONG callibrationValue = 0;
+LONGLONG calibrationValue = 0;
 
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t g_cv = PTHREAD_COND_INITIALIZER;
@@ -62,7 +62,7 @@ int cleanuptest(void);
 int GetParameters( int , char **);
 void incrementCounter(void);
 ULONGLONG GetTicks(void);
-ULONGLONG getPerfCallibrationValue(void);
+ULONGLONG getPerfCalibrationValue(void);
 
 
 
@@ -87,10 +87,10 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	char mainFileName[MAX_PATH];
     FILE *hMainFile;
 
-	//Get perfCallibrationValue
+	//Get perfCalibrationValue
 
-	callibrationValue = getPerfCallibrationValue();
-	printf("Callibration Value for this Platform %llu \n", callibrationValue);
+	calibrationValue = getPerfCalibrationValue();
+	printf("Calibration Value for this Platform %llu \n", calibrationValue);
 
 
 	//Get Parameters
@@ -152,11 +152,11 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 		exit(-1);
 	}
 
-	//Accquire Lock
+	//Acquire Lock
     if (0!=pthread_mutex_lock(&g_mutex))
     {
        	//Error Condition
-		printf("Error Accquiring Lock\n");
+		printf("Error Acquiring Lock\n");
 		exit(-1);
     }
 
@@ -168,7 +168,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	{
 
 		//printf("Creating Thread Count %d\n", i);
-		//printf("Thread arrary value = %d\n", threadID[i]);
+		//printf("Thread array value = %d\n", threadID[i]);
 		rtn=pthread_create(&pthreads[i], NULL, waitforworkerthreads, &threadID[i]);
 		if (0 != rtn)
 			{ /* ERROR Condition */
@@ -179,7 +179,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	}
 
 
-	//printf("Main Thread waits to recevie signal when all threads are done\n");
+	//printf("Main Thread waits to receive signal when all threads are done\n");
 	pthread_cond_wait(&g_cv2,&g_mutex);
 
 	//printf("Main thread has received signal\n");
@@ -219,7 +219,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 
    /*Write Application Results to File*/
    //CAPTURE NATIVE TICK COUNT HERE
-   appStats.operationTime = (DWORD)(GetTicks() - startTicks)/callibrationValue;
+   appStats.operationTime = (DWORD)(GetTicks() - startTicks)/calibrationValue;
 
 
 	/* Write Results to a file*/
@@ -262,11 +262,11 @@ void * waitforworkerthreads(void * threadId)
 
 //	printf("Thread ID : %d \n", *threadParam);
 
-	//Accquire Lock
+	//Acquire Lock
        if (0!=pthread_mutex_lock(&g_mutex))
        	{
        		//Error Condition
-			printf("Error Accquiring Mutex Lock in Wait for Worker Thread\n");
+			printf("Error Acquiring Mutex Lock in Wait for Worker Thread\n");
 			exit(-1);
        	}
 
@@ -349,7 +349,7 @@ void starttests(int threadID)
 	}
 
 
-	stats.operationTime = (DWORD)(GetTicks() - startTime)/callibrationValue;
+	stats.operationTime = (DWORD)(GetTicks() - startTime)/calibrationValue;
 
 //	printf("Operation Time %d \n", stats.operationTime);
 
@@ -455,7 +455,7 @@ ULONGLONG GetTicks(void)
 
 
 /**/
-ULONGLONG getPerfCallibrationValue(void)
+ULONGLONG getPerfCalibrationValue(void)
 {
 	ULONGLONG startTicks;
 	ULONGLONG endTicks;

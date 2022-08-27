@@ -3521,7 +3521,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
         {
-            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
             {
                 IsClass = true,
                 Comments =
@@ -3541,7 +3541,7 @@ namespace System.CodeDom.Compiler.Tests
                   // / each get a separating space,
                   //but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
                   //// This includes lines starting with more than one slash.
-                  public class ClassWithCommment {
+                  public class ClassWithComment {
                   }
                 ");
         }
@@ -3550,7 +3550,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
         {
-            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
             {
                 IsClass = true,
                 Comments =
@@ -3568,7 +3568,7 @@ namespace System.CodeDom.Compiler.Tests
                   /// / Lines starting with a slash each get a separating space,
                   /// // including lines starting with more than one slash,
                   ///but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
-                  public class ClassWithCommment {
+                  public class ClassWithComment {
                   }
                 ");
         }

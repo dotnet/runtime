@@ -185,7 +185,7 @@ enum MethodDescClassification
 //
 // A MethodDesc is the representation of a method of a type.  These live in code:MethodDescChunk which in
 // turn lives in code:EEClass.   They are conceptually cold (we do not expect to access them in normal
-// program exectution, but we often fall short of that goal.
+// program execution, but we often fall short of that goal.
 //
 // A Method desc knows how to get at its metadata token code:GetMemberDef, its chunk
 // code:MethodDescChunk, which in turns knows how to get at its type code:MethodTable.
@@ -323,6 +323,8 @@ public:
 
     LPCUTF8 GetName(USHORT slot);
 
+    LPCUTF8 GetNameThrowing();
+
     BOOL MightHaveName(ULONG nameHashValue);
 
     FORCEINLINE LPCUTF8 GetNameOnNonArrayClass()
@@ -363,7 +365,7 @@ public:
     BOOL IsTypicalSharedInstantiation();
 
 
-    // True if and only if this is a method desriptor for :
+    // True if and only if this is a method descriptor for:
     // 1. a non-generic method or a generic method at its typical method instantiation
     // 2. in a non-generic class or a typical instantiation of a generic class
     // This method can be called on a non-restored method desc
@@ -658,7 +660,7 @@ public:
     inline DWORD IsGenericComPlusCall();
     inline void SetupGenericComPlusCall();
 #else // !FEATURE_COMINTEROP
-     // hardcoded to return FALSE to improve code readibility
+     // hardcoded to return FALSE to improve code readability
     inline DWORD IsComPlusCall()
     {
         LIMITED_METHOD_CONTRACT;
@@ -674,7 +676,7 @@ public:
     // Update flags in a thread safe manner.
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
 
-    // If the method is in an Edit and Contine (EnC) module, then
+    // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
     inline DWORD IsEnCMethod()
@@ -1461,7 +1463,7 @@ public:
     PCODE GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_LDFTN);
 
     // Internal version of GetMultiCallableAddrOfCode. Returns NULL if attempt to acquire directly
-    // callable entrypoint would result into unnecesary allocation of indirection stub. Caller should use
+    // callable entrypoint would result into unnecessary allocation of indirection stub. Caller should use
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
@@ -1604,7 +1606,7 @@ public:
     // In general you don't want to call GetCallTarget - you want to
     // use either "call" directly or call MethodDesc::GetSingleCallableAddrOfVirtualizedCode and
     // then "CallTarget".  Note that GetCallTarget is approximately GetSingleCallableAddrOfCode
-    // but the additional wierdness that class-based-virtual calls (but not interface calls nor calls
+    // but the additional weirdness that class-based-virtual calls (but not interface calls nor calls
     // on proxies) are resolved to their target.  Because of this, many clients of "Call" (see above)
     // end up doing some resolution for interface calls and/or proxies themselves.
     PCODE GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType = TypeHandle());
@@ -3330,20 +3332,14 @@ public:
         // No lock needed here. In the case of a generic dictionary expansion, the values of the old dictionary
         // slots are copied to the newly allocated dictionary, and the old dictionary is kept around. Whether we
         // return the old or new dictionary here, the values of the instantiation arguments will always be the same.
-        return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
+        return (m_pPerInstInfo != NULL)
+                ? Instantiation(m_pPerInstInfo->GetInstantiation(), m_wNumGenericArgs)
+                : Instantiation();
     }
 
     PTR_Dictionary IMD_GetMethodDictionary()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pPerInstInfo;
-    }
-
-    PTR_Dictionary IMD_GetMethodDictionaryNonNull()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_pPerInstInfo != NULL);
 
         return m_pPerInstInfo;
     }

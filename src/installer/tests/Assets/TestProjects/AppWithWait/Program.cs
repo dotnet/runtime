@@ -21,7 +21,7 @@ namespace AppWithSubDirs
                 string waitFile = args[0];
                 string resumeFile = args[1];
 
-                // Once this app creates the waitFile and yeilds control, the test-harness renames this single-file app bundle.
+                // Once this app creates the waitFile and yields control, the test-harness renames this single-file app bundle.
                 // Therefore, any assemblies loaded directly from the bundle, should be loaded before creating the waitFile.
                 Assembly.Load("System.Memory");
 

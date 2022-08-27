@@ -12,6 +12,7 @@ schedules:
     include:
     - main
     - release/6.0
+    - release/7.0
 
 variables:
   - template: ../variables.yml
@@ -55,7 +56,7 @@ jobs:
   timeoutInMinutes: 120
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre.Open
+    demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:
   - checkout: self

@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Microsoft.Interop.JavaScript</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <RunAnalyzers>true</RunAnalyzers>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
@@ -24,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

@@ -427,7 +427,7 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
-    
+
     maximumSize = ((off_t)dwMaximumSizeHigh << 32) | (off_t)dwMaximumSizeLow;
 
     palError = g_pObjectManager->AllocateObject(
@@ -1600,7 +1600,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
-    less efficent way.*/
+    less efficient way.*/
     TruncateRetVal = ftruncate( UnixFD, NewSize );
     fstat( UnixFD, &FileInfo );
 
@@ -1612,7 +1612,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         UINT x = 0;
         UINT CurrentPosition = 0;
 
-        TRACE( "Trying the less efficent way.\n" );
+        TRACE( "Trying the less efficient way.\n" );
 
         CurrentPosition = lseek( UnixFD, 0, SEEK_CUR );
         OrigSize = lseek( UnixFD, 0, SEEK_END );
@@ -2212,7 +2212,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //don't need more directories.
 
     //I now know how big the file is.  Reserve enough address space for the whole thing.  Try to get the
-    //preferred base.  Create the intial mapping as "no access".  We'll use that for the guard pages in the
+    //preferred base.  Create the initial mapping as "no access".  We'll use that for the guard pages in the
     //"holes" between sections.
     SIZE_T preferredBase, virtualSize;
     preferredBase = ntHeader.OptionalHeader.ImageBase;

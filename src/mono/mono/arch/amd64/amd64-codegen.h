@@ -80,7 +80,7 @@ typedef enum
   AMD64_REX_B = 1, /* The register in r/m field, base register in SIB byte, or reg in opcode is 8-15 rather than 0-7 */
   AMD64_REX_X = 2, /* The index register in SIB byte is 8-15 rather than 0-7 */
   AMD64_REX_R = 4, /* The reg field of ModRM byte is 8-15 rather than 0-7 */
-  AMD64_REX_W = 8  /* Opeartion is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
+  AMD64_REX_W = 8  /* Operation is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
 } AMD64_REX_Bits;
 
 #define amd64_codegen_pre(inst)

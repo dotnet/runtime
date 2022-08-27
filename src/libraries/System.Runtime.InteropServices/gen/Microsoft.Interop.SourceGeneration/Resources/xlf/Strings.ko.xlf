@@ -7,34 +7,9 @@
         <target state="translated">비관리형에서 관리형으로 배열을 마샬링하려면 'MarshalAsAttribute'에 'SizeParamIndex' 또는 'SizeConst' 필드를 설정하거나 'MarshalUsingAttribute'에 'ConstantElementCount' 또는 'CountElementName' 속성을 설정해야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArraySizeParamIndexOutOfRange">
-        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
-        <target state="translated">'MarshalAsAttribute'의 'SizeParamIndex' 값이 범위를 벗어났습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로, 비관리형에서 관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
-        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
-        <target state="translated">'BlittableTypeAttribute' 및 'NativeMarshallingAttribute' 특성은 상호 배타적입니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
-        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
-        <target state="translated">형식 '{0}'은(는) 'BlittableTypeAttribute' 및 'NativeMarshallingAttribute'로 표시됩니다. 형식은 이 두 특성 중 하나만 가질 수 있습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
-        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="translated">관리되는 형식을 마샬링하려면 'GenericContiguousCollectionMarshallerAttribute'가 있는 네이티브 형식에는 두 마샬링 메서드 중 하나 이상과 일부 'T'의 'Span&lt;T&gt;' 형식의 'ManagedValues' 속성과 'Span&lt;byte&gt;' 형식의 'NativeValueStorage' 속성이 있어야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
-        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="translated">네이티브 형식 '{0}'은(는) 값 형식이어야 하며 형식 '{1}' 중 하나와 'int' 중 하나를 사용하는 생성자가 있거나, 일부 'T'의 경우 형식 'Span&lt;T&gt;'의 'ManagedValues' 속성 및 형식 'Span&lt;byte&gt;'의 'ManagedValues' 속성뿐만 아니라 '{1}'을(를) 반환하는 'ToManaged'라는 이름의 매개 변수가 없는 인스턴스 메서드가 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
@@ -45,16 +20,6 @@
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
         <target state="translated">'ConstantElementCount' 또는 'ElementCountInfo' 중 하나만 지정된 'ElementIndirectionDepth'에 대한 'MarshalUsingAttribute'에서 사용할 수 있습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">지정된 매개 변수를 관리 형식에서 네이티브 형식으로 마샬링해야 하지만 네이티브 형식 '{0}'에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">지정된 매개 변수는 네이티브 형식에서 관리 형식으로 마샬링되어야 하지만 네이티브 형식 '{0}'은(는) 이를 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -132,21 +97,6 @@
         <target state="translated">명시적 마샬링 정보 없이 문자열 또는 문자를 마샬링할 수 없습니다. 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">관리 형식 '{1}'에 대한 네이티브 형식 '{0}'은(는) 폐쇄된 일반 형식이거나 관리 형식과 인자가 동일해야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedDescription">
-        <source>The '[Out]' attribute is only supported on array parameters.</source>
-        <target state="translated">'[Out]' 특성은 배열 매개 변수에서만 지원됩니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedMessage">
-        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
-        <target state="translated">'[Out]' 특성은 '{0}' 매개 변수에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
@@ -157,19 +107,9 @@
         <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle">
-        <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">지정된 형식은 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">지정된 매개 변수를 비관리에서 관리로 마샬링해야 하지만 마샬러 유형 '{0}'이(가) 지원하지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">형식 '{0}은(는) '{1}에 대한 'CallerAllocatedBuffer' 기능으로 'In' 마샬링을 지원하도록 지정하지만 '{1} 및 '관리되지 않는' 형식의 'Span'을 매개 변수로 사용하는 단일 매개 변수 생성자는 제공하지 않습니다.</target>
         <note />
       </trans-unit>
     </body>

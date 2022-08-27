@@ -252,7 +252,7 @@
 // even though in target address terms one is embedded in the other.
 // The assumption of data stability means that this won't cause
 // a problem, but care must be taken with the address arithmetic,
-// as layed out in rules #2 and #3.
+// as laid out in rules #2 and #3.
 //
 // 4.  Global address references cannot be used.  Any reference to a
 //     global piece of code or data, such as a function address, global
@@ -710,12 +710,15 @@ HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
+extern void DacLogMessage(LPCSTR format, ...);
+
 // This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
 #define RethrowCancelExceptions                                         \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
-    }
+    }                                                                   \
+    DacLogMessage("DAC exception caught at %s:%d\n", __FILE__, __LINE__);
 
 // Occasionally it's necessary to allocate some host memory for
 // instance data that's created on the fly and so doesn't directly
@@ -2292,7 +2295,7 @@ public: name(int dummy) : base(dummy) {}
 //             dac_cast<PTR_AppDomain>(pBD)
 //             dac_cast<PTR_BaseDomain>(pAD)
 //
-// Example comparsions of some old and new syntax, where
+// Example comparisons of some old and new syntax, where
 //    h is a host pointer, such as "Foo *h;"
 //    p is a DPTR, such as "PTR_Foo p;"
 //
@@ -2463,7 +2466,7 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 
 // Helper macro for tracking EnumMemoryRegions progress.
 #if 0
-#define EMEM_OUT(args) DacWarning args
+#define EMEM_OUT(args) DacLogMessage args
 #else
 #define EMEM_OUT(args)
 #endif

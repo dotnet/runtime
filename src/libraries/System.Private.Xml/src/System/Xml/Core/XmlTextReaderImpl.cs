@@ -9787,6 +9787,6 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull(nameof(url))] ref string? url, XmlResolver? resolver);
     }
 }

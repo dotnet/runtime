@@ -310,7 +310,7 @@ namespace System.IO.Ports.Tests
                 asyncReadTask.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarantee that we are executing code in SerialPort
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
 
                 asyncRead.ReadCompletedEvent.WaitOne();

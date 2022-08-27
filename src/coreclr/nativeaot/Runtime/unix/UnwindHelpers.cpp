@@ -490,7 +490,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
 
-    double      getFloatRegister(int num) {abort();}
+    double      getFloatRegister(int num) const {abort();}
     void        setFloatRegister(int num, double value) {abort();}
 
     libunwind::v128    getVectorRegister(int num) const;
@@ -780,13 +780,14 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 
     unw_proc_info_t procInfo;
     uc.getInfo(&procInfo);
+    bool isSignalFrame = false;
 
 #if defined(TARGET_ARM)
     DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs, isSignalFrame);
 #else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame);
 #endif
 
     if (stepRet != UNW_STEP_SUCCESS)

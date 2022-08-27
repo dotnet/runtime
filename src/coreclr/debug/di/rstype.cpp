@@ -171,7 +171,7 @@ CordbType::CordbType(CordbAppDomain *appdomain, CorElementType et, CordbClass *c
 
 //-----------------------------------------------------------------------------
 // Constructor
-// Builds a Partial-Type, instantiation is tycon's instantation plus tyarg.
+// Builds a Partial-Type, instantiation is tycon's instantiation plus tyarg.
 // Eg, if tycon is "Dict<int>", and tyarg is "string", then this yields
 // "Dict<int, string>"
 //-----------------------------------------------------------------------------
@@ -553,7 +553,7 @@ HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain,
 }
 
 //-----------------------------------------------------------------------------
-// Creates a CordbType instantation around a cordbClass and TypeParameter list.
+// Creates a CordbType instantiation around a cordbClass and TypeParameter list.
 // In other words, this does:
 // CordbClass(List<T>) + Instantiation({T=int}) --> CordbType(List<int>)
 //
@@ -919,7 +919,7 @@ CordbType::SigToType(CordbModule * pModule,
             else
             {
                 //ELEMENT_TYPE_MVAR refers to an indexed type-parameter in the containing Method.
-                // Eg, we may be in Class::Func<T> and refering to T.
+                // Eg, we may be in Class::Func<T> and referring to T.
                 // The Instantiation array has Type type-parameters first, and then any Method Type-parameters.
                 // The m_cClassTyPars field indicats where the split is between Type and Method type-parameters. Type type-params
                 // come first.
@@ -2713,7 +2713,7 @@ CordbTypeEnum* CordbTypeEnum::Build(CordbAppDomain * pAppDomain, NeuterList * pN
 
 //-----------------------------------------------------------------------------
 // We need to support taking both an array of CordbType* and an array of RSSmartPtr<CordbType>,
-// but the code is identical in both cases.  Rather than duplicate any code explicity, it's better to
+// but the code is identical in both cases.  Rather than duplicate any code explicitly, it's better to
 // have the compiler do it for us using this template method.
 // Another option would be to create an IList<T> interface and implementations for both arrays
 // of T* and arrays of RSSmartPtr<T>.  This would be more generally useful, but much more code.

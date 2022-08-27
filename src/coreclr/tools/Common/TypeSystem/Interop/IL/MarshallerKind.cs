@@ -47,6 +47,7 @@ namespace Internal.TypeSystem.Interop
         AsAnyW,
         FailedTypeLoad,
         ComInterface,
+        BlittableValueClassByRefReturn,
         BlittableValueClassWithCopyCtor,
         CustomMarshaler,
         Invalid

@@ -6,14 +6,14 @@
 ** Source:  test1.c
 **
 ** Purpose:  Call the sqrtf function on a positive value, a positive value
-** with a decimal and on the maxium possible float value.  
+** with a decimal and on the maximum possible float value.
 **
 **
 **===================================================================*/
 
 #include <palsuite.h>
 
-// binary32 (float) has a machine epsilon of 2^-23 (approx. 1.19e-07). However, this 
+// binary32 (float) has a machine epsilon of 2^-23 (approx. 1.19e-07). However, this
 // is slightly too accurate when writing tests meant to run against libm implementations
 // for various platforms. 2^-21 (approx. 4.76e-07) seems to be as accurate as we can get.
 //
@@ -80,7 +80,7 @@ void __cdecl sqrtf_test1_validate_isnan(float value)
 
 PALTEST(c_runtime_sqrtf_test1_paltest_sqrtf_test1, "c_runtime/sqrtf/test1/paltest_sqrtf_test1")
 {
-    struct test tests[] = 
+    struct test tests[] =
     {
         /* value            expected         variance */
         {  0.318309886f,    0.564189584f,    PAL_EPSILON },       // value:  1 / pi
@@ -104,7 +104,7 @@ PALTEST(c_runtime_sqrtf_test1_paltest_sqrtf_test1, "c_runtime/sqrtf/test1/paltes
     {
         return FAIL;
     }
-    
+
     sqrtf_test1_validate(-0.0f, -0.0f, PAL_EPSILON);
     sqrtf_test1_validate( 0.0f,  0.0f, PAL_EPSILON);
 
@@ -113,7 +113,7 @@ PALTEST(c_runtime_sqrtf_test1_paltest_sqrtf_test1, "c_runtime/sqrtf/test1/paltes
         sqrtf_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
         sqrtf_test1_validate_isnan(-tests[i].value);
     }
-    
+
     sqrtf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();

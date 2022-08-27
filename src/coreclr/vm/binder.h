@@ -139,7 +139,7 @@ class CoreLibBinder
     static FieldDesc * GetField(BinderFieldID id);
 
     //
-    // A slighly faster version that assumes that the class was fetched
+    // A slightly faster version that assumes that the class was fetched
     // by the binder earlier.
     //
     static PTR_MethodTable GetExistingClass(BinderClassID id);

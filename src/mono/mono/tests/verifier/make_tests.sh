@@ -911,7 +911,7 @@ do
   ./make_unary_test.sh ${OP}_obj_int64 unverifiable "$OP int32 Class::valid\n\tpop" int64
   ./make_unary_test.sh ${OP}_obj_float64 unverifiable "$OP int32 Class::valid\n\tpop" float64
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Class::valid\n\tpop" 'native int'
-#overlapped checks must be done separatedly
+#overlapped checks must be done separately
 #  ./make_unary_test.sh ${OP}_obj_ref_overlapped unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
 #  ./make_unary_test.sh ${OP}_obj_overlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
 done
@@ -1436,7 +1436,7 @@ do
 	./make_field_store_test.sh field_store_${I}_9 unverifiable "${OP} int32 MyValueType::fld" int32 'native int'
 	./make_field_store_test.sh field_store_${I}_10 unverifiable "${OP} int32 MyValueType::fld" int32 'class MyValueType *'
 	./make_field_store_test.sh field_store_${I}_11 unverifiable "${OP} int32 ClassA::fld" int32 'class ClassA *'
-	#overlapped field tests should be done separatedly
+	#overlapped field tests should be done separately
 	#./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped' yes
 	#./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped' yes
 	#./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped' yes
@@ -4243,33 +4243,33 @@ done
 I=1
 for TYPE in object string MyValueType
 do
-	./make_constrained_test.sh contrained_prefix_basic_types_$I valid "$TYPE" "$TYPE" "callvirt string object::ToString()"
+	./make_constrained_test.sh constrained_prefix_basic_types_$I valid "$TYPE" "$TYPE" "callvirt string object::ToString()"
 	I=`expr $I + 1`
 done
 
 #method that exist on the value type
-./make_constrained_test.sh contrained_prefix_basic_types_$I valid "MyValueType" "MyValueType" "callvirt int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_basic_types_$I valid "MyValueType" "MyValueType" "callvirt int32 object::GetHashCode()"
 
 
 #mismatch between constrained. type token and this argument
-./make_constrained_test.sh contrained_prefix_type_mismatch_1 unverifiable "object" "string" "callvirt instance int32 object::GetHashCode()"
-./make_constrained_test.sh contrained_prefix_type_mismatch_2 unverifiable "string" "object" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_type_mismatch_1 unverifiable "object" "string" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_type_mismatch_2 unverifiable "string" "object" "callvirt instance int32 object::GetHashCode()"
 
-./make_constrained_test.sh contrained_prefix_type_mismatch_3 unverifiable "object" "MyValueType" "callvirt instance int32 object::GetHashCode()"
-./make_constrained_test.sh contrained_prefix_type_mismatch_4 unverifiable "MyValueType" "object" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_type_mismatch_3 unverifiable "object" "MyValueType" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_type_mismatch_4 unverifiable "MyValueType" "object" "callvirt instance int32 object::GetHashCode()"
 
-#bad contrained token
-./make_constrained_test.sh contrained_prefix_bad_token_1 unverifiable "object" "object&" "callvirt instance int32 object::GetHashCode()"
-./make_constrained_test.sh contrained_prefix_bad_token_1 unverifiable "object*" "object*" "callvirt instance int32 object::GetHashCode()"
+#bad constrained token
+./make_constrained_test.sh constrained_prefix_bad_token_1 unverifiable "object" "object&" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh constrained_prefix_bad_token_1 unverifiable "object*" "object*" "callvirt instance int32 object::GetHashCode()"
 
-#contrained no before a callvirt
-./make_constrained_test.sh contrained_prefix_not_before_a_callvirt invalid "string" "string" "call instance string string::Trim()"
+#constrained no before a callvirt
+./make_constrained_test.sh constrained_prefix_not_before_a_callvirt invalid "string" "string" "call instance string string::Trim()"
 
 #wrong stack type
 
-./make_constrained_test.sh contrained_prefix_bad_stack_type_1 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldloc.0"
-./make_constrained_test.sh contrained_prefix_bad_stack_type_2 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldnull"
-./make_constrained_test.sh contrained_prefix_bad_stack_type_3 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldc.i4.0"
+./make_constrained_test.sh constrained_prefix_bad_stack_type_1 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldloc.0"
+./make_constrained_test.sh constrained_prefix_bad_stack_type_2 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldnull"
+./make_constrained_test.sh constrained_prefix_bad_stack_type_3 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldc.i4.0"
 
 
 
@@ -4833,7 +4833,7 @@ done
 #not followed by a ret
 ./make_tail_call_test.sh "prefix_test_tail_call_not_followed_by_ret" unverifiable "call void MyStruct::Test()\n\tnop" "" "int32"
 
-#caller return type is diferent
+#caller return type is different
 ./make_tail_call_test.sh "prefix_test_tail_call_different_return_type" invalid "call void MyStruct::Test()\n\tnop" "" "int32" "int32"
 
 

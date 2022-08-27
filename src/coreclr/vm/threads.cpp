@@ -20,7 +20,6 @@
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
 #include "corhost.h"
-#include "win32threadpool.h"
 #include "jitinterface.h"
 #include "eventtrace.h"
 #include "comutilnative.h"
@@ -29,12 +28,9 @@
 
 #include "wrappers.h"
 
-#include "nativeoverlapped.h"
-
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
-#include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -136,8 +132,6 @@ PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
-UINT64 Thread::s_workerThreadPoolCompletionCountOverflow = 0;
-UINT64 Thread::s_ioThreadPoolCompletionCountOverflow = 0;
 UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
@@ -1153,8 +1147,8 @@ void InitThreadManager()
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
     if (IsWriteBarrierCopyEnabled())
     {
@@ -1541,8 +1535,6 @@ Thread::Thread()
     m_AbortRequestLock = 0;
     m_fRudeAbortInitiated = FALSE;
 
-    m_pIOCompletionContext = NULL;
-
 #ifdef _DEBUG
     m_fRudeAborted = FALSE;
     m_dwAbortPoint = 0;
@@ -1600,8 +1592,6 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 #endif // FEATURE_EH_FUNCLETS
 
-    m_workerThreadPoolCompletionCount = 0;
-    m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
     m_pDomain = SystemDomain::System()->DefaultDomain();
@@ -1775,12 +1765,6 @@ void Thread::InitThread()
         {
             ThrowOutOfMemory();
         }
-    }
-
-    ret = Thread::AllocateIOCompletionContext();
-    if (!ret)
-    {
-        ThrowOutOfMemory();
     }
 }
 
@@ -1976,33 +1960,6 @@ FAILURE:
     return FALSE;
 }
 
-BOOL Thread::AllocateIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    PIOCompletionContext pIOC = new (nothrow) IOCompletionContext;
-
-    if(pIOC != NULL)
-    {
-        pIOC->lpOverlapped = NULL;
-        m_pIOCompletionContext = pIOC;
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-VOID Thread::FreeIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_pIOCompletionContext != NULL)
-    {
-        PIOCompletionContext pIOC = (PIOCompletionContext) m_pIOCompletionContext;
-        delete pIOC;
-        m_pIOCompletionContext = NULL;
-    }
-}
 
 void Thread::HandleThreadStartupFailure()
 {
@@ -2016,36 +1973,37 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct ProtectArgs
+    struct
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } gc;
+    gc.pThrowable = NULL;
+    gc.pReason = NULL;
 
-    GCPROTECT_BEGIN(args);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    args.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
 
     if (m_pExceptionDuringStartup)
     {
-        args.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
         Exception::Delete(m_pExceptionDuringStartup);
         m_pExceptionDuringStartup = NULL;
     }
 
     ARG_SLOT args1[] = {
-        ObjToArgSlot(args.pThrowable),
-        ObjToArgSlot(args.pReason),
+        ObjToArgSlot(gc.pThrowable),
+        ObjToArgSlot(gc.pReason),
     };
     exceptionCtor.Call(args1);
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
 }
 
 #ifndef TARGET_UNIX
@@ -2468,7 +2426,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
     {
         // TODO: we would prefer to use a GC Holder here, however it is hard
         //       to get the case where we're deleting this thread correct given
-        //       the current macros. We want to supress the release of the holder
+        //       the current macros. We want to suppress the release of the holder
         //       here which puts us in Preemptive mode, and also the switch to
         //       Cooperative mode below, but since both holders will be named
         //       the same thing (due to the generic nature of the macro) we can
@@ -2675,8 +2633,6 @@ Thread::~Thread()
     {
         m_EventWait.CloseEvent();
     }
-
-    FreeIOCompletionContext();
 
     if (m_OSContext)
         delete m_OSContext;
@@ -4108,7 +4064,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
     // {
     // a.Wait
     // }
-    // We need to make sure that the finally from lock is excuted with the lock owned.
+    // We need to make sure that the finally from lock is executed with the lock owned.
     DWORD state = 0;
     SyncBlock *psb = (SyncBlock*)((DWORD_PTR)pRealWaitEventLink->m_WaitSB & ~1);
     for (LONG i=0; i < m_EnterCount;)
@@ -4408,7 +4364,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 
     if (m_LastThrownObjectHandle != NULL)
     {
-        // We'll somtimes use a handle for a preallocated exception object. We should never, ever destroy one of
+        // We'll sometimes use a handle for a preallocated exception object. We should never, ever destroy one of
         // these handles... they'll be destroyed when the Runtime shuts down.
         if (!CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
         {
@@ -5384,12 +5340,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         if (target->IsBackground())
             s_pThreadStore->m_BackgroundThreadCount--;
 
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_workerThreadPoolCompletionCountOverflow,
-            target->m_workerThreadPoolCompletionCount);
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_ioThreadPoolCompletionCountOverflow,
-            target->m_ioThreadPoolCompletionCount);
         InterlockedExchangeAdd64(
             (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
             target->m_monitorLockContentionCount);
@@ -7581,13 +7531,6 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
 }
 
-// The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in the ThreadPool
-void ManagedThreadBase::ThreadPool(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_FullTransition(pTarget, args, ThreadPoolThread);
-}
-
 // The Finalizer thread establishes exception handling at its base, but defers all the AppDomain
 // transitions.
 void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
@@ -7644,7 +7587,7 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     LPVOID result = (LPVOID)((PTR_BYTE)base + (DWORD)offset);
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) result);
@@ -7702,7 +7645,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     TADDR result = dac_cast<TADDR>(base) + (DWORD)offset;
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
         _ASSERTE(result != NULL);
@@ -7899,40 +7842,6 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
         total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
-}
-
-UINT64 Thread::GetTotalThreadPoolCompletionCount()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetIOThreadPoolCompletionCountOverflow();
-    if (!usePortableThreadPool)
-    {
-        total += GetWorkerThreadPoolCompletionCountOverflow();
-    }
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        if (!usePortableThreadPool)
-        {
-            total += pThread->m_workerThreadPoolCompletionCount;
-        }
-        total += pThread->m_ioThreadPoolCompletionCount;
     }
 
     return total;
@@ -8305,7 +8214,7 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(__FILE__, !AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
@@ -8383,7 +8292,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         if (m_pDomain.IsValid())
         {
@@ -8459,10 +8368,15 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
     }
     else
     {
+        // Skip any thread that doesn't have a OS thread id because DacGetThreadContext is going to throw an exception.
+        if (GetOSThreadId() == 0)
+        {
+            return;
+        }
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }

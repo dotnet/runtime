@@ -1,5 +1,5 @@
-v9.0.0
-https://github.com/llvm/llvm-project/releases/tag/llvmorg-9.0.0
+v14.0.6
+https://github.com/llvm/llvm-project/releases/tag/llvmorg-14.0.6
 
-Apply https://github.com/dotnet/runtime/commit/371905898f2c036cc30d662e8a6df162a21967a5
-Reapply changes from https://github.com/dotnet/runtime/commit/62075f115efeecaee9d94f87d0766d657a72fa76
+Apply https://github.com/dotnet/runtime/commit/e57194552327bccaf2b45a9190f0e6e1289472e4
+Apply https://github.com/dotnet/runtime/commit/db7ed089a9e20a391a53e0b547f95dc8bf916765

@@ -7,10 +7,38 @@ using System.Security.Principal;
 namespace System.Net.Security
 {
     /// <summary>
-    /// Represents a propery bag for client-side of an authentication exchange.
+    /// Represents a property bag for client-side of an authentication exchange.
     /// </summary>
+    /// <remarks>
+    /// This property bag is used as argument for <see cref="NegotiateAuthentication" />
+    /// constructor for initializing a client-side authentication.
+    ///
+    /// Initial values of the properties are set for an authentication using
+    /// default network credentials. If you want to explicitly authenticate using a user
+    /// name, password and domain combination then set the <see cref="Credential" />
+    /// property appropriately.
+    ///
+    /// Typical usage of the client-side authentication will also require specifying the
+    /// the <see cref="TargetName" /> property. While it may be omitted in some scenarios
+    /// it is usually required to be set to a valid value like <c>HOST/contoso.com</c> or
+    /// <c>HTTP/www.contoso.com</c>.
+    ///
+    /// When the authentication is wrapped in a secure channel, like TLS, the channel
+    /// binding can provide additional protection by strongly binding the authentication
+    /// to a given transport channel. This is handled by setting the <see cref="Binding" />
+    /// property. For <see cref="SslStream" /> the channel binding could be obtained
+    /// through the <see cref="SslStream.TransportContext" /> property and calling the
+    /// <see cref="TransportContext.GetChannelBinding" /> method.
+    /// </remarks>
     public class NegotiateAuthenticationClientOptions
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NegotiateAuthenticationClientOptions" /> class.
+        /// </summary>
+        public NegotiateAuthenticationClientOptions()
+        {
+        }
+
         /// <summary>
         /// Specifies the GSSAPI authentication package used for the authentication.
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.
@@ -19,7 +47,7 @@ namespace System.Net.Security
 
         /// <summary>
         /// The NetworkCredential that is used to establish the identity of the client.
-        /// Default value is CredentialCache.DefaultNetworkCredentials.
+        /// Default value is <see cref="CredentialCache.DefaultNetworkCredentials" />.
         /// </summary>
         public NetworkCredential Credential { get; set; } = CredentialCache.DefaultNetworkCredentials;
 

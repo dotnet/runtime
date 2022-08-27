@@ -15,10 +15,10 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0007
+#define READYTORUN_MAJOR_VERSION 0x0008
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x008
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -26,6 +26,7 @@
 //     R2R 3.0 is not backward compatible with 2.x.
 // R2R Version 6.0 changes managed layout for sequential types with any unmanaged non-blittable fields.
 //     R2R 6.0 is not backward compatible with 5.x or earlier.
+// R2R Version 8.0 Changes the alignment of the Int128 type
 
 struct READYTORUN_CORE_HEADER
 {
@@ -329,6 +330,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
+    READYTORUN_HELPER_IsInstanceOfException     = 0x69,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,
@@ -367,7 +369,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifdef FEATURE_EH_FUNCLETS
-    // Personality rountines
+    // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif

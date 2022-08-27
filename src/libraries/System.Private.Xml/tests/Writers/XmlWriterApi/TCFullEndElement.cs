@@ -5091,7 +5091,7 @@ namespace System.Xml.Tests
                     Assert.True(utils.CompareReader("<Root a=\"Test Case\" b=\"Test\" />"));
                 }
 
-                // WriteRaw with entites and entitized characters
+                // WriteRaw with entities and entitized characters
                 [Theory]
                 [XmlWriterInlineData]
                 public void writeRaw_2(XmlWriterUtils utils)

@@ -60,7 +60,7 @@ typedef SIZE_T NativePtr;
 
 #define NYI_INTERP(msg) _ASSERTE_MSG(false, msg)
 // I wanted to define NYI_INTERP as the following in retail:
-//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(__FILE__, false)
+//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(false)
 // but doing so gave a very odd unreachable code error.
 
 
@@ -148,7 +148,7 @@ class InterpreterType
     // low-order bits of a "real" CORINFO_CLASS_HANDLE are zero, then use them as follows:
     //    0x0 ==> if "ci" is a non-struct CORINFO_TYPE_* value, m_tp contents are (ci << 2).
     //    0x1, 0x3 ==> is a CORINFO_CLASS_HANDLE "sh" for a struct type, or'd with 0x1 and possibly 0x2.
-    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the plaform, and
+    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the platform, and
     //         should be referenced via a level of indirection.
     //    0x2 (exactly) indicates that it is a "native struct type".
     //
@@ -539,7 +539,7 @@ typedef InterpreterCache<size_t, ILOffsetToItemCache*> GenericContextToInnerCach
 
 #endif // DACCESS_COMPILE
 
-// This is the information that the intepreter stub provides to the
+// This is the information that the interpreter stub provides to the
 // interpreter about the method being interpreted.
 struct InterpreterMethodInfo
 {
@@ -647,7 +647,7 @@ struct InterpreterMethodInfo
 
 
     // This is an array of size at least "m_numArgs", such that entry "i" describes the "i'th"
-    // arg in the "m_ilArgs" array passed to the intepreter: that is, the ArgDesc contains the type, stack-normal type,
+    // arg in the "m_ilArgs" array passed to the interpreter: that is, the ArgDesc contains the type, stack-normal type,
     // and offset in the "m_ilArgs" array of that argument.  In addition, has extra entries if "m_hasGenericsContextArg"
     // and/or "m_hasRetBuffArg" are true, giving the offset of those arguments -- the offsets of those arguments
     // are in that order in the array.  (The corresponding types should be NativeInt.)

@@ -320,7 +320,7 @@ C_FUNC(\Name):
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    push_nonvol_reg rbp                         // push RBP frame  // TODO: do we need this? not on windows.
+    push_nonvol_reg rbp                         // push RBP frame
     mov             rbp, rsp
     lea             \trashReg, [rsp + 0x10]
     push_register   \trashReg                   // save caller's RSP

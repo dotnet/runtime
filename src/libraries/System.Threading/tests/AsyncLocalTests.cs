@@ -104,7 +104,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static async Task CaptureAndRunOnFlowSupressedContext()
+        public static async Task CaptureAndRunOnFlowSuppressedContext()
         {
             ExecutionContext.SuppressFlow();
             try
@@ -689,7 +689,7 @@ namespace System.Threading.Tests
                 }
             }
 
-            // Synchronous function is async to create different ExectutionContexts for each set, and check async unwinding
+            // Synchronous function is async to create different ExecutionContexts for each set, and check async unwinding
             async Task SetLocalsRecursivelyAsync(int index)
             {
                 // Set AsyncLocal

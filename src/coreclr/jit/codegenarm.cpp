@@ -778,7 +778,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     genProduceReg(tree);
 }
 
-// Generate code for CpObj nodes wich copy structs that have interleaved
+// Generate code for CpObj nodes which copy structs that have interleaved
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
 // slots that don't contain GC pointers.  The generated code will look like:

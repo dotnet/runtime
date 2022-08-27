@@ -73,7 +73,11 @@ finally {
 
 if (!$buildOnly)
 {
-    $env:DUMPS_SHARE_MOUNT_ROOT="C:/dumps-share"
+    if ($useWindowsContainers) {
+        $env:DUMPS_SHARE_MOUNT_ROOT="C:/dumps-share"
+    } else {
+        $env:DUMPS_SHARE_MOUNT_ROOT="/dumps-share"
+    }
     if (!$env:CLIENT_DUMPS_SHARE) {
         $env:CLIENT_DUMPS_SHARE=Join-Path $env:Temp $(New-Guid)
     }

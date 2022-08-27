@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Threading;
 
@@ -85,20 +85,26 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            s_createReflectionJsonTypeInfoMethodInfo ??= typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-            return (JsonTypeInfo)s_createReflectionJsonTypeInfoMethodInfo.MakeGenericMethod(type)
-                .InvokeNoWrapExceptions(null, new object[] { options })!;
-        }
+            JsonTypeInfo jsonTypeInfo;
+            JsonConverter converter = GetConverterForType(type, options);
 
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>(JsonSerializerOptions options)
-        {
-            JsonConverter converter = GetConverterForType(typeof(T), options);
-            return new ReflectionJsonTypeInfo<T>(converter, options);
-        }
+            if (converter.TypeToConvert == type)
+            {
+                // For performance, avoid doing a reflection-based instantiation
+                // if the converter type matches that of the declared type.
+                jsonTypeInfo = converter.CreateReflectionJsonTypeInfo(options);
+            }
+            else
+            {
+                Type jsonTypeInfoType = typeof(ReflectionJsonTypeInfo<>).MakeGenericType(type);
+                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { converter, options })!;
+            }
 
-        private static MethodInfo? s_createReflectionJsonTypeInfoMethodInfo;
+            Debug.Assert(jsonTypeInfo.Type == type);
+            return jsonTypeInfo;
+        }
 
         /// <summary>
         /// Gets a list of user-defined callbacks that can be used to modify the initial contract.
@@ -120,7 +126,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsLockedInstance => !_resolver._mutable;
+            protected override bool IsImmutable => !_resolver._mutable;
             protected override void VerifyMutable()
             {
                 if (!_resolver._mutable)

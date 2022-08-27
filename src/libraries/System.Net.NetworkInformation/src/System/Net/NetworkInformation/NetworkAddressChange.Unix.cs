@@ -219,7 +219,7 @@ namespace System.Net.NetworkInformation
             {
                 // Unexpected error.
                 Debug.Fail($"Unexpected error: {ex}");
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(ex);
             }
 
             static unsafe Interop.Error ReadEvents(Socket socket)
@@ -287,7 +287,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -329,7 +329,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, args);
                     }
