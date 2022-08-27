@@ -8495,7 +8495,8 @@ GenTree* Compiler::gtCloneExpr(
             case GT_ARR_ADDR:
                 copy = new (this, GT_ARR_ADDR)
                     GenTreeArrAddr(tree->AsArrAddr()->Addr(), tree->AsArrAddr()->GetElemType(),
-                                   tree->AsArrAddr()->GetElemClassHandle(), tree->AsArrAddr()->GetFirstElemOffset());
+                                   tree->AsArrAddr()->GetElemClassHandle(), tree->AsArrAddr()->GetElemSize(),
+                                   tree->AsArrAddr()->GetFirstElemOffset(), tree->AsArrAddr()->GetFieldOffset());
                 break;
 
             case GT_ARR_LENGTH:
@@ -10629,6 +10630,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 else
                 {
                     printf("%s[]", varTypeName(elemType));
+                }
+
+                if (tree->OperIs(GT_ARR_ADDR) && (tree->AsArrAddr()->GetFieldOffset() != 0))
+                {
+                    printf(" [+%u]", tree->AsArrAddr()->GetFieldOffset());
                 }
             }
 
@@ -18128,13 +18134,9 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     }
 
     // OK, new we have to figure out if any part of the "offset" is a constant contribution to the index.
-    target_ssize_t elemOffset = GetFirstElemOffset();
-    unsigned       elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
-                                                        : genTypeSize(GetElemType());
-
-    assert(FitsIn<target_ssize_t>(elemSizeUn));
-    target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
-    target_ssize_t constIndexOffset = offset - elemOffset;
+    assert(FitsIn<target_ssize_t>(GetElemSize()));
+    target_ssize_t elemSize         = static_cast<target_ssize_t>(GetElemSize());
+    target_ssize_t constIndexOffset = offset - (GetFirstElemOffset() + GetFieldOffset());
 
     // This should be divisible by the element size...
     assert((constIndexOffset % elemSize) == 0);

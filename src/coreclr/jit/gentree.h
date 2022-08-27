@@ -192,6 +192,9 @@ struct GuardedDevirtualizationCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
 
+template <typename T>
+unsigned genTypeSize(T value);
+
 typedef unsigned short AssertionIndex;
 
 static const AssertionIndex NO_ASSERTION_INDEX = 0;
@@ -6425,17 +6428,27 @@ private:
     CORINFO_CLASS_HANDLE m_elemClassHandle; // The array element class. Currently only used for arrays of TYP_STRUCT.
     var_types            m_elemType;        // The normalized (TYP_SIMD != TYP_STRUCT) array element type.
     uint8_t              m_firstElemOffset; // Offset to the first element of the array.
+    unsigned             m_elemSize;        // Size of the array element type.
+    unsigned             m_fieldOffset;     // Compound offset of the element's fields (if any).
 
 public:
-    GenTreeArrAddr(GenTree* addr, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, uint8_t firstElemOffset)
+    GenTreeArrAddr(GenTree*             addr,
+                   var_types            elemType,
+                   CORINFO_CLASS_HANDLE elemClassHandle,
+                   unsigned             elemSize,
+                   uint8_t              firstElemOffset,
+                   unsigned             fieldOffset)
         : GenTreeUnOp(GT_ARR_ADDR, TYP_BYREF, addr DEBUGARG(/* largeNode */ false))
         , m_elemClassHandle(elemClassHandle)
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
+        , m_elemSize(elemSize)
+        , m_fieldOffset(fieldOffset)
     {
         assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
+        assert((elemSize == genTypeSize(elemType)) || ((elemSize != 0) && (elemType == TYP_STRUCT)));
     }
 
 #if DEBUGGABLE_GENTREE
@@ -6459,9 +6472,25 @@ public:
         return m_elemType;
     }
 
+    unsigned GetElemSize() const
+    {
+        return m_elemSize;
+    }
+
     uint8_t GetFirstElemOffset() const
     {
         return m_firstElemOffset;
+    }
+
+    unsigned GetFieldOffset() const
+    {
+        return m_fieldOffset;
+    }
+
+    void AddField(unsigned offset)
+    {
+        assert((m_fieldOffset + offset) < m_elemSize);
+        m_fieldOffset += offset;
     }
 
     void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN);

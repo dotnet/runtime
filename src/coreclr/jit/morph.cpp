@@ -4686,7 +4686,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 
     // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
-    addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemOffs);
+    addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemSize, elemOffs, 0);
 
     if (indexAddr->IsNotNull())
     {
@@ -12557,6 +12557,28 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
                     DEBUG_DESTROY_NODE(add);
 
                     return addrNode;
+                }
+            }
+        }
+
+        // Sink offset addition below "ARR_ADDR"s to find potentially optimizable commutative folding.
+        //
+        if (fgGlobalMorph && op2->IsCnsIntOrI())
+        {
+            GenTree* effectiveOp1 = op1->gtEffectiveVal();
+            if (effectiveOp1->OperIs(GT_ARR_ADDR))
+            {
+                GenTreeArrAddr* addr   = effectiveOp1->AsArrAddr();
+                ssize_t         offset = op2->AsIntCon()->IconValue();
+                if ((0 <= offset) && ((addr->GetFieldOffset() + offset) < addr->GetElemSize()))
+                {
+                    add->SetAllEffectsFlags(addr);
+                    add->gtOp1            = addr->gtOp1;
+                    GenTree* optimizedAdd = fgOptimizeCommutativeArithmetic(add);
+                    addr->gtOp1           = optimizedAdd;
+                    addr->AddField(static_cast<unsigned>(offset));
+
+                    return op1;
                 }
             }
         }
