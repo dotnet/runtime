@@ -56,13 +56,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
         if (varDsc->lvDoNotEnregister && !varDsc->lvIsStructField)
         {
-            GenTreeIntCon* constNode  = storeLoc->Data()->AsIntCon();
-            ssize_t        constValue = constNode->IconValue();
-            constValue =
-                varTypeIsUnsigned(varDsc) ? static_cast<uint16_t>(constValue) : static_cast<int16_t>(constValue);
-
             storeLoc->gtType = TYP_INT;
-            constNode->SetIconValue(constValue);
         }
     }
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
