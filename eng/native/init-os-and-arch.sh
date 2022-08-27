@@ -13,7 +13,7 @@ FreeBSD|Linux|NetBSD|OpenBSD|SunOS|Android)
 Darwin)
     os=OSX ;;
 *)
-    echo "Unsupported OS $OSName detected !"
+    echo "Unsupported OS $OSName detected!"
     exit 1 ;;
 esac
 
