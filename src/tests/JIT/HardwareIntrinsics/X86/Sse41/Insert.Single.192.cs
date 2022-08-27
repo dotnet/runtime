@@ -17,7 +17,7 @@ using static System.Runtime.Intrinsics.X86.Sse;
 using static System.Runtime.Intrinsics.X86.Sse2;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse41
 {
     public static partial class Program
     {

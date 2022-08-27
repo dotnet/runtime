@@ -4,20 +4,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse3
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["AddSubtract.Double"] = AddSubtractDouble,
-                ["AddSubtract.Single"] = AddSubtractSingle,
-                ["HorizontalAdd.Double"] = HorizontalAddDouble,
-                ["HorizontalAdd.Single"] = HorizontalAddSingle,
-                ["HorizontalSubtract.Double"] = HorizontalSubtractDouble,
-                ["HorizontalSubtract.Single"] = HorizontalSubtractSingle,
-            };
+
         }
     }
 }

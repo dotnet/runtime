@@ -5,6 +5,7 @@
   <ItemGroup>
     <MergedWrapperProjectReference Include="Arm/**/*_ro.csproj" />
     <MergedWrapperProjectReference Include="General/**/*_ro.csproj" />
+    <MergedWrapperProjectReference Include="X86/**/*_ro.csproj" />
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
 </Project>

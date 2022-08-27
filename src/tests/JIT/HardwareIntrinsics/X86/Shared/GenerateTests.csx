@@ -1261,35 +1261,90 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("ScalarTernOpBinResTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2.X64", ["Method"] = "MultiplyNoFlags",     ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "UInt64", ["Op3BaseType"] = "UInt64",        ["NextValueOp1"] = "UInt64.MaxValue",                   ["NextValueOp2"] = "UInt64.MaxValue",                     ["NextValueOp3"] = "0",  ["ValidateResult"] = "ulong expectedHigher = 18446744073709551614, expectedLower = 1; isUnexpectedResult = (expectedHigher != higher) || (expectedLower != lower);" }),
 };
 
+private static readonly Dictionary<string,string> extraHelperFiles = new Dictionary<string, string>
+{
+    ["Sse2Verify"] = @"..\Sse2\Sse2Verify.cs",
+    ["ScalarSimdUnaryOpTest"] = @"..\Shared\ScalarSimdUnOpTest_DataTable.cs",
+    ["SimdScalarUnaryOpTest"] = @"..\Shared\SimdScalarUnOpTest_DataTable.cs",
+    ["SimpleBinaryOpTest"] = @"..\Shared\SimpleBinOpTest_DataTable.cs",
+    ["SimpleUnaryOpTest"] = @"..\Shared\SimpleUnOpTest_DataTable.cs",
+    ["SimpleBinaryOpConvTest"] = @"..\Shared\SimpleBinOpConvTest_DataTable.cs",
+};
+
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
+    var debugProjectFileName = Path.Combine("..", groupName, $"{groupName}_r.csproj");
+    var releaseProjectFileName = Path.Combine("..", groupName, $"{groupName}_ro.csproj");
+
+    using var debugProjectFile = new StreamWriter(debugProjectFileName, append: false);
+    using var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false);
+
+        debugProjectFile.WriteLine($@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <AssemblyName>X86_{groupName}_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>");
+
+        releaseProjectFile.WriteLine($@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <AssemblyName>X86_{groupName}_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>");
 
     using (var testListFile = new StreamWriter(testListFileName, append: false))
     {
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
+        testListFile.Write(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._");
+	testListFile.Write(groupName);
+    testListFile.WriteLine(@"
 {
     public static partial class Program
     {
         static Program()
-        {
-            TestList = new Dictionary<string, Action>() {");
-
+        {");
+        SortedSet<string> extraSharedFiles = new SortedSet<string>();
         foreach (var input in inputs)
         {
-            ProcessInput(testListFile, groupName, input);
+            ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input, extraSharedFiles);
         }
 
-        testListFile.WriteLine(@"            };
+        testListFile.WriteLine(@"
         }
     }
 }");
+        foreach (string file in extraSharedFiles)
+        {
+            debugProjectFile.WriteLine($@"    <Compile Include=""{file}"" />");
+            releaseProjectFile.WriteLine($@"    <Compile Include=""{file}"" />");
+        }
+
+        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
+
+        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
     }
 }
 
@@ -1302,7 +1357,7 @@ private static bool isImmTemplate(string name)
            name == "AesImmOpTest.template" || name == "PclmulqdqOpTest.template";
 }
 
-private static void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter releaseProjectFile, StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input, SortedSet<string> extraSharedFiles)
 
 {
     var testName = $"{input.templateData["Method"]}.{input.templateData["RetBaseType"]}";
@@ -1342,17 +1397,9 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
         suffix += "BinRes";
     }
 
-    if (input.templateFileName == "SimpleUnOpConvTest.template" || input.templateFileName == "SimdScalarUnOpConvTest.template" )
-    {
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{suffix},");
-    }
-    else
-    {
-        // Ex: ["Add.Single"] = AddSingle
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["RetBaseType"]}{suffix},");
-    }
+    var fileName = $"{testName}.cs";
 
-    var testFileName = Path.Combine("..", groupName, $"{testName}.cs");
+    var testFileName = Path.Combine("..", groupName, fileName);
     var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
     var template = string.Empty;
 
@@ -1374,8 +1421,18 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
     {
         template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
+    template = template.Replace("namespace JIT.HardwareIntrinsics.X86", $"namespace JIT.HardwareIntrinsics.X86._{groupName}");
+
+    foreach (var kvp in extraHelperFiles)
+    {
+        if (template.Contains(kvp.Key))
+            extraSharedFiles.Add(kvp.Value);
+    }
 
     File.WriteAllText(testFileName, template);
+
+    debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
+    releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
 }
 
 ProcessInputs("Sse1", Sse1Inputs);

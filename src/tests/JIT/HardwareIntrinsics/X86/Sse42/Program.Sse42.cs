@@ -4,15 +4,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse42
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["CompareGreaterThan.Int64"] = CompareGreaterThanInt64,
-            };
+
         }
     }
 }

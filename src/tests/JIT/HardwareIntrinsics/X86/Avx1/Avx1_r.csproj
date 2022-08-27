@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AssemblyName>X86_Avx1_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- https://github.com/dotnet/runtime/issues/12392 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
@@ -17,13 +17,13 @@
     <Compile Include="And.Single.cs" />
     <Compile Include="AndNot.Double.cs" />
     <Compile Include="AndNot.Single.cs" />
+    <Compile Include="BlendVariable.Double.cs" />
+    <Compile Include="BlendVariable.Single.cs" />
     <Compile Include="BroadcastScalarToVector128.Single.cs" />
     <Compile Include="BroadcastScalarToVector256.Single.cs" />
     <Compile Include="BroadcastScalarToVector256.Double.cs" />
     <Compile Include="BroadcastVector128ToVector256.Single.cs" />
     <Compile Include="BroadcastVector128ToVector256.Double.cs" />
-    <Compile Include="BlendVariable.Double.cs" />
-    <Compile Include="BlendVariable.Single.cs" />
     <Compile Include="Ceiling.Double.cs" />
     <Compile Include="Ceiling.Single.cs" />
     <Compile Include="CompareEqual.Single.cs" />
@@ -55,6 +55,8 @@
     <Compile Include="DuplicateEvenIndexed.Double.cs" />
     <Compile Include="DuplicateEvenIndexed.Single.cs" />
     <Compile Include="DuplicateOddIndexed.Single.cs" />
+    <Compile Include="ExtractVector128.Single.1.cs" />
+    <Compile Include="ExtractVector128.Double.1.cs" />
     <Compile Include="ExtractVector128.Byte.1.cs" />
     <Compile Include="ExtractVector128.SByte.1.cs" />
     <Compile Include="ExtractVector128.Int16.1.cs" />
@@ -63,8 +65,6 @@
     <Compile Include="ExtractVector128.UInt32.1.cs" />
     <Compile Include="ExtractVector128.Int64.1.cs" />
     <Compile Include="ExtractVector128.UInt64.1.cs" />
-    <Compile Include="ExtractVector128.Single.1.cs" />
-    <Compile Include="ExtractVector128.Double.1.cs" />
     <Compile Include="InsertVector128.Byte.1.cs" />
     <Compile Include="InsertVector128.SByte.1.cs" />
     <Compile Include="InsertVector128.Int16.1.cs" />
@@ -77,6 +77,8 @@
     <Compile Include="InsertVector128.Double.1.cs" />
     <Compile Include="Floor.Double.cs" />
     <Compile Include="Floor.Single.cs" />
+    <Compile Include="LoadVector256.Single.cs" />
+    <Compile Include="LoadVector256.Double.cs" />
     <Compile Include="LoadVector256.Byte.cs" />
     <Compile Include="LoadVector256.SByte.cs" />
     <Compile Include="LoadVector256.Int16.cs" />
@@ -85,8 +87,6 @@
     <Compile Include="LoadVector256.UInt32.cs" />
     <Compile Include="LoadVector256.Int64.cs" />
     <Compile Include="LoadVector256.UInt64.cs" />
-    <Compile Include="LoadVector256.Single.cs" />
-    <Compile Include="LoadVector256.Double.cs" />
     <Compile Include="MaskLoad.Double.cs" />
     <Compile Include="MaskLoad.Single.cs" />
     <Compile Include="MaskStore.Double.cs" />
@@ -103,6 +103,8 @@
     <Compile Include="Permute.Double.1.cs" />
     <Compile Include="Permute.Single.2.cs" />
     <Compile Include="Permute.Double.2.cs" />
+    <Compile Include="Permute2x128.Double.2.cs" />
+    <Compile Include="Permute2x128.Single.2.cs" />
     <Compile Include="Permute2x128.Byte.2.cs" />
     <Compile Include="Permute2x128.SByte.2.cs" />
     <Compile Include="Permute2x128.Int16.2.cs" />
@@ -111,8 +113,6 @@
     <Compile Include="Permute2x128.UInt32.2.cs" />
     <Compile Include="Permute2x128.Int64.2.cs" />
     <Compile Include="Permute2x128.UInt64.2.cs" />
-    <Compile Include="Permute2x128.Single.2.cs" />
-    <Compile Include="Permute2x128.Double.2.cs" />
     <Compile Include="PermuteVar.Single.cs" />
     <Compile Include="PermuteVar.Double.cs" />
     <Compile Include="RoundCurrentDirection.Double.cs" />
@@ -153,11 +153,11 @@
     <Compile Include="TestZ.UInt16.cs" />
     <Compile Include="TestZ.UInt32.cs" />
     <Compile Include="TestZ.UInt64.cs" />
-    <Compile Include="Xor.Double.cs" />
     <Compile Include="Xor.Single.cs" />
-    <Compile Include="Program.Avx1.cs" />
-    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Xor.Double.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="Program.Avx1.cs" />
+    <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

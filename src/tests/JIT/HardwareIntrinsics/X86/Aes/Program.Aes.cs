@@ -4,20 +4,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Aes
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["Decrypt.Byte"] = DecryptByte,
-                ["DecryptLast.Byte"] = DecryptLastByte,
-                ["Encrypt.Byte"] = EncryptByte,
-                ["EncryptLast.Byte"] = EncryptLastByte,
-                ["InverseMixColumns.Byte"] = InverseMixColumnsByte,
-                ["KeygenAssist.Byte.5"] = KeygenAssistByte5,
-            };
+
         }
     }
 }
