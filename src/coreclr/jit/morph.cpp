@@ -12351,11 +12351,6 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
 {
     assert(div->OperIs(GT_DIV, GT_UDIV));
 
-    if (gtTreeHasSideEffects(div, GTF_SIDE_EFFECT))
-    {
-        return nullptr;
-    }
-
     GenTree* op1 = div->gtGetOp1();
     GenTree* op2 = div->gtGetOp2();
 
@@ -12378,8 +12373,12 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         // is 0
         if ((upperBound / child_val) < root_val)
         {
+            if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+            {
+                return nullptr;
+            }
+
             GenTree* ret = gtNewZeroConNode(TYP_INT);
-            fgUpdateConstTreeValueNumber(ret);
 
             DEBUG_DESTROY_NODE(div);
 
@@ -12389,11 +12388,8 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         }
 
         div->gtOp1 = chOp1;
-        div->gtOp1->SetVNsFromNode(op1);
-
         div->gtOp2 = chOp2;
         div->gtOp2->AsIntConCommon()->SetIntegralValue(root_val * child_val);
-        div->gtOp2->SetVNsFromNode(op2);
 
         DEBUG_DESTROY_NODE(op1);
         DEBUG_DESTROY_NODE(op2);
