@@ -4459,6 +4459,56 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector128DoubleEqualsNonCanonicalNaNTest()
+        {
+            var maxSignificand = (1UL << 53) - 1;
+            // NaN with mantissa bits set
+            var snan = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(double.NaN) | maxSignificand);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
+
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
+                    Assert.False(Vector128.Create(i) == Vector128.Create(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleEqualsNonCanonicalNaNTest()
+        {
+            var maxSignificand = (1U << 24) - 1;
+            // NaN with mantissa bits set
+            var snan = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(float.NaN) | maxSignificand);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
+
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
+                    Assert.False(Vector128.Create(i) == Vector128.Create(j));
+                }
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
