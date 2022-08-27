@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <!-- Generate a warning if the non-SDK path is used  -->
-  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true'" BeforeTargets="ImportRuntimeIlcPackageTarget">
+  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''" BeforeTargets="ImportRuntimeIlcPackageTarget">
     <Warning Text="Set PublishAot property to true and delete explicit `Microsoft.DotNet.ILCompiler` package reference in your project file. Explicit Microsoft.DotNet.ILCompiler package reference can run into version errors." />
   </Target>
 
