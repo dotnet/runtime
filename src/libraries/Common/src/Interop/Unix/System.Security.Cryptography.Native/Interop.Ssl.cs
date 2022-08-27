@@ -113,7 +113,7 @@ internal static partial class Interop
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
-        [return: MarshalUsing(typeof(NullableSafeHandleMarshaller<SafeX509Handle>))]
+        [return: MarshalUsing(typeof(NullableX509HandleMarshaller))]
         internal static partial SafeX509Handle? SslGetPeerCertificate(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
@@ -323,6 +323,33 @@ internal static partial class Interop
             // Choosing an arbitrarily large value that shouldn't conflict
             // with any actual OpenSSL error codes
             SSL_ERROR_RENEGOTIATE = 29304
+        }
+    }
+}
+
+namespace System.Runtime.InteropServices.Marshalling
+{
+    [CustomMarshaller(typeof(SafeX509Handle), MarshalMode.ManagedToUnmanagedOut, typeof(NullableX509HandleMarshaller.Out))]
+    internal static class NullableX509HandleMarshaller
+    {
+        public struct Out
+        {
+            private SafeX509Handle? _handle;
+
+            public void FromUnmanaged(IntPtr value)
+            {
+                if (value != IntPtr.Zero)
+                {
+                    _handle = new SafeX509Handle();
+                    Marshal.InitHandle(_handle, value);
+                }
+            }
+
+            public SafeX509Handle? ToManaged() => _handle;
+
+            public void Free()
+            {
+            }
         }
     }
 }

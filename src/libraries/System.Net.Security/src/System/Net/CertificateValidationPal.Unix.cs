@@ -38,18 +38,16 @@ namespace System.Net
             }
 
             X509Certificate2? result = null;
-            SafeFreeCertContext? remoteContext = null;
+            SafeX509Handle? remoteCertificateHandle = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
             try
             {
-                QueryContextRemoteCertificate(securityContext, out remoteContext);
-
-                if (remoteContext == null || remoteContext.IsInvalid)
+                if (remoteCertificateHandle == null)
                 {
                     return null;
                 }
 
-                remoteContext.DangerousAddRef(ref gotReference);
-                result = new X509Certificate2(remoteContext.DangerousGetHandle());
+                remoteCertificateHandle.DangerousAddRef(ref gotReference);
+                result = new X509Certificate2(remoteCertificateHandle.DangerousGetHandle());
 
                 if (retrieveChainCertificates)
                 {
@@ -88,15 +86,7 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null)
-                {
-                    if (gotReference)
-                    {
-                        remoteContext.DangerousRelease();
-                    }
-
-                    remoteContext.Dispose();
-                }
+                remoteCertificateHandle?.Dispose();
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
@@ -155,22 +145,6 @@ namespace System.Net
             store.Open(OpenFlags.ReadOnly);
 
             return store;
-        }
-
-        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext? remoteCertContext)
-        {
-            remoteCertContext = null;
-            try
-            {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
-                // Note that cert ownership is transferred to SafeFreeCertContext
-                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
         }
     }
 }
