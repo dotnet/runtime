@@ -387,6 +387,12 @@ namespace System.Globalization
             return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
+        public override DateTime ToDateTime(DateTime dateTime)
+        {
+            return this.ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day,
+            dateTime.Hour, dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+        }
+
         private const int DefaultTwoDigitYearMax = 1410;
 
         public override int TwoDigitYearMax
