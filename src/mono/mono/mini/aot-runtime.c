@@ -4329,7 +4329,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	guint32 index;
-	static guint32 n_extra_decodes;
+	// static guint32 n_extra_decodes; // used for debugging
 
 	// The AOT module containing the MonoMethod
 	// The reference to the metadata amodule will differ among multiple dedup methods
@@ -4385,10 +4385,10 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 		}
 
 		/* Methods decoded needlessly */
-		if (m) {
+		/*if (m) {
 			//printf ("%d %s %s %p\n", n_extra_decodes, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE), orig_p);
 			n_extra_decodes ++;
-		}
+		}*/
 
 		if (next != 0)
 			entry = &table [next * entry_size];
@@ -6056,9 +6056,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	gpointer code;
 	MonoAotModule *amodule = mscorlib_aot_module;
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
-	static int count = 0;
 
-	count ++;
 	if (index >= amodule->info.num_rgctx_fetch_trampolines) {
 		static gpointer addr;
 		gpointer *info;

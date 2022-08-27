@@ -644,7 +644,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var hostBuilder = Host.CreateDefaultBuilder();
             var host = hostBuilder.Build();
 
-            var type = hostBuilder.GetType();
+            // Use typeof so that trimming can see the field being used below
+            var type = typeof(HostBuilder);
+            Assert.Equal(hostBuilder.GetType(), type);
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);

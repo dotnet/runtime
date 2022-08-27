@@ -1713,12 +1713,7 @@ namespace Internal.JitInterface
                 _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
 #endif
 
-#if READYTORUN
-                if (recordToken)
-                {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
-                }
-#else
+#if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #endif
             }

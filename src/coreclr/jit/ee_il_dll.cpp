@@ -33,9 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 FILE* jitstdout = nullptr;
 
-ICorJitHost*   g_jitHost        = nullptr;
-static CILJit* ILJitter         = nullptr; // The one and only JITTER I return
-bool           g_jitInitialized = false;
+ICorJitHost* g_jitHost        = nullptr;
+bool         g_jitInitialized = false;
 
 /*****************************************************************************/
 
@@ -152,17 +151,7 @@ void jitShutdown(bool processIsTerminating)
 
 /*****************************************************************************/
 
-struct CILJitSingletonAllocator
-{
-    int x;
-};
-const CILJitSingletonAllocator CILJitSingleton = {0};
-
-void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
-{
-    static char CILJitBuff[sizeof(CILJit)];
-    return CILJitBuff;
-}
+static CILJit g_CILJit;
 
 DLLEXPORT ICorJitCompiler* getJit()
 {
@@ -171,11 +160,7 @@ DLLEXPORT ICorJitCompiler* getJit()
         return nullptr;
     }
 
-    if (ILJitter == nullptr)
-    {
-        ILJitter = new (CILJitSingleton) CILJit();
-    }
-    return (ILJitter);
+    return &g_CILJit;
 }
 
 /*****************************************************************************/

@@ -31,11 +31,13 @@ namespace System.Text.Json.Serialization.Tests
 
     public class DefaultJsonPropertyInfoTests_SerializerContextNoWrapping : DefaultJsonPropertyInfoTests
     {
+        protected override bool ModifiersNotSupported => true;
+
         protected override IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers)
         {
             if (modifiers.Length != 0)
             {
-                throw new SkipTestException($"Testing non wrapped JsonSerializerContext but modifier is provided.");
+                Assert.Fail($"Testing non wrapped JsonSerializerContext but modifier is provided. Make sure to check {nameof(ModifiersNotSupported)}.");
             }
 
             return Context.Default;
@@ -75,6 +77,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public abstract partial class DefaultJsonPropertyInfoTests
     {
+        protected virtual bool ModifiersNotSupported => false;
         protected abstract IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers);
 
         private JsonSerializerOptions CreateOptionsWithModifiers(params Action<JsonTypeInfo>[] modifiers)
@@ -135,9 +138,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(nameof(ClassWithRequiredCustomAttributes.RequiredB), exception.Message);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RequiredMemberCanBeModifiedToNonRequired()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributes))
@@ -180,9 +186,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(nameof(ClassWithRequiredCustomAttributes.RequiredB), exception.Message);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void NonRequiredMemberCanBeModifiedToRequired()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributes))
@@ -234,9 +243,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithRequiredCustomAttributeAndDataExtensionProperty>("""{"Data":{}}""", options));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RequiredExtensionDataPropertyCanBeFixedToNotBeRequiredWithResolver()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndDataExtensionProperty))
@@ -265,9 +277,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("bar", ((JsonElement)deserialized.Data["foo"]).GetString());
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RequiredExtensionDataPropertyCanBeFixedToNotBeExtensionDataWithResolver()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndDataExtensionProperty))
@@ -306,9 +321,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithRequiredCustomAttributeAndReadOnlyProperty>("""{"Data":{}}""", options));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RequiredReadOnlyPropertyCanBeFixedToNotBeRequiredWithResolver()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndReadOnlyProperty))
@@ -338,9 +356,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("SomePropertyInitialValue", deserialized.SomeProperty);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RequiredReadOnlyPropertyCanBeFixedToBeWritableWithResolver()
         {
+            if (ModifiersNotSupported)
+                return;
+
             JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndReadOnlyProperty))

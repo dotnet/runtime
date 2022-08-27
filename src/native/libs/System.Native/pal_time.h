@@ -48,4 +48,4 @@ PALEXPORT uint64_t SystemNative_GetTimestamp(void);
  * returned is sum of utilization across all processors, e.g. this function will
  * return 200 when two cores are running at 100%.
  */
-PALEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);
+PALEXPORT double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);

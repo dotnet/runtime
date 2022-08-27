@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -25,17 +23,13 @@ namespace System.Text.Json.Serialization.Metadata
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
-            if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
+            if (converter.ConverterStrategy == ConverterStrategy.Object)
             {
                 AddPropertiesAndParametersUsingReflection();
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            if (converter.UsesDefaultConstructor)
-            {
-                SetCreateObject(createObject);
-            }
-
+            SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 
             // Plug in any converter configuration -- should be run last.
@@ -47,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private void AddPropertiesAndParametersUsingReflection()
         {
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+            Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Object);
 
             const BindingFlags BindingFlags =
                 BindingFlags.Instance |

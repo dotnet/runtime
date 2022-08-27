@@ -112,21 +112,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
-    /// Path to Dotnet PGO binary (dotnet-pgo)
-    /// </summary>
-    public string? PgoBinaryPath { get; set; }
-
-    /// <summary>
-    /// NetTrace file to use when invoking dotnet-pgo for
-    /// </summary>
-    public string? NetTracePath { get; set; }
-
-    /// <summary>
-    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
-    /// </summary>
-    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
-
-    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -287,31 +272,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
-        if (!string.IsNullOrEmpty(NetTracePath))
-        {
-            if (!File.Exists(NetTracePath))
-            {
-                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
-                return false;
-            }
-            if (!File.Exists(PgoBinaryPath))
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
-                return false;
-            }
-            if (ReferenceAssemblyPathsForPGO.Length == 0)
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
-                return false;
-            }
-            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-            {
-                string? fullPath = refAsmItem.GetMetadata("FullPath");
-                if (!File.Exists(fullPath))
-                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
-            }
-        }
-
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -438,48 +398,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private bool ProcessNettrace(string netTraceFile)
-    {
-        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
-
-        if (_cache!.Enabled)
-        {
-            string hash = Utils.ComputeHash(netTraceFile);
-            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
-                return true;
-            }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
-            }
-        }
-
-        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
-        pgoArgsStr.Append($"create-mibc");
-        pgoArgsStr.Append($" --trace {netTraceFile} ");
-        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-        {
-            string? fullPath = refAsmItem.GetMetadata("FullPath");
-            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
-        }
-        pgoArgsStr.Append($" --output {outputMibcPath} ");
-        (int exitCode, string output) = Utils.TryRunProcess(Log,
-                                                            PgoBinaryPath!,
-                                                            pgoArgsStr.ToString());
-
-        if (exitCode != 0)
-        {
-            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
-            return false;
-        }
-
-        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
-        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
-        return true;
-    }
-
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -497,9 +415,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
-
-        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
-            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -1150,132 +1065,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     }
 }
 
-internal sealed class FileCache
-{
-    private CompilerCache? _newCache;
-    private CompilerCache? _oldCache;
-
-    public bool Enabled { get; }
-    public TaskLoggingHelper Log { get; }
-
-    public FileCache(string? cacheFilePath, TaskLoggingHelper log)
-    {
-        Log = log;
-        if (string.IsNullOrEmpty(cacheFilePath))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because CacheFilePath is not set");
-            return;
-        }
-
-        Enabled = true;
-        if (File.Exists(cacheFilePath))
-        {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
-                                                                    typeof(CompilerCache),
-                                                                    new JsonSerializerOptions());
-        }
-
-        _oldCache ??= new();
-        _newCache = new(_oldCache.FileHashes);
-    }
-
-    public bool UpdateAndCheckHasFileChanged(string filePath, string newHash)
-    {
-        if (!Enabled)
-            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
-
-        _newCache!.FileHashes[filePath] = newHash;
-        return !_oldCache!.FileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
-    }
-
-    public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
-    {
-        if (!Enabled)
-            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
-
-        cause = null;
-
-        string newHash = Utils.ComputeHash(proxyFile.TempFile);
-        _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
-
-        if (!File.Exists(proxyFile.TargetFile))
-        {
-            cause = $"the output file didn't exist";
-            return true;
-        }
-
-        string? oldHash;
-        if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
-            oldHash = Utils.ComputeHash(proxyFile.TargetFile);
-
-        if (oldHash != newHash)
-        {
-            cause = $"hash for the file changed";
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool Save(string? cacheFilePath)
-    {
-        if (!Enabled || string.IsNullOrEmpty(cacheFilePath))
-            return false;
-
-        var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(cacheFilePath!, json);
-        return true;
-    }
-
-    public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
-}
-
-internal sealed class ProxyFile
-{
-    public string TargetFile { get; }
-    public string TempFile   { get; }
-    private FileCache _cache;
-
-    public ProxyFile(string targetFile, FileCache cache)
-    {
-        _cache = cache;
-        this.TargetFile = targetFile;
-        this.TempFile = _cache.Enabled ? targetFile + ".tmp" : targetFile;
-    }
-
-    public bool CopyOutputFileIfChanged()
-    {
-        if (!_cache.Enabled)
-            return true;
-
-        if (!File.Exists(TempFile))
-            throw new LogAsErrorException($"Could not find the temporary file {TempFile} for target file {TargetFile}. Look for any errors/warnings generated earlier in the build.");
-
-        try
-        {
-            if (!_cache.ShouldCopy(this, out string? cause))
-            {
-                _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
-                return false;
-            }
-
-            if (File.Exists(TargetFile))
-                File.Delete(TargetFile);
-
-            File.Copy(TempFile, TargetFile);
-
-            _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
-            return true;
-        }
-        finally
-        {
-            _cache.Log.LogMessage(MessageImportance.Low, $"Deleting temp file {TempFile}");
-            File.Delete(TempFile);
-        }
-    }
-
-}
-
 public enum MonoAotMode
 {
     Normal,
@@ -1305,14 +1094,4 @@ public enum MonoAotModulesTableLanguage
 {
     C,
     ObjC
-}
-
-internal sealed class CompilerCache
-{
-    public CompilerCache() => FileHashes = new();
-    public CompilerCache(IDictionary<string, string> oldHashes)
-        => FileHashes = new(oldHashes);
-
-    [JsonPropertyName("file_hashes")]
-    public ConcurrentDictionary<string, string> FileHashes { get; set; }
 }

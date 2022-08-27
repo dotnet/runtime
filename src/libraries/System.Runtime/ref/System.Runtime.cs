@@ -773,6 +773,8 @@ namespace System
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<byte>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out byte value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<byte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out byte value) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
@@ -816,9 +818,9 @@ namespace System
         static bool System.Numerics.INumberBase<byte>.TryConvertFromChecked<TOther>(TOther value, out byte result) { throw null; }
         static bool System.Numerics.INumberBase<byte>.TryConvertFromSaturating<TOther>(TOther value, out byte result) { throw null; }
         static bool System.Numerics.INumberBase<byte>.TryConvertFromTruncating<TOther>(TOther value, out byte result) { throw null; }
-        static bool System.Numerics.INumberBase<byte>.TryConvertToChecked<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<byte>.TryConvertToSaturating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<byte>.TryConvertToTruncating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToChecked<TOther>(byte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToSaturating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToTruncating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static byte System.Numerics.INumber<byte>.CopySign(byte value, byte sign) { throw null; }
         static byte System.Numerics.INumber<byte>.MaxNumber(byte x, byte y) { throw null; }
         static byte System.Numerics.INumber<byte>.MinNumber(byte x, byte y) { throw null; }
@@ -947,6 +949,8 @@ namespace System
         static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<char>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out char value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<char>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out char value) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.IBinaryNumber<char>.IsPow2(char value) { throw null; }
@@ -996,9 +1000,9 @@ namespace System
         static bool System.Numerics.INumberBase<char>.TryConvertFromChecked<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromSaturating<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromTruncating<TOther>(TOther value, out char result) { throw null; }
-        static bool System.Numerics.INumberBase<char>.TryConvertToChecked<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<char>.TryConvertToSaturating<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<char>.TryConvertToTruncating<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToChecked<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToSaturating<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToTruncating<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) { throw null; }
@@ -2012,9 +2016,9 @@ namespace System
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result) { throw null; }
-        static bool System.Numerics.INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MaxNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MinNumber(decimal x, decimal y) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
@@ -2262,9 +2266,9 @@ namespace System
         static bool System.Numerics.INumberBase<double>.TryConvertFromChecked<TOther>(TOther value, out double result) { throw null; }
         static bool System.Numerics.INumberBase<double>.TryConvertFromSaturating<TOther>(TOther value, out double result) { throw null; }
         static bool System.Numerics.INumberBase<double>.TryConvertFromTruncating<TOther>(TOther value, out double result) { throw null; }
-        static bool System.Numerics.INumberBase<double>.TryConvertToChecked<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<double>.TryConvertToSaturating<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<double>.TryConvertToTruncating<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToChecked<TOther>(double value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToSaturating<TOther>(double value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToTruncating<TOther>(double value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static double System.Numerics.ISubtractionOperators<double, double, double>.operator -(double left, double right) { throw null; }
         static double System.Numerics.IUnaryNegationOperators<double, double>.operator -(double value) { throw null; }
         static double System.Numerics.IUnaryPlusOperators<double, double>.operator +(double value) { throw null; }
@@ -2604,19 +2608,11 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
-    /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
         Default = 0,
-
-        /// <summary>Forces the garbage collection to occur immediately.</summary>
         Forced = 1,
-
-        /// <summary>Allows the garbage collector to determine whether the current time is optimal to reclaim objects.</summary>
         Optimized = 2,
-
-        /// <summary>Requests that the garbage collector decommit as much memory as possible.</summary>
         Aggressive = 3,
     }
 
@@ -2912,9 +2908,9 @@ namespace System
         static bool System.Numerics.INumberBase<System.Half>.TryConvertFromChecked<TOther>(TOther value, out System.Half result) { throw null; }
         static bool System.Numerics.INumberBase<System.Half>.TryConvertFromSaturating<TOther>(TOther value, out System.Half result) { throw null; }
         static bool System.Numerics.INumberBase<System.Half>.TryConvertFromTruncating<TOther>(TOther value, out System.Half result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Half>.TryConvertToChecked<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Half>.TryConvertToSaturating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Half>.TryConvertToTruncating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToChecked<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToSaturating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToTruncating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Half Tan(System.Half x) { throw null; }
         public static System.Half Tanh(System.Half x) { throw null; }
         public static System.Half TanPi(System.Half x) { throw null; }
@@ -3191,6 +3187,8 @@ namespace System
         public static int Sign(System.Int128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.Int128>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Int128>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Int128>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Int128 value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Int128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Int128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsCanonical(System.Int128 value) { throw null; }
@@ -3211,9 +3209,9 @@ namespace System
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromChecked<TOther>(TOther value, out System.Int128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromSaturating<TOther>(TOther value, out System.Int128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromTruncating<TOther>(TOther value, out System.Int128 result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToChecked<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToSaturating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToTruncating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToChecked<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToSaturating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToTruncating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static System.Int128 System.Numerics.INumber<System.Int128>.MaxNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumber<System.Int128>.MinNumber(System.Int128 x, System.Int128 y) { throw null; }
         public override string ToString() { throw null; }
@@ -3296,6 +3294,8 @@ namespace System
         static short System.Numerics.IAdditionOperators<short, short, short>.operator checked +(short left, short right) { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<short>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out short value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<short>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out short value) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
@@ -3334,9 +3334,9 @@ namespace System
         static bool System.Numerics.INumberBase<short>.TryConvertFromChecked<TOther>(TOther value, out short result) { throw null; }
         static bool System.Numerics.INumberBase<short>.TryConvertFromSaturating<TOther>(TOther value, out short result) { throw null; }
         static bool System.Numerics.INumberBase<short>.TryConvertFromTruncating<TOther>(TOther value, out short result) { throw null; }
-        static bool System.Numerics.INumberBase<short>.TryConvertToChecked<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<short>.TryConvertToSaturating<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<short>.TryConvertToTruncating<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToChecked<TOther>(short value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToSaturating<TOther>(short value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToTruncating<TOther>(short value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static short System.Numerics.INumber<short>.MaxNumber(short x, short y) { throw null; }
         static short System.Numerics.INumber<short>.MinNumber(short x, short y) { throw null; }
         static short System.Numerics.IShiftOperators<short, int, short>.operator <<(short value, int shiftAmount) { throw null; }
@@ -3427,6 +3427,8 @@ namespace System
         static int System.Numerics.IAdditionOperators<int, int, int>.operator checked +(int left, int right) { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<int>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out int value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<int>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out int value) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
@@ -3465,9 +3467,9 @@ namespace System
         static bool System.Numerics.INumberBase<int>.TryConvertFromChecked<TOther>(TOther value, out int result) { throw null; }
         static bool System.Numerics.INumberBase<int>.TryConvertFromSaturating<TOther>(TOther value, out int result) { throw null; }
         static bool System.Numerics.INumberBase<int>.TryConvertFromTruncating<TOther>(TOther value, out int result) { throw null; }
-        static bool System.Numerics.INumberBase<int>.TryConvertToChecked<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<int>.TryConvertToSaturating<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<int>.TryConvertToTruncating<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToChecked<TOther>(int value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToSaturating<TOther>(int value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToTruncating<TOther>(int value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static int System.Numerics.INumber<int>.MaxNumber(int x, int y) { throw null; }
         static int System.Numerics.INumber<int>.MinNumber(int x, int y) { throw null; }
         static int System.Numerics.IShiftOperators<int, int, int>.operator <<(int value, int shiftAmount) { throw null; }
@@ -3558,6 +3560,8 @@ namespace System
         static long System.Numerics.IAdditionOperators<long, long, long>.operator checked +(long left, long right) { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<long>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out long value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<long>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out long value) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
@@ -3596,9 +3600,9 @@ namespace System
         static bool System.Numerics.INumberBase<long>.TryConvertFromChecked<TOther>(TOther value, out long result) { throw null; }
         static bool System.Numerics.INumberBase<long>.TryConvertFromSaturating<TOther>(TOther value, out long result) { throw null; }
         static bool System.Numerics.INumberBase<long>.TryConvertFromTruncating<TOther>(TOther value, out long result) { throw null; }
-        static bool System.Numerics.INumberBase<long>.TryConvertToChecked<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<long>.TryConvertToSaturating<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<long>.TryConvertToTruncating<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToChecked<TOther>(long value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToSaturating<TOther>(long value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToTruncating<TOther>(long value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static long System.Numerics.INumber<long>.MaxNumber(long x, long y) { throw null; }
         static long System.Numerics.INumber<long>.MinNumber(long x, long y) { throw null; }
         static long System.Numerics.IShiftOperators<long, int, long>.operator <<(long value, int shiftAmount) { throw null; }
@@ -3693,6 +3697,8 @@ namespace System
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<nint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<nint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
@@ -3729,9 +3735,9 @@ namespace System
         static bool System.Numerics.INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result) { throw null; }
         static bool System.Numerics.INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result) { throw null; }
         static bool System.Numerics.INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result) { throw null; }
-        static bool System.Numerics.INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static nint System.Numerics.INumber<nint>.MaxNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumber<nint>.MinNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.IShiftOperators<nint, int, nint>.operator <<(nint value, int shiftAmount) { throw null; }
@@ -3798,7 +3804,7 @@ namespace System
         void OnError(System.Exception error);
         void OnNext(T value);
     }
-    public partial interface IParsable<TSelf> where TSelf : System.IParsable<TSelf>
+    public partial interface IParsable<TSelf> where TSelf : System.IParsable<TSelf>?
     {
         static abstract TSelf Parse(string s, System.IFormatProvider? provider);
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
@@ -3811,7 +3817,7 @@ namespace System
     {
         bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider);
     }
-    public partial interface ISpanParsable<TSelf> : System.IParsable<TSelf> where TSelf : System.ISpanParsable<TSelf>
+    public partial interface ISpanParsable<TSelf> : System.IParsable<TSelf> where TSelf : System.ISpanParsable<TSelf>?
     {
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
@@ -4618,6 +4624,8 @@ namespace System
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator checked +(sbyte left, sbyte right) { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<sbyte>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out sbyte value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<sbyte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out sbyte value) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
@@ -4656,9 +4664,9 @@ namespace System
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromChecked<TOther>(TOther value, out sbyte result) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromSaturating<TOther>(TOther value, out sbyte result) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromTruncating<TOther>(TOther value, out sbyte result) { throw null; }
-        static bool System.Numerics.INumberBase<sbyte>.TryConvertToChecked<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<sbyte>.TryConvertToSaturating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<sbyte>.TryConvertToTruncating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToChecked<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToSaturating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToTruncating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static sbyte System.Numerics.INumber<sbyte>.MaxNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumber<sbyte>.MinNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.IShiftOperators<sbyte, int, sbyte>.operator <<(sbyte value, int shiftAmount) { throw null; }
@@ -4855,9 +4863,9 @@ namespace System
         static bool System.Numerics.INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result) { throw null; }
         static bool System.Numerics.INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result) { throw null; }
         static bool System.Numerics.INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result) { throw null; }
-        static bool System.Numerics.INumberBase<float>.TryConvertToChecked<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<float>.TryConvertToSaturating<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<float>.TryConvertToTruncating<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToChecked<TOther>(float value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToSaturating<TOther>(float value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToTruncating<TOther>(float value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static float System.Numerics.ISubtractionOperators<float, float, float>.operator -(float left, float right) { throw null; }
         static float System.Numerics.IUnaryNegationOperators<float, float>.operator -(float value) { throw null; }
         static float System.Numerics.IUnaryPlusOperators<float, float>.operator +(float value) { throw null; }
@@ -6186,6 +6194,8 @@ namespace System
         public static int Sign(System.UInt128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.UInt128>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.UInt128>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.UInt128>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.UInt128 value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.UInt128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.UInt128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.Abs(System.UInt128 value) { throw null; }
@@ -6211,9 +6221,9 @@ namespace System
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromChecked<TOther>(TOther value, out System.UInt128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromSaturating<TOther>(TOther value, out System.UInt128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromTruncating<TOther>(TOther value, out System.UInt128 result) { throw null; }
-        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToChecked<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToSaturating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToTruncating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToChecked<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToSaturating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToTruncating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.CopySign(System.UInt128 value, System.UInt128 sign) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.MaxNumber(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.MinNumber(System.UInt128 x, System.UInt128 y) { throw null; }
@@ -6291,6 +6301,8 @@ namespace System
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<ushort>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ushort value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<ushort>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ushort value) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
@@ -6334,9 +6346,9 @@ namespace System
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromChecked<TOther>(TOther value, out ushort result) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromSaturating<TOther>(TOther value, out ushort result) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromTruncating<TOther>(TOther value, out ushort result) { throw null; }
-        static bool System.Numerics.INumberBase<ushort>.TryConvertToChecked<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<ushort>.TryConvertToSaturating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<ushort>.TryConvertToTruncating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToChecked<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToSaturating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToTruncating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static ushort System.Numerics.INumber<ushort>.CopySign(ushort value, ushort sign) { throw null; }
         static ushort System.Numerics.INumber<ushort>.MaxNumber(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumber<ushort>.MinNumber(ushort x, ushort y) { throw null; }
@@ -6422,6 +6434,8 @@ namespace System
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator checked +(uint left, uint right) { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<uint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out uint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<uint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out uint value) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
@@ -6465,9 +6479,9 @@ namespace System
         static bool System.Numerics.INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result) { throw null; }
         static bool System.Numerics.INumberBase<uint>.TryConvertFromSaturating<TOther>(TOther value, out uint result) { throw null; }
         static bool System.Numerics.INumberBase<uint>.TryConvertFromTruncating<TOther>(TOther value, out uint result) { throw null; }
-        static bool System.Numerics.INumberBase<uint>.TryConvertToChecked<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<uint>.TryConvertToSaturating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<uint>.TryConvertToTruncating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToChecked<TOther>(uint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToSaturating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToTruncating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static uint System.Numerics.INumber<uint>.CopySign(uint value, uint sign) { throw null; }
         static uint System.Numerics.INumber<uint>.MaxNumber(uint x, uint y) { throw null; }
         static uint System.Numerics.INumber<uint>.MinNumber(uint x, uint y) { throw null; }
@@ -6553,6 +6567,8 @@ namespace System
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<ulong>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ulong value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<ulong>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ulong value) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
@@ -6596,9 +6612,9 @@ namespace System
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result) { throw null; }
-        static bool System.Numerics.INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static ulong System.Numerics.INumber<ulong>.CopySign(ulong value, ulong sign) { throw null; }
         static ulong System.Numerics.INumber<ulong>.MaxNumber(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumber<ulong>.MinNumber(ulong x, ulong y) { throw null; }
@@ -6685,6 +6701,8 @@ namespace System
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<nuint>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nuint value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<nuint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nuint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
@@ -6726,9 +6744,9 @@ namespace System
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromChecked<TOther>(TOther value, out nuint result) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromSaturating<TOther>(TOther value, out nuint result) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromTruncating<TOther>(TOther value, out nuint result) { throw null; }
-        static bool System.Numerics.INumberBase<nuint>.TryConvertToChecked<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<nuint>.TryConvertToSaturating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<nuint>.TryConvertToTruncating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToChecked<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToSaturating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToTruncating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static nuint System.Numerics.INumber<nuint>.CopySign(nuint value, nuint sign) { throw null; }
         static nuint System.Numerics.INumber<nuint>.MaxNumber(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumber<nuint>.MinNumber(nuint x, nuint y) { throw null; }
@@ -9131,6 +9149,7 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static System.IO.DirectoryInfo CreateTempSubdirectory(string? prefix = null) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
@@ -10199,28 +10218,36 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
     }
-    public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>
+    public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator +(TSelf left, TOther right);
         static virtual TResult operator checked +(TSelf left, TOther right) { throw null; }
     }
-    public partial interface IAdditiveIdentity<TSelf, TResult> where TSelf : System.Numerics.IAdditiveIdentity<TSelf, TResult>
+    public partial interface IAdditiveIdentity<TSelf, TResult> where TSelf : System.Numerics.IAdditiveIdentity<TSelf, TResult>?
     {
         static abstract TResult AdditiveIdentity { get; }
     }
-    public partial interface IBinaryFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IFloatingPointIeee754<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryFloatingPointIeee754<TSelf>
+    public partial interface IBinaryFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IFloatingPointIeee754<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryFloatingPointIeee754<TSelf>?
     {
     }
-    public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>
+    public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>?
     {
         static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
         static abstract TSelf PopCount(TSelf value);
+        static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
         static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);
+        static abstract bool TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
+        static abstract bool TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
         bool TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten);
         bool TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten);
         int WriteBigEndian(byte[] destination) { throw null; }
@@ -10230,42 +10257,42 @@ namespace System.Numerics
         int WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
         int WriteLittleEndian(System.Span<byte> destination) { throw null; }
     }
-    public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>
+    public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>?
     {
-        static abstract TSelf AllBitsSet { get; }
+        static virtual TSelf AllBitsSet { get { throw null; } }
         static abstract bool IsPow2(TSelf value);
         static abstract TSelf Log2(TSelf value);
     }
-    public partial interface IBitwiseOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IBitwiseOperators<TSelf, TOther, TResult>
+    public partial interface IBitwiseOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IBitwiseOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator &(TSelf left, TOther right);
         static abstract TResult operator |(TSelf left, TOther right);
         static abstract TResult operator ^(TSelf left, TOther right);
         static abstract TResult operator ~(TSelf value);
     }
-    public partial interface IComparisonOperators<TSelf, TOther, TResult> : System.Numerics.IEqualityOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IComparisonOperators<TSelf, TOther, TResult>
+    public partial interface IComparisonOperators<TSelf, TOther, TResult> : System.Numerics.IEqualityOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IComparisonOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator >(TSelf left, TOther right);
         static abstract TResult operator >=(TSelf left, TOther right);
         static abstract TResult operator <(TSelf left, TOther right);
         static abstract TResult operator <=(TSelf left, TOther right);
     }
-    public partial interface IDecrementOperators<TSelf> where TSelf : System.Numerics.IDecrementOperators<TSelf>
+    public partial interface IDecrementOperators<TSelf> where TSelf : System.Numerics.IDecrementOperators<TSelf>?
     {
         static virtual TSelf operator checked --(TSelf value) { throw null; }
         static abstract TSelf operator --(TSelf value);
     }
-    public partial interface IDivisionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IDivisionOperators<TSelf, TOther, TResult>
+    public partial interface IDivisionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IDivisionOperators<TSelf, TOther, TResult>?
     {
         static virtual TResult operator checked /(TSelf left, TOther right) { throw null; }
         static abstract TResult operator /(TSelf left, TOther right);
     }
-    public partial interface IEqualityOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IEqualityOperators<TSelf, TOther, TResult>
+    public partial interface IEqualityOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IEqualityOperators<TSelf, TOther, TResult>?
     {
-        static abstract TResult operator ==(TSelf left, TOther right);
-        static abstract TResult operator !=(TSelf left, TOther right);
+        static abstract TResult operator ==(TSelf? left, TOther? right);
+        static abstract TResult operator !=(TSelf? left, TOther? right);
     }
-    public partial interface IExponentialFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IExponentialFunctions<TSelf>
+    public partial interface IExponentialFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IExponentialFunctions<TSelf>?
     {
         static abstract TSelf Exp(TSelf x);
         static abstract TSelf Exp10(TSelf x);
@@ -10274,13 +10301,13 @@ namespace System.Numerics
         static virtual TSelf Exp2M1(TSelf x) { throw null; }
         static virtual TSelf ExpM1(TSelf x) { throw null; }
     }
-    public partial interface IFloatingPointConstants<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IFloatingPointConstants<TSelf>
+    public partial interface IFloatingPointConstants<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IFloatingPointConstants<TSelf>?
     {
         static abstract TSelf E { get; }
         static abstract TSelf Pi { get; }
         static abstract TSelf Tau { get; }
     }
-    public partial interface IFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPointIeee754<TSelf>
+    public partial interface IFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPointIeee754<TSelf>?
     {
         static abstract TSelf Epsilon { get; }
         static abstract TSelf NaN { get; }
@@ -10298,7 +10325,7 @@ namespace System.Numerics
         static virtual TSelf ReciprocalSqrtEstimate(TSelf x) { throw null; }
         static abstract TSelf ScaleB(TSelf x, int n);
     }
-    public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>
+    public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>?
     {
         static virtual TSelf Ceiling(TSelf x) { throw null; }
         static virtual TSelf Floor(TSelf x) { throw null; }
@@ -10328,7 +10355,7 @@ namespace System.Numerics
         int WriteSignificandLittleEndian(byte[] destination, int startIndex) { throw null; }
         int WriteSignificandLittleEndian(System.Span<byte> destination) { throw null; }
     }
-    public partial interface IHyperbolicFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IHyperbolicFunctions<TSelf>
+    public partial interface IHyperbolicFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IHyperbolicFunctions<TSelf>?
     {
         static abstract TSelf Acosh(TSelf x);
         static abstract TSelf Asinh(TSelf x);
@@ -10337,12 +10364,12 @@ namespace System.Numerics
         static abstract TSelf Sinh(TSelf x);
         static abstract TSelf Tanh(TSelf x);
     }
-    public partial interface IIncrementOperators<TSelf> where TSelf : System.Numerics.IIncrementOperators<TSelf>
+    public partial interface IIncrementOperators<TSelf> where TSelf : System.Numerics.IIncrementOperators<TSelf>?
     {
         static virtual TSelf operator checked ++(TSelf value) { throw null; }
         static abstract TSelf operator ++(TSelf value);
     }
-    public partial interface ILogarithmicFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ILogarithmicFunctions<TSelf>
+    public partial interface ILogarithmicFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ILogarithmicFunctions<TSelf>?
     {
         static abstract TSelf Log(TSelf x);
         static abstract TSelf Log(TSelf x, TSelf newBase);
@@ -10352,33 +10379,42 @@ namespace System.Numerics
         static virtual TSelf Log2P1(TSelf x) { throw null; }
         static virtual TSelf LogP1(TSelf x) { throw null; }
     }
-    public partial interface IMinMaxValue<TSelf> where TSelf : System.Numerics.IMinMaxValue<TSelf>
+    public partial interface IMinMaxValue<TSelf> where TSelf : System.Numerics.IMinMaxValue<TSelf>?
     {
         static abstract TSelf MaxValue { get; }
         static abstract TSelf MinValue { get; }
     }
-    public partial interface IModulusOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IModulusOperators<TSelf, TOther, TResult>
+    public partial interface IModulusOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IModulusOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator %(TSelf left, TOther right);
     }
-    public partial interface IMultiplicativeIdentity<TSelf, TResult> where TSelf : System.Numerics.IMultiplicativeIdentity<TSelf, TResult>
+    public partial interface IMultiplicativeIdentity<TSelf, TResult> where TSelf : System.Numerics.IMultiplicativeIdentity<TSelf, TResult>?
     {
         static abstract TResult MultiplicativeIdentity { get; }
     }
-    public partial interface IMultiplyOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IMultiplyOperators<TSelf, TOther, TResult>
+    public partial interface IMultiplyOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IMultiplyOperators<TSelf, TOther, TResult>?
     {
         static virtual TResult operator checked *(TSelf left, TOther right) { throw null; }
         static abstract TResult operator *(TSelf left, TOther right);
     }
-    public partial interface INumberBase<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumberBase<TSelf>
+    public partial interface INumberBase<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumberBase<TSelf>?
     {
         static abstract TSelf One { get; }
         static abstract int Radix { get; }
         static abstract TSelf Zero { get; }
         static abstract TSelf Abs(TSelf value);
-        static virtual TSelf CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        static virtual TSelf CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        static virtual TSelf CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        static virtual TSelf CreateChecked<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
+        static virtual TSelf CreateSaturating<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
+        static virtual TSelf CreateTruncating<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
         static abstract bool IsCanonical(TSelf value);
         static abstract bool IsComplexNumber(TSelf value);
         static abstract bool IsEvenInteger(TSelf value);
@@ -10402,16 +10438,34 @@ namespace System.Numerics
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
         static abstract TSelf Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
-        protected static abstract bool TryConvertFromChecked<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
-        protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
-        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
-        protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
-        protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
-        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertFromChecked<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
     }
-    public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>
+    public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>?
     {
         static virtual TSelf Clamp(TSelf value, TSelf min, TSelf max) { throw null; }
         static virtual TSelf CopySign(TSelf value, TSelf sign) { throw null; }
@@ -10421,33 +10475,33 @@ namespace System.Numerics
         static virtual TSelf MinNumber(TSelf x, TSelf y) { throw null; }
         static virtual int Sign(TSelf value) { throw null; }
     }
-    public partial interface IPowerFunctions<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IPowerFunctions<TSelf>
+    public partial interface IPowerFunctions<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IPowerFunctions<TSelf>?
     {
         static abstract TSelf Pow(TSelf x, TSelf y);
     }
-    public partial interface IRootFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>
+    public partial interface IRootFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>?
     {
         static abstract TSelf Cbrt(TSelf x);
         static abstract TSelf Hypot(TSelf x, TSelf y);
         static abstract TSelf RootN(TSelf x, int n);
         static abstract TSelf Sqrt(TSelf x);
     }
-    public partial interface IShiftOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IShiftOperators<TSelf, TOther, TResult>
+    public partial interface IShiftOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IShiftOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator <<(TSelf value, TOther shiftAmount);
         static abstract TResult operator >>(TSelf value, TOther shiftAmount);
         static abstract TResult operator >>>(TSelf value, TOther shiftAmount);
     }
-    public partial interface ISignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ISignedNumber<TSelf>
+    public partial interface ISignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ISignedNumber<TSelf>?
     {
         static abstract TSelf NegativeOne { get; }
     }
-    public partial interface ISubtractionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.ISubtractionOperators<TSelf, TOther, TResult>
+    public partial interface ISubtractionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.ISubtractionOperators<TSelf, TOther, TResult>?
     {
         static virtual TResult operator checked -(TSelf left, TOther right) { throw null; }
         static abstract TResult operator -(TSelf left, TOther right);
     }
-    public partial interface ITrigonometricFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ITrigonometricFunctions<TSelf>
+    public partial interface ITrigonometricFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ITrigonometricFunctions<TSelf>?
     {
         static abstract TSelf Acos(TSelf x);
         static abstract TSelf AcosPi(TSelf x);
@@ -10464,16 +10518,16 @@ namespace System.Numerics
         static abstract TSelf Tan(TSelf x);
         static abstract TSelf TanPi(TSelf x);
     }
-    public partial interface IUnaryNegationOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryNegationOperators<TSelf, TResult>
+    public partial interface IUnaryNegationOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryNegationOperators<TSelf, TResult>?
     {
         static virtual TResult operator checked -(TSelf value) { throw null; }
         static abstract TResult operator -(TSelf value);
     }
-    public partial interface IUnaryPlusOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryPlusOperators<TSelf, TResult>
+    public partial interface IUnaryPlusOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryPlusOperators<TSelf, TResult>?
     {
         static abstract TResult operator +(TSelf value);
     }
-    public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>
+    public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>?
     {
     }
 }
@@ -12249,8 +12303,8 @@ namespace System.Runtime.CompilerServices
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
         public void AppendFormatted(string? value) { }
         public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
         public void AppendFormatted<T>(T value) { }
@@ -13332,10 +13386,10 @@ namespace System.Runtime.Versioning
         public override string ToString() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    public sealed partial class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    public sealed partial class ObsoletedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
-        public ObsoletedInOSPlatformAttribute(string platformName, string? message) : base(platformName) { }
+        public ObsoletedOSPlatformAttribute(string platformName) : base(platformName) { }
+        public ObsoletedOSPlatformAttribute(string platformName, string? message) : base(platformName) { }
         public string? Message { get { throw null; } }
         public string? Url { get { throw null; } set {} }
     }

@@ -1403,7 +1403,8 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     // the memory allocated for m_pMethInst will be freed if the declaring type fails to load
     m_pPerInstInfo = (Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 
-    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
+    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionary();
+    _ASSERTE(pInstDest != NULL);
 
     {
         // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type

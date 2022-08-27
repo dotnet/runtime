@@ -614,8 +614,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         {
                             var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
                             JObject retValue = await resolver.Resolve(expression, token);
-                            if (retValue == null)
-                                retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
+                            retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
                             if (retValue["type"].Value<string>() == "object")
                             {
                                 osend["result"] = JObject.FromObject(new

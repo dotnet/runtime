@@ -121,7 +121,7 @@
     <value>This operation cannot be carried out because metadata for the following object was removed for performance reasons:\n\n  {0}\n\nNo further information is available. Rebuild in debug mode for better information.\n\n</value>
   </data>
   <data name="Reflection_InsufficientMetadata_EdbNeeded" xml:space="preserve">
-    <value>'{0}' is missing metadata. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=392859</value>
+    <value>'{0}' is missing native code or metadata. This can happen for code that is not compatible with trimming or AOT. Inspect and fix trimming and AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="Arg_DlgtTargMeth" xml:space="preserve">
     <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
@@ -151,7 +151,7 @@
     <value>This object cannot be invoked because no code was generated for it: '{0}'.</value>
   </data>
   <data name="MakeGenericMethod_NoMetadata" xml:space="preserve">
-    <value>MakeGenericMethod() cannot create this generic method instantiation because no code was generated for it: '{0}'.</value>
+    <value>'{0}' is missing native code. MethodInfo.MakeGenericMethod() is not compatible with AOT compilation. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="PlatformNotSupported_CannotInvokeDelegateCtor" xml:space="preserve">
     <value>Dynamic invocation of delegate constructors is not supported on this runtime.</value>

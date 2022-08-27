@@ -75,7 +75,8 @@ namespace System.Reflection.Context.Tests
         {
             Module[] loadedModules = _customAssembly.GetLoadedModules(true);
             Assert.Single(loadedModules);
-            Assert.Equal(typeof(CustomAssemblyTests).Assembly.GetName().Name + ".dll", loadedModules[0].Name);
+            if (PlatformDetection.HasAssemblyFiles)
+                Assert.Equal(typeof(CustomAssemblyTests).Assembly.GetName().Name + ".dll", loadedModules[0].Name);
             Assert.All(loadedModules,
                 (mod) => Assert.Equal(ProjectionConstants.CustomModule, mod.GetType().FullName));
         }
@@ -95,12 +96,13 @@ namespace System.Reflection.Context.Tests
         {
             Module[] modules = _customAssembly.GetModules(true);
             Assert.Single(modules);
-            Assert.Equal(typeof(CustomAssemblyTests).Assembly.GetName().Name + ".dll", modules[0].Name);
+            if (PlatformDetection.HasAssemblyFiles)
+                Assert.Equal(typeof(CustomAssemblyTests).Assembly.GetName().Name + ".dll", modules[0].Name);
             Assert.All(modules,
                 (module) => Assert.Equal(ProjectionConstants.CustomModule, module.GetType().FullName));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void GetModuleTest()
         {
             Module[] modules = _customAssembly.GetModules(true);
@@ -112,6 +114,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetSatelliteAssemblyTest()
         {
             Assert.Throws<FileNotFoundException>(() => _customAssembly.GetSatelliteAssembly(CultureInfo.InvariantCulture));

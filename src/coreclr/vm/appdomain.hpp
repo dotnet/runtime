@@ -1093,6 +1093,11 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
 protected:
 
     //****************************************************************************************
@@ -1255,8 +1260,7 @@ public:
 
 #ifdef DACCESS_COMPILE
 public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                   bool enumThis);
+    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
 #endif
 
 };  // class BaseDomain
@@ -1951,12 +1955,6 @@ public:
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMWRAPPERS
 
-    TPIndex GetTPIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_tpIndex;
-    }
-
     DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
@@ -2204,9 +2202,6 @@ private:
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
 #endif // FEATURE_COMWRAPPERS
-
-    // The thread-pool index of this app domain among existing app domains (starting from 1)
-    TPIndex m_tpIndex;
 
     Volatile<Stage> m_Stage;
 

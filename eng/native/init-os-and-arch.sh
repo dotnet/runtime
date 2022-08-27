@@ -41,6 +41,10 @@ case "$CPUName" in
         arch=loongarch64
         ;;
 
+    riscv64)
+        arch=riscv64
+        ;;
+
     amd64|x86_64)
         arch=x64
         ;;

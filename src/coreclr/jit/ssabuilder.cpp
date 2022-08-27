@@ -1644,11 +1644,6 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
     // lvPromoted structs are never tracked...
     assert(!varDsc->lvPromoted);
 
-    if (varDsc->lvOverlappingFields)
-    {
-        return false; // Don't use SSA on structs that have overlapping fields
-    }
-
     if (varDsc->lvIsStructField &&
         (m_pCompiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {

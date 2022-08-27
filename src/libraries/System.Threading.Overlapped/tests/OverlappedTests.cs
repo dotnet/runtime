@@ -60,8 +60,7 @@ public static partial class OverlappedTests
         Assert.Equal(1, obj.OffsetLow);
     }
 
-    [Fact]
-    [ActiveIssue("https://github.com/mono/mono/issues/15311", TestRuntimes.Mono)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
     public static void PropertyTest3()
     {
         IAsyncResult asyncResult = new Task(() => Console.WriteLine("this is a dummy task"));

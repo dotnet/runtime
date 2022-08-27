@@ -253,7 +253,10 @@ namespace System.Text.RegularExpressions
     {
         public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
         public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, string cultureName) { }
         public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds) { }
+        public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds, string cultureName) { }
+        public string CultureName { get; }
         public string Pattern { get; }
         public System.Text.RegularExpressions.RegexOptions Options { get; }
         public int MatchTimeoutMilliseconds { get; }

@@ -9,7 +9,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, ref ReadStack state)
+        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state)
         {
             if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo)
             {

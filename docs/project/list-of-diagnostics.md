@@ -101,6 +101,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0044`__ | AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported. |
 |  __`SYSLIB0045`__ | Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead. |
 |  __`SYSLIB0046`__ | ControlledExecution.Run method may corrupt the process and should not be used in production code. |
+|  __`SYSLIB0047`__ | XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution. |
 
 ## Analyzer Warnings
 

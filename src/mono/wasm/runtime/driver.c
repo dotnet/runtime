@@ -281,6 +281,12 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_getenv (const char *name)
+{
+	return monoeg_g_getenv (name); // JS must free
+}
+
 static void *sysglobal_native_handle;
 
 static void*
@@ -443,6 +449,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
+typedef void (*background_job_cb)(void);
+void mono_threads_schedule_background_job (background_job_cb cb);
+
 void mono_initialize_internals ()
 {
 	// Blazor specific custom routines - see dotnet_support.js for backing code
@@ -452,6 +461,7 @@ void mono_initialize_internals ()
 	core_initialize_internals();
 #endif
 
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -536,7 +546,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
-	
+
 #ifdef GEN_PINVOKE
 	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
 #endif

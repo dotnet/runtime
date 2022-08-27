@@ -103,6 +103,11 @@
                       PrivateAssets="all"
                       GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
+                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true"
+                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -140,6 +145,14 @@
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
+                        ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DotNetBuildFromSource)' != 'true'">
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*" />
   </ItemGroup>
 
   <ItemGroup>

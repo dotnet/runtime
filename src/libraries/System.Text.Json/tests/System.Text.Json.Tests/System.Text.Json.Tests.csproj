@@ -16,11 +16,6 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
   </ItemGroup>
@@ -230,6 +225,9 @@
     <Compile Include="Utf8JsonReaderTests.ValueTextEquals.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
     <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="Serialization\ConvertersForUnsupportedTypesFunctionalTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />

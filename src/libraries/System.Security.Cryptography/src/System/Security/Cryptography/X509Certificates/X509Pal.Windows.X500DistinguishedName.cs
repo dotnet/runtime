@@ -48,11 +48,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             int cbEncoded = 0;
             if (!Interop.Crypt32.CertStrToName(Interop.Crypt32.CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, null, ref cbEncoded, IntPtr.Zero))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             byte[] encodedName = new byte[cbEncoded];
             if (!Interop.Crypt32.CertStrToName(Interop.Crypt32.CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, encodedName, ref cbEncoded, IntPtr.Zero))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
             return encodedName;
         }

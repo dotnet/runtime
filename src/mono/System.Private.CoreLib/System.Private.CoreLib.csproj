@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -10,7 +10,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm;ppc64le</Platforms>
+    <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -66,6 +66,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 's390x'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -274,7 +278,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>

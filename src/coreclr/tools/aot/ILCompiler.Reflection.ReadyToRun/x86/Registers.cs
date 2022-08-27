@@ -8,7 +8,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.x86
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> RegName
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> RegName
     /// </summary>
     public enum Registers
     {
@@ -23,7 +23,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
     };
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> CalleeSavedRegName
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> CalleeSavedRegName
     /// </summary>
     public enum CalleeSavedRegisters
     {

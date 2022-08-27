@@ -3432,10 +3432,6 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 private:
-    UINT32 m_workerThreadPoolCompletionCount;
-    static UINT64 s_workerThreadPoolCompletionCountOverflow;
-    UINT32 m_ioThreadPoolCompletionCount;
-    static UINT64 s_ioThreadPoolCompletionCountOverflow;
     UINT32 m_monitorLockContentionCount;
     static UINT64 s_monitorLockContentionCountOverflow;
 
@@ -3489,38 +3485,6 @@ private:
     static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 
 public:
-    static void IncrementWorkerThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetWorkerThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalWorkerThreadPoolCompletionCount()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetTotalCount(offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static void IncrementIOThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_ioThreadPoolCompletionCount), &s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetIOThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalThreadPoolCompletionCount();
-
     static void IncrementMonitorLockContentionCount(Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -3837,7 +3801,7 @@ public:
 #endif
     }
 
-    void UnmarkRedirectContextInUse(PTR_CONTEXT pCtx)
+    bool UnmarkRedirectContextInUse(PTR_CONTEXT pCtx)
     {
         LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
@@ -3848,6 +3812,7 @@ public:
             m_RedirectContextInUse = false;
         }
 #endif
+        return (pCtx == m_pSavedRedirectContext);
     }
 #endif //DACCESS_COMPILE
 
@@ -4184,20 +4149,6 @@ public:
     void SetProfilerCallbacksAllowed(BOOL fValue)
     {
         m_fAllowProfilerCallbacks = fValue;
-    }
-
-private:
-    //
-    //This context is used for optimizations on I/O thread pool thread. In case the
-    //overlapped structure is from a different appdomain, it is stored in this structure
-    //to be processed later correctly by entering the right domain.
-    PVOID m_pIOCompletionContext;
-    BOOL AllocateIOCompletionContext();
-    VOID FreeIOCompletionContext();
-public:
-    inline PVOID GetIOCompletionContext()
-    {
-        return m_pIOCompletionContext;
     }
 
 private:
@@ -6003,10 +5954,6 @@ struct ManagedThreadBase
     // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
-    // the ThreadPool
-    static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
     // The Finalizer thread uses this path
     static void FinalizerBase(ADCallBackFcnType pTarget);

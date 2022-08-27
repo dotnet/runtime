@@ -467,20 +467,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
 
 #ifdef DEBUG
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        dumpFunction =
-            JitConfig.NgenDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
-    }
-    else
-    {
-        dumpFunction =
-            JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
-    }
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+    filename     = JitConfig.JitDumpFgFile();
+    pathname     = JitConfig.JitDumpFgDir();
 
     prePhasePattern  = JitConfig.JitDumpFgPrePhase();
     postPhasePattern = JitConfig.JitDumpFgPhase();
@@ -728,9 +717,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_NgenDumpFg             Same as COMPlus_JitDumpFg, but for ngen compiles.
-//      COMPlus_NgenDumpFgDir          Same as COMPlus_JitDumpFgDir, but for ngen compiles.
-//      COMPlus_NgenDumpFgFile         Same as COMPlus_JitDumpFgFile, but for ngen compiles.
 //      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *

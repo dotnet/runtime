@@ -390,4 +390,7 @@
   <data name="CpuFamilies" xml:space="preserve">
     <value>The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:</value>
   </data>
+  <data name="SupportIbc" xml:space="preserve">
+    <value>Enable processing of Ibc data embedded in the input assembly.</value>
+  </data>
 </root>

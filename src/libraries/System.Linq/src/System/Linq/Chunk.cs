@@ -60,10 +60,12 @@ namespace System.Linq
                 // Now that we know we have at least one item, allocate an initial storage array. This is not
                 // the array we'll yield.  It starts out small in order to avoid significantly overallocating
                 // when the source has many fewer elements than the chunk size.
-                var array = new TSource[Math.Min(size, 4)];
+                int arraySize = Math.Min(size, 4);
                 int i;
                 do
                 {
+                    var array = new TSource[arraySize];
+
                     // Store the first item.
                     array[0] = e.Current;
                     i = 1;
@@ -75,7 +77,8 @@ namespace System.Linq
                         {
                             if (i >= array.Length)
                             {
-                                Array.Resize(ref array, (int)Math.Min((uint)size, 2 * (uint)array.Length));
+                                arraySize = (int)Math.Min((uint)size, 2 * (uint)array.Length);
+                                Array.Resize(ref array, arraySize);
                             }
 
                             array[i] = e.Current;
@@ -93,15 +96,12 @@ namespace System.Linq
                         }
                     }
 
-                    // Extract the chunk array to yield, then clear out any references in our storage so that we don't keep
-                    // objects alive longer than needed (the caller might clear out elements from the yielded array.)
-                    var chunk = new TSource[i];
-                    Array.Copy(array, 0, chunk, 0, i);
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<TSource>())
+                    if (i != array.Length)
                     {
-                        Array.Clear(array, 0, i);
+                        Array.Resize(ref array, i);
                     }
-                    yield return chunk;
+
+                    yield return array;
                 }
                 while (i >= size && e.MoveNext());
             }

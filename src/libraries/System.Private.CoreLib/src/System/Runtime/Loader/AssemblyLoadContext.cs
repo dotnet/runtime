@@ -374,34 +374,54 @@ namespace System.Runtime.Loader
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
-            int iAssemblyStreamLength = (int)assembly.Length;
-
-            if (iAssemblyStreamLength <= 0)
+            ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
+            if (spanAssembly.IsEmpty)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
 
-            // Allocate the byte[] to hold the assembly
-            byte[] arrAssembly = new byte[iAssemblyStreamLength];
-
-            // Copy the assembly to the byte array
-            assembly.Read(arrAssembly, 0, iAssemblyStreamLength);
-
-            // Get the symbol stream in byte[] if provided
-            byte[]? arrSymbols = null;
+            // Read the symbol stream if provided
+            ReadOnlySpan<byte> spanSymbols = default;
             if (assemblySymbols != null)
             {
-                int iSymbolLength = (int)assemblySymbols.Length;
-                arrSymbols = new byte[iSymbolLength];
-
-                assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
+                spanSymbols = ReadAllBytes(assemblySymbols);
             }
 
             lock (_unloadLock)
             {
                 VerifyIsAlive();
 
-                return InternalLoad(arrAssembly, arrSymbols);
+                return InternalLoad(spanAssembly, spanSymbols);
+            }
+
+            static ReadOnlySpan<byte> ReadAllBytes(Stream stream)
+            {
+                if (stream.GetType() == typeof(MemoryStream) && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> memoryStreamBuffer))
+                {
+                    int position = (int)stream.Position;
+                    // Simulate that we read the stream to its end.
+                    stream.Seek(0, SeekOrigin.End);
+                    return memoryStreamBuffer.AsSpan(position);
+                }
+
+                long length = stream.Length - stream.Position;
+
+                if (length == 0)
+                {
+                    return ReadOnlySpan<byte>.Empty;
+                }
+
+                if (((ulong)length) > (ulong)Array.MaxLength)
+                {
+                    throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+                }
+
+                byte[] bytes = GC.AllocateUninitializedArray<byte>((int)length);
+
+                // Copy the stream to the byte array
+                stream.ReadExactly(bytes);
+
+                return bytes;
             }
         }
 

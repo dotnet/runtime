@@ -95,7 +95,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
-    ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
+    ASSERT(!pThreadToWalk->IsHijacked());
 
     if (pInitialTransitionFrame == INTERRUPTED_THREAD_MARKER)
     {
@@ -220,8 +220,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     m_RegDisplay.pFP = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
 
-    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_FP)); // FP should never contain a GC ref because we require
-                                               // a frame pointer for methods with pinvokes
+    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_FP)); // FP should never contain a GC ref
 
     if (pFrame->m_Flags & PTFF_SAVE_X19) { m_RegDisplay.pX19 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_X20) { m_RegDisplay.pX20 = pPreservedRegsCursor++; }
@@ -302,9 +301,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 #endif // TARGET_ARM
 
 #endif // defined(USE_PORTABLE_HELPERS)
-
-    // @TODO: currently, we always save all registers -- how do we handle the onese we don't save once we
-    //        start only saving those that weren't already saved?
 
     // This function guarantees that the final initialized context will refer to a managed
     // frame.  In the rare case where the PC does not refer to managed code (and refers to an
@@ -1467,7 +1463,7 @@ UnwindOutOfCurrentManagedFrame:
     else
     {
         // if the thread is safe to walk, it better not have a hijack in place.
-        ASSERT((ThreadStore::GetCurrentThread() == m_pThread) || !m_pThread->DangerousCrossThreadIsHijacked());
+        ASSERT(!m_pThread->IsHijacked());
 
         SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.GetAddrOfIP())));
 

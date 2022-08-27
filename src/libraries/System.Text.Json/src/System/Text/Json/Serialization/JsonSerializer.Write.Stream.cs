@@ -314,15 +314,10 @@ namespace System.Text.Json
             using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
-                WriteStack state = new WriteStack
-                {
-                    CancellationToken = cancellationToken,
-                    SupportContinuation = true,
-                    SupportAsync = true,
-                };
-
+                WriteStack state = default;
                 jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
-                state.Initialize(jsonTypeInfo);
+                state.Initialize(jsonTypeInfo, supportAsync: true, supportContinuation: true);
+                state.CancellationToken = cancellationToken;
 
                 bool isFinalBlock;
 
@@ -395,13 +390,9 @@ namespace System.Text.Json
             using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
-                WriteStack state = new WriteStack
-                {
-                    SupportContinuation = true
-                };
-
+                WriteStack state = default;
                 jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
-                state.Initialize(jsonTypeInfo);
+                state.Initialize(jsonTypeInfo, supportContinuation: true, supportAsync: false);
 
                 bool isFinalBlock;
 

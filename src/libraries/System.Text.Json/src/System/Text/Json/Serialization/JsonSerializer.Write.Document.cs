@@ -117,10 +117,17 @@ namespace System.Text.Json
             // For performance, share the same buffer across serialization and deserialization.
             // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
             PooledByteBufferWriter output = new(options.DefaultBufferSize);
-            using Utf8JsonWriter writer = new(output, options.GetWriterOptions());
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(options, output);
 
-            WriteCore(writer, value, jsonTypeInfo);
-            return JsonDocument.ParseRented(output, options.GetDocumentOptions());
+            try
+            {
+                WriteCore(writer, value, jsonTypeInfo);
+                return JsonDocument.ParseRented(output, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriter(writer);
+            }
         }
 
         private static JsonDocument WriteDocumentAsObject(object? value, JsonTypeInfo jsonTypeInfo)
@@ -131,10 +138,17 @@ namespace System.Text.Json
             // For performance, share the same buffer across serialization and deserialization.
             // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
             PooledByteBufferWriter output = new(options.DefaultBufferSize);
-            using Utf8JsonWriter writer = new(output, options.GetWriterOptions());
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(options, output);
 
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
-            return JsonDocument.ParseRented(output, options.GetDocumentOptions());
+            try
+            {
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                return JsonDocument.ParseRented(output, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriter(writer);
+            }
         }
     }
 }

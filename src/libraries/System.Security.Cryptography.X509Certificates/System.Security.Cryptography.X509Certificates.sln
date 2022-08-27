@@ -1,6 +1,4 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{FC10D700-60DF-4D00-9433-47DFC3E3DC26}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives", "..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj", "{9F9473DD-A006-4298-834D-D36A95777F92}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.NonGeneric", "..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj", "{3B4FCDB7-CC1E-4A49-98C7-10D58737709B}"
@@ -31,11 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptograph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.X509Certificates", "src\System.Security.Cryptography.X509Certificates.csproj", "{2A203F48-05D2-4E45-8A98-98F02EE639A8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.X509Certificates.Tests", "tests\System.Security.Cryptography.X509Certificates.Tests.csproj", "{53F1E058-B5A4-4348-9BE6-8B006A6861AF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography", "..\System.Security.Cryptography\ref\System.Security.Cryptography.csproj", "{2BD68AE2-342C-4CA2-ABDC-288E47F876A3}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E5625DC8-6D89-4C9C-9AF6-35D0FAE7E4A5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{C79093E1-DEC3-4A35-93CB-216D1E87ACDD}"
 EndProject
@@ -49,10 +43,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FC10D700-60DF-4D00-9433-47DFC3E3DC26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC10D700-60DF-4D00-9433-47DFC3E3DC26}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC10D700-60DF-4D00-9433-47DFC3E3DC26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC10D700-60DF-4D00-9433-47DFC3E3DC26}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9F9473DD-A006-4298-834D-D36A95777F92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9F9473DD-A006-4298-834D-D36A95777F92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F9473DD-A006-4298-834D-D36A95777F92}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -113,10 +103,6 @@ Global
 		{2A203F48-05D2-4E45-8A98-98F02EE639A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A203F48-05D2-4E45-8A98-98F02EE639A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A203F48-05D2-4E45-8A98-98F02EE639A8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{53F1E058-B5A4-4348-9BE6-8B006A6861AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{53F1E058-B5A4-4348-9BE6-8B006A6861AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{53F1E058-B5A4-4348-9BE6-8B006A6861AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{53F1E058-B5A4-4348-9BE6-8B006A6861AF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2BD68AE2-342C-4CA2-ABDC-288E47F876A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2BD68AE2-342C-4CA2-ABDC-288E47F876A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BD68AE2-342C-4CA2-ABDC-288E47F876A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -126,8 +112,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{FC10D700-60DF-4D00-9433-47DFC3E3DC26} = {E5625DC8-6D89-4C9C-9AF6-35D0FAE7E4A5}
-		{53F1E058-B5A4-4348-9BE6-8B006A6861AF} = {E5625DC8-6D89-4C9C-9AF6-35D0FAE7E4A5}
 		{9F9473DD-A006-4298-834D-D36A95777F92} = {C79093E1-DEC3-4A35-93CB-216D1E87ACDD}
 		{3B4FCDB7-CC1E-4A49-98C7-10D58737709B} = {C79093E1-DEC3-4A35-93CB-216D1E87ACDD}
 		{C39DB8D7-5726-497D-9193-086D5DA5CC45} = {C79093E1-DEC3-4A35-93CB-216D1E87ACDD}
