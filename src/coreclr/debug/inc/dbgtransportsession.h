@@ -212,7 +212,7 @@ enum DbgTransportFaultSide
     FS_Right    = 0x20000000,
 };
 
-// Network operations which are candiates for fault injection.
+// Network operations which are candidates for fault injection.
 enum DbgTransportFaultOp
 {
     FO_Connect  = 0x01000000,
@@ -305,7 +305,7 @@ class DbgTransportSession
 {
 public:
     // No real work done in the constructor. Use Init() instead.
-    DbgTransportSession();
+    DbgTransportSession() = default;
 
     // Cleanup what is allocated/created in Init()
     ~DbgTransportSession();
@@ -422,7 +422,7 @@ private:
     // error is raised) and which incoming messages are valid.
     enum SessionState
     {
-        SS_Closed,      // No session and no attempt is being made to form one
+        SS_Closed = 0,  // No session and no attempt is being made to form one
         SS_Opening_NC,  // Session is being formed but no connection is established yet
         SS_Opening,     // Session is being formed, the low level connection is in place
         SS_Open,        // Session is fully formed and normal transport messages can be sent and received

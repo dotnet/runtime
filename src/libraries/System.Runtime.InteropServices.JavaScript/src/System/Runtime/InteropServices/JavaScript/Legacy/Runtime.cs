@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static class Runtime
     {
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetGlobalObject(string str)
             => JavaScriptImports.GetGlobalObject(str);
 

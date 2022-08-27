@@ -372,7 +372,7 @@ namespace Mono.Linker.Dataflow
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					} else if (uniqueValue is SystemTypeValue) {
-						// SystemTypeValue can fullfill any requirement, so it's always valid
+						// SystemTypeValue can fulfill any requirement, so it's always valid
 						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
 					} else {
 						throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");

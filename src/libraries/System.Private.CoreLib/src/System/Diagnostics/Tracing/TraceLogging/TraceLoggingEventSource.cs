@@ -781,7 +781,7 @@ namespace System.Diagnostics.Tracing
                         traitMetaData.Add(0);                                           // Emit size (to be filled in later)
                         traitMetaData.Add(0);
                         traitMetaData.Add(traitNum);                                    // Emit Trait number
-                        int valueLen = AddValueToMetaData(traitMetaData, value) + 3;    // Emit the value bytes +3 accounts for 3 bytes we emited above.
+                        int valueLen = AddValueToMetaData(traitMetaData, value) + 3;    // Emit the value bytes +3 accounts for 3 bytes we emitted above.
                         traitMetaData[lenPos] = unchecked((byte)valueLen);              // Fill in size
                         traitMetaData[lenPos + 1] = unchecked((byte)(valueLen >> 8));
                     }

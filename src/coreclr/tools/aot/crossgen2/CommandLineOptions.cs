@@ -58,6 +58,7 @@ namespace ILCompiler
         public bool MapCsv;
         public bool PrintReproInstructions;
         public bool Pdb;
+        public bool SupportIbc;
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
@@ -149,6 +150,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref SystemModule, SR.SystemModuleOverrideOption);
                 syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
                 syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
+                syntax.DefineOption("support-ibc", ref SupportIbc, SR.SupportIbc);
                 syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
                 syntax.DefineOption("imagebase", ref ImageBase, SR.ImageBase);
 

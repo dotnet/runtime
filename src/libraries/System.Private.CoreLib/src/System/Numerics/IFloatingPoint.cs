@@ -9,7 +9,7 @@ namespace System.Numerics
         : IFloatingPointConstants<TSelf>,
           INumber<TSelf>,
           ISignedNumber<TSelf>
-        where TSelf : IFloatingPoint<TSelf>
+        where TSelf : IFloatingPoint<TSelf>?
     {
         /// <summary>Computes the ceiling of a value.</summary>
         /// <param name="x">The value whose ceiling is to be computed.</param>

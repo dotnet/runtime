@@ -677,7 +677,7 @@ namespace System.Management
         /// <summary>
         /// This function will solve the naming collisions that might occur
         /// due to the collision between the local objects of the generated
-        /// class and the properties/methos of the original WMI Class.
+        /// class and the properties/methods of the original WMI Class.
         /// </summary>
         private void ProcessNamingCollisions()
         {
@@ -4531,7 +4531,7 @@ namespace System.Management
 
         /// <summary>
         /// This function will convert the given CIMTYPE to an acceptable .NET type.
-        /// Since CLS doen't support lotz of the basic types, we are using .NET helper
+        /// Since CLS doesn't support lotz of the basic types, we are using .NET helper
         /// classes here. We safely assume that there won't be any problem using them
         /// since .NET has to be there for the System.Management.Dll to work.
         /// </summary>

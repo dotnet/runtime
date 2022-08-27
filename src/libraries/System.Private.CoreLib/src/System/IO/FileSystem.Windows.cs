@@ -33,7 +33,7 @@ namespace System.IO
 
         private static unsafe void ThrowExceptionEncryptDecryptFail(string fullPath)
         {
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
             {
                 // Check to see if the file system support the Encrypted File System (EFS)
@@ -43,7 +43,7 @@ namespace System.IO
                 {
                     if (!Interop.Kernel32.GetVolumeInformation(name, null, 0, null, null, out int fileSystemFlags, null, 0))
                     {
-                        errorCode = Marshal.GetLastWin32Error();
+                        errorCode = Marshal.GetLastPInvokeError();
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
                     }
 
@@ -91,7 +91,7 @@ namespace System.IO
 
             if (!Interop.Kernel32.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
             {
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -100,7 +100,7 @@ namespace System.IO
             bool r = Interop.Kernel32.DeleteFile(fullPath);
             if (!r)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     return;
                 else
@@ -163,7 +163,7 @@ namespace System.IO
                 fileHandle,
                 out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData))
             {
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
 
             PopulateAttributeData(ref data, fileInformationData);
@@ -192,7 +192,7 @@ namespace System.IO
 
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
@@ -239,7 +239,7 @@ namespace System.IO
 
             if (handle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 // NT5 oddity - when trying to open "C:\" as a File,
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
@@ -285,11 +285,11 @@ namespace System.IO
             using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData);
             if (handle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
-                if (isDirectory && errorCode == Interop.Errors.ERROR_ACCESS_DENIED && ignoreAccessDenied)
+                if (ignoreAccessDenied && errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     return;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
@@ -329,7 +329,7 @@ namespace System.IO
                         string fileName = findData.cFileName.GetStringFromFixedBuffer();
                         if (!Interop.Kernel32.DeleteFile(Path.Combine(fullPath, fileName)) && exception == null)
                         {
-                            errorCode = Marshal.GetLastWin32Error();
+                            errorCode = Marshal.GetLastPInvokeError();
 
                             // We don't care if something else deleted the file first
                             if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
@@ -372,7 +372,7 @@ namespace System.IO
                                 string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
                                 if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
                                 {
-                                    errorCode = Marshal.GetLastWin32Error();
+                                    errorCode = Marshal.GetLastPInvokeError();
                                     if (errorCode != Interop.Errors.ERROR_SUCCESS &&
                                         errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                     {
@@ -384,7 +384,7 @@ namespace System.IO
                             // Note that RemoveDirectory on a symbolic link will remove the link itself.
                             if (!Interop.Kernel32.RemoveDirectory(Path.Combine(fullPath, fileName)) && exception == null)
                             {
-                                errorCode = Marshal.GetLastWin32Error();
+                                errorCode = Marshal.GetLastPInvokeError();
                                 if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                 {
                                     exception = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
@@ -397,7 +397,7 @@ namespace System.IO
                 if (exception != null)
                     throw exception;
 
-                errorCode = Marshal.GetLastWin32Error();
+                errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode != Interop.Errors.ERROR_SUCCESS && errorCode != Interop.Errors.ERROR_NO_MORE_FILES)
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
@@ -412,7 +412,7 @@ namespace System.IO
         {
             if (!Interop.Kernel32.RemoveDirectory(fullPath))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 switch (errorCode)
                 {
                     case Interop.Errors.ERROR_FILE_NOT_FOUND:
@@ -444,7 +444,7 @@ namespace System.IO
                 return;
             }
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                 throw new ArgumentException(SR.Arg_InvalidFileAttrs, nameof(attributes));
             throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -561,7 +561,7 @@ namespace System.IO
                     return null;
                 }
 
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                 {
@@ -574,15 +574,20 @@ namespace System.IO
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
             try
             {
-                bool success = Interop.Kernel32.DeviceIoControl(
-                    handle,
-                    dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
-                    lpInBuffer: IntPtr.Zero,
-                    nInBufferSize: 0,
-                    lpOutBuffer: buffer,
-                    nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
-                    out _,
-                    IntPtr.Zero);
+                bool success;
+
+                fixed (byte* pBuffer = buffer)
+                {
+                    success = Interop.Kernel32.DeviceIoControl(
+                        handle,
+                        dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
+                        lpInBuffer: null,
+                        nInBufferSize: 0,
+                        lpOutBuffer: pBuffer,
+                        nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+                        out _,
+                        IntPtr.Zero);
+                }
 
                 if (!success)
                 {
@@ -591,7 +596,7 @@ namespace System.IO
                         return null;
                     }
 
-                    int error = Marshal.GetLastWin32Error();
+                    int error = Marshal.GetLastPInvokeError();
                     // The file or directory is not a reparse point.
                     if (error == Interop.Errors.ERROR_NOT_A_REPARSE_POINT)
                     {
@@ -690,7 +695,7 @@ namespace System.IO
             {
                 // If the handle fails because it is unreachable, is because the link was broken.
                 // We need to fallback to manually traverse the links and return the target of the last resolved link.
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 if (IsPathUnreachableError(error))
                 {
                     return GetFinalLinkTargetSlow(linkPath);

@@ -100,7 +100,7 @@ namespace System
             Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
             int count = values.Length;
             // Without universal shared generics, chances are slim that we'll have the appropriate
-            // array type available. Offer an escape hatch that avoids a MissingMetadataException
+            // array type available. Offer an escape hatch that avoids a missing metadata exception
             // at the cost of a small appcompat risk.
             Array result;
             if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
@@ -109,6 +109,14 @@ namespace System
                 result = Array.CreateInstance(this, count);
             Array.Copy(values, result, values.Length);
             return result;
+        }
+
+        public sealed override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
         }
 
         internal bool IsActualEnum

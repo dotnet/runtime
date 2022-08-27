@@ -479,10 +479,10 @@ namespace System.Net.Mail.Tests
             await Task.Delay(500);
             serverMre.Set();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask);
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
             // We should still be able to send mail on the SmtpClient instance
-            await client.SendMailAsync(message);
+            await client.SendMailAsync(message).WaitAsync(TestHelper.PassingTestTimeout);
 
             Assert.Equal("<foo@internet.com>", server.MailFrom);
             Assert.Equal("<bar@internet.com>", server.MailTo);

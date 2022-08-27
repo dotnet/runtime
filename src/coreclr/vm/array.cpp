@@ -365,7 +365,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -1251,7 +1251,7 @@ BOOL IsImplicitInterfaceOfSZArray(MethodTable *pInterfaceMT)
 // Calls to (IList<T>)(array).Meth are actually implemented by SZArrayHelper.Meth<T>
 // This workaround exists for two reasons:
 //
-//    - For working set reasons, we don't want insert these methods in the array hierachy
+//    - For working set reasons, we don't want insert these methods in the array hierarchy
 //      in the normal way.
 //    - For platform and devtime reasons, we still want to use the C# compiler to generate
 //      the method bodies.

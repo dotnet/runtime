@@ -25,7 +25,7 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
 #if DEBUG
-            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            if (state.Current.JsonTypeInfo.Kind != JsonTypeInfoKind.Object)
             {
                 string objTypeName = obj?.GetType().FullName ?? "<null>";
                 Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
@@ -71,7 +71,7 @@ namespace System.Text.Json
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options)
         {
@@ -139,7 +139,8 @@ namespace System.Text.Json
                 }
 
                 extensionData = createObjectForExtensionDataProp();
-                jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
+                Debug.Assert(jsonPropertyInfo.Set != null);
+                jsonPropertyInfo.Set(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

@@ -583,6 +583,13 @@ enum BasicBlockFlags : unsigned __int64
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
                        BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF,
+
+    // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
+    // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
+    // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
+    // we don't know (unless we actually pay close attention during the copy).
+
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
 };
 
 inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)

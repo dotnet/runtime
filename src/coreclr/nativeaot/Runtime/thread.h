@@ -66,6 +66,15 @@ struct ExInfo
     volatile void*          m_notifyDebuggerSP;
 };
 
+struct GCFrameRegistration
+{
+    Thread* m_pThread;
+    GCFrameRegistration* m_pNext;
+    void** m_pObjRefs;
+    uint32_t m_numObjRefs;
+    int m_MaybeInterior;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -82,6 +91,7 @@ struct ThreadBuffer
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_PTR_VOID            m_pThreadLocalModuleStatics;
     uint32_t                m_numThreadLocalModuleStatics;
+    GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -126,6 +136,12 @@ public:
 #ifdef FEATURE_GC_STRESS
         TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
 #endif // FEATURE_GC_STRESS
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
+                                                    // suspend once resumed.
+                                                    // If we see this flag, we skip hijacking as an optimization.
+#endif //FEATURE_SUSPEND_REDIRECTION
     };
 private:
 
@@ -187,13 +203,11 @@ public:
 
     void                Hijack();
     void                Unhijack();
+    bool                IsHijacked();
+
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
 #endif // FEATURE_GC_STRESS
-    bool                IsHijacked();
-    void *              GetHijackedReturnAddress();
-    void *              GetUnhijackedReturnAddress(void** ppvReturnAddressLocation);
-    bool                DangerousCrossThreadIsHijacked();
 
     bool                IsSuppressGcStressSet();
     void                SetSuppressGcStress();
@@ -220,7 +234,7 @@ public:
 #endif // DACCESS_COMPILE
 #ifdef FEATURE_GC_STRESS
     void                SetRandomSeed(uint32_t seed);
-    uint32_t              NextRand();
+    uint32_t            NextRand();
     bool                IsRandInited();
 #endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
@@ -273,6 +287,9 @@ public:
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
     NATIVE_CONTEXT* GetInterruptedContext();
+
+    void PushGCFrameRegistration(GCFrameRegistration* pRegistration);
+    void PopGCFrameRegistration(GCFrameRegistration* pRegistration);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();

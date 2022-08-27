@@ -1305,7 +1305,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // reserved our one remaining volatile register, r12, to store the eventual target method address. So
     // we're going to generate a hybrid-tail call. Using a tail call has the advantage that we don't need to
     // erect and link an explicit CLR frame to enable crawling of this thunk. Additionally re-writing the
-    // stack can be more peformant in some scenarios than copying the stack (in the presence of floating point
+    // stack can be more performant in some scenarios than copying the stack (in the presence of floating point
     // or arguments requieing 64-bit alignment we might not have to move some or even most of the values).
     // The hybrid nature is that we'll erect a standard native frame (with a proper prolog and epilog) so we
     // can save some non-volatile registers to act as temporaries. Once we've performed the stack re-write

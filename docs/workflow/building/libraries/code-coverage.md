@@ -20,7 +20,7 @@ Our default, somewhat-arbitrary initial goal for a library is 90% code coverage.
 
 ## Issues
 
-Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [up-for-grabs](https://github.com/dotnet/runtime/labels/up-for-grabs).
+Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted).
 
 An issue need not be addressed in its entirety. We happily accept contributions that improve our tests and work towards improving code coverage numbers even if they only incrementally improve the situation.
 

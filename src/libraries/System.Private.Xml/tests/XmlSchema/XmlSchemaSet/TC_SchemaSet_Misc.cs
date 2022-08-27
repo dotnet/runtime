@@ -992,19 +992,6 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "615444 XmlSchema.Write ((XmlWriter)null) throws InvalidOperationException instead of ArgumentNullException")]
-        [Fact]
-        public void v125()
-        {
-            XmlSchema xs = new XmlSchema();
-            try
-            {
-                xs.Write((XmlWriter)null);
-            }
-            catch (InvalidOperationException) { return; }
-            Assert.True(false);
-        }
-
         //[Variation(Desc = "Dev10_40561 Redefine Chameleon: Unexpected qualified name on local particle")]
         [Fact]
         public void Dev10_40561()

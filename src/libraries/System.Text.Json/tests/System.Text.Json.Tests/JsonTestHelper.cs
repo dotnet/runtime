@@ -17,7 +17,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonTestHelper
     {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
         public const string DoubleFormatString = null;
         public const string SingleFormatString = null;
 #else

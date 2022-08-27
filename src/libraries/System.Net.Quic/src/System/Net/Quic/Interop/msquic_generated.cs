@@ -76,6 +76,7 @@ namespace Microsoft.Quic
         USE_SYSTEM_MAPPER = 0x00010000,
         CACHE_ONLY_URL_RETRIEVAL = 0x00020000,
         REVOCATION_CHECK_CACHE_ONLY = 0x00040000,
+        INPROC_PEER_CERTIFICATE = 0x00080000,
     }
 
     [System.Flags]
@@ -424,6 +425,7 @@ namespace Microsoft.Quic
     internal enum QUIC_CONGESTION_CONTROL_ALGORITHM
     {
         CUBIC,
+        BBR,
         MAX,
     }
 
@@ -2481,6 +2483,9 @@ namespace Microsoft.Quic
 
                 [NativeTypeName("QUIC_UINT62")]
                 internal ulong ConnectionErrorCode;
+
+                [NativeTypeName("HRESULT")]
+                internal int ConnectionCloseStatus;
             }
 
             internal partial struct _IDEAL_SEND_BUFFER_SIZE_e__Struct
@@ -2781,6 +2786,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_STREAM_PRIORITY 0x08000003")]
         internal const uint QUIC_PARAM_STREAM_PRIORITY = 0x08000003;
+
+        [NativeTypeName("#define QUIC_PARAM_STREAM_STATISTICS 0X08000004")]
+        internal const uint QUIC_PARAM_STREAM_STATISTICS = 0X08000004;
 
         [NativeTypeName("#define QUIC_API_VERSION_2 2")]
         internal const uint QUIC_API_VERSION_2 = 2;

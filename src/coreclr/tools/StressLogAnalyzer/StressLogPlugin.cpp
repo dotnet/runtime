@@ -1227,6 +1227,10 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_fPrintFormatStrings = false;
     s_showAllMessages = false;
     s_maxHeapNumberSeen = -1;
+    for (int i = IS_INTERESTING; i < s_interestingStringCount; i++)
+    {
+        s_interestingStringTable[i] = nullptr;
+    }
     s_interestingStringCount = IS_INTERESTING;
     s_levelFilterCount = 0;
     s_gcFilterStart = 0;

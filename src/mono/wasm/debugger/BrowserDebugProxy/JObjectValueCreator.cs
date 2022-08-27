@@ -91,7 +91,8 @@ internal sealed class JObjectValueCreator
         CancellationToken token,
         bool isOwn = false,
         int typeIdForObject = -1,
-        bool forDebuggerDisplayAttribute = false)
+        bool forDebuggerDisplayAttribute = false,
+        bool includeStatic = false)
     {
         long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
         ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
@@ -199,7 +200,7 @@ internal sealed class JObjectValueCreator
                 }
             case ElementType.ValueType:
                 {
-                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, token);
+                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, includeStatic, token);
                     break;
                 }
             case (ElementType)ValueTypeId.Null:
@@ -300,6 +301,7 @@ internal sealed class JObjectValueCreator
         string name,
         long initialPos,
         bool forDebuggerDisplayAttribute,
+        bool includeStatic,
         CancellationToken token)
     {
         // FIXME: debugger proxy
@@ -337,6 +339,7 @@ internal sealed class JObjectValueCreator
                                                     typeId,
                                                     numValues,
                                                     isEnum,
+                                                    includeStatic,
                                                     token);
         _valueTypes[valueType.Id.Value] = valueType;
         return await valueType.ToJObject(_sdbAgent, forDebuggerDisplayAttribute, token);

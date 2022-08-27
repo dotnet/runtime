@@ -272,7 +272,7 @@ typedef struct {
 	 */
 	gpointer (*get_provenance_func) (void);
 	/*
-	 * Same as thread_mark_func, mark the intepreter frames.
+	 * Same as thread_mark_func, mark the interpreter frames.
 	 */
 	void (*interp_mark_func) (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise);
 } MonoGCCallbacks;

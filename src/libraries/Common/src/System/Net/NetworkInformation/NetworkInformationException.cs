@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
         ///       Creates a new instance of the <see cref='System.Net.NetworkInformation.NetworkInformationException'/> class with the default error code.
         ///    </para>
         /// </devdoc>
-        public NetworkInformationException() : base(Marshal.GetLastWin32Error())
+        public NetworkInformationException() : base(Marshal.GetLastPInvokeError())
         {
         }
 

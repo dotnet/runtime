@@ -338,6 +338,8 @@ OPDEF(MINT_JMP, "jmp", 2, 0, 0, MintOpMethodToken)
 
 OPDEF(MINT_ENDFILTER, "endfilter", 2, 0, 1, MintOpNoArgs)
 
+OPDEF(MINT_NEWOBJ_SLOW_UNOPT, "newobj_slow_unopt", 5, 1, 0, MintOpMethodToken)
+OPDEF(MINT_NEWOBJ_STRING_UNOPT, "newobj_string_unopt", 4, 1, 0, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_SLOW, "newobj_slow", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_ARRAY, "newobj_array", 5, 1, 1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_STRING, "newobj_string", 4, 1, 1, MintOpMethodToken)

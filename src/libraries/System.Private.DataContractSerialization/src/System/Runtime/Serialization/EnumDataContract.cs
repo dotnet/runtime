@@ -2,75 +2,83 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Text;
 using System.Xml;
-using System.Security;
-using System.Linq;
-using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class EnumDataContract : DataContract
     {
+        internal const string ContractTypeString = nameof(EnumDataContract);
+        public override string? ContractType => ContractTypeString;
+
         private readonly EnumDataContractCriticalHelper _helper;
 
-        public XmlQualifiedName? BaseContractName { get; set; }
-
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
         }
-        public List<DataMember> Members
+
+        internal static Type? GetBaseType(XmlQualifiedName baseContractName)
         {
-            get
-            { return _helper.Members; }
-            set { _helper.Members = value; }
+            return EnumDataContractCriticalHelper.GetBaseType(baseContractName);
         }
 
-        public List<long>? Values
+        public override DataContract BaseContract
         {
-            get
-            { return _helper.Values; }
-            set { _helper.Values = value; }
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get => _helper.BaseContract;
         }
 
-        public bool IsFlags
+        internal XmlQualifiedName BaseContractName
         {
-            get
-            { return _helper.IsFlags; }
-            set { _helper.IsFlags = value; }
+            get => _helper.BaseContractName;
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            set => _helper.BaseContractName = value;
         }
 
-        public bool IsULong
+        internal List<DataMember> Members
         {
-            get
-            { return _helper.IsULong; }
-            set { _helper.IsULong = value; }
+            get => _helper.Members;
+            set => _helper.Members = value;
         }
 
-        public XmlDictionaryString[]? ChildElementNames
+        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? DataContract.s_emptyDataMemberList : Members.AsReadOnly();
+
+        internal List<long>? Values
         {
-            get
-            { return _helper.ChildElementNames; }
-            set { _helper.ChildElementNames = value; }
+            get => _helper.Values;
+            set => _helper.Values = value;
         }
 
-        internal override bool CanContainReferences
+        internal bool IsFlags
         {
-            get { return false; }
+            get => _helper.IsFlags;
+            set => _helper.IsFlags = value;
         }
+
+        internal bool IsULong => _helper.IsULong;
+
+        internal XmlDictionaryString[]? ChildElementNames => _helper.ChildElementNames;
+
+        internal override bool CanContainReferences => false;
 
         private sealed class EnumDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
+            private DataContract _baseContract;
             private List<DataMember> _members;
             private List<long>? _values;
             private bool _isULong;
@@ -80,42 +88,60 @@ namespace System.Runtime.Serialization
 
             static EnumDataContractCriticalHelper()
             {
-                Add(typeof(sbyte), "byte");
-                Add(typeof(byte), "unsignedByte");
-                Add(typeof(short), "short");
-                Add(typeof(ushort), "unsignedShort");
-                Add(typeof(int), "int");
-                Add(typeof(uint), "unsignedInt");
-                Add(typeof(long), "long");
-                Add(typeof(ulong), "unsignedLong");
+                Add(typeof(sbyte), DictionaryGlobals.SignedByteLocalName.Value);        // "byte"
+                Add(typeof(byte), DictionaryGlobals.UnsignedByteLocalName.Value);       // "unsignedByte"
+                Add(typeof(short), DictionaryGlobals.ShortLocalName.Value);             // "short"
+                Add(typeof(ushort), DictionaryGlobals.UnsignedShortLocalName.Value);    // "unsignedShort"
+                Add(typeof(int), DictionaryGlobals.IntLocalName.Value);                 // "int"
+                Add(typeof(uint), DictionaryGlobals.UnsignedIntLocalName.Value);        // "unsignedInt"
+                Add(typeof(long), DictionaryGlobals.LongLocalName.Value);               // "long"
+                Add(typeof(ulong), DictionaryGlobals.UnsignedLongLocalName.Value);      // "unsignedLong"
             }
 
             internal static void Add(Type type, string localName)
             {
-                XmlQualifiedName stableName = CreateQualifiedName(localName, Globals.SchemaNamespace);
-                s_typeToName.Add(type, stableName);
-                s_nameToType.Add(stableName, type);
+                XmlQualifiedName xmlName = CreateQualifiedName(localName, Globals.SchemaNamespace);
+                s_typeToName.Add(type, xmlName);
+                s_nameToType.Add(xmlName, type);
             }
 
+            internal static XmlQualifiedName GetBaseContractName(Type type)
+            {
+                s_typeToName.TryGetValue(type, out XmlQualifiedName? retVal);
+
+                Debug.Assert(retVal != null);   // Enums can only have certain base types. We shouldn't come up empty here.
+                return retVal;
+            }
+
+            internal static Type? GetBaseType(XmlQualifiedName baseContractName)
+            {
+                s_nameToType.TryGetValue(baseContractName, out Type? retVal);
+                return retVal;
+            }
+
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
-                this.StableName = DataContract.GetStableName(type, out _hasDataContract);
+                XmlName = DataContract.GetXmlName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
+                XmlQualifiedName baseTypeName = GetBaseContractName(baseType);
+                _baseContract = DataContract.GetBuiltInDataContract(baseTypeName.Name, baseTypeName.Namespace)!;
+                // Setting XmlName might be redundant. But I don't want to miss an edge case.
+                _baseContract.XmlName = baseTypeName;
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
 
                 XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);
-                Name = dictionary.Add(StableName.Name);
-                Namespace = dictionary.Add(StableName.Namespace);
+                Name = dictionary.Add(XmlName.Name);
+                Namespace = dictionary.Add(XmlName.Namespace);
                 _childElementNames = new XmlDictionaryString[Members.Count];
                 for (int i = 0; i < Members.Count; i++)
                     _childElementNames[i] = dictionary.Add(Members[i].Name);
-                DataContractAttribute? dataContractAttribute;
-                if (TryGetDCAttribute(type, out dataContractAttribute))
+                if (TryGetDCAttribute(type, out DataContractAttribute? dataContractAttribute))
                 {
                     if (dataContractAttribute.IsReference)
                     {
@@ -128,34 +154,56 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
+
+            internal DataContract BaseContract => _baseContract;
+
+            internal XmlQualifiedName BaseContractName
+            {
+                get => _baseContract.XmlName;
+
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+                set
+                {
+                    Type? baseType = GetBaseType(value);
+                    if (baseType == null)
+                        ThrowInvalidDataContractException(
+                                SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, XmlName.Name, XmlName.Namespace));
+                    ImportBaseType(baseType);
+                    _baseContract = DataContract.GetBuiltInDataContract(value.Name, value.Namespace)!;
+                    // Setting XmlName might be redundant. But I don't want to miss an edge case.
+                    _baseContract.XmlName = value;
+                }
+            }
+
             internal List<DataMember> Members
             {
-                get { return _members; }
-                set { _members = value; }
+                get => _members;
+                set => _members = value;
             }
 
             internal List<long>? Values
             {
-                get { return _values; }
-                set { _values = value; }
+                get => _values;
+                set => _values = value;
             }
 
             internal bool IsFlags
             {
-                get { return _isFlags; }
-                set { _isFlags = value; }
+                get => _isFlags;
+                set => _isFlags = value;
             }
 
             internal bool IsULong
             {
-                get { return _isULong; }
-                set { _isULong = value; }
+                get => _isULong;
+                set => _isULong = value;
             }
 
             internal XmlDictionaryString[]? ChildElementNames
             {
-                get { return _childElementNames; }
-                set { _childElementNames = value; }
+                get => _childElementNames;
+                set => _childElementNames = value;
             }
 
             private void ImportBaseType(Type baseType)
@@ -166,7 +214,7 @@ namespace System.Runtime.Serialization
             [MemberNotNull(nameof(_members))]
             private void ImportDataMembers()
             {
-                Type type = this.UnderlyingType;
+                Type type = UnderlyingType;
                 FieldInfo[] fields = type.GetFields(BindingFlags.Static | BindingFlags.Public);
                 Dictionary<string, DataMember> memberValuesTable = new Dictionary<string, DataMember>();
                 List<DataMember> tempMembers = new List<DataMember>(fields.Length);
@@ -194,6 +242,7 @@ namespace System.Runtime.Serialization
                             }
                             else
                                 memberContract.Name = field.Name;
+                            memberContract.Order = _isULong ? (long)Convert.ToUInt64(field.GetValue(null)) : Convert.ToInt64(field.GetValue(null));
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }
@@ -206,8 +255,8 @@ namespace System.Runtime.Serialization
                     {
                         if (!field.IsNotSerialized)
                         {
-                            DataMember memberContract = new DataMember(field);
-                            memberContract.Name = field.Name;
+                            DataMember memberContract = new DataMember(field) { Name = field.Name };
+                            memberContract.Order = _isULong ? (long)Convert.ToUInt64(field.GetValue(null)) : Convert.ToInt64(field.GetValue(null));
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }
@@ -359,14 +408,47 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
+        {
+            if (IsEqualOrChecked(other, checkedContracts))
+                return true;
+
+            if (base.Equals(other, null))
+            {
+                if (other is EnumDataContract enumContract)
+                {
+                    if (Members.Count != enumContract.Members.Count || Values?.Count != enumContract.Values?.Count)
+                        return false;
+                    string[] memberNames1 = new string[Members.Count], memberNames2 = new string[Members.Count];
+                    for (int i = 0; i < Members.Count; i++)
+                    {
+                        memberNames1[i] = Members[i].Name;
+                        memberNames2[i] = enumContract.Members[i].Name;
+                    }
+                    Array.Sort(memberNames1);
+                    Array.Sort(memberNames2);
+                    for (int i = 0; i < Members.Count; i++)
+                    {
+                        if (memberNames1[i] != memberNames2[i])
+                            return false;
+                    }
+
+                    return (IsFlags == enumContract.IsFlags);
+                }
+            }
+            return false;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
+        internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
+        internal override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);
             context?.AddNewObject(obj);

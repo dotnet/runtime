@@ -37,7 +37,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                ret = Marshal.PtrToStringAnsi((IntPtr)buf)!;
+                ret = Marshal.PtrToStringUTF8((IntPtr)buf)!;
             }
 
             ArrayPool<byte>.Shared.Return(buffer);

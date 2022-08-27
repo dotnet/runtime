@@ -8,7 +8,7 @@
 
 // NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
-//  It can be used only manully and very carefully!!!
+//  It can be used only manually and very carefully!!!
 
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      1

@@ -1121,7 +1121,7 @@ namespace System.Data
                         if (_filter(listener))
                         {
                             // perform the action on each listener
-                            // some actions may throw an exception blocking remaning listeners from being notified (just like events)
+                            // some actions may throw an exception blocking remaining listeners from being notified (just like events)
                             action(listener!, arg1, arg2, arg3);
                         }
                         else

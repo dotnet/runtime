@@ -13,10 +13,18 @@ namespace System.Text.Json
 {
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
-        private byte[] _rentedBuffer;
+        // This class allows two possible configurations: if rentedBuffer is not null then
+        // it can be used as an IBufferWriter and holds a buffer that should eventually be
+        // returned to the shared pool. If rentedBuffer is null, then the instance is in a
+        // cleared/disposed state and it must re-rent a buffer before it can be used again.
+        private byte[]? _rentedBuffer;
         private int _index;
 
         private const int MinimumBufferSize = 256;
+
+        private PooledByteBufferWriter()
+        {
+        }
 
         public PooledByteBufferWriter(int initialCapacity)
         {
@@ -68,6 +76,16 @@ namespace System.Text.Json
             ClearHelper();
         }
 
+        public void ClearAndReturnBuffers()
+        {
+            Debug.Assert(_rentedBuffer != null);
+
+            ClearHelper();
+            byte[] toReturn = _rentedBuffer;
+            _rentedBuffer = null;
+            ArrayPool<byte>.Shared.Return(toReturn);
+        }
+
         private void ClearHelper()
         {
             Debug.Assert(_rentedBuffer != null);
@@ -87,9 +105,20 @@ namespace System.Text.Json
 
             ClearHelper();
             byte[] toReturn = _rentedBuffer;
-            _rentedBuffer = null!;
+            _rentedBuffer = null;
             ArrayPool<byte>.Shared.Return(toReturn);
         }
+
+        public void InitializeEmptyInstance(int initialCapacity)
+        {
+            Debug.Assert(initialCapacity > 0);
+            Debug.Assert(_rentedBuffer is null);
+
+            _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
+            _index = 0;
+        }
+
+        public static PooledByteBufferWriter CreateEmptyInstanceForCaching() => new PooledByteBufferWriter();
 
         public void Advance(int count)
         {
@@ -112,7 +141,7 @@ namespace System.Text.Json
             return _rentedBuffer.AsSpan(_index);
         }
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
         internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
             return destination.WriteAsync(WrittenMemory, cancellationToken);
@@ -125,11 +154,13 @@ namespace System.Text.Json
 #else
         internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
+            Debug.Assert(_rentedBuffer != null);
             return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
         }
 
         internal void WriteToStream(Stream destination)
         {
+            Debug.Assert(_rentedBuffer != null);
             destination.Write(_rentedBuffer, 0, _index);
         }
 #endif

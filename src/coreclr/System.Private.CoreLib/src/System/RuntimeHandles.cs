@@ -873,7 +873,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1226,7 +1226,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)

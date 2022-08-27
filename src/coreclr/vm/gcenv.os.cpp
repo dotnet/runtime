@@ -146,8 +146,6 @@ bool GCToOSInterface::Initialize()
         uintptr_t pmask, smask;
         if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
         {
-            pmask &= smask;
-
             for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
                 if ((pmask & ((uintptr_t)1 << i)) != 0)
@@ -169,7 +167,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()

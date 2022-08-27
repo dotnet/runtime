@@ -301,7 +301,7 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
 // If hostpolicy is already initialized, the library will not be
 // reinitialized.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init)
 {
     assert(init != nullptr);
     std::lock_guard<std::mutex> lock{ g_init_lock };

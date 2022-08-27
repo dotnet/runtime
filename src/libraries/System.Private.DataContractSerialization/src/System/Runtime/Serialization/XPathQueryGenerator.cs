@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
+using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {
@@ -18,6 +19,7 @@ namespace System.Runtime.Serialization
         private const string XPathSeparator = "/";
         private const string NsSeparator = ":";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, out XmlNamespaceManager namespaces)
         {
@@ -25,6 +27,7 @@ namespace System.Runtime.Serialization
         }
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
@@ -53,6 +56,7 @@ namespace System.Runtime.Serialization
             return context.XPath;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessDataContract(DataContract contract, ExportContext context, MemberInfo memberNode)
         {
@@ -63,6 +67,7 @@ namespace System.Runtime.Serialization
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
         {
@@ -80,9 +85,9 @@ namespace System.Runtime.Serialization
 
         private static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)
         {
-            if (contract.BaseContract != null)
+            if (contract.BaseClassContract != null)
             {
-                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseContract))
+                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseClassContract))
                 {
                     yield return baseClassMember;
                 }

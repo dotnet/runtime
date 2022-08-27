@@ -27,9 +27,9 @@ To use mocking:
 3. configure the diagnostics server with a `mock:relative_url_of/mock.js`
 
    ```xml
-          <WasmExtraConfig Include="diagnostic_options" Value='
+          <WasmExtraConfig Include="diagnosticOptions" Value='
     {
-      "server": { "suspend": false, "connect_url": "mock:./mock.js" }
+      "server": { "suspend": false, "connectUrl": "mock:./mock.js" }
     }' />
    ```
 

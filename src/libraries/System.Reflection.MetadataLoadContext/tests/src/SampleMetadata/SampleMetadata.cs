@@ -84,6 +84,9 @@ namespace SampleMetadata
     public enum EU8 : ulong { }
     public enum EI8 : long { }
 
+    public enum E_2_I4 : int { min=int.MinValue, zero=0, one=1, max=int.MaxValue}
+    public enum E_2_U4 : uint { min = uint.MinValue, zero = 0, one = 1, max = uint.MaxValue }
+
     public class GenericEnumContainer<T>
     {
         public enum GenericEnum : short { }

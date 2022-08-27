@@ -1156,16 +1156,9 @@ namespace System.Text
             uint utf16Data32BitsHigh = 0, utf16Data32BitsLow = 0;
             ulong utf16Data64Bits = 0;
 
-            // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
-            // code below. This has two benefits: (a) we can take advantage of specific instructions like
-            // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
-            // processor while this method is running.
-
-            if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
-                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2/Arm64 is supported.");
-
-                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
+                if (elementCount >= 2 * (uint)Vector128<byte>.Count)
                 {
                     // Since there's overhead to setting up the vectorized code path, we only want to
                     // call into it after a quick probe to ensure the next immediate characters really are ASCII.
@@ -1380,16 +1373,14 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
+            // prefer architecture specific intrinsic as they offer better perf
             if (Sse2.IsSupported)
             {
                 if (Sse41.IsSupported)
                 {
                     Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
                     // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    if (!Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16()))
-                    {
-                        return true;
-                    }
+                    return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
                 }
                 else
                 {
@@ -1397,10 +1388,7 @@ namespace System.Text
                     // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
                     // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
                     // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0)
-                    {
-                        return true;
-                    }
+                    return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
                 }
             }
             else if (AdvSimd.Arm64.IsSupported)
@@ -1408,16 +1396,15 @@ namespace System.Text
                 // First we pick four chars, a larger one from all four pairs of adjecent chars in the vector.
                 // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
                 Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
-                if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
-                {
-                    return true;
-                }
+                return (maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0;
             }
             else
             {
-                throw new PlatformNotSupportedException();
+                const ushort asciiMask = ushort.MaxValue - 127; // 0x7F80
+                Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
+                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+                return zeroIsAscii != Vector128<ushort>.Zero;
             }
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1426,6 +1413,7 @@ namespace System.Text
             // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
             // to a vector of bytes [ b7 ... b0 b7' ... b0'].
 
+            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
             if (Sse2.IsSupported)
             {
                 return Sse2.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16());
@@ -1436,7 +1424,7 @@ namespace System.Text
             }
             else
             {
-                throw new PlatformNotSupportedException();
+                return Vector128.Narrow(vectorFirst, vectorSecond);
             }
         }
 
@@ -1447,15 +1435,15 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)Vector128<byte>.Count;
             nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
 
             // This method is written such that control generally flows top-to-bottom, avoiding
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
-            Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
+            Debug.Assert(Vector128.IsHardwareAccelerated, "Vector128 is required.");
+            Debug.Assert(BitConverter.IsLittleEndian, "This implementation assumes little-endian.");
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
             // First, perform an unaligned read of the first part of the input buffer.

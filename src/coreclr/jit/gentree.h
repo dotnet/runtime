@@ -502,7 +502,7 @@ enum GenTreeFlags : unsigned int
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
-    GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
+    GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile semantics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
                                               // Same as GTF_ARRLEN_NONFAULTING.
     GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND   -- the target is on the heap
@@ -915,6 +915,12 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
+    // Node is contained, but it isn't contained due to being a containable int.
+    bool isContainedAndNotIntOrIImmed() const
+    {
+        return isContained() && !isContainedIntOrIImmed();
+    }
+
     bool isContainedFltOrDblImmed() const
     {
         return isContained() && OperIs(GT_CNS_DBL);
@@ -1088,8 +1094,8 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsConditionalCompare() || OperIsLong() ||
-                   OperIsSimdOrHWintrinsic() || IsCnsVec());
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
+                   IsCnsVec());
             return false;
         }
 
@@ -1353,10 +1359,21 @@ public:
         return OperIsCompare(OperGet());
     }
 
+    // Oper is a compare that generates a cmp instruction (as opposed to a test instruction).
+    static bool OperIsCmpCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_GT);
+    }
+
+    bool OperIsCmpCompare() const
+    {
+        return OperIsCmpCompare(OperGet());
+    }
+
     static bool OperIsConditional(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_SELECT, GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_SELECT <= gtOper) && (gtOper <= GT_CGT);
+        return (GT_SELECT == gtOper);
     }
 
     bool OperIsConditional() const
@@ -1364,15 +1381,14 @@ public:
         return OperIsConditional(OperGet());
     }
 
-    static bool OperIsConditionalCompare(genTreeOps gtOper)
+    static bool OperIsCC(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_CEQ <= gtOper) && (gtOper <= GT_CGT);
+        return (gtOper == GT_JCC) || (gtOper == GT_SETCC);
     }
 
-    bool OperIsConditionalCompare() const
+    bool OperIsCC() const
     {
-        return OperIsConditionalCompare(OperGet());
+        return OperIsCC(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -3842,6 +3858,22 @@ struct GenTreeCast : public GenTreeOp
     {
     }
 #endif
+
+    bool IsZeroExtending()
+    {
+        assert(varTypeIsIntegral(CastOp()) && varTypeIsIntegral(CastToType()));
+
+        if (varTypeIsSmall(CastToType()))
+        {
+            return varTypeIsUnsigned(CastToType());
+        }
+        if (TypeIs(TYP_LONG) && genActualTypeIsInt(CastOp()))
+        {
+            return IsUnsigned();
+        }
+
+        return false;
+    }
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree
@@ -4024,7 +4056,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_GUARDED                 = 0x00400000, // this call was transformed by guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00800000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x01000000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
-    GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+    GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be transformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
@@ -4311,7 +4343,7 @@ struct CallArgABIInformation
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
         , m_isSplit(false)
 #endif
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -4366,7 +4398,7 @@ public:
     bool PassedByRef : 1;
 
 private:
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
     // True when this argument is split between the registers and OutArg area
     bool m_isSplit : 1;
 #endif
@@ -8222,7 +8254,7 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
+        assert(relop->OperIsCompare());
 
         if (varTypeIsFloating(relop->gtGetOp1()))
         {
@@ -8259,30 +8291,17 @@ public:
 
     static GenCondition FromIntegralRelop(GenTree* relop)
     {
-        if (relop->OperIsConditionalCompare())
-        {
-            assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) &&
-                   !varTypeIsFloating(relop->AsConditional()->gtOp2));
-        }
-        else
-        {
-            assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
-        }
-
+        assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
         return FromIntegralRelop(relop->OperGet(), relop->IsUnsigned());
     }
 
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
-        assert(GenTree::OperIsCompare(oper) || GenTree::OperIsConditionalCompare(oper));
+        assert(GenTree::OperIsCompare(oper));
 
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
         unsigned code;
-        if (oper >= GT_CEQ)
-        {
-            code = oper - GT_CEQ;
-        }
-        else if (oper >= GT_TEST_EQ)
+        if (oper >= GT_TEST_EQ)
         {
             code = oper - GT_TEST_EQ;
         }
@@ -8677,7 +8696,7 @@ inline bool GenTree::IsBoxedValue()
 //
 // Return values:
 //    true:      the GenTree node is accepted as a valid argument
-//    false:     the GenTree node is not accepted as a valid argumeny
+//    false:     the GenTree node is not accepted as a valid argument
 //
 // Notes:
 //    For targets that don't support arguments as a list of fields, we do not support GT_FIELD_LIST.

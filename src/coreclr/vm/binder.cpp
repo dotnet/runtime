@@ -17,7 +17,6 @@
 #include "customattribute.h"
 #include "debugdebugger.h"
 #include "dllimport.h"
-#include "nativeoverlapped.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
 #include "olevariant.h"
@@ -407,7 +406,7 @@ Again:
 
 //------------------------------------------------------------------
 // Resolve type references in the hardcoded metasig.
-// Returns a new signature with type refences resolved.
+// Returns a new signature with type references resolved.
 //------------------------------------------------------------------
 void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder)
 {
