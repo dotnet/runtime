@@ -134,46 +134,11 @@ namespace System.IO.Pipes.Tests
 
         [OuterLoop]
         [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
-        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_OneInvalidClientConnectionAttempt_DoesNotBlockSuccessfulClient()
-        {
-            string name = PipeStreamConformanceTests.GetUniquePipeName();
-            ManualResetEvent @event = new ManualResetEvent(false);
-
-            Task invalidClient = Task.Run(() =>
-            {
-                // invalid non-current user tries to connect to server.
-                _testAccountImpersonator.RunImpersonated(() =>
-                {
-                    using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
-                    Assert.Throws<UnauthorizedAccessException>(() =>
-                    {
-                        @event.WaitOne();
-                        client.Connect();
-                    });
-                });
-            });
-
-            // valid client tries to connect and succeeds.
-            using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
-            Task validClient = Task.Run(() =>
-            {
-                @event.WaitOne();
-                client.Connect();
-            });
-
-            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-            @event.Set();
-            await server.WaitForConnectionAsync();
-
-            Task.WaitAll(validClient, invalidClient);
-        }
-
-        [OuterLoop]
-        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
         public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_InvalidClientConnectionAttempts_DoNotBlockSuccessfulClient()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             bool invalidClientShouldStop = false;
+            bool invalidClientIsRunning = false;
 
             using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             Task serverWait = server.WaitForConnectionAsync();
@@ -187,13 +152,13 @@ namespace System.IO.Pipes.Tests
                     {
                         using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
                         Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+                        Volatile.Write(ref invalidClientIsRunning, true);
                     }
                 });
             });
 
-            Thread.Sleep(1000); // give it a sec to allow above tasks to perform some work before this.
-
             Assert.False(serverWait.IsCompleted);
+            while (!Volatile.Read(ref invalidClientIsRunning)) ; // Wait until the invalid client starts running.
 
             // valid client tries to connect and succeeds.
             using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
