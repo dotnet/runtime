@@ -850,67 +850,49 @@ namespace System.Numerics.Tests
         [Fact]
         public void VectorDoubleEqualsNonCanonicalNaNTest()
         {
-            var cast = BitConverter.DoubleToUInt64Bits(double.NaN);
-            var one = BitConverter.DoubleToUInt64Bits(1);
-            var sign = one ^ BitConverter.DoubleToUInt64Bits(-1);
-            var mant = one ^ BitConverter.DoubleToUInt64Bits(1.2);
-            var nan = new Vector<double>(double.NaN);
-            var pnan = new Vector<double>(BitConverter.UInt64BitsToDouble(cast ^ sign));
-            var snan = new Vector<double>(BitConverter.UInt64BitsToDouble(cast ^ mant));
-            var psnan = new Vector<double>(BitConverter.UInt64BitsToDouble(cast ^ sign ^ mant));
+            var maxSignificand = (1UL << 53) - 1;
+            // NaN with mantissa bits set
+            var snan = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(double.NaN) | maxSignificand);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
 
-            Assert.True(nan.Equals(nan));
-            Assert.True(nan.Equals(pnan));
-            Assert.True(nan.Equals(snan));
-            Assert.True(nan.Equals(psnan));
-
-            Assert.True(pnan.Equals(nan));
-            Assert.True(pnan.Equals(pnan));
-            Assert.True(pnan.Equals(snan));
-            Assert.True(pnan.Equals(psnan));
-
-            Assert.True(snan.Equals(nan));
-            Assert.True(snan.Equals(pnan));
-            Assert.True(snan.Equals(snan));
-            Assert.True(snan.Equals(psnan));
-
-            Assert.True(psnan.Equals(nan));
-            Assert.True(psnan.Equals(pnan));
-            Assert.True(psnan.Equals(snan));
-            Assert.True(psnan.Equals(psnan));
+            // all Vector<double> NaNs .Equals compare the same
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(new Vector<double>(i).Equals(new Vector<double>(j)));
+                }
+            }
         }
 
         [Fact]
         public void VectorSingleEqualsNonCanonicalNaNTest()
         {
-            var cast = BitConverter.SingleToUInt32Bits(float.NaN);
-            var one = BitConverter.SingleToUInt32Bits(1f);
-            var sign = one ^ BitConverter.SingleToUInt32Bits(-1);
-            var mant = one ^ BitConverter.SingleToUInt32Bits(1.2f);
-            var nan = new Vector<float>(float.NaN);
-            var pnan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ sign));
-            var snan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ mant));
-            var psnan = new Vector<float>(BitConverter.UInt32BitsToSingle(cast ^ sign ^ mant));
+            var maxSignificand = (1U << 24) - 1;
+            // NaN with mantissa bits set
+            var snan = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(float.NaN) | maxSignificand);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
 
-            Assert.True(nan.Equals(nan));
-            Assert.True(nan.Equals(pnan));
-            Assert.True(nan.Equals(snan));
-            Assert.True(nan.Equals(psnan));
-
-            Assert.True(pnan.Equals(nan));
-            Assert.True(pnan.Equals(pnan));
-            Assert.True(pnan.Equals(snan));
-            Assert.True(pnan.Equals(psnan));
-
-            Assert.True(snan.Equals(nan));
-            Assert.True(snan.Equals(pnan));
-            Assert.True(snan.Equals(snan));
-            Assert.True(snan.Equals(psnan));
-
-            Assert.True(psnan.Equals(nan));
-            Assert.True(psnan.Equals(pnan));
-            Assert.True(psnan.Equals(snan));
-            Assert.True(psnan.Equals(psnan));
+            // all Vector<float> NaNs .Equals compare the same
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(new Vector<float>(i).Equals(new Vector<float>(j)));
+                }
+            }
         }
         #endregion
 
