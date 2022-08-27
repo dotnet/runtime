@@ -3885,9 +3885,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector64DoubleEqualsNonCanonicalNaNTest()
         {
-            var maxSignificand = (1UL << 53) - 1;
-            // NaN with mantissa bits set
-            var snan = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(double.NaN) | maxSignificand);
+            // max 8 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt64BitsToDouble(0x7FF7_FFFF_FFFF_FFFF);
             var nans = new double[]
             {
                 double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
@@ -3910,9 +3909,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector64SingleEqualsNonCanonicalNaNTest()
         {
-            var maxSignificand = (1U << 24) - 1;
-            // NaN with mantissa bits set
-            var snan = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(float.NaN) | maxSignificand);
+            // max 11 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt32BitsToSingle(0x7FBF_FFFF);
             var nans = new float[]
             {
                 float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
