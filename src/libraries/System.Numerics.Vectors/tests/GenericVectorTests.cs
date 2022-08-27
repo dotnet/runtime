@@ -855,18 +855,19 @@ namespace System.Numerics.Tests
             var snan = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(double.NaN) | maxSignificand);
             var nans = new double[]
             {
-                double.CopySign(double.NaN, -0.0), // -qnan
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
                 double.CopySign(double.NaN, +0.0), // +qnan
                 double.CopySign(snan, -0.0),       // -snan
                 double.CopySign(snan, +0.0),       // +snan
             };
 
-            // all Vector<double> NaNs .Equals compare the same
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
             foreach(var i in nans)
             {
                 foreach(var j in nans)
                 {
                     Assert.True(new Vector<double>(i).Equals(new Vector<double>(j)));
+                    Assert.False(new Vector<double>(i) == new Vector<double>(j));
                 }
             }
         }
@@ -879,18 +880,19 @@ namespace System.Numerics.Tests
             var snan = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(float.NaN) | maxSignificand);
             var nans = new float[]
             {
-                float.CopySign(float.NaN, -0.0f), // -qnan
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
                 float.CopySign(float.NaN, +0.0f), // +qnan
                 float.CopySign(snan, -0.0f),      // -snan
                 float.CopySign(snan, +0.0f),      // +snan
             };
 
-            // all Vector<float> NaNs .Equals compare the same
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
             foreach(var i in nans)
             {
                 foreach(var j in nans)
                 {
                     Assert.True(new Vector<float>(i).Equals(new Vector<float>(j)));
+                    Assert.False(new Vector<float>(i) == new Vector<float>(j));
                 }
             }
         }
