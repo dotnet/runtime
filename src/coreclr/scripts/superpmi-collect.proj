@@ -20,7 +20,7 @@
     <InputArtifacts>c:\bugs\spmicollect14\payload\workitem\collectAssembliesDirectory\libraries</InputArtifacts>
     <Architecture>x64</Architecture>
     <BuildConfig>Checked</BuildConfig>
-    <MchFileTag>x64.checked</MchFileTag>
+    <MchFileTag>windows.x64.checked</MchFileTag>
     <CollectionName>libraries</CollectionName>
     <CollectionType>crossgen2</CollectionType>
     <AGENT_OS>Windows_NT</AGENT_OS>

@@ -44,7 +44,8 @@
         RuntimeVariant=$(_RuntimeVariant);
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid);
-        PALTestsDir=$(_PALTestsDir)
+        PALTestsDir=$(_PALTestsDir);
+        SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
       <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetsAndroid)' == 'true'">
@@ -502,6 +503,16 @@
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
+    <SuperPmiCollect Condition=" '$(SuperPmiCollect)' != 'true' ">false</SuperPmiCollect>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
 
   <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
@@ -526,8 +537,31 @@
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="set spmi_enable_collection=1" />
+    <!-- spmi_collect_dir can point to any temporary directory. We choose %HELIX_WORKITEM_PAYLOAD%\spmi_collect for convenience, and
+         because we know it can be used, but %TEMP%\spmi_collect might be better. -->
+    <HelixPreCommand Include="set spmi_collect_dir=%HELIX_WORKITEM_PAYLOAD%\spmi_collect" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true'" />
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <HelixPostCommand Include="set spmi_collection_name=coreclr_tests" />
+    <HelixPostCommand Include="set spmi_collection_type=run" />
+    <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="set spmi_superpmi_py=$(BUILD_SOURCESDIRECTORY)\src\coreclr\scripts\superpmi.py" />
+    <HelixPostCommand Include="set spmi_collection_partition=%HELIX_WORKITEM_ID%" />
+    <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
+    <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
+    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_partition%.%spmi_collection_mch_file_tag%" />
+    <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
+    <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
+    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG --skip_cleanup --clean --skip_collection_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%"/>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
@@ -545,6 +579,27 @@
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
     <HelixPreCommand Include="cat $__TestEnv" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="export spmi_enable_collection=1" />
+    <HelixPreCommand Include="export spmi_collect_dir=$HELIX_WORKITEM_PAYLOAD/spmi_collect" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' " />
+    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
+    <HelixPostCommand Include="export spmi_collection_type=run" />
+    <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$(BUILD_SOURCESDIRECTORY)/src/coreclr/scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_collection_partition=$HELIX_WORKITEM_ID" />
+    <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
+    <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_partition.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
+    <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG --skip_cleanup --clean --skip_collection_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file"/>
   </ItemGroup>
 
   <PropertyGroup>

@@ -3543,8 +3543,8 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pmi_path")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
-            print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and not coreclr_args.skip_collection_step:
+            print("Either a collection command or `--pmi` or `--crossgen2` or `--skip_collection_step` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
@@ -3565,7 +3565,7 @@ def setup_args(args):
             if args.pmi_location is not None:
                 logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
-        if args.collection_command is None and args.merge_mch_files is not True:
+        if args.collection_command is None and args.merge_mch_files is not True and not coreclr_args.skip_collection_step:
             assert args.collection_args is None
             assert (args.pmi is True) or (args.crossgen2 is True)
             assert len(args.assemblies) > 0
