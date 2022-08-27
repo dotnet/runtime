@@ -18326,36 +18326,6 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
 }
 
 //------------------------------------------------------------------------
-// IsArrayAddr: Is "this" an expression for an array address?
-//
-// Recognizes the following patterns:
-//    this: ARR_ADDR
-//    this: ADD(ARR_ADDR, CONST)
-//
-// Arguments:
-//    pArrAddr - [out] parameter for the found ARR_ADDR node
-//
-// Return Value:
-//    Whether "this" matches the pattern denoted above.
-//
-bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
-{
-    GenTree* addr = this;
-    if (addr->OperIs(GT_ADD) && addr->AsOp()->gtGetOp2()->IsCnsIntOrI())
-    {
-        addr = addr->AsOp()->gtGetOp1();
-    }
-
-    if (addr->OperIs(GT_ARR_ADDR))
-    {
-        *pArrAddr = addr->AsArrAddr();
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
 // Create: Create or retrieve a field sequence for the given field handle.
 //
 // The field sequence instance contains some cached information relevant to

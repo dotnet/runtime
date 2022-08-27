@@ -8473,17 +8473,14 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                     else
                     {
-                        GenTreeArrAddr* arrAddr  = nullptr;
-                        GenTree*        baseAddr = nullptr;
-                        FieldSeq*       fldSeq   = nullptr;
-                        ssize_t         offset   = 0;
+                        GenTree*  baseAddr = nullptr;
+                        FieldSeq* fldSeq   = nullptr;
+                        ssize_t   offset   = 0;
 
-                        if (arg->IsArrayAddr(&arrAddr))
+                        if (arg->OperIs(GT_ARR_ADDR))
                         {
-                            // We will not collect "fldSeq" -- any modification to an S[], at
-                            // any field of "S", will lose all information about the array type.
                             CORINFO_CLASS_HANDLE elemTypeEq =
-                                EncodeElemType(arrAddr->GetElemType(), arrAddr->GetElemClassHandle());
+                                EncodeElemType(arg->AsArrAddr()->GetElemType(), arg->AsArrAddr()->GetElemClassHandle());
                             AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemTypeEq);
                             // Conservatively assume byrefs may alias this array element
                             memoryHavoc |= memoryKindSet(ByrefExposed);

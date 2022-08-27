@@ -2013,8 +2013,6 @@ public:
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSeq, ssize_t* pOffset);
 
-    bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
-
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
     // modified to check this.
