@@ -86,7 +86,14 @@ namespace System.Net
             }
             finally
             {
-                remoteCertificateHandle?.Dispose();
+                if (remoteCertificateHandle != null)
+                {
+                    remoteCertificateHandle.Dispose();
+                    if (gotReference)
+                    {
+                        remoteCertificateHandle.DangerousRelease();
+                    }
+                }
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
