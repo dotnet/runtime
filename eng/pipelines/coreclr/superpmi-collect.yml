@@ -182,7 +182,7 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
-    helixQueueGroup: ci
+    helixQueueGroup: superpmi
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop

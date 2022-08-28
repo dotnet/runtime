@@ -46,7 +46,7 @@
     <BundledNETCoreAppPackageVersion>BundledNETCoreAppPackageVersion</BundledNETCoreAppPackageVersion>
     <HelixRuntimeRid></HelixRuntimeRid>
     <_PALTestsDir></_PALTestsDir>
-    <_SuperPmiCollect>false</_SuperPmiCollect>
+    <_SuperPmiCollect>true</_SuperPmiCollect>
   </PropertyGroup>
   <Target Name="printItems">
     <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
@@ -124,7 +124,7 @@
 
     <Delete Files="@(CleanPreexistingPayloads)" />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="$(_PropertiesToPass)" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
@@ -287,6 +287,13 @@
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\tieringtest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_TieringTest)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/tieringtest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_TieringTest)' == 'true'" />
+
+    <ItemGroup Condition=" '$(SuperPmiCollect)' == 'true' ">
+      <!-- We need superpmi.py and its dependencies; this is an over-approximation. The HelixCorrelationPayload directory is CoreRootDirectory, so copy the scripts there. -->
+      <_SuperPmiScriptsFiles Include="$(RepoRoot)src\coreclr\scripts\*.py" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_SuperPmiScriptsFiles)" DestinationFolder="$(CoreRootDirectory)\superpmi_scripts" Condition=" '$(SuperPmiCollect)' == 'true' "/>
   </Target>
 
   <Target Name="CreateTestEnvFiles" Condition="'$(PayloadGroups)' != ''">
@@ -603,6 +610,7 @@
     <!-- spmi_collect_dir can point to any temporary directory. We choose %HELIX_WORKITEM_PAYLOAD%\spmi_collect for convenience, and
          because we know it can be used, but %TEMP%\spmi_collect might be better. -->
     <HelixPreCommand Include="set spmi_collect_dir=%HELIX_WORKITEM_PAYLOAD%\spmi_collect" />
+    <HelixPreCommand Include="if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
@@ -614,7 +622,7 @@
     <HelixPostCommand Include="set spmi_collection_name=coreclr_tests" />
     <HelixPostCommand Include="set spmi_collection_type=run" />
     <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
-    <HelixPostCommand Include="set spmi_superpmi_py=$(BUILD_SOURCESDIRECTORY)\src\coreclr\scripts\superpmi.py" />
+    <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\superpmi_scripts\superpmi.py" />
     <HelixPostCommand Include="set spmi_collection_partition=%HELIX_WORKITEM_ID%" />
     <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
     <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
@@ -649,6 +657,7 @@
     <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
     <HelixPreCommand Include="export spmi_enable_collection=1" />
     <HelixPreCommand Include="export spmi_collect_dir=$HELIX_WORKITEM_PAYLOAD/spmi_collect" />
+    <HelixPreCommand Include="mkdir -p $spmi_collect_dir" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
@@ -656,7 +665,7 @@
     <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
     <HelixPostCommand Include="export spmi_collection_type=run" />
     <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
-    <HelixPostCommand Include="export spmi_superpmi_py=$(BUILD_SOURCESDIRECTORY)/src/coreclr/scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD\superpmi_scripts\superpmi.py" />
     <HelixPostCommand Include="export spmi_collection_partition=$HELIX_WORKITEM_ID" />
     <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
     <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />

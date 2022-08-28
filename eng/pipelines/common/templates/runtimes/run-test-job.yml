@@ -154,6 +154,7 @@ jobs:
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+      - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
       - name: CollectionType
         value: 'run'
       - name: CollectionName
@@ -662,11 +663,13 @@ jobs:
             mkdir -p $(MergedMchFileLocation)
             mkdir -p $(SpmiLogsLocation)
           displayName: Create SuperPMI directories
+          condition: always()
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - script: |
             mkdir $(MergedMchFileLocation)
             mkdir $(SpmiLogsLocation)
           displayName: Create SuperPMI directories
+          condition: always()
 
       # Always run merge step even if collection of some partition fails so we can store collection of the partitions that succeeded.
       # If all the partitions fail, merge-mch would fail and we won't run future steps like uploading superpmi collection.
