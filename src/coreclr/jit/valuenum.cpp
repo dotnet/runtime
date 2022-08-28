@@ -9173,7 +9173,7 @@ void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
 
     ValueNum arrVN    = vnStore->VNNormalValue(arr->GetVN(VNK_Liberal));
     inxVN             = vnStore->VNNormalValue(inxVN);
-    ValueNum offsetVN = vnStore->VNForIntPtrCon(0);
+    ValueNum offsetVN = vnStore->VNForIntPtrCon(arrAddr->GetFieldOffset());
 
     ValueNum     arrAddrVN  = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, offsetVN);
     ValueNumPair arrAddrVNP = ValueNumPair(arrAddrVN, arrAddrVN);

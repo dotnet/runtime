@@ -12492,7 +12492,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     // Fold "((x + icon1) + (y + icon2))" to ((x + y) + (icon1 + icon2))".
     // Be careful not to create a byref pointer that may point outside of the ref object.
-    // Only do this in global morph as we don't recompute the VN for "(x + y)", the new "op2".
+    // Only do this in global morph as we don't recompute the VN for "(x + y)", the new "op1".
     if (op1->OperIs(GT_ADD) && op2->OperIs(GT_ADD) && !op1->gtOverflow() && !op2->gtOverflow() &&
         op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
         !varTypeIsGC(op1->AsOp()->gtGetOp1()) && !varTypeIsGC(op2->AsOp()->gtGetOp1()) && fgGlobalMorph)
@@ -12562,7 +12562,6 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         }
 
         // Sink offset addition below "ARR_ADDR"s to find potentially optimizable commutative folding.
-        //
         if (fgGlobalMorph && op2->IsCnsIntOrI())
         {
             GenTree* effectiveOp1 = op1->gtEffectiveVal();
@@ -12570,16 +12569,14 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             {
                 GenTreeArrAddr* addr   = effectiveOp1->AsArrAddr();
                 ssize_t         offset = op2->AsIntCon()->IconValue();
-                if ((0 <= offset) && ((addr->GetFieldOffset() + offset) < addr->GetElemSize()))
-                {
-                    add->SetAllEffectsFlags(addr);
-                    add->gtOp1            = addr->gtOp1;
-                    GenTree* optimizedAdd = fgOptimizeCommutativeArithmetic(add);
-                    addr->gtOp1           = optimizedAdd;
-                    addr->AddField(static_cast<unsigned>(offset));
 
-                    return op1;
-                }
+                add->SetAllEffectsFlags(addr);
+                add->gtOp1            = addr->gtOp1;
+                GenTree* optimizedAdd = fgOptimizeCommutativeArithmetic(add);
+                addr->gtOp1           = optimizedAdd;
+                addr->AddOffset(offset);
+
+                return op1;
             }
         }
 

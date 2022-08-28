@@ -6485,10 +6485,9 @@ public:
         return m_fieldOffset;
     }
 
-    void AddField(unsigned offset)
+    void AddOffset(ssize_t offset)
     {
-        assert((m_fieldOffset + offset) < m_elemSize);
-        m_fieldOffset += offset;
+        m_fieldOffset = (m_fieldOffset + static_cast<size_t>(offset)) % m_elemSize;
     }
 
     void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN);
