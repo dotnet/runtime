@@ -84,6 +84,21 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
     // we're in a debug build and write barrier checking has been enabled).
     UPDATE_GC_SHADOW \BASENAME, \REFREG, rdi
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    mov     r11, [C_VAR(g_write_watch_table)]
+    cmp     r11, 0x0
+    je      LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG)
+
+    mov     r10, rdi
+    shr     r10, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     r10, r11
+    cmp     byte ptr [r10], 0x0
+    jne     LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG)
+    mov     byte ptr [r10], 0xFF
+#endif
+
+LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG):
+
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
     cmp     \REFREG, [C_VAR(g_ephemeral_low)]
