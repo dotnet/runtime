@@ -2067,15 +2067,15 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when node.Ch != subsequent.Str![0]:
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when node.Ch != '\n':
-                            case RegexNodeKind.Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
-                            case RegexNodeKind.NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && node.Ch != subsequent.Ch:
                             case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when subsequent.M == 0 && node.Ch == subsequent.Ch:
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case RegexNodeKind.Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2114,14 +2114,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                            case RegexNodeKind.Boundary when node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
-                            case RegexNodeKind.NonBoundary when node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
-                            case RegexNodeKind.ECMABoundary when node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
-                            case RegexNodeKind.NonECMABoundary when node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case RegexNodeKind.Boundary when node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
+                            case RegexNodeKind.NonBoundary when node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
+                            case RegexNodeKind.ECMABoundary when node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
+                            case RegexNodeKind.NonECMABoundary when node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2136,8 +2136,6 @@ namespace System.Text.RegularExpressions
 
                 // We only get here if the node could be made atomic based on subsequent but subsequent has a lower bound of zero
                 // and thus we need to move subsequent to be the next node in sequence and loop around to try again.
-                Debug.Assert(subsequent.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy);
-                Debug.Assert(subsequent.M == 0);
                 if (!iterateNullableSubsequent)
                 {
                     return false;
