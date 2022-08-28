@@ -470,6 +470,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:ab??){2}", "(?:a(?>b??)){2}")]
         [InlineData("(?:ab??){2, 3}", "(?:a(?>b??)){2, 3}")]
         [InlineData("ab??(b)", "a(?>b??)(b)")]
+        [InlineData(@"\w+\b\w+", @"(?>\w+)\b\w")]
+        [InlineData(@"\w*\b\w+", @"(?>\w*)\b\w+")]
+        [InlineData(@"\W+\B\W+", @"(?>\W+)\B\W")]
+        [InlineData(@"\W*\B\W+", @"(?>\W*)\B\W")]
         // Loops inside alternation constructs
         [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
         [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
