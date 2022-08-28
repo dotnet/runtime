@@ -35,7 +35,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       "${TOOLSET_PREFIX}${exec}")
 
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}.'")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}'")
     endif()
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
