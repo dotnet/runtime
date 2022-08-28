@@ -18243,25 +18243,11 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
                 GenTree*       nonConst = nullptr;
                 if (tree->AsOp()->gtOp1->IsCnsIntOrI())
                 {
-                    // If the other arg is an int constant, and is a "not-a-field", choose
-                    // that as the multiplier, thus preserving constant index offsets...
-                    if (tree->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
-                        tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
-                    {
-                        assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
-                        // target_ssize_t type.
-                        subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
-                        nonConst = tree->AsOp()->gtOp1;
-                    }
-                    else
-                    {
-                        assert(!tree->AsOp()->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp));
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
-                        // target_ssize_t type.
-                        subMul   = (target_ssize_t)tree->AsOp()->gtOp1->AsIntConCommon()->IconValue();
-                        nonConst = tree->AsOp()->gtOp2;
-                    }
+                    assert(!tree->AsOp()->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp));
+                    // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
+                    // target_ssize_t type.
+                    subMul   = (target_ssize_t)tree->AsOp()->gtOp1->AsIntConCommon()->IconValue();
+                    nonConst = tree->AsOp()->gtOp2;
                 }
                 else if (tree->AsOp()->gtOp2->IsCnsIntOrI())
                 {
