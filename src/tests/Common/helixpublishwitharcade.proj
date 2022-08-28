@@ -362,6 +362,8 @@
       <_MergedWrapperParentDirectory>$([System.IO.Path]::GetDirectoryName('$(_MergedWrapperDirectory)'))</_MergedWrapperParentDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <!-- On Windows, you need to "call" a script or else the cmd.exe instance it is running in will exit, and the HelixPostCommands will not execute. -->
+      <_MergedWrapperRunScriptPrefix Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="call " />
     </PropertyGroup>
     <ItemGroup>
       <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperParentDirectory)/**/*.OutOfProcessTest" />
@@ -391,8 +393,8 @@
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
-      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
@@ -623,7 +625,8 @@
     <HelixPostCommand Include="set spmi_collection_type=run" />
     <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
     <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\superpmi_scripts\superpmi.py" />
-    <HelixPostCommand Include="set spmi_collection_partition=%HELIX_WORKITEM_ID%" />
+    <!-- temporary disable for hack: <HelixPostCommand Include="set spmi_collection_partition=%HELIX_WORKITEM_ID%" /> -->
+    <HelixPostCommand Include="set spmi_collection_partition=0" />
     <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
     <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
     <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_partition%.%spmi_collection_mch_file_tag%" />
@@ -666,7 +669,8 @@
     <HelixPostCommand Include="export spmi_collection_type=run" />
     <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
     <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD\superpmi_scripts\superpmi.py" />
-    <HelixPostCommand Include="export spmi_collection_partition=$HELIX_WORKITEM_ID" />
+    <!-- temporary disable for hack: <HelixPostCommand Include="export spmi_collection_partition=$HELIX_WORKITEM_ID" /> -->
+    <HelixPostCommand Include="export spmi_collection_partition=0" />
     <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
     <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
     <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_partition.$spmi_collection_mch_file_tag" />
@@ -744,12 +748,14 @@
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      <DownloadFilesFromResults>coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch.mct;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
 
     <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      <DownloadFilesFromResults>coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch.mct;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
 
     <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
