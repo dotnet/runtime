@@ -8750,16 +8750,26 @@ MONO_RESTORE_WARNING
 			LLVMValueRef minus_one [2];
 			minus_one [0] = const_int64 (-1);
 			minus_one [1] = const_int64 (-1);
-			
-			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
-			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
+			LLVMValueRef vec_and = NULL;
 
-			if ( ins -> inst_c0 == -OP_SSE_ANDN )   // Negation on lhs for Vector128
-				vec_rhs_i64 = LLVMBuildXor (builder, vec_rhs_i64, LLVMConstVector (minus_one, 2), "");
-			else 
-				vec_lhs_i64 = LLVMBuildXor (builder, vec_lhs_i64, LLVMConstVector (minus_one, 2), "");
+			if ( ins -> inst_c0 == -OP_SSE_ANDN ) { // Vector64, Vector128
+				LLVMTypeRef t = LLVMTypeOf (lhs);
+				LLVMTypeRef elem_t = LLVMGetElementType (t);
+				unsigned int elems = LLVMGetVectorSize (t);
+				unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+				LLVMTypeRef intermediate_elem_t = LLVMIntType (elem_bits);
+				LLVMTypeRef intermediate_t = LLVMVectorType (intermediate_elem_t, elems);
+				LLVMValueRef lhs_int = convert (ctx, lhs, intermediate_t);
+				LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
+				LLVMValueRef vec_xor = LLVMBuildXor (builder, rhs_int, LLVMConstVector (minus_one, 2), "");
+				vec_and = LLVMBuildAnd (builder, lhs_int, vec_xor, "");
+			} else { // Sse		
+				LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
+				LLVMValueRef vec_xor = LLVMBuildXor (builder, vec_lhs_i64, LLVMConstVector (minus_one, 2), "");
+				LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
+				vec_and = LLVMBuildAnd (builder, vec_rhs_i64, vec_xor, "");
+			} 
 			
-			LLVMValueRef vec_and = LLVMBuildAnd (builder, vec_lhs_i64, vec_rhs_i64, "");
 			values [ins->dreg] = LLVMBuildBitCast (builder, vec_and, type_to_sse_type (ins->inst_c1), "");
 			break;
 		}
