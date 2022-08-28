@@ -629,7 +629,7 @@
     <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_partition%.%spmi_collection_mch_file_tag%" />
     <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
     <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
-    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG --skip_cleanup --clean --skip_collection_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
+    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG -core_root %CORE_ROOT% --skip_cleanup --clean --skip_collection_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
   </ItemGroup>
 
   <!--
@@ -672,7 +672,7 @@
     <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_partition.$spmi_collection_mch_file_tag" />
     <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
     <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
-    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG --skip_cleanup --clean --skip_collection_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --skip_collection_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
   </ItemGroup>
 
   <PropertyGroup>
