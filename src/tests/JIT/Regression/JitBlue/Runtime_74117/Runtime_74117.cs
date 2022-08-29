@@ -8,7 +8,7 @@ unsafe class Runtime_74117
     public unsafe static int Main(string[] args)
     {
         byte a = 5;
-        Problem(ref a, 5);
+        Problem(ref a, 0);
         return 100;
     }
 
