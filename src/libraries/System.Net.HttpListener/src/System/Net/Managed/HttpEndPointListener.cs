@@ -80,12 +80,12 @@ namespace System.Net
 
         private void Accept(SocketAsyncEventArgs e)
         {
-            e.AcceptSocket = null;
             bool asyn = false;
             while (!asyn)
             {
                 try
                 {
+                    e.AcceptSocket = null;
                     asyn = _socket.AcceptAsync(e);
                 }
                 catch (ObjectDisposedException)
