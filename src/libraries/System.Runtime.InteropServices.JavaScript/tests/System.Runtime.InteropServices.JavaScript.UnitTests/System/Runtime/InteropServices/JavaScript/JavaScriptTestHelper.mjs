@@ -171,22 +171,29 @@ export function invoke2(arg1, name) {
     return res;
 }
 
-export function invokeStructClassRecords(arg1, name) {
-    let result = null;
-
-    ["JavaScriptTestHelperNoNamespace", "JavaScriptTestHelperStruct", "JavaScriptTestHelperRecordClass", "JavaScriptTestHelperRecordStruct"].forEach(obj => {
-        const fn = dllExports[obj][name];
-        const currentResult = fn(arg1);
-        if (result) {
-            if (result !== currentResult) {
-                throw new Error(`Un expected change in result from '${result}' to '${currentResult}'`);
-            }
-        } else {
-            result = currentResult;
-        }
-    })
-
-    return result;
+export function invokeStructClassRecords(arg1) {
+    return [
+        dllExports.JavaScriptTestHelperNoNamespace.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStruct.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStruct.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStruct.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStruct.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClass.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClass.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClass.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClass.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStruct.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStruct.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStruct.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStruct.NestedRecordStruct.EchoString(arg1),
+    ];
 }
 
 export async function awaitvoid(arg1) {

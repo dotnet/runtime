@@ -251,8 +251,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.String>]
         internal static partial string invoke2_String([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
         [JSImport("invokeStructClassRecords", "JavaScriptTestHelper")]
-        [return: JSMarshalAs<JSType.String>]
-        internal static partial string invokeStructClassRecords([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
+        [return: JSMarshalAs<JSType.Array<JSType.String>>]
+        internal static partial string[] invokeStructClassRecords([JSMarshalAs<JSType.String>] string value);
         [JSExport]
         [return: JSMarshalAs<JSType.String>]
         public static string EchoString([JSMarshalAs<JSType.String>] string arg1)
@@ -945,6 +945,42 @@ public partial class JavaScriptTestHelperNoNamespace
     {
         return message + "!";
     }
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
 }
 
 public partial class JavaScriptTestHelperStruct
@@ -953,6 +989,42 @@ public partial class JavaScriptTestHelperStruct
     public static string EchoString(string message)
     {
         return message + "!";
+    }
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
     }
 }
 
@@ -963,6 +1035,42 @@ public partial record class JavaScriptTestHelperRecordClass
     {
         return message + "!";
     }
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
 }
 
 public partial record struct JavaScriptTestHelperRecordStruct
@@ -971,5 +1079,41 @@ public partial record struct JavaScriptTestHelperRecordStruct
     public static string EchoString(string message)
     {
         return message + "!";
+    }
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message)
+        {
+            return message + "!";
+        }
     }
 }

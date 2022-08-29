@@ -1205,8 +1205,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public void JsExportStructClassRecords()
         {
-            var actual = JavaScriptTestHelper.invokeStructClassRecords("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
-            Assert.Equal("test!", actual);
+            var actual = JavaScriptTestHelper.invokeStructClassRecords("test");
+            Assert.Equal(20, actual.Length);
+            for (int i = 0; i < actual.Length; i++)
+                Assert.Equal("test!", actual[i]);
         }
 
         [Fact]
