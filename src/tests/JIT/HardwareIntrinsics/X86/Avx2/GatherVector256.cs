@@ -8,14 +8,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Avx2
 {
-    class Program
+    public partial class Program { public class GatherVector256
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
         const int N = 128;
 
         static byte Four;
@@ -31,7 +29,8 @@ namespace IntelHardwareIntrinsicTest
         static readonly long[] longIndexTable = new long[4] {2, 8, 16, 32};
         static readonly int[] vector128intIndexTable = new int[4] {8, 16, 32, 63};
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Test()
         {
             int testResult = Pass;
 
@@ -685,7 +684,7 @@ namespace IntelHardwareIntrinsicTest
 
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public unsafe struct TestTable<T, U> : IDisposable where T : struct where U : struct
@@ -726,5 +725,5 @@ namespace IntelHardwareIntrinsicTest
             }
         }
 
-    }
+    } }
 }

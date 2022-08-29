@@ -7,21 +7,20 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Avx2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void MoveMask()
         {
             int testResult = Pass;
 
             if (Avx2.IsSupported)
             {
-                using (TestTable<byte> byteTable = new TestTable<byte>(new byte[32] { 255, 2, 0, 80, 0, 7, 0, 1, 2, 7, 80, 0, 123, 127, 5, 255, 255, 2, 0, 80, 0, 7, 0, 1, 2, 7, 80, 0, 123, 127, 5, 255 }))
+                using (TestTable_SingleArray<byte> byteTable = new TestTable_SingleArray<byte>(new byte[32] { 255, 2, 0, 80, 0, 7, 0, 1, 2, 7, 80, 0, 123, 127, 5, 255, 255, 2, 0, 80, 0, 7, 0, 1, 2, 7, 80, 0, 123, 127, 5, 255 }))
                 {
 
                     var vf1 = Unsafe.Read<Vector256<byte>>(byteTable.inArray1Ptr);
@@ -35,7 +34,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<sbyte> sbyteTable = new TestTable<sbyte>(new sbyte[32] { -1, 2, 0, 6, 0, 7, 111, 1, 2, 55, 80, 0, 11, 127, 5, -9, -1, 2, 0, 6, 0, 7, 111, 1, 2, 55, 80, 0, 11, 127, 5, -9 }))
+                using (TestTable_SingleArray<sbyte> sbyteTable = new TestTable_SingleArray<sbyte>(new sbyte[32] { -1, 2, 0, 6, 0, 7, 111, 1, 2, 55, 80, 0, 11, 127, 5, -9, -1, 2, 0, 6, 0, 7, 111, 1, 2, 55, 80, 0, 11, 127, 5, -9 }))
                 {
 
                     var vf1 = Unsafe.Read<Vector256<sbyte>>(sbyteTable.inArray1Ptr);
@@ -51,16 +50,16 @@ namespace IntelHardwareIntrinsicTest
             }
 
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
-        public unsafe struct TestTable<T> : IDisposable where T : struct
+        public unsafe struct TestTable_SingleArray<T> : IDisposable where T : struct
         {
             public T[] inArray1;
             public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
             GCHandle inHandle1;
 
-            public TestTable(T[] a)
+            public TestTable_SingleArray(T[] a)
             {
                 this.inArray1 = a;
                 inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
