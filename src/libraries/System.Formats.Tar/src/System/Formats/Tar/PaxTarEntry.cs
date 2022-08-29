@@ -100,6 +100,11 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
+        /// <param name="other">The <see cref="TarEntry"/> instance to convert to the PAX format.</param>
+        /// <exception cref="InvalidOperationException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> instance.</para>
+        /// <para>-or-</para>
+        /// <para>The entry type of <paramref name="other"/> is not supported in PAX.</para></exception>
+        /// <exception cref="FormatException">The format of <paramref name="other"/> is invalid.</exception>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {

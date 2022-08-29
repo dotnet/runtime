@@ -66,9 +66,8 @@ namespace System.Formats.Tar
             }
         }
 
-        /// <summary>
-        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
-        /// </summary>
+        /// <summary>Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.</summary>
+        /// <returns>A value task that represents the asynchronous dispose operation.</returns>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public async ValueTask DisposeAsync()
         {

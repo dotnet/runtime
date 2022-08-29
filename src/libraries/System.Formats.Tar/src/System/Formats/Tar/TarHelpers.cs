@@ -365,7 +365,7 @@ namespace System.Formats.Tar
 
                 case TarEntryFormat.Unknown:
                 default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
+                    throw new FormatException(string.Format(SR.TarInvalidEntryFormat, archiveFormat));
             }
 
             throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat));

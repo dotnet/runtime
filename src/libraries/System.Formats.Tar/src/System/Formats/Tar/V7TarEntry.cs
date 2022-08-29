@@ -30,6 +30,11 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
         /// </summary>
+        /// <param name="other">The <see cref="TarEntry"/> instance to convert to the V7 format.</param>
+        /// <exception cref="InvalidOperationException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> instance.</para>
+        /// <para>-or-</para>
+        /// <para>The entry type of <paramref name="other"/> is not supported in V7.</para></exception>
+        /// <exception cref="FormatException">The format of <paramref name="other"/> is invalid.</exception>
         public V7TarEntry(TarEntry other)
             : base(other, TarEntryFormat.V7)
         {

@@ -228,8 +228,8 @@
   <data name="TarHardLinkToDirectoryNotAllowed" xml:space="preserve">
     <value>Cannot create the hard link '{0}' targeting the directory '{1}'.</value>
   </data>
-  <data name="TarInvalidFormat" xml:space="preserve">
-    <value>The archive format is invalid: '{0}'</value>
+  <data name="TarInvalidEntryFormat" xml:space="preserve">
+    <value>The entry format is invalid: '{0}'</value>
   </data>
   <data name="TarPosixFormatExpected" xml:space="preserve">
     <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>

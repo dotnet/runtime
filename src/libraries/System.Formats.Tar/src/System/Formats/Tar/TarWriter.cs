@@ -100,9 +100,8 @@ namespace System.Formats.Tar
             }
         }
 
-        /// <summary>
-        /// Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
-        /// </summary>
+        /// <summary>Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.</summary>
+        /// <returns>A value task that represents the asynchronous dispose operation.</returns>
         public async ValueTask DisposeAsync()
         {
             if (!_isDisposed)
@@ -224,6 +223,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entry">The tar entry to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
         /// <para>These are the entry types supported for writing on each format:</para>
         /// <list type="bullet">
@@ -298,7 +298,7 @@ namespace System.Formats.Tar
 
                 default:
                     Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                    throw new FormatException(string.Format(SR.TarInvalidEntryFormat, Format));
             }
 
             _wroteEntries = true;
@@ -320,7 +320,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
                 TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new FormatException(string.Format(SR.TarInvalidEntryFormat, Format)),
             };
             await task.ConfigureAwait(false);
 
