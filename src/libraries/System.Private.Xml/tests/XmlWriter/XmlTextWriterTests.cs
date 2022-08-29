@@ -53,12 +53,12 @@ namespace System.Xml.Tests
         [Theory]
         [MemberData(nameof(BadSurrogateTestCases), DisableDiscoveryEnumeration = true)] // disable enumeration to avoid test harness misinterpreting unpaired surrogates
         [InlineData("]]>")] // end of cdata marker forbidden (ambiguous close tag)
-        public void WriteCData_FailureCases(string commentText)
+        public void WriteCData_FailureCases(string cdataText)
         {
             StringWriter sw = new StringWriter();
             XmlTextWriter xw = new XmlTextWriter(sw);
 
-            Assert.Throws<ArgumentException>(() => xw.WriteCData(commentText));
+            Assert.Throws<ArgumentException>(() => xw.WriteCData(cdataText));
         }
 
         [Theory]
