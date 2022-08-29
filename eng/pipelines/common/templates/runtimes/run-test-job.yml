@@ -9,7 +9,6 @@ parameters:
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
@@ -127,15 +126,9 @@ jobs:
 
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
-      # Switch R2R to use cg2 by default
         value: 'crossgen2'
       - name: LogNamePrefix
-        value: TestRunLogs_R2R
-      - ${{ if eq(parameters.crossgen2, true) }}:
-        - name: crossgenArg
-          value: 'crossgen2'
-        - name: LogNamePrefix
-          value: TestRunLogs_R2R_CG2
+        value: TestRunLogs_R2R_CG2
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
@@ -166,8 +159,8 @@ jobs:
     # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
     # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
     #
-    # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
-    # time needed to compile the test into native code with the Crossgen compiler.
+    # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
+    # time needed to compile the test into native code with the Crossgen2 compiler.
 
     - name: timeoutPerTestInMinutes
       value: 10
@@ -176,7 +169,7 @@ jobs:
     - ${{ if in(parameters.testGroup, 'outerloop') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
-    - ${{ if eq(parameters.crossgen2, true) }}:
+    - ${{ if eq(parameters.readyToRun, true) }}:
         - name: timeoutPerTestCollectionInMinutes
           value: 90
         - name: timeoutPerTestInMinutes
@@ -320,7 +313,7 @@ jobs:
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
+    # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
       displayName: Generate CORE_ROOT
@@ -385,8 +378,7 @@ jobs:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
           runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
 

@@ -1111,7 +1111,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            export RunCrossGen=1
+            export RunCrossGen2=1
             ;;
         --sequential)
             ((maxProcesses = 1))
