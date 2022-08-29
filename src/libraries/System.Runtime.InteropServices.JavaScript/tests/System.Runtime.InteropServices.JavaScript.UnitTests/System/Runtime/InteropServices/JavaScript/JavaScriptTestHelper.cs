@@ -250,6 +250,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke2", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial string invoke2_String([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
+        [JSImport("invokeStructClassRecords", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.String>]
+        internal static partial string invokeStructClassRecords([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
         [JSExport]
         [return: JSMarshalAs<JSType.String>]
         public static string EchoString([JSMarshalAs<JSType.String>] string arg1)
@@ -936,6 +939,33 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 }
 
 public partial class JavaScriptTestHelperNoNamespace
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message)
+    {
+        return message + "!";
+    }
+}
+
+public partial class JavaScriptTestHelperStruct
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message)
+    {
+        return message + "!";
+    }
+}
+
+public partial record class JavaScriptTestHelperRecordClass
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message)
+    {
+        return message + "!";
+    }
+}
+
+public partial record struct JavaScriptTestHelperRecordStruct
 {
     [System.Runtime.InteropServices.JavaScript.JSExport]
     public static string EchoString(string message)

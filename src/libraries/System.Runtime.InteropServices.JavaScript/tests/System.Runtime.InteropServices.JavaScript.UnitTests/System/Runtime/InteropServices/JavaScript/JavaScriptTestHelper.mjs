@@ -171,6 +171,24 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function invokeStructClassRecords(arg1, name) {
+    let result = null;
+
+    ["JavaScriptTestHelperNoNamespace", "JavaScriptTestHelperStruct", "JavaScriptTestHelperRecordClass", "JavaScriptTestHelperRecordStruct"].forEach(obj => {
+        const fn = dllExports[obj][name];
+        const currentResult = fn(arg1);
+        if (result) {
+            if (result !== currentResult) {
+                throw new Error(`Un expected change in result from '${result}' to '${currentResult}'`);
+            }
+        } else {
+            result = currentResult;
+        }
+    })
+
+    return result;
+}
+
 export async function awaitvoid(arg1) {
     // console.log("awaitvoid:" + typeof arg1);
     await arg1;
