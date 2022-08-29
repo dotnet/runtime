@@ -51,7 +51,9 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
+      EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
+      EnableRuleCannotChangeParameterName="true"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableRightAssembliesTransformationPattern)" />
 
