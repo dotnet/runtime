@@ -30,24 +30,21 @@ namespace System.Net
             ref X509Chain? chain,
             X509ChainPolicy? chainPolicy)
         {
-            bool gotReference = false;
-
             if (securityContext == null)
             {
                 return null;
             }
 
             X509Certificate2? result = null;
-            SafeX509Handle? remoteCertificateHandle = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
+            IntPtr remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
             try
             {
-                if (remoteCertificateHandle == null)
+                if (remoteCertificate == IntPtr.Zero)
                 {
                     return null;
                 }
 
-                remoteCertificateHandle.DangerousAddRef(ref gotReference);
-                result = new X509Certificate2(remoteCertificateHandle.DangerousGetHandle());
+                result = new X509Certificate2(remoteCertificate);
 
                 if (retrieveChainCertificates)
                 {
@@ -86,13 +83,11 @@ namespace System.Net
             }
             finally
             {
-                if (remoteCertificateHandle != null)
+                if (remoteCertificate != IntPtr.Zero && result == null)
                 {
-                    remoteCertificateHandle.Dispose();
-                    if (gotReference)
-                    {
-                        remoteCertificateHandle.DangerousRelease();
-                    }
+                    // We failed to create certifiate from valid pointer
+                    // so we need to release it explicitly.
+                    Interop.Crypto.X509Destroy(remoteCertificate);
                 }
             }
 
