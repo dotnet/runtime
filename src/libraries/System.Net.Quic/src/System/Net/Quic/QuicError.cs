@@ -72,5 +72,10 @@ namespace System.Net.Quic
         /// The operation has been aborted.
         /// </summary>
         OperationAborted,
+
+        /// <summary>
+        /// OS does not support IPv6
+        /// </summary>
+        OSDoesNotSupportIPv6
     }
 }

@@ -87,6 +87,7 @@ namespace Microsoft.Quic
         public static int QUIC_ADDRESS_FAMILY_UNSPEC => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_UNSPEC : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC : MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC;
         public static int QUIC_ADDRESS_FAMILY_INET => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET;
         public static int QUIC_ADDRESS_FAMILY_INET6 => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET6 : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6 : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6;
+        public static int QUIC_STATUS_ADDRESS_NOT_AVAILABLE => OperatingSystem.IsLinux() ? MsQuic_Linux.QUIC_STATUS_ADDRESS_NOT_AVAILABLE : OperatingSystem.IsMacOS() ? MsQuic_MacOS.QUIC_STATUS_ADDRESS_NOT_AVAILABLE : MsQuic_Linux.QUIC_STATUS_ADDRESS_NOT_AVAILABLE;
     }
 
     /// <summary>Defines the type of a member as it was used in the native signature.</summary>
