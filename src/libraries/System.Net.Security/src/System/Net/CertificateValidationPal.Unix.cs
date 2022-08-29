@@ -83,10 +83,10 @@ namespace System.Net
             }
             finally
             {
-                if (remoteCertificate != IntPtr.Zero && result == null)
+                if (remoteCertificate != IntPtr.Zero)
                 {
-                    // We failed to create certifiate from valid pointer
-                    // so we need to release it explicitly.
+                    // Creating X509Certificate will grab refference
+                    // and we need to release it explicitly on failure.
                     Interop.Crypto.X509Destroy(remoteCertificate);
                 }
             }
