@@ -3720,49 +3720,28 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 #endif
 
-            // We cannot throw if we're compiling the fallback method body or this will shoot down the compiler.
-            // We're going to generate a throwing method body.
-            // This is wrong, but also nothing is right.
-            bool canThrow =
-#if READYTORUN
-                true;
-#else
-                !_isFallbackBodyCompilation;
-#endif
-
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
-                bool wouldThrow = false;
-
                 // Validate UnmanagedCallersOnlyAttribute usage
                 if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {
-                    if (canThrow)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
-                    wouldThrow = true;
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
                 }
 
                 if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
                 {
-                    if (canThrow)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
-                    wouldThrow = true;
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
 #if READYTORUN
                 // TODO: enable this check in full AOT
                 if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>(), ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
                 {
-                    if (canThrow)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
-                    wouldThrow = true;
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
 #endif
 
-                // Don't compile as UnmanagedCallersOnly if this was an invalid case.
-                // This is wrong, but also nothing is right.
-                if (!wouldThrow)
-                    flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
+                flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
 
             if (this.MethodBeingCompiled.IsPInvoke)
