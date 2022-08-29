@@ -142,7 +142,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     if (m_JitInfoArray == nullptr || m_ModuleList == nullptr)
     {
@@ -181,7 +181,7 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
 
     if (SUCCEEDED(hr) && (cbWritten != len))
     {
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
 
     return hr;
@@ -250,7 +250,7 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     // GetMVID can throw exception
     EX_TRY
@@ -270,12 +270,16 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 
             hr = S_OK;
         }
+        else
+        {
+            hr = LogHR(E_FAIL);
+        }
 
         // If the load context is LOADFROM, store it in the flags.
     }
     EX_CATCH
     {
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
     EX_END_CATCH(SwallowAllExceptions);
 

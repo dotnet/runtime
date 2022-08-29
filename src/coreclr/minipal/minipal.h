@@ -75,4 +75,11 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool ReleaseRWMapping(void* pStart, size_t size);
+
+    // Get a string describing the symbol located at the specified address.
+    // Parameters:
+    //  address      - address to find the symbol for
+    //  buffer       - buffer to store the resulting string
+    //  bufferSize   - size of the buffer
+    static void GetSymbolFromAddress(const void* address, char* buffer, size_t bufferSize);
 };

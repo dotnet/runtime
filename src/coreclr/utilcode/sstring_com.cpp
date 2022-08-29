@@ -35,7 +35,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
     }
     CONTRACT_END;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
 #ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
     if (pResourceDLL == NULL)
@@ -91,11 +91,15 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
         }
         EX_CATCH
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
+    else
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
+    {
+        hr = LogHR(E_FAIL);
+    }
 
     RETURN hr;
 } // SString::LoadResourceAndReturnHR

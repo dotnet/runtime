@@ -62,6 +62,18 @@
 
 class StringArrayList;
 
+struct FailedHRLogEntry
+{
+    DWORD hr;
+    void *address;
+};
+
+DWORD LogHR(DWORD hr);
+DWORD LogHR(DWORD hr, void* address);
+
+UINT32 GetFailedHRLogEntryCount();
+FailedHRLogEntry* GetFailedHRLogEntry(UINT32 index);
+
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
 #endif
@@ -840,7 +852,7 @@ inline HRESULT HRESULT_FROM_GetLastError()
     if (dw == ERROR_SUCCESS)
     {
         _ASSERTE(!"We were expecting to get an error code, but a success code is being returned. Check this code path for Everett!");
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
     else
         return HRESULT_FROM_WIN32(dw);
@@ -852,7 +864,7 @@ inline HRESULT HRESULT_FROM_GetLastErrorNA()
     DWORD dw = GetLastError();
     // Make sure we return a failure
     if (dw == ERROR_SUCCESS)
-        return E_FAIL;
+        return LogHR(E_FAIL);
     else
         return HRESULT_FROM_WIN32(dw);
 }

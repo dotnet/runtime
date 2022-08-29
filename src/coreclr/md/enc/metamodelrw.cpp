@@ -4386,7 +4386,7 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
         else
         {
             _ASSERTE(!"PutToken called on unexpected coded token type");
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
         }
     }
     else // It is an error.

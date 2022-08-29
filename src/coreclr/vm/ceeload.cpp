@@ -3149,7 +3149,7 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     WRAPPER_NO_CONTRACT;
-    ThrowHR(E_FAIL);
+    ThrowHR(LogHR(E_FAIL));
 }
 #endif // !DACCESS_COMPILE
 
@@ -5582,7 +5582,7 @@ void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport 
                                                       UINT resIDWhy)
 {
     WRAPPER_NO_CONTRACT;
-    ThrowHR(E_FAIL);
+    ThrowHR(LogHR(E_FAIL));
 }
 #else
 void DECLSPEC_NORETURN Module::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,

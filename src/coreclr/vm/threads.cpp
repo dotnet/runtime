@@ -816,28 +816,26 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
     HRESULT hr = S_OK;
 
     Thread *pThread = GetThreadNULLOk();
-    if (pThread != NULL)
+    if (pThread == NULL)
     {
-        return pThread;
-    }
-
-    EX_TRY
-    {
-        pThread = SetupThread();
-    }
-    EX_CATCH
-    {
-        // We failed SetupThread.  GET_EXCEPTION() may depend on Thread object.
-        if (__pException == NULL)
+        EX_TRY
         {
-            hr = E_OUTOFMEMORY;
+            pThread = SetupThread();
         }
-        else
+        EX_CATCH
         {
-        hr = GET_EXCEPTION()->GetHR();
+            // We failed SetupThread.  GET_EXCEPTION() may depend on Thread object.
+            if (__pException == NULL)
+            {
+                hr = E_OUTOFMEMORY;
+            }
+            else
+            {
+                hr = GET_EXCEPTION()->GetHR();
+            }
+        }
+        EX_END_CATCH(SwallowAllExceptions);
     }
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 
     if (pHR)
     {

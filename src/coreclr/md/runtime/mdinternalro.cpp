@@ -739,7 +739,7 @@ HRESULT MDInternalRO::GetNameOfCustomAttribute( // S_OK or error.
     _ASSERTE(TypeFromToken(mdAttribute) == mdtCustomAttribute);
 
     HRESULT hr = m_LiteWeightStgdb.m_MiniMd.CommonGetNameOfCustomAttribute(RidFromToken(mdAttribute), pszNamespace, pszName);
-    return (hr == S_FALSE) ? E_FAIL : hr;
+    return (hr == S_FALSE) ? LogHR(E_FAIL) : hr;
 } // MDInternalRO::GetNameOfCustomAttribute
 
 //*****************************************************************************
@@ -3322,7 +3322,7 @@ HRESULT MDInternalRO::ApplyEditAndContinue(
     _ASSERTE(pDeltaMD);
     _ASSERTE(ppv);
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     IMDInternalImportENC *pDeltaMDImport = NULL;
 

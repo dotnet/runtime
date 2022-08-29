@@ -1322,7 +1322,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     // Retrieve the native type for the current parameter.
     if (!ParseNativeTypeInfo(token, pModule->GetMDImport(), &ParamInfo))
     {
-        IfFailGoto(E_FAIL, lFail);
+        IfFailGoto(LogHR(E_FAIL), lFail);
     }
 
     nativeType = ParamInfo.m_NativeType;
@@ -1340,7 +1340,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             // and emit exception throwing code directly in STUB in COM interop
             m_type = MARSHAL_TYPE_UNKNOWN;
             m_resID = IDS_EE_SIZECONTROLOUTOFRANGE;
-            IfFailGoto(E_FAIL, lFail);
+            IfFailGoto(LogHR(E_FAIL), lFail);
         }
     }
 
@@ -1413,7 +1413,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         if (IsFieldScenario())
         {
             m_resID = IDS_EE_BADMARSHALFIELD_NOCUSTOMMARSH;
-            IfFailGoto(E_FAIL, lFail);
+            IfFailGoto(LogHR(E_FAIL), lFail);
         }
 
         switch (mtype)
@@ -1432,7 +1432,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
             default:
                 m_resID = IDS_EE_BADMARSHAL_CUSTOMMARSHALER;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
         }
 
         // Set m_type to MARSHAL_TYPE_UNKNOWN in case SetupCustomMarshalerHelper throws.
@@ -1512,7 +1512,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 default:
                     m_resID = IDS_EE_BADMARSHAL_BOOLEAN;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
             }
             break;
 
@@ -1535,7 +1535,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 default:
                     m_resID = IDS_EE_BADMARSHAL_CHAR;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
 
             }
             break;
@@ -1544,7 +1544,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I1;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_1;
             break;
@@ -1553,7 +1553,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I1;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_U1;
             break;
@@ -1562,7 +1562,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I2;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_2;
             break;
@@ -1571,7 +1571,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I2;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_U2;
             break;
@@ -1592,7 +1592,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 default:
                 m_resID = IDS_EE_BADMARSHAL_I4;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_4;
             break;
@@ -1613,7 +1613,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 default:
                 m_resID = IDS_EE_BADMARSHAL_I4;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_U4;
             break;
@@ -1622,7 +1622,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I8;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_8;
             break;
@@ -1631,7 +1631,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I8;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_GENERIC_8;
             break;
@@ -1640,7 +1640,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 #ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
@@ -1653,7 +1653,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 #ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
@@ -1667,7 +1667,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_R4 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_R4;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_FLOAT;
             break;
@@ -1676,7 +1676,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_R8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_R8;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
             m_type = MARSHAL_TYPE_DOUBLE;
             break;
@@ -1685,7 +1685,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (nativeType != NATIVE_TYPE_DEFAULT)
             {
                 m_resID = IDS_EE_BADMARSHAL_PTR;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 #ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
@@ -1698,7 +1698,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 #ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
@@ -1733,7 +1733,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (sigTH.HasInstantiation())
             {
                 m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 
             m_pMT = sigTH.GetMethodTable();
@@ -1747,7 +1747,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 if (sig.IsStringType(pModule, pTypeContext))
                 {
                     m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_STRING : IDS_EE_BADMARSHALPARAM_STRING;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 if (COMDelegate::IsDelegate(m_pMT))
@@ -1757,7 +1757,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
                     // if they need an interface pointer.
                     m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 m_type = MARSHAL_TYPE_INTERFACE;
             }
@@ -1773,7 +1773,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (builder && m_ms == MARSHAL_SCENARIO_FIELD)
                     {
                         m_resID = IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
 
                     switch ( nativeType )
@@ -1797,7 +1797,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             {
                                 _ASSERTE(m_ms == MARSHAL_SCENARIO_COMINTEROP);
                                 // We disallow NATIVE_TYPE_LPTSTR for COM.
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
 #endif // FEATURE_COMINTEROP
                             // We no longer support Win9x so LPTSTR always maps to a Unicode string.
@@ -1809,7 +1809,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             if (builder)
                             {
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
                             m_type = MARSHAL_TYPE_BSTR;
                             break;
@@ -1818,7 +1818,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             if (builder)
                             {
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
                             m_type = MARSHAL_TYPE_ANSIBSTR;
                             break;
@@ -1828,7 +1828,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             if (builder)
                             {
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
 
                             // We no longer support Win9x so TBSTR always maps to a normal (unicode) BSTR.
@@ -1842,7 +1842,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             if (builder)
                             {
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
                             m_type = m_fAnsi ? MARSHAL_TYPE_VBBYVALSTR : MARSHAL_TYPE_VBBYVALSTRW;
                             break;
@@ -1853,10 +1853,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             if (builder)
                             {
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
 
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                             break;
                         }
 #endif // FEATURE_COMINTEROP
@@ -1867,7 +1867,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 if (ParamInfo.m_Additive == 0)
                                 {
                                     m_resID = IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING;
-                                    IfFailGoto(E_FAIL, lFail);
+                                    IfFailGoto(LogHR(E_FAIL), lFail);
                                 }
 
                                 m_args.fs.fixedStringLength = ParamInfo.m_Additive;
@@ -1911,7 +1911,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 m_resID = IDS_EE_BADMARSHALPARAM_STRING;
                             }
 
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                             break;
                     }
                 }
@@ -1954,7 +1954,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
                         m_resID = IDS_EE_BADMARSHAL_SAFEHANDLE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_SAFEHANDLE;
@@ -1964,7 +1964,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
                         m_resID = IDS_EE_BADMARSHAL_CRITICALHANDLE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_CRITICALHANDLE;
@@ -1976,7 +1976,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                           nativeType == NATIVE_TYPE_INTF))
                     {
                         m_resID = IDS_EE_BADMARSHAL_INTERFACE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                     m_type = MARSHAL_TYPE_INTERFACE;
                 }
@@ -2000,7 +2000,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
                                 // if they need an interface pointer.
                                 m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
-                                IfFailGoto(E_FAIL, lFail);
+                                IfFailGoto(LogHR(E_FAIL), lFail);
                             }
                             else
 #endif // FEATURE_COMINTEROP
@@ -2014,7 +2014,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #endif
                         default:
                         m_resID = IDS_EE_BADMARSHAL_DELEGATE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                             break;
                     }
                 }
@@ -2023,7 +2023,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == (IsFieldScenario() ? NATIVE_TYPE_STRUCT : NATIVE_TYPE_LPSTRUCT)))
                     {
                         m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_LAYOUTCLASS : IDS_EE_BADMARSHAL_CLASS;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS : MARSHAL_TYPE_BLITTABLEPTR;
                     m_args.m_pMT = m_pMT;
@@ -2033,7 +2033,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == (IsFieldScenario() ? NATIVE_TYPE_STRUCT : NATIVE_TYPE_LPSTRUCT)))
                     {
                         m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_LAYOUTCLASS : IDS_EE_BADMARSHAL_CLASS;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_LAYOUTCLASS : MARSHAL_TYPE_LAYOUTCLASSPTR;
                     m_args.m_pMT = m_pMT;
@@ -2071,14 +2071,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         case NATIVE_TYPE_DEFAULT:
                         case NATIVE_TYPE_STRUCT:
                             m_resID = IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                             break;
 
                         case NATIVE_TYPE_INTF:
                         case NATIVE_TYPE_IUNKNOWN:
                         case NATIVE_TYPE_IDISPATCH:
                             m_resID = IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                             break;
 #endif // FEATURE_COMINTEROP
 
@@ -2088,7 +2088,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         default:
                             m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_OBJECT : IDS_EE_BADMARSHAL_OBJECT;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                 }
 
@@ -2128,14 +2128,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         default:
                             m_resID = IDS_EE_BADMARSHAL_SYSARRAY;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
 
                     }
                 }
                 else if (m_pMT->IsArray())
                 {
                     _ASSERTE(!"This invalid signature should never be hit!");
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 #endif // FEATURE_COMINTEROP
                 else
@@ -2143,14 +2143,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (!(nativeType == NATIVE_TYPE_INTF || nativeType == NATIVE_TYPE_DEFAULT))
                     {
                         m_resID = IDS_EE_BADMARSHAL_NOLAYOUT;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
 #ifdef FEATURE_COMINTEROP
                     // default marshalling is interface
                     m_type = MARSHAL_TYPE_INTERFACE;
 #else // FEATURE_COMINTEROP
                     m_resID = IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
 #endif // FEATURE_COMINTEROP
                 }
             }
@@ -2174,7 +2174,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         if (IsFieldScenario())
                         {
                             m_resID = IDS_EE_BADMARSHALFIELD_DECIMAL;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                         }
                         m_type = MARSHAL_TYPE_DECIMAL_PTR;
                         break;
@@ -2185,7 +2185,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                     default:
                         m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_DECIMAL : IDS_EE_BADMARSHALPARAM_DECIMAL;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                 }
             }
             else if (sig.IsClassThrowing(pModule, g_GuidClassName, pTypeContext))
@@ -2201,14 +2201,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         if (IsFieldScenario())
                         {
                             m_resID = IDS_EE_BADMARSHAL_GUID;
-                            IfFailGoto(E_FAIL, lFail);
+                            IfFailGoto(LogHR(E_FAIL), lFail);
                         }
                         m_type = MARSHAL_TYPE_GUID_PTR;
                         break;
 
                     default:
                         m_resID = IDS_EE_BADMARSHAL_GUID;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                 }
             }
             else if (sig.IsClassThrowing(pModule, g_DateClassName, pTypeContext))
@@ -2216,7 +2216,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                 {
                     m_resID = IDS_EE_BADMARSHAL_DATETIME;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 m_type = MARSHAL_TYPE_DATE;
             }
@@ -2224,11 +2224,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 if (!(nativeType == NATIVE_TYPE_DEFAULT))
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 m_type = MARSHAL_TYPE_ARRAYWITHOFFSET;
             }
@@ -2236,11 +2236,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 if (!(nativeType == NATIVE_TYPE_DEFAULT))
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 m_type = MARSHAL_TYPE_HANDLEREF;
             }
@@ -2248,11 +2248,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 if (!(nativeType == NATIVE_TYPE_DEFAULT))
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
                 m_type = MARSHAL_TYPE_ARGITERATOR;
             }
@@ -2261,13 +2261,13 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (!(nativeType == NATIVE_TYPE_DEFAULT))
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 // This is only supported for COM interop.
                 if (m_ms != MARSHAL_SCENARIO_COMINTEROP)
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 m_type = MARSHAL_TYPE_OLECOLOR;
@@ -2277,7 +2277,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (nativeType != NATIVE_TYPE_DEFAULT || IsFieldScenario())
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 m_type = MARSHAL_TYPE_RUNTIMETYPEHANDLE;
@@ -2286,7 +2286,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (nativeType != NATIVE_TYPE_DEFAULT || IsFieldScenario())
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 m_type = MARSHAL_TYPE_RUNTIMEFIELDHANDLE;
@@ -2295,7 +2295,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             {
                 if (nativeType != NATIVE_TYPE_DEFAULT || IsFieldScenario())
                 {
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 m_type = MARSHAL_TYPE_RUNTIMEMETHODHANDLE;
@@ -2309,7 +2309,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 if (!IsValidForGenericMarshalling(m_pMT, IsFieldScenario()))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 // * Int128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
@@ -2320,14 +2320,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (m_pMT->IsInt128OrHasInt128Fields())
                     {
                         m_resID = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
                 }
 
                 if (!m_pMT->HasLayout())
                 {
                     m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 UINT managedSize = m_pMT->GetNumInstanceFieldBytes();
@@ -2337,7 +2337,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     managedSize > 0xfff0)
                 {
                     m_resID = IDS_EE_STRUCTTOOCOMPLEX;
-                    IfFailGoto(E_FAIL, lFail);
+                    IfFailGoto(LogHR(E_FAIL), lFail);
                 }
 
                 if (m_pMT->IsBlittable())
@@ -2345,7 +2345,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                     {
                         m_resID = IDS_EE_BADMARSHAL_VALUETYPE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
 
                     if (m_byref && !isParam && !IsFieldScenario())
@@ -2380,7 +2380,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                     {
                         m_resID = IDS_EE_BADMARSHAL_VALUETYPE;
-                        IfFailGoto(E_FAIL, lFail);
+                        IfFailGoto(LogHR(E_FAIL), lFail);
                     }
 #ifdef _DEBUG
                     if (ms == MARSHAL_SCENARIO_FIELD && fEmitsIL)
@@ -2407,7 +2407,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (thElement.HasInstantiation() && !thElement.IsBlittable())
             {
                 m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                IfFailGoto(E_FAIL, lFail);
+                IfFailGoto(LogHR(E_FAIL), lFail);
             }
 
             m_args.na.m_pArrayMT = arrayTypeHnd.AsMethodTable();
@@ -2622,7 +2622,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
             m_type = MARSHAL_TYPE_SAFEARRAY;
 #else
             m_resID = IDS_EE_BADMARSHALFIELD_ARRAY;
-            return E_FAIL;
+            return LogHR(E_FAIL);
 #endif
         }
         else
@@ -2644,7 +2644,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     else
     {
         m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_ARRAY : IDS_EE_BADMARSHAL_ARRAY;
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -2668,7 +2668,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     if (!arrayMarshalInfo.IsValid())
     {
         m_resID = arrayMarshalInfo.GetErrorResourceId();
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     // Set the array type handle and VARTYPE to use for marshalling.
@@ -2688,7 +2688,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
             if (m_additive == 0)
             {
                 m_resID = IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE;
-                return E_FAIL;
+                return LogHR(E_FAIL);
             }
 
             if (isArrayClass == TRUE)

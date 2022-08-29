@@ -1321,7 +1321,7 @@ HRESULT CeeFileGenWriter::computeOffset(_In_ char *ptr,
         s++;
     }
 
-    return E_FAIL;
+    return LogHR(E_FAIL);
 } // HRESULT CeeFileGenWriter::computeOffset()
 
 HRESULT CeeFileGenWriter::getCorHeader(IMAGE_COR20_HEADER **ppHeader)

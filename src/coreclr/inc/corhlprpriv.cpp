@@ -79,7 +79,7 @@ HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
 * get number of bytes consumed by one argument/return type
 *
 *************************************************************************************/
-#define CHECK_REMAINDER  if(cbTotal >= cbTotalMax){hr=E_FAIL; goto ErrExit;}
+#define CHECK_REMAINDER  if(cbTotal >= cbTotalMax){hr=LogHR(E_FAIL); goto ErrExit;}
 HRESULT _CountBytesOfOneArg(
     PCCOR_SIGNATURE pbSig,
     ULONG       *pcbTotal)  // Initially, *pcbTotal contains the remaining size of the sig blob
@@ -97,7 +97,7 @@ HRESULT _CountBytesOfOneArg(
     ULONG       cArgsIndex;
     HRESULT     hr = NOERROR;
 
-    if(pcbTotal==NULL) return E_FAIL;
+    if(pcbTotal==NULL) return LogHR(E_FAIL);
     cbTotalMax = *pcbTotal;
 
     CHECK_REMAINDER;

@@ -351,7 +351,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
                 // Call the method...
                 pUnk = (IUnknown *)delegateMethod.Call_RetArgSlot(args);
                 if (!pUnk)
-                    COMPlusThrowHR(E_FAIL);
+                    COMPlusThrowHR(LogHR(E_FAIL));
             }
             GCPROTECT_END();
         }
@@ -2379,7 +2379,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
                 // Initialize the return variant.
                 SafeVariantInit(&VarResult);
 
-                HRESULT hr = E_FAIL;
+                HRESULT hr;
                 {
                     // We are about to make a call to COM so switch to preemptive GC.
                     GCX_PREEMP();

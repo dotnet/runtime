@@ -31,6 +31,7 @@
 namespace WKS
 {
     extern void PopulateDacVars(GcDacVars* dacVars);
+    uint32_t LogHR(uint32_t hr);
 }
 
 namespace SVR
@@ -81,7 +82,7 @@ GC_Initialize(
 #ifndef FEATURE_NATIVEAOT // GCToOSInterface is initialized directly
     if (!GCToOSInterface::Initialize())
     {
-        return E_FAIL;
+        return GCToEEInterface::LogHR(E_FAIL);
     }
 #endif
 

@@ -4370,7 +4370,6 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
             if (pExceptionDir != NULL)
             {
                 // Do a binary search on the static function table of mscorwks.dll.
-                HRESULT hr = E_FAIL;
                 TADDR   taFuncEntry;
                 T_RUNTIME_FUNCTION functionEntry;
 
@@ -4382,7 +4381,7 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
                 {
                     dwMid = (dwLow + dwHigh) >> 1;
                     taFuncEntry = pExceptionDir + dwMid * sizeof(T_RUNTIME_FUNCTION);
-                    hr = DacReadAll(taFuncEntry, &functionEntry, sizeof(functionEntry), false);
+                    HRESULT hr = DacReadAll(taFuncEntry, &functionEntry, sizeof(functionEntry), false);
                     if (FAILED(hr))
                     {
                         return;

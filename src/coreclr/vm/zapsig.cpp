@@ -1336,7 +1336,7 @@ BOOL ZapSig::EncodeMethod(
             if (IsDynamicScope(pResolvedToken->tokenScope))
             {
                 _ASSERTE(FALSE); // IL stubs aren't expected to call methods which need this
-                ThrowHR(E_FAIL);
+                ThrowHR(LogHR(E_FAIL));
             }
 
             DWORD moduleIndex = MODULE_INDEX_NONE;

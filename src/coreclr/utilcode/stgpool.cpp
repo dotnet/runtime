@@ -503,7 +503,7 @@ StgPool::PersistToStream(
     }
     EX_CATCH
     {
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
     EX_END_CATCH(SwallowAllExceptions);
 
@@ -613,7 +613,7 @@ StgPool::CopyPool(
     if (cbDataSize != cbCopiedDataSize)
     {
         Debug_ReportInternalError("It is expected to copy everything from the source pool.");
-        IfFailGo(E_FAIL);
+        IfFailGo(LogHR(E_FAIL));
     }
 
     // Add the newly allocated segment to the pool
@@ -1917,7 +1917,7 @@ CInMemoryStream::Seek(
             plibNewPosition->QuadPart = m_cbCurrent;
     }
 
-    return (m_cbCurrent < m_cbSize) ? (S_OK) : E_FAIL;
+    return (m_cbCurrent < m_cbSize) ? (S_OK) : LogHR(E_FAIL);
 } // CInMemoryStream::Seek
 
 HRESULT

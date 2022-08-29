@@ -539,7 +539,7 @@ HRESULT ParseKnownCaValue(
     default:
         // The arguments of all known custom attributes are Type, String, Enum, or primitive types.
         _ASSERTE(!"Unexpected internal error");
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
         break;
     } // End switch
 

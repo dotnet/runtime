@@ -1407,7 +1407,7 @@ HRESULT RunMain(MethodDesc *pFD ,
 
     if (!pFD) {
         _ASSERTE(!"Must have a function to call!");
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     CorEntryPointType EntryType = EntryManagedMain;

@@ -230,13 +230,11 @@ BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pCon
 
 BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 {
-    HRESULT hr = E_FAIL;
-
     ULONG64 uControlPC = (DWORD64)dac_cast<PCODE>(::GetIP(pContext));
 
     // get the module base
     ULONG64 uImageBase;
-    hr = GetModuleBase(uControlPC, &uImageBase);
+    HRESULT hr = GetModuleBase(uControlPC, &uImageBase);
     if (FAILED(hr))
     {
         return FALSE;
@@ -536,7 +534,7 @@ HRESULT.
 
         ChainCount += 1;
         if (ChainCount > UNWIND_CHAIN_LIMIT) {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
 
         Index = CountOfCodes;

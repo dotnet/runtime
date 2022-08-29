@@ -18,30 +18,34 @@ HINSTANCE LoadDbgHelp();
 
 #define cchMaxAssertModuleLen 60
 #define cchMaxAssertSymbolLen 257
+#define cchMaxAssertSourceLen MAX_PATH
 #define cfrMaxAssertStackLevels 20
 #define cchMaxAssertExprLen 257
+#define cchMaxAssertLineNumberLen 6
 
 #ifdef HOST_64BIT
 
 #define cchMaxAssertStackLevelStringLen \
-    ((3 * 8) + cchMaxAssertModuleLen + cchMaxAssertSymbolLen + 13)
-    // 3 addresses of at most 8 char, module, symbol, and the extra chars:
-    // 0x<address>: <module>! <symbol> + 0x<offset>\n
+    ((3 * 8) + cchMaxAssertModuleLen + cchMaxAssertSymbolLen + cchMaxAssertSourceLen + cchMaxAssertLineNumberLen + 15)
+    // 3 addresses of at most 8 char, module, symbol, source file, line number, and the extra chars:
+    // 0x<address>: <module>! <symbol> + 0x<offset> source:line\n
     //FMT_ADDR_BARE   is defined as   "%08x`%08x" on Win64, and as
     //"%08x" on 32 bit platforms. Hence the difference in the definitions.
 
 #else
 
 #define cchMaxAssertStackLevelStringLen \
-    ((2 * 8) + cchMaxAssertModuleLen + cchMaxAssertSymbolLen + 12)
-    // 2 addresses of at most 8 char, module, symbol, and the extra chars:
-    // 0x<address>: <module>! <symbol> + 0x<offset>\n
+    ((2 * 8) + cchMaxAssertModuleLen + cchMaxAssertSymbolLen + cchMaxAssertSourceLen + cchMaxAssertLineNumberLen + 14)
+    // 2 addresses of at most 8 char, module, symbol, source file, line number, and the extra chars:
+    // 0x<address>: <module>! <symbol> + 0x<offset> source:line\n
 
 #endif
 
 //
 //--- Prototypes --------------------------------------------------------------
 //
+
+void MagicInit();
 
 /****************************************************************************
 * MagicDeinit *
@@ -71,7 +75,7 @@ void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, _Out_writes_(cchMaxA
 *
 *           0x<address>: <module>! <symbol> + 0x<offset>
 ******************************************************************** robch */
-void GetStringFromAddr(DWORD_PTR dwAddr, _Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString);
+void GetStringFromAddr(DWORD_PTR dwAddr, _Out_writes_(stringBufferSize) LPSTR szString, size_t stringBufferSize);
 
 #if defined(HOST_X86) && !defined(TARGET_UNIX)
 /****************************************************************************

@@ -340,7 +340,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
         if (!nAssociatedListEntries)
         {
             char szFunction[cchMaxAssertStackLevelStringLen];
-            GetStringFromAddr((DWORD_PTR)CurrentIP, szFunction);
+            GetStringFromAddr((DWORD_PTR)CurrentIP, szFunction, sizeof(szFunction));
 
             CONSISTENCY_CHECK_MSGF(false, ("Unmanaged caller %s at sp %p/ip %p is missing a "
                                            "PERMIT_HELPER_METHOD_FRAME_BEGIN, or this function "
@@ -358,7 +358,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
     if (pList)
     {
         char szFunction[cchMaxAssertStackLevelStringLen];
-        GetStringFromAddr((DWORD_PTR)CurrentIP, szFunction);
+        GetStringFromAddr((DWORD_PTR)CurrentIP, szFunction, sizeof(szFunction));
 
         CONSISTENCY_CHECK_MSGF(false, ("fcall entry point %s at sp %p/ip %p is missing a "
                                        "FCALL_TRANSITION_BEGIN or a FCIMPL\n", szFunction, CurrentSP, CurrentIP));

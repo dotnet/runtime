@@ -490,7 +490,7 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
     // We'll just update our private EnC structures instead.
     EnCEEClassData *pEnCClass = ((EditAndContinueModule*)pModule)->GetEnCEEClassData(pMT);
     if (! pEnCClass)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     // Add the field element to the list of added fields for this class
     pEnCClass->AddField(pAddedField);
@@ -572,7 +572,7 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
     {
         _ASSERTE(! "**Error** EEClass::AddMethod parent token not found");
         LOG((LF_ENC, LL_INFO100, "**Error** EEClass::AddMethod parent token not found\n"));
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 #endif // _DEBUG
 

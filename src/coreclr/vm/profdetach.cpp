@@ -90,7 +90,7 @@ HRESULT ProfilingAPIDetach::Initialize()
             if (SUCCEEDED(hr))
             {
                 // For exceptions that give us useless hr's, just use E_FAIL
-                hr = E_FAIL;
+                hr = LogHR(E_FAIL);
             }
         }
         EX_END_CATCH(RethrowTerminalExceptions)

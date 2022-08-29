@@ -114,19 +114,25 @@ ErrExit:
 
 STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpString)
         IfFailGo(E_POINTER);
     *lpString = (LPWSTR)getStringSection().computePointer(RVA);
-
+    if (*lpString == NULL)
+    {
+        hr = LogHR(E_FAIL);
+    }
+    else
+    {
+        hr = S_OK;
+    }
 
 ErrExit:
 
     END_ENTRYPOINT_NOTHROW;
-    if (*lpString)
-        return S_OK;
+
     return hr;
 }
 
@@ -159,37 +165,47 @@ ErrExit:
 
 STDMETHODIMP CCeeGen::GetMethodBuffer(ULONG RVA, UCHAR **lpBuffer)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpBuffer)
         IfFailGo(E_POINTER);
     *lpBuffer = (UCHAR*)getIlSection().computePointer(RVA);
-
+    if (*lpBuffer == 0)
+    {
+        hr = LogHR(E_FAIL);
+    }
+    else
+    {
+        hr = S_OK;
+    }
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-
-    if (lpBuffer != NULL && *lpBuffer != 0)
-        return S_OK;
 
     return hr;
 }
 
 STDMETHODIMP CCeeGen::ComputePointer(HCEESECTION section, ULONG RVA, UCHAR **lpBuffer)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpBuffer)
         IfFailGo(E_POINTER);
     *lpBuffer = (UCHAR*) ((CeeSection *)section)->computePointer(RVA);
+    if (*lpBuffer == 0)
+    {
+        hr = LogHR(E_FAIL);
+    }
+    else
+    {
+        hr = S_OK;
+    }
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
 
-    if (lpBuffer != NULL && *lpBuffer != 0)
-        return S_OK;
     return hr;
 }
 

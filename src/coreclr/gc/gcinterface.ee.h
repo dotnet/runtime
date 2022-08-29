@@ -446,6 +446,9 @@ public:
 
     virtual
     void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved) = 0;
+
+    virtual
+    uint32_t LogHR(uint32_t hr, void* address) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

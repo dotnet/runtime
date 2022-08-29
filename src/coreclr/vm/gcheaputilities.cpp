@@ -185,7 +185,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
 
 #ifndef FEATURE_STANDALONE_GC
     LOG((LF_GC, LL_FATALERROR, "EE not built with the ability to load standalone GCs"));
-    return E_FAIL;
+    return LogHR(E_FAIL);
 #else
     HMODULE hMod = LoadStandaloneGc(standaloneGcLocation);
     if (!hMod)
@@ -220,7 +220,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     {
         LOG((LF_GC, LL_FATALERROR, "Loaded GC has incompatible major version number (expected %d, got %d)\n",
             GC_INTERFACE_MAJOR_VERSION, g_gc_version_info.MajorVersion));
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     if (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION)

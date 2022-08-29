@@ -38,20 +38,20 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
 
     ULONG offset = 0;
     if (memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     offset += sizeof(data->id);
 
     if (memcpy_s(m_data + offset, m_size, &data->entryPoint, sizeof(data->entryPoint)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     offset += sizeof(data->entryPoint);
 
     if (memcpy_s(m_data + offset, m_size, &data->referencedTypeSystemTables, sizeof(data->referencedTypeSystemTables)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     offset += sizeof(data->referencedTypeSystemTables);
 
 #if !BIGENDIAN
     if (memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     offset += sizeof(ULONG) * data->typeSystemTableRowsSize;
 #else
     for (int i = 0; i < data->typeSystemTableRowsSize; i++)

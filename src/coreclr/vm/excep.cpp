@@ -284,17 +284,22 @@ HRESULT GetExceptionHResult(OBJECTREF throwable)
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
     if (throwable == NULL)
-        return hr;
+        return LogHR(E_FAIL);
 
     // Since any object can be thrown in managed code, not only instances of System.Exception subclasses
     // we need to check to see if we are dealing with an exception before attempting to retrieve
     // the HRESULT field. If we are not dealing with an exception, then we will simply return E_FAIL.
     _ASSERTE(IsException(throwable->GetMethodTable()));        // what is the pathway here?
+
+    HRESULT hr;
     if (IsException(throwable->GetMethodTable()))
     {
         hr = ((EXCEPTIONREF)throwable)->GetHResult();
+    }
+    else
+    {
+        hr = LogHR(E_FAIL);
     }
 
     return hr;
@@ -310,17 +315,21 @@ DWORD GetExceptionXCode(OBJECTREF throwable)
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
     if (throwable == NULL)
-        return hr;
+        return LogHR(E_FAIL);
 
     // Since any object can be thrown in managed code, not only instances of System.Exception subclasses
     // we need to check to see if we are dealing with an exception before attempting to retrieve
     // the HRESULT field. If we are not dealing with an exception, then we will simply return E_FAIL.
     _ASSERTE(IsException(throwable->GetMethodTable()));        // what is the pathway here?
+    HRESULT hr;
     if (IsException(throwable->GetMethodTable()))
     {
         hr = ((EXCEPTIONREF)throwable)->GetXCode();
+    }
+    else
+    {
+        hr = LogHR(E_FAIL);
     }
 
     return hr;
@@ -1736,7 +1745,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                                         pFilterCtx,
                                         gcInfoToken,
                                         offFrom))
-                            return E_FAIL;
+                            return LogHR(E_FAIL);
                     }
                     return S_OK;
 #else  // FEATURE_EH_FUNCLETS
@@ -1792,7 +1801,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                             if (!pEECM->LeaveFinally(gcInfoToken,
                                                      offFrom,
                                                      pFilterCtx))
-                                return E_FAIL;
+                                return LogHR(E_FAIL);
                         }
                         return S_OK;
                     }
@@ -2643,16 +2652,21 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    HRESULT    hr  = E_FAIL;
     MethodTable *pMT = throwable->GetMethodTable();
 
     // Only Exception objects have a HResult field
     // So don't fetch the field unless we have an exception
 
     _ASSERTE(IsException(pMT));     // what is the pathway here?
+
+    HRESULT hr;
     if (IsException(pMT))
     {
         hr = ((EXCEPTIONREF)throwable)->GetHResult();
+    }
+    else
+    {
+        hr = LogHR(E_FAIL);
     }
 
     return hr;
@@ -7673,7 +7687,7 @@ void CLRAddVectoredHandlers(void)
     if (g_hVectoredExceptionHandler == NULL)
     {
         LOG((LF_EH, LL_INFO100, "CLRAddVectoredHandlers: AddVectoredExceptionHandler() failed\n"));
-        COMPlusThrowHR(E_FAIL);
+        COMPlusThrowHR(LogHR(E_FAIL));
     }
 
     LOG((LF_EH, LL_INFO100, "CLRAddVectoredHandlers: AddVectoredExceptionHandler() succeeded\n"));

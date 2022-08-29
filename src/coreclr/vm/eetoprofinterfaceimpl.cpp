@@ -541,7 +541,7 @@ HRESULT EEToProfInterfaceImpl::Init(
         // A specialized event log entry for this failure would be confusing and
         // unhelpful.  So just log a generic internal failure event
         ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, E_FAIL);
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     // CEEInfo::GetProfilingHandle will be PREEMPTIVE mode when trying to update
@@ -2118,7 +2118,7 @@ HRESULT EEToProfInterfaceImpl::DetermineAndSetEnterLeaveFunctionHooksForJit()
     }
     EX_CATCH
     {
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
     // We need to swallow all exceptions, because we will lock otherwise (in addition to
     // the IA64-only lock while allocating stub space!).  For example, specifying
@@ -2233,7 +2233,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
                 (m_pProfilerInfo->eventMask.GetEventMaskHigh() & COR_PRF_HIGH_MONITOR_IMMUTABLE)))
         {
             // FUTURE: Should we have a dedicated HRESULT for setting immutable flag?
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
 

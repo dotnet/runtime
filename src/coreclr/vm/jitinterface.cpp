@@ -11224,14 +11224,14 @@ void CEEJitInfo::allocUnwindInfo (
     if (!FitsInU4(currentCodeSizeT))
     {
         _ASSERTE(!"Bad currentCodeSizeT");
-        COMPlusThrowHR(E_FAIL);
+        COMPlusThrowHR(LogHR(E_FAIL));
     }
 
     /* Check if EndAddress offset fits in 32-bit */
     if (!FitsInU4(currentCodeSizeT + endOffset))
     {
         _ASSERTE(!"Bad currentCodeSizeT");
-        COMPlusThrowHR(E_FAIL);
+        COMPlusThrowHR(LogHR(E_FAIL));
     }
 
     unsigned currentCodeOffset = (unsigned) currentCodeSizeT;
@@ -11243,7 +11243,7 @@ void CEEJitInfo::allocUnwindInfo (
     if (!FitsInU4(unwindInfoDeltaT))
     {
         _ASSERTE(!"Bad unwindInfoDeltaT");
-        COMPlusThrowHR(E_FAIL);
+        COMPlusThrowHR(LogHR(E_FAIL));
     }
 
     unsigned unwindInfoDelta = (unsigned) unwindInfoDeltaT;
@@ -11853,6 +11853,11 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
     EE_TO_JIT_TRANSITION();
 
+    if (hr == E_FAIL)
+    {
+        LogHR(E_FAIL);
+    }
+
     return hr;
 }
 
@@ -11917,6 +11922,11 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
 #endif
 
     EE_TO_JIT_TRANSITION();
+
+    if (hr == E_FAIL)
+    {
+        LogHR(E_FAIL);
+    }
 
     return hr;
 }

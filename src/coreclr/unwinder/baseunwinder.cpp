@@ -28,7 +28,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
                                           _Out_ PDWORD64 pdwBase)
 {
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
-    return ((*pdwBase == NULL) ? E_FAIL : S_OK);
+    return ((*pdwBase == NULL) ? LogHR(E_FAIL) : S_OK);
 }
 
 //---------------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
     GetRuntimeStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry));
     if (pFuncEntry == NULL)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     memcpy(pBuffer, pFuncEntry, cbBuffer);

@@ -1631,7 +1631,7 @@ HRESULT MDInternalRW::GetNameOfCustomAttribute( // S_OK or error.
     HRESULT hr = S_OK;
     LOCKREADIFFAILRET();
     hr =  m_pStgdb->m_MiniMd.CommonGetNameOfCustomAttribute(RidFromToken(mdAttribute), pszNamespace, pszName);
-    return (hr == S_FALSE) ? E_FAIL : hr;
+    return (hr == S_FALSE) ? LogHR(E_FAIL) : hr;
 } // MDInternalRW::GetNameOfCustomAttribute
 
 //*****************************************************************************
@@ -4051,7 +4051,7 @@ HRESULT MDInternalRW::ApplyEditAndContinue(
     _ASSERTE(pDeltaMD);
     _ASSERTE(ppv);
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     IMDInternalImportENC *pDeltaMDImport = NULL;
 
     IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport));

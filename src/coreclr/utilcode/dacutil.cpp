@@ -123,7 +123,7 @@ LiveProcDataTarget::GetImageBase(
     //
     // Our creator must have told us WHICH clr to work with.
     //
-    return E_FAIL;
+    return LogHR(E_FAIL);
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -156,7 +156,7 @@ LiveProcDataTarget::ReadVirtual(
             if (totalDone == 0)
             {
                 // If we haven't read anything indicate failure.
-                status = E_FAIL;
+                status = LogHR(E_FAIL);
             }
             break;
         }

@@ -4806,7 +4806,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     // Switch to COOP mode since we are going to work with managed references
     GCX_COOP();

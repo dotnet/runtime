@@ -759,7 +759,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
             default:
             {
                 _ASSERTE(!"Invalid default interface type!");
-                hr = E_FAIL;
+                hr = LogHR(E_FAIL);
                 break;
             }
         }
@@ -769,7 +769,7 @@ ErrExit:
     if (*ppTI == NULL)
     {
         if (!FAILED(hr))
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
     }
 
 ReturnHR:
@@ -2449,7 +2449,7 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
         return hr;
 
     if ((dwEnabledOptions & ~(INTERFACESAFE_FOR_UNTRUSTED_DATA | INTERFACESAFE_FOR_UNTRUSTED_CALLER)) != 0)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     return S_OK;
 }

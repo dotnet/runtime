@@ -298,7 +298,7 @@ unsigned PESection::computeOffset(_In_ char *ptr) const // virtual
 HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
                                 CeeSectionRelocExtra *extra)
 {
-    HRESULT     hr = E_FAIL;
+    HRESULT     hr;
 
     // Use for fixing up pointers pointing outside of the module.
     //
@@ -325,6 +325,7 @@ HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
 
     default:
         _ASSERTE(!"unhandled reloc in PESection::addBaseReloc");
+        hr = LogHR(E_FAIL);
         break;
     }
     return hr;

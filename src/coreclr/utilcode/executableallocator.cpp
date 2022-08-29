@@ -232,7 +232,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
 
     if (!g_instance->Initialize())
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS

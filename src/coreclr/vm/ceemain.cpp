@@ -273,9 +273,9 @@ HRESULT EnsureEEStarted()
     CONTRACTL_END;
 
     if (g_fEEShutDown)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     // On non x86 platforms, when we load CoreLib during EEStartup, we will
     // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for CoreLib. We are
@@ -763,7 +763,7 @@ void EEStartupHelper()
             if (!Disassembler::IsAvailable())
             {
                 fprintf(stderr, "External disassembler is not available.\n");
-                IfFailGo(E_FAIL);
+                IfFailGo(LogHR(E_FAIL));
             }
         }
 #endif // USE_DISASSEMBLER
@@ -823,7 +823,7 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
         {
-            IfFailGo(E_FAIL);
+            IfFailGo(LogHR(E_FAIL));
         }
 #endif // !TARGET_UNIX
 
@@ -849,7 +849,7 @@ void EEStartupHelper()
         //
         if (!InstallUnhandledExceptionFilter())
         {
-            IfFailGo(E_FAIL);
+            IfFailGo(LogHR(E_FAIL));
         }
 
         // throws on error
@@ -989,6 +989,7 @@ ErrExit: ;
     }
     EX_CATCH
     {
+        hr = GET_EXCEPTION()->GetHR();
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
 
@@ -997,7 +998,7 @@ ErrExit: ;
             g_fEEInit = false;
 
         if (!FAILED(hr))
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
 
         g_EEStartupStatus = hr;
     }
@@ -1028,7 +1029,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
     // Make sure we got a failure code in this case
     if (!FAILED(g_EEStartupStatus))
-        g_EEStartupStatus = E_FAIL;
+        g_EEStartupStatus = LogHR(E_FAIL);
 
     // Initializations has failed so reset the g_fEEInit flag.
     g_fEEInit = false;

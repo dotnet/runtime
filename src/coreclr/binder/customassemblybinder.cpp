@@ -161,7 +161,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
                                            UINT_PTR ptrAssemblyLoadContext,
                                            CustomAssemblyBinder **ppBindContext)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     EX_TRY
     {
         if(ppBindContext != NULL)
@@ -197,6 +197,10 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
                 // Return reference to the allocated Binder instance
                 *ppBindContext = pBinder.Extract();
             }
+        }
+        else
+        {
+            hr = LogHR(E_FAIL);
         }
     }
     EX_CATCH_HRESULT(hr);

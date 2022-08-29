@@ -302,7 +302,7 @@ HRESULT Attribute::ParseCaValue(
 
     default:
         // The format of the custom attribute record is invalid.
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
         break;
     } // End switch
 

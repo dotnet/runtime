@@ -606,7 +606,7 @@ HRESULT GetHex(
         }
         else
         {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
         val = (val << 4) + nibble;
     }

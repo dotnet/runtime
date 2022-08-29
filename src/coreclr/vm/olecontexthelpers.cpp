@@ -113,7 +113,7 @@ HRESULT GetCurrentThreadTypeNT5(THDTYPE* pType)
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     IObjectContext *pObjCurrCtx = (IObjectContext *)GetCurrentCtxCookie();
     if(pObjCurrCtx)
@@ -127,6 +127,10 @@ HRESULT GetCurrentThreadTypeNT5(THDTYPE* pType)
             _ASSERTE(pThreadInfo);
             hr = pThreadInfo->GetCurrentThreadType(pType);
         }
+    }
+    else
+    {
+        hr = LogHR(E_FAIL);
     }
     return hr;
 }
@@ -146,7 +150,7 @@ HRESULT GetCurrentApartmentTypeNT5(IObjectContext *pObjCurrCtx, APTTYPE* pType)
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     if(pObjCurrCtx)
     {
         GCX_PREEMP();
@@ -158,6 +162,10 @@ HRESULT GetCurrentApartmentTypeNT5(IObjectContext *pObjCurrCtx, APTTYPE* pType)
             _ASSERTE(pThreadInfo);
             hr = pThreadInfo->GetCurrentApartmentType(pType);
         }
+    }
+    else
+    {
+        hr = LogHR(E_FAIL);
     }
     return hr;
 }

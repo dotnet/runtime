@@ -363,7 +363,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     if (FAILED(hr))
     {
         LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AM can't find parent token for method token %08x\n", token));
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     // see if the class is loaded yet.
@@ -440,7 +440,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     if (FAILED(hr))
     {
         LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token %08x\n", token));
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     // see if the class is loaded yet. If not we don't need to do anything.  When this class is
@@ -622,8 +622,6 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     }
 #endif
 
-    HRESULT hr = E_FAIL;
-
     // JIT-compile the updated version of the method
     PCODE jittedCode = JitUpdatedFunction(pMD, pOrigContext);
     if ( jittedCode == NULL )
@@ -706,7 +704,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from FixContextAndResume()");
 
-    hr = E_FAIL;
+    HRESULT hr = LogHR(E_FAIL);
 
     // If we fail for any reason we have already potentially trashed with new locals and we have also unwound any
     // Win32 handlers on the stack so cannot ever return from this function.

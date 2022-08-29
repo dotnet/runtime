@@ -259,7 +259,7 @@ namespace
         }
 
         *result = defValue;
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     LPWSTR GetConfigString(

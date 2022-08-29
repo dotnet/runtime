@@ -33,11 +33,11 @@ HRESULT EnsureRtlFunctions()
     HMODULE hModuleNtDll = CLRLoadLibrary(W("ntdll"));
 
     if (hModuleNtDll == NULL)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
 #define ENSURE_FUNCTION_RENAME(clrname, ntname)   \
     if (NULL == clrname) { clrname = (ntname##Fn*)GetProcAddress(hModuleNtDll, #ntname); } \
-    if (NULL == clrname) { return E_FAIL; } \
+    if (NULL == clrname) { return LogHR(E_FAIL); } \
     { }
 
     ENSURE_FUNCTION_RENAME(RtlVirtualUnwind_Unsafe, RtlVirtualUnwind       );

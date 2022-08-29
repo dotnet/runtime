@@ -756,7 +756,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         // Get the name.
         pszName = pMeth->GetName();
         if (pszName == NULL)
-            ThrowHR(E_FAIL);
+            ThrowHR(LogHR(E_FAIL));
 
         if (stricmpUTF8(pszName, szInitName) == 0)
         {

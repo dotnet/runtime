@@ -113,7 +113,7 @@ private:
     void EscapeEmbeddedAssemblyName(LPCWSTR szName);
     BOOL CheckParseState(int validState) { WRAPPER_NO_CONTRACT; return ((int)m_parseState & validState) != 0; }
     //BOOL CheckParseState(int validState) { WRAPPER_NO_CONTRACT; ASSERT(((int)m_parseState & validState) != 0); return TRUE; }
-    HRESULT Fail() { WRAPPER_NO_CONTRACT; m_parseState = ParseStateERROR; return E_FAIL; }
+    HRESULT Fail() { WRAPPER_NO_CONTRACT; m_parseState = ParseStateERROR; return LogHR(E_FAIL); }
     void PushOpenGenericArgument();
     void PopOpenGenericArgument();
 

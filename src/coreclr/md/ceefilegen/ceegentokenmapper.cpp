@@ -139,7 +139,7 @@ HRESULT CeeGenTokenMapper::GetMetaData(
     if (m_pIImport)
         return (m_pIImport->QueryInterface(IID_IMetaDataImport, (PVOID *) ppIImport));
     *ppIImport = 0;
-    return E_FAIL;
+    return LogHR(E_FAIL);
 }
 
 

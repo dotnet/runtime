@@ -311,4 +311,16 @@ inline void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStar
     g_theGCToCLR->DiagAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
 }
 
+inline uint32_t GCToEEInterface::LogHR(uint32_t hr, void* address)
+{
+    return g_theGCToCLR->LogHR(hr, address);
+}
+
+// This function is marked as NOINLINE so that it can get the caller's address
+NOINLINE
+inline uint32_t GCToEEInterface::LogHR(uint32_t hr)
+{
+    return LogHR(hr, nullptr);
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

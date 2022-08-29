@@ -99,7 +99,7 @@ struct AssemblyNameData
 
 #define IF_FALSE_GO(expr)                       \
    if (!(expr)) {                               \
-       hr = E_FAIL;                             \
+       hr = LogHR(E_FAIL);                      \
        goto Exit;                               \
    }
 

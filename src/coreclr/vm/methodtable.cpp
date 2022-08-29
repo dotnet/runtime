@@ -3645,7 +3645,6 @@ void MethodTable::DoRunClassInitThrowing()
 
     AppDomain *pDomain = GetAppDomain();
 
-    HRESULT hrResult = E_FAIL;
     const char *description;
     STRESS_LOG2(LF_CLASSLOADER, LL_INFO100000, "DoRunClassInit: Request to init %pT in appdomain %p\n", this, pDomain);
 
@@ -3833,7 +3832,7 @@ void MethodTable::DoRunClassInitThrowing()
                             pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
                         } EX_END_CATCH(SwallowAllExceptions);
 
-                        pEntry->m_hrResultCode = E_FAIL;
+                        pEntry->m_hrResultCode = LogHR(E_FAIL);
                         SetClassInitError();
 
                         COMPlusThrow(gc.pThrowable);
@@ -3854,7 +3853,7 @@ void MethodTable::DoRunClassInitThrowing()
             {
                 // Use previous result
 
-                hrResult = pEntry->m_hrResultCode;
+                HRESULT hrResult = pEntry->m_hrResultCode;
                 if(FAILED(hrResult))
                 {
                     // An exception may have occurred in the cctor. DoRunClassInit() should return FALSE in that
@@ -6270,7 +6269,7 @@ HRESULT MethodTable::GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL 
 
     // ensure we return a failure hr when pGuid is not filled in
     if (SUCCEEDED(hr) && (*pGuid == GUID_NULL))
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
 
     return hr;
 }
@@ -8353,12 +8352,12 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
         else
         {
-            COMPlusThrow(kTypeLoadException, E_FAIL);
+            COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
         }
 
         if (pMethodDecl == nullptr)
         {
-            COMPlusThrow(kTypeLoadException, E_FAIL);
+            COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
         }
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
@@ -8368,7 +8367,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must be MethodDef tokens.
         if (TypeFromToken(methodBody) != mdtMethodDef)
         {
-            COMPlusThrow(kTypeLoadException, E_FAIL);
+            COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
         }
 
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
@@ -8378,14 +8377,14 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             CLASS_LOAD_EXACTPARENTS);
         if (pMethodImpl == nullptr)
         {
-            COMPlusThrow(kTypeLoadException, E_FAIL);
+            COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
         }
 
         // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods
         // defined on the same type that defines the MethodImpl
         if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
         {
-            COMPlusThrow(kTypeLoadException, E_FAIL);
+            COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
         }
 
         if (!verifyImplemented)
@@ -8409,7 +8408,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             if (pPrevMethodImpl != nullptr)
             {
                 // Two MethodImpl records found for the same virtual static interface method
-                COMPlusThrow(kTypeLoadException, E_FAIL);
+                COMPlusThrow(kTypeLoadException, LogHR(E_FAIL));
             }
             pPrevMethodImpl = pMethodImpl;
         }

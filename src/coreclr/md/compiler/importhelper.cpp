@@ -1393,7 +1393,7 @@ HRESULT ImportHelper::FindAssemblyRef(
             else if (IsAfPublicKey(dwTmp))
             {
 #if defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) && !defined(DACCESS_COMPILE)
-                return E_FAIL;
+                return LogHR(E_FAIL);
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                 // Need to compress target public key to see if it matches.
                 IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbTmp,
@@ -1413,7 +1413,7 @@ HRESULT ImportHelper::FindAssemblyRef(
                 if (!pbToken)
                 {
 #if defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) && !defined(DACCESS_COMPILE)
-                    return E_FAIL;
+                    return LogHR(E_FAIL);
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                     IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbPublicKeyOrToken,
                         cbPublicKeyOrToken,

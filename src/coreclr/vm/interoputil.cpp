@@ -171,7 +171,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
         EX_CATCH
         {
             if (SUCCEEDED(hr))
-                hr = E_FAIL;
+                hr = LogHR(E_FAIL);
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
@@ -1117,7 +1117,7 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
     Thread * const pThread = GetThreadNULLOk();
 
     *pResUnk = NULL;
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
@@ -1132,6 +1132,7 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
+        hr = LogHR(E_FAIL);
 #if defined(STACK_GUARDS_DEBUG)
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it
@@ -1175,7 +1176,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
     Thread * const pThread = GetThreadNULLOk();
 
     *pResUnk = NULL;
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     BEGIN_CONTRACT_VIOLATION(ThrowsViolation); // message pump could happen, so arbitrary managed code could run
 
@@ -1188,6 +1189,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
+        hr = LogHR(E_FAIL);
 #if defined(STACK_GUARDS_DEBUG)
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it

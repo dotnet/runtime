@@ -700,7 +700,7 @@ public:
 
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock) { return NULL;}  // return the cached public interface
     __checkReturn
-    STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk) { return E_FAIL;} ;// return hresult
+    STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk) { return LogHR(E_FAIL);} ;// return hresult
     STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
     __checkReturn
     STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem) { return NOERROR; }

@@ -19,6 +19,7 @@
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
 #include "pinvokeoverride.h"
+#include "minipal.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
@@ -162,6 +163,33 @@ static void ConvertConfigPropertiesToUnicode(
 GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
 extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
 #endif //FEATURE_GDBJIT
+
+//
+// Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
+//
+// Parameters:
+//  callBack                - callback that will be called for each line of the error info
+//  arg                     - argument to pass to the callback
+//
+// Returns:
+//  HRESULT indicating status of the operation. S_OK if the error info was successfully retrieved
+//
+extern "C"
+DLLEXPORT
+int coreclr_get_error_info(error_info_callback callBack, void* arg)
+{
+    const char hresultFormatString[] = "HRESULT 0x%08x at ";
+    char line[cchMaxAssertStackLevelStringLen + sizeof(hresultFormatString)];
+    int count = GetFailedHRLogEntryCount();;
+    for (int i = 0; i < count; i++)
+    {
+        FailedHRLogEntry* pEntry = GetFailedHRLogEntry(i);
+        int length = sprintf_s(line, hresultFormatString, pEntry->hr);
+        VMToOSInterface::GetSymbolFromAddress(pEntry->address, line + length, sizeof(line) - length);
+        callBack(line, arg);
+    }
+    return S_OK;
+}
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain

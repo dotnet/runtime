@@ -911,7 +911,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                     }
                     EX_CATCH
                     {
-                        hr = E_FAIL;
+                        hr = LogHR(E_FAIL);
                     }
                     EX_END_CATCH(RethrowTerminalExceptions)
                 }

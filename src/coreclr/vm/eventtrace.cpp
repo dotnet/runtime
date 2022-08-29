@@ -949,7 +949,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     // the Thread object here instead.
     if (GetThreadNULLOk() == NULL)
     {
-        HRESULT hr = E_FAIL;
+        HRESULT hr;
         SetupThreadNoThrow(&hr);
         if (FAILED(hr))
             return hr;
@@ -973,7 +973,10 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 
 #ifndef FEATURE_NATIVEAOT
     }
-    EX_CATCH { }
+    EX_CATCH 
+    {
+        hr = LogHR(E_FAIL);
+    }
     EX_END_CATCH(RethrowTerminalExceptions);
 #endif // FEATURE_NATIVEAOT
 
@@ -2798,7 +2801,7 @@ HRESULT ETW::TypeSystemLog::PreRegistrationInit()
         CrstEtwTypeLogHash,
         CRST_UNSAFE_ANYMODE))       // This lock is taken during a GC while walking the heap
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     return S_OK;

@@ -357,7 +357,7 @@ GetMethodNativeMap(MethodDesc* methodDesc,
 
     if (!success)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     // Need to convert map formats.
@@ -502,22 +502,22 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     ULONG32 numMap;
 
     if (!getInfoForMethodDelegate)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     if (GetMethodNativeMap(methodDescPtr, &numMap, map, &locals.countVars, &locals.vars) != S_OK)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
     SString modName = mod->GetFile()->GetPath();
     if (modName.IsEmpty())
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     const char* szModName = modName.GetUTF8();
 
     MethodDebugInfo methodDebugInfo(numMap, locals.countVars);
 
     if (getInfoForMethodDelegate(szModName, methodDescPtr->GetMemberDef(), methodDebugInfo) == FALSE)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     symInfoLen = numMap;
     symInfo = new SymbolsInfo[numMap];

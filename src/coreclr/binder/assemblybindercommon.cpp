@@ -1159,13 +1159,11 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
                                                             /* in */ AssemblyBinder *pBinder,
                                                             /* out */ Assembly **ppAssembly)
 {
-    HRESULT hr = E_FAIL;
-
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
 
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
+    HRESULT hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
                                            pAssemblyName, pDefaultBinder, pBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
@@ -1183,7 +1181,7 @@ HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder
                                                /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
 
     LONG kContextVersion = 0;
     BindResult bindResult;

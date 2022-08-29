@@ -833,7 +833,7 @@ HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjec
     CrstHolder holder(&mutex);
     if (genDescTable == nullptr)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
     ULONG copy = min(count, cObjectRanges);
     for (ULONG i = 0; i < copy; i++)
@@ -1947,7 +1947,7 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
 
     if (!pCodeInfo->IsValid())
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     return S_OK;
@@ -1979,7 +1979,7 @@ HRESULT GetFunctionFromIPInternal(LPCBYTE ip, EECodeInfo * pCodeInfo, BOOL failO
         // never return a method that the user of the profiler API cannot use
         if (pCodeInfo->GetMethodDesc()->IsNoMetadata())
         {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
 
@@ -3066,7 +3066,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
 
     if (GetAppDomain() == NULL)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
@@ -4670,7 +4670,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
     // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
-    HRESULT hr = E_FAIL;
+    HRESULT hr = LogHR(E_FAIL);
 #endif // FEATURE_EVENT_TRACE
 
     // If a Thread object was just created for this thread, remember the fact that it
@@ -7127,7 +7127,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
         }
         else
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7247,7 +7247,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
         EventPipeProvider *pRealProvider = EventPipeAdapter::CreateProvider(providerName, nullptr);
         if (pRealProvider == NULL)
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
         }
         else
         {
@@ -7490,7 +7490,7 @@ HRESULT ProfToEEInterfaceImpl::CreateHandle(
     AppDomain* appDomain = GetAppDomain();
     if (appDomain == NULL)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     OBJECTHANDLE handle;
@@ -7518,7 +7518,7 @@ HRESULT ProfToEEInterfaceImpl::CreateHandle(
 
     *pHandle = (ObjectHandleID)handle;
 
-    return (handle == NULL) ? E_FAIL : S_OK;
+    return (handle == NULL) ? LogHR(E_FAIL) : S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::DestroyHandle(
@@ -8378,10 +8378,10 @@ HRESULT ProfToEEInterfaceImpl::ProfilerStackWalkFramesWrapper(Thread * pThreadTo
     {
     default:
         _ASSERTE(!"Unexpected StackWalkAction returned from Thread::StackWalkFrames");
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     case SWA_FAILED:
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     case SWA_ABORT:
         return CORPROF_E_STACKSNAPSHOT_ABORTED;
@@ -9026,7 +9026,7 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
 
     if (s_currentGenerationTable == NULL)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     return s_currentGenerationTable->GetGenerationBounds(cObjectRanges, pcObjectRanges, ranges);

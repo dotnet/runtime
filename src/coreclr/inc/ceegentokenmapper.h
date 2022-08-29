@@ -122,7 +122,7 @@ public:
         else
         {
             _ASSERTE(!"Token mapper already set!");
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
 

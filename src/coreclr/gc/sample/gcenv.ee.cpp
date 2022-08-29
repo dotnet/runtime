@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "windows.h"
+#include <intrin.h>
 
 #include "gcenv.h"
 #include "gc.h"
@@ -358,3 +359,18 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
 }
+
+uint32_t GCToEEInterface::LogHR(uint32_t hr, void* address)
+{
+    return hr;
+}
+
+#pragma intrinsic(_ReturnAddress)
+
+// This function is marked as NOINLINE so that it can get the caller's address
+NOINLINE
+uint32_t GCToEEInterface::LogHR(uint32_t hr)
+{
+    return LogHR(hr, _ReturnAddress());
+}
+

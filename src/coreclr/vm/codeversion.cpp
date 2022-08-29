@@ -1909,7 +1909,7 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
     else
     {
         _ASSERTE(!"This method doesn't support versioning but was requested to be versioned.");
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 }
 

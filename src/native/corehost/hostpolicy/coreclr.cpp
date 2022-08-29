@@ -20,6 +20,13 @@ namespace
     }
 }
 
+void coreclr_t::log_error(const char* line, void* arg)
+{
+    pal::string_t lineStr;
+    pal::clr_palstring(line, &lineStr);
+    trace::error(_X("%s"), lineStr.c_str());
+}
+
 pal::hresult_t coreclr_t::create(
     const pal::string_t& libcoreclr_path,
     const char* exe_path,
@@ -65,7 +72,13 @@ pal::hresult_t coreclr_t::create(
         &domain_id);
 
     if (!SUCCEEDED(hr))
+    {
+        if (coreclr_contract.coreclr_get_error_info != nullptr)
+        {
+            coreclr_contract.coreclr_get_error_info(coreclr_t::log_error, nullptr);
+        }
         return hr;
+    }
 
     inst.reset(new coreclr_t(host_handle, domain_id));
     return StatusCode::Success;

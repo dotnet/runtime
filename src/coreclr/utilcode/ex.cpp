@@ -894,7 +894,7 @@ HRESULT DelegatingException::GetHR()
 
     // If there is a delegate exception, defer to it.  Otherwise,
     //  default to E_FAIL.
-    return pDelegate ? pDelegate->GetHR() : E_FAIL;
+    return pDelegate ? pDelegate->GetHR() : LogHR(E_FAIL);
 
 } // HRESULT DelegatingException::GetHR()
 
@@ -972,7 +972,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr)
     // Catchers assume only failing hresults
     _ASSERTE(FAILED(hr));
     if (hr == S_OK)
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
 
     EX_THROW(HRException, (hr));
 }
@@ -989,7 +989,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, SString const &msg)
     // Catchers assume only failing hresults
     _ASSERTE(FAILED(hr));
     if (hr == S_OK)
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
 
     EX_THROW(HRMsgException, (hr, msg));
 }
@@ -1005,7 +1005,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, UINT uText)
     // Catchers assume only failing hresults
     _ASSERTE(FAILED(hr));
     if (hr == S_OK)
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
 
     SString sExceptionText;
 

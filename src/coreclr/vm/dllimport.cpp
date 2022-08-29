@@ -4467,14 +4467,14 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         if (pTargetMT->HasInstantiation())
         {
             // ManagedToNativeComInteropStubAttribute is not supported with generics
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
 
         if (pTargetMD->IsFCall())
         {
             // ManagedToNativeComInteropStubAttribute is not supported on FCalls (i.e. methods on legacy
             // interfaces forwarded to CustomMarshalers.dll such as IEnumerable::GetEnumerator)
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
         _ASSERTE(pTargetMD->IsComPlusCall());
 
@@ -4490,7 +4490,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             // GetCustomAttribute returns S_FALSE when it cannot find the attribute but nothing fails...
             // Translate that to E_FAIL
             else if (hr == S_FALSE)
-                RETURN E_FAIL;
+                RETURN LogHR(E_FAIL);
         }
         else
         {
@@ -4505,11 +4505,11 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
                 RETURN hr;
             }
             else
-                RETURN E_FAIL;
+                RETURN LogHR(E_FAIL);
         }
     }
     else
-        RETURN E_FAIL;
+        RETURN LogHR(E_FAIL);
 
     //
     // Parse the attribute

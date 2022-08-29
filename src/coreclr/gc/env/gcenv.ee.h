@@ -94,6 +94,9 @@ public:
     static uint32_t GetCurrentProcessCpuCount();
 
     static void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
+
+    static uint32_t LogHR(uint32_t hr, void* address);
+    static uint32_t LogHR(uint32_t hr);
 };
 
 #endif // __GCENV_EE_H__

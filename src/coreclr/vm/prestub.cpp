@@ -968,7 +968,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
         if (!(pOtherCode = pConfig->IsJitCancellationRequested()))
         {
-            pEntry->m_hrResultCode = E_FAIL;
+            pEntry->m_hrResultCode = LogHR(E_FAIL);
             EX_RETHROW;
         }
     }

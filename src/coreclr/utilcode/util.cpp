@@ -20,6 +20,7 @@
 #include "volatile.h"
 #include "mdfileformat.h"
 #include <configuration.h>
+#include <intrin.h>
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
@@ -31,6 +32,46 @@ bool g_arm64_atomics_present = false;
 #endif
 
 #endif //!DACCESS_COMPILE
+
+#pragma intrinsic(_ReturnAddress)
+
+// Ring buffer with logged failed HRs
+FailedHRLogEntry s_failedHRLogBuffer[8];
+volatile UINT32 s_failedHRLogBufferIndex = 0;
+
+DWORD LogHR(DWORD hr, void* address)
+{
+    if (FAILED(hr))
+    {
+        UINT32 index = (UINT32)InterlockedIncrement((volatile LONG*)&s_failedHRLogBufferIndex) - 1;
+        index = index % ARRAY_SIZE(s_failedHRLogBuffer);
+        s_failedHRLogBuffer[index].address = address;
+        s_failedHRLogBuffer[index].hr = hr;
+    }
+
+    return hr;
+}
+
+// This function is marked as NOINLINE so that it can get the caller's address
+NOINLINE
+DWORD LogHR(DWORD hr)
+{
+    return LogHR(hr, _ReturnAddress());
+}
+
+UINT32 GetFailedHRLogEntryCount()
+{
+    return min(s_failedHRLogBufferIndex, ARRAY_SIZE(s_failedHRLogBuffer));
+}
+
+FailedHRLogEntry* GetFailedHRLogEntry(UINT32 index)
+{
+    if (s_failedHRLogBufferIndex >= ARRAY_SIZE(s_failedHRLogBuffer))
+    {
+        index = (s_failedHRLogBufferIndex + index) % ARRAY_SIZE(s_failedHRLogBuffer);
+    }
+    return &s_failedHRLogBuffer[index];
+}
 
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.
@@ -70,7 +111,7 @@ HRESULT GetHex(                         // Return status.
             break;
 
             default:
-            return (E_FAIL);
+            return LogHR(E_FAIL);
         }
     }
 
@@ -115,30 +156,30 @@ HRESULT LPCSTRToGuid(                   // Return status.
     if (strlen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
         szGuid[14] != '-' || szGuid[19] != '-' || szGuid[24] != '-' || szGuid[37] != '}')
     {
-        return (E_FAIL);
+        return LogHR(E_FAIL);
     }
 
     // Parse the first 3 fields.
     if (FAILED(GetHex(szGuid + 1, 4, &psGuid->Data1)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     if (FAILED(GetHex(szGuid + 10, 2, &psGuid->Data2)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
     if (FAILED(GetHex(szGuid + 15, 2, &psGuid->Data3)))
-        return E_FAIL;
+        return LogHR(E_FAIL);
 
     // Get the last two fields (which are byte arrays).
     for (i = 0; i < 2; ++i)
     {
         if (FAILED(GetHex(szGuid + 20 + (i * 2), 1, &psGuid->Data4[i])))
         {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
     for (i=0; i < 6; ++i)
     {
         if (FAILED(GetHex(szGuid + 25 + (i * 2), 1, &psGuid->Data4[i+2])))
         {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
     return S_OK;
@@ -210,7 +251,7 @@ namespace
 
             wszDllPath = ssDllName.GetUnicode();
 #else // HOST_WINDOWS
-            return E_FAIL;
+            return LogHR(E_FAIL);
 #endif // HOST_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
@@ -2782,7 +2823,7 @@ namespace Util
         // We need to make sure that GetTokenInformation failed in a predictable manner so we know that
         // dwSize has the correct buffer size in it.
         if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
-            return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
+            return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? LogHR(E_FAIL) : HRESULT_FROM_WIN32(err));
 
         NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
         if (pLabel == NULL)

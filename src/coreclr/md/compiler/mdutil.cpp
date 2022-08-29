@@ -244,7 +244,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
         // Figure out the size and timestamp of this file
         WIN32_FILE_ATTRIBUTE_DATA faData;
         if (!WszGetFileAttributesEx(szName, GetFileExInfoStandard, &faData))
-            return E_FAIL;
+            return LogHR(E_FAIL);
         dwLowFileSize = faData.nFileSizeLow;
         dwLowFileTime = faData.ftLastWriteTime.dwLowDateTime;
 
@@ -432,7 +432,7 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
     if (FAILED(hr))
     {
         // cannot find the match!
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
 ErrExit:
     return hr;

@@ -13333,7 +13333,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
 
         if (gc_log == NULL)
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
 
         // GCLogFileSize in MBs.
         gc_log_file_size = static_cast<size_t>(GCConfig::GetLogFileSize());
@@ -13341,7 +13341,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         if (gc_log_file_size <= 0 || gc_log_file_size > 500)
         {
             fclose (gc_log);
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
         }
 
         gc_log_lock.Initialize();
@@ -13349,7 +13349,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         if (!gc_log_buffer)
         {
             fclose(gc_log);
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
         }
 
         memset (gc_log_buffer, '*', gc_log_buffer_size);
@@ -13364,13 +13364,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         gc_config_log = CreateLogFile(GCConfig::GetConfigLogFile(), true);
 
         if (gc_config_log == NULL)
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
 
         gc_config_log_buffer = new (nothrow) uint8_t [gc_config_log_buffer_size];
         if (!gc_config_log_buffer)
         {
             fclose(gc_config_log);
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
         }
 
         compact_ratio = static_cast<int>(GCConfig::GetCompactRatio());
@@ -13477,7 +13477,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     else
     {
         assert (!"cannot use regions without specifying the range!!!");
-        return E_FAIL;
+        return GCToEEInterface::LogHR(E_FAIL);
     }
 #else //USE_REGIONS
     bool separated_poh_p = use_large_pages_p &&
@@ -13590,7 +13590,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     if (!init_semi_shared())
     {
-        hres = E_FAIL;
+        hres = GCToEEInterface::LogHR(E_FAIL);
     }
 
     return hres;
@@ -45008,7 +45008,7 @@ HRESULT GCHeap::Initialize()
 
     if (!WaitForGCEvent->CreateManualEventNoThrow(TRUE))
     {
-        return E_FAIL;
+        return GCToEEInterface::LogHR(E_FAIL);
     }
 
 #ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
@@ -45089,9 +45089,9 @@ HRESULT GCHeap::Initialize()
         int hb_info_size_per_node = hb_info_size_per_proc * procs_per_numa_node;
         uint8_t* numa_mem = (uint8_t*)GCToOSInterface::VirtualReserve (hb_info_size_per_node, 0, 0, numa_node_index);
         if (!numa_mem)
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
         if (!GCToOSInterface::VirtualCommit (numa_mem, hb_info_size_per_node, numa_node_index))
-            return E_FAIL;
+            return GCToEEInterface::LogHR(E_FAIL);
 
         heap_balance_info_proc* hb_info_procs = (heap_balance_info_proc*)numa_mem;
         hb_info_numa_nodes[numa_node_index].hb_info_procs = hb_info_procs;
@@ -47462,7 +47462,7 @@ size_t GCHeap::ApproxFreeBytes()
 HRESULT GCHeap::GetGcCounters(int gen, gc_counters* counters)
 {
     if ((gen < 0) || (gen > max_generation))
-        return E_FAIL;
+        return GCToEEInterface::LogHR(E_FAIL);
 #ifdef MULTIPLE_HEAPS
     counters->current_size = 0;
     counters->promoted_size = 0;
@@ -48591,7 +48591,7 @@ HRESULT GCHeap::WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout)
         else if (dwRet == WAIT_TIMEOUT)
             return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
         else
-            return E_FAIL;      // It is not clear if what the last error would be if the wait failed,
+            return GCToEEInterface::LogHR(E_FAIL);      // It is not clear if what the last error would be if the wait failed,
                                 // as there are too many layers in between. The best we can do is to return E_FAIL;
     }
 #endif

@@ -720,7 +720,7 @@ HRESULT LongFile::NormalizePath(SString & path)
 
     if (ret == 0)
     {
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     if (ret > size - prefixLen)
@@ -740,7 +740,7 @@ HRESULT LongFile::NormalizePath(SString & path)
 
         if (ret == 0)
         {
-            return E_FAIL;
+            return LogHR(E_FAIL);
         }
     }
 

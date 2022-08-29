@@ -259,7 +259,7 @@ VOID AppDomainDoCallBack(ComCallWrapper* pWrap, ADCallBackFcnType pTarget, LPVOI
     // a thread to enter EE.
     if ((g_fEEShutDown & ShutDown_Finalize2) || g_fForbidEnterEE)
     {
-        *phr = E_FAIL;
+        *phr = LogHR(E_FAIL);
         return;
     }
 

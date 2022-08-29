@@ -871,12 +871,12 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
     if (!oldInfo.ebpFrame || !newInfo.ebpFrame) {
         LOG((LF_ENC, LL_INFO100, "**Error** EECM::FixContextForEnC Esp frames NYI\n"));
-        return E_FAIL; // Esp frames NYI
+        return LogHR(E_FAIL); // Esp frames NYI
     }
 
     if (pCtx->Esp != pCtx->Ebp - oldInfo.stackSize + sizeof(DWORD)) {
         LOG((LF_ENC, LL_INFO100, "**Error** EECM::FixContextForEnC stack should be empty\n"));
-        return E_FAIL; // stack should be empty - <TODO> @TODO : Barring localloc</TODO>
+        return LogHR(E_FAIL); // stack should be empty - <TODO> @TODO : Barring localloc</TODO>
     }
 
     if (oldInfo.handlers)
@@ -1020,7 +1020,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
     // x64: SP == FP before localloc
     if (oldStackBase != GetFP(&oldCtx))
-        return E_FAIL;
+        return LogHR(E_FAIL);
 #elif defined(TARGET_ARM64)
     DWORD oldFixedStackSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
     DWORD newFixedStackSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
@@ -1029,7 +1029,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
     // ARM64: FP + 16 == SP + oldFixedStackSize before localloc
     if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
-        return E_FAIL;
+        return LogHR(E_FAIL);
 #else
     PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
@@ -1041,7 +1041,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     if (oldSizeOfPreservedArea != newSizeOfPreservedArea)
     {
         _ASSERTE(!"FixContextForEnC called with method whose frame header size changed from old to new version.");
-        return E_FAIL;
+        return LogHR(E_FAIL);
     }
 
     TADDR callerSP = oldStackBase + oldFixedStackSize;
@@ -1110,7 +1110,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         oldMethodVarsSortedBase = new  (nothrow) ICorDebugInfo::NativeVarInfo[oldNumVars];
         if (!oldMethodVarsSortedBase)
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
             goto ErrExit;
         }
         oldMethodVarsSorted = oldMethodVarsSortedBase + (-ICorDebugInfo::UNKNOWN_ILNUM);
@@ -1164,7 +1164,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         newMethodVarsSortedBase = new (nothrow) ICorDebugInfo::NativeVarInfo[newNumVars];
         if (!newMethodVarsSortedBase)
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
             goto ErrExit;
         }
         newMethodVarsSorted = newMethodVarsSortedBase + (-ICorDebugInfo::UNKNOWN_ILNUM);
@@ -1199,14 +1199,14 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         rgVal1 = new (nothrow) SIZE_T[newNumVars];
         if (rgVal1 == NULL)
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
             goto ErrExit;
         }
 
         rgVal2 = new (nothrow) SIZE_T[newNumVars];
         if (rgVal2 == NULL)
         {
-            hr = E_FAIL;
+            hr = LogHR(E_FAIL);
             goto ErrExit;
         }
 

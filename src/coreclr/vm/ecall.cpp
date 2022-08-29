@@ -483,7 +483,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             // add FCUnique(<a random unique number here>); to one of the offending fcalls.
 
             _ASSERTE(!"Duplicate pImplementation entries found in reverse fcall table");
-            ThrowHR(E_FAIL);
+            ThrowHR(LogHR(E_FAIL));
         }
     }
     else

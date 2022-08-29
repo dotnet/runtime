@@ -449,7 +449,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     else
     {
         _ASSERTE(!"Unknown file type.");
-        IfFailGo( E_FAIL );
+        IfFailGo( LogHR(E_FAIL) );
     }
 
     // Save off everything.
@@ -460,7 +460,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     {
         WIN32_FILE_ATTRIBUTE_DATA faData;
         if (!WszGetFileAttributesEx(szDatabase, GetFileExInfoStandard, &faData))
-            IfFailGo(E_FAIL);
+            IfFailGo(LogHR(E_FAIL));
         m_dwDatabaseLFS = faData.nFileSizeLow;
         m_dwDatabaseLFT = faData.ftLastWriteTime.dwLowDateTime;
     }

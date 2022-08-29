@@ -324,6 +324,10 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
             hInst = m_Primary.GetLibraryHandle();
             hr = S_OK;
         }
+        else
+        {
+            hr = LogHR(E_FAIL);
+        }
     }
     else if(m_Primary.IsMissing())
     {

@@ -1195,7 +1195,7 @@ ExecuteCodes:
 
         else if (CurCode < 0xc0) {
             if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                Status = E_FAIL;
+                Status = LogHR(E_FAIL);
             } else {
                 Param = ((CurCode & 0x20) << 9) |
                         ((CurCode & 0x1f) << 8) |
@@ -1255,7 +1255,7 @@ ExecuteCodes:
 
             case 0xe8:  case 0xe9:  case 0xea:  case 0xeb:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 ContextRecord->Sp += 4 * 256 * (CurCode & 3);
@@ -1269,7 +1269,7 @@ ExecuteCodes:
 
             case 0xec:  case 0xed:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 Status = RtlpPopRegisterMask(ContextRecord,
@@ -1285,7 +1285,7 @@ ExecuteCodes:
 
             case 0xee:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1295,7 +1295,7 @@ ExecuteCodes:
                                               Param & 0x0f,
                                               UnwindParams);
                 } else {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                 }
                 break;
 
@@ -1305,7 +1305,7 @@ ExecuteCodes:
 
             case 0xef:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1316,7 +1316,7 @@ ExecuteCodes:
                                                  UnwindParams);
                     ContextRecord->Sp += ((Param & 15) - 1) * 4;
                 } else {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                 }
                 break;
 
@@ -1326,7 +1326,7 @@ ExecuteCodes:
 
             case 0xf5:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1342,7 +1342,7 @@ ExecuteCodes:
 
             case 0xf6:
                 if (UnwindCodePtr >= UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1360,7 +1360,7 @@ ExecuteCodes:
             case 0xf7:
             case 0xf9:
                 if (UnwindCodePtr + 2 > UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 ContextRecord->Sp += 4 * 256 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1376,7 +1376,7 @@ ExecuteCodes:
             case 0xf8:
             case 0xfa:
                 if (UnwindCodePtr + 3 > UnwindCodesEndPtr) {
-                    Status = E_FAIL;
+                    Status = LogHR(E_FAIL);
                     break;
                 }
                 ContextRecord->Sp += 4 * 256 * 256 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -1406,7 +1406,7 @@ ExecuteCodes:
                 goto finished;
 
             default:
-                Status = E_FAIL;
+                Status = LogHR(E_FAIL);
                 break;
             }
         }

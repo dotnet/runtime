@@ -113,6 +113,8 @@ struct SYM_INFO
     DWORD_PTR   dwOffset;
     char        achModule[cchMaxAssertModuleLen];
     char        achSymbol[cchMaxAssertSymbolLen];
+    char        achSource[cchMaxAssertSourceLen];
+    DWORD       lineNumber;
 };
 
 //--- Function Pointers to APIs in IMAGEHLP.DLL. Loaded dynamically. ---------
@@ -141,14 +143,17 @@ typedef DWORD64 (__stdcall *pfnImgHlp_SymGetModuleBase64)(
 
 typedef IMAGEHLP_SYMBOL64 PLAT_IMAGEHLP_SYMBOL;
 typedef IMAGEHLP_MODULE64 PLAT_IMAGEHLP_MODULE;
+typedef IMAGEHLP_LINE64 PLAT_IMAGEHLP_LINE;
 
 #else
 typedef IMAGEHLP_SYMBOL PLAT_IMAGEHLP_SYMBOL;
 typedef IMAGEHLP_MODULE PLAT_IMAGEHLP_MODULE;
+typedef IMAGEHLP_LINE PLAT_IMAGEHLP_LINE;
 #endif
 
 #undef IMAGEHLP_SYMBOL
 #undef IMAGEHLP_MODULE
+#undef IMAGEHLP_LINE
 
 
 typedef BOOL (__stdcall *pfnImgHlp_SymGetModuleInfo)(
@@ -167,6 +172,13 @@ typedef BOOL (__stdcall *pfnImgHlp_SymGetSymFromAddr)(
     IN  DWORD_PTR               dwAddr,
     OUT DWORD_PTR*              pdwDisplacement,
     OUT PLAT_IMAGEHLP_SYMBOL*   Symbol
+    );
+
+typedef BOOL (__stdcall *pfnImgHlp_SymGetLineFromAddr)(
+    IN  HANDLE                  hProcess,
+    IN  DWORD_PTR               dwAddr,
+    OUT DWORD_PTR*              pdwDisplacement,
+    OUT PLAT_IMAGEHLP_LINE*     Line
     );
 
 typedef BOOL (__stdcall *pfnImgHlp_SymInitialize)(
@@ -235,6 +247,7 @@ pfnImgHlp_StackWalk               _StackWalk;
 pfnImgHlp_SymGetModuleInfo        _SymGetModuleInfo;
 pfnImgHlp_SymFunctionTableAccess  _SymFunctionTableAccess;
 pfnImgHlp_SymGetSymFromAddr       _SymGetSymFromAddr;
+pfnImgHlp_SymGetLineFromAddr      _SymGetLineFromAddr;
 pfnImgHlp_SymInitialize           _SymInitialize;
 pfnImgHlp_SymUnDName              _SymUnDName;
 pfnImgHlp_SymLoadModule           _SymLoadModule;
@@ -252,6 +265,7 @@ IMGHLPFN_LOAD ailFuncList[] =
     { "SymGetModuleInfo",       (LPVOID*)&_SymGetModuleInfo },
     { "SymFunctionTableAccess", (LPVOID*)&_SymFunctionTableAccess },
     { "SymGetSymFromAddr",      (LPVOID*)&_SymGetSymFromAddr },
+    { "SymGetLineFromAddr",     (LPVOID*)&_SymGetLineFromAddr },
     { "SymInitialize",          (LPVOID*)&_SymInitialize },
     { "SymUnDName",             (LPVOID*)&_SymUnDName },
     { "SymLoadModule",          (LPVOID*)&_SymLoadModule },
@@ -554,6 +568,24 @@ DWORD_PTR dwAddr
     }
 
     strcpy_s(psi->achSymbol, ARRAY_SIZE(psi->achSymbol), pszSymbol);
+
+    __try
+    {
+        PLAT_IMAGEHLP_LINE line;
+        line.SizeOfStruct = sizeof(PLAT_IMAGEHLP_LINE);
+        line.Address = dwAddr;
+        DWORD_PTR dwDisplacement;
+        if (_SymGetLineFromAddr(g_hProcess, dwAddr, &dwDisplacement, &line))
+        {
+            strcpy_s(psi->achSource, ARRAY_SIZE(psi->achSource), line.FileName);
+            psi->lineNumber = line.LineNumber;
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        psi->achSource[0] = '\0';
+        psi->lineNumber = 0;
+    }
 }
 
 /****************************************************************************
@@ -801,7 +833,8 @@ void GetStringFromSymbolInfo
 (
 DWORD_PTR dwAddr,
 SYM_INFO *psi,   // @parm Pointer to SYMBOL_INFO. Can be NULL.
-__out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Place to put string.
+__out_ecount (stringBufferSize) CHAR *pszString,     // @parm Place to put string.
+size_t stringBufferSize
 )
 {
     STATIC_CONTRACT_NOTHROW;
@@ -810,24 +843,26 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
 
     LOCAL_ASSERT(pszString);
 
-    // <module>! <symbol> + 0x<offset> 0x<addr>\n
+    // <module>! <symbol> + 0x<offset> (0x<addr>) source:line\n
 
     if (psi)
     {
         sprintf_s(pszString,
-                  cchMaxAssertStackLevelStringLen,
-                  "%s! %s + 0x" FMT_ADDR_OFFSET " (0x" FMT_ADDR_BARE ")",
+                  stringBufferSize,
+                  "%s! %s + 0x" FMT_ADDR_OFFSET " (0x" FMT_ADDR_BARE ") %s:%u",
                   (psi->achModule[0]) ? psi->achModule : "<no module>",
                   (psi->achSymbol[0]) ? psi->achSymbol : "<no symbol>",
                   psi->dwOffset,
-                  DBG_ADDR(dwAddr));
+                  DBG_ADDR(dwAddr),
+                  (psi->achSource[0]) ? psi->achSource : "<no source>",
+                  psi->lineNumber);
     }
     else
     {
-        sprintf_s(pszString, cchMaxAssertStackLevelStringLen, "<symbols not available> (0x%p)", (void *)dwAddr);
+        sprintf_s(pszString, stringBufferSize, "<symbols not available> (0x%p)", (void *)dwAddr);
     }
 
-    LOCAL_ASSERT(strlen(pszString) < cchMaxAssertStackLevelStringLen);
+    LOCAL_ASSERT(strlen(pszString) < stringBufferSize);
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -877,7 +912,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 
     // First level
     CHAR aszLevel[cchMaxAssertStackLevelStringLen];
-    GetStringFromSymbolInfo(rgdwStackAddrs[0], &rgsi[0], aszLevel);
+    GetStringFromSymbolInfo(rgdwStackAddrs[0], &rgsi[0], aszLevel, sizeof(aszLevel));
 
     size_t bufSize = cchMaxAssertStackLevelStringLen * cfrTotal;
 
@@ -888,7 +923,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
     {
         strcat_s(pszString, bufSize, "\n");
         GetStringFromSymbolInfo(rgdwStackAddrs[i],
-                        &rgsi[i], aszLevel);
+                        &rgsi[i], aszLevel, sizeof(aszLevel));
         strcat_s(pszString, bufSize, aszLevel);
     }
 
@@ -905,8 +940,8 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 void GetStringFromAddr
 (
 DWORD_PTR dwAddr,
-_Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
-                // Buffer must hold at least cchMaxAssertStackLevelStringLen.
+_Out_writes_(stringSize) LPSTR szString, // Place to put string.
+size_t stringBufferSize // Size of the buffer the szString is pointing to
 )
 {
     STATIC_CONTRACT_NOTHROW;
@@ -917,13 +952,7 @@ _Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put str
     SYM_INFO si;
     FillSymbolInfo(&si, dwAddr);
 
-    sprintf_s(szString,
-              cchMaxAssertStackLevelStringLen,
-              "%s! %s + 0x%p (0x%p)",
-              (si.achModule[0]) ? si.achModule : "<no module>",
-              (si.achSymbol[0]) ? si.achSymbol : "<no symbol>",
-              (void*)si.dwOffset,
-              (void*)dwAddr);
+    GetStringFromSymbolInfo(dwAddr, &si, szString, stringBufferSize);
 }
 
 /****************************************************************************

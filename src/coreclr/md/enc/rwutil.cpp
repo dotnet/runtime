@@ -691,7 +691,7 @@ HRESULT MDTOKENMAP::InsertNotFound(
                 else
                 {
                     _ASSERTE(!"inconsistent token has been added to the table!");
-                    IfFailGo( E_FAIL );
+                    IfFailGo( LogHR(E_FAIL) );
                 }
             }
 

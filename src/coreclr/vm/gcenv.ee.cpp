@@ -11,6 +11,7 @@
  */
 
 #include "gcrefmap.h"
+#include <intrin.h>
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
@@ -1736,4 +1737,18 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
     ProfilerAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
+}
+
+uint32_t GCToEEInterface::LogHR(uint32_t hr, void* address)
+{
+    return ::LogHR(hr, address);
+}
+
+#pragma intrinsic(_ReturnAddress)
+
+// This function is marked as NOINLINE so that it can get the caller's address
+NOINLINE
+uint32_t GCToEEInterface::LogHR(uint32_t hr)
+{
+    return LogHR(hr, _ReturnAddress());
 }

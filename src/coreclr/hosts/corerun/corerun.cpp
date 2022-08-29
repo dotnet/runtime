@@ -205,6 +205,11 @@ public:
 static void* CurrentClrInstance;
 static unsigned int CurrentAppDomainId;
 
+static void log_error_info(const char* line, void* arg)
+{
+    std::fprintf(stderr, "%s\n", line);
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -281,11 +286,13 @@ static int run(const configuration& config)
 
     // Get CoreCLR exports
     coreclr_initialize_ptr coreclr_init_func = nullptr;
+    coreclr_get_error_info_ptr coreclr_get_error_info_func = nullptr;
     coreclr_execute_assembly_ptr coreclr_execute_func = nullptr;
     coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
     if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
         || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
-        || !try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
+        || !try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func)
+        || !try_get_export(coreclr_mod, "coreclr_get_error_info", (void**)&coreclr_get_error_info_func))
     {
         return -1;
     }
@@ -356,6 +363,7 @@ static int run(const configuration& config)
     if (FAILED(result))
     {
         pal::fprintf(stderr, W("BEGIN: coreclr_initialize failed - Error: 0x%08x\n"), result);
+        coreclr_get_error_info_func(log_error_info, nullptr);
         logger.dump_details();
         pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;

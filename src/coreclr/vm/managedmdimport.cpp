@@ -48,7 +48,7 @@ FCIMPL11(void, MetaDataImport::GetMarshalAs,
 
         if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
         {
-            ThrowMetaDataImportException(E_FAIL);
+            ThrowMetaDataImportException(LogHR(E_FAIL));
         }
 
         *unmanagedType = info.m_NativeType;
@@ -364,7 +364,7 @@ MDImpl2(void, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
     }
     else
     {
-        hr = E_FAIL;
+        hr = LogHR(E_FAIL);
     }
 
     if (FAILED(hr))
