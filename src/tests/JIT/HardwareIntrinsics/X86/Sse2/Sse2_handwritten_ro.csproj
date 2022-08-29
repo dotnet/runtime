@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>X86_Sse2_handwritten_r</AssemblyName>
+    <AssemblyName>X86_Sse2_handwritten_ro</AssemblyName>
     <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
-    <Optimize />
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HandwrittenProgram.cs" />
