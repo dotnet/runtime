@@ -1746,7 +1746,7 @@
                         <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="LockID" inType="win:Pointer" />
-                        <data name="LockOwnerThreadID" inType="win:Pointer" />
+                        <data name="LockOwnerThreadID" inType="win:UInt64" />
                         <UserData>
                             <Contention xmlns="myNs">
                                 <ContentionFlags> %1 </ContentionFlags>

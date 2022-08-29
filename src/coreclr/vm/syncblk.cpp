@@ -2202,13 +2202,20 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                osThreadId = (SIZE_T)-1;
                             }
-                            syncBlock->InitState(recursionLevel + 1, pThread);
+                            else
+                            {
+                                osThreadId = pThread->GetOSThreadId64();
+                            }
+
+                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2376,6 +2383,7 @@ void AwareLock::Enter()
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2438,6 +2446,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2557,7 +2566,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             ETW::ContentionLog::ContentionStructs::ManagedContention,
             GetClrInstanceId(),
             this,
-            m_HoldingThread);
+            m_HoldingOSThreadId);
     }
 
     LogContention();
@@ -2710,6 +2719,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     }
 
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)

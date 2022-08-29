@@ -440,6 +440,7 @@ private:
 
     ULONG           m_Recursion;
     PTR_Thread      m_HoldingThread;
+    SIZE_T          m_HoldingOSThreadId;
 
     LONG            m_TransientPrecious;
 
@@ -461,6 +462,7 @@ private:
 // PreFAST has trouble with initializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
 #endif // DACCESS_COMPILE
+          m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
           m_waiterStarvationStartTimeMs(0)
@@ -529,13 +531,14 @@ private:
     bool ShouldStopPreemptingWaiters() const;
 
 private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
 
         m_lockState.InitializeToLockedWithNoWaiters();
         m_Recursion = recursionLevel;
         m_HoldingThread = holdingThread;
+        m_HoldingOSThreadId = holdingOSThreadId;
     }
 
 public:
@@ -1243,10 +1246,10 @@ class SyncBlock
     // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
     // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
     // </NOTE>
-    void InitState(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread);
+        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingOSThreadId);
     }
 
 #if defined(ENABLE_CONTRACTS_IMPL)
