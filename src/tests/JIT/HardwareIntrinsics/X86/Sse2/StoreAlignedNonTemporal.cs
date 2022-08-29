@@ -7,15 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void StoreAlignedNonTemporal()
         {
             int testResult = Pass;
 
@@ -247,17 +246,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
-        }
-
-        static unsafe void* Align(byte* buffer, byte expectedAlignment)
-        {
-            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-            // Then subtract that from the expectedAlignment and add it to the original address
-            // to compute the aligned address.
-
-            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            return (void*)(buffer + misalignment);
+            Assert.Equal(Pass, testResult);
         }
     }
 }
