@@ -49,7 +49,7 @@ namespace DebuggerTests
         async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue, string methodName)
         {
             await SetBreakpointInMethod("debugger-test", "DebuggerTests." + clazz, "Prepare", 2);
-            await EvaluateAndCheck("window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests." + clazz + ":Prepare'); })", null, -1, -1, $"DebuggerTests.{clazz}.Prepare");
+            await EvaluateAndCheck("window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests." + clazz + ".Prepare'); })", null, -1, -1, $"DebuggerTests.{clazz}.Prepare");
 
             // 1) check un-assigned variables
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, methodName,

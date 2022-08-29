@@ -59,7 +59,7 @@ namespace DebuggerTests.GetPropertiesTests
         public virtual string LastName => "BaseClass#LastName";
     }
 
-    public class DerivedClass : BaseClass, ICloneable
+    public partial class DerivedClass : BaseClass, ICloneable
     {
         // public string _base_name = "DerivedClass#_base_name";
         private string _stringField = "DerivedClass#_stringField";
@@ -95,7 +95,7 @@ namespace DebuggerTests.GetPropertiesTests
             StringPropertyForOverrideWithAutoProperty = "DerivedClass#StringPropertyForOverrideWithAutoProperty";
         }
 
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             new DerivedClass().InstanceMethod();
             new DerivedClass().InstanceMethodAsync().Wait();
@@ -207,7 +207,7 @@ namespace DebuggerTests.GetPropertiesTests
         }
     }
 
-    public class DerivedClass2 : BaseClass2
+    public partial class DerivedClass2 : BaseClass2
     {
         // overriding with a property:
         public override DateTime Base_PropertyForOverridingWithProperty => new(2020, 7, 6, 5, 4, 3);
@@ -241,7 +241,7 @@ namespace DebuggerTests.GetPropertiesTests
             // BaseBase_AutoPropertyForVOO = "Derived#BaseBase_AutoPropertyForVOO"; // FixMe: Issue #69788
         }
 
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             new DerivedClass2().InstanceMethod();
             new DerivedClass2().InstanceMethodAsync().Wait();
@@ -259,7 +259,7 @@ namespace DebuggerTests.GetPropertiesTests
         }
     }
 
-    public struct CloneableStruct : ICloneable, IName
+    public partial struct CloneableStruct : ICloneable, IName
     {
         private string _stringField;
         private DateTime _dateTime;
@@ -288,7 +288,7 @@ namespace DebuggerTests.GetPropertiesTests
             AutoStringProperty = "CloneableStruct#AutoStringProperty";
         }
 
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             new CloneableStruct(3).InstanceMethod();
             new CloneableStruct(3).InstanceMethodAsync().Wait();
@@ -314,7 +314,7 @@ namespace DebuggerTests.GetPropertiesTests
 
     }
 
-    public struct NestedStruct
+    public partial struct NestedStruct
     {
         public CloneableStruct cloneableStruct;
 
@@ -323,7 +323,7 @@ namespace DebuggerTests.GetPropertiesTests
             cloneableStruct = new CloneableStruct(bias);
         }
 
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             TestNestedStructStatic();
             TestNestedStructStaticAsync().Wait();
@@ -350,21 +350,21 @@ namespace DebuggerTests.GetPropertiesTests
         public bool available => true;
     }
 
-    class DerivedClassForJSTest : BaseClassForJSTest
+    partial class DerivedClassForJSTest : BaseClassForJSTest
     {
         public string owner_name = "foo";
         public string owner_last_name => "bar";
 
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             var obj = new DerivedClassForJSTest();
             Console.WriteLine($"break here");
         }
     }
 
-    public class TestWithReflection
+    public partial class TestWithReflection
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             InvokeReflectedStaticMethod(10, "foobar", new DateTime(1234, 6, 7, 8, 9, 10), 100, "xyz", 345, "abc");
         }

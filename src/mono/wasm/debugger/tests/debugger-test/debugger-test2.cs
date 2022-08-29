@@ -20,11 +20,11 @@ public class Misc
     }
 }
 
-public class Fancy
+public partial class Fancy
 {
     public int Foo;
     public int Bar { get; set; }
-    public static void Types()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Types()
     {
         double dPI = System.Math.PI;
         float fPI = (float)System.Math.PI;
@@ -52,8 +52,8 @@ public class Fancy
     }
 }
 
-public class UserBreak {
-    public static void BreakOnDebuggerBreakCommand()
+public partial class UserBreak {
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void BreakOnDebuggerBreakCommand()
     {
         int a = 10;
         Debugger.Break();
@@ -74,9 +74,9 @@ public class WeatherForecast
     public string Summary { get; set; }
 }
 
-public class InspectTask
+public partial class InspectTask
 {
-    public static async System.Threading.Tasks.Task RunInspectTask()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task RunInspectTask()
     {
         WeatherForecast[] forecasts = null;
         var httpClient = new System.Net.Http.HttpClient();
@@ -114,7 +114,7 @@ public class TestParent : TestParent2
     public int GetJ => j;
 }
 
-public class TestChild : TestParent
+public partial class TestChild : TestParent
 {
     public int i = 50;
     public int GetI => i;
@@ -123,7 +123,7 @@ public class TestChild : TestParent
     {
         Console.WriteLine("Hi");
     }
-    public static void TestWatchWithInheritance()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void TestWatchWithInheritance()
     {
         TestChild test = new TestChild();
         Debugger.Break();

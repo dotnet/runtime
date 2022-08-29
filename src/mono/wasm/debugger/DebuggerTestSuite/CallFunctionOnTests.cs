@@ -22,8 +22,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, 10, false)]
         [InlineData("big_array_js_test (0);", "/other.js", 10, 1, 0, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 10, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 0);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 0, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 10, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 0);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 0, true)]
         public async Task CheckVSCodeTestFunction1(string eval_fn, string bp_loc, int line, int col, int len, bool roundtrip)
         {
             string vscode_fn0 = "function(){const e={__proto__:this.__proto__},t=Object.getOwnPropertyNames(this);for(let r=0;r<t.length;++r){const n=t[r],i=n>>>0;if(String(i>>>0)===n&&i>>>0!=4294967295)continue;const a=Object.getOwnPropertyDescriptor(this,n);a&&Object.defineProperty(e,n,a)}return e}";
@@ -73,8 +73,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, 10)]
         [InlineData("big_array_js_test (0);", "/other.js", 10, 1, 0)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 10)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 0);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 0)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 10)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 0);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, 0)]
         public async Task CheckVSCodeTestFunction2(string eval_fn, string bp_loc, int line, int col, int len)
         {
             var fetch_start_idx = 2;
@@ -125,8 +125,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, false)]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnEmptyArray(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
         {
             var ret_len = 0;
@@ -170,8 +170,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, false)]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnArray(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
         {
             var ret_len = 5;
@@ -224,7 +224,7 @@ namespace DebuggerTests
         [InlineData(false)]
         [InlineData(true)]
         public async Task RunOnVTArray(bool roundtrip) => await RunCallFunctionOn(
-            "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);",
+            "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);",
             "function (m) { return Object.values (this).filter ((k, i) => i%m == 0); }",
             "ss_arr",
             "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12,
@@ -287,7 +287,7 @@ namespace DebuggerTests
         [InlineData(false)]
         [InlineData(true)]
         public async Task RunOnCFOValueTypeResult(bool roundtrip) => await RunCallFunctionOn(
-            eval_fn: "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);",
+            eval_fn: "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);",
             fn_decl: "function () { return this; }",
             local_name: "simple_struct",
             bp_loc: "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12,
@@ -371,8 +371,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, false)]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnObjectArrayByValue(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
         {
             var ret_len = 5;
@@ -408,8 +408,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, false)]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnArrayByValue(string eval_fn, string bp_loc, int line, int col, bool roundtrip) => await RunCallFunctionOn(eval_fn,
             "function () { return Object.getOwnPropertyNames (this); }",
             "big", bp_loc, line, col, returnByValue: true,
@@ -435,8 +435,8 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, false)]
         [InlineData("big_array_js_test (10);", "/other.js", 10, 1, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnPrimitive(string eval_fn, string bp_loc, int line, int col, bool return_by_val)
         {
             await SetBreakpoint(bp_loc, line, col);
@@ -501,7 +501,7 @@ namespace DebuggerTests
         }
 
         public static TheoryData<string, string, int, int, bool?> SilentErrorsTestData(bool? silent) => new TheoryData<string, string, int, int, bool?>
-        { { "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, silent },
+        { { "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, silent },
             { "big_array_js_test (10);", "/other.js", 10, 1, silent }
         };
 
@@ -546,7 +546,7 @@ namespace DebuggerTests
         {
             // Chrome sends this one
             {
-                "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
+                "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTest');",
                 "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
@@ -556,7 +556,7 @@ namespace DebuggerTests
                 use_cfo
             },
             {
-                "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
+                "invoke_exported_method_async ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync');",
                 "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
@@ -568,7 +568,7 @@ namespace DebuggerTests
 
             // VSCode sends this one
             {
-                "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
+                "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTest');",
                 "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
@@ -578,7 +578,7 @@ namespace DebuggerTests
                 use_cfo
             },
             {
-                "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
+                "invoke_exported_method_async ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync');",
                 "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
@@ -683,7 +683,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvokeInheritedAndPrivateGetters() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "DebuggerTests.GetPropertiesTests.DerivedClass.InstanceMethod",
-            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTests.GetPropertiesTests.DerivedClass.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -713,10 +713,10 @@ namespace DebuggerTests
 
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, true)]
-        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, false)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, true)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
+        [InlineData("invoke_exported_method_async ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, true)]
+        [InlineData("invoke_exported_method_async ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, false)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, true)]
+        [InlineData("invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
         [InlineData("invoke_getters_js_test ();", "/other.js", 32, 1, false)]
         [InlineData("invoke_getters_js_test ();", "/other.js", 32, 1, true)]
         public async Task CheckAccessorsOnObjectsWithCFO(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
@@ -772,7 +772,7 @@ namespace DebuggerTests
         }
 
         public static TheoryData<string, string, int, int, bool> NegativeTestsData(bool use_cfo = false) => new TheoryData<string, string, int, int, bool>
-        { { "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:MethodForNegativeTests', null);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 45, 12, use_cfo },
+        { { "invoke_exported_method ('debugger-test', 'DebuggerTests.CallFunctionOnTest.MethodForNegativeTests', null);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 45, 12, use_cfo },
             { "negative_cfo_test ();", "/other.js", 64, 1, use_cfo }
         };
 

@@ -34,7 +34,7 @@ namespace DebuggerTests
         public async Task SetLocalPrimitiveTypeVariableOutOfRange(string variableName, long originalValue, long newValue, long overflowValue) {
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.SetVariableLocals", "run", 12);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
+                "window.setTimeout(function() {{ invoke_exported_method_async('debugger-test', 'DebuggerTests.SetVariableLocals.run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
                 locals_fn: async (locals) =>
                 {
@@ -73,7 +73,7 @@ namespace DebuggerTests
         public async Task SetLocalFloatVariable(string variableName, float originalValue, float newValue, float newValue2) {
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.SetVariableLocals", "run", 12);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
+                "window.setTimeout(function() {{ invoke_exported_method_async('debugger-test', 'DebuggerTests.SetVariableLocals.run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
                 locals_fn: async (locals) =>
                 {
@@ -112,7 +112,7 @@ namespace DebuggerTests
         public async Task SetLocalDoubleVariable(string variableName, double originalValue, double newValue, double newValue2) {
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.SetVariableLocals", "run", 12);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
+                "window.setTimeout(function() {{ invoke_exported_method_async('debugger-test', 'DebuggerTests.SetVariableLocals.run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
                 locals_fn: async (locals) =>
                 {
@@ -162,7 +162,7 @@ namespace DebuggerTests
         public async Task SetLocalPrimitiveTypeVariableValid(string variableName, string originalValue, string newValue, string newValue2) {
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.SetVariableLocals", "run", 12);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
+                "window.setTimeout(function() {{ invoke_exported_method_async('debugger-test', 'DebuggerTests.SetVariableLocals.run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
                 locals_fn: async (locals) =>
                 {

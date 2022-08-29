@@ -24,7 +24,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.DebuggerCustomViewTest.run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -43,7 +43,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.DebuggerCustomViewTest.run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -85,7 +85,7 @@ namespace DebuggerTests
 
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest2", "run", 2);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest2:run'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.DebuggerCustomViewTest2.run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),

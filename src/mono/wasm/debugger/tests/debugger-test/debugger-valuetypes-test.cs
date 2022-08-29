@@ -24,7 +24,7 @@ namespace DebuggerTests
             Console.WriteLine($"Using the struct: {ss_local.gs.StringField}, gs: {gs_local.StringField}, {vt_local.StringField}");
         }
 
-        public static void TestStructsAsMethodArgs()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void TestStructsAsMethodArgs()
         {
             var ss_local = new SimpleStruct("ss_local#SimpleStruct#string#0", 5, DateTimeKind.Local);
             var ss_ret = MethodWithStructArgs("TestStructsAsMethodArgs#label", ss_local, 3);
@@ -40,7 +40,7 @@ namespace DebuggerTests
             return ss_arg;
         }
 
-        public static async Task<bool> MethodWithLocalStructsStaticAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task<bool> MethodWithLocalStructsStaticAsync()
         {
             var ss_local = new SimpleStruct("set in MethodWithLocalStructsStaticAsync", 1, DateTimeKind.Utc);
             var gs_local = new GenericStruct<int>
@@ -103,7 +103,7 @@ namespace DebuggerTests
         public DateTime DT { get; set; }
         public RGB RGB;
 
-        public static void MethodWithLocalsForToStringTest(bool call_other)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodWithLocalsForToStringTest(bool call_other)
         {
             var dt0 = new DateTime(2020, 1, 2, 3, 4, 5);
             var dt1 = new DateTime(2010, 5, 4, 3, 2, 1);
@@ -148,7 +148,7 @@ namespace DebuggerTests
             Console.WriteLine($"MethodWithArgumentsForToStringTest: {dt0}, {dt1}, {ts}, {dec}, {guid}, {dts[0]}, {obj.DT}, {sst.DT}");
         }
 
-        public static async Task MethodWithLocalsForToStringTestAsync(bool call_other)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task MethodWithLocalsForToStringTestAsync(bool call_other)
         {
             var dt0 = new DateTime(2020, 1, 2, 3, 4, 5);
             var dt1 = new DateTime(2010, 5, 4, 3, 2, 1);
@@ -193,7 +193,7 @@ namespace DebuggerTests
             Console.WriteLine($"MethodWithArgumentsForToStringTest: {dt0}, {dt1}, {ts}, {dec}, {guid}, {dts[0]}, {obj.DT}, {sst.DT}"); await Task.CompletedTask;
         }
 
-        public static void MethodUpdatingValueTypeMembers()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodUpdatingValueTypeMembers()
         {
             var obj = new ClassForToStringTests
             {
@@ -209,7 +209,7 @@ namespace DebuggerTests
             Console.WriteLine($"#2");
         }
 
-        public static async Task MethodUpdatingValueTypeLocalsAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task MethodUpdatingValueTypeLocalsAsync()
         {
             var dt = new DateTime(1, 2, 3, 4, 5, 6);
             Console.WriteLine($"#1");
@@ -217,7 +217,7 @@ namespace DebuggerTests
             Console.WriteLine($"#2"); await Task.CompletedTask;
         }
 
-        public static void MethodUpdatingVTArrayMembers()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodUpdatingVTArrayMembers()
         {
             var ssta = new[]
             {

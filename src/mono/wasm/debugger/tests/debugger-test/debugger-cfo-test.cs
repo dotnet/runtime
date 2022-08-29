@@ -5,9 +5,9 @@ using System;
 
 namespace DebuggerTests
 {
-    public class CallFunctionOnTest
+    public partial class CallFunctionOnTest
     {
-        public static void LocalsTest(int len)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void LocalsTest(int len)
         {
             var big = new int[len];
             for (int i = 0; i < len; i++)

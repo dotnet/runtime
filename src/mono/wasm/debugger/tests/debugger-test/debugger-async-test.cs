@@ -7,11 +7,11 @@ using System.Runtime.CompilerServices;
 
 namespace DebuggerTests.AsyncTests
 {
-    public class ContinueWithTests
+    public partial class ContinueWithTests
     {
         public DateTime Date => new DateTime(2510, 1, 2, 3, 4, 5);
 
-        public static async Task RunAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task RunAsync()
         {
             await ContinueWithStaticAsync("foobar");
             await new ContinueWithTests().ContinueWithInstanceAsync("foobar");
@@ -94,7 +94,7 @@ namespace DebuggerTests.AsyncTests
             Console.WriteLine ($"done with this method");
         }
 
-        public static async Task RunAsyncWithLineHidden()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task RunAsyncWithLineHidden()
         {
             await HiddenLinesInAnAsyncBlock("foobar");
             await HiddenLinesJustBeforeANestedAsyncBlock("foobar");

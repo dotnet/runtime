@@ -2,9 +2,9 @@ using System;
 
 namespace DebuggerTests
 {
-    public static class ClassToBreak
+    public static partial class ClassToBreak
     {
-        public static int TestBreakpoint()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static int TestBreakpoint()
         {
             return 50;
         }

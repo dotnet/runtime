@@ -1,8 +1,8 @@
 namespace DebuggerTests
 {
-    public class CheckSpecialCharactersInPath
+    public partial class CheckSpecialCharactersInPath
     {
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var a = 123;
         }

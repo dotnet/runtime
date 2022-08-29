@@ -1,8 +1,8 @@
 namespace DebuggerTests
 {
-    public class CheckSNonAsciiCharactersInPath
+    public partial class CheckSNonAsciiCharactersInPath
     {
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var a = 123;
         }

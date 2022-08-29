@@ -208,7 +208,7 @@ namespace DebuggerTests
         public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{type_name}",
             $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
-            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTests.GetPropertiesTests.{type_name}.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -235,7 +235,7 @@ namespace DebuggerTests
             is_async ? $"TestNestedStructStaticAsync" : "TestNestedStructStatic",
             2,
             "DebuggerTests.GetPropertiesTests.NestedStruct." + (is_async ? "TestNestedStructStaticAsync" : $"TestNestedStructStatic"),
-            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.NestedStruct:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTests.GetPropertiesTests.NestedStruct.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var ns_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ns");
@@ -325,7 +325,7 @@ namespace DebuggerTests
             else
             {
                 await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.GetPropertiesTests.DerivedClassForJSTest", "run", 2);
-                eval_expr = "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClassForJSTest:run'); }, 1)";
+                eval_expr = "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.GetPropertiesTests.DerivedClassForJSTest.run'); }, 1)";
             }
 
             var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
@@ -373,7 +373,7 @@ namespace DebuggerTests
         public async Task GetObjectValueWithInheritance()
         {
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
+               "window.setTimeout(function() { invoke_exported_method('debugger-test', 'TestChild.TestWatchWithInheritance'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 128, 8,
                "TestChild.TestWatchWithInheritance");
             var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -543,7 +543,7 @@ namespace DebuggerTests
             Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>
             await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, $"DebuggerTests.GetPropertiesTests.{entryMethod}.InstanceMethod",
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.{entryMethod}:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method ('debugger-test', 'DebuggerTests.GetPropertiesTests.{entryMethod}.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();

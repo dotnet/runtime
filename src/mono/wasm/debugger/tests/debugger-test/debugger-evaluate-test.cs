@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public class EvaluateTestsClass
+    public partial class EvaluateTestsClass
     {
         public class TestEvaluate
         {
@@ -31,7 +31,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void EvaluateLocals()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateLocals()
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
@@ -43,7 +43,7 @@ namespace DebuggerTests
             f_g_s.EvaluateTestsGenericStructInstanceMethod(100, 200, "test");
         }
 
-        public static void EvaluateLocalsFromAnotherAssembly()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateLocalsFromAnotherAssembly()
         {
             var asm = System.Reflection.Assembly.LoadFrom("lazy-debugger-test.dll");
             var myType = asm.GetType("DebuggerTests.ClassToCheckFieldValue");
@@ -76,7 +76,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateTestsClassWithProperties
+    public partial class EvaluateTestsClassWithProperties
     {
         public int a;
         public int b;
@@ -98,7 +98,7 @@ namespace DebuggerTests
             dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
         }
 
-        public static async Task run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task run()
         {
             var obj = new EvaluateTestsClassWithProperties(0);
             var obj2 = new EvaluateTestsClassWithProperties(0);
@@ -198,7 +198,7 @@ namespace DebuggerTests
         }
     }
 
-    public struct EvaluateTestsStructWithProperties
+    public partial struct EvaluateTestsStructWithProperties
     {
         public int a;
         public int b;
@@ -219,7 +219,7 @@ namespace DebuggerTests
             dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
         }
 
-        public static async Task run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task run()
         {
             var obj = new EvaluateTestsStructWithProperties(0);
             var obj2 = new EvaluateTestsStructWithProperties(0);
@@ -318,7 +318,7 @@ namespace DebuggerTests
             return await Task.FromResult(default(T));
         }
     }
-    public class EvaluateMethodTestsClass
+    public partial class EvaluateMethodTestsClass
     {
         public class ParmToTest
         {
@@ -417,7 +417,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void EvaluateMethods()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateMethods()
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
@@ -428,7 +428,7 @@ namespace DebuggerTests
             instanceWithStaticFields.Run();
         }
 
-        public static async Task EvaluateMethodsAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task EvaluateMethodsAsync()
         {
             await DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
             await DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
@@ -504,7 +504,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateLocalsWithIndexingTests
+    public partial class EvaluateLocalsWithIndexingTests
     {
         public class TestEvaluate
         {
@@ -534,7 +534,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void EvaluateLocals()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateLocals()
         {
             int i = 0;
             int j = 1;
@@ -543,7 +543,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateLocalsWithMultidimensionalIndexingTests
+    public partial class EvaluateLocalsWithMultidimensionalIndexingTests
     {
         public class TestEvaluate
         {
@@ -565,7 +565,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void EvaluateLocals()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateLocals()
         {
             int i = 0;
             int j = 1;
@@ -595,7 +595,7 @@ namespace DebuggerTests
         public List<string> Items = new List<string> { "should not be expanded" };
     }
 
-    public static class EvaluateBrowsableClass
+    public static partial class EvaluateBrowsableClass
     {
         public class TestEvaluateFieldsNone
         {
@@ -807,7 +807,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testFieldsNone = new TestEvaluateFieldsNone();
             var testFieldsNever = new TestEvaluateFieldsNever();
@@ -821,7 +821,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableStruct
+    public static partial class EvaluateBrowsableStruct
     {
         public struct TestEvaluateFieldsNone
         {
@@ -1040,7 +1040,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testFieldsNone = new TestEvaluateFieldsNone();
             var testFieldsNever = new TestEvaluateFieldsNever();
@@ -1054,7 +1054,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableClassStatic
+    public static partial class EvaluateBrowsableClassStatic
     {
         public class TestEvaluateFieldsNone
         {
@@ -1267,7 +1267,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testFieldsNone = new TestEvaluateFieldsNone();
             var testFieldsNever = new TestEvaluateFieldsNever();
@@ -1281,7 +1281,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableStructStatic
+    public static partial class EvaluateBrowsableStructStatic
     {
         public struct TestEvaluateFieldsNone
         {
@@ -1501,7 +1501,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testFieldsNone = new TestEvaluateFieldsNone();
             var testFieldsNever = new TestEvaluateFieldsNever();
@@ -1515,7 +1515,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableNonAutoPropertiesClass
+    public static partial class EvaluateBrowsableNonAutoPropertiesClass
     {
         public class TestEvaluatePropertiesNone
         {
@@ -1600,7 +1600,7 @@ namespace DebuggerTests
             public SampleClass sampleClassRootHidden { get { return new(); } }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testPropertiesNone = new TestEvaluatePropertiesNone();
             var testPropertiesNever = new TestEvaluatePropertiesNever();
@@ -1609,7 +1609,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableNonAutoPropertiesStruct
+    public static partial class EvaluateBrowsableNonAutoPropertiesStruct
     {
         public struct TestEvaluatePropertiesNone
         {
@@ -1694,7 +1694,7 @@ namespace DebuggerTests
             public SampleClass sampleClassRootHidden { get { return new(); } }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testPropertiesNone = new TestEvaluatePropertiesNone();
             var testPropertiesNever = new TestEvaluatePropertiesNever();
@@ -1703,7 +1703,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableNonAutoPropertiesClassStatic
+    public static partial class EvaluateBrowsableNonAutoPropertiesClassStatic
     {
         public class TestEvaluatePropertiesNone
         {
@@ -1788,7 +1788,7 @@ namespace DebuggerTests
             public static SampleClass sampleClassRootHidden { get { return new(); } }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testPropertiesNone = new TestEvaluatePropertiesNone();
             var testPropertiesNever = new TestEvaluatePropertiesNever();
@@ -1797,7 +1797,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableNonAutoPropertiesStructStatic
+    public static partial class EvaluateBrowsableNonAutoPropertiesStructStatic
     {
         public struct TestEvaluatePropertiesNone
         {
@@ -1882,7 +1882,7 @@ namespace DebuggerTests
             public static SampleClass sampleClassRootHidden { get { return new(); } }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var testPropertiesNone = new TestEvaluatePropertiesNone();
             var testPropertiesNever = new TestEvaluatePropertiesNever();
@@ -1891,20 +1891,20 @@ namespace DebuggerTests
         }
     }
 
-    public static class StructureGetters
+    public static partial class StructureGetters
     {
         public struct Point
         {
             public int Id { get { return 123; } }
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var s = new Point();
         }
     }
 
-    public static class DefaultParamMethods
+    public static partial class DefaultParamMethods
     {
         public class TestClass
         {
@@ -1947,13 +1947,13 @@ namespace DebuggerTests
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var test = new TestClass();
         }
     }
 
-    public static class PrimitiveTypeMethods
+    public static partial class PrimitiveTypeMethods
     {
         public class TestClass
         {
@@ -1968,7 +1968,7 @@ namespace DebuggerTests
             public string propString = "s_t_r";
         }
 
-        public static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             var test = new TestClass();
             int localInt = 2;
@@ -1983,7 +1983,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateNullableProperties
+    public static partial class EvaluateNullableProperties
     {
         class TestClass
         {
@@ -1991,7 +1991,7 @@ namespace DebuggerTests
             public List<int> MemberList = new List<int>() {1, 2};
             public TestClass Sibling { get; set; }
         }
-        static void Evaluate()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
         {
             #nullable enable
             List<int>? listNull = null;
@@ -2037,7 +2037,7 @@ namespace DebuggerTestsV2
     }
 }
 
-public static class NestedWithSameNames
+public static partial class NestedWithSameNames
 {
     public static int StaticField = 30;
     public static string StaticProperty => "StaticProperty3";
@@ -2075,16 +2075,16 @@ public static class NestedWithSameNames
         }
     }
 
-    public static void Evaluate()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
     {
         B.NestedWithSameNames.B.Run();
     }
 }
 
 
-public static class NoNamespaceClass
+public static partial class NoNamespaceClass
 {
-    public static void EvaluateMethods()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateMethods()
     {
         var stopHere = true;
     }

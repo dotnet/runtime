@@ -92,7 +92,7 @@ namespace DebuggerTests
             "dotnet://debugger-test.dll/debugger-test.cs",
             line, col,
             bp_method,
-            "window.setTimeout (function () { invoke_static_method ('[debugger-test] Math:DelegatesSignatureTest'); }, 1)",
+            "window.setTimeout (function () { invoke_exported_method ('debugger-test', 'Math.DelegatesSignatureTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {
@@ -162,7 +162,7 @@ namespace DebuggerTests
         public async Task ActionTSignatureTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
-            "window.setTimeout (function () { invoke_static_method ('[debugger-test] Math:ActionTSignatureTest'); }, 1)",
+            "window.setTimeout (function () { invoke_exported_method ('debugger-test', 'Math.ActionTSignatureTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {
@@ -204,7 +204,7 @@ namespace DebuggerTests
         public async Task NestedDelegatesTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
-            "window.setTimeout (function () { invoke_static_method ('[debugger-test] Math:NestedDelegatesTest'); }, 1)",
+            "window.setTimeout (function () { invoke_exported_method ('debugger-test', 'Math.NestedDelegatesTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {
@@ -247,7 +247,7 @@ namespace DebuggerTests
         public async Task DelegatesAsMethodArgsTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
-            "window.setTimeout (function () { invoke_static_method ('[debugger-test] Math:DelegatesAsMethodArgsTest'); }, 1)",
+            "window.setTimeout (function () { invoke_exported_method ('debugger-test', 'Math.DelegatesAsMethodArgsTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {
@@ -278,7 +278,7 @@ namespace DebuggerTests
         public async Task MethodWithDelegatesAsyncTest(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", 281, 8,
             "Math.MethodWithDelegatesAsync",
-            "window.setTimeout (function () { invoke_static_method_async ('[debugger-test] Math:MethodWithDelegatesAsyncTest'); }, 1)",
+            "window.setTimeout (function () { invoke_exported_method_async ('debugger-test', 'Math.MethodWithDelegatesAsyncTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {

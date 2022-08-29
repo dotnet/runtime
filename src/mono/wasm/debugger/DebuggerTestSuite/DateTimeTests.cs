@@ -26,7 +26,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test", "DebuggerTests.DateTimeTest", "LocaleTest", 15);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DateTimeTest:LocaleTest'," +
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.DateTimeTest.LocaleTest'," +
                 $"'{locale}'); }}, 1);",
                 debugger_test_loc, 25, 12, "DebuggerTests.DateTimeTest.LocaleTest",
                 locals_fn: async (locals) =>

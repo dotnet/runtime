@@ -5,9 +5,9 @@ using System;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public class SetVariableLocals
+    public partial class SetVariableLocals
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             sbyte a = 1;
             byte a1 = 1;

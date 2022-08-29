@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace DebuggerTests
 {
-    public class PointerTests
+    public partial class PointerTests
     {
 
-        public static unsafe void LocalPointers()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static unsafe void LocalPointers()
         {
             int ivalue0 = 5;
             int ivalue1 = 10;
@@ -57,7 +57,7 @@ namespace DebuggerTests
             Console.WriteLine($"done!");
         }
 
-        public static unsafe Task LocalPointersAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static unsafe Task LocalPointersAsync()
         {
             int ivalue0 = 5;
             int ivalue1 = 10;

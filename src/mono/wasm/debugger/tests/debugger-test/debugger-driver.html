@@ -6,8 +6,9 @@
 	<script type='text/javascript'>
 		var App = {
 			static_method_table: {},
+			export_table: {},
 			init: async () => {
-				const exports = await App.runtime.getAssemblyExports("debugger-test.dll");
+				const exports = await getAssemblyExports("debugger-test.dll");
 				App.int_add = exports.Math.IntAdd;
 				App.use_complex = exports.Math.UseComplex;
 				App.delegates_test = exports.Math.DelegatesTest;
@@ -17,9 +18,57 @@
 				App.method_with_structs = exports.DebuggerTests.ValueTypesTest.MethodWithLocalStructs;
 				App.run_all = exports.DebuggerTest.run_all;
 				App.static_method_table = {};
+
+				await getAssemblyExports("library-dependency-debugger-test1.dll");
+				await getAssemblyExports("debugger-test-with-source-link.dll");
+				await getAssemblyExports("lazy-debugger-test.dll");
+				await getAssemblyExports("debugger-test-special-char-in-path.dll");
+
 				console.debug ("#debugger-app-ready#"); console.log ("ready"); // HACK: firefox tests are looking for this "ready"
 			},
 		};
+
+		async function getAssemblyExports(assemblyName) {
+			return App.export_table[assemblyName] = await App.runtime.getAssemblyExports(assemblyName);
+		}
+
+		function get_exported_method(assemblyName, methodName) {
+			const exports = App.export_table[assemblyName + ".dll"];
+			if (!exports) {
+				throw new Error(`Missing exports for assembly '${assemblyName}', update the 'App.init'`);
+			}
+
+			const methodParts = methodName.split('.');
+
+			let target = exports;
+			for (let i = 0; i < methodParts.length; i++) {
+				target = target[methodParts[i]];
+				if (!target) {
+					break;
+				}
+			}
+
+			if (!target) {
+				throw new Error(`Unnable to find '${methodName}' in assembly '${assemblyName}'`);
+			}
+			
+			if (typeof target != 'function') {
+				throw new Error(`Found '${methodName}' in assembly '${assemblyName}', but it isn't a method`);
+			}
+
+			return target;
+		}
+
+		function invoke_exported_method(assemblyName, methodName, ...args) {
+			const method = get_exported_method(assemblyName, methodName);
+			return method(...args);
+		}
+
+		async function invoke_exported_method_async(assemblyName, methodName, ...args) {
+			const method = get_exported_method(assemblyName, methodName);
+			return await method (...args);
+		}
+
 		function invoke_static_method (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined)

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace DebuggerTests
 {
-    public class NullableTests
+    public partial class NullableTests
     {
-        public static void TestNullableLocal()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void TestNullableLocal()
         {
             int? n_int = 5;
             int? n_int_null = null;
@@ -22,7 +22,7 @@ namespace DebuggerTests
             Console.WriteLine($"break here");
         }
 
-        public static async Task TestNullableLocalAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task TestNullableLocalAsync()
         {
             int? n_int = 5;
             int? n_int_null = null;

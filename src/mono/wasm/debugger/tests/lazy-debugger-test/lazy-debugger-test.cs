@@ -5,7 +5,7 @@ using System;
 
 public partial class LazyMath
 {
-    public static int IntAdd(int a, int b)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int IntAdd(int a, int b)
     {
         int c = a + b;
         return c;

@@ -8,15 +8,15 @@ using System.Net.Http;
 
 namespace DebuggerTests
 {
-    public class AsyncStepClass
+    public partial class AsyncStepClass
     {
         static HttpClient client = new HttpClient();
-        public static async Task TestAsyncStepOut()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task TestAsyncStepOut()
         {
             await TestAsyncStepOut2("foobar");
         }
 
-        public static async Task<int> TestAsyncStepOut2(string some)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task<int> TestAsyncStepOut2(string some)
         {
             var resp = await client.GetAsync("http://localhost:9400/debugger-driver.html");
             Console.WriteLine($"resp: {resp}"); /// BP at this line
@@ -24,7 +24,7 @@ namespace DebuggerTests
             return 10;
         }
 
-        public static void SimpleMethod()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void SimpleMethod()
         {
             var dt = new DateTime(4512, 1, 3, 5, 7, 9);
             OtherMethod0(dt.AddMinutes(10));
@@ -42,13 +42,13 @@ namespace DebuggerTests
             Console.WriteLine ($"In OtherMethod1");
         }
 
-        public static async Task StepOverTestAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task StepOverTestAsync()
         {
             await MethodWithTwoAwaitsAsync();
             Console.WriteLine ($"StepOverTestAsync: done");
         }
 
-        public static async Task MethodWithTwoAwaitsAsync()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task MethodWithTwoAwaitsAsync()
         {
             Console.WriteLine ($"first await");
             await Task.Delay(50);

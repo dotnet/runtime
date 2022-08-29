@@ -5,9 +5,9 @@ using System;
 using System.Globalization;
 namespace DebuggerTests
 {
-    public class DateTimeTest
+    public partial class DateTimeTest
     {
-        public static void LocaleTest(string locale)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void LocaleTest(string locale)
         {
             CultureInfo.CurrentCulture = new CultureInfo(locale, false);
             Console.WriteLine("CurrentCulture is {0}", CultureInfo.CurrentCulture.Name);

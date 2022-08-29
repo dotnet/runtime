@@ -20,13 +20,14 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestAll()
         {
-            string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ExceptionTestsClass.TestExceptions";
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
             await SetPauseOnException("all");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}'" +
                 "); }, 1);";
 
             var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
@@ -135,11 +136,12 @@ namespace DebuggerTests
         public async Task ExceptionTestNone()
         {
             //Collect events
-            string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ExceptionTestsClass.TestExceptions";
             await SetPauseOnException("none");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}'" +
                 "); }, 1);";
 
             try
@@ -201,7 +203,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
-        [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
+        [InlineData("function () { invoke_exported_method ('debugger-test', 'DebuggerTests.ExceptionTestsClass.TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "DebuggerTests.ExceptionTestsClass.TestUncaughtException.run",
             "DebuggerTests.CustomException", "not implemented uncaught")]
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
@@ -228,7 +230,8 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestUncaughtWithReload()
         {
-            string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ExceptionTestsClass:TestExceptions";
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
             await SetPauseOnException("uncaught");
@@ -240,8 +243,8 @@ namespace DebuggerTests
                                     }));
             Thread.Sleep(1000);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}'" +
                 "); }, 1);";
 
             var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
@@ -266,9 +269,9 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76, "DebuggerTests.ExceptionTestsClassDefault")]
-        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28, "DebuggerTests.ExceptionTestsClass")]
-        public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number, string class_name_pause)
+        [InlineData("debugger-test", "DebuggerTests.ExceptionTestsClassDefault.TestExceptions", "System.Exception", 76, "DebuggerTests.ExceptionTestsClassDefault")]
+        [InlineData("debugger-test", "DebuggerTests.ExceptionTestsClass.TestExceptions", "DebuggerTests.CustomException", 28, "DebuggerTests.ExceptionTestsClass")]
+        public async Task ExceptionTestAllWithReload(string entry_assembly, string entry_method_name, string class_name, int line_number, string class_name_pause)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
@@ -302,8 +305,8 @@ namespace DebuggerTests
             }
             _testOutput.WriteLine ($"* Resumed {count} times");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}'" +
                 "); }, 1);";
 
             pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);

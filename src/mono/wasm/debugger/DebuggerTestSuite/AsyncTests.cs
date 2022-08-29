@@ -27,7 +27,7 @@ namespace DebuggerTests
         [InlineData("ContinueWithInstanceAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceAsync.AnonymousMethod__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", method_name, 5, expected_method_name,
-             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+             "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -46,7 +46,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
-             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+             "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -68,7 +68,7 @@ namespace DebuggerTests
          [Fact] // NestedContinueWith
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
-              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+              "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
               wait_for_event_fn: async (pause_location) =>
               {
                  var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());

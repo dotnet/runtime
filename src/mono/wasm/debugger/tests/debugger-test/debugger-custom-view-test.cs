@@ -65,9 +65,9 @@ namespace DebuggerTests
         public int Age { get; set; }
     }
 
-    class DebuggerCustomViewTest
+    partial class DebuggerCustomViewTest
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             var a = new WithDisplayString();
             var b = new WithProxy();
@@ -89,9 +89,9 @@ namespace DebuggerTests
         }
     }
 
-    class DebuggerCustomViewTest2
+    partial class DebuggerCustomViewTest2
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             List<int> myList = new List<int> ();
             List<int> myList2 = new List<int> ();

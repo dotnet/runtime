@@ -5,9 +5,9 @@ using System;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public class ArrayTestsClass
+    public partial class ArrayTestsClass
     {
-        public static void PrimitiveTypeLocals(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void PrimitiveTypeLocals(bool call_other = false)
         {
             var int_arr = new int[] { 4, 70, 1 };
             var int_arr_empty = new int[0];
@@ -19,7 +19,7 @@ namespace DebuggerTests
             Console.WriteLine($"int_arr: {int_arr.Length}, {int_arr_empty.Length}, {int_arr_null?.Length}");
         }
 
-        public static void ValueTypeLocals(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void ValueTypeLocals(bool call_other = false)
         {
             var point_arr = new Point[]
             {
@@ -36,7 +36,7 @@ namespace DebuggerTests
             Console.WriteLine($"point_arr: {point_arr.Length}, {point_arr_empty.Length}, {point_arr_null?.Length}");
         }
 
-        public static void ObjectTypeLocals(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void ObjectTypeLocals(bool call_other = false)
         {
             var class_arr = new SimpleClass[]
             {
@@ -54,7 +54,7 @@ namespace DebuggerTests
             Console.WriteLine($"class_arr: {class_arr.Length}, {class_arr_empty.Length}, {class_arr_null?.Length}");
         }
 
-        public static void GenericTypeLocals(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void GenericTypeLocals(bool call_other = false)
         {
             var gclass_arr = new GenericClass<int>[]
             {
@@ -72,7 +72,7 @@ namespace DebuggerTests
             Console.WriteLine($"gclass_arr: {gclass_arr.Length}, {gclass_arr_empty.Length}, {gclass_arr_null?.Length}");
         }
 
-        public static void GenericValueTypeLocals(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void GenericValueTypeLocals(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point>[]
             {
@@ -100,7 +100,7 @@ namespace DebuggerTests
             Console.WriteLine($"Just a placeholder for breakpoints");
         }
 
-        public static void ObjectArrayMembers()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void ObjectArrayMembers()
         {
             var c = new Container
             {
@@ -134,7 +134,7 @@ namespace DebuggerTests
             Console.WriteLine($"Back from PlaceholderMethod, {c.id}");
         }
 
-        public static async Task<bool> ValueTypeLocalsAsync(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task<bool> ValueTypeLocalsAsync(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point>[]
             {
@@ -172,12 +172,12 @@ namespace DebuggerTests
         }
 
         // A workaround for method invocations on structs not working right now
-        public static async Task EntryPointForStructMethod(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async Task EntryPointForStructMethod(bool call_other = false)
         {
             await Point.AsyncMethod(call_other);
         }
 
-        public static void GenericValueTypeLocals2(bool call_other = false)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void GenericValueTypeLocals2(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point[]>[]
             {
@@ -283,9 +283,9 @@ namespace DebuggerTests
         public T Value { get; set; }
     }
 
-    public class EntryClass
+    public partial class EntryClass
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             ArrayTestsClass.PrimitiveTypeLocals(true);
             ArrayTestsClass.ValueTypeLocals(true);
@@ -305,9 +305,9 @@ namespace DebuggerTests
             new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.GenericInstanceMethod(sc);
         }
     }
-    public class MultiDimensionalArray
+    public partial class MultiDimensionalArray
     {
-        public static void run()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
         {
             var int_arr_1 = new int[2];
             int_arr_1[0] = 0;

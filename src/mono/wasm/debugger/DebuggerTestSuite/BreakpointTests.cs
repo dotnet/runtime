@@ -265,7 +265,7 @@ namespace DebuggerTests
         public async Task BreakOnDebuggerBreak()
         {
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async('debugger-test', 'UserBreak.BreakOnDebuggerBreakCommand'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
                 "UserBreak.BreakOnDebuggerBreakCommand",
                 locals_fn: async (locals) =>
@@ -325,7 +325,7 @@ namespace DebuggerTests
             await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
+               "window.setTimeout(function () { invoke_exported_method('library-dependency-debugger-test1', 'TestDependency.IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "TestDependency.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -339,7 +339,7 @@ namespace DebuggerTests
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == 3");
             var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'LoopClass.LoopToBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -364,7 +364,7 @@ namespace DebuggerTests
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i % 3 == 0");
             var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'LoopClass.LoopToBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -422,7 +422,7 @@ namespace DebuggerTests
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == \"10\"");
             var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'LoopClass.LoopToBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -435,7 +435,7 @@ namespace DebuggerTests
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i + 4");
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'LoopClass.LoopToBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -552,7 +552,7 @@ namespace DebuggerTests
             var bp_final = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 2);
             Assert.Empty(bp_hidden.Value["locations"]);
             await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DebuggerAttribute.{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_final.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_final.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -569,7 +569,7 @@ namespace DebuggerTests
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 2);
             var bp_final = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 3);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 2);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DebuggerAttribute.{evalFunName}'); }}, 2);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -602,7 +602,7 @@ namespace DebuggerTests
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {evalClassName}:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', '{evalClassName}.{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -625,7 +625,7 @@ namespace DebuggerTests
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 1);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DebuggerAttribute.{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -657,7 +657,7 @@ namespace DebuggerTests
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 1);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DebuggerAttribute.{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -698,7 +698,7 @@ namespace DebuggerTests
             var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 3);
 
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DebuggerAttribute.{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -732,7 +732,7 @@ namespace DebuggerTests
             await SetJustMyCode(true);
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", className, evalFunName, lineBpInit);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {className}:{evalFunName}'); }}, {lineBpInit});",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', '{className}.{evalFunName}'); }}, {lineBpInit});",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -836,7 +836,7 @@ namespace DebuggerTests
             string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
             var bpDim = await SetBreakpointInMethod("debugger-test.dll", dimClassName, dimName, 1);
             var pauseInDim = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DefaultInterfaceMethod.{entryMethod}'); }}, 1);",
                 assembly,
                 bpDim.Value["locations"][0]["lineNumber"].Value<int>(),
                 bpDim.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -893,7 +893,7 @@ namespace DebuggerTests
             var final_bp = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", methodName, 3);
             // check if bp in hidden DIM was ignored:
             var final_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:{methodName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'DefaultInterfaceMethod.{methodName}'); }}, 1);",
                 assembly,
                 final_bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 final_bp.Value["locations"][0]["columnNumber"].Value<int>(),

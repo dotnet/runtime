@@ -22,7 +22,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectPrimitiveTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:PrimitiveTypeLocals",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.PrimitiveTypeLocals",
             method_name: method_name,
             etype_name: "int",
             local_var_name_prefix: "int",
@@ -39,7 +40,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectValueTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocals",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.ValueTypeLocals",
             method_name: method_name,
             etype_name: "DebuggerTests.Point",
             local_var_name_prefix: "point",
@@ -64,7 +66,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectObjectArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectTypeLocals",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.ObjectTypeLocals",
             method_name: method_name,
             etype_name: "DebuggerTests.SimpleClass",
             local_var_name_prefix: "class",
@@ -91,7 +94,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericTypeLocals",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.GenericTypeLocals",
             method_name: method_name,
             etype_name: "DebuggerTests.GenericClass<int>",
             local_var_name_prefix: "gclass",
@@ -128,7 +132,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericValueTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericValueTypeLocals",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals",
             method_name: method_name,
             etype_name: "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>",
             local_var_name_prefix: "gvclass",
@@ -163,7 +168,8 @@ namespace DebuggerTests
         [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericValueTypeArrayLocals2(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
-            entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericValueTypeLocals2",
+            entry_assembly: "debugger-test",
+            entry_method_name: "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals2",
             method_name: method_name,
             etype_name: "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point[]>",
             local_var_name_prefix: "gvclass",
@@ -217,7 +223,7 @@ namespace DebuggerTests
             return await GetProperties(result.Value["result"]["objectId"]?.Value<string>(), fn_args);
         }
 
-        async Task TestSimpleArrayLocals(int line, int col, string entry_method_name, string method_name, string etype_name,
+        async Task TestSimpleArrayLocals(int line, int col, string entry_assembly, string entry_method_name, string method_name, string etype_name,
             string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
@@ -235,8 +241,8 @@ namespace DebuggerTests
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}', { (test_prev_frame ? "true" : "false") }" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}', { (test_prev_frame ? "true" : "false") }" +
                 "); }, 1);";
 
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, method_name);
@@ -301,7 +307,8 @@ namespace DebuggerTests
         {
             int line = 227;
             int col = 12;
-            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ArrayTestsClass.ObjectArrayMembers";
             string method_name = "DebuggerTests.Container.PlaceholderMethod";
             int frame_idx = 1;
 
@@ -310,8 +317,8 @@ namespace DebuggerTests
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'{entry_method_name}'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'{entry_assembly}', '{entry_method_name}'" +
                 "); }, 1);";
 
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, method_name);
@@ -373,7 +380,8 @@ namespace DebuggerTests
         {
             int line = 157;
             int col = 12;
-            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ArrayTestsClass.ValueTypeLocalsAsync";
             string method_name = "DebuggerTests.ArrayTestsClass.ValueTypeLocalsAsync";
             int frame_idx = 0;
 
@@ -382,8 +390,8 @@ namespace DebuggerTests
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
-                $"'{entry_method_name}', false" // *false* here keeps us only in the static method
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method_async (" +
+                $"'{entry_assembly}', '{entry_method_name}', false" // *false* here keeps us only in the static method
                 +
                 "); }, 1);";
 
@@ -438,7 +446,8 @@ namespace DebuggerTests
             //Collect events
             int line = 170;
             int col = 12;
-            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ArrayTestsClass.ValueTypeLocalsAsync";
             int frame_idx = 0;
 
             UseCallFunctionOnBeforeGetProperties = use_cfo;
@@ -446,8 +455,8 @@ namespace DebuggerTests
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
-                $"'{entry_method_name}', true" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method_async (" +
+                $"'{entry_assembly}', '{entry_method_name}', true" +
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
@@ -489,7 +498,8 @@ namespace DebuggerTests
         {
             int line = 244;
             int col = 12;
-            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ArrayTestsClass.EntryPointForStructMethod";
             int frame_idx = 0;
 
             UseCallFunctionOnBeforeGetProperties = use_cfo;
@@ -498,8 +508,8 @@ namespace DebuggerTests
             await SetBreakpoint(debugger_test_loc, line, col);
             //await SetBreakpoint (debugger_test_loc, 143, 3);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
-                $"'{entry_method_name}', false" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method_async (" +
+                $"'{entry_assembly}', '{entry_method_name}', false" +
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
@@ -521,7 +531,8 @@ namespace DebuggerTests
         {
             int line = 251;
             int col = 12;
-            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = "DebuggerTests.ArrayTestsClass.EntryPointForStructMethod";
             int frame_idx = 0;
 
             UseCallFunctionOnBeforeGetProperties = use_cfo;
@@ -529,8 +540,8 @@ namespace DebuggerTests
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
-                $"'{entry_method_name}', true" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method_async (" +
+                $"'{entry_assembly}', '{entry_method_name}', true" +
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
@@ -566,7 +577,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ArrayTestsClass.ObjectArrayMembers'); }, 1);",
             wait_for_event_fn: async (pause_location) =>
            {
                int frame_idx = 1;
@@ -588,7 +599,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ArrayTestsClass.ObjectArrayMembers'); }, 1);",
             locals_fn: async (locals) =>
             {
                 var this_obj = GetAndAssertObjectWithName(locals, "this");
@@ -624,8 +635,8 @@ namespace DebuggerTests
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                $"'[debugger-test] DebuggerTests.MultiDimensionalArray:run'" +
+            var eval_expr = "window.setTimeout(function() { invoke_exported_method (" +
+                $"'debugger-test', 'DebuggerTests.MultiDimensionalArray.run'" +
                 "); }, 1);";
 
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 343, 12, "DebuggerTests.MultiDimensionalArray.run");

@@ -83,7 +83,7 @@ namespace DebuggerTests
         public async Task InspectPrimitiveTypeLocalsAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "Math.PrimitiveTypesTest",
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Math.PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
                     await CheckSymbol(locals, "c0", '€');
@@ -96,7 +96,7 @@ namespace DebuggerTests
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Fancy.Types",
-                "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', \"Fancy.Types\")(); }, 1);",
                 use_cfo: false,
                 test_fn: async (locals) =>
                 {
@@ -128,7 +128,7 @@ namespace DebuggerTests
         public async Task InspectSimpleStringLocals() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "Math", "TestSimpleStrings", 13, "Math.TestSimpleStrings",
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:TestSimpleStrings')(); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Math.TestSimpleStrings')(); }, 1);",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -167,7 +167,7 @@ namespace DebuggerTests
             method_name,
             10,
             $"DebuggerTests.NullableTests.{method_name}",
-            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.NullableTests:{method_name}'); }}, 1);",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTests.NullableTests.{method_name}'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -351,7 +351,7 @@ namespace DebuggerTests
             method_name,
             17,
             $"DebuggerTest.{method_name}",
-            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTest.{method_name}'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -404,7 +404,7 @@ namespace DebuggerTests
             method_name,
             9,
             $"DebuggerTest.{method_name}",
-            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTest.{method_name}'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -430,7 +430,7 @@ namespace DebuggerTests
             method_name,
             6,
             $"DebuggerTest.{method_name}",
-            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'DebuggerTest.{method_name}'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -456,8 +456,8 @@ namespace DebuggerTests
             await SetBreakpoint(debugger_test_loc, 54, 12);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async (" +
-                "'[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructsStaticAsync'" +
+                "window.setTimeout(function() { invoke_exported_method_async (" +
+                "'debugger-test', 'DebuggerTests.ValueTypesTest.MethodWithLocalStructsStaticAsync'" +
                 "); }, 1);",
                 debugger_test_loc, 54, 12, "DebuggerTests.ValueTypesTest.MethodWithLocalStructsStaticAsync");
 
@@ -516,15 +516,16 @@ namespace DebuggerTests
         [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]*/
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
-            string entry_method_name = $"[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalsForToStringTest{(invoke_async ? "Async" : String.Empty)}";
+            string entry_assembly = "debugger-test";
+            string entry_method_name = $"DebuggerTests.ValueTypesTest.MethodWithLocalsForToStringTest{(invoke_async ? "Async" : String.Empty)}";
             int frame_idx = 0;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
             var eval_expr = "window.setTimeout(function() {" +
-                (invoke_async ? "invoke_static_method_async (" : "invoke_static_method (") +
-                $"'{entry_method_name}'," +
+                (invoke_async ? "invoke_exported_method_async (" : "invoke_exported_method (") +
+                $"'{entry_assembly}', '{entry_method_name}'," +
                 (call_other ? "true" : "false") +
                 "); }, 1);";
             _testOutput.WriteLine($"{eval_expr}");
@@ -613,7 +614,7 @@ namespace DebuggerTests
         public async Task InspectLocalsForStructInstanceMethod(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-array-test.cs", 258, 12,
             "DebuggerTests.Point.GenericInstanceMethod<DebuggerTests.SimpleClass>",
-            "window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EntryClass:run'); })",
+            "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.EntryClass.run'); })",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
            {
@@ -649,7 +650,7 @@ namespace DebuggerTests
         [Fact]
         public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
             "MulticastDelegateTestClass", "Test", 5, "MulticastDelegateTestClass.Test",
-            "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
+            "window.setTimeout(function() { invoke_exported_method('debugger-test', 'MulticastDelegateTestClass.run'); })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -670,7 +671,7 @@ namespace DebuggerTests
             $"StaticMethodWithNoLocals{ (is_async ? "Async" : "") }",
             1,
             $"{type_name}.StaticMethodWithNoLocals{ (is_async ? "Async" : "") }",
-            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {type_name}:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', '{type_name}.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -685,7 +686,7 @@ namespace DebuggerTests
             $"StaticMethodWithLocalEmptyStruct{ (is_async ? "Async" : "") }",
             1,
             $"EmptyStruct.StaticMethodWithLocalEmptyStruct{ (is_async ? "Async" : "") }",
-            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] EmptyStruct:run'); }})",
+            $"window.setTimeout(function() {{ invoke_exported_method('debugger-test', 'EmptyStruct.run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -703,7 +704,7 @@ namespace DebuggerTests
         [Fact]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "DebuggerTests.GetPropertiesTests.CloneableStruct.SimpleStaticMethod",
-             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
+             "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.GetPropertiesTests.TestWithReflection.run'); })",
              wait_for_event_fn: async (pause_location) =>
              {
                  var frame = FindFrame(pause_location, "DebuggerTests.GetPropertiesTests.TestWithReflection.InvokeReflectedStaticMethod");
@@ -753,7 +754,7 @@ namespace DebuggerTests
             await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[" + assembly_name + "] LazyMath:IntAdd', 5, 10); }, 1);",
+               "window.setTimeout(function () { invoke_exported_method('" + assembly_name + "', 'LazyMath.IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "LazyMath.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -777,7 +778,7 @@ namespace DebuggerTests
             await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
+               "window.setTimeout(function () { invoke_exported_method('lazy-debugger-test-embedded', 'LazyMath.IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "LazyMath.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -823,7 +824,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test-with-source-link', 'DebuggerTests.ClassToBreak.TestBreakpoint'); }, 1);",
                 "dotnet://debugger-test-with-source-link.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -864,7 +865,7 @@ namespace DebuggerTests
             "RunInspectTask",
             10,
             "InspectTask.RunInspectTask.AnonymousMethod__0" ,
-            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
+            $"window.setTimeout(function() {{ invoke_exported_method_async ('debugger-test', 'InspectTask.RunInspectTask'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -882,7 +883,7 @@ namespace DebuggerTests
         public async Task InspectLocalsWithIndexAndPositionWithDifferentValues() //https://github.com/xamarin/xamarin-android/issues/6161
         {
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] MainPage:CallSetValue'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'MainPage.CallSetValue'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 758, 16,
                 "MainPage.set_SomeValue",
                 locals_fn: async (locals) =>
@@ -938,7 +939,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";
+            var expression = $"{{ invoke_exported_method('debugger-test', 'DebugTypeFull.CallToEvaluateLocal'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
@@ -970,7 +971,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
             await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_exported_method ('debugger-test-special-char-in-path', '{classWithNamespace}.Evaluate'); }}, 1);",
                 expectedFileLocation,
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -986,7 +987,7 @@ namespace DebuggerTests
             1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
+            var expression = $"{{ invoke_exported_method('debugger-test', '{className}.Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
@@ -1016,7 +1017,7 @@ namespace DebuggerTests
         [InlineData("TestKlassGenericAsyncGeneric6", "AsyncGeneric.MyKlass<AsyncGeneric.MyKlass<int>>.GetAsyncMethod<char>")]
         public async Task CheckCallStackOfAsyncGenericMethods(string method_name, string method_name_call_stack)
         {
-            var expression = $"{{ invoke_static_method_async ('[debugger-test] AsyncGeneric:{method_name}'); }}";
+            var expression = $"{{ invoke_exported_method_async ('debugger-test', 'AsyncGeneric.{method_name}'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
@@ -1028,7 +1029,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalRecursiveFieldValue()
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] InspectIntPtr:Run'); }}";
+            var expression = $"{{ invoke_exported_method('debugger-test', 'InspectIntPtr.Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
@@ -1052,7 +1053,7 @@ namespace DebuggerTests
         public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
         {
             await SetJustMyCode(jmc);
-            var expression = "{{ invoke_static_method('[debugger-test] " + class_name + ":Run'); }}";
+            var expression = "{{ invoke_exported_method('debugger-test', '" + class_name + ".Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",

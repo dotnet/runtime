@@ -156,7 +156,7 @@ public partial class Math
             Console.WriteLine($"{c0}, {c1}");
     }
 
-    public static int DelegatesSignatureTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int DelegatesSignatureTest()
     {
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func = (m, gs) => new GenericStruct<bool[]>();
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func_del = GenericStruct<int>.DelegateTargetForSignatureTest;
@@ -203,7 +203,7 @@ public partial class Math
         return 0;
     }
 
-    public static int ActionTSignatureTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int ActionTSignatureTest()
     {
         Action<GenericStruct<int[]>> fn_action = (_) => { };
         Action<GenericStruct<int[]>> fn_action_del = Math.DelegateTargetWithVoidReturn;
@@ -225,7 +225,7 @@ public partial class Math
         return 0;
     }
 
-    public static int NestedDelegatesTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int NestedDelegatesTest()
     {
         Func<Func<int, bool>, bool> fn_func = (_) => { return true; };
         Func<Func<int, bool>, bool> fn_func_null = null;
@@ -243,7 +243,7 @@ public partial class Math
         return 0;
     }
 
-    public static void DelegatesAsMethodArgsTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void DelegatesAsMethodArgsTest()
     {
         var _dst_arr = new DelegateForSignatureTest[]
         {
@@ -263,9 +263,10 @@ public partial class Math
         OuterMethod();
     }
 
-    public static async System.Threading.Tasks.Task MethodWithDelegatesAsyncTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task<int> MethodWithDelegatesAsyncTest()
     {
         await new Math().MethodWithDelegatesAsync();
+        return 0;
     }
 
     async System.Threading.Tasks.Task MethodWithDelegatesAsync()
@@ -431,12 +432,12 @@ public partial class DebuggerTest
     }
 }
 
-public class MulticastDelegateTestClass
+public partial class MulticastDelegateTestClass
 {
     event EventHandler<string> TestEvent;
     MulticastDelegate Delegate;
 
-    public static void run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
     {
         var obj = new MulticastDelegateTestClass();
         obj.Test();
@@ -463,7 +464,7 @@ public class MulticastDelegateTestClass
     }
 }
 
-public class EmptyClass
+public partial class EmptyClass
 {
     public static void StaticMethodWithNoLocals()
     {
@@ -476,14 +477,14 @@ public class EmptyClass
         await System.Threading.Tasks.Task.CompletedTask;
     }
 
-    public static void run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
     {
         StaticMethodWithNoLocals();
         StaticMethodWithNoLocalsAsync().Wait();
     }
 }
 
-public struct EmptyStruct
+public partial struct EmptyStruct
 {
     public static void StaticMethodWithNoLocals()
     {
@@ -509,7 +510,7 @@ public struct EmptyStruct
         await System.Threading.Tasks.Task.CompletedTask;
     }
 
-    public static void run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run()
     {
         StaticMethodWithNoLocals();
         StaticMethodWithNoLocalsAsync().Wait();
@@ -519,8 +520,8 @@ public struct EmptyStruct
     }
 }
 
-public class LoadDebuggerTest {
-    public static void LoadLazyAssembly(string asm_base64, string pdb_base64)
+public partial class LoadDebuggerTest {
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void LoadLazyAssembly(string asm_base64, string pdb_base64)
     {
         byte[] asm_bytes = Convert.FromBase64String(asm_base64);
         byte[] pdb_bytes = null;
@@ -533,7 +534,7 @@ public class LoadDebuggerTest {
 }
 
 public partial class HiddenSequencePointTest {
-    public static void StepOverHiddenSP()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void StepOverHiddenSP()
     {
         Console.WriteLine("first line");
         #line hidden
@@ -543,12 +544,12 @@ public partial class HiddenSequencePointTest {
         Console.WriteLine("third line");
         MethodWithHiddenLinesAtTheEnd();
     }
-    public static void StepOverHiddenSP2()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void StepOverHiddenSP2()
     {
         Console.WriteLine("StepOverHiddenSP2");
     }
 
-    public static void MethodWithHiddenLinesAtTheEnd()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodWithHiddenLinesAtTheEnd()
     {
         Console.WriteLine ($"MethodWithHiddenLinesAtTheEnd");
 #line hidden
@@ -557,9 +558,9 @@ public partial class HiddenSequencePointTest {
 #line default
 }
 
-public class LoadDebuggerTestALC {
+public partial class LoadDebuggerTestALC {
     static System.Reflection.Assembly loadedAssembly;
-    public static void LoadLazyAssemblyInALC(string asm_base64, string pdb_base64)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void LoadLazyAssemblyInALC(string asm_base64, string pdb_base64)
     {
         var context = new System.Runtime.Loader.AssemblyLoadContext("testContext", true);
         byte[] asm_bytes = Convert.FromBase64String(asm_base64);
@@ -570,7 +571,7 @@ public class LoadDebuggerTestALC {
         loadedAssembly = context.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
         Console.WriteLine($"Loaded - {loadedAssembly}");
     }
-    public static void RunMethodInALC(string type_name, string method_name)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunMethodInALC(string type_name, string method_name)
     {
         var myType = loadedAssembly.GetType(type_name);
         var myMethod = myType.GetMethod(method_name);
@@ -578,7 +579,7 @@ public class LoadDebuggerTestALC {
     }
 }
 
-    public class TestHotReload {
+    public partial class TestHotReload {
         static System.Reflection.Assembly loadedAssembly;
         static byte[] dmeta_data1_bytes;
         static byte[] dil_data1_bytes;
@@ -586,7 +587,7 @@ public class LoadDebuggerTestALC {
         static byte[] dmeta_data2_bytes;
         static byte[] dil_data2_bytes;
         static byte[] dpdb_data2_bytes;
-        public static void LoadLazyHotReload(string asm_base64, string pdb_base64, string dmeta_data1, string dil_data1, string dpdb_data1, string dmeta_data2, string dil_data2, string dpdb_data2)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void LoadLazyHotReload(string asm_base64, string pdb_base64, string dmeta_data1, string dil_data1, string dpdb_data1, string dmeta_data2, string dil_data2, string dpdb_data2)
         {
             byte[] asm_bytes = Convert.FromBase64String(asm_base64);
             byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
@@ -604,7 +605,7 @@ public class LoadDebuggerTestALC {
             Console.WriteLine($"Loaded - {loadedAssembly}");
 
         }
-        public static void RunMethod(string className, string methodName)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunMethod(string className, string methodName)
         {
             var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
             var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
@@ -661,7 +662,7 @@ public class Something
     public override string ToString() => Name;
 }
 
-public class Foo
+public partial class Foo
 {
     public string Bar => Stuffs.First(x => x.Name.StartsWith('S')).Name;
     public System.Collections.Generic.List<Something> Stuffs { get; } = Enumerable.Range(0, 10).Select(x => new Something()).ToList();
@@ -677,7 +678,7 @@ public class Foo
             ret = 1;
         return ret;
     }
-    public static void RunBart()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunBart()
     {
         Foo foo = new Foo();
         foo.Bart();
@@ -728,7 +729,7 @@ public class Foo
 
 }
 
-public class MainPage
+public partial class MainPage
 {
     public MainPage()
     {
@@ -763,16 +764,16 @@ public class MainPage
         }
     }
 
-    public static void CallSetValue()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void CallSetValue()
     {
         var mainPage = new MainPage();
         mainPage.SomeValue = 10;
     }
 }
 
-public class LoopClass
+public partial class LoopClass
 {
-    public static void LoopToBreak()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void LoopToBreak()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -782,11 +783,11 @@ public class LoopClass
     }
 }
 
-public class SteppingInto
+public partial class SteppingInto
 {
     static int currentCount = 0;
     static MyIncrementer incrementer = new MyIncrementer();
-    public static void MethodToStep()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodToStep()
     {
         currentCount = incrementer.Increment(currentCount);
     }
@@ -808,7 +809,7 @@ public class MyIncrementer
     }
 }
 
-public class DebuggerAttribute
+public partial class DebuggerAttribute
 {
     [System.Diagnostics.DebuggerHidden]
     public static void HiddenMethod()
@@ -822,7 +823,7 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunDebuggerHidden()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunDebuggerHidden()
     {
         HiddenMethod();
         HiddenMethodUserBreak();
@@ -842,7 +843,7 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunStepThrough()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunStepThrough()
     {
         StepThroughBp();
         StepThroughUserBp();
@@ -862,7 +863,7 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunNonUserCode()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunNonUserCode()
     {
         NonUserCodeBp();
         NonUserCodeUserBp();
@@ -886,7 +887,7 @@ public class DebuggerAttribute
         boundaryTestFun();
     }
 
-    public static void RunNoBoundary()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunNoBoundary()
     {
         NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
         NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
@@ -906,7 +907,7 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunStepThroughWithHidden()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunStepThroughWithHidden()
     {
         StepThroughWithHiddenBp();
         StepThroughWithHiddenUserBp();
@@ -928,7 +929,7 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunStepThroughWithNonUserCode()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunStepThroughWithNonUserCode()
     {
         StepThroughWithNonUserCodeBp();
         StepThroughWithNonUserCodeUserBp();
@@ -948,16 +949,16 @@ public class DebuggerAttribute
         System.Diagnostics.Debugger.Break();
     }
 
-    public static void RunNonUserCodeWithHidden()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunNonUserCodeWithHidden()
     {
         NonUserCodeWithHiddenBp();
         NonUserCodeWithHiddenUserBp();
     }
 }
 
-public class DebugTypeFull
+public partial class DebugTypeFull
 {
-    public static void CallToEvaluateLocal()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void CallToEvaluateLocal()
     {
         var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-full-debug-type.dll");
         var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
@@ -967,9 +968,9 @@ public class DebugTypeFull
     }
 }
 
-public class TestHotReloadUsingSDB {
+public partial class TestHotReloadUsingSDB {
         static System.Reflection.Assembly loadedAssembly;
-        public static string LoadLazyHotReload(string asm_base64, string pdb_base64)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static string LoadLazyHotReload(string asm_base64, string pdb_base64)
         {
             byte[] asm_bytes = Convert.FromBase64String(asm_base64);
             byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
@@ -979,13 +980,13 @@ public class TestHotReloadUsingSDB {
             return Convert.ToBase64String(GUID);
         }
 
-        public static string GetModuleGUID()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static string GetModuleGUID()
         {
             var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
             return Convert.ToBase64String(GUID);
         }
 
-        public static void RunMethod(string className, string methodName)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void RunMethod(string className, string methodName)
         {
             if (loadedAssembly is null)
                 throw new InvalidOperationException($"{nameof(loadedAssembly)} is null!");
@@ -1082,9 +1083,9 @@ public class DIMClass : IExtendIDefaultInterface
     public int dimClassMember = 123;
 }
 
-public static class DefaultInterfaceMethod
+public static partial class DefaultInterfaceMethod
 {
-    public static void Evaluate()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Evaluate()
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         string defaultFromIDefault = extendDefaultInter.DefaultMethod();
@@ -1092,55 +1093,55 @@ public static class DefaultInterfaceMethod
         extendDefaultInter.DefaultMethod2(out string default2FromIExtend);
     }
 
-    public static async void EvaluateAsync()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void EvaluateAsync()
     {
         IDefaultInterface defaultInter = new DIMClass();
         await defaultInter.DefaultMethodAsync();
     }
 
-    public static void EvaluateHiddenAttr()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateHiddenAttr()
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         extendDefaultInter.HiddenDefaultMethod();
     }
 
-    public static void EvaluateStepThroughAttr()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateStepThroughAttr()
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         extendDefaultInter.StepThroughDefaultMethod();
     }
 
-    public static void EvaluateNonUserCodeAttr()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateNonUserCodeAttr()
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         extendDefaultInter.NonUserCodeDefaultMethod();
     }
 
-    public static void EvaluateStepperBoundaryAttr()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateStepperBoundaryAttr()
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         extendDefaultInter.NonUserCodeDefaultMethod(extendDefaultInter.BoundaryBp);
     }
 
-    public static void EvaluateStatic()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void EvaluateStatic()
     {
         IExtendIDefaultInterface.DefaultMethodStatic();
     }
 
-    public static async void EvaluateAsyncStatic()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void EvaluateAsyncStatic()
     {
         await IExtendIDefaultInterface.DefaultMethodAsyncStatic();
     }
 
-    public static void MethodForCallingFromDIM()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodForCallingFromDIM()
     {
         string text = "a place for pausing and inspecting DIM";
     }
 }
 #endregion
-public class DebugWithDeletedPdb
+public partial class DebugWithDeletedPdb
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-pdb-deleted.dll");
         var myType = asm.GetType("DebuggerTests.ClassWithPdbDeleted");
@@ -1150,9 +1151,9 @@ public class DebugWithDeletedPdb
     }
 }
 
-public class DebugWithoutDebugSymbols
+public partial class DebugWithoutDebugSymbols
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         var asm = System.Reflection.Assembly.LoadFrom("debugger-test-without-debug-symbols.dll");
         var myType = asm.GetType("DebuggerTests.ClassWithoutDebugSymbols");
@@ -1162,9 +1163,9 @@ public class DebugWithoutDebugSymbols
     }
 }
 
-public class AsyncGeneric
+public partial class AsyncGeneric
 {
-    public static async void TestAsyncGeneric1Parm()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestAsyncGeneric1Parm()
     {
         var a = await GetAsyncMethod<int>(10);
         Console.WriteLine(a);
@@ -1176,7 +1177,7 @@ public class AsyncGeneric
         return parm;
     }
 
-    public static async void TestKlassGenericAsyncGeneric()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric()
     {
         var a = await MyKlass<bool, char>.GetAsyncMethod<int>(10);
         Console.WriteLine(a);
@@ -1197,7 +1198,7 @@ public class AsyncGeneric
         }
     }
 
-    public static async void TestKlassGenericAsyncGeneric2()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric2()
     {
         var a = await MyKlass<bool>.GetAsyncMethod<int>(10);
         Console.WriteLine(a);
@@ -1227,31 +1228,31 @@ public class AsyncGeneric
         }
     }
 
-    public static async void TestKlassGenericAsyncGeneric3()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric3()
     {
         var a = await MyKlass<bool>.GetAsyncMethod2<int, char>(10);
         Console.WriteLine(a);
     }
-    public static async void TestKlassGenericAsyncGeneric4()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric4()
     {
         var a = await MyKlass<bool, double>.GetAsyncMethod2<int, char>(10);
         Console.WriteLine(a);
     }
-    public static async void TestKlassGenericAsyncGeneric5()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric5()
     {
         var a = await MyKlass<bool>.MyKlassNested<int>.GetAsyncMethod<char>('1');
         Console.WriteLine(a);
     }
-    public static async void TestKlassGenericAsyncGeneric6()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async void TestKlassGenericAsyncGeneric6()
     {
         var a = await MyKlass<MyKlass<int>>.GetAsyncMethod<char>('1');
         Console.WriteLine(a);
     }
 }
 
-public class InspectIntPtr
+public partial class InspectIntPtr
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         IntPtr myInt = default;
         IntPtr myInt2 = new IntPtr(1);
@@ -1275,9 +1276,9 @@ public partial class HiddenSequencePointTest {
 #line default
 }
 
-public class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+public partial class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         var myVar = new ClassInheritsFromClassWithoutDebugSymbols();
         myVar.CallMethod();
@@ -1323,9 +1324,9 @@ public class ClassNonUserCodeToInherit
     }
 }
 
-public class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
+public partial class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         var myVar = new ClassInheritsFromNonUserCodeClass();
         myVar.CallMethod();
@@ -1340,9 +1341,9 @@ public class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
     public int myField;
 }
 
-public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+public partial class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
 {
-    public static void Run()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void Run()
     {
         var myVar = new ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
         myVar.CallMethod();

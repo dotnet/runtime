@@ -119,7 +119,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetBreakpoint(debugger_test_loc, 77, 12);
         var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
         debugger_test_loc, 77, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
         {
@@ -165,7 +165,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetBreakpoint(debugger_test_loc, 77, 12);
         var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
         debugger_test_loc, 77, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
         {
@@ -194,7 +194,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetBreakpoint(debugger_test_loc, 77, 12);
         var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
         debugger_test_loc, 77, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
         {
@@ -224,7 +224,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetBreakpoint(debugger_test_loc, 77, 12);
         var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
         debugger_test_loc, 77, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
         {
@@ -254,7 +254,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetBreakpoint(debugger_test_loc, 77, 12);
         var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsync'); })",
         debugger_test_loc, 77, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
         {

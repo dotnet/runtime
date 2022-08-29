@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public class ExceptionTestsClass
+    public partial class ExceptionTestsClass
     {
         public class TestCaughtException
         {
@@ -30,7 +30,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void TestExceptions()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void TestExceptions()
         {
             TestCaughtException f = new TestCaughtException();
             f.run();
@@ -53,7 +53,7 @@ namespace DebuggerTests
         }
     }
 
-    public class ExceptionTestsClassDefault
+    public partial class ExceptionTestsClassDefault
     {
         public class TestCaughtException
         {
@@ -78,7 +78,7 @@ namespace DebuggerTests
             }
         }
 
-        public static void TestExceptions()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void TestExceptions()
         {
             TestCaughtException f = new TestCaughtException();
             f.run();

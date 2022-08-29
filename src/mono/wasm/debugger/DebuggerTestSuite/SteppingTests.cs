@@ -391,7 +391,7 @@ namespace DebuggerTests
             await SetBreakpoint(debugger_test_loc, 36, 12);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:TestStructsAsMethodArgs'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ValueTypesTest.TestStructsAsMethodArgs'); }, 1);",
                 debugger_test_loc, 36, 12, "DebuggerTests.ValueTypesTest.MethodWithStructArgs");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             {
@@ -512,7 +512,7 @@ namespace DebuggerTests
             await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeMembers'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ValueTypesTest.MethodUpdatingValueTypeMembers'); }, 1);",
                 debugger_test_loc, lines[0], 12, "DebuggerTests.ValueTypesTest.MethodUpdatingValueTypeMembers");
 
             await CheckLocals(pause_location, new DateTime(1, 2, 3, 4, 5, 6), new DateTime(4, 5, 6, 7, 8, 9));
@@ -558,7 +558,7 @@ namespace DebuggerTests
             await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeLocalsAsync'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ValueTypesTest.MethodUpdatingValueTypeLocalsAsync'); }, 1);",
                 debugger_test_loc, lines[0], 12, "DebuggerTests.ValueTypesTest.MethodUpdatingValueTypeLocalsAsync");
 
             var dt = new DateTime(1, 2, 3, 4, 5, 6);
@@ -583,7 +583,7 @@ namespace DebuggerTests
 
             var dt = new DateTime(1, 2, 3, 4, 5, 6);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingVTArrayMembers'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'DebuggerTests.ValueTypesTest.MethodUpdatingVTArrayMembers'); }, 1);",
                 debugger_test_loc, lines[0], 12, "DebuggerTests.ValueTypesTest.MethodUpdatingVTArrayMembers");
             await CheckArrayElements(pause_location, dt);
 
@@ -614,7 +614,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 83, 8);
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Math.OuterMethod'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 83, 8,
                 "Math.OuterMethod");
 
@@ -690,7 +690,7 @@ namespace DebuggerTests
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.TestAsyncStepOut'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
                 "MoveNext");
 
@@ -709,7 +709,7 @@ namespace DebuggerTests
 
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.TestAsyncStepOut'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
                 "MoveNext");
 
@@ -723,7 +723,7 @@ namespace DebuggerTests
 
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.TestAsyncStepOut'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
                 "DebuggerTests.AsyncStepClass.TestAsyncStepOut2");
 
@@ -738,7 +738,7 @@ namespace DebuggerTests
 
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "OtherMethod0", 1);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:SimpleMethod'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.SimpleMethod'); }, 1);",
                 source_file, -1, -1,
                 "DebuggerTests.AsyncStepClass.OtherMethod0");
 
@@ -752,7 +752,7 @@ namespace DebuggerTests
 
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "MethodWithTwoAwaitsAsync", 2);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.StepOverTestAsync'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 53, 12,
                 "DebuggerTests.AsyncStepClass.MethodWithTwoAwaitsAsync");
 
@@ -766,7 +766,7 @@ namespace DebuggerTests
 
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "StepOverTestAsync", 1);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.StepOverTestAsync'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 46, 12,
                 "DebuggerTests.AsyncStepClass.StepOverTestAsync");
 
@@ -783,7 +783,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "StepOverTestAsync", 3);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.StepOverTestAsync'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 46, 12,
                 "DebuggerTests.AsyncStepClass.StepOverTestAsync");
 
@@ -799,7 +799,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "MethodWithTwoAwaitsAsync", 5);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method_async ('debugger-test', 'DebuggerTests.AsyncStepClass.StepOverTestAsync'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-step.cs", 52, 12,
                 "DebuggerTests.AsyncStepClass.MethodWithTwoAwaitsAsync");
 
@@ -812,7 +812,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
 
             var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'HiddenSequencePointTest.StepOverHiddenSP'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
                 "HiddenSequencePointTest.StepOverHiddenSP2");
 
@@ -831,7 +831,7 @@ namespace DebuggerTests
             await SetBreakpoint(source_loc, 537, 8);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'HiddenSequencePointTest.StepOverHiddenSP'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 537, 8,
                 "HiddenSequencePointTest.StepOverHiddenSP");
 
@@ -845,7 +845,7 @@ namespace DebuggerTests
             await SetBreakpoint(source_loc, 552, 8);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'HiddenSequencePointTest.StepOverHiddenSP'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 552, 8,
                 "HiddenSequencePointTest.MethodWithHiddenLinesAtTheEnd");
 
@@ -859,7 +859,7 @@ namespace DebuggerTests
         {
             Console.WriteLine(await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", line_bp, column_bp));
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:" + method_to_call + "'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'HiddenSequencePointTest." + method_to_call + "'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", line_pause, column_pause,
                 method_name);
         }
@@ -873,7 +873,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsyncWithLineHidden'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsyncWithLineHidden'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-test.cs", line_pause, column_pause,
                 $"DebuggerTests.AsyncTests.ContinueWithTests.{method_name}");
         }
@@ -888,7 +888,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsyncWithLineHidden'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerTests.AsyncTests.ContinueWithTests.RunAsyncWithLineHidden'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-async-test.cs", line_pause, column_pause,
                 $"DebuggerTests.AsyncTests.ContinueWithTests.{method_name}");
         }
@@ -898,7 +898,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);";
+            string expression = "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'HiddenSequencePointTest.StepOverHiddenSP'); }, 1);";
             await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
 
             Task pause_task = insp.WaitFor(Inspector.PAUSE);
@@ -911,7 +911,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 674, 0);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
+            string expression = "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Foo.RunBart'); }, 1);";
             await EvaluateAndCheck(
                 expression,
                 "dotnet://debugger-test.dll/debugger-test.cs", 674, 12,
@@ -926,7 +926,7 @@ namespace DebuggerTests
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 682, 0);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Foo.RunBart'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 682, 8,
                 "Foo.RunBart");
             var pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 671, 4, "Foo.Bart");
@@ -942,7 +942,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 693, 0);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
+            string expression = "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Foo.RunBart'); }, 1);";
             await EvaluateAndCheck(
                 expression,
                 "dotnet://debugger-test.dll/debugger-test.cs", 693, 8,
@@ -959,7 +959,7 @@ namespace DebuggerTests
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 710, 0);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
+            string expression = "window.setTimeout(function() { invoke_exported_method ('debugger-test', 'Foo.RunBart'); }, 1);";
             await EvaluateAndCheck(
                 expression,
                 "dotnet://debugger-test.dll/debugger-test.cs", 710, 8,
@@ -977,7 +977,7 @@ namespace DebuggerTests
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "SteppingInto", "MethodToStep", 1);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] SteppingInto:MethodToStep'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'SteppingInto.MethodToStep'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -997,7 +997,7 @@ namespace DebuggerTests
         {
             var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerHidden", 1);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerHidden'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerAttribute.RunDebuggerHidden'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
                 pause_location.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -1017,7 +1017,7 @@ namespace DebuggerTests
         {
             var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerHidden", 1);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerHidden'); }, 1);",
+                "window.setTimeout(function() { invoke_exported_method('debugger-test', 'DebuggerAttribute.RunDebuggerHidden'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
                 pause_location.Value["locations"][0]["columnNumber"].Value<int>(),
