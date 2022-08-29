@@ -433,8 +433,8 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             Assert.Equal(tx.TransactionInformation.DistributedIdentifier, tx2.TransactionInformation.DistributedIdentifier);
         });
 
-    // Test currently skipped, #74745
-    private void GetDtcTransaction()
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    public void GetDtcTransaction()
         => Test(() =>
         {
             using var tx = new CommittableTransaction();
