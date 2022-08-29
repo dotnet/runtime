@@ -298,6 +298,7 @@ namespace System.Runtime.Serialization
         private static Type? s_typeOfHashtable;
         internal static Type TypeOfHashtable
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => s_typeOfHashtable ??= TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
         }

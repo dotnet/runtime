@@ -229,7 +229,7 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
         // Compute the shadow heap address corresponding to the beginning of the range of heap addresses modified
         // and in the process range check it to make sure we have the shadow version allocated.
         uintptr_t* shadowSlot = (uintptr_t*)(g_GCShadow + ((uint8_t*)pMemStart - g_lowest_address));
-        if (shadowSlot <= (uintptr_t*)g_GCShadowEnd)
+        if (shadowSlot < (uintptr_t*)g_GCShadowEnd)
         {
             // Iterate over every pointer sized slot in the range, copying data from the real heap to the shadow heap.
             // As we perform each copy we need to recheck the real heap contents with an ordered read to ensure we're
@@ -239,6 +239,7 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 
             uintptr_t* realSlot = (uintptr_t*)pMemStart;
             uintptr_t slotCount = cbMemSize / sizeof(uintptr_t);
+            ASSERT(slotCount < (uintptr_t*)g_GCShadowEnd - shadowSlot);
             do
             {
                 // Update shadow slot from real slot.

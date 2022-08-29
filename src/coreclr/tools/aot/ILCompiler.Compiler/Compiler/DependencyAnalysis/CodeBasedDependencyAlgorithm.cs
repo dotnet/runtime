@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, method, methodIL);
 
-            factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
+            factory.InteropStubManager.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, method);
 
             if (method.OwningType is MetadataType mdType)
                 ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);

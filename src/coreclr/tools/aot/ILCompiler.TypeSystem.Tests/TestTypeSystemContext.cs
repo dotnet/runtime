@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler;
 using Internal.TypeSystem;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
@@ -22,6 +23,9 @@ namespace TypeSystemTests
     {
         Dictionary<string, ModuleDesc> _modules = new Dictionary<string, ModuleDesc>(StringComparer.OrdinalIgnoreCase);
 
+        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
+        private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -29,9 +33,11 @@ namespace TypeSystemTests
         
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
-        public TestTypeSystemContext(TargetArchitecture arch)
-            : base(new TargetDetails(arch, TargetOS.Unknown, TargetAbi.Unknown))
+        public TestTypeSystemContext(TargetArchitecture arch, TargetOS targetOS = TargetOS.Unknown)
+            : base(new TargetDetails(arch, targetOS, TargetAbi.Unknown))
         {
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout, true);
+            _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayout);
         }
 
         public ModuleDesc GetModuleForSimpleName(string simpleName)
@@ -67,6 +73,14 @@ namespace TypeSystemTests
         {
             if (type == UniversalCanonType)
                 return UniversalCanonLayoutAlgorithm.Instance;
+            else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
+            {
+                return _vectorFieldLayoutAlgorithm;
+            }
+            else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
+            {
+                return _int128FieldLayoutAlgorithm;
+            }
 
             return _metadataFieldLayout;
         }

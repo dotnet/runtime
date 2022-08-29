@@ -31,12 +31,14 @@ namespace System.Runtime.Serialization.DataContracts
 
         private ClassDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal ClassDataContract(Type type) : base(new ClassDataContractCriticalHelper(type))
         {
             InitClassDataContract();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private ClassDataContract(Type type, XmlDictionaryString ns, string[] memberNames) : base(new ClassDataContractCriticalHelper(type, ns, memberNames))
         {
@@ -54,6 +56,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public override DataContract? BaseContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => BaseClassContract;
         }
@@ -74,6 +77,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal XmlDictionaryString?[]? ChildElementNamespaces
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -109,6 +113,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public override DataContractDictionary? KnownDataContracts
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
             internal set => _helper.KnownDataContracts = value;
@@ -148,8 +153,13 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         private Func<object>? _makeNewInstance;
+
+        [UnconditionalSuppressMessage("AOT Analysis", "IL3050:RequiresDynamicCodeAttribute",
+            Justification = "Fields cannot be annotated, annotating the use instead")]
         private Func<object> MakeNewInstance => _makeNewInstance ??= FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
 
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
         {
             ConstructorInfo? ci = GetNonAttributedTypeConstructor();
@@ -172,6 +182,7 @@ namespace System.Runtime.Serialization.DataContracts
             return true;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlFormatClassWriterDelegate CreateXmlFormatWriterDelegate()
         {
@@ -181,6 +192,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal XmlFormatClassWriterDelegate XmlFormatWriterDelegate
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -200,6 +212,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlFormatClassReaderDelegate CreateXmlFormatReaderDelegate()
         {
@@ -209,6 +222,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal XmlFormatClassReaderDelegate XmlFormatReaderDelegate
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -232,6 +246,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {
@@ -255,6 +270,7 @@ namespace System.Runtime.Serialization.DataContracts
             members.Add(memberContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlDictionaryString? GetChildNamespaceToDeclare(DataContract dataContract, Type childType, XmlDictionary dictionary)
         {
@@ -331,6 +347,7 @@ namespace System.Runtime.Serialization.DataContracts
                 type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes) != null);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlDictionaryString?[]? CreateChildElementNamespaces()
         {
@@ -359,6 +376,7 @@ namespace System.Runtime.Serialization.DataContracts
             _helper.EnsureMethodsImported();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
@@ -366,6 +384,7 @@ namespace System.Runtime.Serialization.DataContracts
             XmlFormatWriterDelegate(xmlWriter, obj, context, this);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
@@ -604,6 +623,7 @@ namespace System.Runtime.Serialization.DataContracts
             internal XmlDictionaryString[]? MemberNames;
             internal XmlDictionaryString[]? MemberNamespaces;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type) : base(type)
@@ -707,6 +727,7 @@ namespace System.Runtime.Serialization.DataContracts
                 EnsureMethodsImported();
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal ClassDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
@@ -782,6 +803,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             [MemberNotNull(nameof(_members))]
             [MemberNotNull(nameof(Members))]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ImportDataMembers()
             {
@@ -942,6 +964,7 @@ namespace System.Runtime.Serialization.DataContracts
                 Debug.Assert(Members != null);
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static bool SetIfGetOnlyCollection(DataMember memberContract, bool skipIfReadOnlyContract)
             {
@@ -1016,6 +1039,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private XmlQualifiedName GetXmlNameAndSetHasDataContract(Type type)
             {
@@ -1186,6 +1210,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal override DataContractDictionary? KnownDataContracts
             {
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
@@ -1289,6 +1314,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
@@ -1357,6 +1383,8 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [UnconditionalSuppressMessage("AOT Analysis", "IL3050:RequiresDynamicCode",
+            Justification = "All ctor's required to create an instance of this type are marked with RequiresDynamicCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "All ctor's required to create an instance of this type are marked with RequiresUnreferencedCode.")]
         internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)

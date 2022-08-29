@@ -172,9 +172,9 @@ typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 //
 //                  It is totally possible to have more than one ZapInlineeRecords with the same key, not only due hash collision, but also due to
 //                  the fact that we create one record for each (inlinee module / inliner module) pair.
-//                  For example: we have MyModule!MyType that uses mscorlib!List<T>. Let's say List<T>.ctor got inlined into
-//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for mscorlib!List<T>.ctor
-//                  one for MyModule and another one for mscorlib.
+//                  For example: we have MyModule!MyType that uses System.Private.CoreLib!List<T>. Let's say List<T>.ctor got inlined into
+//                  MyType.GetAllThinds() and into List<MyType>.FindAll. In this case we'll have two InlineeRecords for System.Private.CoreLib!List<T>.ctor
+//                  one for MyModule and another one for System.Private.CoreLib.
 //                  PersistentInlineTrackingMap.GetInliners() always reads all ZapInlineeRecords as long as they have the same key, few of them filtered out
 //                  as hash collisions others provide legitimate inlining information for methods from different modules.
 //

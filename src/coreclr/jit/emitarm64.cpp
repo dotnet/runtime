@@ -11796,7 +11796,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
     {
         alwaysHex = true;
     }
-    else if (strictArmAsm)
+    if (strictArmAsm)
     {
         printf("#");
     }
@@ -11827,7 +11827,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         {
             if (isAddrOffset)
             {
-                printf("%llXH", imm);
+                printf("0x%llX", imm);
             }
             else
             {
@@ -11836,7 +11836,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         }
         else
         {
-            printf("%02XH", (unsigned)imm);
+            printf("0x%02X", (unsigned)imm);
         }
     }
 

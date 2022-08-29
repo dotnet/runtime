@@ -8,7 +8,7 @@ namespace System.Numerics
     public interface IBinaryNumber<TSelf>
         : IBitwiseOperators<TSelf, TSelf, TSelf>,
           INumber<TSelf>
-        where TSelf : IBinaryNumber<TSelf>
+        where TSelf : IBinaryNumber<TSelf>?
     {
         /// <summary>Gets an instance of the binary type in which all bits are set.</summary>
         static virtual TSelf AllBitsSet => ~TSelf.Zero;

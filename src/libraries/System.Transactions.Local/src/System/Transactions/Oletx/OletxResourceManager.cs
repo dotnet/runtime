@@ -462,10 +462,7 @@ internal sealed class OletxResourceManager
         }
         finally
         {
-            if (localTimer != null)
-            {
-                localTimer.Dispose();
-            }
+            localTimer?.Dispose();
         }
     }
 

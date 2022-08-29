@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will be added to <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the sum of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     public interface IAdditionOperators<TSelf, TOther, TResult>
-        where TSelf : IAdditionOperators<TSelf, TOther, TResult>
+        where TSelf : IAdditionOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Adds two values together to compute their sum.</summary>
         /// <param name="left">The value to which <paramref name="right" /> is added.</param>

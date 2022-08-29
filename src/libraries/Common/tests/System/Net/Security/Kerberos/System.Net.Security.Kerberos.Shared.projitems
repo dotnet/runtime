@@ -36,6 +36,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Kerberos.NET" Version="4.5.174" />
+    <PackageReference Include="Kerberos.NET" Version="4.5.178" />
   </ItemGroup>
 </Project>

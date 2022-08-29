@@ -1039,5 +1039,52 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, true)]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
+        {
+            await SetJustMyCode(jmc);
+            var expression = "{{ invoke_static_method('[debugger-test] " + class_name + ":Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", line, 8,
+                $"{class_name}.CallMethod",
+                locals_fn: async (locals) =>
+                {
+                    var this_props = await GetObjectOnLocals(locals, "this");
+                    if (jmc)
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 2);
+                    }
+                    else
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            propA = TNumber(10),
+                            propB = TNumber(20),
+                            propC = TNumber(30),
+                            d = TNumber(40),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                            G = TGetter("G"),
+                            H = TGetter("H"),
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 10);
+                    }
+                }
+            );
+        }
     }
 }
