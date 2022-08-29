@@ -1,6 +1,48 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.RateLimiting.RateLimiterStatistics.set_CurrentAvailablePermits(System.Int64)</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.RateLimiting.RateLimiterStatistics.set_CurrentQueuedCount(System.Int64)</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.RateLimiting.RateLimiterStatistics.set_TotalFailedLeases(System.Int64)</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.RateLimiting.RateLimiterStatistics.set_TotalSuccessfulLeases(System.Int64)</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
@@ -11,12 +53,6 @@
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Left>
     <Right>right</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/Microsoft.Extensions.Caching.Abstractions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -92,13 +128,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.ComponentModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.DependencyInjection.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.DependencyInjection.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.dll</Right>
   </Suppression>
@@ -140,13 +176,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Net.Http, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Http.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.Http.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Net.Http, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Http.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.Http.dll</Right>
   </Suppression>
@@ -188,13 +224,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Diagnostics.Tracing, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Diagnostics.Tracing, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.Logging.EventSource.dll</Right>
   </Suppression>
@@ -230,12 +266,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
     <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
@@ -249,8 +279,8 @@
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.IO.Pipelines.dll</Left>
-    <Right>lib/net7.0/System.IO.Pipelines.dll</Right>
+    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -261,13 +291,25 @@
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.IO.Pipelines.dll</Left>
+    <Right>lib/net7.0/System.IO.Pipelines.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
     <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
-    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>lib/net7.0/System.Threading.RateLimiting.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Threading.RateLimiting.dll</Left>
+    <Right>right</Right>
   </Suppression>
 </Suppressions>

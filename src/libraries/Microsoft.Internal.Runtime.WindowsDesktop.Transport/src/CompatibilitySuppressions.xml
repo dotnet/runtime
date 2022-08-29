@@ -1,6 +1,42 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0004</DiagnosticId>
+    <Target>System.Diagnostics.EventLog.Messages, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.Messages.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>Microsoft.Win32.Registry, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/Microsoft.Win32.Registry.AccessControl.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Drawing.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>left</Left>
+    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Win32.Registry.AccessControl.dll</Left>
@@ -14,21 +50,9 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>Microsoft.Win32.Registry, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/Microsoft.Win32.Registry.AccessControl.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/Microsoft.Win32.SystemEvents.dll</Left>
     <Right>lib/net7.0/Microsoft.Win32.SystemEvents.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.CodeDom.dll</Left>
-    <Right>lib/net7.0/System.CodeDom.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -45,12 +69,12 @@
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
-    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+    <Left>ref/net7.0/System.CodeDom.dll</Left>
+    <Right>lib/net7.0/System.CodeDom.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ObjectModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
   </Suppression>
@@ -62,13 +86,25 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.ComponentModel.TypeConverter, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.ObjectModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
+    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
   </Suppression>
@@ -77,18 +113,6 @@
     <Target>System.Xml.ReaderWriter, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Configuration.ConfigurationManager.dll</Left>
-    <Right>lib/net7.0/System.Configuration.ConfigurationManager.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -105,8 +129,8 @@
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.PerformanceCounter.dll</Right>
+    <Left>ref/net7.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -122,13 +146,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.DirectoryServices.dll</Left>
     <Right>lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.DirectoryServices.dll</Left>
     <Right>lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
@@ -140,7 +170,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.DirectoryServices.dll</Left>
     <Right>lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
@@ -152,25 +182,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.DirectoryServices.dll</Left>
     <Right>lib/net7.0/System.DirectoryServices.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Drawing.Common.dll</Left>
-    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.TypeConverter, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Drawing.Common.dll</Left>
-    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Drawing.Common.dll</Left>
     <Right>lib/net7.0/System.Drawing.Common.dll</Right>
   </Suppression>
@@ -182,7 +200,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.ComponentModel.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel.TypeConverter, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Drawing.Common.dll</Left>
     <Right>lib/net7.0/System.Drawing.Common.dll</Right>
   </Suppression>
@@ -194,25 +224,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Drawing.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/System.Drawing.Common.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.IO.Packaging.dll</Left>
     <Right>lib/net7.0/System.IO.Packaging.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Resources.Writer, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Resources.Extensions.dll</Left>
     <Right>lib/net7.0/System.Resources.Extensions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Resources.Writer, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Resources.Extensions.dll</Left>
     <Right>lib/net7.0/System.Resources.Extensions.dll</Right>
   </Suppression>
@@ -241,18 +265,6 @@
     <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
-    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Collections.NonGeneric, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Security.Permissions.dll</Left>
@@ -260,6 +272,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Security.Permissions.dll</Left>
     <Right>lib/net7.0/System.Security.Permissions.dll</Right>
@@ -279,18 +297,6 @@
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
     <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Threading.AccessControl.dll</Left>
     <Right>lib/net7.0/System.Threading.AccessControl.dll</Right>
   </Suppression>
@@ -299,12 +305,6 @@
     <Target>System.Security.AccessControl, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>ref/net7.0/System.Threading.AccessControl.dll</Left>
     <Right>lib/net7.0/System.Threading.AccessControl.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Windows.Extensions.dll</Left>
-    <Right>lib/net7.0/System.Windows.Extensions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP1002</DiagnosticId>
@@ -319,9 +319,9 @@
     <Right>lib/net7.0/System.Windows.Extensions.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0004</DiagnosticId>
-    <Target>System.Diagnostics.EventLog.Messages, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
-    <Left>left</Left>
-    <Right>lib/net7.0/System.Diagnostics.EventLog.Messages.dll</Right>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>ref/net7.0/System.Windows.Extensions.dll</Left>
+    <Right>lib/net7.0/System.Windows.Extensions.dll</Right>
   </Suppression>
 </Suppressions>

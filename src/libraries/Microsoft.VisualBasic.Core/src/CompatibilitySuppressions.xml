@@ -14,12 +14,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:Microsoft.VisualBasic.Strings.LCase(System.String)-&gt;string?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
-    <Left>ref/net7.0/Microsoft.VisualBasic.Core.dll</Left>
-    <Right>runtimes/win/lib/net7.0/Microsoft.VisualBasic.Core.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:Microsoft.VisualBasic.CompilerServices.Conversions.ToGenericParameter``1(System.Object)-&gt;T?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
     <Left>ref/net7.0/Microsoft.VisualBasic.Core.dll</Left>
     <Right>runtimes/win/lib/net7.0/Microsoft.VisualBasic.Core.dll</Right>
@@ -27,6 +21,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:Microsoft.VisualBasic.CompilerServices.StringType.FromObject(System.Object)-&gt;string?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
+    <Left>ref/net7.0/Microsoft.VisualBasic.Core.dll</Left>
+    <Right>runtimes/win/lib/net7.0/Microsoft.VisualBasic.Core.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:Microsoft.VisualBasic.Strings.LCase(System.String)-&gt;string?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
     <Left>ref/net7.0/Microsoft.VisualBasic.Core.dll</Left>
     <Right>runtimes/win/lib/net7.0/Microsoft.VisualBasic.Core.dll</Right>
   </Suppression>

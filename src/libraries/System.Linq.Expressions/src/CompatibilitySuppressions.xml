@@ -2,7 +2,7 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
+    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -19,10 +19,82 @@
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.ElementInit.GetArgument(System.Int32)</Target>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.Closure</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.Closure</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.Closure</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -32,7 +104,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)</Target>
+    <Target>M:System.Linq.Expressions.ElementInit.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -44,13 +116,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
+    <Target>M:System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -68,13 +146,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -86,31 +170,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.Closure</Target>
+    <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -122,7 +182,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -134,19 +194,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -164,13 +218,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -182,127 +242,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/ios/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.Closure</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.ElementInit.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.LambdaExpression.get_CanCompileToIL</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.LambdaExpression.get_CanInterpret</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.NewExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.Closure</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -314,7 +254,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -326,19 +266,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -356,13 +290,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
     <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
@@ -374,14 +314,74 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
+    <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.ElementInit.GetArgument(System.Int32)</Target>
     <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
-    <Right>runtimes/maccatalyst/lib/net7.0/System.Linq.Expressions.dll</Right>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.LambdaExpression.get_CanCompileToIL</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.LambdaExpression.get_CanInterpret</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Expressions.NewExpression.GetArgument(System.Int32)</Target>
+    <Left>ref/net7.0/System.Linq.Expressions.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.Expressions.dll</Right>
   </Suppression>
 </Suppressions>
