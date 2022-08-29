@@ -213,7 +213,7 @@ mono_cpu_limit (void)
                char *dotnetProcCnt = getenv ("DOTNET_PROCESSOR_COUNT");
                if (dotnetProcCnt != NULL) {
                        errno = 0;
-                       limit = strtol (dotnetProcCnt, NULL, 0);
+                       limit = (int) strtol (dotnetProcCnt, NULL, 0);
                        if ((errno == 0) && (limit > 0))        /* If it's in range and positive */
                                return limit;
                }
