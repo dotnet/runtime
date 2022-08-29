@@ -62,13 +62,11 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
-            var results = new List<string>();
-
             if (parentPath is null)
             {
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
-                    results.Add(Segment(kv.Key, 0));
+                    yield return Segment(kv.Key, 0);
                 }
             }
             else
@@ -81,16 +79,15 @@ namespace Microsoft.Extensions.Configuration
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
                         kv.Key[parentPath.Length] == ':')
                     {
-                        results.Add(Segment(kv.Key, parentPath.Length + 1));
+                        yield return Segment(kv.Key, parentPath.Length + 1);
                     }
                 }
             }
 
-            results.AddRange(earlierKeys);
-
-            results.Sort(ConfigurationKeyComparer.Comparison);
-
-            return results;
+            foreach (string key in earlierKeys)
+            {
+                yield return key;
+            }
         }
 
         private static string Segment(string key, int prefixLength)

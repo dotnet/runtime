@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.Configuration
                 .Aggregate(Enumerable.Empty<string>(),
                     (seed, source) => source.GetChildKeys(seed, path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(key => key)
                 .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
 
             if (reference is null)
