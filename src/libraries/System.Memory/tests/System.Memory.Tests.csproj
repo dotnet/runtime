@@ -13,6 +13,7 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
+    <Compile Include="Ascii\GetIndexOfFirstNonAsciiByteTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
