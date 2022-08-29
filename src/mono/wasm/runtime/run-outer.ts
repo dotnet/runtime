@@ -58,6 +58,35 @@ class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
+    withExitOnUnhandledError(): DotnetHostBuilder {
+        try {
+            // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+            if (ENVIRONMENT_IS_WEB) {
+                window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+                    event.preventDefault();
+                    try {
+                        mono_exit(1, event.reason);
+                    } catch (err) {
+                        // no not re-throw from the unhandledrejection handler
+                    }
+                });
+                window.addEventListener("error", (event: ErrorEvent) => {
+                    event.preventDefault();
+                    try {
+                        mono_exit(1, event.error);
+                    } catch (err) {
+                        // no not re-throw from the error handler
+                    }
+                });
+            }
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAsyncFlushOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
