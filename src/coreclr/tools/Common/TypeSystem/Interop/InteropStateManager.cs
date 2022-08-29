@@ -188,7 +188,11 @@ namespace Internal.TypeSystem
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
-            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(signature, MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
+            // Normalize calling convention details on the signature
+            var normalizedSignatureBuilder = new MethodSignatureBuilder(signature);
+            normalizedSignatureBuilder.Flags = (signature.Flags & MethodSignatureFlags.Static) | MethodSignatureFlags.UnmanagedCallingConvention;
+            normalizedSignatureBuilder.SetEmbeddedSignatureData(signature.GetStandaloneMethodSignatureCallingConventions().EncodeAsEmbeddedSignatureData(moduleContext.Context));
+            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(normalizedSignatureBuilder.ToSignature(), MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
         }
 
         private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>

@@ -26,6 +26,7 @@ WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
 bool           g_initialized        = false;
+char*          g_collectionFilter   = nullptr;
 
 void SetDefaultPaths()
 {
@@ -77,6 +78,16 @@ void SetLogFilePath()
     {
         // If the environment variable isn't set, we don't enable file logging
         g_logFilePath = GetEnvironmentVariableWithDefaultA("SuperPMIShimLogFilePath", nullptr);
+    }
+}
+
+void SetCollectionFilter()
+{
+    g_collectionFilter = GetEnvironmentVariableWithDefaultA("SuperPMIShimFilter", nullptr);
+
+    if (g_collectionFilter != nullptr)
+    {
+        fprintf(stderr, "*** SPMI filter '%s'\n", g_collectionFilter);
     }
 }
 
@@ -140,6 +151,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     SetDefaultPaths();
     SetLibName();
     SetDebugDumpVariables();
+    SetCollectionFilter();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

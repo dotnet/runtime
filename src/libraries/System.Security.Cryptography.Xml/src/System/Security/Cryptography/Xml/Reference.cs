@@ -117,12 +117,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;
@@ -340,7 +335,7 @@ namespace System.Security.Cryptography.Xml
             DigestValue = CalculateHashValue(document, refList);
         }
 
-        // What we want to do is pump the input throug the TransformChain and then
+        // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
         internal byte[] CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
@@ -364,7 +359,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     case ReferenceTargetType.Stream:
                         // This is the easiest case. We already have a stream, so just pump it through the TransformChain
-                        resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                        resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                         hashInputStream = TransformChain.TransformToOctetStream((Stream)_refTarget, resolver, baseUri);
                         break;
                     case ReferenceTargetType.UriReference:
@@ -374,7 +369,7 @@ namespace System.Security.Cryptography.Xml
                         if (_uri == null)
                         {
                             // We need to create a DocumentNavigator out of the XmlElement
-                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             // In the case of a Uri-less reference, we will simply pass null to the transform chain.
                             // The first transform in the chain is expected to know how to retrieve the data to hash.
                             hashInputStream = TransformChain.TransformToOctetStream((Stream)null, resolver, baseUri);
@@ -387,7 +382,7 @@ namespace System.Security.Cryptography.Xml
                                 throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
                             // Normalize the containing document
-                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             XmlDocument docWithNoComments = Utils.DiscardComments(Utils.PreProcessDocumentInput(document, resolver, baseUri));
                             hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver, baseUri);
                         }
@@ -395,16 +390,15 @@ namespace System.Security.Cryptography.Xml
                         {
                             // If we get here, then we are constructing a Reference to an embedded DataObject
                             // referenced by an Id = attribute. Go find the relevant object
-                            bool discardComments = true;
-                            string idref = Utils.GetIdFromLocalUri(_uri, out discardComments);
+                            string idref = Utils.GetIdFromLocalUri(_uri, out bool discardComments);
                             if (idref == "xpointer(/)")
                             {
-                                // This is a self referencial case
+                                // This is a self referential case
                                 if (document == null)
                                     throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
                                 // We should not discard comments here!!!
-                                resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                                resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                                 hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver, baseUri), resolver, baseUri);
                                 break;
                             }
@@ -440,7 +434,7 @@ namespace System.Security.Cryptography.Xml
                             // Add the propagated attributes
                             Utils.AddNamespaces(normDocument.DocumentElement, _namespaces);
 
-                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             if (discardComments)
                             {
                                 // We should discard comments before going into the transform chain
@@ -460,7 +454,7 @@ namespace System.Security.Cryptography.Xml
                         break;
                     case ReferenceTargetType.XmlElement:
                         // We need to create a DocumentNavigator out of the XmlElement
-                        resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
+                        resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                         hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget, resolver, baseUri), resolver, baseUri);
                         break;
                     default:
@@ -473,12 +467,9 @@ namespace System.Security.Cryptography.Xml
             }
             finally
             {
-                if (hashInputStream != null)
-                    hashInputStream.Close();
-                if (response != null)
-                    response.Close();
-                if (inputStream != null)
-                    inputStream.Close();
+                hashInputStream?.Close();
+                response?.Close();
+                inputStream?.Close();
             }
 
             return hashval;

@@ -145,7 +145,7 @@ public:
     VOID SetIsFullyLoaded()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&m_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
     }
 
     ClassLoadLevel GetLoadLevel();

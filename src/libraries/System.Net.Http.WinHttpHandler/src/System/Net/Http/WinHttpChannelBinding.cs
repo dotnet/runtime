@@ -7,8 +7,6 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net.Http
 {
     internal sealed class WinHttpChannelBinding : ChannelBinding

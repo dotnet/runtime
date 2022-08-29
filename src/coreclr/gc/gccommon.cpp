@@ -91,26 +91,27 @@ struct changed_seg
 const int max_saved_changed_segs = 128;
 
 changed_seg saved_changed_segs[max_saved_changed_segs];
-int saved_changed_segs_count = 0;
+uint64_t saved_changed_segs_count = ~0ull;
 
 void record_changed_seg (uint8_t* start, uint8_t* end,
                          size_t current_gc_index,
                          bgc_state current_bgc_state,
                          changed_seg_state changed_state)
 {
-    if (saved_changed_segs_count < max_saved_changed_segs)
-    {
-        saved_changed_segs[saved_changed_segs_count].start = start;
-        saved_changed_segs[saved_changed_segs_count].end = end;
-        saved_changed_segs[saved_changed_segs_count].gc_index = current_gc_index;
-        saved_changed_segs[saved_changed_segs_count].bgc = current_bgc_state;
-        saved_changed_segs[saved_changed_segs_count].changed = changed_state;
-        saved_changed_segs_count++;
-    }
-    else
-    {
-        saved_changed_segs_count = 0;
-    }
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    uint64_t segs_count = Interlocked::Increment(&saved_changed_segs_count);
+#else
+    uint64_t segs_count = ++saved_changed_segs_count;
+#endif //MULTIPLE_HEAPS && USE_REGIONS
+
+    static_assert((max_saved_changed_segs & (max_saved_changed_segs - 1)) == 0, "Size must be a power of two");
+    unsigned int segs_index = segs_count & (max_saved_changed_segs - 1);
+
+    saved_changed_segs[segs_index].start = start;
+    saved_changed_segs[segs_index].end = end;
+    saved_changed_segs[segs_index].gc_index = current_gc_index;
+    saved_changed_segs[segs_index].bgc = current_bgc_state;
+    saved_changed_segs[segs_index].changed = changed_state;
 }
 
 #endif // !DACCESS_COMPILE

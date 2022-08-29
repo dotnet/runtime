@@ -74,6 +74,7 @@ namespace System.Speech.Internal.ObjectTokens
             // If there's no root, we can't do anything.
             if (regHandle == null || regHandle.IsInvalid)
             {
+                regHandle?.Dispose();
                 return null;
             }
 

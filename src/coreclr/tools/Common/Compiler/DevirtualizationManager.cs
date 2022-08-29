@@ -38,7 +38,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Returns true if <paramref name="method"/> cannot be overriden by any other method.
+        /// Returns true if <paramref name="method"/> cannot be overridden by any other method.
         /// </summary>
         public virtual bool IsEffectivelySealed(MethodDesc method)
         {
@@ -111,7 +111,7 @@ namespace ILCompiler
                     // This isn't the correct lookup algorithm for variant default interface methods
                     // but as we will drop any results we find in any case, it doesn't matter much.
                     // Non-variant dispatch can simply use ResolveInterfaceMethodToDefaultImplementationOnType
-                    // but that implemenation currently cannot handle variance.
+                    // but that implementation currently cannot handle variance.
 
                     MethodDesc defaultInterfaceDispatchDeclMethod = null;
                     foreach (TypeDesc iface in implType.RuntimeInterfaces)
@@ -160,7 +160,7 @@ namespace ILCompiler
             else
             {
                 // The derived class should be a subclass of the base class.
-                // this check is perfomed via typedef checking instead of casting, as we accept canon methods calling exact types
+                // this check is performed via typedef checking instead of casting, as we accept canon methods calling exact types
                 TypeDesc checkType;
                 for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
                 { }
@@ -211,6 +211,8 @@ namespace ILCompiler
         /// so it can answer this question.
         /// </remarks>
         public virtual bool CanConstructType(TypeDesc type) => true;
+
+        public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif
     }
 }

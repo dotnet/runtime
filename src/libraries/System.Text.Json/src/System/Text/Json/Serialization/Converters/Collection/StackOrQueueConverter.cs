@@ -18,10 +18,10 @@ namespace System.Text.Json.Serialization.Converters
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
-        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-            JsonTypeInfo.ConstructorDelegate? constructorDelegate = typeInfo.CreateObject;
+            Func<object>? constructorDelegate = typeInfo.CreateObject;
 
             if (constructorDelegate == null)
             {

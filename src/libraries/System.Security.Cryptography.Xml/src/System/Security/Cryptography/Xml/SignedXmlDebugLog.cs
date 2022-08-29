@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Xml
     internal static class SignedXmlDebugLog
     {
         //
-        // In order to enable XML digital signature debug loggging, applications should setup their config
+        // In order to enable XML digital signature debug logging, applications should setup their config
         // file to be similar to the following:
         //
         // <configuration>

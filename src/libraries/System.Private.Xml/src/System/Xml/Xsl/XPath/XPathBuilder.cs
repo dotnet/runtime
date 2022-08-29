@@ -8,14 +8,13 @@ using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
+using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 //#define StopMaskOptimisation
 
 namespace System.Xml.Xsl.XPath
 {
-    using FunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
-    using T = XmlQueryTypeFactory;
-
     internal class XPathBuilder : IXPathBuilder<QilNode>, IXPathEnvironment
     {
         private readonly XPathQilFactory _f;
@@ -70,7 +69,7 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public virtual QilNode? EndBuild(QilNode? result)
         {
             if (result == null)
@@ -424,7 +423,7 @@ namespace System.Xml.Xsl.XPath
             {
                 result = _f.BaseFactory.DocOrderDistinct(result);
                 // To make grouping operator NOP we should always return path expressions in DOD.
-                // I can't use Pattern factory here becasue Predicate() depends on fact that DOD() is
+                // I can't use Pattern factory here because Predicate() depends on fact that DOD() is
                 //     outmost node in reverse steps
             }
             return result;
@@ -459,7 +458,7 @@ namespace System.Xml.Xsl.XPath
                     "ReverseAxe in Qil is actually reverse and we compile them here in builder by wrapping to DocOrderDistinct()"
                 );
                 // The trick here is that we unwarp it back, compile as regular predicate and wrap again.
-                // this way this wat we hold invariant that path expresion are always DOD and make predicates on reverse axe
+                // this way this wat we hold invariant that path expression are always DOD and make predicates on reverse axe
                 // work as specified in XPath 2.0 FS: http://www.w3.org/TR/xquery-semantics/#id-axis-steps
                 nodeset = ((QilUnary)nodeset).Child;
             }
@@ -947,7 +946,7 @@ namespace System.Xml.Xsl.XPath
             // This happens in all cortasian productions now.
             // Excample "a/b=c". 'c' is added inside 'b'
 
-            // I belive some optimisation is posible and would be nice to have.
+            // I belive some optimisation is possible and would be nice to have.
             // We may change the way we generating cortasian product.
 
             protected override QilNode Visit(QilNode n) {

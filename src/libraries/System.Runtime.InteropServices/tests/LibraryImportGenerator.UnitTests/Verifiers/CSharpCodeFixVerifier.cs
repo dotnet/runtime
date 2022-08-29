@@ -5,6 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -31,6 +32,20 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic(DiagnosticDescriptor)"/>
         public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
             => CodeFixVerifier<TAnalyzer, TCodeFix>.Diagnostic(descriptor);
+
+        /// <summary>
+        /// Create a <see cref="DiagnosticResult"/> with the diagnostic message created with the provided arguments.
+        /// A <see cref="DiagnosticResult"/> with the <see cref="DiagnosticResult.Message"/> property set instead of just the <see cref="DiagnosticResult.MessageArguments"/> property
+        /// binds more strongly to the "correct" diagnostic as the test harness will match the diagnostic on the exact message instead of just on the message arguments.
+        /// </summary>
+        /// <param name="descriptor">The diagnostic descriptor</param>
+        /// <param name="arguments">The arguments to use to format the diagnostic message</param>
+        /// <returns>A <see cref="DiagnosticResult"/> with a <see cref="DiagnosticResult.Message"/> set with the <paramref name="descriptor"/>'s message format and the <paramref name="arguments"/>.</returns>
+        public static DiagnosticResult DiagnosticWithArguments(DiagnosticDescriptor descriptor, params object[] arguments)
+        {
+            // Generate the specific message here to ensure a stronger match with the correct diagnostic.
+            return Diagnostic(descriptor).WithMessage(string.Format(descriptor.MessageFormat.ToString(), arguments)).WithArguments(arguments);
+        }
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
         public static async Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)

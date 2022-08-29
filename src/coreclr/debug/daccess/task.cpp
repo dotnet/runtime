@@ -5230,7 +5230,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         m_methodIter.Start(m_appDomain,
                            m_methodDesc->GetModule(),       // module
                            m_methodDesc->GetMemberDef(),    // token
-                           m_methodDesc);                   // intial method desc
+                           m_methodDesc);                   // initial method desc
     }
 
  NextMethod:

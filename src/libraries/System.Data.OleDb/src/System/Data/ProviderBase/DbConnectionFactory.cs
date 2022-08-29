@@ -52,11 +52,7 @@ namespace System.Data.ProviderBase
             Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
             foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)
             {
-                DbConnectionPoolGroup poolGroup = entry.Value;
-                if (null != poolGroup)
-                {
-                    poolGroup.Clear();
-                }
+                entry.Value?.Clear();
             }
         }
 

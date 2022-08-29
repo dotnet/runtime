@@ -17,7 +17,7 @@ namespace System.Data
 
         public ConstraintEnumerator(DataSet? dataSet)
         {
-            _tables = (dataSet != null) ? dataSet.Tables.GetEnumerator() : null;
+            _tables = dataSet?.Tables.GetEnumerator();
             _currentObject = null;
         }
 

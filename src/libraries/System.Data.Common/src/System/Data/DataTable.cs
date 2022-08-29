@@ -543,7 +543,7 @@ namespace System.Data
                 {
                     ForeignKeyConstraint? fk = c as ForeignKeyConstraint;
                     Debug.Assert(fk != null);
-                    bool shouldSerialize = (allConstraints == true) || (fk.Table == this && fk.RelatedTable == this);
+                    bool shouldSerialize = allConstraints || (fk.Table == this && fk.RelatedTable == this);
 
                     if (shouldSerialize)
                     {
@@ -1767,10 +1767,7 @@ namespace System.Data
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.set_TableName|API> {0}, value='{1}'", ObjectID, value);
                 try
                 {
-                    if (value == null)
-                    {
-                        value = string.Empty;
-                    }
+                    value ??= string.Empty;
                     CultureInfo currentLocale = Locale;
                     if (string.Compare(_tableName, value, true, currentLocale) != 0)
                     {
@@ -2061,10 +2058,7 @@ namespace System.Data
             get { return _tablePrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataTable.set_Prefix|API> {0}, value='{1}'", ObjectID, value);
                 if ((XmlConvert.DecodeName(value) == value) && (XmlConvert.EncodeName(value) != value))
                 {
@@ -2092,7 +2086,7 @@ namespace System.Data
                     }
                     else
                     {
-                        Debug.Assert(value != null, "Value shoud not be null ??");
+                        Debug.Assert(value != null, "Value should not be null ??");
                         Debug.Assert(value.ColumnMapping == MappingType.SimpleContent, "should be text node here");
                         if (value != Columns[value.ColumnName])
                         {
@@ -2356,10 +2350,7 @@ namespace System.Data
 
         private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
-            if (visitedMap == null)
-            {
-                visitedMap = new Hashtable();
-            }
+            visitedMap ??= new Hashtable();
             if (visitedMap.Contains(sourceTable))
             {
                 return ((DataTable)visitedMap[sourceTable]!);
@@ -2842,8 +2833,7 @@ namespace System.Data
                 Debug.Assert(null == _rowDiffId, "wasn't previously cleared");
                 _rowDiffId = null;
 
-                if (_dataSet != null)
-                    _dataSet.OnClearFunctionCalled(this);
+                _dataSet?.OnClearFunctionCalled(this);
                 bool shouldFireClearEvents = (Rows.Count != 0); // if Rows is already empty, this is noop
 
                 DataTableClearEventArgs? e = null;
@@ -3526,6 +3516,8 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [UnconditionalSuppressMessage("AOT analysis", "IL3050:RequiresDynamicCode",
+            Justification = "Array.CreateInstance operates over a reference type making the call safe for AOT")]
         protected internal DataRow[] NewRowArray(int size)
         {
             if (IsTypedDataTable)
@@ -4394,7 +4386,7 @@ namespace System.Data
                 if ((-1 == currentRecord) && (-1 != proposedRecord) && (-1 != row._oldRecord) && (proposedRecord != row._oldRecord))
                 {
                     // the transition from DataRowState.Deleted -> DataRowState.Modified
-                    // with same orginal record but new current record
+                    // with same original record but new current record
                     // needs to raise an ItemChanged or ItemMoved instead of ItemAdded in the ListChanged event.
                     // for indexes/views listening for both DataViewRowState.Deleted | DataViewRowState.ModifiedCurrent
                     currentRecord = row._oldRecord;
@@ -4619,10 +4611,7 @@ namespace System.Data
                     {
                         _loadIndex = _primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows);
                     }
-                    if (_loadIndex != null)
-                    {
-                        _loadIndex.AddRef();
-                    }
+                    _loadIndex?.AddRef();
                 }
 
                 if (DataSet != null)
@@ -4651,18 +4640,9 @@ namespace System.Data
                     return;
                 }
 
-                if (_loadIndex != null)
-                {
-                    _loadIndex.RemoveRef();
-                }
-                if (_loadIndexwithOriginalAdded != null)
-                {
-                    _loadIndexwithOriginalAdded.RemoveRef();
-                }
-                if (_loadIndexwithCurrentDeleted != null)
-                {
-                    _loadIndexwithCurrentDeleted.RemoveRef();
-                }
+                _loadIndex?.RemoveRef();
+                _loadIndexwithOriginalAdded?.RemoveRef();
+                _loadIndexwithCurrentDeleted?.RemoveRef();
 
                 _loadIndex = null;
                 _loadIndexwithOriginalAdded = null;
@@ -4767,10 +4747,7 @@ namespace System.Data
                         {
                             _loadIndexwithCurrentDeleted = _primaryKey.Key.GetSortIndex(DataViewRowState.CurrentRows | DataViewRowState.Deleted);
                             Debug.Assert(_loadIndexwithCurrentDeleted != null, "loadIndexwithCurrentDeleted should not be null");
-                            if (_loadIndexwithCurrentDeleted != null)
-                            {
-                                _loadIndexwithCurrentDeleted.AddRef();
-                            }
+                            _loadIndexwithCurrentDeleted?.AddRef();
                         }
                         indextoUse = _loadIndexwithCurrentDeleted;
                     }
@@ -4781,10 +4758,7 @@ namespace System.Data
                         {
                             _loadIndexwithOriginalAdded = _primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added);
                             Debug.Assert(_loadIndexwithOriginalAdded != null, "loadIndexwithOriginalAdded should not be null");
-                            if (_loadIndexwithOriginalAdded != null)
-                            {
-                                _loadIndexwithOriginalAdded.AddRef();
-                            }
+                            _loadIndexwithOriginalAdded?.AddRef();
                         }
                         indextoUse = _loadIndexwithOriginalAdded;
                     }
@@ -4855,7 +4829,7 @@ namespace System.Data
             DataColumn[] pkey = PrimaryKey;
             if (pkey.Length == 1)
             {
-                // We have one-column primary key, so we can use it in our heirarchical relation
+                // We have one-column primary key, so we can use it in our hierarchical relation
                 return pkey[0];
             }
 
@@ -4897,7 +4871,7 @@ namespace System.Data
             Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
-            Debug.Assert(parentKey != null, "AddForeignKey: Invalid paramter.. related primary key is null");
+            Debug.Assert(parentKey != null, "AddForeignKey: Invalid parameter.. related primary key is null");
 
             string keyName = XMLSchema.GenUniqueColumnName(parentKey.ColumnName, this);
             DataColumn foreignKey = new DataColumn(keyName, parentKey.DataType, null, MappingType.Hidden);
@@ -5168,7 +5142,7 @@ namespace System.Data
                     switch (dataRow.RowState)
                     {
                         case DataRowState.Unchanged:
-                            // let see if the incomming value has the same values as existing row, so compare records
+                            // let see if the incoming value has the same values as existing row, so compare records
                             foreach (DataColumn dc in dataRow.Table.Columns)
                             {
                                 if (0 != dc.Compare(dataRow._newRecord, recordNo))
@@ -5916,10 +5890,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    if (xmlload == null)
-                                    {
-                                        xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                                    }
+                                    xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
                                     xmlload.LoadData(reader);
                                     ret = fSchemaFound ? XmlReadMode.ReadSchema : XmlReadMode.IgnoreSchema;
                                 }
@@ -5941,8 +5912,7 @@ namespace System.Data
                             throw ExceptionBuilder.DataTableInferenceNotSupported();
                         }
 
-                        if (xmlload == null)
-                            xmlload = new XmlDataLoader(this, fIsXdr, false);
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, false);
 
                         // so we InferSchema
                         if (!fDiffsFound)
@@ -6217,10 +6187,7 @@ namespace System.Data
                             {
                                 throw ExceptionBuilder.DataTableInferenceNotSupported();
                             }
-                            if (xmlload == null)
-                            {
-                                xmlload = new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
-                            }
+                            xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
                             xmlload.LoadData(reader);
                         }
                     } //end of the while
@@ -6231,10 +6198,7 @@ namespace System.Data
                     // now top node contains the data part
                     xdoc.AppendChild(topNode);
 
-                    if (xmlload == null)
-                    {
-                        xmlload = new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
-                    }
+                    xmlload ??= new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
 
                     if (mode == XmlReadMode.DiffGram)
                     {
@@ -6812,9 +6776,7 @@ namespace System.Data
 #endif
 
 #if DEBUG
-                if (t_usedTables == null)
-                    t_usedTables = new List<DataTable>();
-                t_usedTables.Add(table);
+                (t_usedTables ??= new List<DataTable>()).Add(table);
 #endif
                 _targetTable = table;
                 table._rowDiffId = null;
@@ -6863,8 +6825,7 @@ namespace System.Data
 #if DEBUG
                 // initialize list of tables out of current tables
                 // note: it might remain empty (still initialization is needed for assert to operate)
-                if (RowDiffIdUsageSection.t_usedTables == null)
-                    RowDiffIdUsageSection.t_usedTables = new List<DataTable>();
+                RowDiffIdUsageSection.t_usedTables ??= new List<DataTable>();
 #endif
                 for (int tableIndex = 0; tableIndex < ds.Tables.Count; ++tableIndex)
                 {
@@ -6894,8 +6855,7 @@ namespace System.Data
 #if DEBUG
                         // cannot assert that table exists in the usedTables - new tables might be
                         // created during diffgram processing in DataSet.ReadXml.
-                        if (RowDiffIdUsageSection.t_usedTables != null)
-                            RowDiffIdUsageSection.t_usedTables.Remove(table);
+                        RowDiffIdUsageSection.t_usedTables?.Remove(table);
 #endif
                         table._rowDiffId = null;
                     }
@@ -6914,11 +6874,7 @@ namespace System.Data
                 // assert scope has been created either with RowDiffIdUsageSection.Prepare or DSRowDiffIdUsageSection.Prepare
                 RowDiffIdUsageSection.Assert("missing call to RowDiffIdUsageSection.Prepare or DSRowDiffIdUsageSection.Prepare");
 
-                if (_rowDiffId == null)
-                {
-                    _rowDiffId = new Hashtable();
-                }
-                return _rowDiffId;
+                return _rowDiffId ??= new Hashtable();
             }
         }
 
@@ -6926,10 +6882,7 @@ namespace System.Data
 
         internal void AddDependentColumn(DataColumn expressionColumn)
         {
-            if (_dependentColumns == null)
-            {
-                _dependentColumns = new List<DataColumn>();
-            }
+            _dependentColumns ??= new List<DataColumn>();
 
             if (!_dependentColumns.Contains(expressionColumn))
             {

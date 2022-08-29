@@ -1241,7 +1241,14 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, jitflags->GetFlagsRaw());
+
+    uint64_t *raw = jitflags->GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = jitflags->GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        printf("%016llX", raw[i]);
+    }
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -2703,6 +2710,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
+}
+
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)
@@ -2773,7 +2816,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);
@@ -5607,9 +5650,10 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
+                case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
-                        // (N)umber, (L)ikelihood, (C)lass
-                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        // (N)umber, (L)ikelihood, (H)andle
+                        printf("N %u L %u H %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
@@ -6963,10 +7007,19 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     len -= t;
 
     // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw());
     buff += t;
     len -= t;
+
+    uint64_t *raw = corJitFlags.GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = corJitFlags.GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        t = sprintf_s(buff, len, " %016llX", raw[i]);
+        buff += t;
+        len -= t;
+    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
@@ -7072,12 +7125,13 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
     hasMethodProfile = false;
     hasLikelyClass = false;
+    hasLikelyMethod = false;
 
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
@@ -7102,8 +7156,9 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
                 hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes);
                 hasMethodProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
+                hasLikelyMethod |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod);
 
-                if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
+                if (hasEdgeProfile && hasClassProfile && hasLikelyClass && hasLikelyMethod)
                 {
                     break;
                 }

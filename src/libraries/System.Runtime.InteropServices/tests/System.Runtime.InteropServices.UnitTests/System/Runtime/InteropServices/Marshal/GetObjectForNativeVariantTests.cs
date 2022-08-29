@@ -128,9 +128,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { -10.5m };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_Decimal_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_Decimal_ReturnsExpected(decimal d)
         {
             var variant = new Variant { m_decimal = d };
@@ -138,9 +137,8 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(d, GetObjectForNativeVariant(variant));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_Decimal_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public unsafe void GetObjectForNativeVariant_DecimalByRef_Success(decimal d)
         {
             IntPtr ptr = new IntPtr(&d);
@@ -157,9 +155,8 @@ namespace System.Runtime.InteropServices.Tests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_Array_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_Array_ReturnsExpected(Variant source, object expected)
         {
             Assert.Equal(expected, GetObjectForNativeVariant(source));
@@ -173,15 +170,14 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant(IntPtr.Zero));
             AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(VT_I1 | VT_BYREF)]
         [InlineData(VT_I2 | VT_BYREF)]
         [InlineData(VT_I4 | VT_BYREF)]
@@ -228,7 +224,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(VT_ARRAY | VT_BYREF)]
         [InlineData(VT_RESERVED | VT_BYREF)]
         [InlineData(VT_ILLEGAL | VT_BYREF)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_ZeroByRefTypeNotEmptyOrNull_ThrowsArgumentException(ushort vt)
         {
             var variant = new Variant();
@@ -238,21 +233,19 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => GetObjectForNativeVariant(variant));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(-657435.0)]
         [InlineData(2958466.0)]
         [InlineData(double.NegativeInfinity)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.NaN)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_InvalidDate_ThrowsArgumentException(double value)
         {
             Variant variant = CreateVariant(VT_DATE, new UnionTypes { _date = value });
             AssertExtensions.Throws<ArgumentException>(null, () => GetObjectForNativeVariant(variant));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_NoDataForRecord_ThrowsArgumentException()
         {
             Variant variant = CreateVariant(VT_RECORD, new UnionTypes { _record = new Record { _recordInfo = IntPtr.Zero } });
@@ -265,9 +258,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { Guid.Empty };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_NoSuchGuid_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_NoSuchGuid_ThrowsArgumentException(Guid guid)
         {
             int record = 10;
@@ -329,17 +321,15 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { CreateVariant(127, new UnionTypes()) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMap_ThrowsArgumentException(Variant variant)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => GetObjectForNativeVariant(variant));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMapByRef_ThrowsArgumentException(Variant variant)
         {
             variant.m_Variant.vt |= VT_BYREF;
@@ -362,26 +352,23 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { VT_ILLEGAL };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_InvalidVarType_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_InvalidVarType_InvalidOleVariantTypeException(ushort vt)
         {
             Variant variant = CreateVariant(vt, new UnionTypes { _byref = (IntPtr)10 });
             Assert.Throws<InvalidOleVariantTypeException>(() => GetObjectForNativeVariant(variant));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_InvalidVarType_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_InvalidVarTypeByRef_InvalidOleVariantTypeException(ushort vt)
         {
             Variant variant = CreateVariant((ushort)(vt | VT_BYREF), new UnionTypes { _byref = (IntPtr)10 });
             Assert.Throws<InvalidOleVariantTypeException>(() => GetObjectForNativeVariant(variant));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_ByRefNestedVariant_InvalidOleVariantTypeException()
         {
             var source = new Variant();
@@ -406,8 +393,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_ArrayOfEmpty_ThrowsInvalidOleVariantTypeException()
         {
             Variant variant = CreateVariant(VT_ARRAY, new UnionTypes { _parray = (IntPtr)10 });

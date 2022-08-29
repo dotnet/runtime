@@ -90,10 +90,5 @@ namespace ILCompiler.Dataflow
             }
             return branchTargets;
         }
-
-        public static bool IsByRefOrPointer(this TypeDesc type)
-        {
-            return type.IsByRef || type.IsPointer;
-        }
     }
 }

@@ -64,6 +64,13 @@ namespace Internal.Runtime
         public const uint Reabstraction = 0xFFFFFFFE;
     }
 
+    internal static class StaticVirtualMethodContextSource
+    {
+        public const ushort None = 0;
+        public const ushort ContextFromThisClass = 1;
+        public const ushort ContextFromFirstInterface = 2;
+    }
+
     internal enum RuntimeHelperKind
     {
         AllocateObject,

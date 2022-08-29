@@ -101,6 +101,21 @@ extern jmethodID g_sslCtxGetDefaultSslParamsMethod;
 extern jclass    g_GCMParameterSpecClass;
 extern jmethodID g_GCMParameterSpecCtor;
 
+// java/security/spec/MGF1ParameterSpec
+extern jclass   g_MGF1ParameterSpecClass;
+extern jfieldID g_MGF1ParameterSpec_SHA1Field;
+extern jfieldID g_MGF1ParameterSpec_SHA256Field;
+extern jfieldID g_MGF1ParameterSpec_SHA384Field;
+extern jfieldID g_MGF1ParameterSpec_SHA512Field;
+
+// javax/crypto/spec/OAEPParameterSpec
+extern jclass    g_OAEPParameterSpecClass;
+extern jmethodID g_OAEPParameterSpecCtor;
+
+// javax/crypto/spec/PSource$PSpecified
+extern jclass    g_PSourcePSpecifiedClass;
+extern jfieldID  g_PSourcePSpecified_DefaultField;
+
 // java/security/cert/CertificateFactory
 extern jclass    g_CertFactoryClass;
 extern jmethodID g_CertFactoryGetInstance;

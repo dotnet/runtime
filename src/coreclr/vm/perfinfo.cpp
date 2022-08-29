@@ -85,8 +85,7 @@ void PerfInfo::WriteLine(SString& type, SString& value)
 
     EX_TRY
     {
-        StackScratchBuffer scratch;
-        const char* strLine = line.GetANSI(scratch);
+        const char* strLine = line.GetUTF8();
         ULONG inCount = line.GetCount();
         ULONG outCount;
 

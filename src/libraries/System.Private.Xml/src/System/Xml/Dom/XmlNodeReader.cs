@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System;
-    using System.Text;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Xml.Schema;
-    using System.Globalization;
-
     internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
@@ -865,13 +865,10 @@ namespace System.Xml
             }
 
             // construct the name of the xmlns attribute
-            string attrName;
-            if (prefix == null)
-                prefix = string.Empty;
-            if (prefix.Length == 0)
-                attrName = "xmlns";
-            else
-                attrName = $"xmlns:{prefix}";
+            prefix ??= string.Empty;
+            string attrName = prefix.Length == 0 ?
+                "xmlns" :
+                $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;

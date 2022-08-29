@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -27,6 +28,12 @@ namespace System.Threading
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
+
+#if CORECLR
+#pragma warning disable CA1823
+        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
+#pragma warning restore CA1823
+#endif
 
         private static readonly short ForcedMinWorkerThreads =
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
@@ -111,6 +118,15 @@ namespace System.Threading
             _legacy_minIOCompletionThreads = 1;
             _legacy_maxIOCompletionThreads = 1000;
 
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+            {
+                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                    (ushort)_minThreads,
+                    (ushort)_maxThreads,
+                    (ushort)_legacy_minIOCompletionThreads,
+                    (ushort)_legacy_maxIOCompletionThreads);
+            }
+
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
@@ -141,9 +157,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO
-                        ? ioCompletionThreads > _legacy_maxIOCompletionThreads
-                        : !ThreadPool.CanSetMinIOCompletionThreads(ioCompletionThreads))
+                if (ioCompletionThreads > _legacy_maxIOCompletionThreads)
                 {
                     return false;
                 }
@@ -153,14 +167,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO)
-                {
-                    _legacy_minIOCompletionThreads = (short)Math.Max(1, ioCompletionThreads);
-                }
-                else
-                {
-                    ThreadPool.SetMinIOCompletionThreads(ioCompletionThreads);
-                }
+                _legacy_minIOCompletionThreads = (short)Math.Max(1, ioCompletionThreads);
 
                 short newMinThreads = (short)Math.Max(1, workerThreads);
                 if (newMinThreads == _minThreads)
@@ -185,6 +192,15 @@ namespace System.Threading
                     {
                         addWorker = true;
                     }
+                }
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
                 }
             }
             finally
@@ -224,9 +240,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO
-                        ? ioCompletionThreads < _legacy_minIOCompletionThreads
-                        : !ThreadPool.CanSetMaxIOCompletionThreads(ioCompletionThreads))
+                if (ioCompletionThreads < _legacy_minIOCompletionThreads)
                 {
                     return false;
                 }
@@ -236,14 +250,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO)
-                {
-                    _legacy_maxIOCompletionThreads = (short)Math.Min(ioCompletionThreads, MaxPossibleThreadCount);
-                }
-                else
-                {
-                    ThreadPool.SetMaxIOCompletionThreads(ioCompletionThreads);
-                }
+                _legacy_maxIOCompletionThreads = (short)Math.Min(ioCompletionThreads, MaxPossibleThreadCount);
 
                 short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
                 if (newMaxThreads == _maxThreads)
@@ -255,6 +262,15 @@ namespace System.Threading
                 if (_separated.counts.NumThreadsGoal > newMaxThreads)
                 {
                     _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
+                }
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
                 }
                 return true;
             }
@@ -434,7 +450,7 @@ namespace System.Threading
         private bool OnGen2GCCallback()
         {
             // Gen 2 GCs may be very infrequent in some cases. If it becomes an issue, consider updating the memory usage more
-            // frequently. The memory usage is only used for fallback purposes in blocking adjustment, so an artifically higher
+            // frequently. The memory usage is only used for fallback purposes in blocking adjustment, so an artificially higher
             // memory usage may cause blocking adjustment to fall back to slower adjustments sooner than necessary.
             GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
             _memoryLimitBytes = gcMemoryInfo.HighMemoryLoadThresholdBytes;

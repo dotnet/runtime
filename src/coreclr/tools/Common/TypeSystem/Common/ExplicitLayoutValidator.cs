@@ -157,7 +157,7 @@ namespace Internal.TypeSystem
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ORef);
                     }
-                    else if (field.FieldType.IsByRef || field.FieldType.IsByReferenceOfT)
+                    else if (field.FieldType.IsByRef)
                     {
                         SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ByRef);
                     }
@@ -233,7 +233,7 @@ namespace Internal.TypeSystem
                         previousInterval.EndSentinel = newInterval.EndSentinel;
 
                         fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
-                        newIntervalLocation = newIntervalLocation - 1;
+                        newIntervalLocation--;
                     }
                     else
                     {

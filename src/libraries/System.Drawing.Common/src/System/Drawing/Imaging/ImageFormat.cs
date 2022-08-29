@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Drawing.Imaging
 {
@@ -24,6 +25,8 @@ namespace System.Drawing.Imaging
         private static readonly ImageFormat s_tiff = new ImageFormat(new Guid("{b96b3cb1-0728-11d3-9d7b-0000f81ef32e}"));
         private static readonly ImageFormat s_exif = new ImageFormat(new Guid("{b96b3cb2-0728-11d3-9d7b-0000f81ef32e}"));
         private static readonly ImageFormat s_icon = new ImageFormat(new Guid("{b96b3cb5-0728-11d3-9d7b-0000f81ef32e}"));
+        private static readonly ImageFormat s_heif = new ImageFormat(new Guid("{b96b3cb6-0728-11d3-9d7b-0000f81ef32e}"));
+        private static readonly ImageFormat s_webp = new ImageFormat(new Guid("{b96b3cb7-0728-11d3-9d7b-0000f81ef32e}"));
 
         private Guid _guid;
 
@@ -124,6 +127,30 @@ namespace System.Drawing.Imaging
         }
 
         /// <summary>
+        /// Specifies the High Efficiency Image Format (HEIF).
+        /// </summary>
+        /// <remarks>
+        /// This format is supported since Windows 10 1809.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.17763.0")]
+        public static ImageFormat Heif
+        {
+            get { return s_heif; }
+        }
+
+        /// <summary>
+        /// Specifies the WebP image format.
+        /// </summary>
+        /// <remarks>
+        /// This format is supported since Windows 10 1809.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.17763.0")]
+        public static ImageFormat Webp
+        {
+            get { return s_webp; }
+        }
+
+        /// <summary>
         /// Returns a value indicating whether the specified object is an <see cref='ImageFormat'/> equivalent to this
         /// <see cref='ImageFormat'/>.
         /// </summary>
@@ -170,6 +197,8 @@ namespace System.Drawing.Imaging
             if (this.Guid == s_tiff.Guid) return "Tiff";
             if (this.Guid == s_exif.Guid) return "Exif";
             if (this.Guid == s_icon.Guid) return "Icon";
+            if (this.Guid == s_heif.Guid) return "Heif";
+            if (this.Guid == s_webp.Guid) return "Webp";
             return $"[ImageFormat: {_guid}]";
         }
     }

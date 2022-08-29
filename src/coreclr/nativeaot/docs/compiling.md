@@ -1,10 +1,12 @@
 # Compiling with Native AOT
 
-This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
+Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
 
-## Add ILCompiler package reference
+The rest of this document covers advanced topics only. Adding an explicit package reference to `Microsoft.DotNet.ILCompiler` will generate warning when publishing and it can run into version errors. When possible, use the PublishAot property to publish a native AOT application.
 
-To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime. Make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
+## Using daily builds
+
+For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
 ```xml
 <add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
 <add key="nuget" value="https://api.nuget.org/v3/index.json" />
@@ -29,23 +31,23 @@ or by adding the following element to the project file:
   </ItemGroup>
 ```
 
-## Compile and publish your app
-
-Use the `dotnet publish` command to compile and publish your app:
-```bash
-> dotnet publish -r <RID> -c <Configuration>
-```
-
-where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier reflecting your host OS and architecture (one of win-x64, linux-x64, osx-x64). For example, to publish the Release build of your app for Windows x64, run the following command:
-```bash
-> dotnet publish -r win-x64 -c Release
-```
-
-If the compilation succeeds, the native executable will be placed under the `bin/<Configuration>/net6.0/<RID>/publish/` path relative to your project's root directory.
-
 ## Cross-architecture compilation
 
-Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. To target win-arm64 on a Windows x64 host, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
+Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
+
+```xml
+    <PropertyGroup>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+```
+
+Targeting win-arm64 on a Windows x64 host machine,
+
+```bash
+> dotnet publish -r win-arm64 -c Release
+```
+
+To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK support is not sufficient (note that these scenarios will generate warnings for using explicit package references), in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.2.22103.2" />
 ```

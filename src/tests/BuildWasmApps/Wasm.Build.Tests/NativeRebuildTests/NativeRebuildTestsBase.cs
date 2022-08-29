@@ -40,7 +40,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             IEnumerable<object?[]> GetData(bool aot, bool nativeRelinking, bool invariant)
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
-                        .WithRunHosts(RunHost.V8)
+                        .WithRunHosts(RunHost.Chrome)
                         .UnwrapItemsAsArrays().ToList();
         }
 
@@ -55,7 +55,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                 HasIcudt: !invariant,
                                 CreateProject: true));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.V8, id: id);
+            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
         }
 

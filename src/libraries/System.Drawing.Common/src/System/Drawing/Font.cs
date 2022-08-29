@@ -661,7 +661,7 @@ namespace System.Drawing
             GC.SuppressFinalize(_fontFamily);
         }
 
-        [return: NotNullIfNotNull("familyName")]
+        [return: NotNullIfNotNull(nameof(familyName))]
         private static string? StripVerticalName(string? familyName)
         {
             if (familyName?.Length > 1 && familyName[0] == '@')

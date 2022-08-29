@@ -57,6 +57,9 @@ namespace ILCompiler
                             {
                                 var ecmaMethod = (EcmaMethod)assembly.GetObject(methodHandle);
                                 WalkMethod(ecmaMethod);
+
+                                if (ecmaMethod.IsVirtual)
+                                    LookForVirtualOverrides(ecmaMethod);
                             }
                             catch (TypeSystemException)
                             {
@@ -89,6 +92,61 @@ namespace ILCompiler
                 ForEachEmbeddedGenericFormal(ancestorType, typeContext, Instantiation.Empty);
             }
 
+            private void LookForVirtualOverrides(EcmaMethod method)
+            {
+                // We don't currently attempt to handle this for non-generics.
+                if (!method.HasInstantiation)
+                    return;
+
+                // If this is a generic virtual method, add an edge from each of the generic parameters
+                // of the implementation to the generic parameters of the declaration - any call to the
+                // declaration will be modeled as if the declaration was calling into the implementation.
+
+                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
+                if (decl != method)
+                {
+                    RecordBinding(this, decl.Instantiation, method.Instantiation);
+                }
+                else
+                {
+                    TypeDesc methodOwningType = method.OwningType;
+
+                    // This is the slot definition. Does it implement an interface?
+                    // (This has obvious holes. They haven't show up as issues so far.)
+                    foreach (DefType interfaceType in methodOwningType.RuntimeInterfaces)
+                    {
+                        foreach (MethodDesc interfaceMethod in interfaceType.GetVirtualMethods())
+                        {
+                            // Trivially reject looking at interface methods that for sure can't be implemented by
+                            // the method we're looking at.
+                            if (!interfaceMethod.IsVirtual
+                                || interfaceMethod.Instantiation.Length != method.Instantiation.Length
+                                || interfaceMethod.Signature.Length != method.Signature.Length
+                                || interfaceMethod.Signature.IsStatic != method.Signature.IsStatic)
+                                continue;
+
+                            MethodDesc impl = methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod)?.GetMethodDefinition();
+                            if (impl == method)
+                            {
+                                RecordBinding(this, interfaceMethod.Instantiation, method.Instantiation);
+                                // Continue the loop in case this method implements multiple interfaces
+                            }
+                        }
+                    }
+                }
+
+                static void RecordBinding(GraphBuilder builder, Instantiation declInstantiation, Instantiation implInstantiation)
+                {
+                    for (int i = 0; i < declInstantiation.Length; i++)
+                    {
+                        builder.RecordBinding(
+                            (EcmaGenericParameter)implInstantiation[i],
+                            (EcmaGenericParameter)declInstantiation[i],
+                            isProperEmbedding: false);
+                    }
+                }
+            }
+
             private void WalkMethod(EcmaMethod method)
             {
                 Instantiation typeContext = method.OwningType.Instantiation;
@@ -110,26 +168,6 @@ namespace ILCompiler
                 if (methodIL == null)
                 {
                     return;
-                }
-
-                // If this is a generic virtual method, add an edge from each of the generic parameters
-                // of the implementation to the generic parameters of the declaration - any call to the
-                // declaration will be modeled as if the declaration was calling into the implementation.
-                if (method.IsVirtual && method.HasInstantiation)
-                {
-                    var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
-                    if (decl != method)
-                    {
-                        Instantiation declInstantiation = decl.Instantiation;
-                        Instantiation implInstantiation = method.Instantiation;
-                        for (int i = 0; i < declInstantiation.Length; i++)
-                        {
-                            RecordBinding(
-                                (EcmaGenericParameter)implInstantiation[i],
-                                (EcmaGenericParameter)declInstantiation[i],
-                                isProperEmbedding: false);
-                        }
-                    }
                 }
 
                 // Walk the method body looking at referenced things that have some genericness.
@@ -201,8 +239,11 @@ namespace ILCompiler
                                      && _metadataReader.GetMemberReference((MemberReferenceHandle)accessedMethod).Parent.Kind == HandleKind.TypeSpecification))
                             {
                                 var m = methodIL.GetObject(MetadataTokens.GetToken(accessedMethod), NotFoundBehavior.ReturnNull) as MethodDesc;
-                                ProcessTypeReference(m.OwningType, typeContext, methodContext);
-                                ProcessMethodCall(m, typeContext, methodContext);
+                                if (m != null)
+                                {
+                                    ProcessTypeReference(m.OwningType, typeContext, methodContext);
+                                    ProcessMethodCall(m, typeContext, methodContext);
+                                }
                             }
                             break;
 

@@ -330,10 +330,9 @@ namespace System
             #endregion
 
             #region Filter by name wrt prefixLookup and implicitly by case sensitivity
-            if (prefixLookup == true)
+            if (prefixLookup && !FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
             {
-                if (!FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
-                    return false;
+                return false;
             }
             #endregion
 
@@ -803,8 +802,7 @@ namespace System
                 }
             }
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
         }
@@ -833,8 +831,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -873,8 +870,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
         }
@@ -929,7 +925,7 @@ namespace System
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException();
 
-                        if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
+                        if (match.DeclaringType!.IsInterface && fieldInfo.DeclaringType!.IsInterface)
                             multipleStaticFieldMatches = true;
                     }
 
@@ -969,14 +965,12 @@ namespace System
             StringComparison nameComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (RuntimeType t in GetInterfaces())
             {
-
                 if (!string.Equals(t.Name, name, nameComparison))
                 {
                     continue;
                 }
 
-                if (list == null)
-                    list = new List<RuntimeType>(2);
+                list ??= new List<RuntimeType>(2);
 
                 list.Add(t);
             }
@@ -1268,7 +1262,22 @@ namespace System
             return GetBaseType() == typeof(System.MulticastDelegate);
         }
 
+        protected override bool IsValueTypeImpl()
+        {
+            // We need to return true for generic parameters with the ValueType constraint.
+            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
+            // false for all generic parameters.
+            if (this == typeof(ValueType) || this == typeof(Enum))
+                return false;
+
+            return IsSubclassOf(typeof(ValueType));
+        }
+
+        // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
+
+        // Returns true for actual enum types only.
+        internal bool IsActualEnum => RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -1298,9 +1307,7 @@ namespace System
             Type[]? types = null;
             var this_type = this;
             GetGenericArgumentsInternal(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref types), false);
-            if (types == null)
-                types = Type.EmptyTypes;
-            return types;
+            return types ?? Type.EmptyTypes;
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -1410,8 +1417,7 @@ namespace System
                     int argCnt = args.Length;
 
                     // Without a binder we need to do use the default binder...
-                    if (binder == null)
-                        binder = DefaultBinder;
+                    binder ??= DefaultBinder;
 
                     // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
                     // so a call to GetMemberCons would fail
@@ -2013,10 +2019,14 @@ namespace System
 
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
-            RuntimeType genericArgument)
+            RuntimeType genericArgument,
+            RuntimeType? genericArgument2 = null)
         {
             RuntimeType? gt = null;
-            MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
+            if (genericArgument2 != null)
+                MakeGenericType(genericType, new Type[] { genericArgument, genericArgument2 }, ObjectHandleOnStack.Create(ref gt));
+            else
+                MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
             RuntimeConstructorInfo? ctor = gt!.GetDefaultConstructor();
 
             // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.

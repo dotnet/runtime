@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _methodArgument;
 
-        private readonly FieldDesc _fieldArgument;
+        private readonly FieldWithToken _fieldArgument;
 
         private readonly GenericContext _methodContext;
 
@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
             MethodWithToken methodArgument,
-            FieldDesc fieldArgument,
+            FieldWithToken fieldArgument,
             GenericContext methodContext)
         {
             Debug.Assert(typeArgument != null || methodArgument != null || fieldArgument != null);
@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Determine the need for module override
-            EcmaModule targetModule;
+            IEcmaModule targetModule;
             if (_methodArgument != null)
             {
                 targetModule = _methodArgument.Token.Module;
@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else if (_fieldArgument != null)
             {
-                targetModule = factory.SignatureContext.GetTargetModule(_fieldArgument);
+                targetModule = _fieldArgument.Token.Module;
             }
             else
             {
@@ -130,6 +130,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return dataBuilder.ToObjectData();
         }
 
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = null;
+            if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
+            {
+                TypeFixupSignature.AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeArgument);
+            }
+            return dependencies;
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
@@ -163,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             if (_fieldArgument != null)
             {
-                sb.Append(nameMangler.GetMangledFieldName(_fieldArgument));
+                _fieldArgument.AppendMangledName(nameMangler, sb);
             }
             sb.Append(" (");
             _methodContext.AppendMangledName(nameMangler, sb);
@@ -200,7 +210,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (otherNode._fieldArgument == null)
                     return 1;
 
-                result = comparer.Compare(_fieldArgument, otherNode._fieldArgument);
+                result = _fieldArgument.CompareTo(otherNode._fieldArgument, comparer);
                 if (result != 0)
                     return result;
             }

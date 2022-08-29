@@ -206,14 +206,22 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
 //   Returns true if this intrinsic requires value numbering to add an
 //   extra SimdType argument that encodes the resulting type.
 //   If we don't do this overloaded versions can return the same VN
-//   leading to incorrect CSE subsitutions.
+//   leading to incorrect CSE substitutions.
 //
 /* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
 {
+    // No extra type information is needed for scalar/special HW Intrinsic.
+    //
+    unsigned simdSize = 0;
+    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
+    {
+        return false;
+    }
+
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
     // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give themm a unique value number them, and don't add an extra argument.
+    // give them a unique value number, and don't add an extra argument.
     //
     if (numArgs == -1)
     {
@@ -314,20 +322,45 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Throw_PlatformNotSupportedException;
     }
 
-#if defined(TARGET_XARCH)
-    if ((isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector256))
-#elif defined(TARGET_ARM64)
-    if ((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128))
-#endif
+    // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
+    // IsHardwareAccelerated reports false. For Vector64 and Vector128 this is when the baseline
+    // ISA is unsupported. For Vector256 this is when AVX2 is unsupported since integer types
+    // can't get properly accelerated.
+
+    // We support some Vector256 intrinsics on AVX-only CPUs
+    bool isLimitedVector256Isa = false;
+
+    if (isa == InstructionSet_Vector128)
     {
         if (!comp->IsBaselineSimdIsaSupported())
         {
-            // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when SSE/SSE2
-            // aren't supported since IsHardwareAccelerated reports false. To simplify the importation logic we'll
-            // just return illegal here and let it fallback to the software path instead.
             return NI_Illegal;
         }
     }
+#if defined(TARGET_XARCH)
+    else if (isa == InstructionSet_Vector256)
+    {
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                isLimitedVector256Isa = true;
+            }
+            else
+            {
+                return NI_Illegal;
+            }
+        }
+    }
+#elif defined(TARGET_ARM64)
+    else if (isa == InstructionSet_Vector64)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
+#endif
 
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
@@ -347,7 +380,16 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (strcmp(methodName, intrinsicInfo.name) == 0)
         {
-            return intrinsicInfo.id;
+            NamedIntrinsic ni = intrinsicInfo.id;
+
+#if defined(TARGET_XARCH)
+            // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
+            if (isLimitedVector256Isa && !AvxOnlyCompatible(ni))
+            {
+                return NI_Illegal;
+            }
+#endif
+            return ni;
         }
     }
 
@@ -741,6 +783,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (!mustExpand && info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
@@ -755,12 +803,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
+            // We don't have generic multireg APIs
             assert(sizeBytes == 0);
         }
         else
         {
-            assert(sizeBytes != 0);
-
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
             // rather than deferring the decision after getting the simdBaseJitType of arg.
             if (!isSupportedBaseType(intrinsic, simdBaseJitType))
@@ -768,6 +815,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 
+            assert(sizeBytes != 0);
             retType = getSIMDTypeForSize(sizeBytes);
         }
     }

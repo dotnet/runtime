@@ -298,9 +298,9 @@ collect_parser.add_argument("--tiered_compilation", action="store_true", help="S
 
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
+collect_parser.add_argument("--clean", action="store_true", help="Clean the collection by removing contexts that fail to replay without error.")
 collect_parser.add_argument("--skip_collection_step", action="store_true", help="Do not run the collection step.")
 collect_parser.add_argument("--skip_merge_step", action="store_true", help="Do not run the merge step.")
-collect_parser.add_argument("--skip_clean_and_verify_step", action="store_true", help="Do not run the collection cleaning, TOC creation, and verifying step.")
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
 # Create a set of arguments common to all SuperPMI replay commands, namely basic replay and ASM diffs.
@@ -323,19 +323,21 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
+# common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
 base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading COMPlus_")
 base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
-asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
+asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
@@ -724,9 +726,15 @@ class SuperPMICollect:
                     else:
                         self.__merge_mch_files__()
 
-                if not self.coreclr_args.skip_clean_and_verify_step:
+                if self.coreclr_args.clean:
                     self.__create_clean_mch_file__()
-                    self.__create_toc__()
+                else:
+                    self.__copy_to_final_mch_file__()
+
+                self.__create_toc__()
+
+                if self.coreclr_args.clean:
+                    # There is no point to verify unless we have run the clean step.
                     self.__verify_final_mch__()
 
                 passed = True
@@ -936,7 +944,7 @@ class SuperPMICollect:
                     # -o:<output dll>
                     # -r:<Core_Root>\System.*.dll
                     # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\mscorlib.dll
+                    # -r:<Core_Root>\System.Private.CoreLib.dll
                     # -r:<Core_Root>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of complus_env
@@ -1112,6 +1120,26 @@ class SuperPMICollect:
             if os.path.isfile(self.base_fail_mcl_file):
                 os.remove(self.base_fail_mcl_file)
                 self.base_fail_mcl_file = None
+            if os.path.isfile(self.base_mch_file):
+                os.remove(self.base_mch_file)
+                self.base_mch_file = None
+
+    def __copy_to_final_mch_file__(self):
+        """ When not cleaning the MCH file, copy the base MCH file to the final MCH file location.
+
+        Notes:
+            # copy/move base file to final file
+            del <s_baseFailMclFile>
+        """
+
+        logging.info("Copy base MCH file to final MCH file")
+
+        shutil.copy2(self.base_mch_file, self.final_mch_file)
+
+        if not os.path.isfile(self.final_mch_file):
+            raise RuntimeError("Final mch file failed to be generated.")
+
+        if not self.coreclr_args.skip_cleanup:
             if os.path.isfile(self.base_mch_file):
                 os.remove(self.base_mch_file)
                 self.base_mch_file = None
@@ -1424,9 +1452,6 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDisasm": "*",
             "COMPlus_JitUnwindDump": "*",
             "COMPlus_JitEHDump": "*",
-            "COMPlus_NgenDisasm": "*",
-            "COMPlus_NgenUnwindDump": "*",
-            "COMPlus_NgenEHDump": "*",
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
@@ -1434,19 +1459,16 @@ class SuperPMIReplayAsmDiffs:
 
         if self.coreclr_args.gcinfo:
             asm_complus_vars.update({
-                "COMPlus_JitGCDump": "*",
-                "COMPlus_NgenGCDump": "*" })
+                "COMPlus_JitGCDump": "*" })
 
         if self.coreclr_args.debuginfo:
             asm_complus_vars.update({
                 "COMPlus_JitDebugDump": "*",
-                "COMPlus_NgenDebugDump": "*",
                 "COMPlus_JitDisasmWithDebugInfo": "1" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
-            "COMPlus_JitDump": "*",
-            "COMPlus_NgenDump": "*" })
+            "COMPlus_JitDump": "*" })
 
         asm_complus_vars_full_env = os.environ.copy()
         asm_complus_vars_full_env.update(asm_complus_vars)
@@ -1465,12 +1487,19 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
         base_option_flags_for_diff_artifact = base_option_flags
 
         diff_option_flags = []
         diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
@@ -1631,11 +1660,12 @@ class SuperPMIReplayAsmDiffs:
                             async def create_one_artifact(jit_path: str, location: str, flags) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
-                                with open(item_path, 'w') as file_handle:
-                                    logging.debug("%sGenerating %s", print_prefix, item_path)
-                                    logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE, env=env)
-                                    await proc.communicate()
+                                modified_env = env.copy()
+                                modified_env['COMPlus_JitStdOutFile'] = item_path
+                                logging.debug("%sGenerating %s", print_prefix, item_path)
+                                logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
+                                proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
+                                await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
                                     generated_txt = file_handle.read()
                                 return generated_txt
@@ -1952,9 +1982,12 @@ class SuperPMIReplayThroughputDiff:
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
-                    delta_instructions = diff_instructions - base_instructions
-                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
-                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    if base_instructions != 0 and diff_instructions != 0:
+                        delta_instructions = diff_instructions - base_instructions
+                        logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                        tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
 
@@ -3085,7 +3118,7 @@ def process_base_jit_path_arg(coreclr_args):
 
 def get_pintools_path(coreclr_args):
     """ Get the local path where we expect pintools for this OS to be located
-    
+
     Returns:
         A path to the folder.
     """
@@ -3093,7 +3126,7 @@ def get_pintools_path(coreclr_args):
 
 def get_pin_exe_path(coreclr_args):
     """ Get the local path where we expect the pin executable to be located
-    
+
     Returns:
         A path to the executable.
     """
@@ -3103,7 +3136,7 @@ def get_pin_exe_path(coreclr_args):
 
 def get_inscount_pintool_path(coreclr_args):
     """ Get the local path where we expect the clrjit inscount pintool to be located
-    
+
     Returns:
         A path to the pintool library.
     """
@@ -3377,6 +3410,11 @@ def setup_args(args):
                             "Unable to set base_git_hash")
 
         coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
+
+        coreclr_args.verify(args,
                             "base_jit_option",
                             lambda unused: True,
                             "Unable to set base_jit_option.")
@@ -3486,9 +3524,9 @@ def setup_args(args):
                             "Unable to set skip_merge_step.")
 
         coreclr_args.verify(args,
-                            "skip_clean_and_verify_step",
+                            "clean",
                             lambda unused: True,
-                            "Unable to set skip_clean_and_verify_step.")
+                            "Unable to set clean.")
 
         coreclr_args.verify(args,
                             "use_zapdisable",
@@ -3966,7 +4004,7 @@ def main(args):
         logging.info("SuperPMI throughput diff")
         logging.debug("------------------------------------------------------------")
         logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
-        
+
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 

@@ -2,9 +2,6 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.js</WasmMainJSPath>
-    <!--
-    <WasmEnableES6>true</WasmEnableES6>
-    -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,11 +12,13 @@
   <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="$(WasmAppDir)/dotnet.js;
           $(WasmAppDir)/dotnet.wasm;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/dotnet-runtime/.npm-stamp">
     <ItemGroup>
       <NpmPackageFiles Include="$(WasmAppDir)/dotnet.js"/>
       <NpmPackageFiles Include="$(WasmAppDir)/dotnet.wasm"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
     </ItemGroup>
     <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/dotnet-runtime" />

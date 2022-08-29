@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Collections;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
     {
@@ -58,16 +58,19 @@ namespace System.Xml.Schema
 
         public static XmlSchema? Read(TextReader reader, ValidationEventHandler? validationEventHandler)
         {
+            ArgumentNullException.ThrowIfNull(reader);
             return Read(new XmlTextReader(reader), validationEventHandler);
         }
 
         public static XmlSchema? Read(Stream stream, ValidationEventHandler? validationEventHandler)
         {
+            ArgumentNullException.ThrowIfNull(stream);
             return Read(new XmlTextReader(stream), validationEventHandler);
         }
 
         public static XmlSchema? Read(XmlReader reader, ValidationEventHandler? validationEventHandler)
         {
+            ArgumentNullException.ThrowIfNull(reader);
             XmlNameTable nameTable = reader.NameTable;
             Parser parser = new Parser(SchemaType.XSD, nameTable, new SchemaNames(nameTable), validationEventHandler);
             try
@@ -98,6 +101,7 @@ namespace System.Xml.Schema
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
+            ArgumentNullException.ThrowIfNull(stream);
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
             xmlWriter.Formatting = Formatting.Indented;
             Write(xmlWriter, namespaceManager);
@@ -106,12 +110,14 @@ namespace System.Xml.Schema
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             Write(writer, null);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
             xmlWriter.Formatting = Formatting.Indented;
             Write(xmlWriter, namespaceManager);
@@ -120,6 +126,7 @@ namespace System.Xml.Schema
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             Write(writer, null);
         }
 
@@ -130,6 +137,7 @@ namespace System.Xml.Schema
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));
             XmlSerializerNamespaces ns;
 
@@ -316,56 +324,16 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaObjectTable Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                {
-                    _attributes = new XmlSchemaObjectTable();
-                }
-                return _attributes;
-            }
-        }
+        public XmlSchemaObjectTable Attributes => _attributes ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable AttributeGroups
-        {
-            get
-            {
-                if (_attributeGroups == null)
-                {
-                    _attributeGroups = new XmlSchemaObjectTable();
-                }
-                return _attributeGroups;
-            }
-        }
+        public XmlSchemaObjectTable AttributeGroups => _attributeGroups ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable SchemaTypes
-        {
-            get
-            {
-                if (_types == null)
-                {
-                    _types = new XmlSchemaObjectTable();
-                }
-                return _types;
-            }
-        }
+        public XmlSchemaObjectTable SchemaTypes => _types ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
-        public XmlSchemaObjectTable Elements
-        {
-            get
-            {
-                if (_elements == null)
-                {
-                    _elements = new XmlSchemaObjectTable();
-                }
-                return _elements;
-            }
-        }
+        public XmlSchemaObjectTable Elements => _elements ??= new XmlSchemaObjectTable();
 
         [XmlAttribute("id", DataType = "ID")]
         public string? Id
@@ -442,10 +410,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlDocument Document
-        {
-            get { if (_document == null) _document = new XmlDocument(); return _document; }
-        }
+        internal XmlDocument Document => _document ??= new XmlDocument();
 
         [XmlIgnore]
         internal int ErrorCount
@@ -547,34 +512,11 @@ namespace System.Xml.Schema
             _items.Add(annotation);
         }
 
-        internal XmlNameTable NameTable
-        {
-            get { if (_nameTable == null) _nameTable = new System.Xml.NameTable(); return _nameTable; }
-        }
+        internal XmlNameTable NameTable => _nameTable ??= new System.Xml.NameTable();
 
-        internal ArrayList ImportedSchemas
-        {
-            get
-            {
-                if (_importedSchemas == null)
-                {
-                    _importedSchemas = new ArrayList();
-                }
-                return _importedSchemas;
-            }
-        }
+        internal ArrayList ImportedSchemas => _importedSchemas ??= new ArrayList();
 
-        internal ArrayList ImportedNamespaces
-        {
-            get
-            {
-                if (_importedNamespaces == null)
-                {
-                    _importedNamespaces = new ArrayList();
-                }
-                return _importedNamespaces;
-            }
-        }
+        internal ArrayList ImportedNamespaces => _importedNamespaces ??= new ArrayList();
 
         internal void GetExternalSchemasList(IList extList, XmlSchema schema)
         {

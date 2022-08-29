@@ -7,32 +7,17 @@
   <title>Hot Reload Sample</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="modulepreload" href="./main.js" />
+  <link rel="modulepreload" href="./dotnet.js" />
 </head>
 
 <body>
   <h3 id="header">Wasm Hot Reload Sample</h3>
-  Result from Sample.Test.TestMeaning: <span id="out"></span>
   <div>
     Click here (upto 2 times): <button id="update">Update</button>
   </div>
-  <script type='text/javascript'>
-    const App = {
-      init: function () {
-        const update = BINDING.bind_static_method("[WasmDelta] Sample.Test:Update");
-        const testMeaning = BINDING.bind_static_method("[WasmDelta] Sample.Test:TestMeaning");
-        const outElement = document.getElementById("out");
-        document.getElementById("update").addEventListener("click", function () {
-          update();
-          console.log("applied update");
-          outElement.innerHTML = testMeaning();
-        })
-        outElement.innerHTML = testMeaning();
-        console.log("ready");
-      },
-    };
-  </script>
-  <script type="text/javascript" src="main.js"></script>
-  <script defer src="dotnet.js"></script>
+  Answer to the Ultimate Question of Life, the Universe, and Everything is : <span id="out"></span>
+  <script type='module' src="./main.js"></script>
 </body>
 
 </html>

@@ -50,7 +50,7 @@ Function:
 
     CRTInitStdStreams.
 
-    Initilizes the standard streams.
+    Initializes the standard streams.
     Returns TRUE on success, FALSE otherwise.
 --*/
 BOOL CRTInitStdStreams()
@@ -522,7 +522,7 @@ PAL_fread(void * buffer, size_t size, size_t count, PAL_FILE * f)
                     }
                     else
                     {
-                        temp[nCount++]=nChar;
+                        temp[nCount++]= (char)nChar;
                     }
                 }
             }

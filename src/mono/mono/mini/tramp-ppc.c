@@ -53,7 +53,7 @@ mono_ppc_create_ftnptr (guint8 *code)
 static guint32
 branch_for_target_reachable (guint8 *branch, guint8 *target)
 {
-	gint diff = target - branch;
+	gint64 diff = target - branch;
 	g_assert ((diff & 3) == 0);
 	if (diff >= 0) {
 		if (diff <= 33554431)
@@ -669,7 +669,17 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
-	} else {
+	}
+#if defined(TARGET_POWERPC64) && !defined(PPC_USES_FUNCTION_DESCRIPTOR)
+	else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 32));
+		return thunk;
+	} else if (((guint32*)(code - 4)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 4));
+		return thunk;
+	}
+#endif
+	else {
 		return NULL;
 	}
 }

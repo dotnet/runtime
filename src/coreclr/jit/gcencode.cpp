@@ -4226,7 +4226,31 @@ void GCInfo::gcMakeRegPtrTable(
                     continue;
                 }
 
-                int offset = varDsc->GetStackOffset() + i * TARGET_POINTER_SIZE;
+                unsigned const fieldOffset = i * TARGET_POINTER_SIZE;
+                int const      offset      = varDsc->GetStackOffset() + fieldOffset;
+
+#ifdef DEBUG
+                if (varDsc->lvPromoted)
+                {
+                    assert(compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT);
+
+                    // A dependently promoted tracked gc local can end up in the gc tracked
+                    // frame range. If so it should be excluded from tracking via lvaIsGCTracked.
+                    //
+                    unsigned const fieldLclNum = compiler->lvaGetFieldLocal(varDsc, fieldOffset);
+                    assert(fieldLclNum != BAD_VAR_NUM);
+                    LclVarDsc* const fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+
+                    if (compiler->GetEmitter()->emitIsWithinFrameRangeGCRs(offset))
+                    {
+                        assert(!compiler->lvaIsGCTracked(fieldVarDsc));
+                        JITDUMP("Untracked GC struct slot V%02u+%u (P-DEP promoted V%02u) is at frame offset %d within "
+                                "tracked ref range; will report slot as untracked\n",
+                                varNum, fieldOffset, fieldLclNum, offset);
+                    }
+                }
+#endif
+
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
                 // arguments are addressed relative to EBP.

@@ -63,11 +63,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                     }
 
-                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee) && !factory.CompilationModuleGroup.CrossModuleInlineable(inlinee))
                     {
                         // We cannot record inlining info across version bubble as cross-bubble assemblies
-                        // are not guaranteed to preserve token values. Only non-versionable methods may be
-                        // inlined across the version bubble.
+                        // are not guaranteed to preserve token values unless CrossModule inlining is in place
+                        // Otherwise non-versionable methods may be inlined across the version bubble.
+
                         Debug.Assert(inlinee.IsNonVersionable());
                         continue;
                     }

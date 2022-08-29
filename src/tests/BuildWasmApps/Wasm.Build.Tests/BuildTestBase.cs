@@ -130,11 +130,13 @@ namespace Wasm.Build.Tests
                                            string id,
                                            Action<string>? test=null,
                                            string? buildDir = null,
+                                           string? bundleDir = null,
                                            int expectedExitCode = 0,
                                            string? args = null,
                                            Dictionary<string, string>? envVars = null,
                                            string targetFramework = DefaultTargetFramework,
-                                           string? extraXHarnessMonoArgs = null)
+                                           string? extraXHarnessMonoArgs = null,
+                                           string jsRelativePath = "test-main.js")
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -151,12 +153,16 @@ namespace Wasm.Build.Tests
                     envVars[kvp.Key] = kvp.Value;
             }
 
-            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
-            (string testCommand, string extraXHarnessArgs) = host switch
+            bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
+            if (host is RunHost.V8 && OperatingSystem.IsWindows())
+                throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
+
+            // Use wasm-console.log to get the xharness output for non-browser cases
+            (string testCommand, string extraXHarnessArgs, bool useWasmConsoleOutput) = host switch
             {
-                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
-                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
-                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop")
+                RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
+                RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
+                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
@@ -170,7 +176,8 @@ namespace Wasm.Build.Tests
                                 expectedAppExitCode: expectedExitCode,
                                 extraXHarnessArgs: extraXHarnessArgs,
                                 appArgs: args,
-                                extraXHarnessMonoArgs: extraXHarnessMonoArgs
+                                extraXHarnessMonoArgs: extraXHarnessMonoArgs,
+                                useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
             if (buildArgs.AOT)
@@ -192,7 +199,8 @@ namespace Wasm.Build.Tests
 
         protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
                                         ITestOutputHelper _testOutput, IDictionary<string, string>? envVars=null,
-                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null, string? extraXHarnessMonoArgs = null)
+                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null,
+                                        string? appArgs=null, string? extraXHarnessMonoArgs = null, bool useWasmConsoleOutput = false)
         {
             _testOutput.WriteLine($"============== {testCommand} =============");
             Directory.CreateDirectory(testLogPath);
@@ -213,7 +221,9 @@ namespace Wasm.Build.Tests
             // App arguments
             if (envVars != null)
             {
-                var setenv = string.Join(' ', envVars.Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
+                var setenv = string.Join(' ', envVars
+                                                .Where(ev => ev.Key != "PATH")
+                                                .Select(kvp => $"\"--setenv={kvp.Key}={kvp.Value}\"").ToArray());
                 args.Append($" {setenv}");
             }
 
@@ -230,6 +240,21 @@ namespace Wasm.Build.Tests
                                         timeoutMs: s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
+            if (useWasmConsoleOutput)
+            {
+                string wasmConsolePath = Path.Combine(testLogPath, "wasm-console.log");
+                try
+                {
+                    if (File.Exists(wasmConsolePath))
+                        output = File.ReadAllText(wasmConsolePath);
+                    else
+                        _testOutput.WriteLine($"Warning: Could not find {wasmConsolePath}. Ignoring.");
+                }
+                catch (IOException ioex)
+                {
+                    _testOutput.WriteLine($"Warning: Could not read {wasmConsolePath}: {ioex}");
+                }
+            }
 
             if (exitCode != xharnessExitCode)
             {
@@ -336,7 +361,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
+            sb.Append($" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -345,13 +370,20 @@ namespace Wasm.Build.Tests
             (int exitCode, string buildOutput) result;
             try
             {
-                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: s_buildEnv.EnvVars);
+                var envVars = s_buildEnv.EnvVars;
+                if (options.ExtraBuildEnvironmentVariables is not null)
+                {
+                    envVars = new Dictionary<string, string>(s_buildEnv.EnvVars);
+                    foreach (var kvp in options.ExtraBuildEnvironmentVariables!)
+                        envVars[kvp.Key] = kvp.Value;
+                }
+                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
                 //AssertRuntimePackPath(result.buildOutput);
 
                 // check that we are using the correct runtime pack!
 
-                if (options.ExpectSuccess)
+                if (options.ExpectSuccess && options.AssertAppBundle)
                 {
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
                     AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -387,6 +419,17 @@ namespace Wasm.Build.Tests
         {
             InitPaths(id);
             InitProjectDir(id);
+
+            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
+            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
+                """
+                <Project>
+                  <ItemGroup>
+                      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+                  </ItemGroup>
+                </Project>
+                """);
+
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput($"new {template}")
@@ -509,8 +552,7 @@ namespace Wasm.Build.Tests
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
-                "dotnet.js",
-                "dotnet-crypto-worker.js"
+                "dotnet.js"
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
@@ -548,6 +590,11 @@ namespace Wasm.Build.Tests
                        "Expected dotnet.js to be same as the runtime pack",
                        same: fromRuntimePack);
         }
+
+        protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack)
+            => AssertFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.js.symbols"),
+                            Path.Combine(bundleDir, "dotnet.js.symbols"),
+                            same: fromRuntimePack);
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
@@ -746,9 +793,12 @@ namespace Wasm.Build.Tests
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                // process.WaitForExit doesn't work if the process exits too quickly?
-                // resetEvent.WaitOne();
-                if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
+                using CancellationTokenSource cts = new();
+                cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
+
+                await process.WaitForExitAsync(cts.Token);
+
+                if (cts.IsCancellationRequested)
                 {
                     // process didn't exit
                     process.Kill(entireProcessTree: true);
@@ -758,13 +808,11 @@ namespace Wasm.Build.Tests
                         throw new XunitException($"Process timed out. Last 20 lines of output:{Environment.NewLine}{string.Join(Environment.NewLine, lastLines)}");
                     }
                 }
-                else
-                {
-                    // this will ensure that all the async event handling
-                    // has completed
-                    // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
-                    await process.WaitForExitAsync();
-                }
+
+                // this will ensure that all the async event handling has completed
+                // and should be called after process.WaitForExit(int)
+                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;
@@ -891,6 +939,7 @@ namespace Wasm.Build.Tests
         bool    HasIcudt                  = true,
         bool    UseCache                  = true,
         bool    ExpectSuccess             = true,
+        bool    AssertAppBundle           = true,
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
@@ -898,7 +947,8 @@ namespace Wasm.Build.Tests
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null
+        string? MainJS                    = null,
+        IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
     public record BlazorBuildOptions

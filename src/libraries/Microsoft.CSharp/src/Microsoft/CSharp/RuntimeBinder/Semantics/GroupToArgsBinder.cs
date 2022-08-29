@@ -347,10 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Record our best match in the memgroup as well. This is temporary.
 
-                    if (true)
-                    {
-                        ReportErrorsOnSuccess();
-                    }
+                    ReportErrorsOnSuccess();
 
                     return true;
                 }
@@ -758,27 +755,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Name name = named.Name;
                     if (!methprop.ParameterNames.Contains(name))
                     {
-                        if (_pInvalidSpecifiedName == null)
-                        {
-                            _pInvalidSpecifiedName = name;
-                        }
+                        _pInvalidSpecifiedName ??= name;
                         return false;
                     }
                     else if (!currentPosition.Contains(name))
                     {
-                        if (_pNameUsedInPositionalArgument == null)
-                        {
-                            _pNameUsedInPositionalArgument = name;
-                        }
+                        _pNameUsedInPositionalArgument ??= name;
                         return false;
                     }
 
                     if (!names.Add(name))
                     {
-                        if (_pDuplicateSpecifiedName == null)
-                        {
-                            _pDuplicateSpecifiedName = name;
-                        }
+                        _pDuplicateSpecifiedName ??= name;
                         return false;
                     }
                 }

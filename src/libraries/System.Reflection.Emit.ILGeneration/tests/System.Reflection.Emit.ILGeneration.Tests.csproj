@@ -10,6 +10,7 @@
     <Compile Include="ILGenerator\Emit2Tests.cs" />
     <Compile Include="ILGenerator\Emit3Tests.cs" />
     <Compile Include="ILGenerator\Emit4Tests.cs" />
+    <Compile Include="ILGenerator\Emit5Tests.cs" />
     <Compile Include="ILGenerator\EmitMethodInfo.cs" />
     <Compile Include="ILGenerator\EmitWithModsTests.cs" />
     <Compile Include="ILGenerator\EmitWriteLineTests.cs" />

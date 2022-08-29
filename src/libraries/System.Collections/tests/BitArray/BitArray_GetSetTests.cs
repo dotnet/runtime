@@ -498,7 +498,7 @@ namespace System.Collections.Tests
                 Length = BitsPerInt32 + 3
             };
             yield return new object[] { "Length-Long > 32", lengthLong2 };
-            // alligned test cases
+            // aligned test cases
             yield return new object[] { "Aligned-Constructor", new BitArray(BitsPerInt32, true) };
             yield return new object[] { "Aligned-Not", new BitArray(BitsPerInt32, false).Not() };
             BitArray alignedSetAll = new BitArray(BitsPerInt32, false);

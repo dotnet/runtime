@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Xml.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization
 {
@@ -55,7 +56,8 @@ namespace System.Runtime.Serialization
             return reader.GetAttribute(i);
         }
 
-        internal static bool IsEmptyElement
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Conceptually, this property describes this instance. Callers should expect to have an instance on hand to 'ask' about this 'emtpy' circumstance.")]
+        internal bool IsEmptyElement
         {
             get { return false; }
         }
@@ -468,7 +470,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)
@@ -496,7 +498,7 @@ namespace System.Runtime.Serialization
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
 
-            return XmlConvert.ToDateTime(reader.ReadElementContentAsString(), XmlDateTimeSerializationMode.RoundtripKind);
+            return reader.ReadElementContentAsDateTime();
         }
 
         internal virtual DateTime ReadContentAsDateTime()
@@ -783,9 +785,12 @@ namespace System.Runtime.Serialization
             context.IncrementItemCount(arrayLength);
         }
 
-        protected static int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
+        protected int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
         {
-            return Math.Min(context.RemainingItemCount, int.MaxValue);
+            if (dictionaryReader?.Quotas == null)
+                return context.RemainingItemCount;
+
+            return Math.Min(context.RemainingItemCount, dictionaryReader.Quotas.MaxArrayLength);
         }
 
         private static void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
@@ -1039,8 +1044,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
@@ -1050,11 +1054,9 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
-                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (reader is IXmlTextParser xmlTextParser)
                         xmlTextParser.Normalized = value;
                 }
                 else
@@ -1066,8 +1068,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
@@ -1077,11 +1078,9 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
-                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (reader is IXmlTextParser xmlTextParser)
                         xmlTextParser.WhitespaceHandling = value;
                 }
                 else

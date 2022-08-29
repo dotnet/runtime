@@ -60,7 +60,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriEscapingDataString_RFC3986ReservedWithIRI_Escaped()
         {
-            // Note that \ and % are not officaly reserved, but we treat it as reserved.
+            // Note that \ and % are not officialy reserved, but we treat it as reserved.
             string input = RFC3986Reserved;
             string output = Uri.EscapeDataString(input);
             Assert.Equal(Escape(RFC3986Reserved), output);
@@ -170,7 +170,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriUnescapingDataString_RFC3986ReservedWithIRI_Unescaped()
         {
-            // Note that \ and % are not officaly reserved, but we treat it as reserved.
+            // Note that \ and % are not officialy reserved, but we treat it as reserved.
             string input = RFC3986Reserved;
             string output = Uri.UnescapeDataString(Escape(input));
             Assert.Equal(input, output);

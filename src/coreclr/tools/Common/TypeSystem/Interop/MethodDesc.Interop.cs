@@ -168,7 +168,8 @@ namespace Internal.TypeSystem
                     case PInvokeAttributes.None:
                         return MethodSignatureFlags.None;
                     default:
-                        throw new BadImageFormatException();
+                        ThrowHelper.ThrowBadImageFormatException();
+                        return MethodSignatureFlags.None; // unreachable
                 }
             }
             set

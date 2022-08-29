@@ -10,8 +10,5 @@ namespace System.Security.Cryptography.Cose
         internal const int Crit = 2;
         internal const int ContentType = 3;
         internal const int Kid = 4;
-        internal const int IV = 5;
-        internal const int PartialIV = 6;
-        internal const int CounterSignature = 7;
     }
 }

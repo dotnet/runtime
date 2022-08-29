@@ -220,18 +220,6 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
     return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
 }
 
-
-// This is the routine that is called by the 'typeof()' operator in C#.  It is one of the most commonly used
-// reflection operations. This call should be optimized away in nearly all situations
-FCIMPL1_V(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandle, FCALLRuntimeTypeHandle th)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0x31);
-    return FCALL_RTH_TO_REFLECTCLASS(th);
-}
-FCIMPLEND
-
 FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
@@ -253,17 +241,6 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, Enregistered
         return NULL;
 
     RETURN_CLASS_OBJECT(typeHandle, NULL);
-}
-FCIMPLEND
-
-FCIMPL1_V(EnregisteredTypeHandle, RuntimeTypeHandle::GetValueInternal, FCALLRuntimeTypeHandle RTH)
-{
-    FCALL_CONTRACT;
-
-    if (FCALL_RTH_TO_REFLECTCLASS(RTH) == NULL)
-        return 0;
-
-    return FCALL_RTH_TO_REFLECTCLASS(RTH) ->GetType().AsPtr();
 }
 FCIMPLEND
 
@@ -2251,7 +2228,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //  - static or instance method on a generic value type
 // The Reflection policy is to always hand out instantiating stubs in these cases
 //
-// For methods on non-generic value types we can use either the cannonical method or the unboxing stub
+// For methods on non-generic value types we can use either the canonical method or the unboxing stub
 // The Reflection policy is to always hand out unboxing stubs if the methods are virtual methods
 // The reason for this is that in the current implementation of the class loader, the v-table slots for
 // those methods point to unboxing stubs already. Note that this is just a implementation choice

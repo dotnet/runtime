@@ -53,10 +53,6 @@
 
 #define dwUniBuf 16384
 
-#ifdef TARGET_UNIX
-extern char *g_pszExeFile;
-#endif
-
 extern WCHAR   wzUniBuf[]; // Unicode conversion global buffer (assem.cpp)
 
 class Class;
@@ -291,10 +287,7 @@ struct SEH_Descriptor
         mdTypeRef   cException; // what to catch
     };
 
-    SEH_Descriptor()
-    {
-        memset(this, 0, sizeof(*this));
-    }
+    SEH_Descriptor() = default;
 };
 
 
@@ -344,6 +337,7 @@ struct EventDescriptor
     mdEvent             m_edEventTok;
     BOOL                m_fNew;
     CustomDescrList     m_CustomDescrList;
+    EventDescriptor() = default;
     ~EventDescriptor() { m_tklOthers.RESET(false); };
 };
 typedef FIFO<EventDescriptor> EventDList;
@@ -364,6 +358,7 @@ struct PropDescriptor
     mdProperty          m_pdPropTok;
     BOOL                m_fNew;
     CustomDescrList     m_CustomDescrList;
+    PropDescriptor() = default;
     ~PropDescriptor() { m_tklOthers.RESET(false); };
 };
 typedef FIFO<PropDescriptor> PropDList;

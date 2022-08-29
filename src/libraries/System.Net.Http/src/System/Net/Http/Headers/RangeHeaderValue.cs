@@ -102,7 +102,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (RangeItemHeaderValue range in _ranges)
                 {
-                    result = result ^ range.GetHashCode();
+                    result ^= range.GetHashCode();
                 }
             }
 
@@ -150,7 +150,7 @@ namespace System.Net.Http.Headers
             RangeHeaderValue result = new RangeHeaderValue();
             result._unit = input.Substring(startIndex, unitLength);
             int current = startIndex + unitLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != '='))
             {
@@ -158,7 +158,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip '=' separator
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             int rangesLength = RangeItemHeaderValue.GetRangeItemListLength(input, current, result.Ranges);
 
@@ -167,7 +167,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            current = current + rangesLength;
+            current += rangesLength;
             Debug.Assert(current == input.Length, "GetRangeItemListLength() should consume the whole string or fail.");
 
             parsedValue = result;

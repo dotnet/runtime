@@ -639,12 +639,10 @@ namespace System.Data
                 {
                     lock (_defaultViewManagerLock)
                     {
-                        if (_defaultViewManager == null)
-                        {
-                            _defaultViewManager = new DataViewManager(this, true);
-                        }
+                        _defaultViewManager ??= new DataViewManager(this, true);
                     }
                 }
+
                 return _defaultViewManager;
             }
         }
@@ -758,10 +756,7 @@ namespace System.Data
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataSet.set_Namespace|API> {0}, '{1}'", ObjectID, value);
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (value != _namespaceURI)
                 {
@@ -801,10 +796,7 @@ namespace System.Data
             get { return _datasetPrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if ((XmlConvert.DecodeName(value) == value) && (XmlConvert.EncodeName(value) != value))
                 {
@@ -2182,10 +2174,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    if (xmlload == null)
-                                    {
-                                        xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                                    }
+                                    xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                                     xmlload.LoadData(reader);
                                     topNodeIsProcessed = true; // we process the topnode
@@ -2226,10 +2215,7 @@ namespace System.Data
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
 
-                        if (xmlload == null)
-                        {
-                            xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                        }
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                         if (!isEmptyDataSet && !topNodeIsProcessed)
                         {
@@ -2734,10 +2720,7 @@ namespace System.Data
                             }
                             else
                             {
-                                if (xmlload == null)
-                                {
-                                    xmlload = new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
-                                }
+                                xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
                                 xmlload.LoadData(reader);
                             }
                         } //end of the while
@@ -2747,8 +2730,7 @@ namespace System.Data
 
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
-                        if (xmlload == null)
-                            xmlload = new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
 
                         if (mode == XmlReadMode.DiffGram)
                         {
@@ -3153,11 +3135,7 @@ namespace System.Data
 
         internal void OnRemovedTable(DataTable table)
         {
-            DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
-            {
-                viewManager.DataViewSettings.Remove(table);
-            }
+            _defaultViewManager?.DataViewSettings.Remove(table);
         }
 
         /// <summary>

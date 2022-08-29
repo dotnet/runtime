@@ -443,23 +443,6 @@ FCIMPLEND
  * Support for the GCHandle class.
  */
 
- // Check that the supplied object is valid to put in a pinned handle.
-// Throw an exception if not.
-void ValidatePinnedObject(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Identical logic exists in managed code for Marshal.IsPinnable()
-    if (obj != NULL && obj->GetMethodTable()->ContainsPointers())
-        COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
-}
-
 NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)
 {
     OBJECTHANDLE hnd = NULL;
@@ -1083,7 +1066,7 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE,
         COMPlusThrowArgumentException(W("obj"), W("Argument_NeedNonGenericObject"));
     }
 
-    // intialize the output variant
+    // initialize the output variant
     SafeVariantInit((VARIANT*)pDestNativeVariant);
     OleVariant::MarshalOleVariantForObject(&Obj, (VARIANT*)pDestNativeVariant);
 

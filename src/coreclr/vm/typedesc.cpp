@@ -506,7 +506,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
@@ -594,7 +594,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 //                 dependencies - the root caller must handle this.
 //
 //
-//   pfBailed - if we or one of our depedencies bails early due to cyclic dependencies, we
+//   pfBailed - if we or one of our dependencies bails early due to cyclic dependencies, we
 //              must set *pfBailed to TRUE. Otherwise, we must *leave it unchanged* (thus, the
 //              boolean acts as a cumulative OR.)
 //
@@ -668,7 +668,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            FastInterlockOr(&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -1550,7 +1550,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                 }
                 else
                 {
-                    // if a concrete type can be cast to the constraint, then this constraint will be satisifed
+                    // if a concrete type can be cast to the constraint, then this constraint will be satisfied
                     if (thElem.CanCastTo(thConstraint))
                     {
                         // Static virtual methods need an extra check when an abstract type is used for instantiation
@@ -1624,7 +1624,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }

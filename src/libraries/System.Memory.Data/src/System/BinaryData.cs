@@ -16,6 +16,7 @@ namespace System
     /// <summary>
     /// A lightweight abstraction for a payload of bytes that supports converting between string, stream, JSON, and bytes.
     /// </summary>
+    [JsonConverter(typeof(BinaryDataConverter))]
     public class BinaryData
     {
         private const string JsonSerializerRequiresUnreferencedCode = "JSON serialization and deserialization might require types that cannot be statically analyzed.";
@@ -275,7 +276,13 @@ namespace System
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
         {
-            return JsonSerializer.Deserialize<T>(_bytes.Span, options);
+            ReadOnlySpan<byte> span = _bytes.Span;
+
+            // Check for the UTF-8 byte order mark (BOM) EF BB BF
+            if (span.Length > 2 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF)
+                span = span.Slice(3);
+
+            return JsonSerializer.Deserialize<T>(span, options);
         }
 
         /// <summary>

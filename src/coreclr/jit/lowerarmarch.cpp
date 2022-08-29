@@ -104,6 +104,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
+            case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
@@ -306,11 +307,13 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
             mul->SetUnsigned();
         }
 
+        op1->CastOp()->ClearContained(); // Uncontain any memory operands.
         mul->gtOp1 = op1->CastOp();
         BlockRange().Remove(op1);
 
         if (op2->OperIs(GT_CAST))
         {
+            op2->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
             mul->gtOp2 = op2->AsCast()->CastOp();
             BlockRange().Remove(op2);
         }
@@ -364,6 +367,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             binOp->ChangeOper(GT_AND_NOT);
             BlockRange().Remove(notNode);
         }
+#ifdef TARGET_ARM64
+        else
+        {
+            ContainCheckCompareChainForAnd(binOp);
+        }
+#endif
     }
 
     ContainCheckBinary(binOp);
@@ -492,9 +501,14 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr() || (isDstAddrLocal && (size <= copyBlockUnrollLimit)))
+            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
+            }
+            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
+            {
+                blkNode->SetOper(GT_STORE_BLK);
+                blkNode->gtBlkOpGcUnsafe = true;
             }
         }
 
@@ -572,6 +586,45 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     addr->AsAddrMode()->SetScale(0);
     addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
     addr->SetContained();
+}
+
+//------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    GenTree* src = putArgNode->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        MakeSrcContained(putArgNode, src);
+
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -661,19 +714,7 @@ void Lowering::LowerRotate(GenTree* tree)
 // Arguments:
 //    tree - the node to lower
 //
-// Return Value:
-//    A new tree node if it changed.
-//
 // Notes:
-//     {expr} % {cns}
-//     Logically turns into:
-//         let a = {expr}
-//         if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
-//     which then turns into:
-//         and   reg1, reg0, #({cns} - 1)
-//         negs  reg0, reg0
-//         and   reg0, reg0, #({cns} - 1)
-//         csneg reg0, reg1, reg0, mi
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
@@ -684,12 +725,15 @@ void Lowering::LowerModPow2(GenTree* node)
     GenTree*   dividend = mod->gtGetOp1();
     GenTree*   divisor  = mod->gtGetOp2();
 
+    JITDUMP("Lower: optimize X MOD POW2");
+
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
+    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue());
+    ssize_t divisorCnsValueMinusOne = divisorCnsValue - 1;
 
     BlockRange().Remove(divisor);
 
@@ -701,31 +745,62 @@ void Lowering::LowerModPow2(GenTree* node)
     GenTree* dividend2 = comp->gtClone(dividend);
     BlockRange().InsertAfter(dividend, dividend2);
 
-    GenTreeIntCon* cns = comp->gtNewIconNode(cnsValue, type);
+    GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
     BlockRange().InsertAfter(dividend2, cns);
 
     GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
     BlockRange().InsertAfter(cns, trueExpr);
     LowerNode(trueExpr);
 
-    GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
-    neg->gtFlags |= GTF_SET_FLAGS;
-    BlockRange().InsertAfter(trueExpr, neg);
+    if (divisorCnsValue == 2)
+    {
+        // {expr} % 2
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a < 0 then -(a & 1) else (a & 1)
+        // which then turns into:
+        //     and   reg1, reg0, #1
+        //     cmp   reg0, #0
+        //     cneg  reg0, reg1, lt
 
-    GenTreeIntCon* cns2 = comp->gtNewIconNode(cnsValue, type);
-    BlockRange().InsertAfter(neg, cns2);
+        GenTreeIntCon* cnsZero = comp->gtNewIconNode(0, type);
+        BlockRange().InsertAfter(trueExpr, cnsZero);
 
-    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
-    BlockRange().InsertAfter(cns2, falseExpr);
-    LowerNode(falseExpr);
+        GenTree* const cmp = comp->gtNewOperNode(GT_CMP, type, dividend2, cnsZero);
+        cmp->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(cnsZero, cmp);
+        LowerNode(cmp);
 
-    mod->ChangeOper(GT_CSNEG_MI);
-    mod->gtOp1 = trueExpr;
-    mod->gtOp2 = falseExpr;
-    mod->gtFlags |= GTF_USE_FLAGS;
+        mod->ChangeOper(GT_CNEG_LT);
+        mod->gtOp1 = trueExpr;
+    }
+    else
+    {
+        // {expr} % {cns}
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+        // which then turns into:
+        //     and   reg1, reg0, #({cns} - 1)
+        //     negs  reg0, reg0
+        //     and   reg0, reg0, #({cns} - 1)
+        //     csneg reg0, reg1, reg0, mi
 
-    JITDUMP("Lower: optimize X MOD POW2");
-    DISPNODE(mod);
+        GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+        neg->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(trueExpr, neg);
+
+        GenTreeIntCon* cns2 = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
+        BlockRange().InsertAfter(neg, cns2);
+
+        GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+        BlockRange().InsertAfter(cns2, falseExpr);
+        LowerNode(falseExpr);
+
+        mod->ChangeOper(GT_CSNEG_MI);
+        mod->gtOp1 = trueExpr;
+        mod->gtOp2 = falseExpr;
+    }
 
     ContainCheckNode(mod);
 }
@@ -1808,6 +1883,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
             {
                 node->ChangeOper(GT_ADDEX);
+                cast->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
                 MakeSrcContained(node, cast);
             }
         }
@@ -1951,11 +2027,63 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-#ifdef TARGET_ARM
     GenTree*  castOp     = node->CastOp();
     var_types castToType = node->CastToType();
-    var_types srcType    = castOp->TypeGet();
 
+    if (comp->opts.OptimizationEnabled() && !node->gtOverflow() && varTypeIsIntegral(castOp) &&
+        varTypeIsIntegral(castToType))
+    {
+        // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+        if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+        {
+            bool srcIsContainable = false;
+
+            // Make sure to only contain indirections codegen can handle.
+            if (castOp->OperIs(GT_IND))
+            {
+                GenTreeIndir* indir = castOp->AsIndir();
+
+                if (!indir->IsVolatile() && !indir->IsUnaligned())
+                {
+                    GenTree* addr = indir->Addr();
+
+                    if (!addr->isContained())
+                    {
+                        srcIsContainable = true;
+                    }
+                    else if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
+                    {
+                        var_types loadType = varTypeIsSmall(castToType) ? castToType : castOp->TypeGet();
+
+                        if (emitter::emitIns_valid_imm_for_ldst_offset(addr->AsAddrMode()->Offset(),
+                                                                       emitTypeSize(loadType)))
+                        {
+                            srcIsContainable = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                assert(castOp->OperIsLocalRead() || !IsContainableMemoryOp(castOp));
+                srcIsContainable = true;
+            }
+
+            if (srcIsContainable && IsSafeToContainMem(node, castOp))
+            {
+                if (IsContainableMemoryOp(castOp))
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else
+                {
+                    castOp->SetRegOptional();
+                }
+            }
+        }
+    }
+
+#ifdef TARGET_ARM
     if (varTypeIsLong(castOp))
     {
         assert(castOp->OperGet() == GT_LONG);
@@ -1974,6 +2102,216 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
+
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// IsValidCompareChain : Determine if the node contains a valid chain of ANDs and CMPs.
+//
+// Arguments:
+//    child - pointer to the node being checked.
+//    parent - parent node of the child.
+//
+// Return value:
+//    True if a valid chain is found.
+//
+// Notes:
+//    A compare chain is a sequence of CMP nodes connected by AND nodes.
+//    For example:   AND (AND (CMP A B) (CMP C D)) (CMP E F)
+//    The chain can just be a single compare node, however it's parent
+//    must always be an AND or SELECT node.
+//    If a CMP or AND node is contained then it and all it's children are
+//    considered to be in a valid chain.
+//    Chains are built up during the lowering of each successive parent.
+//
+bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
+{
+    assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
+
+    if (child->isContainedAndNotIntOrIImmed())
+    {
+        // Already have a chain.
+        assert(child->OperIs(GT_AND) || child->OperIsCmpCompare());
+        return true;
+    }
+    else
+    {
+        if (child->OperIs(GT_AND))
+        {
+            // Count both sides.
+            return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
+                   IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
+        }
+        else if (child->OperIsCmpCompare())
+        {
+            // Can the child compare be contained.
+            return IsSafeToContainMem(parent, child);
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCompareChain : Determine if a chain of ANDs and CMPs can be contained.
+//
+// Arguments:
+//    child - pointer to the node being checked.
+//    parent - parent node of the child.
+//    startOfChain - If found, returns the earliest valid op in the chain.
+//
+// Return value:
+//    True if a valid chain is was contained.
+//
+// Notes:
+//    Assumes the chain was checked via IsValidCompareChain.
+//
+bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** startOfChain)
+{
+    assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
+    *startOfChain = nullptr; // Nothing found yet.
+
+    if (child->isContainedAndNotIntOrIImmed())
+    {
+        // Already have a chain.
+        return true;
+    }
+    // Can the child be contained.
+    else if (IsSafeToContainMem(parent, child))
+    {
+        if (child->OperIs(GT_AND))
+        {
+            // If Op2 is not contained, then try to contain it.
+            if (!child->AsOp()->gtGetOp2()->isContainedAndNotIntOrIImmed())
+            {
+                if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
+                {
+                    // Op2 must be contained in order to contain Op1 or the AND.
+                    return false;
+                }
+            }
+
+            // If Op1 is not contained, then try to contain it.
+            if (!child->AsOp()->gtGetOp1()->isContainedAndNotIntOrIImmed())
+            {
+                if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
+                {
+                    return false;
+                }
+            }
+
+            // Contain the AND.
+            child->SetContained();
+            return true;
+        }
+        else if (child->OperIsCmpCompare())
+        {
+            child->AsOp()->SetContained();
+
+            // Ensure the children of the compare are contained correctly.
+            child->AsOp()->gtGetOp1()->ClearContained();
+            child->AsOp()->gtGetOp2()->ClearContained();
+            ContainCheckConditionalCompare(child->AsOp());
+            *startOfChain = child;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCompareChainForAnd : Determine if an AND is a containable chain
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
+{
+    assert(tree->OperIs(GT_AND));
+
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    // First check there is a valid chain.
+    if (IsValidCompareChain(tree->AsOp()->gtGetOp2(), tree) && IsValidCompareChain(tree->AsOp()->gtGetOp1(), tree))
+    {
+        GenTree* startOfChain = nullptr;
+
+        // To ensure ordering at code generation, Op1 and the parent can
+        // only be contained if Op2 is contained.
+        if (ContainCheckCompareChain(tree->AsOp()->gtGetOp2(), tree, &startOfChain))
+        {
+            if (ContainCheckCompareChain(tree->AsOp()->gtGetOp1(), tree, &startOfChain))
+            {
+                // If op1 is the start of a chain, then it'll be generated as a standard compare.
+                if (startOfChain != nullptr)
+                {
+                    // The earliest node in the chain will be generated as a standard compare.
+                    assert(startOfChain->OperIsCmpCompare());
+                    startOfChain->AsOp()->gtGetOp1()->ClearContained();
+                    startOfChain->AsOp()->gtGetOp2()->ClearContained();
+                    ContainCheckCompare(startOfChain->AsOp());
+                }
+            }
+        }
+
+        JITDUMP("Lowered `AND` chain:\n");
+        DISPTREE(tree);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
+{
+    assert(cmp->OperIsCmpCompare());
+    GenTree* op2 = cmp->gtOp2;
+
+    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+
+        if (emitter::emitIns_valid_imm_for_ccmp(immVal))
+        {
+            MakeSrcContained(cmp, op2);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckSelect : determine whether the source of a select should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckSelect(GenTreeConditional* node)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    // Check if the compare does not need to be generated into a register.
+    GenTree* startOfChain = nullptr;
+    ContainCheckCompareChain(node->gtCond, node, &startOfChain);
+
+    if (startOfChain != nullptr)
+    {
+        // The earliest node in the chain will be generated as a standard compare.
+        assert(startOfChain->OperIsCmpCompare());
+        startOfChain->AsOp()->gtGetOp1()->ClearContained();
+        startOfChain->AsOp()->gtGetOp2()->ClearContained();
+        ContainCheckCompare(startOfChain->AsOp());
+    }
+}
+
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.

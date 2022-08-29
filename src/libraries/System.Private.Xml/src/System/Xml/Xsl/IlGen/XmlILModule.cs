@@ -8,11 +8,10 @@ using System.Reflection.Emit;
 using System.Security;
 using System.Xml.Xsl.Runtime;
 using System.Runtime.Versioning;
+using DebuggingModes = System.Diagnostics.DebuggableAttribute.DebuggingModes;
 
 namespace System.Xml.Xsl.IlGen
 {
-    using DebuggingModes = DebuggableAttribute.DebuggingModes;
-
     internal enum XmlILMethodAttributes
     {
         None = 0,
@@ -240,7 +239,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                typBaked = _typeBldr!.CreateTypeInfo()!.AsType();
+                typBaked = _typeBldr!.CreateType();
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);

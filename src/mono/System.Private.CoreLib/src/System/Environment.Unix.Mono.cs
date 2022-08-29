@@ -20,7 +20,7 @@ namespace System
 
             if (s_environment == null)
             {
-                return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+                return Marshal.PtrToStringUTF8(Interop.Sys.GetEnv(variable));
             }
 
             variable = TrimStringOnFirstZero(variable);

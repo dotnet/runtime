@@ -279,6 +279,14 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(producedSum, consumedSum);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ReadThrowsOriginalExceptionWhenItOccurs()
+        {
+            var pipeReader = new BuggyAndNotCompletedPipeReader();
+            Stream stream = pipeReader.AsStream();
+            AssertExtensions.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3), "error occurred during reading");
+        }
+
         [Fact]
         public void AsStreamDoNotCompleteReader()
         {
@@ -409,6 +417,12 @@ namespace System.IO.Pipelines.Tests
                 yield return new object[] { readArraySync };
                 yield return new object[] { readSpanSync };
             }
+        }
+
+        public class BuggyAndNotCompletedPipeReader : BuggyPipeReader
+        {
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) =>
+                new ValueTask<ReadResult>(Task.FromException<ReadResult>(new InvalidOperationException("error occurred during reading")));
         }
     }
 }

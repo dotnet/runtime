@@ -759,7 +759,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (header.IsValid)
                 {
                     // Notify the owner block that our count has decreased
-                    if (_itemsRemovedAction != null) _itemsRemovedAction(numDequeuedMessages);
+                    _itemsRemovedAction?.Invoke(numDequeuedMessages);
 
                     // Offer it to each target, unless a soleTarget was provided, which case just offer it to that one.
                     TargetRegistry<TOutput>.LinkedTargetInfo? cur = _targetRegistry.FirstTargetNode;

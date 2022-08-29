@@ -16,7 +16,6 @@ namespace Wasm.Build.Tests
         {}
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
@@ -25,7 +24,6 @@ namespace Wasm.Build.Tests
                     buildArgs, host, id);
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)
@@ -56,6 +54,18 @@ namespace Wasm.Build.Tests
                         return 42;
                     }
                 }", buildArgs, host, id);
+
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        public void ExceptionFromMain(BuildArgs buildArgs, RunHost host, string id)
+            => TestMain("main_exception", """
+                using System;
+                using System.Threading.Tasks;
+
+                public class TestClass {
+                    public static int Main() => throw new Exception("MessageFromMyException");
+                }
+                """, buildArgs, host, id, expectedExitCode: 71, expectedOutput: "Error: MessageFromMyException");
 
         private static string s_bug49588_ProgramCS = @"
             using System;
@@ -167,7 +177,9 @@ namespace Wasm.Build.Tests
               RunHost host,
               string id,
               string extraProperties = "",
-              bool? dotnetWasmFromRuntimePack = null)
+              bool? dotnetWasmFromRuntimePack = null,
+              int expectedExitCode = 42,
+              string expectedOutput = "Hello, World!")
         {
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
@@ -181,8 +193,8 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
-                                test: output => Assert.Contains("Hello, World!", output), host: host, id: id);
+            RunAndTestWasmApp(buildArgs, expectedExitCode: expectedExitCode,
+                                test: output => Assert.Contains(expectedOutput, output), host: host, id: id);
         }
     }
 }

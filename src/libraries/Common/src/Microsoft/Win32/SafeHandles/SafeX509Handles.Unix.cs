@@ -74,7 +74,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.X509StoreDestory(handle);
+            Interop.Crypto.X509StoreDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

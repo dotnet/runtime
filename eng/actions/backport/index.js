@@ -39,7 +39,7 @@ async function run() {
       console.log(`Verified ${comment_user} is a repo collaborator.`);
     } catch (error) {
       console.log(error);
-      throw new BackportException(`Error: @${comment_user} is not a repo collaborator, backporting is not allowed. If you're a collaborator please make sure your Microsoft team membership visibility is set to Public on https://github.com/orgs/microsoft/people?query=${comment_user}`);
+      throw new BackportException(`Error: @${comment_user} is not a repo collaborator, backporting is not allowed. If you're a collaborator please make sure your ${repo_owner} team membership visibility is set to Public on https://github.com/orgs/${repo_owner}/people?query=${comment_user}`);
     }
 
     try { await exec.exec(`git ls-remote --exit-code --heads origin ${target_branch}`) } catch { throw new BackportException(`Error: The specified backport target branch ${target_branch} wasn't found in the repo.`); }
@@ -67,7 +67,9 @@ async function run() {
     } catch { }
 
     // download and apply patch
-    await exec.exec(`curl -sSL "${github.context.payload.issue.pull_request.patch_url}" --output changes.patch`);
+    let patch_url = github.context.payload.issue.pull_request.patch_url;
+    patch_url = patch_url.replace("runtime", "RUNTIME");
+    await exec.exec(`curl -sSL "${patch_url}" --output changes.patch`);
 
     const git_am_command = "git am --3way --ignore-whitespace --keep-non-patch changes.patch";
     let git_am_output = `$ ${git_am_command}\n\n`;

@@ -438,9 +438,9 @@ void BasicBlock::dspFlags()
     {
         printf("idxlen ");
     }
-    if (bbFlags & BBF_HAS_NEWARRAY)
+    if (bbFlags & BBF_HAS_MD_IDX_LEN)
     {
-        printf("new[] ");
+        printf("mdidxlen ");
     }
     if (bbFlags & BBF_HAS_NEWOBJ)
     {
@@ -511,6 +511,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_LOOP_ALIGN)
     {
         printf("align ");
+    }
+    if (bbFlags & BBF_HAS_MDARRAYREF)
+    {
+        printf("mdarr ");
     }
 }
 
@@ -1447,7 +1451,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
     // Note that some fields have to be initialized to 0 (like bbFPStateX87)
-    memset(block, 0, sizeof(*block));
+    memset((void*)block, 0, sizeof(*block));
 
     // scopeInfo needs to be able to differentiate between blocks which
     // correspond to some instrs (and so may have some LocalVarInfo

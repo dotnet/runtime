@@ -20,7 +20,7 @@ internal class Program
             arrayObj.SetValue("solitary value", Enumerable.Repeat(0, rank).ToArray());
             ConstantExpression array = Expression.Constant(arrayObj);
             IEnumerable<DefaultExpression> indices = Enumerable.Repeat(Expression.Default(typeof(int)), rank);
-            // This code path for the Compile call excercises the method being tested.
+            // This code path for the Compile call exercises the method being tested.
             Func<string> func = Expression.Lambda<Func<string>>(
                 Expression.ArrayAccess(array, indices)).Compile(preferInterpretation: true);
 

@@ -46,6 +46,8 @@ public class WasmAppBuilder : Task
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
     public string? MainHTMLPath { get; set; }
+    public bool IncludeThreadsWorker {get; set; }
+    public int PThreadPoolSize {get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -54,7 +56,7 @@ public class WasmAppBuilder : Task
     // - Value: can be a number, bool, quoted string, or json string
     //
     // Examples:
-    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="enableProfiler" Value="true" />
     //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
     //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
     //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
@@ -73,13 +75,15 @@ public class WasmAppBuilder : Task
 
     private sealed class WasmAppConfig
     {
-        [JsonPropertyName("assembly_root")]
-        public string AssemblyRoot { get; set; } = "managed";
-        [JsonPropertyName("debug_level")]
+        [JsonPropertyName("mainAssemblyName")]
+        public string? MainAssemblyName { get; set; }
+        [JsonPropertyName("assemblyRootFolder")]
+        public string AssemblyRootFolder { get; set; } = "managed";
+        [JsonPropertyName("debugLevel")]
         public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
         public List<object> Assets { get; } = new List<object>();
-        [JsonPropertyName("remote_sources")]
+        [JsonPropertyName("remoteSources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
@@ -96,6 +100,18 @@ public class WasmAppBuilder : Task
         public string Behavior { get; init; }
         [JsonPropertyName("name")]
         public string Name { get; init; }
+        // TODO [JsonPropertyName("hash")]
+        // TODO public string? Hash { get; set; }
+    }
+
+    private sealed class WasmEntry : AssetEntry
+    {
+        public WasmEntry(string name) : base(name, "dotnetwasm") { }
+    }
+
+    private sealed class ThreadsWorkerEntry : AssetEntry
+    {
+        public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
     }
 
     private sealed class AssemblyEntry : AssetEntry
@@ -117,14 +133,14 @@ public class WasmAppBuilder : Task
     private sealed class VfsEntry : AssetEntry
     {
         public VfsEntry(string name) : base(name, "vfs") {}
-        [JsonPropertyName("virtual_path")]
+        [JsonPropertyName("virtualPath")]
         public string? VirtualPath { get; set; }
     }
 
     private sealed class IcuData : AssetEntry
     {
         public IcuData(string name) : base(name, "icu") {}
-        [JsonPropertyName("load_remote")]
+        [JsonPropertyName("loadRemote")]
         public bool LoadRemote { get; set; }
     }
 
@@ -162,10 +178,13 @@ public class WasmAppBuilder : Task
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ();
+        var config = new WasmAppConfig ()
+        {
+            MainAssemblyName = MainAssemblyName,
+        };
 
         // Create app
-        var asmRootPath = Path.Combine(AppDir, config.AssemblyRoot);
+        var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
@@ -195,15 +214,22 @@ public class WasmAppBuilder : Task
         {
             if (!File.Exists(indexHtmlPath))
             {
-                var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
+                var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
                 File.WriteAllText(indexHtmlPath, html);
             }
         }
         else
         {
             FileCopyChecked(MainHTMLPath, Path.Combine(AppDir, indexHtmlPath), "html");
-            //var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
+            //var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
             //File.WriteAllText(indexHtmlPath, html);
+        }
+
+        string packageJsonPath = Path.Combine(AppDir, "package.json");
+        if (!File.Exists(packageJsonPath))
+        {
+            var json = @"{ ""type"":""module"" }";
+            File.WriteAllText(packageJsonPath, json);
         }
 
         foreach (var assembly in _assemblies)
@@ -233,7 +259,7 @@ public class WasmAppBuilder : Task
                 // FIXME: validate the culture?
 
                 string name = Path.GetFileName(fullPath);
-                string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
+                string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
                 Directory.CreateDirectory(directory);
                 FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
@@ -288,12 +314,24 @@ public class WasmAppBuilder : Task
             config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
+        config.Assets.Add(new WasmEntry ("dotnet.wasm") );
+        if (IncludeThreadsWorker)
+            config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 
         if (RemoteSources?.Length > 0)
         {
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
+        }
+
+        if (PThreadPoolSize < -1)
+        {
+            throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
+        }
+        else
+        {
+            config.Extra["pthreadPoolSize"] = PThreadPoolSize;
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())

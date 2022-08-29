@@ -3,11 +3,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using QilName = System.Xml.Xsl.Qil.QilName;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using QilName = System.Xml.Xsl.Qil.QilName;
-
     // Compiler scope manager keeps track of
     //   Variable declarations
     //   Namespace declarations
@@ -123,7 +122,7 @@ namespace System.Xml.Xsl.Xslt
             }
             if (excludeAll)
             {
-                // #all should be on the top of the stack, becase all NSs on this element should be excluded as well
+                // #all should be on the top of the stack, because all NSs on this element should be excluded as well
                 AddExNamespace(null);
             }
             return hasNamespaces;

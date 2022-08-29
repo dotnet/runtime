@@ -65,7 +65,7 @@
 
 #ifndef DACCESS_COMPILE
 
-// Typedef for string comparition functions.
+// Typedef for string comparison functions.
 typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
 MethodDataCache *MethodTable::s_pMethodDataCache = NULL;
@@ -552,7 +552,7 @@ void MethodTable::SetIsRestored()
 
     PRECONDITION(!IsFullyLoaded());
 
-    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
+    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -719,8 +719,8 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
@@ -998,7 +998,7 @@ void MethodTable::SetInterfaceDeclaredOnClass(DWORD index)
     // Get address of optional slot for extra info.
     PTR_TADDR pInfoSlot = GetExtraInterfaceInfoPtr();
 
-    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshhold)
+    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshold)
     {
         // Bitmap of flags is stored inline in the optional slot.
         *pInfoSlot |= SELECT_TADDR_BIT(index);
@@ -1038,7 +1038,7 @@ bool MethodTable::IsInterfaceDeclaredOnClass(DWORD index)
     // Get data from the optional extra info slot.
     TADDR taddrInfo = *GetExtraInterfaceInfoPtr();
 
-    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshhold)
+    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshold)
     {
         // Bitmap of flags is stored directly in the value.
         return (taddrInfo & SELECT_TADDR_BIT(index)) != 0;
@@ -1200,7 +1200,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
 
     // For small numbers of interfaces we can record the info in the TADDR of the optional member itself (use
     // the TADDR as a bitmap).
-    if (cInterfaces <= kInlinedInterfaceInfoThreshhold)
+    if (cInterfaces <= kInlinedInterfaceInfoThreshold)
         return 0;
 
     // Otherwise we'll cause an array of TADDRs to be allocated (use TADDRs since the heap space allocated
@@ -1214,9 +1214,9 @@ void MethodTable::EnumMemoryRegionsForExtraInterfaceInfo()
 {
     SUPPORTS_DAC;
 
-    // No extra data to enum if the number of interfaces is below the threshhold -- there is either no data or
+    // No extra data to enum if the number of interfaces is below the threshold -- there is either no data or
     // it all fits into the optional members inline.
-    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshhold)
+    if (GetNumInterfaces() <= kInlinedInterfaceInfoThreshold)
         return;
 
     DacEnumMemoryRegion(*GetExtraInterfaceInfoPtr(), GetExtraInterfaceInfoSize(GetNumInterfaces()));
@@ -2285,12 +2285,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize();
     }
 
-    // System types are loaded before others, so ByReference<T> would be loaded before Span<T> or any other type that has a
-    // ByReference<T> field. ByReference<T> is the first by-ref-like system type to be loaded (see
-    // SystemDomain::LoadBaseSystemClasses), so if the current method table is marked as by-ref-like and g_pByReferenceClass is
-    // null, it must be the initial load of ByReference<T>.
-    bool isThisByReferenceOfT = IsByRefLike() && (g_pByReferenceClass == nullptr || HasSameTypeDefAs(g_pByReferenceClass));
-
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         FieldDesc* pField;
@@ -2320,20 +2314,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         }
 
         CorElementType fieldType = pField->GetFieldType();
-
-        SystemVClassificationType fieldClassificationType;
-        if (isThisByReferenceOfT)
-        {
-            // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
-            // memory, so classify its field as such
-            _ASSERTE(numIntroducedFields == 1);
-            _ASSERTE(fieldType == CorElementType::ELEMENT_TYPE_I);
-            fieldClassificationType = SystemVClassificationTypeIntegerByRef;
-        }
-        else
-        {
-            fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
-        }
+        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
 
 #ifdef _DEBUG
         LPCUTF8 fieldName;
@@ -2519,7 +2500,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
         if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
         {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
+            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
                 nestingLevel * 5, "", this->GetDebugClassName()));
 
             return false;
@@ -2872,19 +2853,22 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_LOONGARCH64)
-int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
-{
-    TypeHandle th(cls);
 
-    bool useNativeLayout           = false;
-    int size = STRUCT_NO_FLOAT_FIELD;
-    MethodTable* pMethodTable      = nullptr;
+bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
+{
+    TypeHandle th(pMT);
+
+    bool useNativeLayout      = false;
+    bool ret                  = false;
+    MethodTable* pMethodTable = nullptr;
 
     if (!th.IsTypeDesc())
     {
         pMethodTable = th.AsMethodTable();
         if (pMethodTable->HasLayout())
+        {
             useNativeLayout = true;
+        }
         else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
@@ -2897,122 +2881,16 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
-                    if (fieldType == ELEMENT_TYPE_R4)
-                        size = STRUCT_FLOAT_FIELD_ONLY_ONE;
-                    else if (fieldType == ELEMENT_TYPE_R8)
-                        size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                    ret = true;
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
+                    pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                    }
-                    else if (pMethodTable->GetNumIntroducedInstanceFields() == 2)
-                    {
-                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        ret = IsLoongArch64OnlyOneField(pMethodTable);
                     }
                 }
-            }
-            else if (numIntroducedFields == 2)
-            {
-                FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
-                if (pFieldStart->GetSize() > 8)
-                    goto _End_arg;
-
-                CorElementType fieldType = pFieldStart[0].GetFieldType();
-                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-                {
-                    if (fieldType == ELEMENT_TYPE_R4)
-                        size = STRUCT_FLOAT_FIELD_FIRST;
-                    else if (fieldType == ELEMENT_TYPE_R8)
-                        size = STRUCT_FIRST_FIELD_DOUBLE;
-                    else if (pFieldStart[0].GetSize() == 8)
-                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
-
-                }
-                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-                {
-                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
-                    {
-                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                        if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-                        {
-                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
-                        }
-                        else if (size == STRUCT_NO_FLOAT_FIELD)
-                        {
-                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
-                        }
-                        else
-                        {
-                            size = STRUCT_NO_FLOAT_FIELD;
-                            goto _End_arg;
-                        }
-                    }
-                    else
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
-                    }
-                }
-                else if (pFieldStart[0].GetSize() == 8)
-                    size = STRUCT_FIRST_FIELD_SIZE_IS8;
-
-                fieldType = pFieldStart[1].GetFieldType();
-                if (pFieldStart[1].GetSize() > 8)
-                {
-                    size = STRUCT_NO_FLOAT_FIELD;
-                    goto _End_arg;
-                }
-                else if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-                {
-                    if (fieldType == ELEMENT_TYPE_R4)
-                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                    else if (fieldType == ELEMENT_TYPE_R8)
-                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                    else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                        size = STRUCT_NO_FLOAT_FIELD;
-                    else if (pFieldStart[1].GetSize() == 8)
-                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-                }
-                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-                {
-                    pMethodTable  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
-                    {
-                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                        if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-                        {
-                            if (pFieldStart[1].GetSize() == 8)
-                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                            else
-                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                        }
-                        else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                        {
-                            size = STRUCT_NO_FLOAT_FIELD;
-                        }
-                        else if (size2 == STRUCT_NO_FLOAT_FIELD)
-                        {
-                            size |= pFieldStart[1].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
-                        }
-                        else
-                        {
-                            size = STRUCT_NO_FLOAT_FIELD;
-                        }
-                    }
-                    else
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                    }
-                }
-                else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                    size = STRUCT_NO_FLOAT_FIELD;
-                else if (pFieldStart[1].GetSize() == 8)
-                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
             }
             goto _End_arg;
         }
@@ -3048,22 +2926,283 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 if (isFixedBuffer)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
-                    if (numIntroducedFields > 2)
+                    if (numIntroducedFields != 1)
+                    {
                         goto _End_arg;
+                    }
+                }
+
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    ret = true;
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+                    NativeFieldCategory nfc = pNativeFieldDescs->GetCategory();
+                    if (nfc == NativeFieldCategory::NESTED)
+                    {
+                        pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
+                        ret = IsLoongArch64OnlyOneField(pMethodTable);
+                    }
+                    else if (nfc != NativeFieldCategory::ILLEGAL)
+                    {
+                        ret = true;
+                    }
+                }
+            }
+            else
+            {
+                ret = false;
+            }
+        }
+    }
+_End_arg:
+
+    return ret;
+}
+
+int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+{
+    TypeHandle th(cls);
+
+    bool useNativeLayout           = false;
+    int size = STRUCT_NO_FLOAT_FIELD;
+    MethodTable* pMethodTable      = nullptr;
+
+    if (!th.IsTypeDesc())
+    {
+        pMethodTable = th.AsMethodTable();
+        if (pMethodTable->HasLayout())
+        {
+            useNativeLayout = true;
+        }
+        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        {
+            DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
+
+            if (numIntroducedFields == 1)
+            {
+                FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
+
+                CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                    }
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                }
+            }
+            else if (numIntroducedFields == 2)
+            {
+                FieldDesc *pFieldSecond;
+                FieldDesc *pFieldFirst = pMethodTable->GetApproxFieldDescListRaw();
+                if (pFieldFirst->GetOffset() == 0)
+                {
+                    pFieldSecond = pFieldFirst + 1;
+                }
+                else
+                {
+                    pFieldSecond = pFieldFirst;
+                    pFieldFirst  = pFieldFirst + 1;
+                }
+                assert(pFieldFirst->GetOffset() == 0);
+
+                if (pFieldFirst->GetSize() > 8)
+                {
+                    goto _End_arg;
+                }
+
+                CorElementType fieldType = pFieldFirst[0].GetFieldType();
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        size = STRUCT_FLOAT_FIELD_FIRST;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        size = STRUCT_FIRST_FIELD_DOUBLE;
+                    }
+                    else if (pFieldFirst[0].GetSize() == 8)
+                    {
+                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                    }
+
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    if (IsLoongArch64OnlyOneField(pMethodTable))
+                    {
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                        {
+                            size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
+                        }
+                        else if (size == STRUCT_NO_FLOAT_FIELD)
+                        {
+                            size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
+                        }
+                        else
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
+                        }
+                    }
+                    else
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                        goto _End_arg;
+                    }
+                }
+                else if (pFieldFirst[0].GetSize() == 8)
+                {
+                    size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                }
+
+                fieldType = pFieldSecond[0].GetFieldType();
+                if (pFieldSecond[0].GetSize() > 8)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
+                }
+                else if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                    }
+                    else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                    }
+                    else if (pFieldSecond[0].GetSize() == 8)
+                    {
+                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                    }
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                    if (IsLoongArch64OnlyOneField(pMethodTable))
+                    {
+                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                        {
+                            if (pFieldSecond[0].GetSize() == 8)
+                            {
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                            }
+                            else
+                            {
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                            }
+                        }
+                        else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                        }
+                        else if (size2 == STRUCT_NO_FLOAT_FIELD)
+                        {
+                            size |= pFieldSecond[0].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
+                        }
+                        else
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                        }
+                    }
+                    else
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                    }
+                }
+                else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                }
+                else if (pFieldSecond[0].GetSize() == 8)
+                {
+                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                }
+            }
+
+            goto _End_arg;
+        }
+    }
+    else
+    {
+        _ASSERTE(th.IsNativeValueType());
+
+        useNativeLayout = true;
+        pMethodTable = th.AsNativeValueType();
+    }
+    _ASSERTE(pMethodTable != nullptr);
+
+    if (useNativeLayout)
+    {
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        {
+            DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
+            FieldDesc *pFieldStart = nullptr;
+
+            if (numIntroducedFields == 1)
+            {
+                pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
+
+                CorElementType fieldType = pFieldStart->GetFieldType();
+
+                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
+                                    && (pFieldStart->GetOffset() == 0)
+                                    && pMethodTable->HasLayout()
+                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+
+                if (isFixedBuffer)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields > 2)
+                    {
+                        goto _End_arg;
+                    }
+
                     if (fieldType == ELEMENT_TYPE_R4)
                     {
                         if (numIntroducedFields == 1)
+                        {
                             size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                        }
                         else if (numIntroducedFields == 2)
+                        {
                             size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                        }
                         goto _End_arg;
                     }
                     else if (fieldType == ELEMENT_TYPE_R8)
                     {
                         if (numIntroducedFields == 1)
+                        {
                             size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
                         else if (numIntroducedFields == 2)
+                        {
                             size = STRUCT_FIELD_TWO_DOUBLES;
+                        }
                         goto _End_arg;
                     }
                 }
@@ -3071,9 +3210,13 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
+                    {
                         size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                    }
                     else if (fieldType == ELEMENT_TYPE_R8)
+                    {
                         size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                    }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
@@ -3103,7 +3246,9 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 if (pFieldStart->GetSize() > 8)
+                {
                     goto _End_arg;
+                }
 
                 if (pFieldStart->GetOffset() || !pFieldStart[1].GetOffset() || (pFieldStart[0].GetSize() > pFieldStart[1].GetOffset()))
                 {
@@ -3114,23 +3259,37 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
+                    {
                         size = STRUCT_FLOAT_FIELD_FIRST;
+                    }
                     else if (fieldType == ELEMENT_TYPE_R8)
+                    {
                         size = STRUCT_FIRST_FIELD_DOUBLE;
+                    }
                     else if (pFieldStart[0].GetSize() == 8)
+                    {
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                    }
 
                     fieldType = pFieldStart[1].GetFieldType();
                     if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                     {
                         if (fieldType == ELEMENT_TYPE_R4)
+                        {
                             size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                        }
                         else if (fieldType == ELEMENT_TYPE_R8)
+                        {
                             size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                        }
                         else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                        {
                             size = STRUCT_NO_FLOAT_FIELD;
+                        }
                         else if (pFieldStart[1].GetSize() == 8)
+                        {
                             size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                        }
                         goto _End_arg;
                     }
                 }
@@ -3150,13 +3309,23 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
+                        if (!IsLoongArch64OnlyOneField(pMethodTable2))
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
+                        }
+
                         size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart->GetSize() == 8)
+                            {
                                 size = STRUCT_FIRST_FIELD_DOUBLE;
+                            }
                             else
+                            {
                                 size = STRUCT_FLOAT_FIELD_FIRST;
+                            }
                         }
                         else if (pFieldStart->GetSize() == 8)
                         {
@@ -3180,25 +3349,15 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
-                }
-                else if (fieldType == ELEMENT_TYPE_CLASS)
-                {
-                    MethodTable* pMethodTable2  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
-
-                    if (pMethodTable2->IsArray())
-                    {
-                        // Here is just skip the array as its elements' count greater than 1.
-                        // TODO-LoongArch64: liking `struct {int array[1]; float field_2;}` which the array field is only one element,
-                        // this struct can be passed by registers and should using float-register.
-                        // Details see github https://github.com/dotnet/runtime/pull/62885#discussion_r821878981
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
-                    }
                     else if (pFieldStart[0].GetSize() == 8)
+                    {
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                    }
                 }
                 else if (pFieldStart[0].GetSize() == 8)
+                {
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                }
 
                 fieldType = pFieldStart[1].GetFieldType();
                 if (pFieldStart[1].GetSize() > 8)
@@ -3209,116 +3368,91 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 else if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
+                    {
                         size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                    }
                     else if (fieldType == ELEMENT_TYPE_R8)
+                    {
                         size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                    }
                     else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                    {
                         size = STRUCT_NO_FLOAT_FIELD;
+                    }
                     else if (pFieldStart[1].GetSize() == 8)
+                    {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                    }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    MethodTable* pMethodTable2 = pFieldStart[1].GetFieldTypeHandleThrowing().AsMethodTable();
+                    const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+                    NativeFieldCategory nfc = pNativeFieldDescs[1].GetCategory();
 
-                    if (pMethodTable2->GetNumIntroducedInstanceFields() > 1)
+                    if (nfc == NativeFieldCategory::NESTED)
                     {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
-                    }
-
-                    if (pMethodTable2->HasLayout())
-                    {
-                        const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable2->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
-
-                        NativeFieldCategory nfc = pNativeFieldDescs->GetCategory();
-                        if (nfc == NativeFieldCategory::NESTED)
+                        if (pNativeFieldDescs[1].GetNumElements() != 1)
                         {
-                            pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
+                        }
 
-                            if (pMethodTable->GetNumIntroducedInstanceFields() > 1)
-                            {
-                                size = STRUCT_NO_FLOAT_FIELD;
-                                goto _End_arg;
-                            }
+                        MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                            if ((GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-                            {
-                                if (pFieldStart[1].GetSize() == 4)
-                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                                else if (pFieldStart[1].GetSize() == 8)
-                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                            }
-                            else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                                size = STRUCT_NO_FLOAT_FIELD;
-                            else if (pFieldStart[1].GetSize() == 8)
-                                size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-                        }
-                        else if (nfc == NativeFieldCategory::FLOAT)
+                        if (!IsLoongArch64OnlyOneField(pMethodTable2))
                         {
-                            if (pFieldStart[1].GetSize() == 4)
-                            {
-                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                            }
-                            else if (pFieldStart[1].GetSize() == 8)
-                            {
-                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                            }
-                            else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                                size = STRUCT_NO_FLOAT_FIELD;
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
                         }
-                        else
-                        {
-                            if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                            {
-                                size = STRUCT_NO_FLOAT_FIELD;
-                                goto _End_arg;
-                            }
-                            else if (pFieldStart[1].GetSize() == 8)
-                                size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-                        }
-                    }
-                    else
-                    {
+
                         if ((GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart[1].GetSize() == 4)
+                            {
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                            }
                             else if (pFieldStart[1].GetSize() == 8)
+                            {
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                            }
                         }
                         else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                        {
                             size = STRUCT_NO_FLOAT_FIELD;
+                        }
                         else if (pFieldStart[1].GetSize() == 8)
+                        {
                             size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                        }
                     }
-                }
-                else if (fieldType == ELEMENT_TYPE_CLASS)
-                {
-                    MethodTable* pMethodTable2  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
-
-                    if (pMethodTable2->IsArray())
+                    else if (nfc == NativeFieldCategory::FLOAT)
                     {
-                        // Here is just skip the array as its elements' count greater than 1.
-                        // TODO-LoongArch64: liking `struct {int array[1]; float field_2;}` which the array field is only one element,
-                        // this struct can be passed by registers and should using float-register.
-                        // Details see github https://github.com/dotnet/runtime/pull/62885#discussion_r821878981
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
+                        if (pFieldStart[1].GetSize() == 4)
+                        {
+                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                        }
+                        else if (pFieldStart[1].GetSize() == 8)
+                        {
+                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                        }
                     }
                     else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                     {
                         size = STRUCT_NO_FLOAT_FIELD;
                     }
                     else if (pFieldStart[1].GetSize() == 8)
+                    {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                    }
                 }
                 else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                 {
                     size = STRUCT_NO_FLOAT_FIELD;
                 }
                 else if (pFieldStart[1].GetSize() == 8)
+                {
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                }
             }
         }
     }
@@ -3449,7 +3583,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // Activate our module if necessary
         EnsureInstanceActive();
 
-        STRESS_LOG1(LF_CLASSLOADER, LL_INFO1000, "RunClassInit: Calling class contructor for type %pT\n", this);
+        STRESS_LOG1(LF_CLASSLOADER, LL_INFO1000, "RunClassInit: Calling class constructor for type %pT\n", this);
 
         MethodTable * pCanonMT = GetCanonicalMethodTable();
 
@@ -3472,7 +3606,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
             CALL_MANAGED_METHOD_NORET(args);
         }
 
-        STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class contructor for type %pT\n", this);
+        STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
 
         fRet = TRUE;
     }
@@ -3952,7 +4086,7 @@ void CallFinalizerOnThreadObject(Object *obj)
                 refThis->ClearInternal();
             }
 
-            FastInterlockOr ((ULONG *)&thread->m_State, Thread::TS_Finalized);
+            thread->SetThreadState(Thread::TS_Finalized);
             Thread::SetCleanupNeededForFinalizedThread();
         }
     }
@@ -4077,7 +4211,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     CONTRACT_END;
 
 #ifdef _DEBUG
-    // Force a GC here because GetManagedClassObject could trigger GC nondeterminsticaly
+    // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
@@ -4099,7 +4233,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         // Only the winner can set m_ExposedClassObject from NULL.
         LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
         }
@@ -4276,7 +4410,7 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
 //                 on the pending list rather that pushed to CLASS_LOADED in the case of cyclic
 //                 dependencies - the root caller must handle this.
 //
-//   pfBailed - if we or one of our depedencies bails early due to cyclic dependencies, we
+//   pfBailed - if we or one of our dependencies bails early due to cyclic dependencies, we
 //              must set *pfBailed to TRUE. Otherwise, we must *leave it unchanged* (thus, the
 //              boolean acts as a cumulative OR.)
 //
@@ -4881,7 +5015,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         break;
     }
 
-    // DAC may be targetting a dump; dumps do not guarantee you can retrieve the EEClass from
+    // DAC may be targeting a dump; dumps do not guarantee you can retrieve the EEClass from
     // the MethodTable so this is not expected to work in a DAC build.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (IsRestored_NoLogging())
@@ -5475,7 +5609,8 @@ namespace
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
         BOOL allowVariance,
-        MethodDesc **candidateMD)
+        MethodDesc **candidateMD,
+        ClassLoadLevel level)
     {
         *candidateMD = NULL;
 
@@ -5518,15 +5653,15 @@ namespace
                         for (; it.IsValid() && candidateMaybe == NULL; it.Next())
                         {
                             MethodDesc *pDeclMD = it.GetMethodDesc();
-    
+
                             // Is this the right slot?
                             if (pDeclMD->GetSlot() != targetSlot)
                                 continue;
-    
+
                             // Is this the right interface?
                             if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
                                 continue;
-    
+
                             if (interfaceMD->HasClassInstantiation())
                             {
                                 // pInterfaceMD will be in the canonical form, so we need to check the specific
@@ -5534,17 +5669,17 @@ namespace
                                 //
                                 // The parent of pDeclMD is unreliable for this purpose because it may or
                                 // may not be canonicalized. Let's go from the metadata.
-    
+
                                 SigTypeContext typeContext = SigTypeContext(pMT);
-    
+
                                 mdTypeRef tkParent;
                                 IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-    
+
                                 MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
                                     pMD->GetModule(),
                                     tkParent,
                                     &typeContext).AsMethodTable();
-    
+
                                 // We do CanCastToInterface to also cover variance.
                                 // We already know this is a method on the same type definition as the (generic)
                                 // interface but we need to make sure the instantiations match.
@@ -5568,7 +5703,8 @@ namespace
                         candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
                             interfaceMT,
                             interfaceMD,
-                            /* verifyImplemented */ FALSE);
+                            /* verifyImplemented */ FALSE,
+                            /* level */ level);
                     }
                 }
             }
@@ -5588,9 +5724,11 @@ namespace
                 FALSE,                  // forceBoxedEntryPoint
                 candidateMaybe->HasMethodInstantiation() ?
                 candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
-                Instantiation(),    // for method themselves that are generic
+                Instantiation(),        // for method themselves that are generic
                 FALSE,                  // allowInstParam
-                TRUE                    // forceRemoteableMethod
+                TRUE,                   // forceRemoteableMethod
+                TRUE,                   // allowCreate
+                level                   // level
             );
         }
 
@@ -5607,7 +5745,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     MethodTable *pInterfaceMT,
     MethodDesc **ppDefaultMethod,
     BOOL allowVariance,
-    BOOL throwOnConflict
+    BOOL throwOnConflict,
+    ClassLoadLevel level
 )
 {
     CONTRACT(BOOL) {
@@ -5627,7 +5766,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5667,7 +5806,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, level))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -5935,7 +6074,7 @@ BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, Me
         return FALSE;
     }
 
-    // The target slots are the same, but they can still be overriden. We'll iterate
+    // The target slots are the same, but they can still be overridden. We'll iterate
     // the dispatch map beginning with pParentMT up the hierarchy and for each pItfMT
     // entry check the target slot contents (pParentMT vs. this class). A mismatch
     // means that there is an override. We'll keep track of source (interface) slots
@@ -5963,7 +6102,7 @@ BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, Me
                     UINT32 targetSlot = pCurEntry->GetTargetSlotNumber();
                     if (GetRestoredSlot(targetSlot) != pParentMT->GetRestoredSlot(targetSlot))
                     {
-                        // the target slot is overriden
+                        // the target slot is overridden
                         return FALSE;
                     }
 
@@ -6454,7 +6593,7 @@ void MethodTable::SetCl(mdTypeDef token)
     }
     else
     {
-        _ASSERTE(FitsIn<U2>(rid));
+        _ASSERTE(FitsIn<WORD>(rid));
         m_wToken = (WORD)rid;
     }
 
@@ -7671,6 +7810,16 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DWORD size = GetEndOffsetOfOptionalMembers();
     DacEnumMemoryRegion(dac_cast<TADDR>(this), size);
 
+    // Make sure the GCDescs are added to the dump
+    if (ContainsPointers())
+    {
+        PTR_CGCDesc gcdesc = CGCDesc::GetCGCDescFromMT(this);
+        size_t size = gcdesc->GetSize();
+        // Manually calculate the start of the GCDescs because CGCDesc::GetStartOfGCData() isn't DAC'ified.
+        TADDR gcdescStart = dac_cast<TADDR>(this) - size;
+        DacEnumMemoryRegion(gcdescStart, size);
+    }
+
     if (!IsCanonicalMethodTable())
     {
         PTR_MethodTable pMTCanonical = GetCanonicalMethodTable();
@@ -7678,6 +7827,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         if (pMTCanonical.IsValid())
         {
             pMTCanonical->EnumMemoryRegions(flags);
+        }
+        else
+        {
+            DacLogMessage("MT %p invalid canonical MT %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pMTCanonical));
         }
     }
     else
@@ -7696,6 +7849,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                 DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
             }
             pClass->EnumMemoryRegions(flags, this);
+        }
+        else
+        {
+            DacLogMessage("MT %p invalid class %p\n", dac_cast<TADDR>(this), dac_cast<TADDR>(pClass));
         }
     }
 
@@ -7747,7 +7904,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pWriteableData.EnumMem();
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         DispatchMap * pMap = GetDispatchMap();
         if (pMap != NULL)
@@ -7991,7 +8148,8 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL allowNullResult,
     BOOL verifyImplemented,
     BOOL allowVariantMatches,
-    BOOL* uniqueResolution)
+    BOOL* uniqueResolution,
+    ClassLoadLevel level)
 {
     if (uniqueResolution != nullptr)
     {
@@ -8024,7 +8182,7 @@ MethodTable::ResolveVirtualStaticMethod(
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, level);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8055,7 +8213,7 @@ MethodTable::ResolveVirtualStaticMethod(
 
                         if (allowVariantMatches)
                         {
-                            equivalentOrVariantCompatible = pItfInMap->CanCastTo(pInterfaceType, NULL);
+                            equivalentOrVariantCompatible = pItfInMap->CanCastToInterface(pInterfaceType, NULL);
                         }
                         else
                         {
@@ -8068,7 +8226,7 @@ MethodTable::ResolveVirtualStaticMethod(
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, level);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8082,7 +8240,8 @@ MethodTable::ResolveVirtualStaticMethod(
                     pInterfaceType,
                     &pMD,
                     /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ uniqueResolution == nullptr);
+                    /* throwOnConflict */ uniqueResolution == nullptr,
+                    level);
                 if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
                 {
                     // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
@@ -8112,7 +8271,7 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8239,7 +8398,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                /* level */ CLASS_LOADED);
+                /* level */ level);
         }
         if (pMethodImpl != nullptr)
         {
@@ -8285,7 +8444,8 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                         /* allowNullResult */ TRUE,
                         /* verifyImplemented */ TRUE,
                         /* allowVariantMatches */ FALSE,
-                        /* uniqueResolution */ &uniqueResolution)))
+                        /* uniqueResolution */ &uniqueResolution,
+                        /* level */ CLASS_LOAD_EXACTPARENTS)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);

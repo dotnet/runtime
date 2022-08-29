@@ -644,10 +644,7 @@ namespace System.Speech.Recognition
                         }
                         while (semanticValue._dictionary.ContainsKey(key));
                         semanticValue._dictionary.Add(key, thisSemanticValue);
-                        if (dupItems == null)
-                        {
-                            dupItems = new Collection<SemanticValue>();
-                        }
+                        dupItems ??= new Collection<SemanticValue>();
                         SemanticValue s = semanticValue._dictionary[key];
                         dupItems.Add(s);
                     }
@@ -744,7 +741,7 @@ namespace System.Speech.Recognition
 
             // find the grammar for this rule. If the grammar does not belong to any existing ruleref then
             // it must be local.
-            Grammar ruleRef = grammar != null ? grammar.Find(name) : null;
+            Grammar ruleRef = grammar?.Find(name);
             if (ruleRef != null)
             {
                 grammar = ruleRef;

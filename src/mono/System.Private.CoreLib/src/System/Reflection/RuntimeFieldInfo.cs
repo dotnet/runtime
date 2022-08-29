@@ -38,8 +38,6 @@ namespace System.Reflection
         internal abstract object UnsafeGetValue(object obj);
         internal abstract void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
         internal abstract void CheckConsistency(object target);
-        internal abstract object? GetValueNonEmit(object? obj);
-        internal abstract void SetValueNonEmit(object? obj, object? value);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -51,18 +49,7 @@ namespace System.Reflection
         private string? name;
         private Type? type;
         private FieldAttributes attrs;
-        private FieldAccessor? invoker;
 #pragma warning restore 649
-
-        private FieldAccessor Invoker
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                invoker ??= new FieldAccessor(this);
-                return invoker;
-            }
-        }
 
         public override Module Module
         {
@@ -130,13 +117,6 @@ namespace System.Reflection
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal override void SetValueNonEmit(object? obj, object? value)
-        {
-            SetValueInternal(this, obj, value);
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
         public override object GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
@@ -147,13 +127,6 @@ namespace System.Reflection
                 // Passing TypedReference by reference is easier to make correct in native code
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
             }
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal override object? GetValueNonEmit(object? obj)
-        {
-            return GetValueInternal(obj);
         }
 
         public override FieldAttributes Attributes
@@ -174,15 +147,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type ResolveType();
 
-        public override Type FieldType
-        {
-            get
-            {
-                if (type == null)
-                    type = ResolveType();
-                return type;
-            }
-        }
+        public override Type FieldType => type ??= ResolveType();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type GetParentType(bool declaring);
@@ -247,7 +212,7 @@ namespace System.Reflection
             if (!IsLiteral)
                 CheckGeneric();
 
-            return Invoker.GetValue(obj);
+            return GetValueInternal(obj);
         }
 
         public override string ToString()
@@ -272,8 +237,8 @@ namespace System.Reflection
             }
             if (IsLiteral)
                 throw new FieldAccessException("Cannot set a constant field");
-            if (binder == null)
-                binder = Type.DefaultBinder;
+
+            binder ??= Type.DefaultBinder;
             CheckGeneric();
             if (val != null)
             {
@@ -286,7 +251,7 @@ namespace System.Reflection
                 }
             }
 
-            Invoker.SetValue(obj, val);
+            SetValueInternal(this, obj, val);
         }
 
         internal RuntimeFieldInfo Clone(string newName)

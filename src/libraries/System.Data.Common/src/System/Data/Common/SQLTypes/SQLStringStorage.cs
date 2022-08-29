@@ -38,7 +38,7 @@ namespace System.Data.Common
                         }
                         if (min >= 0)
                         {
-                            for (i = i + 1; i < recordNos.Length; i++)
+                            for (i++; i < recordNos.Length; i++)
                             {
                                 if (IsNull(recordNos[i]))
                                     continue;
@@ -63,7 +63,7 @@ namespace System.Data.Common
                         }
                         if (max >= 0)
                         {
-                            for (i = i + 1; i < recordNos.Length; i++)
+                            for (i++; i < recordNos.Length; i++)
                             {
                                 if (Compare(max, recordNos[i]) < 0)
                                 {
@@ -153,19 +153,14 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            SqlString[] newValues = new SqlString[capacity];
-            if (null != _values)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             SqlString newValue = default;
-            string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
+            string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragment to reader
             StringReader strReader = new StringReader(tempStr);
 
             IXmlSerializable tmp = newValue;

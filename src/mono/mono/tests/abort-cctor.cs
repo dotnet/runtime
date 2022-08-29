@@ -46,7 +46,7 @@ class Driver
 			Environment.Exit (1);
 		if (StaticConstructor1.caughtException)
 			Environment.Exit (2);
-			
+
 	}
 
 	static void Test1 ()
@@ -186,7 +186,7 @@ class Driver
 	static void Test3 ()
 	{
 		Console.WriteLine ("Test 3:");
-		bool catched_abort = false;
+		bool caught_abort = false;
 
 		Driver.mre1.Reset ();
 		Driver.mre2.Reset ();
@@ -199,7 +199,7 @@ class Driver
 				Environment.Exit (7);
 			} catch (ThreadAbortException e) {
 				Console.WriteLine ("TEST 3: aborted {0}", e);
-				catched_abort = true;
+				caught_abort = true;
 			}
 		});
 
@@ -214,7 +214,7 @@ class Driver
 		thread.Join ();
 
 		// Did we catch the abort
-		if (!catched_abort)
+		if (!caught_abort)
 			Environment.Exit (8);
 
 		//is StaticConstructor2 viable?
@@ -253,7 +253,7 @@ class Driver
 			} catch (Exception e) {
 				caughtException = true;
 				throw;
-			}	
+			}
 		}
 
 		public static void Init ()
@@ -310,7 +310,7 @@ class Driver
 
 		thread.Join ();
 
-		if (!got_to_the_end_of_the_finally) { 
+		if (!got_to_the_end_of_the_finally) {
 			Console.WriteLine ("Did not get to the end of test 4 cctor");
 			Environment.Exit (12);
 		}
@@ -327,7 +327,7 @@ class Driver
 
 
 	class StaticConstructor5 {
-		public static bool catched_exception = false;
+		public static bool caught_exception = false;
 		static StaticConstructor5 ()
 		{
 			Driver.mre1.Set ();
@@ -335,23 +335,23 @@ class Driver
 			try {
 				throw new Exception ();
 			} catch (Exception) {
-				Console.WriteLine ("Catched exception in cctor");
-				catched_exception = true;
+				Console.WriteLine ("Caught exception in cctor");
+				caught_exception = true;
 			}
 		}
 	}
 
 	static void Test5 ()
 	{
-		bool catched_abort = false;
+		bool caught_abort = false;
 		Driver.mre1.Reset ();
 		Driver.mre2.Reset ();
 		Thread thread = new Thread (() => {
 					try {
 						new StaticConstructor5 ();
 					} catch (ThreadAbortException) {
-						Console.WriteLine ("Catched thread abort");
-						catched_abort = true;
+						Console.WriteLine ("Caught thread abort");
+						caught_abort = true;
 					}
 				});
 		thread.Start ();
@@ -362,9 +362,9 @@ class Driver
 
 		thread.Join ();
 
-		if (!StaticConstructor5.catched_exception)
+		if (!StaticConstructor5.caught_exception)
 			Environment.Exit (14);
-		if (!catched_abort)
+		if (!caught_abort)
 			Environment.Exit (15);
 	}
 

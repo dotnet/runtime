@@ -1142,10 +1142,7 @@ namespace System.Linq.Expressions
         {
             ArgumentNullException.ThrowIfNull(instance);
             ArgumentNullException.ThrowIfNull(methodName);
-            if (arguments == null)
-            {
-                arguments = Array.Empty<Expression>();
-            }
+            arguments ??= Array.Empty<Expression>();
 
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
             return Expression.Call(instance, FindMethod(instance.Type, methodName, typeArguments, arguments, flags)!, arguments);
@@ -1173,9 +1170,9 @@ namespace System.Linq.Expressions
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(methodName);
 
-            if (arguments == null) arguments = Array.Empty<Expression>();
-            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
-            return Expression.Call(null, FindMethod(type, methodName, typeArguments, arguments, flags)!, arguments);
+            arguments ??= Array.Empty<Expression>();
+            const BindingFlags Flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+            return Expression.Call(null, FindMethod(type, methodName, typeArguments, arguments, Flags)!, arguments);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a method call.</summary>

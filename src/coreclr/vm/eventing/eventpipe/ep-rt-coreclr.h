@@ -11,7 +11,6 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
-#include "win32threadpool.h"
 #include "clrversion.h"
 
 #undef EP_INFINITE_WAIT
@@ -1150,6 +1149,66 @@ ep_rt_runtime_version_get_utf8 (void)
 }
 
 /*
+ * Little-Endian Conversion.
+ */
+
+static
+EP_ALWAYS_INLINE
+uint16_t
+ep_rt_val_uint16_t (uint16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint32_t
+ep_rt_val_uint32_t (uint32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint64_t
+ep_rt_val_uint64_t (uint64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int16_t
+ep_rt_val_int16_t (int16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int32_t
+ep_rt_val_int32_t (int32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int64_t
+ep_rt_val_int64_t (int64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value)
+{
+	return value;
+}
+
+/*
 * Atomics.
 */
 
@@ -1283,10 +1342,10 @@ ep_rt_shutdown (void)
 static
 inline
 bool
-ep_rt_config_aquire (void)
+ep_rt_config_acquire (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_lock_aquire (ep_rt_coreclr_config_lock_get ());
+	return ep_rt_lock_acquire (ep_rt_coreclr_config_lock_get ());
 }
 
 static
@@ -1369,10 +1428,9 @@ ep_rt_method_get_full_name (
 	EX_TRY
 	{
 		SString method_name;
-		StackScratchBuffer conversion;
 
 		TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
+		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 ();
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
 			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
@@ -1600,15 +1658,6 @@ ep_rt_config_value_get_output_streaming (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
-}
-
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
 /*
@@ -2155,7 +2204,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
 	ep_return_null_if_nok (path_utf16 != NULL);
 
 	CFileStream *file_stream = new (nothrow) CFileStream ();
@@ -2263,7 +2312,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -2362,7 +2411,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 static
 inline
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
@@ -2543,7 +2592,7 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len)
 {
@@ -2646,6 +2695,16 @@ ep_rt_utf16_to_utf8_string (
 
 static
 inline
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len)
+{
+	return ep_rt_utf16_to_utf8_string (str, len);
+}
+
+static
+inline
 void
 ep_rt_utf16_string_free (ep_char16_t *str)
 {
@@ -2676,7 +2735,7 @@ ep_rt_diagnostics_command_line_get (void)
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
 	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value

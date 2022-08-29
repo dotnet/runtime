@@ -73,8 +73,8 @@ private:
 public:
     void            InitUnseal() { LIMITED_METHOD_CONTRACT; m_dwSealCount = 0; }
     bool            IsUnsealed() { LIMITED_METHOD_CONTRACT; return (m_dwSealCount == 0); }
-    void            Seal()   { LIMITED_METHOD_CONTRACT; FastInterlockIncrement(&m_dwSealCount); }
-    void            Unseal() { LIMITED_METHOD_CONTRACT; FastInterlockDecrement(&m_dwSealCount); }
+    void            Seal()   { LIMITED_METHOD_CONTRACT; InterlockedIncrement(&m_dwSealCount); }
+    void            Unseal() { LIMITED_METHOD_CONTRACT; InterlockedDecrement(&m_dwSealCount); }
 #endif  // _DEBUG
 
 private:

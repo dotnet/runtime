@@ -260,7 +260,7 @@ namespace System.Diagnostics.Metrics
 
                         double defaultIntervalSecs = 1;
                         Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
-                        double refreshIntervalSecs = defaultIntervalSecs;
+                        double refreshIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
                             Log.Message($"RefreshInterval argument received: {refreshInterval}");

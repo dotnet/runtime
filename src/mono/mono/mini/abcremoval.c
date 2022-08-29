@@ -493,7 +493,7 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 			symmetric_relation = MONO_SYMMETRIC_RELATION (branch_relation);
 
 			/* FIXME: Other compare opcodes */
-			if (compare->opcode == OP_ICOMPARE) {
+			if (compare->opcode == OP_ICOMPARE && compare->sreg1 != compare->sreg2) {
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
@@ -957,7 +957,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			}
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Recursivity rejected (some relation in the cycle is not a defintion)\n");
+				printf ("Recursivity rejected (some relation in the cycle is not a definition)\n");
 			}
 		}
 		break;
@@ -1307,7 +1307,6 @@ mono_perform_abc_removal (MonoCompile *cfg)
 {
 	MonoVariableRelationsEvaluationArea area;
 	MonoBasicBlock *bb;
-	int i;
 
 	verbose_level = cfg->verbose_level;
 
@@ -1324,7 +1323,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
 	area.defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
-	for (i = 0; i < cfg->next_vreg; i++) {
+	for (guint32 i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
@@ -1410,7 +1409,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	}
 
 	/* Add symmetric relations */
-	for (i = 0; i < cfg->next_vreg; i++) {
+	for (guint32 i = 0; i < cfg->next_vreg; i++) {
 		if (area.relations [i].related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			int related_index = cfg->next_vreg + i;
 			int related_variable = area.relations [i].related_value.value.variable.variable;

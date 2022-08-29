@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -14,7 +15,7 @@ namespace System.Security.Cryptography
         // secp521r1 maxes out at 139 bytes, so 256 should always be enough
         private const int SignatureStackBufSize = 256;
 
-        private ECOpenSsl _key;
+        private ECOpenSsl? _key;
 
         /// <summary>
         /// Create an ECDsaOpenSsl algorithm with a named curve.
@@ -260,7 +261,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 _key?.Dispose();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -333,6 +334,7 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
             if (_key == null)

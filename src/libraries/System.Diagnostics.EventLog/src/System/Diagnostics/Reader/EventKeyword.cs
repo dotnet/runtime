@@ -35,12 +35,12 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal void PrepareData()
         {
-            if (_dataReady == true)
+            if (_dataReady)
                 return;
 
             lock (_syncObject)
             {
-                if (_dataReady == true)
+                if (_dataReady)
                     return;
 
                 IEnumerable<EventKeyword> result = _pmReference.Keywords;

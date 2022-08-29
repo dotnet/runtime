@@ -59,7 +59,6 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
-#define LegacyCoreLibName_A "mscorlib"
 
 class StringArrayList;
 
@@ -597,7 +596,7 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 BOOL CLRFreeLibrary(HMODULE hModule);
 
 // Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
+STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
 
 // Specify callbacks so that UtilLoadStringRC can find out which language we're in.
 // If no callbacks specified (or both parameters are NULL), we default to the
@@ -792,7 +791,7 @@ public:
     }
 
 private:
-// String resouces packaged as PE files only exist on Windows
+// String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
@@ -828,7 +827,7 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 };
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -1389,7 +1388,8 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::Grow()  // exception if c
 
     // try to allocate memory for reallocation.
     pTemp = ALLOCATOR::AllocThrowing(this, m_iSize+iGrowInc);
-    memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
+    if (m_iSize > 0)
+        memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
     ALLOCATOR::Free(this, m_pTable);
     m_pTable = pTemp;
     m_iSize += iGrowInc;
@@ -1676,8 +1676,8 @@ private:
             if (iLeft >= iRight)
                 return;
 
-            // ASSERT that we now have valid indicies.  This is statically provable
-            // since this private function is only called with valid indicies,
+            // ASSERT that we now have valid indices.  This is statically provable
+            // since this private function is only called with valid indices,
             // and iLeft and iRight only converge towards eachother.  However,
             // PreFast can't detect this because it doesn't know about our callers.
             COMPILER_ASSUME(iLeft >= 0 && iLeft < m_iCount);
@@ -2023,7 +2023,7 @@ public:
 //*****************************************************************************
 // Returns the first entry in the first hash bucket and inits the search
 // struct.  Use the FindNextEntry function to continue walking the list.  The
-// return order is not gauranteed.
+// return order is not guaranteed.
 //*****************************************************************************
     BYTE *FindFirstEntry(               // First entry found, or 0.
         HASHFIND    *psSrch)            // Search object.
@@ -2264,7 +2264,7 @@ public:
     // accessors here. So if you're not using these functions, don't start.
     // We can hopefully remove them.
     // Note that we can't just make RCThread a friend of this class (we tried
-    // originally) because the inheritence chain has a private modifier,
+    // originally) because the inheritance chain has a private modifier,
     // so DebuggerPatchTable::m_pcEntries is illegal.
     static SIZE_T helper_GetOffsetOfEntries()
     {
@@ -3808,14 +3808,6 @@ inline bool FitsInRel28(INT64 val64)
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
 }
 
-//*****************************************************************************
-// Splits a command line into argc/argv lists, using the VC7 parsing rules.
-// This functions interface mimics the CommandLineToArgvW api.
-// If function fails, returns NULL.
-// If function suceeds, call delete [] on return pointer when done.
-//*****************************************************************************
-LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
-
 //
 // TEB access can be dangerous when using fibers because a fiber may
 // run on multiple threads.  If the TEB pointer is retrieved and saved
@@ -3838,11 +3830,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
-    }
-
-    static void* InvalidFiberPtrId()
-    {
-        return NULL;
     }
 
     static void* GetStackBase()
@@ -3877,33 +3864,12 @@ public:
         return NtCurrentTeb()->NtTib.StackLimit;
     }
 
-    // Please don't start to use this method unless you absolutely have to.
-    // The reason why this is added is for WIN64 to support LEGACY PE-style TLS
-    // variables.  On X86 it is supported by the JIT compilers themselves.  On
-    // WIN64 we build more logic into the JIT helper for accessing fields.
-    static void* GetLegacyThreadLocalStoragePointer()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->ThreadLocalStoragePointer;
-    }
-
     static void* GetOleReservedPtr()
     {
         LIMITED_METHOD_CONTRACT;
         return NtCurrentTeb()->ReservedForOle;
     }
 
-    static void* GetProcessEnvironmentBlock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->ProcessEnvironmentBlock;
-    }
-
-
-    static void* InvalidFiberPtrId()
-    {
-        return (void*) 1;
-    }
 #endif // HOST_UNIX
 };
 
@@ -3930,16 +3896,6 @@ inline BOOL IsGateSpecialThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Gate);
-}
-
-// check if current thread is a Timer thread
-inline BOOL IsTimerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Timer);
 }
 
 // check if current thread is a debugger helper thread
@@ -4260,7 +4216,7 @@ template<class T> void DeleteExecutable(T *p)
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack);
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }

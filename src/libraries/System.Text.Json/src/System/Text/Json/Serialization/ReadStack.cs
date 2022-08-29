@@ -5,11 +5,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
+    [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
@@ -91,12 +93,6 @@ namespace System.Text.Json
             }
         }
 
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
-        {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            Initialize(jsonTypeInfo, supportContinuation);
-        }
-
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
@@ -106,11 +102,11 @@ namespace System.Text.Json
                 PreserveReferences = true;
             }
 
-            SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
             Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            SupportContinuation = supportContinuation;
         }
 
         public void Push()
@@ -220,13 +216,13 @@ namespace System.Text.Json
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
-            Current.JsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo.JsonTypeInfo;
-            Current.JsonPropertyInfo = Current.JsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.JsonTypeInfo = derivedJsonTypeInfo;
+            Current.JsonPropertyInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling ??= Current.JsonPropertyInfo.NumberHandling;
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
             SetConstructorArgumentState();
 
-            return derivedJsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return derivedJsonTypeInfo.Converter;
         }
 
 
@@ -241,7 +237,7 @@ namespace System.Text.Json
             // Swap out the two values as we resume the polymorphic converter
             (Current.JsonTypeInfo, Current.PolymorphicJsonTypeInfo) = (Current.PolymorphicJsonTypeInfo, Current.JsonTypeInfo);
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return Current.JsonTypeInfo.Converter;
         }
 
         /// <summary>
@@ -382,20 +378,20 @@ namespace System.Text.Json
 
             for (int i = 0; i < _count - 1; i++)
             {
-                if (_stack[i].JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+                if (_stack[i].JsonTypeInfo.Converter.ConstructorIsParameterized)
                 {
                     return _stack[i].JsonTypeInfo;
                 }
             }
 
-            Debug.Assert(Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized);
+            Debug.Assert(Current.JsonTypeInfo.Converter.ConstructorIsParameterized);
             return Current.JsonTypeInfo;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+            if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)
@@ -415,6 +411,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

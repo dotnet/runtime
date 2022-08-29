@@ -101,6 +101,10 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(ImageFormat.Icon, ConvertFromName("Icon"));
             Assert.Equal(ImageFormat.Jpeg, ConvertFromName("Jpeg"));
             Assert.Equal(ImageFormat.Wmf, ConvertFromName("Wmf"));
+#if NET
+            Assert.Equal(ImageFormat.Heif, ConvertFromName("Heif"));
+            Assert.Equal(ImageFormat.Webp, ConvertFromName("Webp"));
+#endif
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -174,6 +178,10 @@ namespace System.ComponentModel.TypeConverterTests
             bool tiff = false;
             bool exif = false;
             bool icon = false;
+#if NET
+            bool heif = false;
+            bool webp = false;
+#endif
 
             foreach (ImageFormat iformat in values)
             {
@@ -209,6 +217,14 @@ namespace System.ComponentModel.TypeConverterTests
                     case "b96b3cb5-0728-11d3-9d7b-0000f81ef32e":
                         icon = true;
                         break;
+#if NET
+                    case "b96b3cb6-0728-11d3-9d7b-0000f81ef32e":
+                        heif = true;
+                        break;
+                    case "b96b3cb7-0728-11d3-9d7b-0000f81ef32e":
+                        webp = true;
+                        break;
+#endif
                     default:
                         throw new InvalidOperationException($"Unknown GUID {iformat.Guid}.");
                 }
@@ -223,6 +239,10 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.True(tiff, "Tiff");
             Assert.True(exif, "Exif");
             Assert.True(icon, "Icon");
+#if NET
+            Assert.True(heif, "Heif");
+            Assert.True(webp, "Webp");
+#endif
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

@@ -19,7 +19,7 @@
 
 #if defined(__APPLE__)
 #define C_PLTFUNC(name) _##name
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM64) || defined(HOST_POWERPC64)
 #define C_PLTFUNC(name) name
 #else
 #define C_PLTFUNC(name) name@PLT
@@ -47,4 +47,6 @@
 #include "unixasmmacross390x.inc"
 #elif defined(HOST_LOONGARCH64)
 #include "unixasmmacrosloongarch64.inc"
+#elif defined(HOST_POWERPC64)
+#include "unixasmmacrosppc64le.inc"
 #endif

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class CallSiteFactory : IServiceProviderIsService
     {
         private const int DefaultSlot = 0;
@@ -179,7 +180,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (!_stackGuard.TryEnterOnCurrentStack())
             {
-                return _stackGuard.RunOnEmptyStack((type, chain) => CreateCallSite(type, chain), serviceType, callSiteChain);
+                return _stackGuard.RunOnEmptyStack(CreateCallSite, serviceType, callSiteChain);
             }
 
             // We need to lock the resolution process for a single service type at a time:

@@ -20,7 +20,6 @@
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
 #include "corhost.h"
-#include "win32threadpool.h"
 #include "jitinterface.h"
 #include "eventtrace.h"
 #include "comutilnative.h"
@@ -29,12 +28,9 @@
 
 #include "wrappers.h"
 
-#include "nativeoverlapped.h"
-
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
-#include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -136,8 +132,6 @@ PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
-UINT64 Thread::s_workerThreadPoolCompletionCountOverflow = 0;
-UINT64 Thread::s_ioThreadPoolCompletionCountOverflow = 0;
 UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
@@ -612,7 +606,7 @@ static void DeleteThread(Thread* pThread)
         pThread->RevokeApartmentSpy();
 #endif // FEATURE_COMINTEROP
 
-        FastInterlockOr((ULONG *)&pThread->m_State, Thread::TS_Dead);
+        pThread->SetThreadState(Thread::TS_Dead);
 
         // ~Thread() calls SafeSetThrowables which has a conditional contract
         // which says that if you call it with a NULL throwable then it is
@@ -695,17 +689,17 @@ Thread* SetupThread()
         {
             if (IsThreadPoolWorkerSpecialThread())
             {
-                FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
+                pThread->SetThreadState(Thread::TS_TPWorkerThread);
                 pThread->SetBackground(TRUE);
             }
             else if (IsThreadPoolIOCompletionSpecialThread())
             {
-                FastInterlockOr ((ULONG *) &pThread->m_State, Thread::TS_CompletionPortThread);
+                pThread->SetThreadState(Thread::TS_CompletionPortThread);
                 pThread->SetBackground(TRUE);
             }
-            else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+            else if (IsWaitSpecialThread())
             {
-                FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
+                pThread->SetThreadState(Thread::TS_TPWorkerThread);
                 pThread->SetBackground(TRUE);
             }
 
@@ -727,8 +721,8 @@ Thread* SetupThread()
     pThread->PrepareApartmentAndContext();
 
     // reset any unstarted bits on the thread object
-    FastInterlockAnd((ULONG *) &pThread->m_State, ~Thread::TS_Unstarted);
-    FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_LegalToJoin);
+    pThread->ResetThreadState(Thread::TS_Unstarted);
+    pThread->SetThreadState(Thread::TS_LegalToJoin);
 
     ThreadStore::AddThread(pThread);
 
@@ -745,7 +739,7 @@ Thread* SetupThread()
 
     threadHolder.SuppressRelease();
 
-    FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_FullyInitialized);
+    pThread->SetThreadState(Thread::TS_FullyInitialized);
 
 #ifdef DEBUGGING_SUPPORTED
     //
@@ -788,15 +782,15 @@ Thread* SetupThread()
 
     if (IsThreadPoolWorkerSpecialThread())
     {
-        FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
+        pThread->SetThreadState(Thread::TS_TPWorkerThread);
     }
     else if (IsThreadPoolIOCompletionSpecialThread())
     {
-        FastInterlockOr ((ULONG *) &pThread->m_State, Thread::TS_CompletionPortThread);
+        pThread->SetThreadState(Thread::TS_CompletionPortThread);
     }
-    else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+    else if (IsWaitSpecialThread())
     {
-        FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
+        pThread->SetThreadState(Thread::TS_TPWorkerThread);
     }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -878,8 +872,7 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
         pThread->SetThreadStateNC(Thread::TSNC_TSLTakenForStartup);
     }
 
-    FastInterlockOr((ULONG *) &pThread->m_State,
-                    (Thread::TS_Unstarted | Thread::TS_WeOwn));
+    pThread->SetThreadState((Thread::ThreadState)(Thread::TS_Unstarted | Thread::TS_WeOwn));
 
     ThreadStore::AddThread(pThread);
 
@@ -989,7 +982,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     _ASSERTE (this == GetThread());
 
-    FastInterlockIncrement(&Thread::m_DetachCount);
+    InterlockedIncrement(&Thread::m_DetachCount);
 
     if (IsAbortRequested()) {
         // Reset trapping count.
@@ -998,7 +991,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     if (!IsBackground())
     {
-        FastInterlockIncrement(&Thread::m_ActiveDetachCount);
+        InterlockedIncrement(&Thread::m_ActiveDetachCount);
         ThreadStore::CheckForEEShutdown();
     }
 
@@ -1007,10 +1000,8 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-#undef Sleep
         // We can not call __SwitchToThread since we can not go back to host.
-        ::Sleep(10);
-#define Sleep(a) Dont_Use_Sleep(a)
+        ClrSleepEx(10, FALSE);
     }
     if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
@@ -1021,7 +1012,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     SetThread(NULL);
     SetAppDomain(NULL);
 
-    FastInterlockOr((ULONG*)&m_State, (int) (Thread::TS_Detached | Thread::TS_ReportDead));
+    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
 
     // These detached threads will be cleaned up by finalizer thread.  But if the process uses
@@ -1156,8 +1147,8 @@ void InitThreadManager()
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
     if (IsWriteBarrierCopyEnabled())
     {
@@ -1544,8 +1535,6 @@ Thread::Thread()
     m_AbortRequestLock = 0;
     m_fRudeAbortInitiated = FALSE;
 
-    m_pIOCompletionContext = NULL;
-
 #ifdef _DEBUG
     m_fRudeAborted = FALSE;
     m_dwAbortPoint = 0;
@@ -1603,8 +1592,6 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 #endif // FEATURE_EH_FUNCLETS
 
-    m_workerThreadPoolCompletionCount = 0;
-    m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
     m_pDomain = SystemDomain::System()->DefaultDomain();
@@ -1779,12 +1766,6 @@ void Thread::InitThread()
             ThrowOutOfMemory();
         }
     }
-
-    ret = Thread::AllocateIOCompletionContext();
-    if (!ret)
-    {
-        ThrowOutOfMemory();
-    }
 }
 
 // Allocate all the handles.  When we are kicking of a new thread, we can call
@@ -1898,7 +1879,7 @@ BOOL Thread::HasStarted()
     if (res == FALSE)
         goto FAILURE;
 
-    FastInterlockOr((ULONG *) &m_State, TS_FullyInitialized);
+    SetThreadState(TS_FullyInitialized);
 
 #ifdef DEBUGGING_SUPPORTED
     //
@@ -1969,7 +1950,7 @@ FAILURE:
         CleanupCOMState();
     }
 #endif
-    FastInterlockDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
+    InterlockedDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
     // One of the components of OtherThreadsComplete() has changed, so check whether
     // we should now exit the EE.
     ThreadStore::CheckForEEShutdown();
@@ -1979,33 +1960,6 @@ FAILURE:
     return FALSE;
 }
 
-BOOL Thread::AllocateIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    PIOCompletionContext pIOC = new (nothrow) IOCompletionContext;
-
-    if(pIOC != NULL)
-    {
-        pIOC->lpOverlapped = NULL;
-        m_pIOCompletionContext = pIOC;
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-VOID Thread::FreeIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_pIOCompletionContext != NULL)
-    {
-        PIOCompletionContext pIOC = (PIOCompletionContext) m_pIOCompletionContext;
-        delete pIOC;
-        m_pIOCompletionContext = NULL;
-    }
-}
 
 void Thread::HandleThreadStartupFailure()
 {
@@ -2019,36 +1973,37 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct ProtectArgs
+    struct
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } gc;
+    gc.pThrowable = NULL;
+    gc.pReason = NULL;
 
-    GCPROTECT_BEGIN(args);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    args.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
 
     if (m_pExceptionDuringStartup)
     {
-        args.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
         Exception::Delete(m_pExceptionDuringStartup);
         m_pExceptionDuringStartup = NULL;
     }
 
     ARG_SLOT args1[] = {
-        ObjToArgSlot(args.pThrowable),
-        ObjToArgSlot(args.pReason),
+        ObjToArgSlot(gc.pThrowable),
+        ObjToArgSlot(gc.pReason),
     };
     exceptionCtor.Call(args1);
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
 }
 
 #ifndef TARGET_UNIX
@@ -2376,7 +2331,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 
     m_OSThreadId = ourId;
 
-    FastInterlockIncrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
+    InterlockedIncrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
 
 #ifdef _DEBUG
     m_Creator.SetToCurrentThread();
@@ -2423,7 +2378,7 @@ int Thread::IncExternalCount()
     Thread *pCurThread = GetThreadNULLOk();
 
     _ASSERTE(m_ExternalRefCount > 0);
-    int retVal = FastInterlockIncrement((LONG*)&m_ExternalRefCount);
+    int retVal = InterlockedIncrement((LONG*)&m_ExternalRefCount);
     // If we have an exposed object and the refcount is greater than one
     // we must make sure to keep a strong handle to the exposed object
     // so that we keep it alive even if nobody has a reference to it.
@@ -2471,7 +2426,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
     {
         // TODO: we would prefer to use a GC Holder here, however it is hard
         //       to get the case where we're deleting this thread correct given
-        //       the current macros. We want to supress the release of the holder
+        //       the current macros. We want to suppress the release of the holder
         //       here which puts us in Preemptive mode, and also the switch to
         //       Cooperative mode below, but since both holders will be named
         //       the same thing (due to the generic nature of the macro) we can
@@ -2493,7 +2448,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
              ThreadStore::s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
 
-    retVal = FastInterlockDecrement((LONG*)&m_ExternalRefCount);
+    retVal = InterlockedDecrement((LONG*)&m_ExternalRefCount);
 
     if (retVal == 0)
     {
@@ -2679,8 +2634,6 @@ Thread::~Thread()
         m_EventWait.CloseEvent();
     }
 
-    FreeIOCompletionContext();
-
     if (m_OSContext)
         delete m_OSContext;
 
@@ -2785,7 +2738,7 @@ void Thread::CoUninitialize()
         if (IsCoInitialized())
         {
             BaseCoUninitialize();
-            FastInterlockAnd((ULONG *)&m_State, ~TS_CoInitialized);
+            ResetThreadState(TS_CoInitialized);
         }
 
 #ifdef FEATURE_COMINTEROP
@@ -2827,10 +2780,10 @@ void Thread::CleanupDetachedThreads()
             // Unmark that the thread is detached while we have the
             // thread store lock. This will ensure that no other
             // thread will race in here and try to delete it, too.
-            FastInterlockAnd((ULONG*)&(thread->m_State), ~TS_Detached);
-            FastInterlockDecrement(&m_DetachCount);
+            thread->ResetThreadState(TS_Detached);
+            InterlockedDecrement(&m_DetachCount);
             if (!thread->IsBackground())
-                FastInterlockDecrement(&m_ActiveDetachCount);
+                InterlockedDecrement(&m_ActiveDetachCount);
 
             // If the debugger is attached, then we need to unlock the
             // thread store before calling OnThreadTerminate. That
@@ -3016,7 +2969,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             GCX_COOP();
             // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
             // however, there could be other threads terminating and doing the same Add.
-            FastInterlockExchangeAddLong((LONG64*)&dead_threads_non_alloc_bytes, m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr);
+            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr);
             GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, NULL, NULL);
             m_alloc_context.init();
         }
@@ -3079,7 +3032,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             m_alloc_context.init();
         }
 
-        FastInterlockOr((ULONG *) &m_State, TS_Dead);
+        SetThreadState(TS_Dead);
         ThreadStore::s_pThreadStore->m_DeadThreadCount++;
         ThreadStore::s_pThreadStore->IncrementDeadThreadCountForGCTrigger();
 
@@ -3091,7 +3044,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
                 ThreadStore::s_pThreadStore->m_BackgroundThreadCount--;
         }
 
-        FastInterlockAnd((ULONG *) &m_State, ~(TS_Unstarted | TS_Background));
+        ResetThreadState((Thread::ThreadState)(TS_Unstarted | TS_Background));
 
         //
         // If this thread was told to trip for debugging between the
@@ -3397,7 +3350,7 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
     // a thread that's not in the interruptible state, we just record that fact.  So
     // we have to set TS_Interruptible before we test to see whether someone wants to
     // interrupt us or else we have a race condition that causes us to skip the APC.
-    FastInterlockOr((ULONG *) &m_State, TS_Interruptible);
+    SetThreadState(TS_Interruptible);
 
     if (HasThreadStateNC(TSNC_InRestoringSyncBlock))
     {
@@ -3411,7 +3364,7 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
         // Safe to clear the interrupted state, no APC could have fired since we
         // reset m_UserInterrupt (which inhibits our APC callback from doing
         // anything).
-        FastInterlockAnd((ULONG *) &m_State, ~TS_Interrupted);
+        ResetThreadState(TS_Interrupted);
     }
 }
 
@@ -4111,7 +4064,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
     // {
     // a.Wait
     // }
-    // We need to make sure that the finally from lock is excuted with the lock owned.
+    // We need to make sure that the finally from lock is executed with the lock owned.
     DWORD state = 0;
     SyncBlock *psb = (SyncBlock*)((DWORD_PTR)pRealWaitEventLink->m_WaitSB & ~1);
     for (LONG i=0; i < m_EnterCount;)
@@ -4184,7 +4137,7 @@ void WINAPI Thread::UserInterruptAPC(ULONG_PTR data)
         {
             // Set bit to indicate this routine was called (as opposed to other
             // generic APCs).
-            FastInterlockOr((ULONG *) &pCurThread->m_State, TS_Interrupted);
+            pCurThread->SetThreadState(TS_Interrupted);
         }
     }
 }
@@ -4198,7 +4151,7 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     }
     CONTRACTL_END;
 
-    FastInterlockOr((DWORD*)&m_UserInterrupt, mode);
+    InterlockedOr(&m_UserInterrupt, mode);
 
     if (HasValidThreadHandle() &&
         HasThreadState (TS_Interruptible))
@@ -4231,7 +4184,7 @@ void Thread::UserSleep(INT32 time)
     // a thread that's not in the interruptible state, we just record that fact.  So
     // we have to set TS_Interruptible before we test to see whether someone wants to
     // interrupt us or else we have a race condition that causes us to skip the APC.
-    FastInterlockOr((ULONG *) &m_State, TS_Interruptible);
+    SetThreadState(TS_Interruptible);
 
     // If someone has interrupted us, we should not enter the wait.
     if (IsUserInterrupted())
@@ -4241,7 +4194,7 @@ void Thread::UserSleep(INT32 time)
 
     ThreadStateHolder tsh(TRUE, TS_Interruptible | TS_Interrupted);
 
-    FastInterlockAnd((ULONG *) &m_State, ~TS_Interrupted);
+    ResetThreadState(TS_Interrupted);
 
     DWORD dwTime = (DWORD)time;
 retry:
@@ -4324,7 +4277,7 @@ OBJECTREF Thread::GetExposedObject()
 
             // Increase the external ref count. We can't call IncExternalCount because we
             // already hold the thread lock and IncExternalCount won't be able to take it.
-            ULONG retVal = FastInterlockIncrement ((LONG*)&m_ExternalRefCount);
+            ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
 
             // Check to see if we need to store a strong pointer to the object.
             if (retVal > 1)
@@ -4411,7 +4364,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 
     if (m_LastThrownObjectHandle != NULL)
     {
-        // We'll somtimes use a handle for a preallocated exception object. We should never, ever destroy one of
+        // We'll sometimes use a handle for a preallocated exception object. We should never, ever destroy one of
         // these handles... they'll be destroyed when the Runtime shuts down.
         if (!CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
         {
@@ -4663,7 +4616,7 @@ void Thread::SetBackground(BOOL isBack)
     {
         if (!IsBackground())
         {
-            FastInterlockOr((ULONG *) &m_State, TS_Background);
+            SetThreadState(TS_Background);
 
             // unstarted threads don't contribute to the background count
             if (!IsUnstarted())
@@ -4683,7 +4636,7 @@ void Thread::SetBackground(BOOL isBack)
     {
         if (IsBackground())
         {
-            FastInterlockAnd((ULONG *) &m_State, ~TS_Background);
+            ResetThreadState(TS_Background);
 
             // unstarted threads don't contribute to the background count
             if (!IsUnstarted())
@@ -4785,7 +4738,7 @@ void Thread::PrepareApartmentAndContext()
         // a different apartment state than the requested one. If we didn't clear
         // the requested apartment state, then we could end up with both TS_InSTA and
         // TS_InMTA set at the same time.
-        FastInterlockAnd ((ULONG *) &m_State, ~TS_InSTA & ~TS_InMTA);
+        ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
 
         // Attempt to set the requested apartment state.
         SetApartment(aState);
@@ -4882,7 +4835,7 @@ Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
                 // made MTA (if it hasn't been CoInitializeEx'd but CoInitialize
                 // has already been called on some other thread in the process.
                 if (as == AS_InSTA)
-                    FastInterlockOr((ULONG *) &m_State, AS_InSTA);
+                    SetThreadState(TS_InSTA);
             }
         }
     }
@@ -4935,7 +4888,7 @@ Thread::ApartmentState Thread::GetFinalApartment()
     {
         // On shutdown, do not use cached value.  Someone might have called
         // CoUninitialize.
-        FastInterlockAnd ((ULONG *) &m_State, ~TS_InSTA & ~TS_InMTA);
+        ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
     }
 
     as = GetApartment();
@@ -4962,8 +4915,7 @@ VOID Thread::ResetApartment()
     CONTRACTL_END;
 
     // reset the TS_InSTA bit and TS_InMTA bit
-    ThreadState t_State = (ThreadState)(~(TS_InSTA | TS_InMTA));
-    FastInterlockAnd((ULONG *) &m_State, t_State);
+    ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
 }
 
 // Attempt to set current thread's apartment state. The actual apartment state
@@ -5012,7 +4964,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
                 ::CoUninitialize();
 
                 ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
-                FastInterlockAnd((ULONG *) &m_State, ~uninitialized);
+                ResetThreadState(uninitialized);
             }
 
 #ifdef FEATURE_COMINTEROP
@@ -5062,7 +5014,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     if (m_OSThreadId != ::GetCurrentThreadId())
 #endif
     {
-        FastInterlockOr((ULONG *) &m_State, (state == AS_InSTA) ? TS_InSTA : TS_InMTA);
+        SetThreadState((state == AS_InSTA) ? TS_InSTA : TS_InMTA);
         return state;
     }
 
@@ -5104,14 +5056,14 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         }
 
         // We succeeded in setting the apartment state to the requested state.
-        FastInterlockOr((ULONG *) &m_State, t_State);
+        SetThreadState(t_State);
     }
     else if (hr == RPC_E_CHANGED_MODE)
     {
         // We didn't manage to enforce the requested apartment state, but at least
         // we can work out what the state is now.  No need to actually do the CoInit --
         // obviously someone else already took care of that.
-        FastInterlockOr((ULONG *) &m_State, ((state == AS_InSTA) ? TS_InMTA : TS_InSTA));
+        SetThreadState((state == AS_InSTA) ? TS_InMTA : TS_InSTA);
     }
     else if (hr == E_OUTOFMEMORY)
     {
@@ -5388,13 +5340,7 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         if (target->IsBackground())
             s_pThreadStore->m_BackgroundThreadCount--;
 
-        FastInterlockExchangeAddLong(
-            (LONGLONG *)&Thread::s_workerThreadPoolCompletionCountOverflow,
-            target->m_workerThreadPoolCompletionCount);
-        FastInterlockExchangeAddLong(
-            (LONGLONG *)&Thread::s_ioThreadPoolCompletionCountOverflow,
-            target->m_ioThreadPoolCompletionCount);
-        FastInterlockExchangeAddLong(
+        InterlockedExchangeAdd64(
             (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
             target->m_monitorLockContentionCount);
 
@@ -5459,12 +5405,12 @@ void ThreadStore::TransferStartedThread(Thread *thread)
         s_pThreadStore->m_BackgroundThreadCount++;
 
     _ASSERTE(s_pThreadStore->m_PendingThreadCount > 0);
-    FastInterlockDecrement(&s_pThreadStore->m_PendingThreadCount);
+    InterlockedDecrement(&s_pThreadStore->m_PendingThreadCount);
 
     // As soon as we erase this bit, the thread becomes eligible for suspension,
     // stopping, interruption, etc.
-    FastInterlockAnd((ULONG *) &thread->m_State, ~Thread::TS_Unstarted);
-    FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_LegalToJoin);
+    thread->ResetThreadState(Thread::TS_Unstarted);
+    thread->SetThreadState(Thread::TS_LegalToJoin);
 
     // One of the components of OtherThreadsComplete() has changed, so check whether
     // we should now exit the EE.
@@ -5486,7 +5432,7 @@ void ThreadStore::IncrementDeadThreadCountForGCTrigger()
     // Although all increments and decrements are usually done inside a lock, that is not sufficient to synchronize with a
     // background GC thread resetting this value, hence the interlocked operation. Ignore overflow; overflow would likely never
     // occur, the count is treated as unsigned, and nothing bad would happen if it were to overflow.
-    SIZE_T count = static_cast<SIZE_T>(FastInterlockIncrement(&m_DeadThreadCountForGCTrigger));
+    SIZE_T count = static_cast<SIZE_T>(InterlockedIncrement(&m_DeadThreadCountForGCTrigger));
 
     SIZE_T countThreshold = static_cast<SIZE_T>(s_DeadThreadCountThresholdForGCTrigger);
     if (count < countThreshold || countThreshold == 0)
@@ -5532,7 +5478,7 @@ void ThreadStore::DecrementDeadThreadCountForGCTrigger()
 
     // Although all increments and decrements are usually done inside a lock, that is not sufficient to synchronize with a
     // background GC thread resetting this value, hence the interlocked operation.
-    if (FastInterlockDecrement(&m_DeadThreadCountForGCTrigger) < 0)
+    if (InterlockedDecrement(&m_DeadThreadCountForGCTrigger) < 0)
     {
         m_DeadThreadCountForGCTrigger = 0;
     }
@@ -5546,7 +5492,7 @@ void ThreadStore::OnMaxGenerationGCStarted()
     // objects are still reachable due to references to the thread objects, they will not contribute to triggering a GC again.
     // Synchronize the store with increment/decrement operations occurring on different threads, and make the change visible to
     // other threads in order to prevent unnecessary GC triggers.
-    FastInterlockExchange(&m_DeadThreadCountForGCTrigger, 0);
+    InterlockedExchange(&m_DeadThreadCountForGCTrigger, 0);
 }
 
 bool ThreadStore::ShouldTriggerGCForDeadThreads()
@@ -5789,7 +5735,7 @@ void ThreadStore::WaitForOtherThreads()
     {
         TSLockHolder.Release();
 
-        FastInterlockOr((ULONG *) &pCurThread->m_State, Thread::TS_ReportDead);
+        pCurThread->SetThreadState(Thread::TS_ReportDead);
 
         DWORD ret = WAIT_OBJECT_0;
         while (CLREventWaitWithTry(&m_TerminationEvent, INFINITE, TRUE, &ret))
@@ -5928,7 +5874,7 @@ void Thread::HandleThreadInterrupt ()
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
         ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
-        FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
+        InterlockedAnd (&m_UserInterrupt, ~TI_Interrupt);
 
         COMPlusThrow(kThreadInterruptedException);
     }
@@ -6015,7 +5961,7 @@ void UniqueStackSetupMap()
                                      CrstUniqueStack,
                                      CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE));
 
-        if (FastInterlockCompareExchangePointer(&g_pUniqueStackCrst,
+        if (InterlockedCompareExchangeT(&g_pUniqueStackCrst,
                                                 Attempt,
                                                 NULL) != NULL)
         {
@@ -6750,11 +6696,7 @@ BOOL Thread::DoesRegionContainGuardPage(UINT_PTR uLowAddress, UINT_PTR uHighAddr
 
     while (uStartOfCurrentRegion < uHighAddress)
     {
-#undef VirtualQuery
-        // This code can run below YieldTask, which means that it must not call back into the host.
-        // The reason is that YieldTask is invoked by the host, and the host needs not be reentrant.
         dwRes = VirtualQuery((const void *)uStartOfCurrentRegion, &meminfo, sizeof(meminfo));
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
         // If the query fails then assume we have no guard page.
         if (sizeof(meminfo) != dwRes)
@@ -7191,7 +7133,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
     LIMITED_METHOD_CONTRACT;
 
     return RequireSyncBlockCleanup()
-        || ThreadpoolMgr::HaveTimerInfosToFlush()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -7238,9 +7179,6 @@ void Thread::DoExtraWorkForFinalizer()
     {
         Thread::CleanupDetachedThreads();
     }
-
-    // If there were any TimerInfos waiting to be released, they'll get flushed now
-    ThreadpoolMgr::FlushQueueOfTimerInfos();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
@@ -7593,13 +7531,6 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
 }
 
-// The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in the ThreadPool
-void ManagedThreadBase::ThreadPool(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_FullTransition(pTarget, args, ThreadPoolThread);
-}
-
 // The Finalizer thread establishes exception handling at its base, but defers all the AppDomain
 // transitions.
 void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
@@ -7656,7 +7587,7 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     LPVOID result = (LPVOID)((PTR_BYTE)base + (DWORD)offset);
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) result);
@@ -7714,7 +7645,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     TADDR result = dac_cast<TADDR>(base) + (DWORD)offset;
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
         _ASSERTE(result != NULL);
@@ -7911,40 +7842,6 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
         total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
-}
-
-UINT64 Thread::GetTotalThreadPoolCompletionCount()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetIOThreadPoolCompletionCountOverflow();
-    if (!usePortableThreadPool)
-    {
-        total += GetWorkerThreadPoolCompletionCountOverflow();
-    }
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        if (!usePortableThreadPool)
-        {
-            total += pThread->m_workerThreadPoolCompletionCount;
-        }
-        total += pThread->m_ioThreadPoolCompletionCount;
     }
 
     return total;
@@ -8271,7 +8168,7 @@ void dbgOnly_IdentifySpecialEEThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    LONG  ourCount = FastInterlockIncrement(&cnt_SpecialEEThreads);
+    LONG  ourCount = InterlockedIncrement(&cnt_SpecialEEThreads);
 
     _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
     SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
@@ -8317,7 +8214,7 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(__FILE__, !AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
@@ -8360,6 +8257,23 @@ void Thread::InitializeSpecialUserModeApc()
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
+
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+#endif
+
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+{
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(ContextRecord);
+    ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
+#else
+    // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
+    RtlRestoreContext(ContextRecord, NULL);
+#endif
+}
+#endif // !(TARGET_WINDOWS && TARGET_X86)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -8378,7 +8292,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         if (m_pDomain.IsValid())
         {
@@ -8454,10 +8368,15 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
     }
     else
     {
+        // Skip any thread that doesn't have a OS thread id because DacGetThreadContext is going to throw an exception.
+        if (GetOSThreadId() == 0)
+        {
+            return;
+        }
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }

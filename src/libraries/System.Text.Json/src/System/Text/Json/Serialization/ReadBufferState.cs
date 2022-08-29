@@ -4,11 +4,13 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization
 {
+    [StructLayout(LayoutKind.Auto)]
     internal struct ReadBufferState : IDisposable
     {
         private byte[] _buffer;
@@ -47,7 +49,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = await utf8Json.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     bufferState._buffer.AsMemory(bufferState._count),
 #else
                     bufferState._buffer, bufferState._count, bufferState._buffer.Length - bufferState._count,
@@ -78,7 +80,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = utf8Json.Read(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     _buffer.AsSpan(_count));
 #else
                     _buffer, _count, _buffer.Length - _count);

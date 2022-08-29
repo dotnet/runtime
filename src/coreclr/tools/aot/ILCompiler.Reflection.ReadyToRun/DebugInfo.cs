@@ -12,7 +12,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// Represents the debug information for a single method in the ready-to-run image.
-    /// See <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/cordebuginfo.h">src\inc\cordebuginfo.h</a> for
+    /// See <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/cordebuginfo.h">src\inc\cordebuginfo.h</a> for
     /// the fundamental types this is based on.
     /// </summary>
     public class DebugInfo
@@ -124,7 +124,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             // - Sorted by native offset (so use a delta encoding for that).
             // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
             //   They may also include a sentinel value from MappingTypes.
-            // - flags is 3 indepedent bits.
+            // - flags is 3 independent bits.
             NibbleReader reader = new NibbleReader(image, offset);
             uint boundsEntryCount = reader.ReadUInt();
             Debug.Assert(boundsEntryCount > 0);

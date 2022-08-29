@@ -53,8 +53,8 @@ namespace System.Security.Cryptography
             int hashBlockSizeBytes = GetHashBlockSize(hashAlgorithmName);
 
             // stackalloc 0 to let compiler know this cannot escape.
-            Span<byte> clearSpan = stackalloc byte[0];
-            ReadOnlySpan<byte> symmetricKeyMaterial = stackalloc byte[0];
+            scoped Span<byte> clearSpan;
+            scoped ReadOnlySpan<byte> symmetricKeyMaterial;
             int symmetricKeyMaterialLength;
 
             if (password.IsEmpty)

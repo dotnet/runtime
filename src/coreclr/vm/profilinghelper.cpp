@@ -260,7 +260,7 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
 
     pString->AppendUTF8("  ");
     pString->AppendPrintf(
-        supplementaryInformationUtf8.GetUTF8NoConvert(),
+        supplementaryInformationUtf8.GetUTF8(),
         GetCurrentProcessId(),
         iStringResource);
 }
@@ -311,7 +311,7 @@ void ProfilingAPIUtility::LogProfEventVA(
     messageFromResource.ConvertToUTF8(messageFromResourceUtf8);
 
     StackSString messageToLog;
-    messageToLog.VPrintf(messageFromResourceUtf8.GetUTF8NoConvert(), insertionArgs);
+    messageToLog.VPrintf(messageFromResourceUtf8.GetUTF8(), insertionArgs);
 
     AppendSupplementaryInformation(iStringResourceID, &messageToLog);
 
@@ -324,8 +324,8 @@ void ProfilingAPIUtility::LogProfEventVA(
         FireEtwProfilerMessage(GetClrInstanceId(), messageToLogUtf16.GetUnicode());
     }
 
-    // Ouput debug strings for diagnostic messages.
-    OutputDebugStringUtf8(messageToLog.GetUTF8NoConvert());
+    // Output debug strings for diagnostic messages.
+    OutputDebugStringUtf8(messageToLog.GetUTF8());
 }
 
 // See code:ProfilingAPIUtility.LogProfEventVA for description of arguments.
@@ -472,7 +472,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 
 #ifdef _DEBUG
-    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,
+    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo interface,
     // which would otherwise be disallowed for attaching profilers
     DWORD dwTestOnlyEnableICorProfilerInfo = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableICorProfilerInfo);
     if (dwTestOnlyEnableICorProfilerInfo != 0)

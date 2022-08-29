@@ -41,6 +41,7 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
         }
         WriteCrashReport();
         CloseWriter();
+        printf_status("Crash report successfully written\n");
     }
     catch (const std::exception& e)
     {

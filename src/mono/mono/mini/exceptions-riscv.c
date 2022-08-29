@@ -201,7 +201,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (*lmf)
 			NOT_IMPLEMENTED;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->gregs [RISCV_ZERO]--;
 
 		return TRUE;

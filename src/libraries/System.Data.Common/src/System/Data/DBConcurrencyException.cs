@@ -70,11 +70,7 @@ namespace System.Data
 
         public void CopyToRows(DataRow[] array, int arrayIndex)
         {
-            DataRow[]? dataRows = _dataRows;
-            if (null != dataRows)
-            {
-                dataRows.CopyTo(array, arrayIndex);
-            }
+            _dataRows?.CopyTo(array, arrayIndex);
         }
     }
 }

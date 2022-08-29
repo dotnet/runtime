@@ -751,7 +751,7 @@ static BOOL VIRTUALStoreAllocationInfo(
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
-        /* Set the intial allocation state, and initial allocation protection. */
+        /* Set the initial allocation state, and initial allocation protection. */
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),
@@ -2089,7 +2089,7 @@ size_t GetVirtualPageSize()
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/
@@ -2140,7 +2140,15 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     int32_t preferredStartAddressIncrement;
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
-    const int32_t MemoryProbingIncrement = 128 * 1024 * 1024;
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
+    // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
+    const int32_t AddressProbingIncrement = 8 * 1024 * 1024;
+#else
+    const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
+#endif
+    const int32_t SizeProbingDecrement = 128 * 1024 * 1024;
 
     // Try to find and reserve an available region of virtual memory that is located
     // within 2GB range (defined by the MaxExecutableMemorySizeNearCoreClr constant) from the
@@ -2161,12 +2169,18 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     {
         // Try to allocate above the location of libcoreclr
         preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
-        preferredStartAddressIncrement = MemoryProbingIncrement;
+        preferredStartAddressIncrement = AddressProbingIncrement;
     }
     else
     {
         // Try to allocate below the location of libcoreclr
-        preferredStartAddress = coreclrLoadAddress - MaxExecutableMemorySizeNearCoreClr;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // For arm for the "high address" case it only makes sense to try to reserve 128Mb
+        // and if it doesn't work - we'll reserve a full-sized region in a random location
+        sizeOfAllocation = SizeProbingDecrement;
+#endif
+
+        preferredStartAddress = coreclrLoadAddress - sizeOfAllocation;
         preferredStartAddressIncrement = 0;
     }
 
@@ -2180,10 +2194,10 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         }
 
         // Try to allocate a smaller region
-        sizeOfAllocation -= MemoryProbingIncrement;
+        sizeOfAllocation -= SizeProbingDecrement;
         preferredStartAddress += preferredStartAddressIncrement;
 
-    } while (sizeOfAllocation >= MemoryProbingIncrement);
+    } while (sizeOfAllocation >= SizeProbingDecrement);
 
     if (m_startAddress == nullptr)
     {

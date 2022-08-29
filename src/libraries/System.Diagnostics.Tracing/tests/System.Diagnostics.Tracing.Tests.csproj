@@ -5,6 +5,9 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'Android'">diagnostics_tracing</RuntimeComponents>
+  </PropertyGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />

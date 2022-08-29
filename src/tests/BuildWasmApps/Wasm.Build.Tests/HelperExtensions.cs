@@ -70,6 +70,12 @@ namespace Wasm.Build.Tests
                 if (value == RunHost.None)
                     continue;
 
+                if (value == RunHost.V8 && OperatingSystem.IsWindows())
+                {
+                    // Don't run tests with V8 on windows
+                    continue;
+                }
+
                 // Ignore any combos like RunHost.All from Enum.GetValues
                 // by ignoring any @value that has more than 1 bit set
                 if (((int)value & ((int)value - 1)) != 0)

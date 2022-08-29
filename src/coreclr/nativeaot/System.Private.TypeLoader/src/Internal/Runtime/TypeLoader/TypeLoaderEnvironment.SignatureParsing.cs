@@ -479,7 +479,7 @@ namespace Internal.Runtime.TypeLoader
                             for (uint i = 0; i < data; i++)
                                 result = TypeSignatureHasVarsNeedingCallingConventionConverter(ref parser, moduleHandle, context, HasVarsInvestigationLevel.NotParameter) || result;
 
-                            if ((result == true) && (investigationLevel == HasVarsInvestigationLevel.Parameter))
+                            if (result && (investigationLevel == HasVarsInvestigationLevel.Parameter))
                             {
                                 if (!TryComputeHasInstantiationDeterminedSize(genericTypeDef, context, out result))
                                     Environment.FailFast("Unable to setup calling convention converter correctly");

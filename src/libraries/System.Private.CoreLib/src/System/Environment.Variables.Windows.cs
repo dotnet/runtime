@@ -48,10 +48,10 @@ namespace System
 
                     case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
                     case Interop.Errors.ERROR_NO_SYSTEM_RESOURCES:
-                        throw new OutOfMemoryException(Interop.Kernel32.GetMessage(errorCode));
+                        throw new OutOfMemoryException(Marshal.GetPInvokeErrorMessage(errorCode));
 
                     default:
-                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
+                        throw new ArgumentException(Marshal.GetPInvokeErrorMessage(errorCode));
                 }
             }
         }

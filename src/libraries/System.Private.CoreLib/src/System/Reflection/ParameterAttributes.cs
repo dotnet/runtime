@@ -6,7 +6,7 @@
 
 namespace System.Reflection
 {
-    // This Enum matchs the CorParamAttr defined in CorHdr.h
+    // This Enum matches the CorParamAttr defined in CorHdr.h
     [Flags]
     public enum ParameterAttributes
     {

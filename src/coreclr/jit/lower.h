@@ -85,7 +85,13 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
-
+#ifdef TARGET_ARM64
+    bool IsValidCompareChain(GenTree* child, GenTree* parent);
+    bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
+    void ContainCheckCompareChainForAnd(GenTree* tree);
+    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    void ContainCheckSelect(GenTreeConditional* node);
+#endif
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -308,7 +314,10 @@ private:
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
-    void LowerPutArgStk(GenTreePutArgStk* tree);
+    void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+#ifdef TARGET_XARCH
+    void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+#endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
@@ -330,7 +339,7 @@ private:
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
     bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    GenTree* LowerArrElem(GenTree* node);
+    GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
@@ -374,15 +383,41 @@ private:
     //     Otherwise, it returns the underlying operation that was being casted
     GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
     {
-        if (!op->OperIs(GT_CAST))
+        if (!op->OperIs(GT_CAST) || !comp->opts.OptimizationEnabled())
         {
             return op;
         }
 
-        GenTree* castOp = op->AsCast()->CastOp();
+        GenTreeCast* cast   = op->AsCast();
+        GenTree*     castOp = cast->CastOp();
 
-        if (genTypeSize(castOp->gtType) >= genTypeSize(expectedType))
+        // FP <-> INT casts should be kept
+        if (varTypeIsFloating(castOp) ^ varTypeIsFloating(expectedType))
         {
+            return op;
+        }
+
+        // Keep casts which can overflow
+        if (cast->gtOverflow())
+        {
+            return op;
+        }
+
+        // Keep casts with operands usable from memory.
+        if (castOp->isContained() || castOp->IsRegOptional())
+        {
+            return op;
+        }
+
+        if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
+        {
+#ifndef TARGET_64BIT
+            // Don't expose TYP_LONG on 32bit
+            if (castOp->TypeIs(TYP_LONG))
+            {
+                return op;
+            }
+#endif
             BlockRange().Remove(op);
             return castOp;
         }

@@ -77,53 +77,73 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> parts, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, CancellationToken token)
         {
-            string classNameToFind = "";
-            var store = await proxy.LoadStore(sessionId, token);
+            var store = await proxy.LoadStore(sessionId, false, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             if (methodInfo == null)
                 return (null, null);
 
-            int typeId = -1;
-            for (int i = 0; i < parts.Count; i++)
+            string[] parts = expressionParts.ToArray();
+
+            string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
+            string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries).ToArray();
+            for (int i = 0; i < fullNameParts.Length; i++)
             {
-                string part = parts[i];
+                string[] fullNamePrefix = fullNameParts[..^i];
+                var (memberObject, remaining) = await FindStaticMemberMatchingParts(parts, fullNamePrefix);
+                if (memberObject != null)
+                    return (memberObject, remaining);
+            }
+            return await FindStaticMemberMatchingParts(parts);
 
-                if (typeId != -1)
+            async Task<(JObject, ArraySegment<string>)> FindStaticMemberMatchingParts(string[] parts, string[] fullNameParts = null)
+            {
+                string classNameToFind = fullNameParts == null ? "" : string.Join(".", fullNameParts);
+                int typeId = -1;
+                for (int i = 0; i < parts.Length; i++)
                 {
-                    JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
-                    if (memberObject != null)
+                    if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
                     {
-                        ArraySegment<string> remaining = null;
-                        if (i < parts.Count - 1)
-                            remaining = parts[i..];
+                        typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                        if (typeId != -1)
+                            continue;
+                    }
+                    typeId = await FindStaticTypeId(classNameToFind);
 
-                        return (memberObject, remaining);
+                    string part = parts[i];
+                    if (typeId != -1)
+                    {
+                        JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
+                        if (memberObject != null)
+                        {
+                            ArraySegment<string> remaining = null;
+                            if (i < parts.Length - 1)
+                                remaining = parts[i..];
+                            return (memberObject, remaining);
+                        }
+
+                        // Didn't find a member named `part` in `typeId`.
+                        // Could be a nested type. Let's continue the search
+                        // with `part` added to the type name
+
+                        typeId = -1;
                     }
 
-                    // Didn't find a member named `part` in `typeId`.
-                    // Could be a nested type. Let's continue the search
-                    // with `part` added to the type name
-
-                    typeId = -1;
+                    if (classNameToFind.Length > 0)
+                        classNameToFind += ".";
+                    classNameToFind += part;
                 }
-
-                if (classNameToFind.Length > 0)
-                    classNameToFind += ".";
-                classNameToFind += part;
-
-                if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
-                {
-                    typeId = await FindStaticTypeId(methodInfo?.TypeInfo?.Namespace + "." + classNameToFind);
-                    if (typeId != -1)
-                        continue;
-                }
-                typeId = await FindStaticTypeId(classNameToFind);
+                return (null, null);
             }
 
-            return (null, null);
+            // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
+            static string StripAsyncPartOfFullName(string fullName)
+                => fullName.IndexOf(".<") is int index && index < 0
+                    ? fullName
+                    : fullName.Substring(0, index);
+
 
             async Task<JObject> FindStaticMemberInType(string classNameToFind, string name, int typeId)
             {
@@ -138,11 +158,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                     }
-                    var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
-                    var valueRet = await GetValueFromObject(staticFieldValue, token);
-                    // we need the full name here
-                    valueRet["className"] = classNameToFind;
-                    return valueRet;
+                    try
+                    {
+                        var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
+                        var valueRet = await GetValueFromObject(staticFieldValue, token);
+                        // we need the full name here
+                        valueRet["className"] = classNameToFind;
+                        return valueRet;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to get value of field {field.Name} on {classNameToFind} " +
+                            $"because {field.Name} is not a static member of {classNameToFind}.");
+                    }
+                    return null;
                 }
 
                 var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
@@ -150,8 +179,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-                    return await GetValueFromObject(retMethod, token);
+                    try
+                    {
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to invoke getter of id={methodId} on {classNameToFind}.{name} " +
+                            $"because {name} is not a static member of {classNameToFind}.");
+                    }
                 }
                 return null;
             }
@@ -290,8 +327,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        if (resolvedObject["type"].Value<string>() == "string")
-                            throw new ReturnAsErrorException($"String properties evaluation is not supported yet.", "ReferenceError"); // Issue #66823
                         if (!throwOnNullReference)
                             throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
                         throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
@@ -321,12 +356,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<string> variableDefinitions, CancellationToken token)
         {
             try
             {
                 JObject rootObject = null;
                 string elementAccessStrExpression = elementAccess.Expression.ToString();
+                var multiDimensionalArray = false;
                 rootObject = await Resolve(elementAccessStrExpression, token);
                 if (rootObject == null)
                 {
@@ -335,25 +371,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 if (rootObject != null)
                 {
-                    string elementIdxStr;
+                    string elementIdxStr = null;
                     int elementIdx = 0;
+                    var elementAccessStr = elementAccess.ToString();
                     // x[1] or x[a] or x[a.b]
                     if (indexObject == null)
                     {
                         if (elementAccess.ArgumentList != null)
                         {
-                            foreach (var arg in elementAccess.ArgumentList.Arguments)
+                            for (int i = 0 ; i < elementAccess.ArgumentList.Arguments.Count; i++)
                             {
+                                var arg = elementAccess.ArgumentList.Arguments[i];
+                                if (i != 0)
+                                {
+                                    elementIdxStr += ", ";
+                                    multiDimensionalArray = true;
+                                }
                                 // e.g. x[1]
                                 if (arg.Expression is LiteralExpressionSyntax)
                                 {
                                     var argParm = arg.Expression as LiteralExpressionSyntax;
-                                    elementIdxStr = argParm.ToString();
-                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    elementIdxStr += argParm.ToString();
                                 }
 
                                 // e.g. x[a] or x[a.b]
-                                if (arg.Expression is IdentifierNameSyntax)
+                                else if (arg.Expression is IdentifierNameSyntax)
                                 {
                                     var argParm = arg.Expression as IdentifierNameSyntax;
 
@@ -361,13 +403,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     memberAccessValues.TryGetValue(argParm.Identifier.Text, out indexObject);
 
                                     // x[a]
-                                    if (indexObject == null)
-                                    {
-                                        indexObject = await Resolve(argParm.Identifier.Text, token);
-                                    }
-                                    elementIdxStr = indexObject["value"].ToString();
-                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    indexObject ??= await Resolve(argParm.Identifier.Text, token);
+                                    elementIdxStr += indexObject["value"].ToString();
                                 }
+                                // FixMe: indexing with expressions, e.g. x[a + 1]
                             }
                         }
                     }
@@ -375,26 +414,72 @@ namespace Microsoft.WebAssembly.Diagnostics
                     else
                     {
                         elementIdxStr = indexObject["value"].ToString();
-                        int.TryParse(elementIdxStr, out elementIdx);
                     }
-                    if (elementIdx >= 0)
+                    if (elementIdxStr != null)
                     {
-                        DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                        var type = rootObject?["type"]?.Value<string>();
+                        if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                            throw new InvalidOperationException($"Cannot apply indexing with [] to a primitive object of type '{type}'");
+
                         switch (objectId.Scheme)
                         {
                             case "array":
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                                return (JObject)rootObject["value"][elementIdx]["value"];
+                                if (!multiDimensionalArray)
+                                {
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    return (JObject)rootObject["value"][elementIdx]["value"];
+                                }
+                                else
+                                {
+                                    return (JObject)(((JArray)rootObject["value"]).FirstOrDefault(x => x["name"].Value<string>() == elementIdxStr)["value"]);
+                                }
                             case "object":
+                                if (multiDimensionalArray)
+                                    throw new InvalidOperationException($"Cannot apply indexing with [,] to an object of type '{type}'");
+                                int.TryParse(elementIdxStr, out elementIdx);
+                                if (type == "string")
+                                {
+                                    // ToArray() does not exist on string
+                                    var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
+                                    variableDefinitions.Add(ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject));
+                                    var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
+                                    return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
+                                }
                                 var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                                int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethod(objectId.Value, methodId, isValueType: false, token);
-                                rootObject = await GetValueFromObject(toArrayRetMethod, token);
-                                DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                                rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
-                                return (JObject)rootObject["value"][elementIdx]["value"];
+                                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "ToArray", token);
+                                // ToArray should not have an overload, but if user defined it, take the default one: without params
+                                if (methodIds == null)
+                                    throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
+
+                                int toArrayId = methodIds[0];
+                                if (methodIds.Length > 1)
+                                {
+                                    foreach (var methodId in methodIds)
+                                    {
+                                        MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
+                                        ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
+                                        if (paramInfo.Length == 0)
+                                        {
+                                            toArrayId = methodId;
+                                            break;
+                                        }
+                                    }
+                                }
+                                try
+                                {
+                                    var toArrayRetMethod = await context.SdbAgent.InvokeMethod(objectId.Value, toArrayId, isValueType: false, token);
+                                    rootObject = await GetValueFromObject(toArrayRetMethod, token);
+                                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
+                                    rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
+                                    return (JObject)rootObject["value"][elementIdx]["value"];
+                                }
+                                catch
+                                {
+                                    throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
+                                }
                             default:
-                                throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                                throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                         }
                     }
                 }
@@ -406,7 +491,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<(JObject, string)> ResolveInvokationInfo(InvocationExpressionSyntax method, CancellationToken token)
+        public async Task<(JObject, string)> ResolveInvocationInfo(InvocationExpressionSyntax method, CancellationToken token)
         {
             var methodName = "";
             try
@@ -438,7 +523,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
-            (JObject rootObject, string methodName) = await ResolveInvokationInfo(method, token);
+            (JObject rootObject, string methodName) = await ResolveInvocationInfo(method, token);
             if (rootObject == null)
                 throw new ReturnAsErrorException($"Failed to resolve root object for {method}", "ReferenceError");
 
@@ -458,85 +543,100 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
                         throw new Exception($"Could not find valuetype {objectId}");
-
                     typeIds = new List<int>(1) { valueType.TypeId };
                 }
                 else
                 {
                     typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
                 }
-                int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
-                var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
-                if (methodId == 0) //try to search on System.Linq.Enumerable
-                    methodId = await FindMethodIdOnLinqEnumerable(typeIds, methodName);
-
-                if (methodId == 0)
+                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], methodName, token);
+                if (methodIds == null)
                 {
-                    var typeName = await context.SdbAgent.GetTypeName(typeIds[0], token);
-                    throw new ReturnAsErrorException($"Method '{methodName}' not found in type '{typeName}'", "ReferenceError");
-                }
-                using var commandParamsObjWriter = new MonoBinaryWriter();
-                if (!isExtensionMethod)
-                {
-                    // instance method
-                    commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                }
-
-                int passedArgsCnt = method.ArgumentList.Arguments.Count;
-                int methodParamsCnt = passedArgsCnt;
-                ParameterInfo[] methodParamsInfo = null;
-                var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                if (methodInfo != null)
-                {
-                    methodParamsInfo = methodInfo.Info.GetParametersInfo();
-                    methodParamsCnt = methodParamsInfo.Length;
-                    if (isExtensionMethod)
+                    //try to search on System.Linq.Enumerable
+                    int methodId = await FindMethodIdOnLinqEnumerable(typeIds, methodName);
+                    if (methodId == 0)
                     {
-                        // implicit *this* parameter
-                        methodParamsCnt--;
+                        var typeName = await context.SdbAgent.GetTypeName(typeIds[0], token);
+                        throw new ReturnAsErrorException($"Method '{methodName}' not found in type '{typeName}'", "ReferenceError");
                     }
-                    if (passedArgsCnt > methodParamsCnt)
-                        throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Too many arguments passed.", "ArgumentError");
+                    methodIds = new int[] { methodId };
                 }
-
+                // get information about params in all overloads for *methodName*
+                List<MethodInfoWithDebugInformation> methodInfos = await GetMethodParamInfosForMethods(methodIds);
+                int passedArgsCnt = method.ArgumentList.Arguments.Count;
+                int maxMethodParamsCnt = methodInfos.Max(v => v.GetParametersInfo().Length);
                 if (isExtensionMethod)
                 {
-                    commandParamsObjWriter.Write(methodParamsCnt + 1);
-                    commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                    // implicit *this* parameter
+                    maxMethodParamsCnt--;
                 }
-                else
-                {
-                    commandParamsObjWriter.Write(methodParamsCnt);
-                }
+                if (passedArgsCnt > maxMethodParamsCnt)
+                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Too many arguments passed.", "ArgumentError");
 
-                int argIndex = 0;
-                // explicitly passed arguments
-                for (; argIndex < passedArgsCnt; argIndex++)
+                foreach (var methodInfo in methodInfos)
                 {
-                    var arg = method.ArgumentList.Arguments[argIndex];
-                    if (arg.Expression is LiteralExpressionSyntax literal)
+                    ParameterInfo[] methodParamsInfo = methodInfo.GetParametersInfo();
+                    int methodParamsCnt = isExtensionMethod ? methodParamsInfo.Length - 1 : methodParamsInfo.Length;
+                    int optionalParams = methodParamsInfo.Count(v => v.Value != null);
+                    if (passedArgsCnt > methodParamsCnt || passedArgsCnt < methodParamsCnt - optionalParams)
                     {
-                        if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
-                            throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.");
+                        // this overload does not match the number of params passed, try another one
+                        continue;
                     }
-                    else if (arg.Expression is IdentifierNameSyntax identifierName)
+                    int methodId = methodInfo.DebugId;
+                    using var commandParamsObjWriter = new MonoBinaryWriter();
+
+                    if (isExtensionMethod)
                     {
-                        if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
-                            throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
+                        commandParamsObjWriter.Write(methodParamsCnt + 1);
+                        commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                     }
                     else
                     {
-                        throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}");
+                        // instance method
+                        commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                        commandParamsObjWriter.Write(methodParamsCnt);
+                    }
+
+                    int argIndex = 0;
+                    // explicitly passed arguments
+                    for (; argIndex < passedArgsCnt; argIndex++)
+                    {
+                        var arg = method.ArgumentList.Arguments[argIndex];
+                        if (arg.Expression is LiteralExpressionSyntax literal)
+                        {
+                            if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.");
+                        }
+                        else if (arg.Expression is IdentifierNameSyntax identifierName)
+                        {
+                            if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
+                        }
+                        else
+                        {
+                            throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}");
+                        }
+                    }
+                    // optional arguments that were not overwritten
+                    for (; argIndex < methodParamsCnt; argIndex++)
+                    {
+                        if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[argIndex].TypeCode, methodParamsInfo[argIndex].Value, context.SdbAgent, token))
+                            throw new InternalErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.");
+                    }
+                    try
+                    {
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
+                    catch
+                    {
+                        // try further methodIds, we're looking for a method with the same type of params that the user passed
+                        logger.LogDebug($"InvokeMethod failed due to parameter type mismatch for {methodName} with {methodParamsCnt} parameters, including {optionalParams} optional.");
+                        continue;
                     }
                 }
-                // optional arguments that were not overwritten
-                for (; argIndex < methodParamsCnt; argIndex++)
-                {
-                    if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[argIndex].TypeCode, methodParamsInfo[argIndex].Value, context.SdbAgent, token))
-                        throw new InternalErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.");
-                }
-                var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-                return await GetValueFromObject(retMethod, token);
+                throw new ReturnAsErrorException($"No implementation of method '{methodName}' matching '{method}' found in type {rootObject["className"]}.", "ArgumentError");
             }
             catch (Exception ex) when (ex is not (ExpressionEvaluationFailedException or ReturnAsErrorException))
             {
@@ -555,8 +655,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                int newMethodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
-                if (newMethodId == 0)
+                int[] newMethodIds = await context.SdbAgent.GetMethodIdsByName(linqTypeId, methodName, token);
+                if (newMethodIds == null)
                     return 0;
 
                 foreach (int typeId in typeIds)
@@ -565,36 +665,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (genericTypeArgs.Count > 0)
                     {
                         isExtensionMethod = true;
-                        return await context.SdbAgent.MakeGenericMethod(newMethodId, genericTypeArgs, token);
+                        return await context.SdbAgent.MakeGenericMethod(newMethodIds[0], genericTypeArgs, token);
                     }
                 }
 
                 return 0;
             }
+
+            async Task<List<MethodInfoWithDebugInformation>> GetMethodParamInfosForMethods(int[] methodIds)
+            {
+                List<MethodInfoWithDebugInformation> allMethodInfos = new();
+                for (int i = 0; i < methodIds.Length; i++)
+                {
+                    var ithMethodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
+                    if (ithMethodInfo != null)
+                        allMethodInfos.Add(ithMethodInfo);
+                }
+                return allMethodInfos;
+            }
         }
 
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        public JObject ConvertCSharpToJSType(object v, Type type)
         {
-            typeof(decimal), typeof(byte), typeof(sbyte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(float), typeof(double)
-        };
+            if (v is JObject jobj)
+                return jobj;
 
-        public object ConvertCSharpToJSType(object v, Type type)
-        {
-            if (v == null)
-                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
-            if (v is string s)
-                return new { type = "string", value = s, description = s };
-            if (v is char c)
-                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
-            if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
-            if (v is bool)
-                return new { type = "boolean", value = v, description = v.ToString().ToLowerInvariant(), className = type.ToString() };
-            if (v is JObject)
-                return v;
+            if (v is null)
+                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+
             if (v is Array arr)
             {
                 return CacheEvaluationResult(
@@ -613,7 +711,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                             className = type.ToString()
                         }));
             }
-            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
+
+            string typeName = v.GetType().ToString();
+            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
+            return jobj is not null
+                ? jobj["value"] as JObject
+                : JObjectValueCreator.Create<object>(value: null,
+                                                    type: "object",
+                                                    description: v.ToString(),
+                                                    className: typeName)?["value"] as JObject;
         }
 
         private JObject CacheEvaluationResult(JObject value)

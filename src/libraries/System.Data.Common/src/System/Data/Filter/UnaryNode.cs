@@ -139,7 +139,7 @@ namespace System.Data
                     }
                     else
                     {
-                        if (DataExpression.ToBoolean(vl) != false)
+                        if (DataExpression.ToBoolean(vl))
                             return false;
                         return true;
                     }

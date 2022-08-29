@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -72,7 +73,8 @@ namespace System.Reflection
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
 
         internal override bool CacheEquals(object? o) =>
-            o is RuntimeConstructorInfo m && m.m_handle == m_handle;
+            o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType);
 
         internal Signature Signature
         {
@@ -118,6 +120,13 @@ namespace System.Reflection
 
             return m_toString;
         }
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider

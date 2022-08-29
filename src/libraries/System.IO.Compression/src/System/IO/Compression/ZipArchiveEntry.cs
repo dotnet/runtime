@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static System.IO.Compression.ZipArchiveEntryConstants;
+
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
@@ -21,6 +23,7 @@ namespace System.IO.Compression
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
+        private bool _isEncrypted;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -55,6 +58,7 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
+            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
@@ -113,7 +117,11 @@ namespace System.IO.Compression
 
             _compressedSize = 0; // we don't know these yet
             _uncompressedSize = 0;
-            _externalFileAttr = 0;
+            UnixFileMode defaultEntryPermissions = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
+                                        ? DefaultDirectoryEntryPermissions
+                                        : DefaultFileEntryPermissions;
+            _externalFileAttr = (uint)(defaultEntryPermissions) << 16;
+
             _offsetOfLocalHeader = 0;
             _storedOffsetOfCompressedData = null;
             _crc32 = 0;
@@ -150,6 +158,11 @@ namespace System.IO.Compression
 
         [CLSCompliant(false)]
         public uint Crc32 => _crc32;
+
+        /// <summary>
+        /// Gets a value that indicates whether the entry is encrypted.
+        /// </summary>
+        public bool IsEncrypted => _isEncrypted;
 
         /// <summary>
         /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
@@ -815,7 +828,7 @@ namespace System.IO.Compression
             {
                 // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
                 // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false && !isEmptyFile)
+                if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     zip64Used = false;
@@ -1050,8 +1063,7 @@ namespace System.IO.Compression
 
         private void UnloadStreams()
         {
-            if (_storedUncompressedData != null)
-                _storedUncompressedData.Dispose();
+            _storedUncompressedData?.Dispose();
             _compressedBytes = null;
             _outstandingWriteStream = null;
         }
@@ -1059,10 +1071,7 @@ namespace System.IO.Compression
         private void CloseStreams()
         {
             // if the user left the stream open, close the underlying stream for them
-            if (_outstandingWriteStream != null)
-            {
-                _outstandingWriteStream.Dispose();
-            }
+            _outstandingWriteStream?.Dispose();
         }
 
         private void VersionToExtractAtLeast(ZipVersionNeededValues value)
@@ -1089,14 +1098,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Windows(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-            {
-                char ch = path[i];
-                if (ch == '\\' || ch == '/' || ch == ':')
-                    return path.Substring(i + 1);
-            }
-            return path;
+            int i = path.AsSpan().LastIndexOfAny('\\', '/', ':');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         /// <summary>
@@ -1104,11 +1109,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Unix(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-                if (path[i] == '/')
-                    return path.Substring(i + 1);
-            return path;
+            int i = path.LastIndexOf('/');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         private sealed class DirectToArchiveWriterStream : Stream
@@ -1229,7 +1233,7 @@ namespace System.IO.Compression
             }
 
             public override void WriteByte(byte value) =>
-                Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                Write(new ReadOnlySpan<byte>(in value));
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
@@ -1306,7 +1310,7 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
+        internal enum BitFlagValues : ushort { IsEncrypted = 0x1, DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
 
         internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
     }

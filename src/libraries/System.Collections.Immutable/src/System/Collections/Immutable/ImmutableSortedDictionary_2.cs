@@ -328,15 +328,8 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
-            if (keyComparer == null)
-            {
-                keyComparer = Comparer<TKey>.Default;
-            }
-
-            if (valueComparer == null)
-            {
-                valueComparer = EqualityComparer<TValue>.Default;
-            }
+            keyComparer ??= Comparer<TKey>.Default;
+            valueComparer ??= EqualityComparer<TValue>.Default;
 
             if (keyComparer == _keyComparer)
             {

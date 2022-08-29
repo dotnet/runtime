@@ -29,7 +29,10 @@ namespace System.Net
         //
 
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext, bool retrieveChainCertificates, ref X509Chain? chain)
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
             if (securityContext == null)
             {
@@ -62,13 +65,20 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext != null)
                 {
-                    if (retrieveChainCertificates)
+                    if (!remoteContext.IsInvalid)
                     {
-                        chain ??= new X509Chain();
+                        if (retrieveChainCertificates)
+                        {
+                            chain ??= new X509Chain();
+                            if (chainPolicy != null)
+                            {
+                                chain.ChainPolicy = chainPolicy;
+                            }
 
-                        UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                            UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                        }
                     }
 
                     remoteContext.Dispose();
@@ -128,7 +138,8 @@ namespace System.Net
             // For app-compat We want to ensure the store is opened under the **process** account.
             try
             {
-                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+                WindowsIdentity.RunImpersonated(invalidHandle, () =>
                 {
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                 });

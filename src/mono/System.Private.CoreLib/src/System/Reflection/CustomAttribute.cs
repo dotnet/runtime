@@ -48,8 +48,8 @@ namespace System.Reflection
                 return false;
             if ((obj is Type))
                 return true;
-            if (corlib == null)
-                corlib = typeof(int).Assembly;
+
+            corlib ??= typeof(int).Assembly;
             return obj.GetType().Assembly != corlib;
         }
 
@@ -282,7 +282,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             if (attributeType == null || attributeType.IsValueType)
                 array = new Attribute[a.Count];
@@ -450,7 +450,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesDataBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             return a.ToArray();
         }
@@ -733,8 +733,7 @@ namespace System.Reflection
         {
             AttributeUsageAttribute? usageAttribute;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
-            if (usage_cache == null)
-                usage_cache = new Dictionary<Type, AttributeUsageAttribute>();
+            usage_cache ??= new Dictionary<Type, AttributeUsageAttribute>();
             if (usage_cache.TryGetValue(attributeType, out usageAttribute))
                 return usageAttribute;
             usageAttribute = RetrieveAttributeUsageNoCache(attributeType);

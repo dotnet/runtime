@@ -36,8 +36,6 @@ gets updated.
 
 namespace System
 {
-    using System;
-
     internal static class HResults
     {
         // Xml

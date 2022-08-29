@@ -287,6 +287,14 @@ COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
     return current_high;
 }
 
+using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    pHeap->EnumerateConfigurationValues(configurationContext, callback);
+}
+
 EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;
@@ -343,4 +351,24 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t f
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
+}
+
+COOP_PINVOKE_HELPER(void, RhRegisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    ASSERT(pRegistration->m_pThread == NULL);
+    pRegistration->m_pThread = pThread;
+
+    pThread->PushGCFrameRegistration(pRegistration);
+}
+
+COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = pRegistration->m_pThread;
+    if (pThread == NULL)
+        return;
+
+    ASSERT(pThread == ThreadStore::GetCurrentThread());
+    pThread->PopGCFrameRegistration(pRegistration);
 }

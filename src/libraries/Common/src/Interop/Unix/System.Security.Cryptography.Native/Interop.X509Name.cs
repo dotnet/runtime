@@ -24,7 +24,7 @@ internal static partial class Interop
         {
             CheckValidOpenSslHandle(namePtr);
 
-            byte[] buf = GetDynamicBuffer((ptr, buf1, i) => GetX509NameRawBytes(ptr, buf1, i), namePtr);
+            byte[] buf = GetDynamicBuffer(GetX509NameRawBytes, namePtr);
             return new X500DistinguishedName(buf);
         }
 
@@ -33,7 +33,7 @@ internal static partial class Interop
             CheckValidOpenSslHandle(sk);
 
             return SafeInteriorHandle.OpenInteriorHandle(
-                (handle, i) => GetX509NameStackField_private(handle, i),
+                GetX509NameStackField_private,
                 sk,
                 loc);
         }

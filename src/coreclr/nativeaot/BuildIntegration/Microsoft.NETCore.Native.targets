@@ -16,6 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
+    <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == ''">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
@@ -38,8 +39,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up the defaults for the compatibility mode -->
   <PropertyGroup>
-    <_BuildingInCompatibleMode Condition="$(TrimmerDefaultAction) == '' and $(IlcGenerateStackTraceData) == '' and $(IlcDisableReflection) == ''">true</_BuildingInCompatibleMode>
-
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
     <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
   </PropertyGroup>
@@ -48,6 +47,10 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
+    <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == ''">false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -190,7 +193,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="WriteIlcRspFileForCompilation"
-      Inputs="@(IlcCompileInput);@(RdXmlFile)"
+      Inputs="@(IlcCompileInput);@(RdXmlFile);@(TrimmerRootDescriptor)"
       Outputs="%(ManagedBinary.IlcRspFile)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
@@ -214,13 +217,16 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
+      <IlcArg Condition="$(IlcGenerateMstatFile) == 'true'" Include="--mstat:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).mstat" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
-      <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
+      <IlcArg Include="@(RdXmlFile->'--rdxml:%(FullPath)')" />
+      <IlcArg Include="@(TrimmerRootDescriptor->'--descriptor:%(FullPath)')" />
       <IlcArg Condition="$(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--appcontextswitch:%(Identity)=%(Value)')" />
+      <IlcArg Include="--appcontextswitch:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />
       <IlcArg Include="@(DirectPInvoke->'--directpinvoke:%(Identity)')" />
       <IlcArg Include="@(DirectPInvokeList->'--directpinvokelist:%(Identity)')" />
       <IlcArg Include="@(_TrimmerFeatureSettings->'--feature:%(Identity)=%(Value)')" />
@@ -231,21 +237,23 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
-      <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instruction-set:$(IlcInstructionSet)" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
-      <IlcArg Condition="$(IlcTrimMetadata) == 'true'" Include="--reflectedonly" />
+      <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
+      <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
+      <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(TargetOS)' == 'windows'" Include="--guard:cf" />
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
       <IlcArg Include="@(_IlcConditionallyRootedAssemblies->'--conditionalroot:%(Identity)')" />
       <IlcArg Include="@(_IlcTrimmedAssemblies->'--trim:%(Identity)')" />
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Filename)')" />
-      <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy'" Include="--defaultrooting" />
+      <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Include="--resilient" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
@@ -261,11 +269,10 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="IlcCompile"
-      Inputs="@(IlcCompileInput);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Inputs="@(IlcCompileInput);@(IlcReference);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
-    <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating native code" Importance="high" />
 
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
@@ -274,8 +281,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(TargetOS)' == 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(TargetOS)' != 'windows'" />
 
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"
@@ -335,23 +342,28 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'OSX'">true</_IgnoreLinkerWarnings>
     </PropertyGroup>
 
-    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
-    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'" />
+    <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
+    <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'" />
 
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
-    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
-    <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
+    <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
+
+    <!-- remove executable flag -->
+    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Shared'" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'"
       Command="
-        objcopy --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
-        objcopy --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
-        objcopy --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
+        &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
+        &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
+        &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot;" />
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'"
+      Command="
+        dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
+        strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"
@@ -368,8 +380,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows'" />
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(SharedLibrary)))" />
-    <Exec Command="$(CppLibCreator) @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows'" />
-    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows'" />
+    <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows'" />
+    <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows'" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />

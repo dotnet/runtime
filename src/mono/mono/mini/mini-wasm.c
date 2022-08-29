@@ -11,6 +11,12 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/components.h>
 
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+#include <mono/utils/mono-threads-wasm.h>
+#endif
+#endif
+
 static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
@@ -73,9 +79,8 @@ get_storage (MonoType *type, gboolean is_return)
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
-		if (mini_is_gsharedvt_type (type)) {
+		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
@@ -617,7 +622,13 @@ void
 mono_wasm_set_timeout (int timeout)
 {
 #ifdef HOST_BROWSER
-	mono_set_timeout (timeout);
+#ifndef DISABLE_THREADS
+    if (!mono_threads_wasm_is_browser_thread ()) {
+        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_set_timeout, GINT_TO_POINTER(timeout));
+        return;
+    }
+#endif
+    mono_set_timeout (timeout);
 #endif
 }
 

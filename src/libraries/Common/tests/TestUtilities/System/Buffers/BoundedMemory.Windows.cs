@@ -41,7 +41,9 @@ namespace System.Buffers
 
             if (handle == null || handle.IsInvalid)
             {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                int lastError = Marshal.GetHRForLastWin32Error();
+                handle?.Dispose();
+                Marshal.ThrowExceptionForHR(lastError);
                 throw new InvalidOperationException("VirtualAlloc failed unexpectedly.");
             }
 

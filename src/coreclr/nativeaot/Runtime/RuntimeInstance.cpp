@@ -149,14 +149,6 @@ PTR_RuntimeInstance GetRuntimeInstance()
     return g_pTheRuntimeInstance;
 }
 
-void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
-    }
-}
-
 RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 {
     return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));
@@ -374,17 +366,5 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterfac
     return pCell;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
-COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (uint32_t uOffset, uint32_t tlsStorageSize, uint32_t numTlsCells))
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    PTR_UInt8 pResult = pCurrentThread->GetThreadLocalStorageForDynamicType(uOffset);
-    if (pResult != NULL || tlsStorageSize == 0 || numTlsCells == 0)
-        return pResult;
-
-    ASSERT(tlsStorageSize > 0 && numTlsCells > 0);
-    return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
-}
 
 #endif // DACCESS_COMPILE

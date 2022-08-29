@@ -86,7 +86,7 @@ namespace System
         internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Type? GetTypeFromHandle(RuntimeTypeHandle handle);
+        public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)
+            => handle.m_type;
     }
 }

@@ -606,7 +606,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
  * Returns a function pointer which can be used to raise
  * corlib exceptions. The returned function has the following
  * signature: void (*func) (guint32 ex_token, guint32 offset);
- * Here, offset is the offset which needs to be substracted from the caller IP
+ * Here, offset is the offset which needs to be subtracted from the caller IP
  * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
@@ -1584,7 +1584,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 		g_assert_checked (found_entry->end_range >= begin_range && found_entry->end_range >= end_range);
 		g_assert_checked (found_entry->rt_funcs != NULL);
 
-		for (int i = 0; i < found_entry->rt_funcs_current_count; ++i) {
+		for (DWORD i = 0; i < found_entry->rt_funcs_current_count; ++i) {
 			PRUNTIME_FUNCTION current_rt_func = (PRUNTIME_FUNCTION)(&found_entry->rt_funcs [i]);
 
 			// Is this our RT function entry?
@@ -1621,7 +1621,7 @@ validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 
 	PRUNTIME_FUNCTION current_rt_func = NULL;
 	PRUNTIME_FUNCTION previous_rt_func = NULL;
-	for (int i = 0; i < entry->rt_funcs_current_count; ++i) {
+	for (DWORD i = 0; i < entry->rt_funcs_current_count; ++i) {
 		current_rt_func = &(entry->rt_funcs [i]);
 
 		g_assert_checked (current_rt_func->BeginAddress < current_rt_func->EndAddress);

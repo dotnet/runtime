@@ -1,0 +1,93 @@
+
+trigger: none
+
+schedules:
+- cron: "0 11 * * 1,3"
+  displayName: Every Monday and Wednesday at 3:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - /**/*.md
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+#
+# Build CoreCLR checked
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    jobParameters:
+      testGroup: innerloop
+          
+#
+# Build CoreCLR release
+# Always as they are needed by Installer and we always build and test the Installer.
+#
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    jobParameters:
+      testScope: innerloop
+
+#
+# CoreCLR Test builds using live libraries release build
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: innerloop
+
+
+#
+# CoreCLR Test executions using live libraries
+# Only when CoreCLR is changed
+#
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    helixQueueGroup: cet
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: release
+      useCodeFlowEnforcement: true

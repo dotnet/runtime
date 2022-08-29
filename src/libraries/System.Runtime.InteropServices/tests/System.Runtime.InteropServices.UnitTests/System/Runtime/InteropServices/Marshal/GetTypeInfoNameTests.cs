@@ -10,8 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetTypeInfoNameTests
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeInfoName_ValidTypeInfo_ReturnsExpected()
         {
             Assert.Equal("strName", Marshal.GetTypeInfoName(new TypeInfo()));
@@ -24,8 +23,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetTypeInfoName((ITypeInfo)null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeInfoName_NullTypeInfo_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("typeInfo", () => Marshal.GetTypeInfoName((ITypeInfo)null));

@@ -9,13 +9,12 @@ using static Interop.Crypt32;
 
 namespace Microsoft.Win32.SafeHandles
 {
-#nullable disable
     /// <summary>
     /// SafeHandle for the CERT_CONTEXT structure defined by crypt32.
     /// </summary>
     internal class SafeCertContextHandle : SafeCrypt32Handle<SafeCertContextHandle>
     {
-        private SafeCertContextHandle _parent;
+        private SafeCertContextHandle? _parent;
 
         public SafeCertContextHandle() { }
 
@@ -32,8 +31,6 @@ namespace Microsoft.Win32.SafeHandles
 
             SetHandle(_parent.handle);
         }
-
-        internal new void SetHandle(IntPtr handle) => base.SetHandle(handle);
 
         protected override bool ReleaseHandle()
         {

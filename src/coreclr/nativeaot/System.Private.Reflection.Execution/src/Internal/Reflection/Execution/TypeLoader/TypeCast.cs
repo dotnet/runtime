@@ -93,7 +93,7 @@ namespace Internal.Reflection.Execution
                         // Special case for generic interfaces on arrays. Arrays of integral types (including enums)
                         // can be cast to generic interfaces over the integral types of the same size. For example
                         // int[] . IList<uint>.
-                        if (ArePrimitveTypesEquivalentSize(pInterfaceInstantiation[0],
+                        if (ArePrimitiveTypesEquivalentSize(pInterfaceInstantiation[0],
                                                            pTargetInstantiation[0]))
                         {
                             // We have checked that the interface type definition matches above. The checks are ordered differently
@@ -142,9 +142,9 @@ namespace Internal.Reflection.Execution
         {
             // The types represent different instantiations of the same generic type. The
             // arity of both had better be the same.
-            Debug.Assert(pSourceInstantiation.Length == pTargetInstantiation.Length, "arity mismatch betweeen generic instantiations");
+            Debug.Assert(pSourceInstantiation.Length == pTargetInstantiation.Length, "arity mismatch between generic instantiations");
 
-            Debug.Assert(fForceCovariance || pTargetInstantiation.Length == pVarianceInfo.Length, "arity mismatch betweeen generic instantiations");
+            Debug.Assert(fForceCovariance || pTargetInstantiation.Length == pVarianceInfo.Length, "arity mismatch between generic instantiations");
 
             // Walk through the instantiations comparing the cast compatibility of each pair
             // of type args.
@@ -343,7 +343,7 @@ namespace Internal.Reflection.Execution
                 // same size.
                 if (fAllowSizeEquivalence && pTargetType.IsValueType)
                 {
-                    if (ArePrimitveTypesEquivalentSize(pSourceType, pTargetType))
+                    if (ArePrimitiveTypesEquivalentSize(pSourceType, pTargetType))
                         return true;
 
                     // Non-identical value types aren't equivalent in any other case (since value types are
@@ -436,7 +436,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private static bool ArePrimitveTypesEquivalentSize(Type pType1, Type pType2)
+        private static bool ArePrimitiveTypesEquivalentSize(Type pType1, Type pType2)
         {
             int normalizedType1 = NormalizedPrimitiveTypeSizeForIntegerTypes(pType1);
             if (normalizedType1 == 0)
