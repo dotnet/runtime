@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
@@ -128,12 +129,7 @@ namespace Microsoft.Interop.JavaScript
             int typesHash = Math.Abs((int)hash);
 
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            string qualifiedName;
-
-            var ns = string.Join(".", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.NamespaceName).Select(x => x.ToString()).ToArray());
-            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => Array.IndexOf(nameKinds, p.Kind) >= 0).Select(x => x.ToString()).ToArray());
-            var qclasses = method.ContainingType.ContainingNamespace == null ? ns : ns + "." + cn;
-            qualifiedName = $"[{env.Compilation.AssemblyName}]{qclasses}:{method.Name}";
+            string qualifiedName = GetQualifiedName(env, method);
 
             return new JSSignatureContext()
             {
@@ -149,6 +145,54 @@ namespace Microsoft.Interop.JavaScript
                 BindingName = "__signature_" + method.Name + "_" + typesHash,
                 GeneratorFactory = generatorFactory
             };
+        }
+
+        private static string GetQualifiedName(StubEnvironment env, IMethodSymbol method)
+        {
+            bool isFirstTypeName = true;
+            string? namespaceName = null;
+            string? className;
+            StringBuilder nameBuilder = new StringBuilder();
+            ImmutableArray<SymbolDisplayPart> nameParts = method.ContainingType.ToDisplayParts();
+            foreach (SymbolDisplayPart namePart in nameParts)
+            {
+                if (namePart.Kind == SymbolDisplayPartKind.NamespaceName)
+                {
+                    if (!isFirstTypeName)
+                        throw new InvalidOperationException($"Found namespace name '{namePart}' after some type names '{nameBuilder}'");
+
+                    if (nameBuilder.Length != 0)
+                        nameBuilder.Append('.');
+
+                    nameBuilder.Append(namePart);
+                }
+                else if (Array.IndexOf(nameKinds, namePart.Kind) >= 0)
+                {
+                    if (isFirstTypeName)
+                    {
+                        namespaceName = nameBuilder.ToString();
+                        nameBuilder.Clear();
+                        isFirstTypeName = false;
+                    }
+
+                    if (nameBuilder.Length != 0)
+                        nameBuilder.Append('/');
+
+                    nameBuilder.Append(namePart);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Name kind '{namePart.Kind}' should be reached");
+                }
+            }
+
+            if (isFirstTypeName)
+                throw new InvalidOperationException($"Type name not found in '{nameParts}'");
+            else
+                className = nameBuilder.ToString();
+
+            string qualifiedClassName = namespaceName == null ? className : namespaceName + "." + className;
+            return $"[{env.Compilation.AssemblyName}]{qualifiedClassName}:{method.Name}";
         }
 
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
