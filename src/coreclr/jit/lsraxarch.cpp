@@ -2501,9 +2501,10 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     }
 #endif
 
-    int srcCount = BuildOperandUses(src, candidates);
+    int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();
     BuildDef(cast, candidates);
+
     return srcCount;
 }
 
