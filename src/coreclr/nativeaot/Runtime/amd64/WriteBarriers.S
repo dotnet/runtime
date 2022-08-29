@@ -297,7 +297,7 @@ LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
     cmp     rcx, [C_VAR(g_ephemeral_high)]
     jae     LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
 
-    // move current rdi value into rcx and then increment the pointers
+    // move current rdi value into rcx, we need to keep rdi and eventually increment by 8
     mov     rcx, rdi
 
     // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
