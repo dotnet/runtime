@@ -2235,6 +2235,17 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
+#ifdef DEBUG
+    ValueNum result = VNForFunc(typ, func, arg0VN, arg1VN);
+
+    VNFuncApp app;
+    // We only expect to be using this function for VNFs that we cannot fold
+    // so validate that no folding occurred in the normal helper.
+    assert(GetVNFunc(result, &app) && (app.m_func == func) && (app.m_arity == 2) && (app.m_args[0] == arg0VN) &&
+           (app.m_args[1] == arg1VN));
+
+    return result;
+#else
     assert(arg0VN != NoVN && arg1VN != NoVN);
 
     // Function arguments carry no exceptions.
@@ -2263,6 +2274,7 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
         GetVNFunc2Map()->Set(fstruct, resultVN);
     }
     return resultVN;
+#endif
 }
 
 //----------------------------------------------------------------------------------------
