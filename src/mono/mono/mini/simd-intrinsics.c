@@ -270,7 +270,8 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 	int op = OP_XBINOP;
 
 	if (id == SN_BitwiseAnd || id == SN_BitwiseOr || id == SN_Xor ||
-		id == SN_op_BitwiseAnd || id == SN_op_BitwiseOr || id == SN_op_ExclusiveOr) {
+		id == SN_op_BitwiseAnd || id == SN_op_BitwiseOr || id == SN_op_ExclusiveOr ||
+		id == SN_AndNot ) {
 		op = OP_XBINOP_FORCEINT;
 	
 		switch (id) {
@@ -285,6 +286,9 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 		case SN_op_ExclusiveOr:
 		case SN_Xor:
 			instc0 = XBINOP_FORCEINT_XOR;
+			break;
+		case SN_AndNot:
+			instc0 = XBINOP_FORCEINT_ANDN;
 			break;
 		}
 	} else {
@@ -1055,14 +1059,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
 
-		// Works only for floats right now
-		if ( arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8 ) {
-			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
-			ins->inst_c0 = -OP_SSE_ANDN; // Swap operands flag for Vector128
-			return ins;
-		} else
-			return NULL;
-		
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 #else
 		return NULL;
 #endif
