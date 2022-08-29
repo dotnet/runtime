@@ -1386,6 +1386,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
+#elif TARGET_AMD64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float (arg0_type))
+			return NULL;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, INTRINS_SSE_SQRT_PD, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
