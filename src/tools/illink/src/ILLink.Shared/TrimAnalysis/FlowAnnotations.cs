@@ -24,8 +24,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, SourceParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex);
+		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, SourceParameterIndex parameterIndex);
 	}
 }
