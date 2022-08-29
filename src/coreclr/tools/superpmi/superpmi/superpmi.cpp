@@ -380,10 +380,10 @@ int __cdecl main(int argc, char* argv[])
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT) ||
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
 
-        MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.Opts;
-        MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.Opts;
+        MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.FullOpts;
+        MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.FullOpts;
 
-        totalBaseMetrics.Total.AggregateFrom(baseMetrics);
+        totalBaseMetrics.Overall.AggregateFrom(baseMetrics);
 
         if (res == JitInstance::RESULT_SUCCESS)
         {
@@ -411,7 +411,7 @@ int __cdecl main(int argc, char* argv[])
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
 
-            totalDiffMetrics.Total.AggregateFrom(diffMetrics);
+            totalDiffMetrics.Overall.AggregateFrom(diffMetrics);
 
             if (res2 == JitInstance::RESULT_SUCCESS)
             {
@@ -561,14 +561,14 @@ int __cdecl main(int argc, char* argv[])
                 {
                     InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
 
-                    totalBaseMetrics.Total.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
-                    totalDiffMetrics.Total.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+                    totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetrics.Overall.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
 
                     totalBaseMetricsOpts.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetricsOpts.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
 
-                    totalBaseMetrics.Total.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
-                    totalDiffMetrics.Total.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+                    totalBaseMetrics.Overall.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.Overall.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
 
                     totalBaseMetricsOpts.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
                     totalDiffMetricsOpts.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;

@@ -28,9 +28,9 @@ struct MetricsSummary
 class MetricsSummaries
 {
 public:
-    MetricsSummary Total;
+    MetricsSummary Overall;
     MetricsSummary MinOpts;
-    MetricsSummary Opts;
+    MetricsSummary FullOpts;
 
     void AggregateFrom(const MetricsSummaries& other);
 

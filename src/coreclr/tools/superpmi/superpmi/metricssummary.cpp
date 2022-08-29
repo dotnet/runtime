@@ -18,9 +18,9 @@ void MetricsSummary::AggregateFrom(const MetricsSummary& other)
 
 void MetricsSummaries::AggregateFrom(const MetricsSummaries& other)
 {
-    Total.AggregateFrom(other.Total);
+    Overall.AggregateFrom(other.Overall);
     MinOpts.AggregateFrom(other.MinOpts);
-    Opts.AggregateFrom(other.Opts);
+    FullOpts.AggregateFrom(other.FullOpts);
 }
 
 struct FileHandleWrapper
@@ -47,7 +47,7 @@ static bool FilePrintf(HANDLE hFile, const char* fmt, ...)
     va_start(args, fmt);
 
     char buffer[4096];
-    int len = vsprintf_s(buffer, ARRAYSIZE(buffer), fmt, args);
+    int len = vsprintf_s(buffer, ARRAY_SIZE(buffer), fmt, args);
     DWORD numWritten;
     bool result =
         WriteFile(hFile, buffer, static_cast<DWORD>(len), &numWritten, nullptr) && (numWritten == static_cast<DWORD>(len));
@@ -74,9 +74,9 @@ bool MetricsSummaries::SaveToFile(const char* path)
     }
 
     return
-        WriteRow(file.get(), "Total", Total) &&
+        WriteRow(file.get(), "Overall", Overall) &&
         WriteRow(file.get(), "MinOpts", MinOpts) &&
-        WriteRow(file.get(), "Opts", Opts);
+        WriteRow(file.get(), "FullOpts", FullOpts);
 }
 
 bool MetricsSummaries::WriteRow(HANDLE hFile, const char* name, const MetricsSummary& summary)
@@ -163,12 +163,12 @@ bool MetricsSummaries::LoadFromFile(const char* path, MetricsSummaries* metrics)
         if (scanResult == 8)
         {
             MetricsSummary* tarSummary = nullptr;
-            if (strcmp(name, "Total") == 0)
-                metrics->Total = summary;
+            if (strcmp(name, "Overall") == 0)
+                metrics->Overall = summary;
             else if (strcmp(name, "MinOpts") == 0)
                 metrics->MinOpts = summary;
-            else if (strcmp(name, "Opts") == 0)
-                metrics->Opts = summary;
+            else if (strcmp(name, "FullOpts") == 0)
+                metrics->FullOpts = summary;
             else
                 result = false;
         }

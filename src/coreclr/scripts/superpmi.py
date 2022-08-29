@@ -484,7 +484,7 @@ def read_csv_metrics(path):
         path (str) : path to .csv file
 
     Returns:
-        A dictionary of dictionaries. For example, dict["Total"]["Successful
+        A dictionary of dictionaries. For example, dict["Overall"]["Successful
         compiles"] will access the total number of successful compiles and
         dict["MinOpts"]["Successful compiles"] will access the number of
         minopts compilations.
@@ -1192,7 +1192,7 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
         those return codes.
     """
     if return_code == 0:
-        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Total"]["Successful compiles"]))
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
     elif return_code == -1 or return_code == 4294967295:
         logging.error("General fatal error")
     elif return_code == -2 or return_code == 4294967294:
@@ -1202,13 +1202,13 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        missing_base = int(base_metrics["Total"]["Missing compiles"])
-        total_contexts = int(base_metrics["Total"]["Successful compiles"]) + int(base_metrics["Total"]["Failing compiles"])
+        missing_base = int(base_metrics["Overall"]["Missing compiles"])
+        total_contexts = int(base_metrics["Overall"]["Successful compiles"]) + int(base_metrics["Overall"]["Failing compiles"])
 
         if diff_metrics is None:
             logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
         else:
-            missing_diff = int(diff_metrics["Total"]["Missing compiles"])
+            missing_diff = int(diff_metrics["Overall"]["Missing compiles"])
             logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
     elif return_code == 139 and coreclr_args.host_os != "windows":
@@ -1718,8 +1718,8 @@ class SuperPMIReplayAsmDiffs:
                     logging.debug("")
 
                     if base_metrics is not None and diff_metrics is not None:
-                        base_bytes = int(base_metrics["Total"]["Diffed code bytes"])
-                        diff_bytes = int(diff_metrics["Total"]["Diffed code bytes"])
+                        base_bytes = int(base_metrics["Overall"]["Diffed code bytes"])
+                        diff_bytes = int(diff_metrics["Overall"]["Diffed code bytes"])
                         logging.info("Total bytes of base: {}".format(base_bytes))
                         logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
@@ -1790,9 +1790,9 @@ class SuperPMIReplayAsmDiffs:
                             logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
 
                     if base_metrics is not None and diff_metrics is not None:
-                        missing_base = int(base_metrics["Total"]["Missing compiles"])
-                        missing_diff = int(diff_metrics["Total"]["Missing compiles"])
-                        total_contexts = int(base_metrics["Total"]["Successful compiles"]) + int(base_metrics["Total"]["Failing compiles"])
+                        missing_base = int(base_metrics["Overall"]["Missing compiles"])
+                        missing_diff = int(diff_metrics["Overall"]["Missing compiles"])
+                        total_contexts = int(base_metrics["Overall"]["Successful compiles"]) + int(base_metrics["Overall"]["Failing compiles"])
 
                         if missing_base > 0 or missing_diff > 0:
                             logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
@@ -1842,22 +1842,22 @@ class SuperPMIReplayAsmDiffs:
                     color = "red" if diff > base else "green"
                     return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
 
-                diffed_contexts = sum(int(diff_metrics["Total"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+                diffed_contexts = sum(int(diff_metrics["Overall"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
                 diffed_minopts_contexts = sum(int(diff_metrics["MinOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-                diffed_opts_contexts = sum(int(diff_metrics["Opts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-                missing_base_contexts = sum(int(base_metrics["Total"]["Missing compiles"]) for (_, base_metrics, _, _, _) in asm_diffs)
-                missing_diff_contexts = sum(int(diff_metrics["Total"]["Missing compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+                diffed_opts_contexts = sum(int(diff_metrics["FullOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+                missing_base_contexts = sum(int(base_metrics["Overall"]["Missing compiles"]) for (_, base_metrics, _, _, _) in asm_diffs)
+                missing_diff_contexts = sum(int(diff_metrics["Overall"]["Missing compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
 
-                write_fh.write("Diffs are based on <span style=\"color:#66ccff\">{:,d}</span> contexts (<span style=\"color:#66ccff\">{:,d}</span> minopts, <span style=\"color:#66ccff\">{:,d}</span> optimized).\n".format(
+                write_fh.write("Diffs are based on <span style=\"color:#1460aa\">{:,d}</span> contexts (<span style=\"color:#1460aa\">{:,d}</span> minopts, <span style=\"color:#1460aa\">{:,d}</span> optimized).\n\n".format(
                     diffed_contexts, diffed_minopts_contexts, diffed_opts_contexts))
 
-                color_base = "orange" if missing_base_contexts > 0 else "green"
-                color_diff = "orange" if missing_diff_contexts > 0 else "green"
-                write_fh.write("<span style=\"color:{}\">{:,d}</span> contexts missed with the base JIT and <span style=\"color:{}\">{:,d}</span> missed with the diff JIT.\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
+                color_base = "#d35400" if missing_base_contexts > 0 else "green"
+                color_diff = "#d35400" if missing_diff_contexts > 0 else "green"
+                write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     # First write an overview table
-                    write_fh.write("|Collection|Overall (bytes)|MinOpts (bytes)|Opts (bytes)|\n")
+                    write_fh.write("|Collection|MinOpts (bytes)|Opts (bytes)|Overall (bytes)|\n")
                     write_fh.write("|---|---|---|---|\n")
                     for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                         if not has_diffs:
@@ -1866,14 +1866,14 @@ class SuperPMIReplayAsmDiffs:
                         write_fh.write("|{}|{}|{}|{}|\n".format(
                             mch_file,
                             format_delta(
-                                int(base_metrics["Total"]["Diffed code bytes"]),
-                                int(diff_metrics["Total"]["Diffed code bytes"])),
-                            format_delta(
                                 int(base_metrics["MinOpts"]["Diffed code bytes"]),
                                 int(diff_metrics["MinOpts"]["Diffed code bytes"])),
                             format_delta(
-                                int(base_metrics["Opts"]["Diffed code bytes"]),
-                                int(diff_metrics["Opts"]["Diffed code bytes"]))))
+                                int(base_metrics["FullOpts"]["Diffed code bytes"]),
+                                int(diff_metrics["FullOpts"]["Diffed code bytes"])),
+                            format_delta(
+                                int(base_metrics["Overall"]["Diffed code bytes"]),
+                                int(diff_metrics["Overall"]["Diffed code bytes"]))))
 
                     write_fh.write("\n")
                 else:
@@ -1888,11 +1888,11 @@ class SuperPMIReplayAsmDiffs:
                 for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                     write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
                         mch_file,
-                        int(diff_metrics["Total"]["Successful compiles"]),
-                        int(base_metrics["Total"]["Missing compiles"]),
-                        int(diff_metrics["Total"]["Missing compiles"]),
+                        int(diff_metrics["Overall"]["Successful compiles"]),
+                        int(base_metrics["Overall"]["Missing compiles"]),
+                        int(diff_metrics["Overall"]["Missing compiles"]),
                         int(diff_metrics["MinOpts"]["Successful compiles"]),
-                        int(diff_metrics["Opts"]["Successful compiles"])))
+                        int(diff_metrics["FullOpts"]["Successful compiles"])))
 
                 write_fh.write("\n")
 
@@ -2065,8 +2065,8 @@ class SuperPMIReplayThroughputDiff:
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
 
                 if base_metrics is not None and diff_metrics is not None:
-                    base_instructions = int(base_metrics["Total"]["Diff executed instructions"])
-                    diff_instructions = int(diff_metrics["Total"]["Diff executed instructions"])
+                    base_instructions = int(base_metrics["Overall"]["Diff executed instructions"])
+                    diff_instructions = int(diff_metrics["Overall"]["Diff executed instructions"])
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
@@ -2118,7 +2118,7 @@ class SuperPMIReplayThroughputDiff:
                     def check(col):
                         return is_significant_pct(int(base[col]["Diff executed instructions"]), int(diff[col]["Diff executed instructions"]))
 
-                    return check("Total") or check("MinOpts") or check("Opts")
+                    return check("Overall") or check("MinOpts") or check("FullOpts")
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
                     color = "red" if diff_instructions > base_instructions else "green"
@@ -2136,15 +2136,15 @@ class SuperPMIReplayThroughputDiff:
                         if is_significant(base, diff):
                             write_fh.write("|{}|{}|{}|{}|\n".format(
                                 mch_file,
-                                format_pct_for_col("Total"),
                                 format_pct_for_col("MinOpts"),
-                                format_pct_for_col("Opts")))
+                                format_pct_for_col("FullOpts"),
+                                format_pct_for_col("Overall")))
                 else:
                     write_fh.write("No significant throughput differences found\n")
 
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
-                for (disp, col) in [("All", "Total"), ("MinOpts", "MinOpts"), ("Optimized", "Opts")]:
+                for (disp, col) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("Optimized", "FullOpts")]:
                     write_fh.write("{} contexts:\n\n".format(disp))
                     write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                     write_fh.write("|---|---|---|---|\n")
