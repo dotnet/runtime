@@ -1203,6 +1203,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public void JsExportStructClassRecords()
+        {
+            var actual = JavaScriptTestHelper.invokeStructClassRecords("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
+            Assert.Equal("test!", actual);
+        }
+
+        [Fact]
         public void JsImportNative()
         {
             if (JSHost.GlobalThis.HasProperty("window"))

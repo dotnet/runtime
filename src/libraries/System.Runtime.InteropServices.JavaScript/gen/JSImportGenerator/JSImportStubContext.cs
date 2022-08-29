@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -16,6 +17,14 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSSignatureContext : IEquatable<JSSignatureContext>
     {
+        private static SymbolDisplayPartKind[] nameKinds = new[]
+        {
+            SymbolDisplayPartKind.ClassName,
+            SymbolDisplayPartKind.StructName,
+            SymbolDisplayPartKind.RecordClassName,
+            SymbolDisplayPartKind.RecordStructName
+        };
+
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
         internal static readonly string GeneratorVersion = typeof(JSImportGenerator).Assembly.GetName().Version.ToString();
@@ -118,12 +127,11 @@ namespace Microsoft.Interop.JavaScript
             };
             int typesHash = Math.Abs((int)hash);
 
-
-
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
             string qualifiedName;
+
             var ns = string.Join(".", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.NamespaceName).Select(x => x.ToString()).ToArray());
-            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.ClassName).Select(x => x.ToString()).ToArray());
+            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => Array.IndexOf(nameKinds, p.Kind) >= 0).Select(x => x.ToString()).ToArray());
             var qclasses = method.ContainingType.ContainingNamespace == null ? ns : ns + "." + cn;
             qualifiedName = $"[{env.Compilation.AssemblyName}]{qclasses}:{method.Name}";
 
