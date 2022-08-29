@@ -14,7 +14,11 @@ namespace System.Buffers.Text.Tests
         private static byte GetNextInvalidAsciiByte() => (byte)Random.Shared.Next(128, 255 + 1);
 
         [Fact]
-        public void EmptyInput_IndexNotFound() => Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte>.Empty));
+        public void EmptyInput_IndexNotFound()
+        {
+            Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte>.Empty));
+            Assert.True(Ascii.IsAscii(ReadOnlySpan<byte>.Empty));
+        }
 
         private static int[] BufferLengths = new[] {
             1,
@@ -40,7 +44,11 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(AsciiOnlyBuffers))]
-        public void AllAscii_IndexNotFound(byte[] buffer) => Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
+        public void AllAscii_IndexNotFound(byte[] buffer)
+        {
+            Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
+            Assert.True(Ascii.IsAscii(buffer));
+        }
 
         public static IEnumerable<object[]> ContainingNonAsciiCharactersBuffers
         {
@@ -65,6 +73,10 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ContainingNonAsciiCharactersBuffers))]
-        public void NonAscii_IndexFound(int expectedIndex, byte[] buffer) => Assert.Equal(expectedIndex, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
+        public void NonAscii_IndexFound(int expectedIndex, byte[] buffer)
+        {
+            Assert.Equal(expectedIndex, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
+            Assert.False(Ascii.IsAscii(buffer));
+        }
     }
 }
