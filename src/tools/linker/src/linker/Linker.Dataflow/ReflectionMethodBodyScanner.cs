@@ -93,18 +93,14 @@ namespace Mono.Linker.Dataflow
 			Debug.Fail ("Invalid IL or a bug in the scanner");
 		}
 
-		protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, int parameterIndex)
-			=> GetMethodParameterValue (method, parameterIndex, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method, parameterIndex));
+		protected override ValueWithDynamicallyAccessedMembers GetMethodThisParameterValue (MethodDefinition method)
+			=> _annotations.GetMethodThisParameterValue (method);
 
-		ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, SourceParameterIndex parameterIndex)
+			=> GetMethodParameterValue (method, parameterIndex, _annotations.GetParameterAnnotation (method, parameterIndex));
+
+		ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, SourceParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			if (method.HasImplicitThis ()) {
-				if (parameterIndex == 0)
-					return _annotations.GetMethodThisParameterValue (method, dynamicallyAccessedMemberTypes);
-
-				parameterIndex--;
-			}
-
 			return _annotations.GetMethodParameterValue (method, parameterIndex, dynamicallyAccessedMemberTypes);
 		}
 

@@ -347,8 +347,8 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (candidate.GetParameterType (i, context) is not TypeReference candidateParameterType ||
-					method.GetParameterType (i, context) is not TypeReference methodParameterType ||
+				if (candidate.GetInflatedParameterType (i, context) is not TypeReference candidateParameterType ||
+					method.GetInflatedParameterType (i, context) is not TypeReference methodParameterType ||
 					!TypeMatch (candidateParameterType, methodParameterType))
 					return false;
 			}

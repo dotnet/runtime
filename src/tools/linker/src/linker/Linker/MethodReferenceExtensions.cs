@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using ILLink.Shared;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
@@ -80,13 +81,17 @@ namespace Mono.Linker
 			return method.ReturnType.WithoutModifiers ().MetadataType == MetadataType.Void;
 		}
 
-		public static TypeReference? GetParameterType (this MethodReference method, int parameterIndex, LinkContext context)
+		public static TypeReference? GetInflatedParameterType (this MethodReference method, int index, LinkContext context)
 		{
-			if (method.DeclaringType is GenericInstanceType genericInstance)
-				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType, context);
-
-			return method.Parameters[parameterIndex].ParameterType;
+			var uninflatedParameterType = method.GetParameterType ((SourceParameterIndex) index);
+			if (method.DeclaringType is GenericInstanceType genericInstance) {
+				return TypeReferenceExtensions.InflateGenericType (genericInstance, uninflatedParameterType, context);
+			}
+			return uninflatedParameterType;
 		}
+
+		public static TypeReference GetParameterType (this MethodReference method, SourceParameterIndex index)
+			=> method.Parameters[(int) index].ParameterType;
 
 		public static bool IsDeclaredOnType (this MethodReference method, string fullTypeName)
 		{

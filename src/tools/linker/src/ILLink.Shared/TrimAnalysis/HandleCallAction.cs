@@ -631,7 +631,7 @@ namespace ILLink.Shared.TrimAnalysis
 						// In all other cases we may not even know which type this is about, so there's nothing we can do
 						// report it as a warning.
 						_diagnosticContext.AddDiagnostic (DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined,
-							_annotations.GetMethodParameterValue (calledMethod, 1, DynamicallyAccessedMemberTypes.None).GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
+							_annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) 1, DynamicallyAccessedMemberTypes.None).GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
 					}
 				}
 				break;
@@ -652,7 +652,7 @@ namespace ILLink.Shared.TrimAnalysis
 						break;
 					}
 
-					var targetValue = _annotations.GetMethodParameterValue (calledMethod, 1, memberTypes);
+					var targetValue = _annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) 1, memberTypes);
 					foreach (var value in argumentValues[1]) {
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in argumentValues[2]) {
@@ -1147,7 +1147,7 @@ namespace ILLink.Shared.TrimAnalysis
 					for (int argumentIndex = 0; argumentIndex < argumentValues.Count; argumentIndex++) {
 						if (argumentIndex >= calledMethod.GetParametersCount () || calledMethod.ParameterReferenceKind (argumentIndex) == ReferenceKind.Out)
 							continue;
-						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[argumentIndex], _annotations.GetMethodParameterValue (calledMethod, argumentIndex));
+						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[argumentIndex], _annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) argumentIndex));
 					}
 				}
 				break;
