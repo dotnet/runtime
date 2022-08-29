@@ -85,8 +85,8 @@ namespace System.Net
             {
                 if (remoteCertificate != IntPtr.Zero)
                 {
-                    // Creating X509Certificate will grab refference
-                    // and we need to release it explicitly on failure.
+                    // Creating X509Certificate will increase the reference count
+                    // so we need to release it explicitly on either success or failure.
                     Interop.Crypto.X509Destroy(remoteCertificate);
                 }
             }
