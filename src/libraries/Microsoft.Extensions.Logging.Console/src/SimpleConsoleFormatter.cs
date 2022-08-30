@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Logging.Console
             // We shouldn't be outputting color codes for Android/Apple mobile platforms,
             // they have no shell (adb shell is not meant for running apps) and all the output gets redirected to some log file.
             bool disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
-                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || _isAndroidOrAppleMobile));
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || IsAndroidOrAppleMobile));
             if (disableColors)
             {
                 return new ConsoleColors(null, null);
