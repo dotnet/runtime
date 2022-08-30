@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Hosting
                 await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
 #else
                 var tcs = new TaskCompletionSource<object>();
-                using var registration = cancellationToken.Register(tcs.SetCanceled);
+                using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s).SetCanceled(), tcs);
                 await (await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false)).ConfigureAwait(false);
 #endif
             }
