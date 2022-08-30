@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Primitives;
 
 namespace System.Text.Json.SourceGeneration.Tests.RepeatedTypes
 {
@@ -274,5 +275,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class PublicTestClass
     {
         internal class InternalNestedClass { }
+    }
+
+    public sealed class ClassWithStringValues
+    {
+        public StringValues StringValuesProperty { get; set; }
     }
 }
