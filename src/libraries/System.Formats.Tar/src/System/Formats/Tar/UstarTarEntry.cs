@@ -39,7 +39,7 @@ namespace System.Formats.Tar
         /// <param name="other">The <see cref="TarEntry"/> instance to convert to the Ustar format.</param>
         /// <exception cref="InvalidOperationException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> instance.</para>
         /// <para>-or-</para>
-        /// <para>The entry type of <paramref name="other"/> is not supported in Ustar.</para></exception>
+        /// <para>The entry type of <paramref name="other"/> is not supported in the Ustar format.</para></exception>
         /// <exception cref="FormatException">The format of <paramref name="other"/> is invalid.</exception>
         public UstarTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Ustar)
