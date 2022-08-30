@@ -395,6 +395,22 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
         }
 
+        // Regression test for https://github.com/dotnet/runtime/issues/61734
+        [Fact]
+        public static void ClassWithDictionaryPropertyRoundtrips()
+        {
+            JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
+
+            ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
+            {
+                ["foo"] = "bar",
+                ["test"] = "baz",
+            });
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
+        }
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum TestEnum
         {
@@ -413,6 +429,11 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(ClassWithStringValues))]
         internal partial class ClassWithStringValuesContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(ClassWithDictionaryProperty))]
+        internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
         {
         }
 
