@@ -326,14 +326,6 @@ namespace System.Threading
                     // thread name will be set in thread proc
                     workerThread.UnsafeStart();
                 }
-                catch (ThreadStartException)
-                {
-                    return false;
-                }
-                catch (OutOfMemoryException)
-                {
-                    return false;
-                }
 
                 return true;
             }
