@@ -2856,8 +2856,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // Optimizes (X & 1) != 1 or (X & 1) == 0 to ((NOT X) & 1)
             // The compiler requires jumps to have relop operands, so we do not fold that case.
 
-            const bool optimizeEq = (op2Value == 1) && cmp->OperIs(GT_EQ) || (op2Value == 0) && cmp->OperIs(GT_NE);
-            const bool optimizeNe = (op2Value == 1) && cmp->OperIs(GT_NE) || (op2Value == 0) && cmp->OperIs(GT_EQ);
+            const bool optimizeEq = ((op2Value == 1) && cmp->OperIs(GT_EQ)) || ((op2Value == 0) && cmp->OperIs(GT_NE));
+            const bool optimizeNe = ((op2Value == 1) && cmp->OperIs(GT_NE)) || ((op2Value == 0) && cmp->OperIs(GT_EQ));
 
             if (optimizeEq || optimizeNe)
             {
