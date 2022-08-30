@@ -2235,17 +2235,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-#ifdef DEBUG
-    ValueNum result = VNForFunc(typ, func, arg0VN, arg1VN);
-
-    VNFuncApp app;
-    // We only expect to be using this function for VNFs that we cannot fold
-    // so validate that no folding occurred in the normal helper.
-    assert(GetVNFunc(result, &app) && (app.m_func == func) && (app.m_arity == 2) && (app.m_args[0] == arg0VN) &&
-           (app.m_args[1] == arg1VN));
-
-    return result;
-#else
     assert(arg0VN != NoVN && arg1VN != NoVN);
 
     // Function arguments carry no exceptions.
@@ -2253,9 +2242,21 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(VNFuncArity(func) == 2);
 
+#ifdef DEBUG
+    ValueNum resultVN = VNForFunc(typ, func, arg0VN, arg1VN);
+
+    VNFuncApp app;
+    // We only expect to be using this function for VNFs that we cannot fold
+    // so validate that no folding occurred in the normal helper.
+    assert(GetVNFunc(resultVN, &app) && (app.m_func == func) && (app.m_arity == 2) && (app.m_args[0] == arg0VN) &&
+           (app.m_args[1] == arg1VN));
+
+    return resultVN;
+#else
+
     ValueNum resultVN;
 
-    // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN') ?
+    // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
     if (!GetVNFunc2Map()->Lookup(fstruct, &resultVN))
@@ -2273,6 +2274,7 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
         // Record 'resultVN' in the Func2Map
         GetVNFunc2Map()->Set(fstruct, resultVN);
     }
+
     return resultVN;
 #endif
 }
