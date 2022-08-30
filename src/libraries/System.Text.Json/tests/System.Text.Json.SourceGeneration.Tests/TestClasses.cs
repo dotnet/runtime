@@ -281,4 +281,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public StringValues StringValuesProperty { get; set; }
     }
+
+    public class ClassWithDictionaryProperty
+    {
+        public ClassWithDictionaryProperty(Dictionary<string, object?> property) => DictionaryProperty = property;
+        public Dictionary<string, object?> DictionaryProperty { get; }
+    }
 }
