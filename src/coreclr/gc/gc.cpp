@@ -6085,20 +6085,22 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_CPUS];
         uint16_t node_no[MAX_SUPPORTED_CPUS];
         uint16_t max_node_no = 0;
-        for (uint16_t i = 0; i < n_heaps; i++)
+        uint16_t heap_num;
+        for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
+            if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
                 break;
-            if (!do_numa || node_no[i] == NUMA_NODE_UNDEFINED)
-                node_no[i] = 0;
-            max_node_no = max(max_node_no, node_no[i]);
+            assert(proc_no[heap_num] < MAX_SUPPORTED_CPUS);
+            if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
+                node_no[heap_num] = 0;
+            max_node_no = max(max_node_no, node_no[heap_num]);
         }
 
         // Pass 2: assign heap numbers by numa node
         int cur_heap_no = 0;
         for (uint16_t cur_node_no = 0; cur_node_no <= max_node_no; cur_node_no++)
         {
-            for (int i = 0; i < n_heaps; i++)
+            for (int i = 0; i < heap_num; i++)
             {
                 if (node_no[i] != cur_node_no)
                     continue;
@@ -44828,7 +44830,9 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
+    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // heaps as that is the number of slots we have allocated for handle tables.
+    g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 
     if (nhp_from_config)
     {
@@ -44937,6 +44941,7 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
+    assert (nhp <= g_num_processors);
     gc_heap::n_heaps = nhp;
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, nhp);
 #else
@@ -44971,7 +44976,7 @@ HRESULT GCHeap::Initialize()
         int available_mem_th = 10;
         if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
         {
-            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(GCToOSInterface::GetTotalProcessorCount()));
+            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
             available_mem_th = min (available_mem_th, adjusted_available_mem_th);
         }
 
