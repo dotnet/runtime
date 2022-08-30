@@ -20,6 +20,7 @@
       <TpnRepo Include="dotnet/templating" />
       <TpnRepo Include="dotnet/winforms" />
       <TpnRepo Include="dotnet/wpf" />
+      <TpnRepo Include="dotnet/linker" />
 
       <!--
         Additional repos that should be included but don't have any third-party-notices files:
@@ -29,7 +30,6 @@
           dotnet/icu
           dotnet/sdk
           dotnet/windowsdesktop
-          dotnet/linker
       -->
 
       <TpnRepo Condition="'%(TpnRepo.Branch)' == ''" Branch="main" />
