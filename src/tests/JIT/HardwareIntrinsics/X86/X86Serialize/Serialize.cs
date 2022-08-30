@@ -10,15 +10,11 @@ using System.Runtime.Intrinsics.X86;
 using Xunit;
 namespace IntelHardwareIntrinsicTest
 {
-    class Program
+    public class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
         [Fact]
         public static unsafe void Test()
         {
-            int testResult = X86Serialize.IsSupported ? Pass : Fail;
             if (X86Serialize.IsSupported)
             {
                 // Should work without throwing
