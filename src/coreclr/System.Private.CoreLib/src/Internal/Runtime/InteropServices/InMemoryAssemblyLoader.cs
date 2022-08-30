@@ -29,9 +29,13 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
+            LoadInMemoryAssemblyInContextImplLocal(moduleHandle, assemblyPath);
+
+            void LoadInMemoryAssemblyInContextImplLocal(IntPtr moduleHandle, IntPtr assemblyPath){
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
+                LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
 #pragma warning restore IL2026
+            }
         }
 
         /// <summary>
