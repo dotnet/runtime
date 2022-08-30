@@ -7,21 +7,20 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Sse1
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void ConvertToInt32()
         {
             int testResult = Pass;
 
             if (Sse.IsSupported)
             {
-                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 0 }))
+                using (TestTable_SingleArray<float> floatTable = new TestTable_SingleArray<float>(new float[4] { 1, -5, 100, 0 }))
                 {
                     var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArrayPtr);
                     var i2 = Sse.ConvertToInt32(vf1);
@@ -35,28 +34,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
-
-        public unsafe struct TestTable<T> : IDisposable where T : struct
-        {
-            public T[] inArray;
-
-            public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
-
-            GCHandle inHandle;
-            public TestTable(T[] a)
-            {
-                this.inArray = a;
-
-                inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
-            }
-
-            public void Dispose()
-            {
-                inHandle.Free();
-            }
-        }
-
     }
 }

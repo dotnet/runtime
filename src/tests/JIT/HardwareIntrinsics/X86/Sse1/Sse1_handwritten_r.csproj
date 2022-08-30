@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Sse1_handwritten_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HandwrittenProgram.cs" />
+
+    <Compile Include="ConvertToInt32WithTruncation.cs" />
+    <Compile Include="ConvertToInt32.cs" />
+    <Compile Include="LoadAlignedVector128.cs" />
+    <Compile Include="LoadHigh.cs" />
+    <Compile Include="LoadLow.cs" />
+    <Compile Include="MoveHighToLow.cs" />
+    <Compile Include="MoveLowToHigh.cs" />
+    <Compile Include="MoveMask.cs" />
+    <Compile Include="MoveScalar.cs" />
+    <Compile Include="Prefetch.cs" />
+    <Compile Include="ReciprocalScalar.cs" />
+    <Compile Include="ReciprocalSqrtScalar.cs" />
+    <Compile Include="ReciprocalSqrt.cs" />
+    <Compile Include="Reciprocal.cs" />
+    <Compile Include="Shuffle.cs" />
+    <Compile Include="SqrtScalar.cs" />
+    <Compile Include="Sqrt.cs" />
+    <Compile Include="StoreAlignedNonTemporal.cs" />
+    <Compile Include="StoreAligned.cs" />
+    <Compile Include="StoreFence.cs" />
+    <Compile Include="StoreHigh.cs" />
+    <Compile Include="StoreLow.cs" />
+    <Compile Include="StoreScalar.cs" />
+    <Compile Include="Store.cs" />
+    <Compile Include="UnpackHigh.cs" />
+    <Compile Include="UnpackLow.cs" />
+  </ItemGroup>
+</Project>
