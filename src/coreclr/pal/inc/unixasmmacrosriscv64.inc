@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#error "TODO-RISCV64: review this; missing many macros for VM"
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -33,4 +35,8 @@ C_FUNC(\Name):
 C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
         LEAF_END \Name, \Section
+.endm
+
+.macro EMIT_BREAKPOINT
+        ebreak
 .endm
