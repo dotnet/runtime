@@ -22,9 +22,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ResultChecker
 	{
-		readonly BaseAssemblyResolver _originalsResolver;
-		readonly ReaderParameters _originalReaderParameters;
-		readonly ReaderParameters _linkedReaderParameters;
+		private readonly BaseAssemblyResolver _originalsResolver;
+		private readonly ReaderParameters _originalReaderParameters;
+		private readonly ReaderParameters _linkedReaderParameters;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (),
@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
+		private void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 		}
@@ -76,13 +76,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyLoggedMessages (original, linkResult.LogWriter, checkRemainingErrors);
 		}
 
-		static bool IsProducedByNativeAOT (CustomAttribute attr)
+		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.NativeAot);
 		}
 
-		static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
+		private static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
 		{
 			foreach (var testType in assembly.AllDefinedTypes ()) {
 				foreach (var provider in testType.AllMembers ())
@@ -97,7 +97,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
+		private void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
@@ -304,7 +304,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.False (remainingErrors.Any (), $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
 			}
 
-			bool LogMessageHasSameOriginMember (MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)
+			static bool LogMessageHasSameOriginMember (MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)
 			{
 				var origin = mc.Origin;
 				Debug.Assert (origin != null);
@@ -391,7 +391,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (part.EndsWith ('>')) {
 						int i = part.LastIndexOf ('<');
 						if (i >= 0) {
-							sb.Append (part.Substring (0, i));
+							sb.Append (part.AsSpan (0, i));
 							sb.Append ('`');
 							sb.Append (part.Substring (i + 1).Where (c => c == ',').Count () + 1);
 							continue;
@@ -405,7 +405,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+		private static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{
 			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
 				return assembly.EntryPoint.DeclaringType.CustomAttributes

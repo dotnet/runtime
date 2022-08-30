@@ -14,10 +14,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		protected readonly TestCase _testCase;
 		protected readonly NPath _directory;
+		private const string _linkerAssemblyPath = "";//typeof (Trimmer).Assembly.Location;
 
-		static readonly string _linkerAssemblyPath = "";//typeof (Trimmer).Assembly.Location;
-
-		static NPath GetArtifactsTestPath ()
+		private static NPath GetArtifactsTestPath ()
 		{
 			// Converts paths like /root-folder/runtime/artifacts/bin/Mono.Linker.Tests/x64/Debug/Mono.Linker.Tests.dll
 			// to /root-folder/runtime/artifacts/bin/ILLink.testcases/

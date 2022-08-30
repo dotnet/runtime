@@ -118,7 +118,9 @@ namespace Mono.Linker.Tests.Extensions
 		public static PropertyDefinition GetPropertyDefinition (this MethodDefinition method)
 		{
 			if (!method.IsSetter && !method.IsGetter)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentException ();
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 
 			var propertyName = method.Name.Substring (4);
 			return method.DeclaringType.Properties.First (p => p.Name == propertyName);
@@ -328,7 +330,7 @@ namespace Mono.Linker.Tests.Extensions
 			sb.Insert (0, '<');
 		}
 
-		static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
+		private static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
 		{
 			sb.Insert (0, '>').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
 			while (--argumentsToTake > 0)
@@ -337,7 +339,7 @@ namespace Mono.Linker.Tests.Extensions
 			sb.Insert (0, '<');
 		}
 
-		static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
+		private static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
 		{
 			void parseArrayDimensions (ArrayType at)
 			{

@@ -10,8 +10,8 @@ namespace TypeSystemTests
 {
     public class InterfacesTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public InterfacesTests()
         {

@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.TestCases
 			}
 		}
 
-		static IEnumerable<TestCase> AllCases ()
+		private static IEnumerable<TestCase> AllCases ()
 		{
 			_cachedAllCases ??= CreateCollector ()
 					.Collect ()
@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.TestCases
 			return AllCases ().FirstOrDefault (c => c.Name == name);
 		}
 
-		static IEnumerable<object[]> TestNamesBySuiteName (string suiteName)
+		private static IEnumerable<object[]> TestNamesBySuiteName (string suiteName)
 		{
 			return AllCases ()
 				.Where (c => c.TestSuiteDirectory.FileName == suiteName)
@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.TestCases
 				.Select (c => new object[] { c });
 		}
 
-		static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath)
+		private static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath)
 		{
 			rootSourceDirectory = Path.GetFullPath (Path.Combine (PathUtilities.GetTestsSourceRootDirectory (), "Mono.Linker.Tests.Cases"));
 			testCaseAssemblyPath = PathUtilities.GetTestAssemblyPath ("Mono.Linker.Tests.Cases");

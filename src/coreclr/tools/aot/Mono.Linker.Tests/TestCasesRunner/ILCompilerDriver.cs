@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
 				.ToILScanner ();
 
-			ILScanResults results = scanner.Scan ();
+			_ = scanner.Scan ();
 		}
 
 		public static void ComputeDefaultOptions (out TargetOS os, out TargetArchitecture arch)

@@ -12,12 +12,12 @@ namespace TypeSystemTests
 {
     public class UniversalGenericFieldLayoutTests
     {
-        TestTypeSystemContext _contextX86;
-        ModuleDesc _testModuleX86;
-        TestTypeSystemContext _contextX64;
-        ModuleDesc _testModuleX64;
-        TestTypeSystemContext _contextARM;
-        ModuleDesc _testModuleARM;
+        private TestTypeSystemContext _contextX86;
+        private ModuleDesc _testModuleX86;
+        private TestTypeSystemContext _contextX64;
+        private ModuleDesc _testModuleX64;
+        private TestTypeSystemContext _contextARM;
+        private ModuleDesc _testModuleARM;
 
         public UniversalGenericFieldLayoutTests()
         {
@@ -327,6 +327,7 @@ namespace TypeSystemTests
             InstantiatedType genOfIntNestedInt;
             InstantiatedType genOfLongNestedInt;
 
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
             TestIndeterminatedNestedStructFieldPerContext(_contextX64, _testModuleX64, out genOfIntNestedInt, out genOfLongNestedInt);
             Assert.Equal(new LayoutInt(8), genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(new LayoutInt(8), genOfLongNestedInt.InstanceByteAlignment);
@@ -334,6 +335,7 @@ namespace TypeSystemTests
             Assert.Equal(new LayoutInt(4), genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(new LayoutInt(4), genOfLongNestedInt.InstanceByteAlignment);
             TestIndeterminatedNestedStructFieldPerContext(_contextARM, _testModuleARM, out genOfIntNestedInt, out genOfLongNestedInt);
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteAlignment);
         }
@@ -347,7 +349,7 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, type.InstanceByteCountUnaligned);
         }
 
-        private void CommonClassLayoutTestBits(ModuleDesc testModule,
+        private static void CommonClassLayoutTestBits(ModuleDesc testModule,
                                                TypeSystemContext context,
                                                LayoutInt expectedIndeterminateByteAlignment,
                                                out InstantiatedType genOfIU,

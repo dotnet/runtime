@@ -178,7 +178,7 @@ namespace TypeSystemTests
             }
 
             // SimpleTypeConstraint and DoubleSimpleTypeConstraint
-            foreach(var genType in new MetadataType[] { _simpleTypeConstraintType , _doubleSimpleTypeConstraintType })
+            foreach(var genType in new MetadataType[] { _simpleTypeConstraintType, _doubleSimpleTypeConstraintType })
             {
                 instantiatedType = genType.MakeInstantiatedType(_arg1Type);
                 Assert.True(instantiatedType.CheckConstraints());

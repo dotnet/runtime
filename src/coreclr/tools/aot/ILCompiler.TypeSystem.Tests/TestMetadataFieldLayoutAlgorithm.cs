@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace TypeSystemTests
 {
-    class TestMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
+    internal sealed class TestMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {

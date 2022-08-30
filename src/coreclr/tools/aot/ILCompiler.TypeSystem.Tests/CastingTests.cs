@@ -148,8 +148,6 @@ namespace TypeSystemTests
             TypeDesc valueTypeType = _context.GetWellKnownType(WellKnownType.ValueType);
             TypeDesc iFooType = _testModule.GetType("Casting", "IFoo");
             TypeDesc classImplementingIFooType = _testModule.GetType("Casting", "ClassImplementingIFoo");
-            TypeDesc classImplementingIFooIndirectlyType =
-                _testModule.GetType("Casting", "ClassImplementingIFooIndirectly");
 
             Assert.True(paramWithNoConstraint.CanCastTo(objectType));
             Assert.False(paramWithNoConstraint.CanCastTo(valueTypeType));

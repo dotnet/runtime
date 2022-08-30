@@ -40,6 +40,9 @@ csharp_style_expression_bodied_properties = true:none
 csharp_style_expression_bodied_indexers = true:none
 csharp_style_expression_bodied_accessors = true:none
 
+# IL3000: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3000.severity = suggestion
+
 # IDE0073: The file header does not match the required text
 dotnet_diagnostic.IDE0073.severity = none
 
@@ -70,6 +73,15 @@ csharp_style_expression_bodied_properties = true:none
 csharp_style_expression_bodied_indexers = true:none
 csharp_style_expression_bodied_accessors = true:none
 
+# IDE0073: The file header does not match the required text
+dotnet_diagnostic.IDE0073.severity = none
+
+# IL3000: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3000.severity = suggestion
+
+# IL3002: Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
+dotnet_diagnostic.IL3002.severity = suggestion
+
 [Mono.Linker.Tests.Cases/**.cs]
 indent_style = tab
 indent_size = 4
@@ -97,6 +109,12 @@ csharp_style_expression_bodied_properties = true:none
 csharp_style_expression_bodied_indexers = true:none
 csharp_style_expression_bodied_accessors = true:none
 
+# IL3000: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3000.severity = suggestion
+
+# IDE0073: The file header does not match the required text
+dotnet_diagnostic.IDE0073.severity = none
+
 [Mono.Linker.Tests.Cases.Expectations/**.cs]
 indent_style = tab
 indent_size = 4
@@ -123,3 +141,9 @@ dotnet_sort_system_directives_first = true
 csharp_style_expression_bodied_properties = true:none
 csharp_style_expression_bodied_indexers = true:none
 csharp_style_expression_bodied_accessors = true:none
+
+# IL3000: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3000.severity = suggestion
+
+# IDE0073: The file header does not match the required text
+dotnet_diagnostic.IDE0073.severity = none

@@ -11,22 +11,17 @@ namespace TypeSystemTests
 {
     public class TypeNameParsingTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
-
-        string _coreAssemblyQualifier;
-
-        MetadataType _simpleType;
-        MetadataType _nestedType;
-        MetadataType _nestedTwiceType;
-
-        MetadataType _genericType;
-        MetadataType _nestedNongenericType;
-        MetadataType _nestedGenericType;
-
-        MetadataType _veryGenericType;
-
-        MetadataType _structType;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
+        private string _coreAssemblyQualifier;
+        private MetadataType _simpleType;
+        private MetadataType _nestedType;
+        private MetadataType _nestedTwiceType;
+        private MetadataType _genericType;
+        private MetadataType _nestedNongenericType;
+        private MetadataType _nestedGenericType;
+        private MetadataType _veryGenericType;
+        private MetadataType _structType;
 
         public TypeNameParsingTests()
         {
