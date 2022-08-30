@@ -30,7 +30,6 @@
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
-#include "nativeoverlapped.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -211,9 +210,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
-    DllImportEntry(ThreadPool_GetCompletedWorkItemCount)
-    DllImportEntry(ThreadPool_RequestWorkerThread)
-    DllImportEntry(ThreadPool_PerformGateActivities)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif

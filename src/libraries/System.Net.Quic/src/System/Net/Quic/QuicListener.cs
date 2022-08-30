@@ -162,6 +162,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
+        GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
             PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -174,6 +175,10 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             throw;
+        }
+        finally
+        {
+            keepObject.Free();
         }
     }
 

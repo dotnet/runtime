@@ -13,7 +13,7 @@ namespace System.Formats.Tar
         internal static SortedDictionary<string, UnixFileMode>? CreatePendingModesDictionary()
             => null;
 
-        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, bool overwriteMetadata, SortedDictionary<string, UnixFileMode>? pendingModes)
+        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, SortedDictionary<string, UnixFileMode>? pendingModes)
             => Directory.CreateDirectory(fullPath);
 
         internal static void SetPendingModes(SortedDictionary<string, UnixFileMode>? pendingModes)

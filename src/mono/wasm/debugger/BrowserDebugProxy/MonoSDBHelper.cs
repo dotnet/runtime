@@ -889,11 +889,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             string methodName = await GetMethodName(methodId, token);
-            if (method == null)
-            {
-                //get information from runtime
-                method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
-            }
+            //get information from runtime
+            method ??= await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             var type = await GetTypeFromMethodIdAsync(methodId, token);
             var typeInfo = await GetTypeInfo(type, token);
             try {
@@ -955,10 +952,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             asm.TypesByToken.TryGetValue(typeToken, out TypeInfo type);
 
-            if (type == null)
-            {
-                type = asm.CreateTypeInfo(typeName, typeToken);
-            }
+            type ??= asm.CreateTypeInfo(typeName, typeToken);
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
             return types[typeId];
@@ -1622,8 +1616,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
-                if (retValue == null)
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
 
                 return retValue?["value"]?.Value<string>();
             }

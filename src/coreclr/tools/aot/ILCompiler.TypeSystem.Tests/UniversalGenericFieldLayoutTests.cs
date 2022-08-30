@@ -372,6 +372,7 @@ namespace TypeSystemTests
             AssertClassIndeterminateSize(context, genOfUL, expectedIndeterminateByteAlignment);
         }
 
+        /* This test exercises universal shared generic layout that is currently unsupported and known to be buggy.
         [Fact]
         public void TestClassLayout()
         {
@@ -511,5 +512,6 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.GetFields().First().Offset);
         }
+        */
     }
 }

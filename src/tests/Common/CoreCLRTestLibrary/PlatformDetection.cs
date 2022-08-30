@@ -13,5 +13,12 @@ namespace TestLibrary
     
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
+
+        public static bool IsWindows => OperatingSystem.IsWindows();
+
+        public static bool IsBuiltInComEnabled => IsWindows
+                                            && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
+                                                ? isEnabled
+                                                : true);
     }
 }
