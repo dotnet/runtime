@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
     <IsWasmProject>true</IsWasmProject>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
+    <RuntimeConfig Condition="'$(RuntimeConfig)'==''">Release</RuntimeConfig>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>
@@ -15,6 +15,6 @@
     <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\AppBundle</AppDir>
     <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
 
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfiguration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfig)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
   </PropertyGroup>
 </Project>
