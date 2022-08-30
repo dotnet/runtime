@@ -20,7 +20,9 @@
 
   <ItemGroup>
     <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppLatestStable)/$1" />
-    <ApiCompatNetCoreAppLatestStableRightAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
+    <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
+    <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
+    <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
   </ItemGroup>
 
   <!-- For API comparison, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
@@ -55,7 +57,7 @@
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       EnableRuleCannotChangeParameterName="true"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableRightAssembliesTransformationPattern)" />
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.1 -->
     <!-- <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
@@ -64,9 +66,11 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard21BaselineFile)"
-      EnableStrictMode="$(ApiCompatStrictMode)"
-      LeftAssembliesTransformationPattern="@(ApiCompatLeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatRightAssembliesTransformationPattern)" /> -->
+      EnableRuleAttributesMustMatch="true"
+      ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
+      EnableRuleCannotChangeParameterName="true"
+      LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" /> -->
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.0 -->
     <!-- <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
@@ -75,9 +79,11 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard20BaselineFile)"
-      EnableStrictMode="$(ApiCompatStrictMode)"
-      LeftAssembliesTransformationPattern="@(ApiCompatLeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatRightAssembliesTransformationPattern)" /> -->
+      EnableRuleAttributesMustMatch="true"
+      ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
+      EnableRuleCannotChangeParameterName="true"
+      LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" /> -->
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
     <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt"
