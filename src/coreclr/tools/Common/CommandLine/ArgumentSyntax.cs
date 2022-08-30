@@ -9,7 +9,6 @@ namespace Internal.CommandLine
 {
     public sealed partial class ArgumentSyntax
     {
-        private const string nameString = "name";
         private readonly IEnumerable<string> _arguments;
         private readonly List<ArgumentCommand> _commands = new List<ArgumentCommand>();
         private readonly List<Argument> _options = new List<Argument>();
@@ -108,12 +107,12 @@ namespace Internal.CommandLine
         public ArgumentCommand<T> DefineCommand<T>(string name, T value)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(Strings.NameMissing, nameString);
+                throw new ArgumentException(Strings.NameMissing, nameof(name));
 
             if (!IsValidName(name))
             {
                 var message = string.Format(Strings.CommandNameIsNotValidFmt, name);
-                throw new ArgumentException(message, nameString);
+                throw new ArgumentException(message, nameof(name));
             }
 
             if (_commands.Any(c => string.Equals(c.Name, name, StringComparison.Ordinal)))
@@ -144,7 +143,7 @@ namespace Internal.CommandLine
         public Argument<T> DefineOption<T>(string name, T defaultValue, Func<string, T> valueConverter, bool isRequired)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(Strings.NameMissing, nameString);
+                throw new ArgumentException(Strings.NameMissing, nameof(name));
 
             if (DefinedParameters.Any())
                 throw new InvalidOperationException(Strings.OptionsMustBeDefinedBeforeParameters);
@@ -179,7 +178,7 @@ namespace Internal.CommandLine
         public ArgumentList<T> DefineOptionList<T>(string name, IReadOnlyList<T> defaultValue, Func<string, T> valueConverter, bool isRequired)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(Strings.NameMissing, nameString);
+                throw new ArgumentException(Strings.NameMissing, nameof(name));
 
             if (DefinedParameters.Any())
                 throw new InvalidOperationException(Strings.OptionsMustBeDefinedBeforeParameters);
@@ -214,12 +213,12 @@ namespace Internal.CommandLine
         public Argument<T> DefineParameter<T>(string name, T defaultValue, Func<string, T> valueConverter)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(Strings.NameMissing, nameString);
+                throw new ArgumentException(Strings.NameMissing, nameof(name));
 
             if (!IsValidName(name))
             {
                 var message = string.Format(Strings.ParameterNameIsNotValidFmt, name);
-                throw new ArgumentException(message, nameString);
+                throw new ArgumentException(message, nameof(name));
             }
 
             if (DefinedParameters.Any(p => p.IsList))
@@ -253,12 +252,12 @@ namespace Internal.CommandLine
         public ArgumentList<T> DefineParameterList<T>(string name, IReadOnlyList<T> defaultValue, Func<string, T> valueConverter)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(Strings.NameMissing, nameString);
+                throw new ArgumentException(Strings.NameMissing, nameof(name));
 
             if (!IsValidName(name))
             {
                 var message = string.Format(Strings.ParameterNameIsNotValidFmt, name);
-                throw new ArgumentException(message, nameString);
+                throw new ArgumentException(message, nameof(name));
             }
 
             if (DefinedParameters.Any(p => p.IsList))
@@ -305,7 +304,7 @@ namespace Internal.CommandLine
                 if (!IsValidName(alias))
                 {
                     var message = string.Format(Strings.OptionNameIsNotValidFmt, alias);
-                    throw new ArgumentException(message, nameString);
+                    throw new ArgumentException(message, nameof(name));
                 }
 
                 foreach (var option in DefinedOptions)
