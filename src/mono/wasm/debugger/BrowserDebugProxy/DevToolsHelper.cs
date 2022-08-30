@@ -408,7 +408,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
         }
-
+        public ExecutionContext Clone(SessionId sessionId)
+        {
+            var ret = new ExecutionContext(SdbAgent.Clone(sessionId), Id, AuxData, PauseOnExceptions);
+            ret.ready = ready;
+            ret.store = store;
+            ret.Source = Source;
+            return ret;
+        }
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
         public int breakpointId;
@@ -433,7 +440,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
         internal MonoSDBHelper SdbAgent { get; init; }
-        public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
+        public TaskCompletionSource<DebugStore> Source { get; set; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 

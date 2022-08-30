@@ -41,7 +41,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, Mdb
 
 
 //JS functions imported that we use
-extern void mono_wasm_fire_debugger_agent_message (void);
+extern void mono_wasm_fire_debugger_agent_message_with_data (const char *data, int len);
 extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
@@ -454,9 +454,8 @@ done:
 static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
-	mono_wasm_add_dbg_command_received(1, 0, data, len);
 	mono_wasm_save_thread_context();
-	mono_wasm_fire_debugger_agent_message ();
+	mono_wasm_fire_debugger_agent_message_with_data ((const char*)data, len);
 	return FALSE;
 }
 
