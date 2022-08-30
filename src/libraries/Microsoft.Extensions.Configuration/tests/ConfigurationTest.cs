@@ -971,5 +971,35 @@ namespace Microsoft.Extensions.Configuration.Test
             // Assert
             Assert.NotNull(config);
         }
+
+        [Fact]
+        public void ConfigurationGetChildrenKeysOrdered()
+        {
+            // Arrange
+            var dic1 = new Dictionary<string, string>()
+            {
+                {"Services:2", "Service2"}
+            };
+            var dic2 = new Dictionary<string, string>()
+            {
+                {"Services:10", "Service10"},
+            };
+            var memConfigSrc1 = new MemoryConfigurationSource { InitialData = dic1 };
+            var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.Add(memConfigSrc1);
+            configurationBuilder.Add(memConfigSrc2);
+
+            var config = configurationBuilder.Build();
+
+            // Act
+            var keys = config.GetSection("Services").GetChildren().Select(c => c.Key).ToList();
+
+            // Assert
+            Assert.Equal(2, keys.Count);
+            Assert.Equal("2", keys[0]);
+            Assert.Equal("10", keys[1]);
+        }
     }
 }
