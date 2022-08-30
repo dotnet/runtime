@@ -5,15 +5,17 @@
 using System;
 using System.Reflection;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Crc32
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             ulong s1l = 0, s2l = 0, resl;
             int testResult = Pass;
@@ -69,7 +71,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public struct Crc<T, U> where T : struct where U : struct
