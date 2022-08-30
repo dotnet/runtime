@@ -26,10 +26,8 @@ jobs:
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
-            eq(variables['alwaysRunVar'], true),
             eq(variables['wasmDarcDependenciesChanged'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true))
           ]
     jobParameters:

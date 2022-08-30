@@ -182,15 +182,11 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
 
-    # triggers most of the wasm jobs to run
     - subset: wasm
       include:
-      # other paths that should also trigger wasm jobs
-      - src/mono/*.proj
-      - src/mono/Directory.Build*
-      - src/mono/CMakeLists.txt
-      - src/mono/System.Private.CoreLib/*
       - ${{ parameters._const_paths._wasm_specific_only }}
+      # other paths that should also trigger wasm jobs
+      - src/mono/*
 
     # anything other than wasm-specific paths
     - subset: non_wasm
