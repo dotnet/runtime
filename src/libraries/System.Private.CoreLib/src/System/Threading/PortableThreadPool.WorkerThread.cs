@@ -239,27 +239,9 @@ namespace System.Threading
 
                 while (toCreate > 0)
                 {
-                    if (TryCreateWorkerThread())
-                    {
-                        toCreate--;
-                        continue;
-                    }
-
-                    counts = threadPoolInstance._separated.counts;
-                    while (true)
-                    {
-                        ThreadCounts newCounts = counts;
-                        newCounts.NumProcessingWork -= (short)toCreate;
-                        newCounts.NumExistingThreads -= (short)toCreate;
-
-                        ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-                        if (oldCounts == counts)
-                        {
-                            break;
-                        }
-                        counts = oldCounts;
-                    }
-                    break;
+                    TryCreateWorkerThread();
+                    toCreate--;
+                    continue;
                 }
             }
 
@@ -314,7 +296,7 @@ namespace System.Threading
                 return false;
             }
 
-            private static bool TryCreateWorkerThread()
+            private static void TryCreateWorkerThread()
             {
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
@@ -323,7 +305,6 @@ namespace System.Threading
                 workerThread.IsBackground = true;
                 // thread name will be set in thread proc
                 workerThread.UnsafeStart();
-                return true;
             }
         }
     }
