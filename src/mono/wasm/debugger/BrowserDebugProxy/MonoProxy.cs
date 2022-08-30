@@ -199,11 +199,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     await SendResume(sessionId, token);
                                     return true;
                                 }
-                            case "mono_wasm_fire_debugger_agent_message_with_data":
-                            case "_mono_wasm_fire_debugger_agent_message_with_data":
+                            case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                            case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
                                 try
                                 {
-                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, await GetLastDebuggerAgentBuffer(sessionId, args, token), token);
                                 }
                                 catch (Exception) //if the page is refreshed maybe it stops here.
                                 {
@@ -1056,20 +1056,24 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
         }
 
-        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
+        internal async Task<Result> GetLastDebuggerAgentBuffer(SessionId sessionId, JObject args, CancellationToken token)
         {
             var argsNew = JObject.FromObject(new
             {
                 objectId = args?["callFrames"]?[0]?["scopeChain"]?[0]?["object"]?["objectId"]?.Value<string>(),
             });
             Result res = await SendCommand(sessionId, "Runtime.getProperties", argsNew, token);
+            return res;
+        }
 
-            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, res);
-            if (!res.IsOk)
+        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, Result debuggerAgentBuffer, CancellationToken token)
+        {
+            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, debuggerAgentBuffer);
+            if (!debuggerAgentBuffer.IsOk)
                 return false;
 
             ExecutionContext context = GetContext(sessionId);
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?[2]?["value"]?["value"]?.Value<string>());
+            byte[] newBytes = Convert.FromBase64String(debuggerAgentBuffer.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
             using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
             retDebuggerCmdReader.ReadBytes(11); //skip HEADER_LEN
             retDebuggerCmdReader.ReadByte(); //suspend_policy

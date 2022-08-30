@@ -271,11 +271,11 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     var topFunc = args["frame"]["displayName"].Value<string>();
                     switch (topFunc)
                     {
-                        case "mono_wasm_fire_debugger_agent_message_with_data":
-                        case "_mono_wasm_fire_debugger_agent_message_with_data":
+                        case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                        case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
                             {
                                 ctx.PausedOnWasm = true;
-                                return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                return await OnReceiveDebuggerAgentEvent(sessionId, args, GetLastDebuggerAgentBuffer(args), token);
                             }
                         default:
                             ctx.PausedOnWasm = false;
@@ -702,6 +702,16 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         var context = GetContextFixefox(sessionId);
         context.LastDebuggerAgentBufferReceived = res;
     }
+    internal static Result GetLastDebuggerAgentBuffer(JObject args)
+    {
+        var result = new JArray();
+        result.Add(JObject.FromObject(new { value = new {value = args?["frame"]?["arguments"]?[0].Value<string>()}}));
+        Result res = Result.OkFromObject(new
+                    {
+                        result
+                    });
+        return res;
+    }
 
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
@@ -710,7 +720,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         if (!res.IsOk)
             return false;
 
-        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);
         retDebuggerCmdReader.ReadByte();

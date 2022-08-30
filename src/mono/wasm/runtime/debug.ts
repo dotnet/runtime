@@ -32,12 +32,16 @@ export function mono_wasm_runtime_ready(): void {
 
 }
 
-export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
-    const base64String = toBase64StringImpl(new Uint8Array(Module.HEAPU8.buffer, data, len));
+export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String: string): void {
     //keep this console.assert, otherwise optimization will remove the assignments
     console.assert(true, `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
     // eslint-disable-next-line no-debugger
     debugger;
+}
+
+export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
+    const base64String = toBase64StringImpl(new Uint8Array(Module.HEAPU8.buffer, data, len));
+    mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
 }
 
 export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
