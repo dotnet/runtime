@@ -14,36 +14,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	/// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
 	/// </summary>
 	public class TestInfraMultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
-    {
-        public TestInfraMultiFileSharedCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
-            : base(context, compilationModuleSet)
-        {
-        }
+	{
+		public TestInfraMultiFileSharedCompilationModuleGroup (CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+			: base (context, compilationModuleSet)
+		{
+		}
 
-        public override bool ShouldProduceFullVTable(TypeDesc type)
-        {
-            return false;
-        }
+		public override bool ShouldProduceFullVTable (TypeDesc type)
+		{
+			return false;
+		}
 
-        public override bool ShouldPromoteToFullType(TypeDesc type)
-        {
-            return ShouldProduceFullVTable(type);
-        }
+		public override bool ShouldPromoteToFullType (TypeDesc type)
+		{
+			return ShouldProduceFullVTable (type);
+		}
 
-        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
-        {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
-                   type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
-        }
+		public override bool PresenceOfEETypeImpliesAllMethodsOnType (TypeDesc type)
+		{
+			return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable (type) &&
+				   type.ConvertToCanonForm (CanonicalFormKind.Specific).IsCanonicalSubtype (CanonicalFormKind.Any);
+		}
 
-        public override bool AllowInstanceMethodOptimization(MethodDesc method)
-        {
-            // Both the instance methods and the owning type are homed in a single compilation group
-            // so if we're able to generate the body, we would also generate the owning type here
-            // and nowhere else.
-            Debug.Assert(ContainsMethodBody(method, unboxingStub: false));
-            TypeDesc owningType = method.OwningType;
-            return owningType.IsDefType && !owningType.HasInstantiation && !method.HasInstantiation;
-        }
-    }
+		public override bool AllowInstanceMethodOptimization (MethodDesc method)
+		{
+			// Both the instance methods and the owning type are homed in a single compilation group
+			// so if we're able to generate the body, we would also generate the owning type here
+			// and nowhere else.
+			Debug.Assert (ContainsMethodBody (method, unboxingStub: false));
+			TypeDesc owningType = method.OwningType;
+			return owningType.IsDefType && !owningType.HasInstantiation && !method.HasInstantiation;
+		}
+	}
 }

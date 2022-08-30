@@ -931,10 +931,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTClass == null)
-                {
-                    _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                }
+                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
                 return _systemArrayOfTClass;
             }
         }
@@ -944,10 +941,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTEnumeratorType == null)
-                {
-                    _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                }
+                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
                 return _systemArrayOfTEnumeratorType;
             }
         }

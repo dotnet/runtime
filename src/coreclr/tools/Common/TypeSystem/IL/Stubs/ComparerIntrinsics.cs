@@ -225,8 +225,7 @@ namespace Internal.IL.Stubs
                 if (interfaceInstantiation.Length == 1 &&
                     interfaceInstantiation[0] == type)
                 {
-                    if (interfaceType == null)
-                        interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
+                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                         return true;

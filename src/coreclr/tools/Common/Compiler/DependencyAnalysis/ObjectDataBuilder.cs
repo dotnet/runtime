@@ -213,7 +213,9 @@ namespace ILCompiler.DependencyAnalysis
             return ticket;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private int ReturnReservationTicket(Reservation reservation)
+#pragma warning restore CA1822 // Mark members as static
         {
 #if DEBUG
             Debug.Assert(_numReservations > 0);
