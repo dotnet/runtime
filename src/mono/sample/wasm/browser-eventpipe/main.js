@@ -44,11 +44,7 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 }
 
 async function main() {
-    const { MONO, Module, getAssemblyExports } = await dotnet
-        .withElementOnExit()
-        .withExitCodeLogging()
-        .create();
-
+    const { MONO, Module, getAssemblyExports } = await dotnet.create()
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
