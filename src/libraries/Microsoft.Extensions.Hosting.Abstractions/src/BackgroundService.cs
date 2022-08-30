@@ -74,13 +74,17 @@ namespace Microsoft.Extensions.Hosting
             finally
             {
                 // Wait until the task completes or the stop token triggers
+                try
+                {
 #if NETCOREAPP
-                await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
 #else
-                var tcs = new TaskCompletionSource<object>();
-                using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s).SetCanceled(), tcs);
-                await (await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false)).ConfigureAwait(false);
+                    var tcs = new TaskCompletionSource<object>();
+                    using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s).SetCanceled(), tcs);
+                    await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false);
 #endif
+                }
+                catch (OperationCanceledException) { }
             }
 
         }
