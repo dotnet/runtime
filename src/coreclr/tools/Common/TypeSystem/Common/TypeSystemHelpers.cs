@@ -363,9 +363,7 @@ namespace Internal.TypeSystem
                     // It is generally a bug to have instantiations over generic parameters
                     // in the system. Typical instantiations are represented as instantiations
                     // over own formals - so these should be signature variables instead.
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                    throw new ArgumentException();
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
+                    throw new InvalidOperationException();
 
                 default:
                     Debug.Assert(thisType is DefType);
