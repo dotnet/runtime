@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         {
             if (input < 0)
             {
-                throw default(ArgumentException);
+                throw new ArgumentException();
             }
             else
             {
