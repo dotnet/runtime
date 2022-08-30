@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.Logging.Console
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 #if NETCOREAPP
-        private static readonly bool _isAndroidOrAppleMobile => OperatingSystem.IsAndroid()
+        private static bool IsAndroidOrAppleMobile => OperatingSystem.IsAndroid()
                                                             || OperatingSystem.IsTvOS()
                                                             || OperatingSystem.IsIOS(); // returns true on MacCatalyst
 #else
-        private const bool _isAndroidOrAppleMobile = false;
+        private static bool IsAndroidOrAppleMobile => false;
 #endif
         private IDisposable? _optionsReloadToken;
 
