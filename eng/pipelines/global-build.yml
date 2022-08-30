@@ -54,9 +54,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -75,9 +73,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -96,9 +92,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -118,9 +112,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -140,9 +132,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -161,9 +151,7 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -180,7 +168,5 @@ jobs:
       timeoutInMinutes: 90
       condition:
         or(
-          and(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))

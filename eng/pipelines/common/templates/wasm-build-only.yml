@@ -32,8 +32,8 @@ jobs:
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true))
           ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}

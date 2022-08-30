@@ -48,13 +48,16 @@ jobs:
 
       # JUST FOR TESTING THIS PR
       - eng/pipelines/*
-    - subset: mono
+
+    - subset: mono_excluding_wasm
       include:
       - src/libraries/System.Private.CoreLib/*
       - src/native/libs/Common/*
       - src/native/libs/System.Globalization.Native/*
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
+
       - eng/Version.Details.xml
       - '*.md'
       - LICENSE.TXT
@@ -66,7 +69,6 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - src/mono/wasm/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
@@ -203,7 +205,7 @@ jobs:
       - eng/pipelines/*
 
     # anything other than mono, or wasm specific paths
-    - subset: non_mono
+    - subset: non_mono_and_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
 

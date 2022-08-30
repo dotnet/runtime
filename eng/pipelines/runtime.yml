@@ -106,7 +106,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
@@ -158,7 +158,7 @@ jobs:
       # Don't run these when we have only wasm changes on PRs
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -312,7 +312,7 @@ jobs:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
@@ -336,7 +336,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -355,7 +355,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -466,7 +466,7 @@ jobs:
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -475,7 +475,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
@@ -509,7 +509,7 @@ jobs:
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -518,7 +518,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
@@ -550,7 +550,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -570,7 +570,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -593,7 +593,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -612,7 +612,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -639,7 +639,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -669,7 +669,7 @@ jobs:
       - Browser
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
@@ -697,7 +697,7 @@ jobs:
       - MacCatalyst
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -721,7 +721,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -741,7 +741,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -761,7 +761,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -784,7 +784,7 @@ jobs:
     jobParameters:
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -803,7 +803,7 @@ jobs:
       testScope: innerloop
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -889,7 +889,7 @@ jobs:
       liveLibrariesBuildConfig: Release
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/installer/installer-matrix.yml
@@ -908,7 +908,7 @@ jobs:
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -1002,7 +1002,7 @@ jobs:
       testGroup: innerloop
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -1026,7 +1026,7 @@ jobs:
       runtimeVariant: minijit
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -1049,7 +1049,7 @@ jobs:
       runtimeVariant: monointerpreter
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 #
@@ -1074,7 +1074,7 @@ jobs:
       runtimeVariant: llvmaot
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -1099,7 +1099,7 @@ jobs:
       runtimeVariant: llvmfullaot
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -1126,7 +1126,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -1152,7 +1152,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #

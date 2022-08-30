@@ -73,7 +73,7 @@ jobs:
       nameSuffix: Runtime_Release
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       buildArgs: -s clr+libs -c $(_BuildConfig)
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
@@ -96,7 +96,7 @@ jobs:
         or(
           eq(variables['isRollingBuild'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true)),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true)),
           eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
       extraStepsParameters:
