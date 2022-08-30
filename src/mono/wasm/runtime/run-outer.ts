@@ -59,25 +59,19 @@ class HostBuilder implements DotnetHostBuilder {
 
     // internal
     withExitOnUnhandledError(): DotnetHostBuilder {
+        const handler = function fatal_handler(event: Event, error: any) {
+            event.preventDefault();
+            try {
+                mono_exit(1, error);
+            } catch (err) {
+                // no not re-throw from the fatal handler
+            }
+        };
         try {
             // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
             if (ENVIRONMENT_IS_WEB) {
-                window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
-                    event.preventDefault();
-                    try {
-                        mono_exit(1, event.reason);
-                    } catch (err) {
-                        // no not re-throw from the unhandledrejection handler
-                    }
-                });
-                window.addEventListener("error", (event: ErrorEvent) => {
-                    event.preventDefault();
-                    try {
-                        mono_exit(1, event.error);
-                    } catch (err) {
-                        // no not re-throw from the error handler
-                    }
-                });
+                window.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
+                window.addEventListener("error", (event) => handler(event, event.error));
             }
             return this;
         } catch (err) {
