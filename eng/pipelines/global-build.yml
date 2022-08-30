@@ -25,7 +25,17 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
+
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
 #
 # Build with Release config and Debug runtimeConfiguration
 #
