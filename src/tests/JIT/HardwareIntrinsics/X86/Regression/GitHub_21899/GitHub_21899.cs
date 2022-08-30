@@ -2,13 +2,15 @@ using System;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_21899
 {
-    class GitHub_21899
+    public class GitHub_21899
     {
 
-        static int Main(string[] args)
+        [Fact]
+        public static int Main(string[] args)
         {
             bool pass = true;
             pass = test1() && test2() && test3() && test4();

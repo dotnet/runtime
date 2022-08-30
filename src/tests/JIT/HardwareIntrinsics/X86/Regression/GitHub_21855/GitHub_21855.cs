@@ -2,13 +2,15 @@ using System;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_21855
 {
-    class GitHub_21855
+    public class GitHub_21855
     {
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             bool pass =true;
             if (Sse2.IsSupported)
@@ -18,7 +20,7 @@ namespace GitHub_21855
                 Vector128<uint> result = Sse2.Shuffle(srcAsUInt32, _MM_SHUFFLE(0, 1, 2, 3));
                 pass = result.Equals(Sse2.Shuffle(srcAsUInt32, (byte)(0 << 6 | 1 << 4 | 2 << 2 | 3)));
             }
-            return pass ? 100 : 0;
+            Assert.True(pass);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
