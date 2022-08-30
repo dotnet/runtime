@@ -30,14 +30,14 @@ Building the repo requires CMake 3.14.5 or newer on Linux. Add Kitware's APT fee
 Install the following packages for the toolchain:
 
 - cmake
-- llvm-9
-- clang-9
+- llvm
+- clang
 - build-essential
 - python
 - curl
 - git
-- lldb-6.0
-- liblldb-6.0-dev
+- lldb
+- liblldb-dev
 - libunwind8
 - libunwind8-dev
 - gettext
@@ -50,8 +50,8 @@ Install the following packages for the toolchain:
 - ninja-build (optional, enables building native code with ninja instead of make)
 
 ```
-sudo apt-get install -y cmake llvm-9 clang-9 \
-build-essential python curl git lldb-6.0 liblldb-6.0-dev \
+sudo apt-get install -y cmake llvm clang \
+build-essential python curl git lldb liblldb-dev \
 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev \
 libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
 ```

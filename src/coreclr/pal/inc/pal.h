@@ -2653,7 +2653,7 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 48
 #elif defined(__linux__) && defined(__loongarch64)
 #define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__linux__) && defined(_riscv) && __riscv_xlen == 64
+#elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
@@ -3742,7 +3742,7 @@ YieldProcessor()
     __asm__ __volatile__( "yield");
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
-#elif defined(HOST_RISV64)
+#elif defined(HOST_RISCV64)
     __asm__ __volatile__( "wfi");
 #else
     return;
