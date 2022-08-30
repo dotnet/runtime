@@ -7,23 +7,8 @@ using Xunit;
 
 namespace GitHub_43569
 {
-    class Program
+    public class Program
     {
-        public static int Main()
-        {
-            if ((int)Vector64_Create_short(100) != 100)
-                return 1;
-            if ((int)Vector128_Create_float(100) != 100)
-                return 2;
-            if ((int)Vector128_Create_byte(100) != 100)
-                return 3;
-            if ((int)Vector256_Create_float(100) != 100)
-                return 4;
-            if ((int)Vector256_Create_double(100) != 100)
-                return 5;
-            return 100;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Inline<T>(T t) => t;
 
