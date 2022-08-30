@@ -221,6 +221,14 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 #endif // UNIX_AMD64_ABI
     uintptr_t GetIp() { return Rip; }
     uintptr_t GetSp() { return Rsp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (size_t* pReg = &Rax; pReg < &Rip; pReg++)
+            lambda(pReg);
+    }
+
 } CONTEXT, *PCONTEXT;
 #elif defined(HOST_ARM)
 
@@ -406,6 +414,16 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
     uintptr_t GetSp() { return Sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (size_t* pReg = &X0; pReg <= &X28; pReg++)
+            lambda(pReg);
+
+        // Lr can be used as a scratch register
+        lambda(&Lr);
+    }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_WASM)

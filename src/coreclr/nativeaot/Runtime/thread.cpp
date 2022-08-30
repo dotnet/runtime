@@ -476,6 +476,18 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             // Transition frame may contain callee saved registers that need to be reported as well
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
+
+            if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
+            {
+                GetInterruptedContext()->ForEachPossibleObjectRef
+                (
+                    [&](size_t* pRef)
+                    {
+                        RedhawkGCInterface::EnumGcRefConservatively((PTR_RtuObjectRef)pRef, pfnEnumCallback, pvCallbackData);
+                    }
+                );
+            }
+
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
 

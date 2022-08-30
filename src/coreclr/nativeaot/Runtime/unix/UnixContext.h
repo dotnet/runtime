@@ -67,6 +67,22 @@ struct UNIX_CONTEXT
     uintptr_t GetIp() { return (uintptr_t)Pc(); }
     uintptr_t GetSp() { return (uintptr_t)Sp(); }
 
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        // it is doubtful anyone would implement X0-X28 not as a contiguous array
+        // just in case - here are some asserts.
+        ASSERT(&X0() + 1 == &X1());
+        ASSERT(&X0() + 10 == &X10());
+        ASSERT(&X0() + 20 == &X20());
+
+        for (size_t* pReg = &X0(); pReg <= &X28(); pReg++)
+            lambda(pReg);
+
+        // Lr can be used as a scratch register
+        lambda(&Lr());
+    }
+
 #elif defined(TARGET_AMD64)
     uint64_t& Rax();
     uint64_t& Rcx();
@@ -88,6 +104,27 @@ struct UNIX_CONTEXT
 
     uintptr_t GetIp() { return (uintptr_t)Rip(); }
     uintptr_t GetSp() { return (uintptr_t)Rsp(); }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        lambda(&Rax());
+        lambda(&Rcx());
+        lambda(&Rdx());
+        lambda(&Rbx());
+        lambda(&Rsp());
+        lambda(&Rbp());
+        lambda(&Rsi());
+        lambda(&Rdi());
+        lambda(&R8());
+        lambda(&R9());
+        lambda(&R10());
+        lambda(&R11());
+        lambda(&R12());
+        lambda(&R13());
+        lambda(&R14());
+        lambda(&R15());
+    }
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");
 #endif // TARGET_ARM
