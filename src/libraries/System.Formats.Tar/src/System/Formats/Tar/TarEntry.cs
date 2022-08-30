@@ -51,7 +51,7 @@ namespace System.Formats.Tar
         {
             if (other is PaxGlobalExtendedAttributesTarEntry)
             {
-                throw new InvalidOperationException(SR.TarCannotConvertPaxGlobalExtendedAttributesEntry);
+                throw new ArgumentException(SR.TarCannotConvertPaxGlobalExtendedAttributesEntry, nameof(other));
             }
 
             TarEntryType compatibleEntryType = TarHelpers.GetCorrectTypeFlagForFormat(format, other.EntryType);
