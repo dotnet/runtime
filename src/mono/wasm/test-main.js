@@ -259,6 +259,7 @@ async function run() {
             .withVirtualWorkingDirectory(runArgs.workingDirectory)
             .withEnvironmentVariables(runArgs.environmentVariables)
             .withDiagnosticTracing(runArgs.diagnosticTracing)
+            .withExitOnUnhandledError()
             .withExitCodeLogging()
             .withElementOnExit();
 
@@ -266,7 +267,7 @@ async function run() {
             dotnet
                 .withEnvironmentVariable("NodeJSPlatform", process.platform)
                 .withAsyncFlushOnExit();
-            
+
             const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
             if (modulesToLoad) {
                 dotnet.withModuleConfig({
