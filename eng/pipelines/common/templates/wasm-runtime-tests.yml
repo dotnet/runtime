@@ -17,8 +17,6 @@ jobs:
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
     variables:
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: timeoutPerTestInMinutes
