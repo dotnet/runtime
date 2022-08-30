@@ -2232,7 +2232,16 @@ static MonoInst*
 mono_emit_widen_call_res (MonoCompile *cfg, MonoInst *ins, MonoMethodSignature *fsig)
 {
 	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-		if ((fsig->pinvoke || LLVM_ENABLED) && !m_type_is_byref (fsig->ret)) {
+		// FIXME
+		// LLVM code doesn't uses zero extend the full word while jit expects it.
+		// A proper fix would be to detect if we are actually using llvm code from aot images
+		// or make sure llvm code actually zero extends the return.
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+		gboolean might_use_llvm = TRUE;
+#else
+		gboolean might_use_llvm = FALSE;
+#endif
+		if ((fsig->pinvoke || might_use_llvm) && !m_type_is_byref (fsig->ret)) {
 			int widen_op = -1;
 
 			/*
