@@ -250,7 +250,7 @@ namespace System.Threading
                 {
                     if (!created)
                     {
-                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
+                        Environment.FailFast("Failed to create Gate Thread");
                     }
                 }
             }
