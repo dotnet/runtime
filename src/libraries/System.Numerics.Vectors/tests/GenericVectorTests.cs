@@ -848,6 +848,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74781", TestRuntimes.Mono)]
         public void VectorDoubleEqualsNonCanonicalNaNTest()
         {
             // max 8 bit exponent, just under half max mantissa
@@ -872,6 +873,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74781", TestRuntimes.Mono)]
         public void VectorSingleEqualsNonCanonicalNaNTest()
         {
             // max 11 bit exponent, just under half max mantissa
