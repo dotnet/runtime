@@ -2871,7 +2871,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                     if (optimizeNe)
                     {
-                        GenTree* notNode = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+                        GenTree* notNode   = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
                         op1->AsOp()->gtOp1 = notNode;
                         BlockRange().InsertBefore(andOp2, notNode);
                     }
