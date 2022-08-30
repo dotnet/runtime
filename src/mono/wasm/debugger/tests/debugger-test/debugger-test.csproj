@@ -42,7 +42,7 @@
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)native')"
-           Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfig). Current value: $(RuntimeConfig)" />
+           Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
 
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
