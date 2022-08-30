@@ -52,7 +52,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).cmd"
-    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript;GetDisasmCheckCommands">
+    DependsOnTargets="$(BatchScriptSnippetGen)">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
