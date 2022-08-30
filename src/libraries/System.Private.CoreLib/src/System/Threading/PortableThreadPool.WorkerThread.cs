@@ -239,7 +239,7 @@ namespace System.Threading
 
                 while (toCreate > 0)
                 {
-                    TryCreateWorkerThread();
+                    CreateWorkerThread();
                     toCreate--;
                     continue;
                 }
@@ -296,7 +296,7 @@ namespace System.Threading
                 return false;
             }
 
-            private static void TryCreateWorkerThread()
+            private static void CreateWorkerThread()
             {
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
