@@ -79,6 +79,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
+        [Fact]
+        public unsafe void OptimizedPaths()
+        {
+            JavaScriptTestHelper.optimizedReached = 0;
+            JavaScriptTestHelper.invoke0V();
+            Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
+            JavaScriptTestHelper.invoke1V(42);
+            Assert.Equal(43, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(124, JavaScriptTestHelper.invoke1R(123));
+            Assert.Equal(43 + 123, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(32, JavaScriptTestHelper.invoke2R(15, 16));
+            Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
+        }
+
 
         #region Get/Set Property
 

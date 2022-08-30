@@ -147,6 +147,31 @@ export function getClass1() {
     return cname;
 }
 let dllExports;
+
+export function invoke0V() {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized0V'];
+    fn();
+}
+
+export function invoke1V(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1V'];
+    fn(arg1);
+}
+
+export function invoke1R(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1R'];
+    return fn(arg1);
+}
+
+export function invoke2R(arg1, arg2) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized2R'];
+    return fn(arg1, arg2);
+}
+
 export function invoke1(arg1, name) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');

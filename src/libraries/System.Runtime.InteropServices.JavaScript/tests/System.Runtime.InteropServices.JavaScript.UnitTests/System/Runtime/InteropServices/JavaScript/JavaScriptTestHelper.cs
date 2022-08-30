@@ -44,6 +44,40 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return DateTime.Now;
         }
+        public static int optimizedReached = 0;
+        [JSExport]
+        public static void Optimized0V()
+        {
+            optimizedReached++;
+        }
+        [JSImport("invoke0V", "JavaScriptTestHelper")]
+        public static partial void invoke0V();
+
+        [JSExport]
+        public static void Optimized1V(int a1)
+        {
+            optimizedReached+= a1;
+        }
+        [JSImport("invoke1V", "JavaScriptTestHelper")]
+        public static partial void invoke1V(int a1);
+
+        [JSExport]
+        public static int Optimized1R(int a1)
+        {
+            optimizedReached += a1;
+            return a1 + 1;
+        }
+        [JSImport("invoke1R", "JavaScriptTestHelper")]
+        public static partial int invoke1R(int a1);
+
+        [JSExport]
+        public static int Optimized2R(int a1, int a2)
+        {
+            optimizedReached += a1+ a2;
+            return a1 + a2 +1;
+        }
+        [JSImport("invoke2R", "JavaScriptTestHelper")]
+        public static partial int invoke2R(int a1, int a2);
 
         [JSImport("create_function", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
