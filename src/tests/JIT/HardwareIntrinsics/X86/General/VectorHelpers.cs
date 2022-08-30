@@ -8,7 +8,9 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
 
-internal partial class IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.General;
+
+public partial class Program
 {
     public static Vector128<T> Vector128Add<T>(Vector128<T> left, Vector128<T> right) where T : struct
     {

@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.General
 {
-    class Program
+    public partial class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static void IsSupported()
         {
             bool result = true;
 
@@ -53,8 +55,7 @@ namespace IntelHardwareIntrinsicTest
             {
                 result = false;
             }
-            return result ? 100 : 0;
+            Assert.Equal(true, result);
         }
-
     }
 }

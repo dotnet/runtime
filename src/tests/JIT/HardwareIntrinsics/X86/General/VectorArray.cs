@@ -10,12 +10,11 @@ using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal partial class IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.General;
+public partial class Program
 {
-    private const int Pass = 100;
-    private const int Fail = -1;
-
     private class Vector128ArrayTest<T> where T : struct, IComparable<T>, IEquatable<T>
     {
         private static void Move(Vector128<T>[] pos, ref Vector128<T> delta)
@@ -96,7 +95,8 @@ internal partial class IntelHardwareIntrinsicTest
         }
     }
 
-    unsafe static int Main()
+    [Fact]
+    public unsafe static void VectorArray()
     {
         int returnVal = Pass;
         try
@@ -139,9 +139,9 @@ internal partial class IntelHardwareIntrinsicTest
         {
             Console.WriteLine("NotSupportedException was raised");
             Console.WriteLine(ex.StackTrace);
-            return Fail;
+            Assert.Fail("");
         }
 
-        return returnVal;
+        Assert.Equal(Pass, returnVal);
     }
 }
