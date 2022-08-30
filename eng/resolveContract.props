@@ -2,6 +2,9 @@
   <!-- ApiCompat setting -->
   <PropertyGroup>
     <ApiCompatValidateAssemblies Condition="'$(IsSourceProject)' == 'true'">true</ApiCompatValidateAssemblies>
+    <!-- Optional rules -->
+    <EnableRuleAttributesMustMatch>true</EnableRuleAttributesMustMatch>
+    <EnableRuleCannotChangeParameterName>true</EnableRuleCannotChangeParameterName>
   </PropertyGroup>
 
   <ItemGroup>
