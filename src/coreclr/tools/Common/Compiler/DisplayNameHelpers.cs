@@ -7,8 +7,6 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
     public static class DisplayNameHelpers
@@ -123,9 +121,9 @@ namespace ILCompiler
             return Formatter.Instance.FormatName(type, FormatOptions.None);
         }
 
-        private class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
+        private sealed class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
         {
-            public readonly static Formatter Instance = new Formatter();
+            public static readonly Formatter Instance = new Formatter();
 
             public override Unit AppendName(StringBuilder sb, ArrayType type, FormatOptions options)
             {
@@ -226,7 +224,7 @@ namespace ILCompiler
                 return default;
             }
 
-            private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+            private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
             {
                 if ((options & FormatOptions.NamespaceQualify) != 0)
                 {

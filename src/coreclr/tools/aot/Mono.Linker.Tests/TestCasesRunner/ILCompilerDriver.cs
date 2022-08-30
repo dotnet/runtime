@@ -119,7 +119,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
+		private static IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
 		{
 			List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc> ();
 

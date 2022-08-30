@@ -54,7 +54,7 @@ namespace TypeSystemTests
 
             Assert.False(objectType.CanCastTo(iFooType));
         }
-        
+
         [Fact]
         public void TestSameSizeArrayTypeCasting()
         {

@@ -6,24 +6,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using ILCompiler;
-using ILCompiler.Dataflow;
 using ILCompiler.Logging;
-using Mono.Linker.Tests.TestCasesRunner;
 using Internal.TypeSystem;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
-using Mono.Linker.Tests.Cases.RequiresCapability;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -109,7 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString () is String mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
+				if (attrProvider.ToString () is string mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
 					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
@@ -145,7 +138,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 								Assert.True (
 									isLogged (),
-									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
 							}
 						}
 						break;
@@ -393,13 +386,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				StringBuilder sb = new StringBuilder ();
 				foreach (var part in parts) {
 					if (sb.Length > 0)
-						sb.Append (".");
+						sb.Append ('.');
 
 					if (part.EndsWith ('>')) {
 						int i = part.LastIndexOf ('<');
 						if (i >= 0) {
 							sb.Append (part.Substring (0, i));
-							sb.Append ("`");
+							sb.Append ('`');
 							sb.Append (part.Substring (i + 1).Where (c => c == ',').Count () + 1);
 							continue;
 						}

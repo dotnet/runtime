@@ -43,8 +43,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		static IEnumerable<TestCase> AllCases ()
 		{
-			if (_cachedAllCases == null)
-				_cachedAllCases = CreateCollector ()
+			_cachedAllCases ??= CreateCollector ()
 					.Collect ()
 					.Where (c => c != null)
 					.OrderBy (c => c.DisplayName)

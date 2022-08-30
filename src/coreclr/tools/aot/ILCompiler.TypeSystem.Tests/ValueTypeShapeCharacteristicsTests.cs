@@ -32,7 +32,7 @@ namespace TypeSystemTests
 
             Assert.True(singleType.IsHomogeneousAggregate);
             Assert.Equal(Float32Aggregate, singleType.ValueTypeShapeCharacteristics);
-            
+
             Assert.True(doubleType.IsHomogeneousAggregate);
             Assert.Equal(Float64Aggregate, doubleType.ValueTypeShapeCharacteristics);
         }

@@ -209,7 +209,7 @@ namespace ILCompiler.DependencyAnalysis
             _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);               
+                Debug.Assert(gcStaticsNode is GCStaticsNode);
                 return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
             });
 
@@ -907,8 +907,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode HelperEntrypoint(HelperEntrypoint entrypoint)
         {
-            if (_helperEntrypointSymbols == null)
-                _helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
+            _helperEntrypointSymbols ??= new ISymbolNode[s_helperEntrypointNames.Length];
 
             int index = (int)entrypoint;
 
@@ -958,12 +957,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_instanceMethodRemovedHelper == null)
-                {
-                    // This helper is optional, but it's fine for this cache to be ineffective if that happens.
-                    // Those scenarios are rare and typically deal with small compilations.
-                    _instanceMethodRemovedHelper = TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-                }
+                // This helper is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
 
                 return _instanceMethodRemovedHelper;
             }
@@ -985,21 +981,21 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
 
-        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
             return _readyToRunHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
-        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromType;
 
-        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
@@ -1113,7 +1109,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
-            "__GCStaticRegionStart", 
+            "__GCStaticRegionStart",
             "__GCStaticRegionEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 

@@ -1,22 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 using ILCompiler;
-using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 
-    /// <summary>
-    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
-    /// </summary>
-    public class TestInfraMultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
+	/// <summary>
+	/// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
+	/// </summary>
+	public class TestInfraMultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
     {
         public TestInfraMultiFileSharedCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
             : base(context, compilationModuleSet)
@@ -35,7 +32,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
                    type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 

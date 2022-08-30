@@ -97,7 +97,7 @@ namespace Mono.Linker.Tests.Extensions
 			return stack.Count > 0 && stack[stack.Count - 1] != "..";
 		}
 
-		private string ParseDriveLetter (string path, out string? driveLetter)
+		private static string ParseDriveLetter (string path, out string? driveLetter)
 		{
 			if (path.Length >= 2 && path[1] == ':') {
 				driveLetter = path[0].ToString ();
@@ -242,7 +242,7 @@ namespace Mono.Linker.Tests.Extensions
 
 				var last = _elements.Last ();
 				var index = last.LastIndexOf (".");
-				if (index < 0) return String.Empty;
+				if (index < 0) return string.Empty;
 				return last.Substring (index);
 			}
 		}
@@ -274,7 +274,7 @@ namespace Mono.Linker.Tests.Extensions
 			var sb = new StringBuilder ();
 			if (_driveLetter != null) {
 				sb.Append (_driveLetter);
-				sb.Append (":");
+				sb.Append (':');
 			}
 			if (!_isRelative)
 				sb.Append (Slash (slashMode));
@@ -303,7 +303,7 @@ namespace Mono.Linker.Tests.Extensions
 			};
 		}
 
-		public override bool Equals (Object? obj)
+		public override bool Equals (object? obj)
 		{
 			if (obj == null)
 				return false;
@@ -511,7 +511,7 @@ namespace Mono.Linker.Tests.Extensions
 			if (!IsRelative)
 				return this;
 
-			return NPath.CurrentDirectory.Combine (this);
+			return CurrentDirectory.Combine (this);
 		}
 
 		NPath? CopyWithDeterminedDestination (NPath absoluteDestination, Func<NPath, bool> fileFilter)

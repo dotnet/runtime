@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Internal.IL;
 using Debug = System.Diagnostics.Debug;
-using Internal.IL.Stubs;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop

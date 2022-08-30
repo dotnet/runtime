@@ -44,7 +44,7 @@ namespace TypeSystemTests
             _context = new TestTypeSystemContext(TargetArchitecture.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
-            
+
             _testModule = systemModule;
 
             _iNonGenType = _testModule.GetType("GenericConstraints", "INonGen");

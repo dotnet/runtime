@@ -21,10 +21,10 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectDataBuilder(TargetDetails target, bool relocsOnly)
         {
             _target = target;
-            _data = new ArrayBuilder<byte>();
-            _relocs = new ArrayBuilder<Relocation>();
+            _data = default(ArrayBuilder<byte>);
+            _relocs = default(ArrayBuilder<Relocation>);
             Alignment = 1;
-            _definedSymbols = new ArrayBuilder<ISymbolDefinitionNode>();
+            _definedSymbols = default(ArrayBuilder<ISymbolDefinitionNode>);
 #if DEBUG
             _numReservations = 0;
             _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
@@ -308,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.
-                    break;                    
+                    break;
                 default:
                     throw new NotImplementedException();
             }

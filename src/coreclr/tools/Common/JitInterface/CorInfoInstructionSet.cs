@@ -5,11 +5,9 @@
 // FROM /src/coreclr/tools/Common/JitInterface/ThunkGenerator/InstructionSetDesc.txt
 // using /src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -338,7 +336,7 @@ namespace Internal.JitInterface
 
         public IEnumerator<InstructionSet> GetEnumerator()
         {
-            for (int i = 1; i < (int)InstructionSet.NONE; i ++)
+            for (int i = 1; i < (int)InstructionSet.NONE; i++)
             {
                 InstructionSet instructionSet = (InstructionSet)i;
                 if (HasInstructionSet(instructionSet))
@@ -384,12 +382,12 @@ namespace Internal.JitInterface
 
         public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
-            InstructionSetFlags oldflags = input;
+            InstructionSetFlags oldflags;
             InstructionSetFlags resultflags = input;
             do
             {
                 oldflags = resultflags;
-                switch(architecture)
+                switch (architecture)
                 {
 
                 case TargetArchitecture.ARM64:
@@ -619,7 +617,7 @@ namespace Internal.JitInterface
 
         private static InstructionSetFlags ExpandInstructionSetByReverseImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
-            InstructionSetFlags oldflags = input;
+            InstructionSetFlags oldflags;
             InstructionSetFlags resultflags = input;
             do
             {

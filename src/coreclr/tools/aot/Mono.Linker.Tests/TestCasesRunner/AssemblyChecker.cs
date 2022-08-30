@@ -230,11 +230,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			StringBuilder builder = new StringBuilder ();
 			builder.Append (attr.ConstructorArguments[0].Value);
-			builder.Append ("<");
+			builder.Append ('<');
 			bool separator = false;
 			foreach (var caa in (CustomAttributeArgument[]) attr.ConstructorArguments[1].Value) {
 				if (separator)
-					builder.Append (",");
+					builder.Append (',');
 				else
 					separator = true;
 
@@ -242,7 +242,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				builder.Append (arg.Value);
 			}
 
-			builder.Append (">");
+			builder.Append ('>');
 			return builder.ToString ();
 		}
 
@@ -267,7 +267,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			if (!object.Equals (src.Constant, linked.Constant)) {
+			if (!Equals (src.Constant, linked.Constant)) {
 				Assert.True (false, $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
 
@@ -466,7 +466,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			case FlowControl.Branch:
 			case FlowControl.Cond_Branch:
 				if (instr.Operand is Instruction target)
-					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("x")}";
+					return $"{instr.OpCode} il_{target.Offset:x}";
 
 				break;
 			}
@@ -474,35 +474,35 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			switch (instr.OpCode.Code) {
 			case Code.Ldc_I4:
 				if (instr.Operand is int ivalue)
-					return $"{instr.OpCode.ToString ()} 0x{ivalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{ivalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 			case Code.Ldc_I4_S:
 				if (instr.Operand is sbyte bvalue)
-					return $"{instr.OpCode.ToString ()} 0x{bvalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{bvalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 			case Code.Ldc_I8:
 				if (instr.Operand is long lvalue)
-					return $"{instr.OpCode.ToString ()} 0x{lvalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{lvalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R4:
 				if (instr.Operand is float fvalue)
-					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+					return $"{instr.OpCode} {fvalue}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R8:
 				if (instr.Operand is double dvalue)
-					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+					return $"{instr.OpCode} {dvalue}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldstr:
 				if (instr.Operand is string svalue)
-					return $"{instr.OpCode.ToString ()} '{svalue}'";
+					return $"{instr.OpCode} '{svalue}'";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
@@ -523,7 +523,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 
 					if (operandString != null)
-						return $"{instr.OpCode.ToString ()} {operandString}";
+						return $"{instr.OpCode} {operandString}";
 					else
 						return instr.OpCode.ToString ();
 				}

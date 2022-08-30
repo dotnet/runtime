@@ -132,7 +132,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append ($"<#{method.GenericParameters.Count}>");
 			}
 
-			builder.Append ("(");
+			builder.Append ('(');
 
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++) {
@@ -144,7 +144,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
 			}
 
-			builder.Append (")");
+			builder.Append (')');
 
 			return builder.ToString ();
 		}
@@ -200,7 +200,7 @@ namespace Mono.Linker.Tests.Extensions
 			}
 
 			// Append parameters
-			sb.Append ("(");
+			sb.Append ('(');
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++)
 					sb.Append (method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace ()).Append (", ");
@@ -208,7 +208,7 @@ namespace Mono.Linker.Tests.Extensions
 				sb.Append (method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayNameWithoutNamespace ());
 			}
 
-			sb.Append (")");
+			sb.Append (')');
 
 			// Insert generic parameters
 			if (method.HasGenericParameters) {
@@ -250,7 +250,7 @@ namespace Mono.Linker.Tests.Extensions
 			var builder = new StringBuilder ();
 			if (field.DeclaringType != null) {
 				builder.Append (field.DeclaringType.GetDisplayName ());
-				builder.Append (".");
+				builder.Append ('.');
 			}
 
 			builder.Append (field.Name);

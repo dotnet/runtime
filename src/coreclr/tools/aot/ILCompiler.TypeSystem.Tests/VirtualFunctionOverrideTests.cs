@@ -77,7 +77,7 @@ namespace TypeSystemTests
             MethodDesc targetOnInstance = testInstance.GetMethod("ToString", toStringSig);
 
             MethodDesc targetMethod = testInstance.FindVirtualFunctionTargetMethodOnObjectType(objectToString);
-            Assert.Equal(targetOnInstance, targetMethod);        
+            Assert.Equal(targetOnInstance, targetMethod);
         }
 
         [Fact]

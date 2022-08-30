@@ -92,24 +92,23 @@ namespace Internal.NativeFormat
 #endif
     class NativeWriter
     {
-        List<Section> _sections = new List<Section>();
+        private List<Section> _sections = new List<Section>();
 
-        enum SavePhase
+        private enum SavePhase
         {
             Initial,
             Shrinking,
             Growing
         }
 
+        private int _iteration;
+        private SavePhase _phase; // Current save phase
+        private int _offsetAdjustment; // Cumulative offset adjustment compared to previous iteration
+        private int _paddingSize; // How much padding was used
 
-        int _iteration = 0;
-        SavePhase _phase; // Current save phase
-        int _offsetAdjustment; // Cumulative offset adjustment compared to previous iteration
-        int _paddingSize; // How much padding was used
+        private Dictionary<Vertex, Vertex> _unifier = new Dictionary<Vertex, Vertex>();
 
-        Dictionary<Vertex, Vertex> _unifier = new Dictionary<Vertex, Vertex>();
-
-        NativePrimitiveEncoder _encoder = new NativePrimitiveEncoder();
+        private NativePrimitiveEncoder _encoder;
 
 #if NATIVEFORMAT_COMPRESSION
         struct Tentative
@@ -403,11 +402,11 @@ namespace Internal.NativeFormat
         internal struct TypeSignatureCompressor
         {
             internal TypeSignatureCompressor(NativeWriter pWriter) { }
-            internal void Pack(Vertex vertex) { }
+            internal static void Pack(Vertex vertex) { }
         }
 #endif
 
-        T Unify<T>(T vertex) where T : Vertex
+        private T Unify<T>(T vertex) where T : Vertex
         {
             Vertex existing;
             if (_unifier.TryGetValue(vertex, out existing))
@@ -537,9 +536,9 @@ namespace Internal.NativeFormat
         }
     }
 
-    class PlacedVertex : Vertex
+    internal sealed class PlacedVertex : Vertex
     {
-        Vertex _unified;
+        private Vertex _unified;
 
         public PlacedVertex(Vertex unified)
         {
@@ -559,7 +558,7 @@ namespace Internal.NativeFormat
 #endif
     class UnsignedConstant : Vertex
     {
-        uint _value;
+        private uint _value;
 
         public UnsignedConstant(uint value)
         {
@@ -586,7 +585,7 @@ namespace Internal.NativeFormat
         }
     }
 
-    class Tuple : Vertex
+    internal sealed class Tuple : Vertex
     {
         private Vertex _item1;
         private Vertex _item2;
@@ -603,8 +602,7 @@ namespace Internal.NativeFormat
         {
             _item1.Save(writer);
             _item2.Save(writer);
-            if (_item3 != null)
-                _item3.Save(writer);
+            _item3?.Save(writer);
         }
 
         public override int GetHashCode()
@@ -621,9 +619,9 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            return Object.Equals(_item1, other._item1) &&
-                Object.Equals(_item2, other._item2) &&
-                Object.Equals(_item3, other._item3);
+            return Equals(_item1, other._item1) &&
+                Equals(_item2, other._item2) &&
+                Equals(_item3, other._item3);
         }
     }
 
@@ -639,9 +637,9 @@ namespace Internal.NativeFormat
 #endif
     class VertexBag : Vertex
     {
-        enum EntryType { Vertex, Unsigned, Signed }
+        private enum EntryType { Vertex, Unsigned, Signed }
 
-        struct Entry
+        private struct Entry
         {
             internal BagElementKind _id;
             internal EntryType _type;
@@ -752,7 +750,7 @@ namespace Internal.NativeFormat
                 return false;
 
             for (int i = 0; i < _elements.Count; i++)
-                if (!Object.Equals(_elements[i], other._elements[i]))
+                if (!Equals(_elements[i], other._elements[i]))
                     return false;
 
             return true;
@@ -804,7 +802,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            return Object.Equals(_methodName, other._methodName) && Object.Equals(_signature, other._signature);
+            return Equals(_methodName, other._methodName) && Equals(_signature, other._signature);
         }
     }
 
@@ -876,7 +874,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            return Object.Equals(_item, other._item);
+            return Equals(_item, other._item);
         }
     }
 
@@ -916,7 +914,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            return Object.Equals(_item, other._item);
+            return Equals(_item, other._item);
         }
     }
 
@@ -936,11 +934,9 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
-            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
-
             writer.WriteUnsigned((uint)TypeSignatureKind.External | (_externalTypeId << 4));
 
-            compressor.Pack(this);
+            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1021,8 +1017,8 @@ namespace Internal.NativeFormat
             if (!(
                 _flags == other._flags &&
                 _fptrReferenceId == other._fptrReferenceId &&
-                Object.Equals(_containingType, other._containingType) &&
-                Object.Equals(_methodNameAndSig, other._methodNameAndSig)))
+                Equals(_containingType, other._containingType) &&
+                Equals(_methodNameAndSig, other._methodNameAndSig)))
             {
                 return false;
             }
@@ -1032,7 +1028,7 @@ namespace Internal.NativeFormat
                 if (other._args == null) return false;
                 if (other._args.Length != _args.Length) return false;
                 for (uint iArg = 0; _args != null && iArg < _args.Length; iArg++)
-                    if (!Object.Equals(_args[iArg], other._args[iArg]))
+                    if (!Equals(_args[iArg], other._args[iArg]))
                         return false;
             }
             else if (other._args != null)
@@ -1079,10 +1075,10 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            if (!Object.Equals(other._containingType, _containingType))
+            if (!Equals(other._containingType, _containingType))
                 return false;
 
-            if (!Object.Equals(other._name, _name))
+            if (!Equals(other._name, _name))
                 return false;
 
             return true;
@@ -1108,8 +1104,7 @@ namespace Internal.NativeFormat
         internal override void Save(NativeWriter writer)
         {
             writer.WriteUnsigned((uint)_kind);
-            if (_signature != null)
-                _signature.Save(writer);
+            _signature?.Save(writer);
         }
 
         public override int GetHashCode()
@@ -1126,7 +1121,7 @@ namespace Internal.NativeFormat
             if (other._kind != _kind)
                 return false;
 
-            if (!Object.Equals(other._signature, _signature))
+            if (!Equals(other._signature, _signature))
                 return false;
 
             return true;
@@ -1166,7 +1161,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            if (!Object.Equals(other._type, _type))
+            if (!Equals(other._type, _type))
                 return false;
 
             if (other._staticDataKind != _staticDataKind)
@@ -1209,7 +1204,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            if (!Object.Equals(other._type, _type))
+            if (!Equals(other._type, _type))
                 return false;
 
             if (other._slot != _slot)
@@ -1273,13 +1268,13 @@ namespace Internal.NativeFormat
                 _callingConvention == other._callingConvention &&
                 _genericArgCount == other._genericArgCount &&
                 _parameters.Length == other._parameters.Length &&
-                Object.Equals(_returnType, other._returnType)))
+                Equals(_returnType, other._returnType)))
             {
                 return false;
             }
 
             for (int i = 0; i < _parameters.Length; i++)
-                if (!Object.Equals(_parameters[i], other._parameters[i]))
+                if (!Equals(_parameters[i], other._parameters[i]))
                     return false;
 
             return true;
@@ -1304,12 +1299,10 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
-            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
-
             writer.WriteUnsigned((uint)TypeSignatureKind.Modifier | ((uint)_modifier << 4));
             _param.Save(writer);
 
-            compressor.Pack(this);
+            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1323,7 +1316,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            return _modifier == other._modifier && Object.Equals(_param, other._param);
+            return _modifier == other._modifier && Equals(_param, other._param);
         }
     }
 
@@ -1343,11 +1336,9 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
-            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
-
             writer.WriteUnsigned((uint)TypeSignatureKind.Variable | (_variableId << 4));
 
-            compressor.Pack(this);
+            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1383,14 +1374,12 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
-            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
-
             writer.WriteUnsigned((uint)TypeSignatureKind.Instantiation | ((uint)_args.Length << 4));
             _typeDef.Save(writer);
             for (int iArg = 0; iArg < _args.Length; iArg++)
                 _args[iArg].Save(writer);
 
-            compressor.Pack(this);
+            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1409,11 +1398,11 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            if (_args.Length != other._args.Length || !Object.Equals(_typeDef, other._typeDef))
+            if (_args.Length != other._args.Length || !Equals(_typeDef, other._typeDef))
                 return false;
 
             for (uint iArg = 0; iArg < _args.Length; iArg++)
-                if (!Object.Equals(_args[iArg], other._args[iArg]))
+                if (!Equals(_args[iArg], other._args[iArg]))
                     return false;
 
             return true;
@@ -1444,8 +1433,6 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
-            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
-
             writer.WriteUnsigned((uint)TypeSignatureKind.MultiDimArray | ((uint)_rank << 4));
             _arrayElementType.Save(writer);
 
@@ -1457,7 +1444,7 @@ namespace Internal.NativeFormat
             foreach (uint b in _lowerBounds)
                 writer.WriteUnsigned(b);
 
-            compressor.Pack(this);
+            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1479,7 +1466,7 @@ namespace Internal.NativeFormat
             if (other == null)
                 return false;
 
-            if (!Object.Equals(_arrayElementType, other._arrayElementType) ||
+            if (!Equals(_arrayElementType, other._arrayElementType) ||
                 _rank != other._rank ||
                 _bounds.Length != other._bounds.Length ||
                 _lowerBounds.Length != other._lowerBounds.Length)
@@ -1741,7 +1728,7 @@ namespace Internal.NativeFormat
         /// </summary>
         private uint _entryIndexSize;
 
-        class VertexLeaf : Vertex
+        private sealed class VertexLeaf : Vertex
         {
             private Vertex _vertex;
             private int _leafIndex;
@@ -1756,14 +1743,11 @@ namespace Internal.NativeFormat
             {
                 writer.WriteUnsigned((uint)_leafIndex << 2);
 
-                if (_vertex != null)
-                {
-                    _vertex.Save(writer);
-                }
+                _vertex?.Save(writer);
             }
         }
 
-        class VertexTree : Vertex
+        private sealed class VertexTree : Vertex
         {
             private Vertex _first;
             private Vertex _second;
@@ -1801,8 +1785,7 @@ namespace Internal.NativeFormat
 
                 writer.WriteUnsigned(value);
 
-                if (_first != null)
-                    _first.Save(writer);
+                _first?.Save(writer);
             }
         }
 
@@ -1830,7 +1813,7 @@ namespace Internal.NativeFormat
                 if (first == null || second == null)
                 {
                     VertexLeaf leaf = new VertexLeaf(
-                        first == null ? second : first,
+                        first ?? second,
                         (first == null ? index + 1 : index) & (BlockSize - 1));
 
                     if (place)
@@ -1921,8 +1904,7 @@ namespace Internal.NativeFormat
             VertexLeaf nullBlock = null;
             for (int i = 0; i < _entries.Count; i += BlockSize)
             {
-                bool isLeaf;
-                Vertex block = ExpandBlock(i, 4, true, out isLeaf);
+                Vertex block = ExpandBlock(i, 4, true, out _);
 
                 if (block == null)
                 {
@@ -2009,7 +1991,7 @@ namespace Internal.NativeFormat
 #endif
     class VertexHashtable : Vertex
     {
-        struct Entry
+        private struct Entry
         {
             public Entry(uint hashcode, Vertex vertex)
             {
@@ -2059,7 +2041,7 @@ namespace Internal.NativeFormat
         }
 
         // Returns 1 + log2(x) rounded up, 0 iff x == 0
-        static int HighestBit(uint x)
+        private static int HighestBit(uint x)
         {
             int ret = 0;
             while (x != 0)
@@ -2071,7 +2053,7 @@ namespace Internal.NativeFormat
         }
 
         // Helper method to back patch entry index in the bucket table
-        static void PatchEntryIndex(NativeWriter writer, int patchOffset, int entryIndexSize, int entryIndex)
+        private static void PatchEntryIndex(NativeWriter writer, int patchOffset, int entryIndexSize, int entryIndex)
         {
             if (entryIndexSize == 0)
             {
@@ -2091,7 +2073,7 @@ namespace Internal.NativeFormat
             }
         }
 
-        void ComputeLayout()
+        private void ComputeLayout()
         {
             uint bucketsEstimate = (uint)(_Entries.Count / _nFillFactor);
 
@@ -2117,7 +2099,6 @@ namespace Internal.NativeFormat
                 ComputeLayout();
 
             int nEntries = _Entries.Count;
-            int startOffset = writer.GetCurrentOffset();
             uint bucketMask = (_nBuckets - 1);
 
             // Lowest two bits are entry index size, the rest is log2 number of buckets
