@@ -9,7 +9,7 @@ namespace System.Net.Internals
     {
         public static SocketException CreateSocketException(SocketError errorCode, int platformError)
         {
-            return new ExtendedSocketException(errorCode, platformError);
+            return new SocketException(errorCode, (uint)platformError);
         }
     }
 }
