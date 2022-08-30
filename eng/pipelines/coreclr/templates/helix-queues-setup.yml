@@ -98,11 +98,13 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Ubuntu.1804.Amd64.Open
+        - (Centos.Stream9.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix-20220912172916-8be5e3a
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20220810215022-f344011
         - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20220810215032-f344011
         - Ubuntu.1804.Amd64.Open
         - (Centos.8.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
+        - (Centos.Stream9.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix-20220912172916-8be5e3a
         - RedHat.7.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
         - Ubuntu.1804.Amd64
@@ -112,6 +114,7 @@ jobs:
         - Ubuntu.1804.Amd64
         - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - (Fedora.34.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220809205730-e7e8d1c
+        - (Centos.Stream9.Amd64)Ubuntu.1804.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix-20220912172916-8be5e3a
         - RedHat.7.Amd64
 
     # OSX arm64
