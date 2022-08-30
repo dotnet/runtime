@@ -46,7 +46,7 @@ namespace System.Text.Tests
             Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderExceptionFallback(), new DecoderReplacementFallback("?"));
             EncodingHelpers.Encode(exceptionEncoding, source, index, count, expected);
 
-            byte[] actual = new byte[expected.Length * 2];
+            byte[] actual = new byte[expected.Length];
             Assert.Equal(OperationStatus.Done , Ascii.FromUtf16(source.AsSpan(index, count), actual, out int charsConsumed, out int bytesWritten));
             Assert.Equal(count, charsConsumed);
             Assert.Equal(expected.Length, bytesWritten);
@@ -109,7 +109,7 @@ namespace System.Text.Tests
             Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderExceptionFallback(), new DecoderReplacementFallback("?"));
             NegativeEncodingTests.Encode_Invalid(exceptionEncoding, source, index, count);
 
-            byte[] actual = new byte[expected.Length * 2];
+            byte[] actual = new byte[expected.Length];
             Assert.Equal(OperationStatus.InvalidData, Ascii.FromUtf16(source.AsSpan(index, count), actual, out int charsConsumed, out int bytesWritten));
             Assert.Equal(expectedCharsConsumed, charsConsumed);
             Assert.Equal(charsConsumed, bytesWritten);
