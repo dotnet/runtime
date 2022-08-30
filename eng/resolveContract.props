@@ -3,8 +3,8 @@
   <PropertyGroup>
     <ApiCompatValidateAssemblies Condition="'$(IsSourceProject)' == 'true'">true</ApiCompatValidateAssemblies>
     <!-- Optional rules -->
-    <EnableRuleAttributesMustMatch>true</EnableRuleAttributesMustMatch>
-    <EnableRuleCannotChangeParameterName>true</EnableRuleCannotChangeParameterName>
+    <ApiCompatEnableRuleAttributesMustMatch>true</ApiCompatEnableRuleAttributesMustMatch>
+    <ApiCompatEnableRuleCannotChangeParameterName>true</ApiCompatEnableRuleCannotChangeParameterName>
   </PropertyGroup>
 
   <ItemGroup>
