@@ -316,17 +316,13 @@ namespace System.Threading
 
             private static bool TryCreateWorkerThread()
             {
-                try
-                {
-                    // Thread pool threads must start in the default execution context without transferring the context, so
-                    // using UnsafeStart() instead of Start()
-                    Thread workerThread = new Thread(s_workerThreadStart);
-                    workerThread.IsThreadPoolThread = true;
-                    workerThread.IsBackground = true;
-                    // thread name will be set in thread proc
-                    workerThread.UnsafeStart();
-                }
-
+                // Thread pool threads must start in the default execution context without transferring the context, so
+                // using UnsafeStart() instead of Start()
+                Thread workerThread = new Thread(s_workerThreadStart);
+                workerThread.IsThreadPoolThread = true;
+                workerThread.IsBackground = true;
+                // thread name will be set in thread proc
+                workerThread.UnsafeStart();
                 return true;
             }
         }
