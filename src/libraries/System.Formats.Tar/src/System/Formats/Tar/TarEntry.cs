@@ -39,7 +39,7 @@ namespace System.Formats.Tar
 
             if (!isGea)
             {
-                TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
+                TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format, nameof(entryType));
             }
 
             // Default values for fields shared by all supported formats
@@ -56,7 +56,7 @@ namespace System.Formats.Tar
 
             TarEntryType compatibleEntryType = TarHelpers.GetCorrectTypeFlagForFormat(format, other.EntryType);
 
-            TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format);
+            TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format, nameof(other));
 
             _readerOfOrigin = other._readerOfOrigin;
 
