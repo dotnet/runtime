@@ -15,6 +15,7 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiByteTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiCharTests.cs" />
+    <Compile Include="Ascii\TrimTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />

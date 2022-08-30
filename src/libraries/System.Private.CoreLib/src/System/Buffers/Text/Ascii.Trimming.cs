@@ -42,7 +42,7 @@ namespace System.Buffers.Text
             int end = value.Length - 1;
             if ((trimType & TrimType.Tail) != 0)
             {
-                for (; start < end; end--)
+                for (; start <= end; end--)
                 {
                     uint elementValue = uint.CreateTruncating(value[end]);
                     if ((elementValue > 0x20) || ((trimMask & (1u << ((int)elementValue - 1))) == 0))
