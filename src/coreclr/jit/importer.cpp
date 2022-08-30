@@ -15016,53 +15016,60 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 tiRetVal        = se.seTypeInfo;
                 op1             = tree;
 
-                // If the expression to dup is simple, just clone it.
-                // Otherwise spill it to a temp, and reload the temp twice.
-                bool cloneExpr = false;
+                // In unoptimized code we leave the decision of
+                // cloning/creating temps up to impCloneExpr, while in
+                // optimized code we prefer temps except for some cases we know
+                // are profitable.
 
-                if (!opts.compDbgCode)
+                if (opts.OptimizationEnabled())
                 {
+                    bool clone = false;
                     // Duplicate 0 and +0.0
                     if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
                     {
-                        cloneExpr = true;
+                        clone = true;
                     }
                     // Duplicate locals and addresses of them
                     else if (op1->IsLocal())
                     {
-                        cloneExpr = true;
+                        clone = true;
                     }
-                    else if (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal() &&
+                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1) &&
                              (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
                     {
-                        cloneExpr = true;
+                        // We mark implicit byrefs with GTF_GLOB_REF (see gtNewFieldRef for why).
+                        // Avoid cloning for these.
+                        clone = (op1->gtFlags & GTF_GLOB_REF) == 0;
+                    }
+
+                    if (clone)
+                    {
+                        op2 = gtCloneExpr(op1);
+                    }
+                    else
+                    {
+                        const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
+                        impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
+                        var_types type = genActualType(lvaTable[tmpNum].TypeGet());
+
+                        // Propagate type info to the temp from the stack and the original tree
+                        if (type == TYP_REF)
+                        {
+                            assert(lvaTable[tmpNum].lvSingleDef == 0);
+                            lvaTable[tmpNum].lvSingleDef = 1;
+                            JITDUMP("Marked V%02u as a single def local\n", tmpNum);
+                            lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
+                        }
+
+                        op1 = gtNewLclvNode(tmpNum, type);
+                        op2 = gtNewLclvNode(tmpNum, type);
                     }
                 }
                 else
                 {
-                    // Always clone for debug mode
-                    cloneExpr = true;
+                    op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("DUP instruction"));
                 }
-
-                if (!cloneExpr)
-                {
-                    const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
-                    impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
-                    var_types type = genActualType(lvaTable[tmpNum].TypeGet());
-                    op1            = gtNewLclvNode(tmpNum, type);
-
-                    // Propagate type info to the temp from the stack and the original tree
-                    if (type == TYP_REF)
-                    {
-                        assert(lvaTable[tmpNum].lvSingleDef == 0);
-                        lvaTable[tmpNum].lvSingleDef = 1;
-                        JITDUMP("Marked V%02u as a single def local\n", tmpNum);
-                        lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
-                    }
-                }
-
-                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("DUP instruction"));
 
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
                 impPushOnStack(op1, tiRetVal);
