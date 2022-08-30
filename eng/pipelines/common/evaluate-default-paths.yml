@@ -190,6 +190,7 @@ jobs:
       - src/mono/System.Private.CoreLib/*
       - ${{ parameters._const_paths._wasm_specific_only }}
 
+    # anything other than wasm-specific paths
     - subset: non_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
@@ -201,15 +202,12 @@ jobs:
       # JUST FOR TESTING THIS PR
       - eng/pipelines/*
 
-    # only mono (including wasm) specific changes
+    # anything other than mono, or wasm specific paths
     - subset: non_mono
       exclude:
-      #- src/tasks/Common/*
-      - eng/testing/ProvisioningVersions.props
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - ${{ parameters._const_paths._wasm_specific_only }}
+
       - eng/testing/tests.mobile.targets
-      - eng/testing/tests.wasm.targets
-      - src/libraries/sendtohelix-wasm.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
       - src/tasks/AotCompilerTask/*

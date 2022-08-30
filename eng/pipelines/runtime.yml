@@ -155,6 +155,11 @@ jobs:
     - FreeBSD_x64
     jobParameters:
       testGroup: innerloop
+      # Don't run these when we have only wasm changes on PRs
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # Build CoreCLR Formatting Job
@@ -776,6 +781,11 @@ jobs:
     - windows_arm
     - windows_arm64
     - windows_x86
+    jobParameters:
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -791,6 +801,10 @@ jobs:
     - FreeBSD_x64
     jobParameters:
       testScope: innerloop
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # Libraries debug build that only runs when coreclr is changed
@@ -873,6 +887,10 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
@@ -888,6 +906,10 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # CoreCLR Test builds using live libraries release build
