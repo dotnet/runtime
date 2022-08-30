@@ -44,8 +44,8 @@ namespace TypeSystemTests
         [Fact]
         public void LayoutIntTests()
         {
-            Assert.Throws<ArgumentException>(() => { return new LayoutInt(int.MinValue); });
-            Assert.Throws<ArgumentException>(() => { return new LayoutInt(-1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { return new LayoutInt(int.MinValue); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { return new LayoutInt(-1); });
 
             Assert.Equal(LayoutInt.Zero, new LayoutInt(0));
             Assert.Equal(LayoutInt.One, new LayoutInt(1));
