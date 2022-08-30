@@ -15,10 +15,13 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-        private static readonly bool _isAndroidOrAppleMobile = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"))
-                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))
-                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"))
-                                                            || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
+#if NETCOREAPP
+        private static readonly bool _isAndroidOrAppleMobile = OperatingSystem.IsAndroid()
+                                                            || OperatingSystem.IsTvOS()
+                                                            || OperatingSystem.IsIOS();
+#else
+        private const bool _isAndroidOrAppleMobile = false;
+#endif
         private IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
