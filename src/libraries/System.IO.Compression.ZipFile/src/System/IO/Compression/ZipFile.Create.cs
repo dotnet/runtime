@@ -379,13 +379,10 @@ namespace System.IO.Compression
                 {
                     directoryIsEmpty = false;
 
-                    int entryNameLength = file.FullName.Length - basePath.Length;
-                    Debug.Assert(entryNameLength > 0);
-
                     if (file is FileInfo)
                     {
                         // Create entry for file:
-                        string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength);
+                        string entryName = ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePath.Length));
                         ZipFileExtensions.DoCreateEntryFromFile(archive, file.FullName, entryName, compressionLevel);
                     }
                     else
@@ -395,7 +392,7 @@ namespace System.IO.Compression
                         {
                             // FullName never returns a directory separator character on the end,
                             // but Zip archives require it to specify an explicit directory:
-                            string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, appendPathSeparator: true);
+                            string entryName = ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePath.Length), appendPathSeparator: true);
                             archive.CreateEntry(entryName);
                         }
                     }
@@ -403,7 +400,7 @@ namespace System.IO.Compression
 
                 // If no entries create an empty root directory entry:
                 if (includeBaseDirectory && directoryIsEmpty)
-                    archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, appendPathSeparator: true));
+                    archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
             }
         }
     }

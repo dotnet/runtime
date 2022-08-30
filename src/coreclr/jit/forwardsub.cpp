@@ -673,13 +673,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
     // local being defined must be specially marked up.
     //
-    if (fwdSubNode->IsMultiRegCall())
+    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegCall())
     {
         GenTree* const parentNode = fsv.GetParentNode();
 
         if (!parentNode->OperIs(GT_ASG))
         {
-            JITDUMP(" multi-reg call, parent not asg\n");
+            JITDUMP(" multi-reg struct call, parent not asg\n");
             return false;
         }
 
@@ -687,17 +687,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         if (!parentNodeLHS->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" multi-reg call, parent not asg(lcl, ...)\n");
+            JITDUMP(" multi-reg struct call, parent not asg(lcl, ...)\n");
             return false;
         }
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        if (fwdSubNode->TypeGet() == TYP_LONG)
-        {
-            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
-            return false;
-        }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
 

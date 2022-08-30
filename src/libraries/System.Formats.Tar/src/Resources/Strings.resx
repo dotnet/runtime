@@ -205,6 +205,9 @@
     <value>The entry is a symbolic link or a hard link but the LinkName field is null or empty.</value>
   </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
+    <value>Entry type '{0}' not supported.</value>
+  </data>
+  <data name="TarEntryTypeNotSupportedInFormat" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
   </data>
   <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">

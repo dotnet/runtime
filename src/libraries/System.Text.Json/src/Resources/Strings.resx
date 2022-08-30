@@ -336,7 +336,7 @@
   <data name="TrailingCommaNotAllowedBeforeObjectEnd" xml:space="preserve">
     <value>The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options.</value>
   </data>
-  <data name="SerializerOptionsImmutable" xml:space="preserve">
+  <data name="SerializerOptionsReadOnly" xml:space="preserve">
     <value>Serializer options cannot be changed once serialization or deserialization has occurred.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
@@ -578,7 +578,7 @@
   <data name="NodeDuplicateKey" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
-  <data name="SerializerContextOptionsImmutable" xml:space="preserve">
+  <data name="SerializerContextOptionsReadOnly" xml:space="preserve">
     <value>JsonSerializerOptions instances cannot be modified once encapsulated by a JsonSerializerContext. Such encapsulation can happen either when calling 'JsonSerializerOptions.AddContext' or when passing the options instance to a JsonSerializerContext constructor.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
@@ -659,8 +659,8 @@
   <data name="JsonPropertyInfoBoundToDifferentParent" xml:space="preserve">
     <value>JsonPropertyInfo with name '{0}' for type '{1}' is already bound to different JsonTypeInfo.</value>
   </data>
-  <data name="JsonTypeInfoUsedButTypeInfoResolverNotSet" xml:space="preserve">
-    <value>JsonTypeInfo metadata references a JsonSerializerOptions instance that doesn't specify a TypeInfoResolver.</value>
+  <data name="JsonSerializerOptionsNoTypeInfoResolverSpecified" xml:space="preserve">
+    <value>JsonSerializerOptions instance must specify a TypeInfoResolver setting before being marked as read-only.</value>
   </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
