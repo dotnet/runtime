@@ -241,7 +241,6 @@ namespace System.Threading
                 {
                     CreateWorkerThread();
                     toCreate--;
-                    continue;
                 }
             }
 
