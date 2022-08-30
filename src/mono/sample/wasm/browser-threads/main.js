@@ -3,15 +3,6 @@
 
 import { dotnet, exit } from './dotnet.js'
 
-function wasm_exit(exit_code) {
-    var tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
-
-    console.log(`WASM EXIT ${exit_code}`);
-}
-
 let progressElement = null;
 
 function updateProgress(status) {
@@ -63,6 +54,8 @@ try {
     const inputElement = document.getElementById("inputN");
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        .withElementOnExit()
+        .withExitCodeLogging()
         .create();
 
     setModuleImports("main.js", {
@@ -80,9 +73,7 @@ try {
     inputElement.addEventListener("change", onInputValueChanged(exports, inputElement));
 
     let exit_code = await runMain(assemblyName, []);
-    wasm_exit(exit_code);
     exit(exit_code);
 } catch (err) {
-    wasm_exit(2);
-    exit(exit_code, err);
+    exit(2, err);
 }
