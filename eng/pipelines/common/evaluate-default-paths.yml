@@ -46,9 +46,6 @@ jobs:
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
 
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
-
     - subset: mono_excluding_wasm
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -74,8 +71,6 @@ jobs:
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
 
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
@@ -94,8 +89,6 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/common/evaluate-default-paths.yml
 
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
     - subset: runtimetests
       include:
       - src/tests/*
@@ -119,8 +112,6 @@ jobs:
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
 
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
     # Specifically runtime directories which are higher risk of
@@ -197,9 +188,6 @@ jobs:
       # trigger non-onlywasm jobs
       - eng/pipelines/common/evaluate-default-paths.yml
 
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
-
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
@@ -214,9 +202,6 @@ jobs:
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*
-
-      # JUST FOR TESTING THIS PR
-      - eng/pipelines/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
