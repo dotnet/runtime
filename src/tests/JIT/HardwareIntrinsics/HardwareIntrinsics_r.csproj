@@ -3,9 +3,7 @@
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="Arm/**/*_r.csproj" />
-    <MergedWrapperProjectReference Include="General/**/*_r.csproj" />
-    <MergedWrapperProjectReference Include="X86/**/*_r.csproj" />
+    <MergedWrapperProjectReference Include="**/*.csproj" Exclude="**/*_ro.csproj" />
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
 </Project>
