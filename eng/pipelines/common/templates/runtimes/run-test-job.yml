@@ -703,7 +703,7 @@ jobs:
           archiveExtension: $(archiveExtension)
           artifactName: 'SuperPMI_PreMerge_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
           displayName: 'Upload pre-merge artifacts SuperPMI $(CollectionName)-$(CollectionType)'
-        condition: always()
+          condition: always()
 
       # Always run merge step even if collection of some partition fails so we can store collection of the partitions that succeeded.
       # If all the partitions fail, merge-mch will fail and we won't run future steps like uploading superpmi collection.
@@ -736,7 +736,7 @@ jobs:
           archiveExtension: $(archiveExtension)
           artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
-        condition: always()
+          condition: always()
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
