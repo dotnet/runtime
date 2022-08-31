@@ -299,6 +299,7 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, symbolicLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => symbolicLink.LinkName = null);
             symbolicLink.LinkName = TestLinkName;
         }
 
