@@ -26,16 +26,6 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
-      - name: isDefaultPipeline
-        # default pipeline, so not runtime-wasm, and not
-        # runtime-extra-platforms+rolling build
-        value: ${{
-            and(
-              ne(parameters.isWasmOnlyBuild, true),
-              or(
-                ne(parameters.isExtraPlatformsBuild, true),
-                eq(variables['isRollingBuild'], true)))
-          }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
