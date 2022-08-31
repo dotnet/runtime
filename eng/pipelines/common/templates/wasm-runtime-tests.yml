@@ -39,6 +39,7 @@ jobs:
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
       #     - then run only if it would not have run on default pipelines (based
