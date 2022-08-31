@@ -219,36 +219,31 @@ namespace System.IO
             // Using 32 characters for convenience, that gives us 32^^6 ~= 10^^9 possibilities,
             // but we'll still loop to handle the unlikely case the file already exists.
 
-            string tempPath = Path.GetTempPath();
             byte* bytes = stackalloc byte[KeyLength];
+            Span<char> span = stackalloc char[13]; // tmpXXXXXX.tmp
 
             while (true)
             {
-                string path = string.Create(tempPath.Length + 13 /* tmpXXXXXX.tmp */, (IntPtr)bytes, (span, state) =>
-                {
-                    tempPath.TryCopyTo(span);
+                const int KeyLength = 4; // 4 bytes = more than 6 x 5 bits
+                Interop.GetRandomBytes(bytes, KeyLength);
 
-                    span = span.Slice(tempPath.Length);
+                byte b0 = bytes[0];
+                byte b1 = bytes[1];
+                byte b2 = bytes[2];
+                byte b3 = bytes[3];
 
-                    const int KeyLength = 4; // 4 bytes = more than 6 x 5 bits
-                    Interop.GetRandomBytes(bytes, KeyLength);
+                span[0] = span[10] = 't';
+                span[1] = span[11] = 'm';
+                span[2] = span[12] = 'p';
+                span[3] = (char)Base32Char[b0 & 0b0001_1111];
+                span[4] = (char)Base32Char[b1 & 0b0001_1111];
+                span[5] = (char)Base32Char[b2 & 0b0001_1111];
+                span[6] = (char)Base32Char[b3 & 0b0001_1111];
+                span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
+                span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
+                span[9] = '.';
 
-                    byte b0 = bytes[0];
-                    byte b1 = bytes[1];
-                    byte b2 = bytes[2];
-                    byte b3 = bytes[3];
-
-                    span[0] = span[10] = 't';
-                    span[1] = span[11] = 'm';
-                    span[2] = span[12] = 'p';
-                    span[3] = (char)Base32Char[b0 & 0b0001_1111];
-                    span[4] = (char)Base32Char[b1 & 0b0001_1111];
-                    span[5] = (char)Base32Char[b2 & 0b0001_1111];
-                    span[6] = (char)Base32Char[b3 & 0b0001_1111];
-                    span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
-                    span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
-                    span[9] = '.';
-                });
+                string path = string.Concat(Path.GetTempPath(), span);
 
                 try
                 {
