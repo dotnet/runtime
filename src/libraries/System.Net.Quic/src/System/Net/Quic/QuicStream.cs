@@ -126,7 +126,7 @@ public sealed partial class QuicStream
     /// </summary>
     public Task WritesClosed => _sendTcs.GetFinalTask();
 
-    /// <inheritdoc cref="ToString"/>
+    /// <inheritdoc cref="object.ToString"/>
     public override string ToString() => _handle.ToString();
 
     /// <summary>
@@ -484,8 +484,8 @@ public sealed partial class QuicStream
     private unsafe int HandleEventReceive(ref RECEIVE data)
     {
         ulong totalCopied = (ulong)_receiveBuffers.CopyFrom(
-            new ReadOnlySpan<QUIC_BUFFER>(data.Buffers, (int) data.BufferCount),
-            (int) data.TotalBufferLength,
+            new ReadOnlySpan<QUIC_BUFFER>(data.Buffers, (int)data.BufferCount),
+            (int)data.TotalBufferLength,
             data.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN));
 
         if (NetEventSource.Log.IsEnabled())
