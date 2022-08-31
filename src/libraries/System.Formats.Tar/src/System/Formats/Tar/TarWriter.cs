@@ -216,6 +216,7 @@ namespace System.Formats.Tar
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             WriteEntryInternal(entry);
         }
 
@@ -262,6 +263,7 @@ namespace System.Formats.Tar
 
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
@@ -364,6 +366,17 @@ namespace System.Formats.Tar
             string? actualEntryName = string.IsNullOrEmpty(entryName) ? Path.GetFileName(fileName) : entryName;
 
             return (fullPath, actualEntryName);
+        }
+
+        private static void ValidateEntryLinkName(TarEntryType entryType, string? linkName)
+        {
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                if (string.IsNullOrEmpty(linkName))
+                {
+                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                }
+            }
         }
     }
 }
