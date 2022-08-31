@@ -208,25 +208,57 @@ namespace System.IO
         // name on disk.
         public static string GetTempFileName()
         {
-            var tempPathBuilder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+            // Avoid GetTempFileNameW because it is limited to 0xFFFF possibilities, which both
+            // means that it may have to make many attempts to create the file before
+            // finding an unused name, and also that if an app "leaks" such temp files,
+            // it can prevent GetTempFileNameW succeeding at all.
+            //
+            // To make this a little more robust, generate our own name with more
+            // entropy. We could use GetRandomFileName() here, but for consistency
+            // with Unix and to retain the ".tmp" extension we will use the "tmpXXXXXX.tmp" pattern.
+            // Using 32 characters for convenience, that gives us 32^^6 ~= 10^^9 possibilities,
+            // but we'll still loop to handle the unlikely case the file already exists.
 
-            GetTempPath(ref tempPathBuilder);
+            while (true)
+            {
+                var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+                builder.Append(Path.GetTempPath());
+                Debug.Assert(builder[builder.Length - 1] == PathInternal.DirectorySeparatorChar);
 
-            var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+                Span<char> span = builder.AppendSpan(13); // "tmpXXXXXX.tmp"
 
-            uint result = Interop.Kernel32.GetTempFileNameW(
-                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference());
+                const int KeyLength = 4; // 4 bytes = more than 6 x 5 bits
+                byte* bytes = stackalloc byte[KeyLength];
+                Interop.GetRandomBytes(bytes, KeyLength);
 
-            tempPathBuilder.Dispose();
+                byte b0 = bytes[0];
+                byte b1 = bytes[1];
+                byte b2 = bytes[2];
+                byte b3 = bytes[3];
 
-            if (result == 0)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                span[0] = span[10] = 't';
+                span[1] = span[11] = 'm';
+                span[2] = span[12] = 'p';
+                span[3] = (char)Base32Char[b0 & 0b0001_1111];
+                span[4] = (char)Base32Char[b1 & 0b0001_1111];
+                span[5] = (char)Base32Char[b2 & 0b0001_1111];
+                span[6] = (char)Base32Char[b3 & 0b0001_1111];
+                span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
+                span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
+                span[9] = '.';
 
-            builder.Length = builder.RawChars.IndexOf('\0');
+                string path = builder.ToString();
+                try
+                {
+                    new FileStream(path, FileMode.CreateNew).Dispose();
+                }
+                catch (IOException)
+                {
+                    continue; // File already exists: very, very unlikely
+                }
 
-            string path = PathHelper.Normalize(ref builder);
-            builder.Dispose();
-            return path;
+                return path;
+            }
         }
 
         // Tests if the given path contains a root. A path is considered rooted

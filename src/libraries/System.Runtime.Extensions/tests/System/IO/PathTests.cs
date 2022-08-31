@@ -182,6 +182,8 @@ namespace System.IO.Tests
             try
             {
                 Assert.True(File.Exists(tmpFile));
+                Assert.StartsWith("tmp", Path.GetFileName(tmpFile));
+                Assert.Equal("tmpXXXXXX.tmp".Length, Path.GetFileName(tmpFile).Length);
                 Assert.Equal(".tmp", Path.GetExtension(tmpFile), ignoreCase: true, ignoreLineEndingDifferences: false, ignoreWhiteSpaceDifferences: false);
                 Assert.Equal(-1, tmpFile.IndexOfAny(Path.GetInvalidPathChars()));
                 using (FileStream fs = File.OpenRead(tmpFile))
