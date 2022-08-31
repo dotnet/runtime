@@ -253,7 +253,7 @@ namespace System.Formats.Tar
 
                 if (value != null && !value.CanRead)
                 {
-                    throw new IOException(SR.IO_NotSupported_UnreadableStream);
+                    throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(value));
                 }
 
                 if (_readerOfOrigin != null)

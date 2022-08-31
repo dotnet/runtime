@@ -402,6 +402,13 @@ namespace System.Formats.Tar.Tests
             if (isFromWriter)
             {
                 Assert.Null(entry.DataStream);
+
+                using (MemoryStream ms = new MemoryStream())
+                using (WrappedStream ws = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: true))
+                {
+                    Assert.Throws<ArgumentException>(() => entry.DataStream = ws);
+                }
+
                 entry.DataStream = new MemoryStream();
                 // Verify it is not modified or wrapped in any way
                 Assert.True(entry.DataStream.CanRead);
