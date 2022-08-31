@@ -755,6 +755,206 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
     D[num] = (uint64_t)value.vec[2] << 32 | (uint64_t)value.vec[3];
 }
 
+/// CompactUnwinder_arm64 uses a compact unwind info to virtually "step" (aka
+/// unwind) by modifying a Registers_arm64 register set
+template <typename A>
+class CompactUnwinder_arm64 {
+public:
+
+  static int stepWithCompactEncoding(compact_unwind_encoding_t compactEncoding,
+                                     uint64_t functionStart, A &addressSpace,
+                                     Registers_REGDISPLAY &registers);
+
+private:
+  typename A::pint_t pint_t;
+
+  static int
+      stepWithCompactEncodingFrame(compact_unwind_encoding_t compactEncoding,
+                                   uint64_t functionStart, A &addressSpace,
+                                   Registers_REGDISPLAY &registers);
+  static int stepWithCompactEncodingFrameless(
+      compact_unwind_encoding_t compactEncoding, uint64_t functionStart,
+      A &addressSpace, Registers_REGDISPLAY &registers);
+};
+
+template <typename A>
+int CompactUnwinder_arm64<A>::stepWithCompactEncoding(
+    compact_unwind_encoding_t compactEncoding, uint64_t functionStart,
+    A &addressSpace, Registers_REGDISPLAY &registers) {
+  switch (compactEncoding & UNWIND_ARM64_MODE_MASK) {
+  case UNWIND_ARM64_MODE_FRAME:
+    return stepWithCompactEncodingFrame(compactEncoding, functionStart,
+                                        addressSpace, registers);
+  case UNWIND_ARM64_MODE_FRAMELESS:
+    return stepWithCompactEncodingFrameless(compactEncoding, functionStart,
+                                            addressSpace, registers);
+  }
+  _LIBUNWIND_ABORT("invalid compact unwind encoding");
+}
+
+template <typename A>
+int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrameless(
+    compact_unwind_encoding_t encoding, uint64_t, A &addressSpace,
+    Registers_REGDISPLAY &registers) {
+  uint32_t stackSize =
+      16 * EXTRACT_BITS(encoding, UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK);
+
+  uint64_t savedRegisterLoc = registers.getSP() + stackSize;
+
+  if (encoding & UNWIND_ARM64_FRAME_X19_X20_PAIR) {
+    registers.setRegister(UNW_AARCH64_X19, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X20, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X21_X22_PAIR) {
+    registers.setRegister(UNW_AARCH64_X21, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X22, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X23_X24_PAIR) {
+    registers.setRegister(UNW_AARCH64_X23, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X24, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X25_X26_PAIR) {
+    registers.setRegister(UNW_AARCH64_X25, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X26, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X27_X28_PAIR) {
+    registers.setRegister(UNW_AARCH64_X27, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X28, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+
+  if (encoding & UNWIND_ARM64_FRAME_D8_D9_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V8,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V9,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D10_D11_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V10,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V11,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D12_D13_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V12,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V13,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D14_D15_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V14,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V15,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+
+  // subtract stack size off of sp
+  registers.setSP(savedRegisterLoc, 0);
+
+  // set pc to be value in lr
+  registers.setIP(registers.getRegister(UNW_AARCH64_LR), 0);
+
+  return UNW_STEP_SUCCESS;
+}
+
+template <typename A>
+int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
+    compact_unwind_encoding_t encoding, uint64_t, A &addressSpace,
+    Registers_REGDISPLAY &registers) {
+  uint64_t savedRegisterLoc = registers.GetFP() - 8;
+
+  if (encoding & UNWIND_ARM64_FRAME_X19_X20_PAIR) {
+    registers.setRegister(UNW_AARCH64_X19, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X20, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X21_X22_PAIR) {
+    registers.setRegister(UNW_AARCH64_X21, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X22, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X23_X24_PAIR) {
+    registers.setRegister(UNW_AARCH64_X23, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X24, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X25_X26_PAIR) {
+    registers.setRegister(UNW_AARCH64_X25, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X26, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_X27_X28_PAIR) {
+    registers.setRegister(UNW_AARCH64_X27, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+    registers.setRegister(UNW_AARCH64_X28, addressSpace.get64(savedRegisterLoc), savedRegisterLoc);
+    savedRegisterLoc -= 8;
+  }
+
+  if (encoding & UNWIND_ARM64_FRAME_D8_D9_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V8,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V9,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D10_D11_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V10,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V11,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D12_D13_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V12,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V13,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+  if (encoding & UNWIND_ARM64_FRAME_D14_D15_PAIR) {
+    registers.setFloatRegister(UNW_AARCH64_V14,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+    registers.setFloatRegister(UNW_AARCH64_V15,
+                               addressSpace.getDouble(savedRegisterLoc));
+    savedRegisterLoc -= 8;
+  }
+
+  uint64_t fp = registers.GetFP();
+  // fp points to old fp
+  registers.setRegister(UNW_ARM64_FP, addressSpace.get64(fp), fp);
+  // old sp is fp less saved fp and lr
+  registers.setSP(fp + 16, 0);
+  // pop return address into pc
+  registers.setIP(addressSpace.get64(fp + 8), fp + 8);
+
+  return UNW_STEP_SUCCESS;
+}
+
 #endif // TARGET_ARM64
 
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
@@ -772,7 +972,29 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #endif
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, 0 /* fdeSectionOffsetHint */);
+    uint32_t dwarfOffsetHint = 0;
+
+#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
+    // If there is a compact unwind encoding table, look there first.
+    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
+        unw_proc_info_t procInfo;
+        uc.getInfo(&procInfo);
+
+#if defined(_LIBUNWIND_TARGET_AARCH64)
+        if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+            CompactUnwinder_arm64<LocalAddressSpace> compactInst;
+            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, pc, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            return stepRet == UNW_STEP_SUCCESS;
+        } else {
+            dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
+        }
+#else
+        PORTABILITY_ASSERT("DoTheStep");
+#endif
+    }
+#endif
+
+    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
     if (!retVal)
     {
         return false;
