@@ -213,7 +213,7 @@ fi
   </Target>
 
   <Target Name="GetDisasmCheckBatchScript"
-          Returns="$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)">
+          Returns="$(DoBatchDisasmCheck);$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)">
     <ItemGroup>
       <BatchDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
