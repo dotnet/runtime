@@ -18,16 +18,16 @@ variables:
 - name: isNotExtraPlatformsBuild
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
 - name: isWasmOnlyBuild
-  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-wasm') }}
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests') }}
 - name: isRunSmokeTestsOnly
-  value: ${{ and(ne(variables['Build.DefinitionName'], 'runtime-extra-platforms'), ne(variables['Build.DefinitionName'], 'runtime-wasm')) }}
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests') }}
 - name: isNotSpecificPlatformOnlyBuild
-  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-wasm') }}
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests') }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
