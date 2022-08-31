@@ -7570,10 +7570,13 @@ public:
                             bool              includeReturnType,
                             bool              includeThis);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
+    void eeFormatClassName(char** buffer, size_t bufferMax, CORINFO_CLASS_HANDLE clsHnd);
 
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
-    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
+    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
+                                    bool                  includeReturnType    = true,
+                                    bool                  includeThisSpecifier = true);
     unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
@@ -7797,6 +7800,12 @@ public:
     bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
     {
         return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    template <typename Functor>
+    bool eeRunFunctorWithSPMIErrorTrap(Functor f)
+    {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) { (*pf)(); }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);

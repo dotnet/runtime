@@ -1508,23 +1508,9 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
 
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.fieldOrMethodOrClassNamePtr = "hackishClassName";
-    }
-    return param.fieldOrMethodOrClassNamePtr;
+    char* result;
+    eeFormatClassName(&result, 0, clsHnd);
+    return result;
 }
 
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF

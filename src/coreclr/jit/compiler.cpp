@@ -1769,6 +1769,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compCompHnd    = compHnd;
     info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
+    info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
     bRangeAllowStress = false;
@@ -1788,17 +1789,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = nullptr;
     info.compFullName   = nullptr;
 
-    const char* classNamePtr;
-    const char* methodName;
-
-    methodName          = eeGetMethodName(methodHnd, &classNamePtr);
-    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
-    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
-    info.compMethodName = methodName;
-    strcpy_s((char*)info.compClassName, len, classNamePtr);
-
-    info.compFullName  = eeGetMethodFullName(methodHnd);
-    info.compPerfScore = 0.0;
+    info.compMethodName = eeGetMethodName(methodHnd, nullptr);
+    info.compClassName  = eeGetClassName(info.compClassHnd);
+    info.compFullName   = eeGetMethodFullName(methodHnd);
+    info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
@@ -3017,8 +3011,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #else  // DEBUG
     if (!JitConfig.JitDisasm().isEmpty())
     {
-        const char* className;
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, &className);
+        const char* className  = eeGetClassName(info.compClassHnd);
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
 
         if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
         {
@@ -4990,7 +4984,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
         const char* fullName = info.compFullName;
 #else
-        const char* fullName  = eeGetMethodFullName(info.compMethodHnd);
+        const char* fullName =
+            eeGetMethodFullName(info.compMethodHnd, /* includeReturnType */ false, /* includeThisSpecifier */ false);
 #endif
 
         char debugPart[128] = {0};
@@ -5677,9 +5672,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     {
         impTokenLookupContextHandle = impInlineInfo->tokenLookupContextHandle;
 
-        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compCompHnd->getMethodClass(info.compMethodHnd));
-        info.compClassHnd = impInlineInfo->inlineCandidateInfo->clsHandle;
-
+        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compClassHnd);
         assert(impInlineInfo->inlineCandidateInfo->clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
         // printf("%x != %x\n", impInlineInfo->inlineCandidateInfo->clsAttr,
         // info.compCompHnd->getClassAttribs(info.compClassHnd));
@@ -5689,7 +5682,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     {
         impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
-        info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
