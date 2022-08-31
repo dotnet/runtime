@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -126,23 +127,36 @@ namespace System.Buffers.Text.Tests
             }
 
             // char => char
-            Verify(Ascii.ToLower(sourceChars, destinationChars, out int consumed, out int written), consumed, written);
-            Verify(Ascii.ToUpper(sourceChars, destinationChars, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToLower(sourceChars, destinationChars, out int consumed, out int written), consumed, written);
+            VerifyStatus(Ascii.ToUpper(sourceChars, destinationChars, out consumed, out written), consumed, written);
             // char => byte
-            Verify(Ascii.ToLower(sourceChars, destinationBytes, out consumed, out written), consumed, written);
-            Verify(Ascii.ToUpper(sourceChars, destinationBytes, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToLower(sourceChars, destinationBytes, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToUpper(sourceChars, destinationBytes, out consumed, out written), consumed, written);
             // byte => byte
-            Verify(Ascii.ToLower(sourceBytes, destinationBytes, out consumed, out written), consumed, written);
-            Verify(Ascii.ToUpper(sourceBytes, destinationBytes, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToLower(sourceBytes, destinationBytes, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToUpper(sourceBytes, destinationBytes, out consumed, out written), consumed, written);
             // byte => char
-            Verify(Ascii.ToLower(sourceBytes, destinationChars, out consumed, out written), consumed, written);
-            Verify(Ascii.ToUpper(sourceBytes, destinationChars, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToLower(sourceBytes, destinationChars, out consumed, out written), consumed, written);
+            VerifyStatus(Ascii.ToUpper(sourceBytes, destinationChars, out consumed, out written), consumed, written);
 
-            static void Verify(OperationStatus status, int consumed, int written)
+            // Try(byte)
+            VerifyBool(Ascii.TryToLowerInPlace(sourceBytes, out int processed), processed);
+            VerifyBool(Ascii.TryToUpperInPlace(sourceBytes, out processed), processed);
+            // Try(char)
+            VerifyBool(Ascii.TryToLowerInPlace(sourceChars.ToCharArray(), out processed), processed);
+            VerifyBool(Ascii.TryToUpperInPlace(sourceChars.ToCharArray(), out processed), processed);
+
+            static void VerifyStatus(OperationStatus status, int consumed, int written)
             {
                 Assert.Equal(OperationStatus.InvalidData, status);
                 Assert.Equal(0, consumed);
                 Assert.Equal(0, written);
+            }
+
+            static void VerifyBool(bool result, int processed)
+            {
+                Assert.False(result);
+                Assert.Equal(0, processed);
             }
         }
 
@@ -182,24 +196,42 @@ namespace System.Buffers.Text.Tests
             byte[] destinationBytes = new byte[expectedLowerChars.Length];
 
             // char -> char
-            Verify<char>(Ascii.ToLower(sourceChars, destinationChars, out int consumed, out int written), expectedLowerChars, destinationChars, consumed, written);
-            Verify<char>(Ascii.ToUpper(sourceChars, destinationChars, out consumed, out written), expectedUpperChars, destinationChars, consumed, written);
+            VerifyStatus<char>(Ascii.ToLower(sourceChars, destinationChars, out int consumed, out int written), expectedLowerChars, destinationChars, consumed, written);
+            VerifyStatus<char>(Ascii.ToUpper(sourceChars, destinationChars, out consumed, out written), expectedUpperChars, destinationChars, consumed, written);
             // char -> byte
-            Verify<byte>(Ascii.ToLower(sourceChars, destinationBytes, out consumed, out written), expectedLowerBytes, destinationBytes, consumed, written);
-            Verify<byte>(Ascii.ToUpper(sourceChars, destinationBytes, out consumed, out written), expectedUpperBytes, destinationBytes, consumed, written);
+            VerifyStatus<byte>(Ascii.ToLower(sourceChars, destinationBytes, out consumed, out written), expectedLowerBytes, destinationBytes, consumed, written);
+            VerifyStatus<byte>(Ascii.ToUpper(sourceChars, destinationBytes, out consumed, out written), expectedUpperBytes, destinationBytes, consumed, written);
             // byte -> byte
-            Verify<byte>(Ascii.ToLower(sourceBytes, destinationBytes, out consumed, out written), expectedLowerBytes, destinationBytes, consumed, written);
-            Verify<byte>(Ascii.ToUpper(sourceBytes, destinationBytes, out consumed, out written), expectedUpperBytes, destinationBytes, consumed, written);
+            VerifyStatus<byte>(Ascii.ToLower(sourceBytes, destinationBytes, out consumed, out written), expectedLowerBytes, destinationBytes, consumed, written);
+            VerifyStatus<byte>(Ascii.ToUpper(sourceBytes, destinationBytes, out consumed, out written), expectedUpperBytes, destinationBytes, consumed, written);
             // byte -> char
-            Verify<char>(Ascii.ToLower(sourceBytes, destinationChars, out consumed, out written), expectedLowerChars, destinationChars, consumed, written);
-            Verify<char>(Ascii.ToUpper(sourceBytes, destinationChars, out consumed, out written), expectedUpperChars, destinationChars, consumed, written);
+            VerifyStatus<char>(Ascii.ToLower(sourceBytes, destinationChars, out consumed, out written), expectedLowerChars, destinationChars, consumed, written);
+            VerifyStatus<char>(Ascii.ToUpper(sourceBytes, destinationChars, out consumed, out written), expectedUpperChars, destinationChars, consumed, written);
 
-            static void Verify<T>(OperationStatus status, ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, int consumed, int written)
+            // Try(byte)
+            byte[] sourceBytesCopy = sourceBytes.ToArray();
+            VerifyBool(Ascii.TryToLowerInPlace(sourceBytesCopy, out int processed), processed, expectedLowerBytes, sourceBytesCopy);
+            sourceBytesCopy = sourceBytes.ToArray();
+            VerifyBool(Ascii.TryToUpperInPlace(sourceBytesCopy, out processed), processed, expectedUpperBytes, sourceBytesCopy);
+            // Try(char)
+            char[] sourceCharsCopy = sourceChars.ToCharArray();
+            VerifyBool(Ascii.TryToLowerInPlace(sourceCharsCopy, out processed), processed, expectedLowerChars.ToCharArray(), sourceCharsCopy);
+            sourceCharsCopy = sourceChars.ToCharArray();
+            VerifyBool(Ascii.TryToUpperInPlace(sourceCharsCopy, out processed), processed, expectedUpperChars.ToCharArray(), sourceCharsCopy);
+
+            static void VerifyStatus<T>(OperationStatus status, ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, int consumed, int written)
             {
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(expected.Length, consumed);
                 Assert.Equal(expected.Length, written);
                 Assert.Equal(expected.ToArray(), actual.ToArray());
+            }
+
+            static void VerifyBool<T>(bool result, int processed, T[] expected, T[] actual)
+            {
+                Assert.True(result);
+                Assert.Equal(expected.Length, processed);
+                Assert.Equal(expected, actual);
             }
         }
 

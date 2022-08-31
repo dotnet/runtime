@@ -7106,6 +7106,10 @@ namespace System.Buffers.Text
         public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
         public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
+        public static bool TryToLowerInPlace(System.Span<byte> value, out int bytesProcessed) { throw null; }
+        public static bool TryToLowerInPlace(System.Span<char> value, out int charsProcessed) { throw null; }
+        public static bool TryToUpperInPlace(System.Span<byte> value, out int bytesProcessed) { throw null; }
+        public static bool TryToUpperInPlace(System.Span<char> value, out int charsProcessed) { throw null; }
         public static System.Range Trim(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Range Trim(System.ReadOnlySpan<char> value) { throw null; }
         public static System.Range TrimEnd(System.ReadOnlySpan<byte> value) { throw null; }

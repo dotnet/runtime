@@ -46,6 +46,22 @@ namespace System.Buffers.Text
         public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
             => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryToLowerInPlace(Span<byte> value, out int bytesProcessed)
+            => TryChangeCase<byte, ToLowerConversion>(value, out bytesProcessed);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryToLowerInPlace(Span<char> value, out int charsProcessed)
+            => TryChangeCase<ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsProcessed);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryToUpperInPlace(Span<byte> value, out int bytesProcessed)
+            => TryChangeCase<byte, ToUpperConversion>(value, out bytesProcessed);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryToUpperInPlace(Span<char> value, out int charsProcessed)
+            => TryChangeCase<ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsProcessed);
+
         private static unsafe OperationStatus ChangeCase<TFrom, TTo, TCasing>(ReadOnlySpan<TFrom> source, Span<TTo> destination, out int sourceElementsConsumed, out int destinationElementsWritten)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
@@ -79,6 +95,20 @@ namespace System.Buffers.Text
                 sourceElementsConsumed = (int)numElementsActuallyConverted;
                 destinationElementsWritten = (int)numElementsActuallyConverted;
                 return (numElementsToConvert == numElementsActuallyConverted) ? statusToReturnOnSuccess : OperationStatus.InvalidData;
+            }
+        }
+
+        private static unsafe bool TryChangeCase<T, TCasing>(Span<T> buffer, out int elementsProcessed)
+            where T : unmanaged, IBinaryInteger<T>
+            where TCasing : struct
+        {
+            fixed (T* pBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                nuint numElementsActuallyConverted = ChangeCase<T, T, TCasing>(pBuffer, pBuffer, (nuint)buffer.Length);
+                Debug.Assert(numElementsActuallyConverted <= (nuint)buffer.Length);
+
+                elementsProcessed = (int)numElementsActuallyConverted;
+                return elementsProcessed == buffer.Length;
             }
         }
 
