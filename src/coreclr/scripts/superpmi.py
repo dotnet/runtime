@@ -301,6 +301,7 @@ collect_parser.add_argument("-temp_dir", help="Specify an existing temporary dir
 collect_parser.add_argument("--clean", action="store_true", help="Clean the collection by removing contexts that fail to replay without error.")
 collect_parser.add_argument("--skip_collection_step", action="store_true", help="Do not run the collection step.")
 collect_parser.add_argument("--skip_merge_step", action="store_true", help="Do not run the merge step.")
+collect_parser.add_argument("--skip_toc_step", action="store_true", help="Do not run the TOC creation step.")
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
 # Create a set of arguments common to all SuperPMI replay commands, namely basic replay and ASM diffs.
@@ -731,7 +732,8 @@ class SuperPMICollect:
                 else:
                     self.__copy_to_final_mch_file__()
 
-                self.__create_toc__()
+                if not self.coreclr_args.skip_toc_step:
+                    self.__create_toc__()
 
                 if self.coreclr_args.clean:
                     # There is no point to verify unless we have run the clean step.
@@ -3522,6 +3524,11 @@ def setup_args(args):
                             "skip_merge_step",
                             lambda unused: True,
                             "Unable to set skip_merge_step.")
+
+        coreclr_args.verify(args,
+                            "skip_toc_step",
+                            lambda unused: True,
+                            "Unable to set skip_toc_step.")
 
         coreclr_args.verify(args,
                             "clean",
