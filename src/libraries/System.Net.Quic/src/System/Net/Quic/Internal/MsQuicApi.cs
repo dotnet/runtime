@@ -127,10 +127,8 @@ internal sealed unsafe class MsQuicApi
         }
         finally
         {
-            if (!IsQuicSupported)
-            {
-                NativeLibrary.Free(msQuicHandle);
-            }
+            // Unload the library, we will load it again when we actually use QUIC
+            NativeLibrary.Free(msQuicHandle);
         }
     }
 
