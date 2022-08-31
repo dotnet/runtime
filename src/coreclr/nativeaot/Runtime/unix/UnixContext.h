@@ -76,11 +76,11 @@ struct UNIX_CONTEXT
         ASSERT(&X0() + 10 == &X10());
         ASSERT(&X0() + 20 == &X20());
 
-        for (size_t* pReg = &X0(); pReg <= &X28(); pReg++)
-            lambda(pReg);
+        for (uint64_t* pReg = &X0(); pReg <= &X28(); pReg++)
+            lambda((size_t*)pReg);
 
         // Lr can be used as a scratch register
-        lambda(&Lr());
+        lambda((size_t*)&Lr());
     }
 
 #elif defined(TARGET_AMD64)
@@ -108,22 +108,22 @@ struct UNIX_CONTEXT
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
     {
-        lambda(&Rax());
-        lambda(&Rcx());
-        lambda(&Rdx());
-        lambda(&Rbx());
-        lambda(&Rsp());
-        lambda(&Rbp());
-        lambda(&Rsi());
-        lambda(&Rdi());
-        lambda(&R8());
-        lambda(&R9());
-        lambda(&R10());
-        lambda(&R11());
-        lambda(&R12());
-        lambda(&R13());
-        lambda(&R14());
-        lambda(&R15());
+        lambda((size_t*)&Rax());
+        lambda((size_t*)&Rcx());
+        lambda((size_t*)&Rdx());
+        lambda((size_t*)&Rbx());
+        lambda((size_t*)&Rsp());
+        lambda((size_t*)&Rbp());
+        lambda((size_t*)&Rsi());
+        lambda((size_t*)&Rdi());
+        lambda((size_t*)&R8());
+        lambda((size_t*)&R9());
+        lambda((size_t*)&R10());
+        lambda((size_t*)&R11());
+        lambda((size_t*)&R12());
+        lambda((size_t*)&R13());
+        lambda((size_t*)&R14());
+        lambda((size_t*)&R15());
     }
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");

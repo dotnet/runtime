@@ -225,8 +225,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
     {
-        for (size_t* pReg = &Rax; pReg < &Rip; pReg++)
-            lambda(pReg);
+        for (uint64_t* pReg = &Rax; pReg < &Rip; pReg++)
+            lambda((size_t*)pReg);
     }
 
 } CONTEXT, *PCONTEXT;
@@ -418,11 +418,11 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
     {
-        for (size_t* pReg = &X0; pReg <= &X28; pReg++)
-            lambda(pReg);
+        for (uint64_t* pReg = &X0; pReg <= &X28; pReg++)
+            lambda((size_t*)pReg);
 
         // Lr can be used as a scratch register
-        lambda(&Lr);
+        lambda((size_t*)&Lr);
     }
 } CONTEXT, *PCONTEXT;
 
