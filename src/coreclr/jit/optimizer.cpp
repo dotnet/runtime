@@ -4585,13 +4585,14 @@ PhaseStatus Compiler::optUnrollLoops()
 // statement. For example:
 // if (x < 7) { a = 5; }
 //
-// This is represented in IR by two basic blocks. The first block ends with a
-// JTRUE statement which conditionally jumps to the second block. Both blocks
-// then jump to the same destination. The second block just contains a single
-// assign statement. (Note that the first block may contain additional statements
-// prior to the JTRUE statement.)
+// This is represented in IR by two basic blocks. The first block (block) ends with
+// a JTRUE statement which conditionally jumps to the second block (middleBlock).
+// The second block just contains a single assign statement. Both blocks then jump
+// to the same destination (middleNext).  Note that the first block may contain
+// additional statements prior to the JTRUE statement.
 //
 // For example:
+//
 // ------------ BB03 [009..00D) -> BB05 (cond), preds={BB02} succs={BB04,BB05}
 // STMT00004
 //   *  JTRUE     void   $VN.Void
@@ -4605,15 +4606,20 @@ PhaseStatus Compiler::optUnrollLoops()
 // +--*  LCL_VAR   int    V00 arg0
 // \--*  CNS_INT   int    5 $47
 //
-// The JTRUE statement in the first block is replace with a SELECT node in the
-// assignment in the second block. If the result of the SELECTs op1 is true,
-// then op2 is passed to the assignment. Otherwise op3 is used. For example:
 //
-// ------------ BB03 [009..00D), preds={BB02} succs={BB04}
+// This is optimised by conditionally executing the store and removing the conditional
+// jumps. First the JTRUE is replaced with a NOP. The assignment is updated so that
+// the source of the store is a SELECT node with the condition set to the inverse of
+// the original JTRUE condition. If the condition passes the original assign happens,
+// otherwise the existing source value is used.
+//
+// In the example above, local var 0 is set to 5 if the LT returns true, otherwise
+// the existing value of local var 0 is used:
+//
+// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
 // STMT00004
 //   *  NOP       void
 //
-// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
 // STMT00005
 //   *  ASG       int    $VN.Void
 //   +--*  LCL_VAR   int    V00 arg0
@@ -4624,6 +4630,7 @@ PhaseStatus Compiler::optUnrollLoops()
 //      +--*  CNS_INT   int    5 $47
 //      \--*  LCL_VAR   int    V00
 //
+// ------------ BB04 [00D..010), preds={} succs={BB05}
 //
 bool Compiler::optIfConvert(BasicBlock* block)
 {
@@ -4653,7 +4660,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    BasicBlock* middleBlock = block->bbNext;
+    BasicBlock* middleBlock = nullptr;
+    BasicBlock* middleNext  = block->bbNext;
     GenTree*    asgNode     = nullptr;
     Statement*  asgStmt     = nullptr;
 
@@ -4663,21 +4671,23 @@ bool Compiler::optIfConvert(BasicBlock* block)
     bool foundMiddle = false;
     while (!foundMiddle)
     {
+        middleBlock = middleNext;
         noway_assert(middleBlock != nullptr);
-        BasicBlock* const middleNext = middleBlock->GetUniqueSucc();
 
-        if (middleBlock->bbNext == block->bbJumpDest)
+        // middleBlock should have a single successor.
+        middleNext = middleBlock->GetUniqueSucc();
+        if (middleNext == nullptr)
+        {
+            return false;
+        }
+
+        if (middleNext == block->bbJumpDest)
         {
             // This is our final middle block.
             foundMiddle = true;
         }
 
         // Check that we have linear flow and are still in the same EH region
-        //
-        if (middleBlock->NumSucc() != 1 || middleBlock->bbJumpKind != BBJ_NONE)
-        {
-            return false;
-        }
 
         if (middleBlock->GetUniquePred(this) == nullptr)
         {
@@ -4737,8 +4747,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
                     return false;
             }
         }
-
-        middleBlock = middleNext;
     }
     if (asgNode == nullptr)
     {
@@ -4749,7 +4757,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("Conditionally executing " FMT_BB " from " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
+        JITDUMP("Conditionally executing " FMT_BB " inside " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
         for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
             fgDumpBlock(dumpBlock);
@@ -4770,24 +4778,48 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Create a select node.
     GenTreeConditional* select =
         gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), destination, asgNode->TypeGet());
+    gtSetEvalOrder(select);
 
     // Use the select as the source of the assignment.
     asgNode->AsOp()->gtOp2 = select;
     asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-
-    // Calculate costs.
-    gtSetEvalOrder(select);
+    gtSetEvalOrder(asgNode);
+    fgSetStmtSeq(asgStmt);
 
     // Remove the JTRUE statement.
     last->ReplaceWith(gtNewNothingNode(), this);
-    fgSetStmtSeq(block->lastStmt());
     gtSetEvalOrder(last);
-    fgSetStmtSeq(asgStmt);
+    fgSetStmtSeq(block->lastStmt());
 
-    // Update the flow.
-    fgRemoveAllRefPreds(block->bbJumpDest, block);
-    block->bbJumpKind = BBJ_NONE;
-    block->bbJumpDest = middleBlock;
+    // Move the Asg to the end of the original block
+    Statement* stmtList1 = block->firstStmt();
+    Statement* stmtList2 = middleBlock->firstStmt();
+    Statement* stmtLast1 = block->lastStmt();
+    Statement* stmtLast2 = middleBlock->lastStmt();
+    stmtLast1->SetNextStmt(stmtList2);
+    stmtList2->SetPrevStmt(stmtLast1);
+    stmtList1->SetPrevStmt(stmtLast2);
+    middleBlock->bbStmtList = nullptr;
+
+    // Fix up the SSA of assignment destination.
+    if (asgNode->AsOp()->gtOp1->IsLocal())
+    {
+        GenTreeLclVarCommon* lclVar = asgNode->AsOp()->gtOp1->AsLclVarCommon();
+        unsigned             lclNum = lclVar->GetLclNum();
+        unsigned             ssaNum = lclVar->GetSsaNum();
+
+        if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+        {
+            LclSsaVarDsc* ssaDef = lvaTable[lclNum].GetPerSsaData(ssaNum);
+            noway_assert(ssaDef->GetBlock() == middleBlock);
+            ssaDef->SetBlock(block);
+        }
+    }
+
+    // Update the flow from the original block.
+    fgRemoveAllRefPreds(block->bbNext, block);
+    block->bbJumpKind = BBJ_ALWAYS;
+
 
 #ifdef DEBUG
     if (verbose)
