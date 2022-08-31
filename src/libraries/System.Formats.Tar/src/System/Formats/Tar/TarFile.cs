@@ -29,7 +29,7 @@ namespace System.Formats.Tar
 
             if (!destination.CanWrite)
             {
-                throw new IOException(SR.IO_NotSupported_UnwritableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnwritableStream, nameof(destination));
             }
 
             if (!Directory.Exists(sourceDirectoryName))
@@ -62,7 +62,7 @@ namespace System.Formats.Tar
 
             if (!destination.CanWrite)
             {
-                return Task.FromException(new IOException(SR.IO_NotSupported_UnwritableStream));
+                return Task.FromException(new ArgumentException(SR.IO_NotSupported_UnwritableStream, nameof(destination)));
             }
 
             if (!Directory.Exists(sourceDirectoryName))
