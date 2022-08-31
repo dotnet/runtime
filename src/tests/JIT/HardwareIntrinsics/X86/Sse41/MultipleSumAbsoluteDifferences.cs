@@ -17,7 +17,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86._Sse41
+namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
 {
     public static partial class Program
     {

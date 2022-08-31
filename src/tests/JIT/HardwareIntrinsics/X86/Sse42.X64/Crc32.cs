@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-namespace IntelHardwareIntrinsicTest._Crc32
+namespace IntelHardwareIntrinsicTest._Crc32.X64
 {
     public class Program
     {

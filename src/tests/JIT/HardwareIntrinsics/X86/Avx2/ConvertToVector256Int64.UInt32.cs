@@ -16,7 +16,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86._Avx2
+namespace JIT.HardwareIntrinsics.X86._Avx2.handwritten
 {
     public static partial class Program
     {
