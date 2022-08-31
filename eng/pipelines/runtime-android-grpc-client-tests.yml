@@ -8,12 +8,12 @@
 trigger: none
 
 schedules:
-  - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
+  - cron: "0 9 * * *" # run at 9:00 (UTC) which is 1:00 (PST).
     displayName: grpc-dotnet Android client test schedule
     branches:
       include:
       - main
-    always: true
+    always: false
 
 variables:
   - template: /eng/pipelines/common/variables.yml
