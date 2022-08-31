@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -63,7 +62,8 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
-            var results = GetChildKeysInternal(parentPath).ToList();
+            var results = new List<string>();
+            results.AddRange(GetChildKeysInternal(parentPath));
             results.AddRange(earlierKeys);
             results.Sort(ConfigurationKeyComparer.Comparison);
             return results;
