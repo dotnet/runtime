@@ -535,7 +535,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             //ignore all protocol extension messages not supported on .net6
-            if (method.StartsWith("DotnetDebugger."))
+            if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
                 return true;
 
             return false;
