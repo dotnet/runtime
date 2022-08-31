@@ -93,6 +93,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
 function bind_fn_0V(closure: BindingClosure) {
     const fn = closure.fn;
+    (<any>closure) = null;
     return function bound_fn_0V(args: JSMarshalerArguments) {
         try {
             // call user function
@@ -106,6 +107,7 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
+    (<any>closure) = null;
     return function bound_fn_1V(args: JSMarshalerArguments) {
         try {
             const arg1 = marshaler1(args);
@@ -121,6 +123,7 @@ function bind_fn_1R(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
+    (<any>closure) = null;
     return function bound_fn_1R(args: JSMarshalerArguments) {
         try {
             const arg1 = marshaler1(args);
@@ -138,6 +141,7 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
+    (<any>closure) = null;
     return function bound_fn_2R(args: JSMarshalerArguments) {
         try {
             const arg1 = marshaler1(args);
@@ -152,25 +156,32 @@ function bind_fn_2R(closure: BindingClosure) {
 }
 
 function bind_fn(closure: BindingClosure) {
+    const args_count = closure.args_count;
+    const arg_marshalers = closure.arg_marshalers;
+    const res_converter = closure.res_converter;
+    const arg_cleanup = closure.arg_cleanup;
+    const has_cleanup = closure.has_cleanup;
+    const fn = closure.fn;
+    (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
         try {
-            const js_args = new Array(closure.args_count);
-            for (let index = 0; index < closure.args_count; index++) {
-                const marshaler = closure.arg_marshalers[index]!;
+            const js_args = new Array(args_count);
+            for (let index = 0; index < args_count; index++) {
+                const marshaler = arg_marshalers[index]!;
                 const js_arg = marshaler(args);
                 js_args[index] = js_arg;
             }
 
             // call user function
-            const js_result = closure.fn(...js_args);
+            const js_result = fn(...js_args);
 
-            if (closure.res_converter) {
-                closure.res_converter(args, js_result);
+            if (res_converter) {
+                res_converter(args, js_result);
             }
 
-            if (closure.has_cleanup) {
-                for (let index = 0; index < closure.args_count; index++) {
-                    const cleanup = closure.arg_cleanup[index];
+            if (has_cleanup) {
+                for (let index = 0; index < args_count; index++) {
+                    const cleanup = arg_cleanup[index];
                     if (cleanup) {
                         cleanup(js_args[index]);
                     }
@@ -197,7 +208,7 @@ export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHand
     bound_fn(args);
 }
 
-export function mono_wasm_invoke_imported_function(fn_handle: JSFnHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_import(fn_handle: JSFnHandle, args: JSMarshalerArguments): void {
     const bound_fn = fn_wrapper_by_fn_handle[<any>fn_handle];
     mono_assert(bound_fn, () => `Imported function handle expected ${fn_handle}`);
     bound_fn(args);

@@ -96,6 +96,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
+    (<any>closure) = null;
     return function bound_fn_0V() {
         const sp = Module.stackSave();
         try {
@@ -111,6 +112,7 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
+    (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
         const sp = Module.stackSave();
         try {
@@ -129,6 +131,7 @@ function bind_fn_1R(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
+    (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const sp = Module.stackSave();
         try {
@@ -151,6 +154,7 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
+    (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const sp = Module.stackSave();
         try {
@@ -170,12 +174,17 @@ function bind_fn_2R(closure: BindingClosure) {
 }
 
 function bind_fn(closure: BindingClosure) {
+    const args_count = closure.args_count;
+    const arg_marshalers = closure.arg_marshalers;
+    const res_converter = closure.res_converter;
+    const method = closure.method;
+    (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(2 + closure.args_count);
-            for (let index = 0; index < closure.args_count; index++) {
-                const marshaler = closure.arg_marshalers[index];
+            const args = alloc_stack_frame(2 + args_count);
+            for (let index = 0; index < args_count; index++) {
+                const marshaler = arg_marshalers[index];
                 if (marshaler) {
                     const js_arg = js_args[index];
                     marshaler(args, js_arg);
@@ -183,10 +192,10 @@ function bind_fn(closure: BindingClosure) {
             }
 
             // call C# side
-            invoke_method_and_handle_exception(closure.method, args);
+            invoke_method_and_handle_exception(method, args);
 
-            if (closure.res_converter) {
-                const js_result = closure.res_converter(args);
+            if (res_converter) {
+                const js_result = res_converter(args);
                 return js_result;
             }
         } finally {

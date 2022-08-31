@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             fixed (JSMarshalerArgument* ptr = arguments)
             {
-                Interop.Runtime.InvokeImportedFunction(fnHandle, ptr);
+                Interop.Runtime.InvokeImport(fnHandle, ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
