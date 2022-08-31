@@ -26,7 +26,7 @@ namespace System.Formats.Tar
         /// <param name="archiveStream">The stream to write to.</param>
         /// <remarks>When using this constructor, <see cref="TarEntryFormat.Pax"/> is used as the default format of the entries written to the archive using the <see cref="WriteEntry(string, string?)"/> method.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> does not support writing.</exception>
         public TarWriter(Stream archiveStream)
             : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
         {

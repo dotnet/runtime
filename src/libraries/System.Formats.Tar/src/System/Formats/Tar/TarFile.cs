@@ -22,10 +22,10 @@ namespace System.Formats.Tar
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         /// <param name="destination">The destination stream the archive.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the archive entry names.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> of <paramref name="destination"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
         /// <para>-or-</para>
-        /// <para><paramref name="destination"/> is an unwritable stream.</para></exception>
+        /// <para><paramref name="destination"/> does not support writing.</para></exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
@@ -56,10 +56,11 @@ namespace System.Formats.Tar
         /// <param name="destination">The destination stream of the archive.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous creation operation.</returns>\/// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> of <paramref name="destination"/> is <see langword="null"/>.</exception>
+        /// <returns>A task that represents the asynchronous creation operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
         /// <para>-or-</para>
-        /// <para><paramref name="destination"/> is an unwritable stream.</para></exception>
+        /// <para><paramref name="destination"/> does not support writing.</para></exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
@@ -203,7 +204,7 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para><paramref name="destinationDirectoryName"/> is empty.</para>
         /// <para>-or-</para>
-        /// <para><paramref name="source"/> is an unreadable stream.</para></exception>
+        /// <para><paramref name="source"/> does not support reading.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
         {
