@@ -944,7 +944,7 @@ class SuperPMICollect:
                     # -o:<output dll>
                     # -r:<Core_Root>\System.*.dll
                     # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\mscorlib.dll
+                    # -r:<Core_Root>\System.Private.CoreLib.dll
                     # -r:<Core_Root>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of complus_env

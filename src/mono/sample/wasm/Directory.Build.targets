@@ -26,7 +26,7 @@
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
+    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />

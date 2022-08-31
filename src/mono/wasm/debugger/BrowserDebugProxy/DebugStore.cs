@@ -1467,11 +1467,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     try
                     {
+                        string unescapedFileName = Uri.UnescapeDataString(file_name);
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
                             });
                     }
                     catch (Exception e)

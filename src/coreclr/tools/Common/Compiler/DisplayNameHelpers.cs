@@ -39,6 +39,7 @@ namespace ILCompiler
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
             }
+#if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
                 sb.Append(property.Name);
@@ -46,6 +47,22 @@ namespace ILCompiler
                 sb.Append(property.GetMethod == method ? "get" : "set");
                 return sb.ToString();
             }
+            else if (method.GetEventForAccessor() is EventPseudoDesc @event)
+            {
+                sb.Append(@event.Name);
+                sb.Append('.');
+                string accessor;
+                if (method.Name == @event.AddMethod.Name)
+                    accessor = "add";
+                else if (method.Name == @event.RemoveMethod.Name)
+                    accessor = "remove";
+                else if (method.Name == @event.RaiseMethod.Name)
+                    accessor = "raise";
+                else
+                    throw new NotSupportedException();
+                sb.Append(accessor);
+            }
+#endif
             else
             {
                 sb.Append(method.Name);

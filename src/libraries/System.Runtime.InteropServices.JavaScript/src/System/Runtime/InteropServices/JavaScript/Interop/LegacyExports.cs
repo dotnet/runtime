@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -210,15 +211,34 @@ namespace System.Runtime.InteropServices.JavaScript
             result = unixTime.DateTime;
         }
 
+        // we do this via reflection to allow linker to trim dependency on Uri class and it's assembly
+        // if the user code has methods with Uri signature, they probably also have the Uri constructor
+        // if they don't have it, they could configure ILLing to protect it after they enabled trimming
+        // We believe that this code path is probably not even used in the wild
+        // System.Private.Uri is ~80KB large assembly so it's worth trimming
+        private static Type? uriType;
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2077", Justification = "Done on purpose, see comment above.")]
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2057", Justification = "Done on purpose, see comment above.")]
         public static void CreateUriRef(string uri, out object? result)
         {
-            // we do this via reflection to allow linker to trim dependency on URI and it's assembly
-            // if the user code has methods with Uri signature, this should work too
-            // System.Private.Uri is large assembly so it's worth trimming
-            var uriType = Type.GetType("System.Uri, System.Private.Uri");
-            if (uriType == null) throw new InvalidProgramException();
-            result = Activator.CreateInstance(uriType, uri);
+            if (uriType == null)
+            {
+                // StringBuilder to confuse ILLink, which is too smart otherwise
+                StringBuilder sb = new StringBuilder("System.Uri, System.Private.Uri");
+                uriType = Type.GetType(sb.ToString());
+            }
+            // See: https://devblogs.microsoft.com/dotnet/customizing-trimming-in-net-core-5/
+            if (uriType == null) throw new InvalidProgramException("The type System.Uri could not be found. Please consider to protect the class and it's constructor from trimming.");
+            try
+            {
+                result = Activator.CreateInstance(uriType, uri);
+            }
+            catch (MissingMethodException ex)
+            {
+                throw new MissingMethodException("Constructor on type 'System.Uri' not found. Please consider to protect it's constructor from trimming.", ex);
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425

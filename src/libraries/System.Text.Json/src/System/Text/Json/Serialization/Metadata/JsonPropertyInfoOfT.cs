@@ -10,8 +10,6 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
-    /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
-    /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
         private Func<object, T>? _typedGet;
@@ -221,7 +219,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             _effectiveConverter = converter;
             _typedEffectiveConverter = converter;
-            ConverterStrategy = converter.ConverterStrategy;
         }
 
         internal override object? GetValueAsObject(object obj)
@@ -249,7 +246,7 @@ namespace System.Text.Json.Serialization.Metadata
                 value is not null &&
                 !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
-                ConverterStrategy != ConverterStrategy.Value &&
+                EffectiveConverter.ConverterStrategy != ConverterStrategy.Value &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.

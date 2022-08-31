@@ -123,8 +123,8 @@ namespace LibraryImportGenerator.UnitTests
             // Generic collection marshaller has different arity than collection.
             yield return new object[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
-            yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
+            yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 1, 0 };
+            yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingDuplicateElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
