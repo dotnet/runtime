@@ -40,7 +40,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
-        /// <exception cref="ArgumentException"><para>Cannot convert a PAX Global Extended Attributes entry.</para>
+        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the GNU format.</para></exception>
         public GnuTarEntry(TarEntry other)

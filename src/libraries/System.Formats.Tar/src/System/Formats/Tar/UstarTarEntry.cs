@@ -38,7 +38,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="UstarTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the Ustar format.
         /// </summary>
-        /// <exception cref="ArgumentException"><para>Cannot convert a PAX Global Extended Attributes entry.</para>
+        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the Ustar format.</para></exception>
         public UstarTarEntry(TarEntry other)
