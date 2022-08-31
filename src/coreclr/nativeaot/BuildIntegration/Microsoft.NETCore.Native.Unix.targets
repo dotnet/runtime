@@ -52,7 +52,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
-      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' == ''" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(TargetOS)' == 'OSX'" />
@@ -64,10 +64,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
-      <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" Condition="'$(StaticICULinking)' != ''"/>
-      <DirectPInvoke Include="libSystem.Globalization.Native" Condition="'$(StaticICULinking)' != ''"/>
+      <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" Condition="'$(StaticICULinking)' == 'true'"/>
+      <DirectPInvoke Include="libSystem.Globalization.Native" Condition="'$(StaticICULinking)' == 'true'"/>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
-      <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -Wl,-Bdynamic" Condition="'$(StaticICULinking)' != ''" />
+      <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -Wl,-Bdynamic" Condition="'$(StaticICULinking)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
@@ -77,7 +77,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
-    <Exec Command="$(IlcHostPackagePath)/source_code/libs/System.Globalization.Native/static-build/build-nativeaot-shim-standalone.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' != '' and '$(IlcHostPackagePath)' != ''"/>
+    <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Globalization.Native/local-build/build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' == 'true'"/>
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
@@ -96,7 +96,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-lz" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
-      <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' != ''" />
+      <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->

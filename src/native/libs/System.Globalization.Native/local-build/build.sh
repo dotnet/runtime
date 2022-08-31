@@ -10,17 +10,17 @@
 
 # Currently, only Linux is supported
 
-SHIM_SOURCE_DIR=$1/source_code
+SHIM_SOURCE_DIR=$1/native/src
 INTERMEDIATE_OUTPUT_PATH=$2
 
 if [ -d "$SHIM_SOURCE_DIR" ]; then
     LOCAL_SHIM_DIR="$INTERMEDIATE_OUTPUT_PATH"/libs/System.Globalization.Native/build
     mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"
-    if [ $? -ne 0 ]; then echo "build-standalone.sh::ERROR: Cannot use local build directory"; exit 1; fi
-    cmake -S "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/" "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/static-build"
-    if [ $? -ne 0 ]; then echo "build-standalone.sh::ERROR: cmake failed"; exit 1; fi
+    if [ $? -ne 0 ]; then echo "build.sh::ERROR: Cannot use local build directory"; exit 1; fi
+    cmake -S "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/" "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/local-build"
+    if [ $? -ne 0 ]; then echo "build.sh::ERROR: cmake failed"; exit 1; fi
     make VERBOSE=1 -j
-    if [ $? -ne 0 ]; then echo "build-standalone.sh::ERROR: Build failed"; exit 1; fi
+    if [ $? -ne 0 ]; then echo "build.sh::ERROR: Build failed"; exit 1; fi
 fi
 
 exit 0
