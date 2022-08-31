@@ -51,7 +51,7 @@ namespace System.Buffers.Text
             where TTo : unmanaged, IBinaryInteger<TTo>
             where TCasing : struct
         {
-            if (typeof(TFrom) == typeof(TTo) && source.Overlaps(MemoryMarshal.Cast<TTo, TFrom>(destination)))
+            if ((typeof(TFrom) == typeof(TTo) || (Unsafe.SizeOf<TFrom>() * source.Length % Unsafe.SizeOf<TTo>() == 0)) && source.Overlaps(MemoryMarshal.Cast<TTo, TFrom>(destination)))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
             }
@@ -197,7 +197,13 @@ namespace System.Buffers.Text
                 ulong nextBlockAsUInt64 = Unsafe.ReadUnaligned<ulong>(&pSrc[i]);
                 if (SourceIsAscii)
                 {
-                    throw new NotImplementedException();
+                    if (!Utf8Utility.AllBytesInUInt64AreAscii(nextBlockAsUInt64))
+                    {
+                        goto Drain32;
+                    }
+                    nextBlockAsUInt64 = (ConversionIsToUpper)
+                        ? Utf8Utility.ConvertAllAsciiBytesInUInt64ToUppercase(nextBlockAsUInt64)
+                        : Utf8Utility.ConvertAllAsciiBytesInUInt64ToLowercase(nextBlockAsUInt64);
                 }
                 else
                 {
@@ -207,7 +213,7 @@ namespace System.Buffers.Text
                     }
                     nextBlockAsUInt64 = (ConversionIsToUpper)
                         ? Utf16Utility.ConvertAllAsciiCharsInUInt64ToUppercase(nextBlockAsUInt64)
-                        : throw new NotImplementedException();
+                        : Utf16Utility.ConvertAllAsciiCharsInUInt64ToLowercase(nextBlockAsUInt64);
                 }
 
                 if (ConversionIsWidthPreserving)
@@ -250,7 +256,13 @@ namespace System.Buffers.Text
                 uint nextBlockAsUInt32 = Unsafe.ReadUnaligned<uint>(&pSrc[i]);
                 if (SourceIsAscii)
                 {
-                    throw new NotImplementedException();
+                    if (!Utf8Utility.AllBytesInUInt32AreAscii(nextBlockAsUInt32))
+                    {
+                        goto DrainRemaining;
+                    }
+                    nextBlockAsUInt32 = (ConversionIsToUpper)
+                        ? Utf8Utility.ConvertAllAsciiBytesInUInt32ToUppercase(nextBlockAsUInt32)
+                        : Utf8Utility.ConvertAllAsciiBytesInUInt32ToLowercase(nextBlockAsUInt32);
                 }
                 else
                 {

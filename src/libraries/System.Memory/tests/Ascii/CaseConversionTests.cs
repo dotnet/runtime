@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -23,9 +24,9 @@ namespace System.Buffers.Text.Tests
             Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(byteBuffer.AsSpan(1, 3), byteBuffer.AsSpan(3, 5), out _, out _));
             // byte -> char
             Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer), out _, out _));
-            Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer).Slice(3, 5), out _, out _));
+            Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer).Slice(1, 3), out _, out _));
             Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer), out _, out _));
-            Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer).Slice(3, 5), out _, out _));
+            Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(byteBuffer, MemoryMarshal.Cast<byte, char>(byteBuffer).Slice(1, 3), out _, out _));
             // char -> char
             Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(charBuffer, charBuffer, out _, out _));
             Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(charBuffer.AsSpan(1, 3), charBuffer.AsSpan(3, 5), out _, out _));
@@ -33,9 +34,9 @@ namespace System.Buffers.Text.Tests
             Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(charBuffer.AsSpan(1, 3), charBuffer.AsSpan(3, 5), out _, out _));
             // char -> byte
             Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer), out _, out _));
-            Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer).Slice(3, 5), out _, out _));
+            Assert.Throws<InvalidOperationException>(() => Ascii.ToLower(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer).Slice(1, 3), out _, out _));
             Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer), out _, out _));
-            Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer).Slice(3, 5), out _, out _));
+            Assert.Throws<InvalidOperationException>(() => Ascii.ToUpper(charBuffer, MemoryMarshal.Cast<char, byte>(charBuffer).Slice(1, 3), out _, out _));
         }
 
         private static void VerifySingleChar<T>(OperationStatus status, int value, T expected, T actual, int consumed, int written)
@@ -67,7 +68,7 @@ namespace System.Buffers.Text.Tests
             for (int i = 0; i <= byte.MaxValue; i++)
             {
                 byte expectedToLower = char.IsBetween((char)i, 'A', 'Z') ? (byte)(i - 'A' + 'a') : (byte)i;
-                byte expectedToUpper= char.IsBetween((char)i, 'a', 'z') ? (byte)(i + 'A' + 'a') : (byte)i;
+                byte expectedToUpper = char.IsBetween((char)i, 'a', 'z') ? (byte)(i + 'A' - 'a') : (byte)i;
 
                 byte[] sourceByte = new byte[1] { (byte)i };
 
@@ -93,7 +94,7 @@ namespace System.Buffers.Text.Tests
             for (int i = 0; i <= char.MaxValue; i++)
             {
                 char expectedLower = char.IsBetween((char)i, 'A', 'Z') ? (char)(i - 'A' + 'a') : (char)i;
-                char expectedUpper = char.IsBetween((char)i, 'a', 'z') ? (char)(i + 'A' + 'a') : (char)i;
+                char expectedUpper = char.IsBetween((char)i, 'a', 'z') ? (char)(i + 'A' - 'a') : (char)i;
 
                 sourceChar[0] = (char)i;
 
@@ -119,6 +120,11 @@ namespace System.Buffers.Text.Tests
             byte[] sourceBytes = System.Text.Encoding.ASCII.GetBytes(sourceChars);
             byte[] destinationBytes = new byte[sourceBytes.Length];
 
+            if (sourceBytes[0] <= MaxValidAsciiChar)
+            {
+                sourceBytes[0] = MaxValidAsciiChar + 1; // ensure the first byte is invalid (U+00C0 is mapped to valid ascii char by ASCII.GetBytes)
+            }
+
             // char => char
             Verify(Ascii.ToLower(sourceChars, destinationChars, out int consumed, out int written), consumed, written);
             Verify(Ascii.ToUpper(sourceChars, destinationChars, out consumed, out written), consumed, written);
@@ -140,13 +146,30 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        public static IEnumerable<object[]> MultipleValidCharacterConversion_Arguments
+        {
+            get
+            {
+                yield return new object[] { "", "", "" };
+                yield return new object[] { "Hello", "hello", "HELLO" };
+                yield return new object[] { "\rHello\n", "\rhello\n", "\rHELLO\n" };
+                yield return new object[] { "\0xyz\0", "\0xyz\0", "\0XYZ\0" };
+                yield return new object[] { "\0XYZ\0", "\0xyz\0", "\0XYZ\0" };
+                yield return new object[] { "AbCdEFgHIJkLmNoPQRStUVwXyZ", "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
+
+                // exercise all possible code paths
+                for (int i = 1; i <= MaxValidAsciiChar; i++)
+                {
+                    char expectedLower = char.IsBetween((char)i, 'A', 'Z') ? (char)(i - 'A' + 'a') : (char)i;
+                    char expectedUpper = char.IsBetween((char)i, 'a', 'z') ? (char)(i + 'A' - 'a') : (char)i;
+
+                    yield return new object[] { new string((char)i, i), new string(expectedLower, i), new string(expectedUpper, i) };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData("", "", "")]
-        [InlineData("Hello", "hello", "HELLO")]
-        [InlineData("\rHello\n", "\rhello\n", "\rHELLO\n")]
-        [InlineData("\0xyz\0", "\0xyz\0", "\0XYZ\0")]
-        [InlineData("\0XYZ\0", "\0xyz\0", "\0XYZ\0")]
-        [InlineData("AbCdEFgHIJkLmNoPQRStUVwXyZ", "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")] // should hit vectorized code path
+        [MemberData(nameof(MultipleValidCharacterConversion_Arguments))]
         public void MultipleValidCharacterConversion(string sourceChars, string expectedLowerChars, string expectedUpperChars)
         {
             Assert.Equal(sourceChars.Length, expectedLowerChars.Length);
