@@ -468,6 +468,7 @@
       <GroupBuildCmd>$(DotNetCli) msbuild</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) $(MSBuildThisFileFullPath)</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /t:$(TargetToBuild)</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:RunWithGcStress=$(RunWithGcStress)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>

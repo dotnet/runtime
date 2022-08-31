@@ -8,7 +8,7 @@
     <Compile Include="DllImportPathTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <CLRTestBashEnvironmentVariable Include="export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$%28pwd)/Subdirectory" />
+    <CLRTestBashEnvironmentVariable Include="LD_LIBRARY_PATH" Value="$LD_LIBRARY_PATH:$%28pwd)/Subdirectory" />
   </ItemGroup>
   <PropertyGroup>
     <PathEnvSetupCommands><![CDATA[

@@ -31,6 +31,7 @@ function print_usage {
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --useServerGC                    : Enable server GC for this test run'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
+    echo '  --disasmchecks                   : Runs checks on the disassembly output'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
@@ -101,6 +102,7 @@ limitedCoreDumps=
 # Handle arguments
 verbose=0
 ilasmroundtrip=
+disasmchecks=
 printLastResultsOnly=
 runSequential=0
 runincontext=0
@@ -165,6 +167,9 @@ do
             ;;
         --ilasmroundtrip)
             ((ilasmroundtrip = 1))
+            ;;
+        --disasmchecks)
+            ((disasmchecks = 1))
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
@@ -273,6 +278,11 @@ fi
 if [[ -n "$ilasmroundtrip" ]]; then
     echo "Running Ilasm round trip"
     runtestPyArguments+=("--ilasmroundtrip")
+fi
+
+if [[ -n "$disasmchecks" ]]; then
+    echo "Running disasm checks"
+    runtestPyArguments+=("--disasmchecks")
 fi
 
 if (($verbose!=0)); then

@@ -541,14 +541,14 @@ if [ -n "$__TestEnv" ]%3B then
     source $__TestEnv
 fi
 
-$(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 $(IlasmRoundTripBashScript)
-# Allow precommands to override the ExePath
+# Allow test environment variables or precommands to override the ExePath
 ExePath=$(InputAssemblyName)
 export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
+$(BashEnvironmentVariables)
 # PreCommands
 $(BashCLRTestPreCommands)
 # Launch
