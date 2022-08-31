@@ -26,33 +26,6 @@ namespace Microsoft.Interop.JavaScript
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
         internal static readonly string GeneratorVersion = typeof(JSImportGenerator).Assembly.GetName().Version.ToString();
-        internal static bool MethodIsSkipLocalsInit(StubEnvironment env, IMethodSymbol method)
-        {
-            if (env.ModuleSkipLocalsInit)
-            {
-                return true;
-            }
-
-            if (method.GetAttributes().Any(IsSkipLocalsInitAttribute))
-            {
-                return true;
-            }
-
-            for (INamedTypeSymbol type = method.ContainingType; type is not null; type = type.ContainingType)
-            {
-                if (type.GetAttributes().Any(IsSkipLocalsInitAttribute))
-                {
-                    return true;
-                }
-            }
-
-            // We check the module case earlier, so we don't need to do it here.
-
-            return false;
-
-            static bool IsSkipLocalsInitAttribute(AttributeData a)
-                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute;
-        }
 
         public static JSSignatureContext Create(
             IMethodSymbol method,
@@ -71,28 +44,7 @@ namespace Microsoft.Interop.JavaScript
                 stubTypeNamespace = method.ContainingNamespace.ToString();
             }
 
-            string stubTypeFullName = "";
-
-            // Determine containing type(s)
-            ImmutableArray<TypeDeclarationSyntax>.Builder containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
-            INamedTypeSymbol currType = method.ContainingType;
-            while (!(currType is null))
-            {
-                // Use the declaring syntax as a basis for this type declaration.
-                // Since we're generating source for the method, we know that the current type
-                // has to be declared in source.
-                TypeDeclarationSyntax typeDecl = (TypeDeclarationSyntax)currType.DeclaringSyntaxReferences[0].GetSyntax(token);
-                // Remove current members, attributes, and base list so we don't double declare them.
-                typeDecl = typeDecl.WithMembers(List<MemberDeclarationSyntax>())
-                                   .WithAttributeLists(List<AttributeListSyntax>())
-                                   .WithBaseList(null);
-
-                containingTypes.Add(typeDecl);
-
-                stubTypeFullName = currType.Name + (string.IsNullOrEmpty(stubTypeFullName) ? "" : ".") + stubTypeFullName;
-                currType = currType.ContainingType;
-            }
-            stubTypeFullName = stubTypeNamespace == null ? stubTypeFullName : (stubTypeNamespace + "." + stubTypeFullName);
+            string stubTypeFullName = method.ContainingType.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces));
 
             (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, diagnostics, env);
 
@@ -132,10 +84,8 @@ namespace Microsoft.Interop.JavaScript
             {
                 StubReturnType = method.ReturnType.AsTypeSyntax(),
                 ElementTypeInformation = typeInfos,
-                StubTypeNamespace = stubTypeNamespace,
                 TypesHash = typesHash,
                 StubTypeFullName = stubTypeFullName,
-                StubContainingTypes = containingTypes.ToImmutable(),
                 AdditionalAttributes = additionalAttrs.ToImmutable(),
                 MethodName = fullName,
                 QualifiedMethodName = qualifiedName,
@@ -195,12 +145,8 @@ namespace Microsoft.Interop.JavaScript
         }
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
-
-        public string? StubTypeNamespace { get; init; }
         public string? StubTypeFullName { get; init; }
         public int TypesHash { get; init; }
-
-        public ImmutableArray<TypeDeclarationSyntax> StubContainingTypes { get; init; }
 
         public TypeSyntax StubReturnType { get; init; }
 
@@ -239,10 +185,8 @@ namespace Microsoft.Interop.JavaScript
             // We don't check if the generator factories are equal since
             // the generator factory is deterministically created based on the ElementTypeInformation and Options.
             return other is not null
-                && StubTypeNamespace == other.StubTypeNamespace
                 && StubTypeFullName == other.StubTypeFullName
                 && ElementTypeInformation.SequenceEqual(other.ElementTypeInformation)
-                && StubContainingTypes.SequenceEqual(other.StubContainingTypes, (IEqualityComparer<TypeDeclarationSyntax>)SyntaxEquivalentComparer.Instance)
                 && StubReturnType.IsEquivalentTo(other.StubReturnType)
                 && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes, (IEqualityComparer<AttributeListSyntax>)SyntaxEquivalentComparer.Instance)
                 ;
