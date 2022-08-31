@@ -164,7 +164,9 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
         /// <para>-or-</para>
-        /// <para><paramref name="destinationDirectoryName"/> is empty.</para></exception>
+        /// <para><paramref name="destinationDirectoryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="source"/> does not support reading.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles)
         {
