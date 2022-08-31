@@ -25,7 +25,7 @@ namespace System.Formats.Tar
         {
             if (!superStream.CanRead)
             {
-                throw new InvalidOperationException(SR.IO_NotSupported_UnreadableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(superStream));
             }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
