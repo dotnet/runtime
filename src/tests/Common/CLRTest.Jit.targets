@@ -191,6 +191,9 @@ IF NOT DEFINED DoLink (
   ***********************************************************************************************
   SuperPMI collection of CoreCLR tests
   ***********************************************************************************************
+  
+  You shouldn't have to escape characters in a CDATA block, but it appears that you do actually need
+  to escape semicolons with %3B here.
   -->
 
   <Target Name="GetSuperPMICollectionBashScript"
@@ -198,17 +201,17 @@ IF NOT DEFINED DoLink (
     <PropertyGroup>
       <SuperPMICollectionBashScript><![CDATA[
 # SuperPMI collection
-if [[ -v spmi_enable_collection ]];
+if [[ -v spmi_enable_collection ]]%3B
 then
   # spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
-  if [[ ! -v spmi_collect_dir ]];
+  if [[ ! -v spmi_collect_dir ]]%3B
   then
     echo "ERROR - spmi_collect_dir not defined"
     exit 1
   fi
   mkdir -p $spmi_collect_dir
   export spmi_file_extension=so
-  if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ "$OSTYPE" == "darwin"* ]]%3B then
     export spmi_file_extension=dylib
   fi
   export spmi_jitlib=$CORE_ROOT/libclrjit.$spmi_file_extension
