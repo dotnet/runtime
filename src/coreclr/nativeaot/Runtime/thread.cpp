@@ -661,11 +661,13 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     // we may be able to do GC stack walk right where the threads is now,
     // as long as the location is a GC safe point.
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-    if (codeManager->IsSafePoint(pvAddress))
+    if (runtime->IsConservativeStackReportingEnabled() ||
+        codeManager->IsSafePoint(pvAddress))
     {
         // we may not be able to unwind in some locations, such as epilogs.
         // such locations should not contain safe points.
-        ASSERT(codeManager->IsUnwindable(pvAddress));
+        // when scanning conservatively we do not need to unwind
+        ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
