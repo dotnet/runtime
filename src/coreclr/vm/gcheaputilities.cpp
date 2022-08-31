@@ -335,7 +335,7 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     assert(g_gc_load_status == GC_LOAD_STATUS_BEFORE_START);
     g_gc_load_status = GC_LOAD_STATUS_START;
 
-    LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.GCName"), CLRConfig::EXTERNAL_GCName);
+    LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
     if (!standaloneGcLocation)
     {
         return InitializeDefaultGC();
