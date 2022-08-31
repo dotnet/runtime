@@ -63,8 +63,8 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archiveStream = new MemoryStream();
             using WrappedStream wrappedStream = new WrappedStream(archiveStream, canRead: true, canWrite: false, canSeek: false);
-            Assert.Throws<IOException>(() => new TarWriter(wrappedStream));
-            Assert.Throws<IOException>(() => new TarWriter(wrappedStream, TarEntryFormat.V7));
+            Assert.Throws<ArgumentException>(() => new TarWriter(wrappedStream));
+            Assert.Throws<ArgumentException>(() => new TarWriter(wrappedStream, TarEntryFormat.V7));
         }
 
         [Fact]
