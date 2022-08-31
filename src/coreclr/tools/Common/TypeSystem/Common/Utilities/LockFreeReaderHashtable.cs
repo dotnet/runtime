@@ -593,9 +593,7 @@ namespace Internal.TypeSystem
         public TValue GetValueIfExists(TValue value)
         {
             if (value == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException();
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
+                throw new ArgumentNullException(nameof(value));
 
             TValue[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);

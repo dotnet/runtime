@@ -178,9 +178,7 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.Array:
                     {
                         ParseType();
-#pragma warning disable IDE0059 // The value is never used but is informative for other people to know what is being parsed
-                        var rank = ParseCompressedInt();
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
+                        /*var rank = */ParseCompressedInt();
 
                         var boundsCount = ParseCompressedInt();
                         for (int i = 0; i < boundsCount; i++)

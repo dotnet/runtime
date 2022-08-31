@@ -15,8 +15,6 @@ namespace ILCompiler
 {
     public class NativeAotNameMangler : NameMangler
     {
-        private SHA256 _sha256;
-
 #if !READYTORUN
         private readonly bool _mangleForCplusPlus;
 
@@ -50,13 +48,13 @@ namespace ILCompiler
             {
                 char c = s[i];
 
-                if (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))
+                if (char.IsAsciiLetter(c))
                 {
                     sb?.Append(c);
                     continue;
                 }
 
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     // C identifiers cannot start with a digit. Prepend underscores.
                     if (i == 0)
@@ -121,9 +119,7 @@ namespace ILCompiler
                     // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
                     // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
                     // failure.
-                    _sha256 ??= SHA256.Create();
-
-                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                    hash = SHA256.HashData(GetBytesFromString(literal));
                 }
 
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");

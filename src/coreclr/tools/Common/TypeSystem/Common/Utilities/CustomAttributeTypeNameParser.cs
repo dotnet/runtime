@@ -376,9 +376,7 @@ namespace Internal.TypeSystem
             return new StringIterator(s, s.Length);
         }
 
-#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
-        private struct StringIterator
-#pragma warning restore CA1066 // Implement IEquatable when overriding Object.Equals
+        private struct StringIterator : IEquatable<StringIterator>
         {
             private string _string;
             private int _index;
@@ -449,6 +447,11 @@ namespace Internal.TypeSystem
             }
 
             public override int GetHashCode()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Equals(StringIterator other)
             {
                 throw new NotImplementedException();
             }

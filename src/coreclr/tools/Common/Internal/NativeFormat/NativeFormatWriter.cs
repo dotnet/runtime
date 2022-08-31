@@ -396,16 +396,6 @@ namespace Internal.NativeFormat
             }
         }
 
-#if NATIVEFORMAT_COMPRESSION
-        // TODO:
-#else
-        internal struct TypeSignatureCompressor
-        {
-            internal TypeSignatureCompressor(NativeWriter pWriter) { }
-            internal static void Pack(Vertex vertex) { }
-        }
-#endif
-
         private T Unify<T>(T vertex) where T : Vertex
         {
             Vertex existing;
@@ -935,8 +925,6 @@ namespace Internal.NativeFormat
         internal override void Save(NativeWriter writer)
         {
             writer.WriteUnsigned((uint)TypeSignatureKind.External | (_externalTypeId << 4));
-
-            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1301,8 +1289,6 @@ namespace Internal.NativeFormat
         {
             writer.WriteUnsigned((uint)TypeSignatureKind.Modifier | ((uint)_modifier << 4));
             _param.Save(writer);
-
-            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1337,8 +1323,6 @@ namespace Internal.NativeFormat
         internal override void Save(NativeWriter writer)
         {
             writer.WriteUnsigned((uint)TypeSignatureKind.Variable | (_variableId << 4));
-
-            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1378,8 +1362,6 @@ namespace Internal.NativeFormat
             _typeDef.Save(writer);
             for (int iArg = 0; iArg < _args.Length; iArg++)
                 _args[iArg].Save(writer);
-
-            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
@@ -1443,8 +1425,6 @@ namespace Internal.NativeFormat
             writer.WriteUnsigned((uint)_lowerBounds.Length);
             foreach (uint b in _lowerBounds)
                 writer.WriteUnsigned(b);
-
-            NativeWriter.TypeSignatureCompressor.Pack(this);
         }
 
         public override int GetHashCode()
