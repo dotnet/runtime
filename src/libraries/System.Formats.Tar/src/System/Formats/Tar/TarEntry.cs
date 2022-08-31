@@ -117,6 +117,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <exception cref="InvalidOperationException">The entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         /// <exception cref="ArgumentNullException">The specified value is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The specified value is empty.</exception>
         public string LinkName
         {
             get => _header._linkName ?? string.Empty;
@@ -126,7 +127,7 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidOperationException(SR.TarEntryHardLinkOrSymLinkExpected);
                 }
-                ArgumentNullException.ThrowIfNull(value);
+                ArgumentException.ThrowIfNullOrEmpty(value);
                 _header._linkName = value;
             }
         }
