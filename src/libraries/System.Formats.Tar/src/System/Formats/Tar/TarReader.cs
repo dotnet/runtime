@@ -27,8 +27,8 @@ namespace System.Formats.Tar
         /// Initializes a <see cref="TarReader"/> instance that can read tar entries from the specified stream, and can optionally leave the stream open upon disposal of this instance.
         /// </summary>
         /// <param name="archiveStream">The stream to read from.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unreadable.</exception>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed, as well as all the non-null <see cref="TarEntry.DataStream"/> instances from the entries that were visited by this reader; <see langword="true"/> to leave all the streams open.</param>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> does not support reading.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         public TarReader(Stream archiveStream, bool leaveOpen = false)
         {
@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        /// Disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
@@ -68,7 +68,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public async ValueTask DisposeAsync()
