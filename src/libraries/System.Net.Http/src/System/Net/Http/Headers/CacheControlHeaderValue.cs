@@ -367,7 +367,7 @@ namespace System.Net.Http.Headers
             return (CacheControlHeaderValue)CacheControlHeaderParser.Parser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out CacheControlHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out CacheControlHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
