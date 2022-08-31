@@ -943,7 +943,10 @@ namespace JavaScriptTestHelperNamespace
     public partial class JavaScriptTestHelper
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) => message + "11";
+        public static string EchoString(string message) 
+        {
+            return message + "11";
+        }
 
         public partial class NestedClass
         {
@@ -1014,7 +1017,10 @@ namespace JavaScriptTestHelperNamespace
         public partial struct NestedStruct
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
-            public static string EchoString(string message) => message + "24";
+            public static string EchoString(string message)
+            {
+                return message + "24";
+            }
         }
 
         public partial record struct NestedRecordStruct
@@ -1080,7 +1086,10 @@ namespace JavaScriptTestHelperNamespace
         public partial record struct NestedRecordStruct
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
-            public static string EchoString(string message) => message + "45";
+            public static string EchoString(string message)
+            {
+                return message + "45";
+            }
         }
     }
 }
