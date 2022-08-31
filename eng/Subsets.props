@@ -62,7 +62,7 @@
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
-    <DefaultMonoSubsets Condition="'$(PrimaryRuntimeFlavor)' == 'Mono'">$(DefaultMonoSubsets)mono.tools+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'Mono'">$(DefaultMonoSubsets)mono.tools+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
