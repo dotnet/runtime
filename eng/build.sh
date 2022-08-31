@@ -31,7 +31,7 @@ usage()
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
   echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
-  echo "  --distrorid <rid>               Optional argument that overrides the target rid name."
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -403,13 +403,12 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
-     -distrorid)
+     -outputrid)
       if [ -z ${2+x} ]; then
-        echo "No value for distrorid is supplied. See help (--help) for supported values." 1>&2
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      __DistroRid="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      arguments="$arguments /p:OutputRid=$__DistroRid"
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       shift 2
       ;;
 
