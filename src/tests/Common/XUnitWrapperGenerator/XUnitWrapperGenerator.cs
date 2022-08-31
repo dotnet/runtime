@@ -162,13 +162,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
-        foreach (ITestInfo test in testInfos)
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+
+        if (testInfos.Length > 0)
         {
-            builder.AppendLine(test.GenerateTestExecution(reporter));
+            // Break tests into groups of 100 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
+                    testsLeftInCurrentTestExecutor = 100; // Break test executors into groups of 100, which empircally seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
         }
 
         builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput(""{assemblyName}""));");
         builder.AppendLine("return 100;");
+
+        builder.Append(testExecutorBuilder);
 
         return builder.ToString();
     }
@@ -193,13 +216,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
-        foreach (ITestInfo test in testInfos)
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+
+        if (testInfos.Length > 0)
         {
-            builder.AppendLine(test.GenerateTestExecution(reporter));
+            // Break tests into groups of 100 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
+                    testsLeftInCurrentTestExecutor = 100; // Break test executors into groups of 100, which empircally seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
         }
 
         builder.AppendLine("return summary;");
         builder.AppendLine("}");
+
+        builder.Append(testExecutorBuilder);
 
         return builder.ToString();
     }
