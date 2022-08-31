@@ -4765,9 +4765,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     // Duplicate the condition and invert it
     GenTree* cond = gtCloneExpr(last->gtGetOp1());
-    cond->gtFlags |= GTF_DONT_CSE;
-    cond->gtFlags ^= GTF_RELOP_JMP_USED;
-    cond->gtFlags ^= GTF_RELOP_NAN_UN;
     cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
 
     // Create a select node.
