@@ -561,10 +561,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 case TYP_SIMD12:
                 case TYP_SIMD16:
                 {
-                    simd16_t constValue = vecCon->gtSimd16Val;
+                    simd16_t constValue = {};
 
-                    if (tree->TypeGet() == TYP_SIMD12)
-                        constValue.u32[3] = 0;
+                    if (vecCon->TypeIs(TYP_SIMD12))
+                        memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
+                    else
+                        constValue = vecCon->gtSimd16Val;
 
                     CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
