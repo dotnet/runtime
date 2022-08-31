@@ -288,6 +288,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, hardLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => hardLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => hardLink.LinkName = string.Empty);
             hardLink.LinkName = TestLinkName;
         }
 
@@ -300,6 +302,7 @@ namespace System.Formats.Tar.Tests
             // LinkName
             Assert.Equal(DefaultLinkName, symbolicLink.LinkName);
             Assert.Throws<ArgumentNullException>(() => symbolicLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => symbolicLink.LinkName = string.Empty);
             symbolicLink.LinkName = TestLinkName;
         }
 
