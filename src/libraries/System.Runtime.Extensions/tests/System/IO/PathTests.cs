@@ -254,6 +254,9 @@ namespace System.IO.Tests
                     Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // file not directory
                     File.Delete(badTemp);
                     Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // non existent
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, "|||");
+                    Assert.Throws<IOException>(() => Path.GetTempFileName()); // non existent
                 }
                 finally
                 {
