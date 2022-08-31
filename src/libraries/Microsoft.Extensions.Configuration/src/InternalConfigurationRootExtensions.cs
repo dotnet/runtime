@@ -22,14 +22,48 @@ namespace Microsoft.Extensions.Configuration
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+            var optimizedProviders = new List<ConfigurationProvider>();
+            bool allProvidersAreOptimized = true;
+            foreach (IConfigurationProvider provider in providers)
+            {
+                // If a IConfigurationProvider inherit from ConfigurationProvider, but override the implementation GetChildKeys
+                // To make sure we get the expected keys, we should honor the override and go the legacy path.
+                Type type = provider.GetType();
+                if (provider is not ConfigurationProvider optimizedProvider
+                    || type.GetMethod(nameof(provider.GetChildKeys))?.DeclaringType == type)
+                {
+                    allProvidersAreOptimized = false;
+                    break;
+                }
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(key => key, ConfigurationKeyComparer.Instance)
+                optimizedProviders.Add(optimizedProvider);
+            }
+
+            IEnumerable<string> allKeys;
+            if (allProvidersAreOptimized)
+            {
+                // Optimized implementation: each provider return keys via yield return
+                // No re-create the accumulated list, No sort,
+                // Note P = number of providers, K = max number of keys per provider,
+                // The time complexity is O(K*P*log(K*P))
+                allKeys = optimizedProviders
+                    .SelectMany(p => p.GetChildKeysInternal(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(key => key, ConfigurationKeyComparer.Instance);
+            }
+            else
+            {
+                // Legacy implementation: accumulate keys by passing the partial keys from one provider to the next,
+                // If each provider re-create the accumulated list and sort inside,
+                // the time complexity is O(K*P^2*log(K*P))
+                allKeys = providers
+                    .Aggregate(Enumerable.Empty<string>(),
+                        (seed, source) => source.GetChildKeys(seed, path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+            }
+
+            IEnumerable<IConfigurationSection> children = allKeys
                 .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
-
             if (reference is null)
             {
                 return children;

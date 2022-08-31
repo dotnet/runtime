@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -62,6 +63,19 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
+            var results = GetChildKeysInternal(parentPath).ToList();
+            results.AddRange(earlierKeys);
+            results.Sort(ConfigurationKeyComparer.Comparison);
+            return results;
+        }
+
+        /// <summary>
+        /// Returns the list of keys that this provider has.
+        /// </summary>
+        /// <param name="parentPath">The path for the parent IConfiguration.</param>
+        /// <returns>The list of keys for this provider.</returns>
+        internal IEnumerable<string> GetChildKeysInternal(string? parentPath)
+        {
             if (parentPath is null)
             {
                 foreach (KeyValuePair<string, string?> kv in Data)
@@ -82,11 +96,6 @@ namespace Microsoft.Extensions.Configuration
                         yield return Segment(kv.Key, parentPath.Length + 1);
                     }
                 }
-            }
-
-            foreach (string key in earlierKeys)
-            {
-                yield return key;
             }
         }
 
