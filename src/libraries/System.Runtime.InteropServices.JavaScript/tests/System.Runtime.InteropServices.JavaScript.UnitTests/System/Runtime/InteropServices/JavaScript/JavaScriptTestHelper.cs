@@ -940,6 +940,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 namespace JavaScriptTestHelperNamespace
 {
+
+
+
+
+
+
+    
+
+
+    
     public partial class JavaScriptTestHelper
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]

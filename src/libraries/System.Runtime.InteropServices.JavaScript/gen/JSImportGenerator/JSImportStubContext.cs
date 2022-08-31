@@ -18,13 +18,14 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSSignatureContext : IEquatable<JSSignatureContext>
     {
-        private static SymbolDisplayPartKind[] nameKinds = new[]
-        {
-            SymbolDisplayPartKind.ClassName,
-            SymbolDisplayPartKind.StructName,
-            SymbolDisplayPartKind.RecordClassName,
-            SymbolDisplayPartKind.RecordStructName
-        };
+        private static SymbolDisplayFormat typeNameFormat { get; } = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions:
+                SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+                SymbolDisplayMiscellaneousOptions.UseSpecialTypes
+        );
 
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
@@ -129,7 +130,7 @@ namespace Microsoft.Interop.JavaScript
             int typesHash = Math.Abs((int)hash);
 
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            string qualifiedName = GetQualifiedName(env, method);
+            string qualifiedName = GetFullyQualifiedMethodName(env, method);
 
             return new JSSignatureContext()
             {
@@ -147,52 +148,15 @@ namespace Microsoft.Interop.JavaScript
             };
         }
 
-        private static string GetQualifiedName(StubEnvironment env, IMethodSymbol method)
+        private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
         {
-            bool isFirstTypeName = true;
-            string? namespaceName = null;
-            string? className;
-            StringBuilder nameBuilder = new StringBuilder();
-            ImmutableArray<SymbolDisplayPart> nameParts = method.ContainingType.ToDisplayParts();
-            foreach (SymbolDisplayPart namePart in nameParts)
-            {
-                if (namePart.Kind == SymbolDisplayPartKind.NamespaceName)
-                {
-                    if (!isFirstTypeName)
-                        throw new InvalidOperationException($"Found namespace name '{namePart}' after some type names '{nameBuilder}'");
+            // Mono style nested class name format.
+            string typeName = method.ContainingType.ToDisplayString(typeNameFormat).Replace(".", "/");
 
-                    if (nameBuilder.Length != 0)
-                        nameBuilder.Append('.');
+            if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
+                typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
 
-                    nameBuilder.Append(namePart);
-                }
-                else if (Array.IndexOf(nameKinds, namePart.Kind) >= 0)
-                {
-                    if (isFirstTypeName)
-                    {
-                        namespaceName = nameBuilder.ToString();
-                        nameBuilder.Clear();
-                        isFirstTypeName = false;
-                    }
-
-                    if (nameBuilder.Length != 0)
-                        nameBuilder.Append('/');
-
-                    nameBuilder.Append(namePart);
-                }
-                else if (namePart.Kind != SymbolDisplayPartKind.Punctuation)
-                {
-                    throw new InvalidOperationException($"Name kind '{namePart.Kind}' should be reached");
-                }
-            }
-
-            if (isFirstTypeName)
-                throw new InvalidOperationException($"Type name not found in '{nameParts}'");
-            else
-                className = nameBuilder.ToString();
-
-            string qualifiedClassName = namespaceName == null ? className : namespaceName + "." + className;
-            return $"[{env.Compilation.AssemblyName}]{qualifiedClassName}:{method.Name}";
+            return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
         }
 
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
