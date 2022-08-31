@@ -317,8 +317,14 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
 
-echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+# Change to runtime config check
+if [[ -n "$(BashDisasmOutputFile)" ]]; then
+  echo $LAUNCHER $ExePath $(printf "'%s' " "${CLRTestExecutionArguments[@]}") \> $(BashDisasmOutputFile)
+  $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}" > $(BashDisasmOutputFile)
+else
+  echo $LAUNCHER $ExePath $(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+  $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+fi
 
 CLRTestExitCode=$?
 
@@ -427,11 +433,17 @@ echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecuti
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
-    </PropertyGroup>
 
+      <BashCLRTestPostCommands><![CDATA[
+$(BashDisasmCheckPostCommands)
+$(CLRTestBashPostCommands)
+      ]]></BashCLRTestPostCommands>
+
+    </PropertyGroup>
     <PropertyGroup>
       <BashEnvironmentVariables>
-@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
+@(CLRTestBashEnvironmentVariable -> export %(Identity)=%(Value)', '%0a')
+@(CLRTestEnvironmentVariable -> export %(Identity)=%(Value)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
 

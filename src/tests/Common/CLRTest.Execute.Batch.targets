@@ -301,8 +301,16 @@ $(BatchIlrtTestLaunchCmds)
 if defined RunCrossGen (
   call :TakeLock
 )
-ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% $(BatchDisasmOutputRedir)
-%LAUNCHER% %ExePath% %CLRTestExecutionArguments% $(BatchDisasmOutputRedir)
+
+REM Change to runtime config check
+if NOT "$(BatchDisasmOutputFile)"=="" (
+  ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% ^> $(BatchDisasmOutputFile)
+  %LAUNCHER% %ExePath% %CLRTestExecutionArguments% > $(BatchDisasmOutputFile)
+) ELSE (
+  ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+  %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+)
+
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen (
   call :ReleaseLock

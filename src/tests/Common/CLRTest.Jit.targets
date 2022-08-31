@@ -23,6 +23,7 @@ WARNING:   When setting properties based on their current state (for example:
   <PropertyGroup>
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetIlasmRoundTripBashScript;GetDisasmCheckBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript;GetDisasmCheckBatchScript</BatchScriptSnippetGen>
+  </PropertyGroup>
 
   <!--
   ***********************************************************************************************
@@ -186,7 +187,7 @@ IF NOT DEFINED DoLink (
   </Target>
 
   <Target Name="GetDisasmCheckBashScript"
-          Returns="$(BashDisasmOutputRedir);$(BashDisasmCheckPostCommands)">
+          Returns="$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)">
     <ItemGroup>
       <BashDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
@@ -194,16 +195,14 @@ IF NOT DEFINED DoLink (
       <DoBashDisasmCheck>false</DoBashDisasmCheck>
       <DoBashDisasmCheck Condition="@(BashDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</DoBashDisasmCheck>
 
-      <BashDisasmOutputFile>%scriptPath%/__jit_disasm.out</BashDisasmOutputFile>
-
-      <BashDisasmOutputRedir></BashDisasmOutputRedir>
-      <BashDisasmOutputRedir Condition="'$(DoBashDisasmCheck)' == 'true'">&gt; "$(BashDisasmOutputFile)"</BashDisasmOutputRedir>
+      <BashDisasmOutputFile></BashDisasmOutputFile>
+      <BashDisasmOutputFile Condition="'$(DoBashDisasmCheck)' == 'true'">%scriptPath%/__jit_disasm.out</BashDisasmOutputFile>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(DoBashDisasmCheck)' == 'true'"><![CDATA[
 @(BashDisasmCheckFile -> 'FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BashDisasmOutputFile)"
 ERRORLEVEL=$?
-if [ $ERRORLEVEL -ne 0 ]
+if [[ $ERRORLEVEL -ne 0 ]];
 then
   echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
   exit 1
@@ -214,7 +213,7 @@ fi
   </Target>
 
   <Target Name="GetDisasmCheckBatchScript"
-          Returns="$(BatchDisasmOutputRedir);$(BatchDisasmCheckPostCommands)">
+          Returns="$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)">
     <ItemGroup>
       <BatchDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
@@ -222,10 +221,8 @@ fi
       <DoBatchDisasmCheck>false</DoBatchDisasmCheck>
       <DoBatchDisasmCheck Condition="@(BatchDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</DoBatchDisasmCheck>
 
-      <BatchDisasmOutputFile>%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
-
-      <BatchDisasmOutputRedir></BatchDisasmOutputRedir>
-      <BatchDisasmOutputRedir Condition="'$(DoBatchDisasmCheck)' == 'true'">&gt; "$(BatchDisasmOutputFile)"</BatchDisasmOutputRedir>
+      <BatchDisasmOutputFile></BatchDisasmOutputFile>
+      <BatchDisasmOutputFile Condition="'$(DoBatchDisasmCheck)' == 'true'">%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(DoBatchDisasmCheck)' == 'true'"><![CDATA[
