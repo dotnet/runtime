@@ -51,3 +51,4 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - buildwasmapps
+
