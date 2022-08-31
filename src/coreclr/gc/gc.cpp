@@ -4473,8 +4473,12 @@ public:
         return ((ArrayBase *)this)->GetNumComponents();
     }
 
-    void Validate(BOOL bDeep=TRUE)
+    void Validate(BOOL bDeep=TRUE, BOOL bVerifyNextHeader = FALSE, BOOL bVerifySyncBlock = FALSE)
     {
+        // declaration of extra parameters just so the call site would need no #ifdefs
+        UNREFERENCED_PARAMETER(bVerifyNextHeader);
+        UNREFERENCED_PARAMETER(bVerifySyncBlock);
+
         MethodTable * pMT = GetMethodTable();
 
         _ASSERTE(pMT->SanityCheck());
