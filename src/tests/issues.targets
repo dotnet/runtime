@@ -4069,8 +4069,8 @@
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
+           <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
@@ -4120,6 +4120,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
