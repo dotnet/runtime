@@ -2122,7 +2122,8 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         return true;
     }
     // Can the child be contained.
-    else if (IsSafeToContainMem(parent, child))
+    else if (IsSafeToContainMem(parent, child) && varTypeIsIntegral(child->gtGetOp1()) &&
+             varTypeIsIntegral(child->gtGetOp2()))
     {
         if (child->OperIs(GT_AND))
         {
