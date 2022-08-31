@@ -344,6 +344,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				lambda ();
 			}
 
+			static void LambdaCallsPInvokeTakingPrimitiveType ()
+			{
+				var lambda = () => MethodTakingPrimitiveType (42);
+				lambda ();
+			}
+
+			static void LambdaCallsPInvokeTakingObject ()
+			{
+				var lambda =
+				[ExpectedWarning ("IL2050")]
+				[ExpectedWarning ("IL2119", "<" + nameof (LambdaCallsPInvokeTakingObject) + ">",
+					ProducedBy = ProducedBy.Trimmer)]
+				() => MethodTakingObject (null);
+				lambda ();
+			}
+
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLambdas--")]
@@ -374,6 +390,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			[ExpectedWarning ("IL2118", "<" + nameof (LambdaCallsPInvokeTakingObject) + ">",
+				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaCallsMethodWithRequires) + ">",
 				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCorrectDataflow) + ">",
@@ -463,6 +481,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				LocalFunction ();
 			}
 
+			static void LocalFunctionCallsPInvokeTakingPrimitiveType ()
+			{
+				void LocalFunction () => MethodTakingPrimitiveType (42);
+				LocalFunction ();
+			}
+
+			static void LocalFunctionCallsPInvokeTakingObject ()
+			{
+				[ExpectedWarning ("IL2050")]
+				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionCallsPInvokeTakingObject) + ">",
+					ProducedBy = ProducedBy.Trimmer)]
+				void LocalFunction () => MethodTakingObject (null);
+				LocalFunction ();
+			}
+
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLocalFunctions--")]
@@ -499,6 +532,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			[ExpectedWarning ("IL2118", nameof (LocalFunctionCallsPInvokeTakingObject),
+				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionCallsMethodWithRequires),
 				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionWithCorrectDataflow),
@@ -644,5 +679,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 		static Type GetAll () => null;
+
+		[DllImport ("Foo")]
+		static extern int MethodTakingPrimitiveType (int num);
+
+		[DllImport ("Foo")]
+		static extern void MethodTakingObject ([MarshalAs (UnmanagedType.IUnknown)] object obj);
 	}
 }
