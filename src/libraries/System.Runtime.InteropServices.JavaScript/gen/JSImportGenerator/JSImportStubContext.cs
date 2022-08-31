@@ -18,12 +18,9 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSSignatureContext : IEquatable<JSSignatureContext>
     {
-        private static SymbolDisplayFormat typeNameFormat { get; } = new SymbolDisplayFormat(
+        private static SymbolDisplayFormat s_typeNameFormat { get; } = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-            miscellaneousOptions:
-                SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
-                SymbolDisplayMiscellaneousOptions.UseSpecialTypes
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes
         );
 
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
@@ -150,7 +147,7 @@ namespace Microsoft.Interop.JavaScript
         private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
         {
             // Mono style nested class name format.
-            string typeName = method.ContainingType.ToDisplayString(typeNameFormat).Replace(".", "/");
+            string typeName = method.ContainingType.ToDisplayString(s_typeNameFormat).Replace(".", "/");
 
             if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
                 typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
