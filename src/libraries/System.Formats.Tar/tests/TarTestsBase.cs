@@ -447,7 +447,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => typeof(UstarTarEntry),
                 TarEntryFormat.Pax => typeof(PaxTarEntry),
                 TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+                _ => throw new InvalidDataException($"Unrecognized format: {expectedFormat}"),
             };
         }
 
@@ -483,7 +483,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+                _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
 
         public static IEnumerable<object[]> GetFormatsAndLinks()
