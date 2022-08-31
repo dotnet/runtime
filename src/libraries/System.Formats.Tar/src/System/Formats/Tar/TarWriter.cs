@@ -376,7 +376,7 @@ namespace System.Formats.Tar
             {
                 if (string.IsNullOrEmpty(linkName))
                 {
-                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                    throw new ArgumentException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty, "entry");
                 }
             }
         }
