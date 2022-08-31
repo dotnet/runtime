@@ -34,4 +34,11 @@ variables:
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
     value: Debug
 
+- name: isDefaultPipeline
+  value: $[ and(
+              ne(variables['isWasmOnlyBuild'], true),
+              or(
+                ne(variables['isExtraPlatformsBuild'], true),
+                eq(variables['isRollingBuild'], true))) ]
+
 - template: /eng/pipelines/common/perf-variables.yml
