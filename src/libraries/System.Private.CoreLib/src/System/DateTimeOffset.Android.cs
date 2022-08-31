@@ -11,64 +11,60 @@ namespace System
         private static readonly object s_localUtcOffsetLock = new();
         private static Thread? s_loadAndroidTZData;
 
-        // TryGetNowOffset is a helper function on Android responsible for:
-        // 1) quickly returning a fast path offset when first called
-        // 2) starting a background thread to pursue the original implementation
+        // Now on Android does the following
+        // 1) quickly returning a fast path result when first called if the right AppContext data element is set
+        // 2) starting a background thread to load TimeZoneInfo local cache
         //
         // On Android, loading AndroidTZData is expensive for startup performance.
         // The fast result relies on `System.TimeZoneInfo.LocalDateTimeOffset` being set
         // in the App Context's properties as the appropriate local date time offset from UTC.
         // monovm_initialize(_preparsed) can be leveraged to do so.
         // However, to handle timezone changes during the app lifetime, AndroidTZData needs to be loaded.
-        // So, on first call, we return the fast path and start a background thread to pursue the original
-        // implementation which eventually loads AndroidTZData.
-
-        private static TimeSpan TryGetNowOffset()
-        {
-            if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
-                return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
-
-            if (!s_androidTZDataLoaded && s_loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
-            {
-                lock (s_localUtcOffsetLock)
-                {
-                    // GetLocalUtcOffset may be called multiple times before a cache is loaded and a background thread is running,
-                    // once the lock is available, check for a cache and background thread.
-                    if (s_androidTZDataLoaded)
-                        return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
-
-                    if (s_loadAndroidTZData == null)
-                    {
-                        s_loadAndroidTZData = new Thread(() => {
-                            Thread.Sleep(1000); // Delay the background thread to avoid impacting startup, if it still coincides, startup is already perceived as slow
-                            _ = TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
-                            lock (s_localUtcOffsetLock)
-                            {
-                                s_androidTZDataLoaded = true;
-                                s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
-                            }
-                        });
-                        s_loadAndroidTZData.IsBackground = true;
-                        s_loadAndroidTZData.Start();
-                    }
-                }
-            }
-
-            object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
-            if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
-                return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
-
-            int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
-            TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
-            return offset;
-        }
-
+        // So, on first call, we return the fast path and start a background thread to load
+        // the TimeZoneInfo Local cache implementation which loads AndroidTZData.
         public static DateTimeOffset Now
         {
             get
             {
                 DateTime utcDateTime = DateTime.UtcNow;
-                TimeSpan offset = TryGetNowOffset();
+
+                if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
+                    return ToLocalTime(utcDateTime, true);
+
+                if (!s_androidTZDataLoaded && s_loadAndroidTZData == null) // The cache isn't loaded and no background thread has been created
+                {
+                    lock (s_localUtcOffsetLock)
+                    {
+                        // Now may be called multiple times before a cache is loaded and a background thread is running,
+                        // once the lock is available, check for a cache and background thread.
+                        if (s_androidTZDataLoaded)
+                            return ToLocalTime(utcDateTime, true);
+
+                        if (s_loadAndroidTZData == null)
+                        {
+                            s_loadAndroidTZData = new Thread(() => {
+                                // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
+                                Thread.Sleep(1000);
+                                _ = TimeZoneInfo.Local; // Load AndroidTZData
+                                lock (s_localUtcOffsetLock)
+                                {
+                                    s_androidTZDataLoaded = true;
+                                    s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
+                                }
+                            });
+                            s_loadAndroidTZData.IsBackground = true;
+                            s_loadAndroidTZData.Start();
+                        }
+                    }
+                }
+
+                object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
+                if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
+                    return ToLocalTime(utcDateTime, true);
+
+                // Fast path obtained offset incorporated into ToLocalTime(DateTime.UtcNow, true) logic
+                int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
+                TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
                 long localTicks = utcDateTime.Ticks + offset.Ticks;
                 if (localTicks < DateTime.MinTicks || localTicks > DateTime.MaxTicks)
                     throw new ArgumentException(SR.Arg_ArgumentOutOfRangeException);
