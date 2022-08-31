@@ -4648,8 +4648,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* last = block->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
-    if (!last->gtGetOp1()->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0 ||
-        (last->gtGetOp1()->gtFlags & GTF_COLON_COND) != 0)
+    if (!last->gtGetOp1()->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return false;
     }
