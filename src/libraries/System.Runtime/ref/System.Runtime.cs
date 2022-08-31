@@ -7097,6 +7097,18 @@ namespace System.Buffers.Text
         public static int GetIndexOfFirstNonAsciiChar(System.ReadOnlySpan<char> buffer) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool EndsWith(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool EndsWith(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool StartsWith(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool StartsWith(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsConsumed, out int charsWritten) { throw null; }
         public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
