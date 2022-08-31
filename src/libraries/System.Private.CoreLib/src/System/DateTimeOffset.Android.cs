@@ -11,7 +11,7 @@ namespace System
         private static readonly object s_localUtcOffsetLock = new();
         private static Thread? s_loadAndroidTZData;
 
-        // TryGetNow is a helper function on Android responsible for:
+        // TryGetNowOffset is a helper function on Android responsible for:
         // 1) quickly returning a fast path offset when first called
         // 2) starting a background thread to pursue the original implementation
         //
@@ -23,7 +23,7 @@ namespace System
         // So, on first call, we return the fast path and start a background thread to pursue the original
         // implementation which eventually loads AndroidTZData.
 
-        private static TimeSpan TryGetNow()
+        private static TimeSpan TryGetNowOffset()
         {
             if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
                 return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
@@ -40,7 +40,7 @@ namespace System
                     if (s_loadAndroidTZData == null)
                     {
                         s_loadAndroidTZData = new Thread(() => {
-                            Thread.Sleep(1000);
+                            Thread.Sleep(1000); // Delay the background thread to avoid impacting startup, if it still coincides, startup is already perceived as slow
                             _ = TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
                             lock (s_localUtcOffsetLock)
                             {
@@ -55,8 +55,8 @@ namespace System
             }
 
             object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
-            if (localDateTimeOffset == null)
-                return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime); // If no offset property provided through monovm app context, default
+            if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
+                return TimeZoneInfo.GetLocalUtcOffset(DateTime.UtcNow, TimeZoneInfoOptions.NoThrowOnInvalidTime);
 
             int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
             TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
@@ -68,7 +68,7 @@ namespace System
             get
             {
                 DateTime utcDateTime = DateTime.UtcNow;
-                TimeSpan offset = TryGetNow();
+                TimeSpan offset = TryGetNowOffset();
                 long localTicks = utcDateTime.Ticks + offset.Ticks;
                 if (localTicks < DateTime.MinTicks || localTicks > DateTime.MaxTicks)
                     throw new ArgumentException(SR.Arg_ArgumentOutOfRangeException);
