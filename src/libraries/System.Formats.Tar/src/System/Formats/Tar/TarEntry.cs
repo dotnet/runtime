@@ -344,7 +344,7 @@ namespace System.Formats.Tar
             {
                 if (string.IsNullOrEmpty(LinkName))
                 {
-                    throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
                 }
 
                 linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
@@ -516,7 +516,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
                 }
             }
         }

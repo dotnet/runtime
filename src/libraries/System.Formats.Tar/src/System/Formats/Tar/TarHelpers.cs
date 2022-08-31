@@ -228,7 +228,7 @@ namespace System.Formats.Tar
 
         [DoesNotReturn]
         private static void ThrowInvalidNumber() =>
-            throw new FormatException(SR.Format(SR.TarInvalidNumber));
+            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
 
         // Returns the string contained in the specified buffer of bytes,
         // in the specified encoding, removing the trailing null or space chars.
@@ -365,7 +365,7 @@ namespace System.Formats.Tar
 
                 case TarEntryFormat.Unknown:
                 default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
+                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
             throw new ArgumentException(string.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
