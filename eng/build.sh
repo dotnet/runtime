@@ -31,7 +31,7 @@ usage()
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
   echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
-  echo "  --packagerid <rid>              Optional argument that overrides the target rid name."
+  echo "  --distrorid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -135,13 +135,12 @@ initDistroRid()
     local buildArch="$2"
     local isCrossBuild="$3"
     local isPortableBuild="$4"
-    local packageRid="$5"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
     if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} "${packageRid}" ${passedRootfsDir}
+    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
 }
 
 showSubsetHelp()
@@ -154,7 +153,6 @@ cmakeargs=''
 extraargs=''
 crossBuild=0
 portableBuild=1
-packageRid=''
 
 source $scriptroot/native/init-os-and-arch.sh
 
@@ -405,13 +403,13 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
-     -packagerid)
+     -distrorid)
       if [ -z ${2+x} ]; then
-        echo "No value for packagerid is supplied. See help (--help) for supported values." 1>&2
+        echo "No value for distrorid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      packageRid="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      arguments="$arguments /p:PackageRid=$packageRid"
+      __DistroRid="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      arguments="$arguments /p:PackageRid=$__DistroRid"
       shift 2
       ;;
 
@@ -481,7 +479,7 @@ if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
     arch=wasm
 fi
 
-initDistroRid $os $arch $crossBuild $portableBuild "$packageRid"
+initDistroRid $os $arch $crossBuild $portableBuild
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
