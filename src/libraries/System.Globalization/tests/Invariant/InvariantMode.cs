@@ -864,7 +864,6 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IndexOf_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74179", TestRuntimes.Mono)]
         public void TestIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
             foreach (string cul in s_cultureNames)
@@ -912,7 +911,6 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(LastIndexOf_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74179", TestRuntimes.Mono)]
         public void TestLastIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
             foreach (string cul in s_cultureNames)

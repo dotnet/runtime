@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()");
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 

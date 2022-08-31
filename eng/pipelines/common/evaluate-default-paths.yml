@@ -74,7 +74,7 @@ jobs:
       exclude:
       # wasm runtime changes will trigger all wasm jobs anyway
       - src/mono/wasm/*
-      - src/tests/BuildWasmApps/*
+      - src/mono/wasm/*
       - eng/pipelines/common/evaluate-default-paths.yml
     - subset: installer
       include:
@@ -116,8 +116,8 @@ jobs:
     - subset: wasmbuildtests
       include:
       - src/tasks/*
-      - src/tests/BuildWasmApps/Directory.Build*
-      - src/tests/BuildWasmApps/Wasm.Build.Tests/*
+      - src/mono/wasm/Directory.Build*
+      - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/build/*
       - src/mono/wasm/host/*
       - src/mono/wasm/runtime/*
@@ -141,8 +141,8 @@ jobs:
       include:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
-      - src/tests/BuildWasmApps/Directory.Build*
-      - src/tests/BuildWasmApps/Wasm.Debugger.Tests/*
+      - src/mono/wasm/Directory.Build*
+      - src/mono/wasm/debugger/Wasm.Debugger.Tests/*
       - eng/testing/ProvisioningVersions.props
       - src/mono/mono/*
       exclude:

@@ -21,7 +21,7 @@ Example for wasm:
                           VersionBand="$(SdkBandVersion)" />
 ```
 
-- Currently, this is used only by `src/tests/BuildWasmApps/Wasm.Build.Tests`
+- Currently, this is used only by `src/mono/wasm/Wasm.Build.Tests`
 
 ## Multiple runtime packs
 

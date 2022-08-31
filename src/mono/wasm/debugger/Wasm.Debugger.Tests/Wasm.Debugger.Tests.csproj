@@ -24,7 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)src/mono/wasm/debugger/DebuggerTestSuite/DebuggerTestSuite.csproj"
+    <ProjectReference Include="../DebuggerTestSuite/DebuggerTestSuite.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"

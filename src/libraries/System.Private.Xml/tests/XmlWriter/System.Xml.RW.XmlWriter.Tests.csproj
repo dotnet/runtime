@@ -7,5 +7,6 @@
     <Compile Include="WriteWithEncoding.cs" />
     <Compile Include="WriteWithEncodingWithFallback.cs" />
     <Compile Include="WriteWithInvalidSurrogate.cs" />
+    <Compile Include="XmlTextWriterTests.cs" />
   </ItemGroup>
 </Project>

@@ -317,6 +317,7 @@ namespace ILCompiler.Dataflow
 
                             ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
 
+                            bool aotUnsafeDelegate = IsAotUnsafeDelegate(calledMethod.Signature.ReturnType);
                             bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
                             for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
                             {
@@ -327,7 +328,13 @@ namespace ILCompiler.Dataflow
                                         marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
                                 }
 
+                                aotUnsafeDelegate |= IsAotUnsafeDelegate(calledMethod.Signature[paramIndex]);
                                 comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
+                            }
+
+                            if (aotUnsafeDelegate)
+                            {
+                                diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, calledMethod.GetDisplayName());
                             }
 
                             if (comDangerousMethod)
@@ -561,6 +568,13 @@ namespace ILCompiler.Dataflow
             {
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
+        }
+
+        static bool IsAotUnsafeDelegate(TypeDesc parameterType)
+        {
+            TypeSystemContext context = parameterType.Context;
+            return parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate)
+                    || parameterType == context.GetWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate).BaseType;
         }
 
         static bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)
