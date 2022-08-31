@@ -949,24 +949,48 @@ namespace JavaScriptTestHelperNamespace
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
+        
+            public partial class DoubleNestedClass
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "13";
+            }
         }
 
         public partial record class NestedRecordClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
-            public static string EchoString(string message) => message + "13";
+            public static string EchoString(string message) => message + "14";
+
+            public partial record class DoubleNestedRecordClass
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "15";
+            }
         }
 
         public partial struct NestedStruct
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
-            public static string EchoString(string message) => message + "14";
+            public static string EchoString(string message) => message + "16";
+
+            public partial struct DoubleNestedStruct
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "17";
+            }
         }
 
         public partial record struct NestedRecordStruct
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
-            public static string EchoString(string message) => message + "15";
+            public static string EchoString(string message) => message + "18";
+
+            public partial record struct DoubleNestedRecordStruct
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "19";
+            }
         }
     }
 
@@ -1070,24 +1094,48 @@ public partial class JavaScriptTestHelperNoNamespace
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
         public static string EchoString(string message) => message + "52";
+
+        public partial class DoubleNestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "53";
+        }
     }
 
     public partial record class NestedRecordClass
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) => message + "53";
+        public static string EchoString(string message) => message + "54";
+
+        public partial record class DoubleNestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "55";
+        }
     }
 
     public partial struct NestedStruct
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) => message + "54";
+        public static string EchoString(string message) => message + "56";
+
+        public partial struct DoubleNestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "57";
+        }
     }
 
     public partial record struct NestedRecordStruct
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) => message + "55";
+        public static string EchoString(string message) => message + "58";
+
+        public partial record struct DoubleNestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "59";
+        }
     }
 }
 

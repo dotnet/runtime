@@ -180,7 +180,7 @@ namespace Microsoft.Interop.JavaScript
 
                     nameBuilder.Append(namePart);
                 }
-                else
+                else if (namePart.Kind != SymbolDisplayPartKind.Punctuation)
                 {
                     throw new InvalidOperationException($"Name kind '{namePart.Kind}' should be reached");
                 }
