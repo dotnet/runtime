@@ -55,7 +55,6 @@
       CompatibilitySuppressionFilePath="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
-      EnableRuleCannotChangeParameterName="true"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
 
@@ -68,7 +67,6 @@
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard21BaselineFile)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
-      EnableRuleCannotChangeParameterName="true"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
 
@@ -81,7 +79,6 @@
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard20BaselineFile)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
-      EnableRuleCannotChangeParameterName="true"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
 
