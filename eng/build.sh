@@ -409,7 +409,7 @@ while [[ $# > 0 ]]; do
         exit 1
       fi
       __DistroRid="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      arguments="$arguments /p:PackageRid=$__DistroRid"
+      arguments="$arguments /p:OutputRid=$__DistroRid"
       shift 2
       ;;
 
