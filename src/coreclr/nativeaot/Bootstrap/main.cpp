@@ -152,7 +152,7 @@ static int InitializeRuntime()
     if (!RhInitialize())
         return -1;
 
-    RhpEnableConservativeStackReporting();
+    // RhpEnableConservativeStackReporting();
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
 
