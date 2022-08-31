@@ -2412,12 +2412,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd16_t             constValue = vecCon->gtSimd16Val;
+                        simd16_t constValue = vecCon->gtSimd16Val;
 
                         if (tree->TypeGet() == TYP_SIMD12)
                             constValue.u32[3] = 0;
 
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
