@@ -201,10 +201,10 @@ IF NOT DEFINED DoLink (
     <PropertyGroup>
       <SuperPMICollectionBashScript><![CDATA[
 # SuperPMI collection
-if [[ -v spmi_enable_collection ]]%3B
+if [ ! -z $spmi_enable_collection ]%3B
 then
   # spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
-  if [[ ! -v spmi_collect_dir ]]%3B
+  if [ -z $spmi_collect_dir ]%3B
   then
     echo "ERROR - spmi_collect_dir not defined"
     exit 1
