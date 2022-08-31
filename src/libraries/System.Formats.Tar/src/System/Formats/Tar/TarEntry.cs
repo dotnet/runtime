@@ -124,6 +124,7 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidOperationException(SR.TarEntryHardLinkOrSymLinkExpected);
                 }
+                ArgumentNullException.ThrowIfNull(value);
                 _header._linkName = value;
             }
         }
