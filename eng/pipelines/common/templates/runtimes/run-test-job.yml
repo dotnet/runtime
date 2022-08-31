@@ -693,6 +693,18 @@ jobs:
           displayName: Create SuperPMI directories
           condition: always()
 
+      # Temporary? Upload all the downloaded per-Helix MCH files, before the merge step.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(MchFilesLocation)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: 'SuperPMI_PreMerge_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          displayName: 'Upload pre-merge artifacts SuperPMI $(CollectionName)-$(CollectionType)'
+        condition: always()
+
       # Always run merge step even if collection of some partition fails so we can store collection of the partitions that succeeded.
       # If all the partitions fail, merge-mch will fail and we won't run future steps like uploading superpmi collection.
       # This depends on mcs.exe (from artifacts Core_Root or product binaries or PATH).
