@@ -1636,8 +1636,35 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 //
                 //  Copy Assertions
                 //
+                case GT_OBJ:
+                case GT_BLK:
+                {
+                    // TODO-ADDR: delete once local morph folds SIMD-typed indirections.
+                    //
+                    GenTree* const addr = op2->AsIndir()->Addr();
+
+                    if (addr->OperIs(GT_ADDR))
+                    {
+                        GenTree* const base = addr->AsOp()->gtOp1;
+
+                        if (base->OperIs(GT_LCL_VAR) && varTypeIsStruct(base))
+                        {
+                            ClassLayout* const varLayout = base->GetLayout(this);
+                            ClassLayout* const objLayout = op2->GetLayout(this);
+                            if (ClassLayout::AreCompatible(varLayout, objLayout))
+                            {
+                                op2 = base;
+                                goto IS_COPY;
+                            }
+                        }
+                    }
+
+                    goto DONE_ASSERTION;
+                }
+
                 case GT_LCL_VAR:
                 {
+                IS_COPY:
                     //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     //
@@ -3416,7 +3443,14 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
         return false;
     }
 
-    unsigned       lclNum         = tree->AsLclVar()->GetLclNum();
+    // No ZEROOBJ assertions for simd.
+    //
+    if (varTypeIsSIMD(tree))
+    {
+        return false;
+    }
+
+    const unsigned lclNum         = tree->AsLclVar()->GetLclNum();
     AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
     if (assertionIndex == NO_ASSERTION_INDEX)
     {
@@ -3568,6 +3602,20 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
+    // Heuristic: for LclFld prop, don't force the copy or its promoted fields to be in memory.
+    //
+    if (tree->OperIs(GT_LCL_FLD))
+    {
+        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromotedStruct())
+        {
+            return nullptr;
+        }
+        else
+        {
+            lvaSetVarDoNotEnregister(copyLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+    }
+
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
 
@@ -3684,6 +3732,71 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
                 }
             }
         }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_LclFld: try and optimize a local field use via assertions
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - local field use to optimize
+//    stmt       - statement containing the tree
+//
+// Returns:
+//    Updated tree, or nullptr
+//
+// Notes:
+//   stmt may be nullptr during local assertion prop
+//
+GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt)
+{
+    // If we have a var definition then bail or
+    // If this is the address of the var then it will have the GTF_DONT_CSE
+    // flag set and we don't want to to assertion prop on it.
+    if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
+    {
+        return nullptr;
+    }
+
+    // Only run during local prop and if copies are available.
+    //
+    if (!optLocalAssertionProp || !optCanPropLclVar)
+    {
+        return nullptr;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+
+        // See if the variable is equal to another variable.
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if (!curAssertion->CanPropLclVar())
+        {
+            continue;
+        }
+
+        // Copy prop.
+        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
+        {
+            // Perform copy assertion prop.
+            GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            if (newTree != nullptr)
+            {
+                return newTree;
+            }
+        }
+
+        continue;
     }
 
     return nullptr;
@@ -4915,6 +5028,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
     {
         case GT_LCL_VAR:
             return optAssertionProp_LclVar(assertions, tree->AsLclVarCommon(), stmt);
+
+        case GT_LCL_FLD:
+            return optAssertionProp_LclFld(assertions, tree->AsLclVarCommon(), stmt);
 
         case GT_ASG:
             return optAssertionProp_Asg(assertions, tree->AsOp(), stmt);

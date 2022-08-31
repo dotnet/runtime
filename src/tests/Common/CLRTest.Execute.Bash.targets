@@ -313,7 +313,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -322,7 +322,7 @@ $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
@@ -341,7 +341,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -350,7 +350,7 @@ $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
