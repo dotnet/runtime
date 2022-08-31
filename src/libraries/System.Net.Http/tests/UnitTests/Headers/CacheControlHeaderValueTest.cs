@@ -656,6 +656,29 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void TryParse_SetOfInvalidAndValidValueStrings_ReturnsEmptyValue()
+        {
+            // Invalids
+            CheckInvalidParseReturnsValue("no-cache,=");
+            CheckInvalidParseReturnsValue("max-age=123x");
+
+            // Valids
+            CheckValidParseReturnsValue(" , no-store, min-fresh=123");
+            CheckValidParseReturnsValue("");
+            CheckValidParseReturnsValue(null);
+            CheckValidParseReturnsValue(string.Empty);
+        }
+
+        [Fact]
+        public void TryParse_SetOfInvalidValueStrings_ReturnsEmptyValue()
+        {
+            bool parsed = CacheControlHeaderValue.TryParse("no-cache,=", out CacheControlHeaderValue parsedValue);
+            Assert.True(parsed);
+            Assert.IsType<CacheControlHeaderValue>(parsedValue);
+            Assert.False(parsedValue is null);
+        }
+
+        [Fact]
         public void TryParseAndAddRawHeaderValue_AddEmptyAfterValid_NoEmptyValuesAdded()
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
@@ -735,6 +758,22 @@ namespace System.Net.Http.Tests
             CacheControlHeaderValue result = null;
             Assert.False(CacheControlHeaderValue.TryParse(input, out result));
             Assert.Null(result);
+        }
+
+        private static void CheckInvalidParseReturnsValue(string? input)
+        {
+            bool parsed = CacheControlHeaderValue.TryParse(input, out CacheControlHeaderValue parsedValue);
+            Assert.False(parsed);
+            Assert.IsType<CacheControlHeaderValue>(parsedValue);
+            Assert.False(parsedValue is null);
+        }
+
+        private static void CheckValidParseReturnsValue(string? input)
+        {
+            bool parsed = CacheControlHeaderValue.TryParse(input, out CacheControlHeaderValue parsedValue);
+            Assert.True(parsed);
+            Assert.IsType<CacheControlHeaderValue>(parsedValue);
+            Assert.False(parsedValue is null);
         }
         #endregion
     }
