@@ -44,6 +44,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return DateTime.Now;
         }
+
+        // the methods in the region have signature for which we have optimized path in the call marshaler
+        // it's the combination of number of arguments and void vs result
+        // see mono_wasm_bind_js_function and mono_wasm_bind_cs_function
+        #region Optimized
+
         public static int optimizedReached = 0;
         [JSExport]
         public static void Optimized0V()
@@ -78,6 +84,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         [JSImport("invoke2R", "JavaScriptTestHelper")]
         public static partial int invoke2R(int a1, int a2);
+
+        #endregion
 
         [JSImport("create_function", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]

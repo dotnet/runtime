@@ -65,6 +65,7 @@ export function bind_arg_marshal_to_cs(sig: JSMarshalerType, marshaler_type: Mar
     const marshaler_type_res = get_signature_res_type(sig);
     res_marshaler = get_marshaler_to_cs_by_type(marshaler_type_res);
     if (marshaler_type === MarshalerType.Nullable) {
+        // nullable has nested type information, it's stored in res slot of the signature. The marshaler is the same as for non-nullable primitive type.
         marshaler_type = marshaler_type_res;
     }
     const converter = get_marshaler_to_cs_by_type(marshaler_type)!;
