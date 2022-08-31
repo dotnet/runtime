@@ -222,6 +222,7 @@ namespace System.IO
             byte* bytes = stackalloc byte[KeyLength];
             Span<char> span = stackalloc char[13]; // tmpXXXXXX.tmp
 
+            int i = 0;
             while (true)
             {
                 const int KeyLength = 4; // 4 bytes = more than 6 x 5 bits
@@ -249,8 +250,9 @@ namespace System.IO
                 {
                     File.OpenHandle(path, FileMode.CreateNew, FileAccess.Write).Dispose();
                 }
-                catch (IOException)
+                catch (IOException) when (i < 100)
                 {
+                    i++; // If TMP is invalid, don't loop forever
                     continue; // File already exists: very, very unlikely
                 }
 
