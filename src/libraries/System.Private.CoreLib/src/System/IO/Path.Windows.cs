@@ -219,30 +219,31 @@ namespace System.IO
             // Using 32 characters for convenience, that gives us 32^^6 ~= 10^^9 possibilities,
             // but we'll still loop to handle the unlikely case the file already exists.
 
+            const int KeyLength = 4;
             byte* bytes = stackalloc byte[KeyLength];
+
             Span<char> span = stackalloc char[13]; // tmpXXXXXX.tmp
+            span[0] = span[10] = 't';
+            span[1] = span[11] = 'm';
+            span[2] = span[12] = 'p';
+            span[9] = '.';
 
             int i = 0;
             while (true)
             {
-                const int KeyLength = 4; // 4 bytes = more than 6 x 5 bits
-                Interop.GetRandomBytes(bytes, KeyLength);
+                Interop.GetRandomBytes(bytes, KeyLength);  // 4 bytes = more than 6 x 5 bits
 
                 byte b0 = bytes[0];
                 byte b1 = bytes[1];
                 byte b2 = bytes[2];
                 byte b3 = bytes[3];
 
-                span[0] = span[10] = 't';
-                span[1] = span[11] = 'm';
-                span[2] = span[12] = 'p';
                 span[3] = (char)Base32Char[b0 & 0b0001_1111];
                 span[4] = (char)Base32Char[b1 & 0b0001_1111];
                 span[5] = (char)Base32Char[b2 & 0b0001_1111];
                 span[6] = (char)Base32Char[b3 & 0b0001_1111];
                 span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
                 span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
-                span[9] = '.';
 
                 string path = string.Concat(Path.GetTempPath(), span);
 
@@ -250,9 +251,9 @@ namespace System.IO
                 {
                     File.OpenHandle(path, FileMode.CreateNew, FileAccess.Write).Dispose();
                 }
-                catch (IOException) when (i < 100)
+                catch (IOException ex) when (i < 100 && Win32Marshal.TryMakeWin32ErrorCodeFromHR(ex.HResult) == Interop.Errors.ERROR_FILE_EXISTS)
                 {
-                    i++; // If TMP is invalid, don't loop forever
+                    i++; // If there's a read-only temp volume, don't loop forever
                     continue; // File already exists: very, very unlikely
                 }
 
