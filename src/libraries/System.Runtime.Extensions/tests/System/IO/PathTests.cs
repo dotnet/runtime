@@ -232,6 +232,36 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetTempFileNameTempInvalidTemp()
+        {
+            // GetTempFileName has retries in it. It shouldn't hang in the face of a
+            // bad temp path.
+            RemoteExecutor.Invoke(() =>
+            {
+                string goodTemp = Path.GetTempPath();
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TMP" : "TMPDIR";
+
+                try
+                {
+                    string badTemp = Path.GetTempFileName();
+                    Assert.True(File.Exists(badTemp));
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, badTemp);
+
+                    Assert.StartsWith(badTemp, Path.GetTempPath());
+
+                    Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // file not directory
+                    File.Delete(badTemp);
+                    Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // non existent
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(tempEnvVar, goodTemp);
+                }
+            }).Dispose();
+        }
+
         [Fact]
         public void GetFullPath_InvalidArgs()
         {
