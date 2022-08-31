@@ -35,7 +35,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				inputModules.Add (module);
 			}
 
-			CompilationModuleGroup compilationGroup = new MultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
+			CompilationModuleGroup compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
 
 			List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider> ();
 			EcmaModule? entrypointModule = null;

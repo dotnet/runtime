@@ -400,7 +400,7 @@ namespace SerializationTestTypes
                             (property.GetCustomAttributes(typeof(EnumMemberAttribute), false).Length > 0)
                             )
                         {
-                            //Pass attribute of the complex type for furthur evaluation
+                            //Pass attribute of the complex type for further evaluation
                             if (IsComplexType(newData))
                             {
                                 CompareData(newData, property.GetValue(deserializedData, null), fieldAttribute, cmpType);
@@ -415,7 +415,7 @@ namespace SerializationTestTypes
                     {
                         if (property.GetCustomAttributes(typeof(NonSerializedAttribute), false).Length == 0)
                         {
-                            //Pass attribute of the complex type for furthur evaluation
+                            //Pass attribute of the complex type for further evaluation
                             if (IsComplexType(newData))
                             {
                                 CompareData(newData, property.GetValue(deserializedData, null), fieldAttribute, cmpType);
@@ -435,7 +435,7 @@ namespace SerializationTestTypes
                         //On POCO types, Properties which have both getter and setter will be serialized otherwise ignored
                         if (property.CanRead && property.CanWrite)
                         {
-                            //Pass attribute of the complex type for furthur evaluation
+                            //Pass attribute of the complex type for further evaluation
                             if (IsComplexType(newData))
                             {
                                 CompareData(newData, property.GetValue(deserializedData, null), fieldAttribute, cmpType);
@@ -447,7 +447,7 @@ namespace SerializationTestTypes
                         }
                         else if (property.CanRead && !property.CanWrite) //Get-Only collection
                         {
-                            //Pass attribute of the complex type for furthur evaluation
+                            //Pass attribute of the complex type for further evaluation
                             if (IsComplexType(newData))
                             {
                                 CompareData(newData, property.GetValue(deserializedData, null), fieldAttribute, cmpType);
@@ -512,7 +512,7 @@ namespace SerializationTestTypes
                             (field.GetCustomAttributes(typeof(EnumMemberAttribute), false).Length > 0)
                             )
                         {
-                            //Pass attribute of the complex type for furthur evaluation
+                            //Pass attribute of the complex type for further evaluation
                             if (ComparisonHelper.IsComplexType(newData))
                             {
                                 ComparisonHelper.CompareData(field.GetValue(originalData), field.GetValue(deserializedData), fieldAttribute, cmpType);

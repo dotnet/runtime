@@ -457,9 +457,9 @@ namespace System.Data.Common
         // : DbMetaDataFactory
         //
 
-        internal static Exception AmbigousCollectionName(string collectionName)
+        internal static Exception AmbiguousCollectionName(string collectionName)
         {
-            return Argument(SR.GetString(SR.MDF_AmbigousCollectionName, collectionName));
+            return Argument(SR.GetString(SR.MDF_AmbiguousCollectionName, collectionName));
         }
 
         internal static Exception CollectionNameIsNotUnique(string collectionName)

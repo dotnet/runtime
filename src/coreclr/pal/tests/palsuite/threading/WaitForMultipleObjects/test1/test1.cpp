@@ -96,7 +96,7 @@ BOOL WaitForMultipleObjectsTest()
         DWORD nCount = MAX_EVENTS;
         CONST HANDLE *lpHandles = &hEvent[0];
 
-        /* Call WaitForMultipleOjbects on all the events, the return
+        /* Call WaitForMultipleObjects on all the events, the return
            should be WAIT_TIMEOUT
         */
         dwRet = WaitForMultipleObjects( nCount,
@@ -111,7 +111,7 @@ BOOL WaitForMultipleObjectsTest()
         else
         {
             /* Step through each event and one at a time, set the
-               currect test, while resetting all the other tests
+               current test, while resetting all the other tests
             */
 
             for (i = 0; i < MAX_EVENTS; i++)

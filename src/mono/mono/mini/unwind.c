@@ -412,7 +412,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 			loc = op->when;
 		}
 
-		/* Emit an advance_loc if neccesary */
+		/* Emit an advance_loc if necessary */
 		while (op->when > loc) {
 			if (op->when - loc >= 65536) {
 				*p ++ = DW_CFA_advance_loc4;

@@ -11,12 +11,13 @@
   <PropertyGroup>
     <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <PropertyGroup>
     <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
-    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">true</WasmEnableES6>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -25,7 +26,6 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <SystemCryptoNativeDir>$(RepoRoot)\src\native\libs\System.Security.Cryptography.Native.Browser</SystemCryptoNativeDir>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -61,7 +61,6 @@
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
       <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-      <WasmPInvokeModule Include="libSystem.Security.Cryptography.Native.Browser" />
       <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
@@ -124,10 +123,8 @@
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=2" />
-      <!--
-      <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
-      -->
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
@@ -215,7 +212,7 @@
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableES6)' != 'false'">$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
@@ -260,16 +257,10 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/cjs/dotnet.cjs.pre.js;
-                       runtime/cjs/dotnet.cjs.lib.js;
-                       runtime/cjs/dotnet.cjs.post.js;
-                       runtime/cjs/dotnet.cjs.extpost.js;"
-          DestinationFolder="$(NativeBinDir)src/cjs"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
-                       runtime/es6/dotnet.es6.post.js;"
+                       runtime/es6/dotnet.es6.post.js;
+                       runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
@@ -293,16 +284,15 @@
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
-      <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.d.ts;
+                       $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)\src\dotnet-crypto-worker.js;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
@@ -322,10 +312,6 @@
 
     <Copy SourceFiles="@(WasmSrcFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(WasmSrcFilesCjs)"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\cjs"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(WasmSrcFilesEs6)"
@@ -351,9 +337,9 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
-           Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
+		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/dotnet-legacy.d.ts;$(MonoProjectRoot)wasm/runtime/diagnostics-mock.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
-           Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
+		   Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
@@ -362,7 +348,7 @@
 
   <Target Name="SetMonoRollupEnvironment">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -400,5 +386,4 @@
 
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
-
 </Project>

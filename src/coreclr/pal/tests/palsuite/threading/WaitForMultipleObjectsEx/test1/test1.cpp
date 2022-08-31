@@ -114,7 +114,7 @@ BOOL WaitForMultipleObjectsExTest()
         else
         {
             /* Step through each event and one at a time, set the
-               currect test, while resetting all the other tests
+               current test, while resetting all the other tests
             */
 
             for (i = 0; i < MAX_EVENTS; i++)

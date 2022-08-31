@@ -17,7 +17,9 @@
     "wasm-experimental": {
       "description": ".NET WebAssembly experimental",
       "packs": [
-        "Microsoft.NET.Runtime.WebAssembly.Templates"
+        "Microsoft.NET.Runtime.WebAssembly.Templates",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm"
       ],
       "extends": [ "wasm-tools" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -364,6 +366,14 @@
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },

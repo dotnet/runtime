@@ -225,6 +225,7 @@
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
       Microsoft.Win32.Registry.AccessControl;

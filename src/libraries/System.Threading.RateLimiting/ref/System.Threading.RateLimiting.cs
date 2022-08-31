@@ -10,18 +10,18 @@ namespace System.Threading.RateLimiting
     {
         public ConcurrencyLimiter(System.Threading.RateLimiting.ConcurrencyLimiterOptions options) { }
         public override System.TimeSpan? IdleDuration { get { throw null; } }
-        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int permitCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
     }
     public sealed partial class ConcurrencyLimiterOptions
     {
-        public ConcurrencyLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit) { }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
+        public ConcurrencyLimiterOptions() { }
+        public int PermitLimit { get { throw null; } set { } }
+        public int QueueLimit { get { throw null; } set { } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { } }
     }
     public sealed partial class FixedWindowRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
     {
@@ -29,21 +29,21 @@ namespace System.Threading.RateLimiting
         public override System.TimeSpan? IdleDuration { get { throw null; } }
         public override bool IsAutoReplenishing { get { throw null; } }
         public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int requestCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class FixedWindowRateLimiterOptions
     {
-        public FixedWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public System.TimeSpan Window { get { throw null; } }
+        public FixedWindowRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { } }
+        public int PermitLimit { get { throw null; } set { } }
+        public int QueueLimit { get { throw null; } set { } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { } }
+        public System.TimeSpan Window { get { throw null; } set { } }
     }
     public static partial class MetadataName
     {
@@ -70,15 +70,16 @@ namespace System.Threading.RateLimiting
     public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
     {
         protected PartitionedRateLimiter() { }
-        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resource, int permitCount = 1) { throw null; }
-        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resource, int permitCount);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsync(TResource resource, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, System.Threading.CancellationToken cancellationToken);
+        public System.Threading.RateLimiting.RateLimitLease AttemptAcquire(TResource resource, int permitCount = 1) { throw null; }
+        protected abstract System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(TResource resource, int permitCount);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits(TResource resource);
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics(TResource resource);
+        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(System.Func<TOuter, TResource> keyAdapter, bool leaveOpen) { throw null; }
     }
     public enum QueueProcessingOrder
     {
@@ -89,15 +90,23 @@ namespace System.Threading.RateLimiting
     {
         protected RateLimiter() { }
         public abstract System.TimeSpan? IdleDuration { get; }
-        public System.Threading.RateLimiting.RateLimitLease Acquire(int permitCount = 1) { throw null; }
-        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken);
+        public System.Threading.RateLimiting.RateLimitLease AttemptAcquire(int permitCount = 1) { throw null; }
+        protected abstract System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int permitCount);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits();
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics();
+    }
+    public partial class RateLimiterStatistics
+    {
+        public RateLimiterStatistics() { }
+        public long CurrentAvailablePermits { get { throw null; } set { } }
+        public long CurrentQueuedCount { get { throw null; } set { } }
+        public long TotalFailedLeases { get { throw null; } set { } }
+        public long TotalSuccessfulLeases { get { throw null; } set { } }
     }
     public abstract partial class RateLimitLease : System.IDisposable
     {
@@ -141,22 +150,22 @@ namespace System.Threading.RateLimiting
         public override System.TimeSpan? IdleDuration { get { throw null; } }
         public override bool IsAutoReplenishing { get { throw null; } }
         public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int requestCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class SlidingWindowRateLimiterOptions
     {
-        public SlidingWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, int segmentsPerWindow, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public int SegmentsPerWindow { get { throw null; } }
-        public System.TimeSpan Window { get { throw null; } }
+        public SlidingWindowRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { } }
+        public int PermitLimit { get { throw null; } set { } }
+        public int QueueLimit { get { throw null; } set { } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { } }
+        public int SegmentsPerWindow { get { throw null; } set { } }
+        public System.TimeSpan Window { get { throw null; } set { } }
     }
     public sealed partial class TokenBucketRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
     {
@@ -164,21 +173,21 @@ namespace System.Threading.RateLimiting
         public override System.TimeSpan? IdleDuration { get { throw null; } }
         public override bool IsAutoReplenishing { get { throw null; } }
         public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int tokenCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int tokenCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public override int GetAvailablePermits() { throw null; }
+        public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class TokenBucketRateLimiterOptions
     {
-        public TokenBucketRateLimiterOptions(int tokenLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan replenishmentPeriod, int tokensPerPeriod, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        public int TokenLimit { get { throw null; } }
-        public int TokensPerPeriod { get { throw null; } }
+        public TokenBucketRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { } }
+        public int QueueLimit { get { throw null; } set { } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { } }
+        public System.TimeSpan ReplenishmentPeriod { get { throw null; } set { } }
+        public int TokenLimit { get { throw null; } set { } }
+        public int TokensPerPeriod { get { throw null; } set { } }
     }
 }

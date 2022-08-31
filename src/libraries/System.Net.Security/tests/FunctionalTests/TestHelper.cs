@@ -105,12 +105,12 @@ namespace System.Net.Security.Tests
             }
         }
 
-        internal static void CleanupCertificates([CallerMemberName] string? testName = null)
+        internal static void CleanupCertificates([CallerMemberName] string? testName = null, StoreName storeName = StoreName.CertificateAuthority)
         {
             string caName = $"O={testName}";
             try
             {
-                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+                using (X509Store store = new X509Store(storeName, StoreLocation.LocalMachine))
                 {
                     store.Open(OpenFlags.ReadWrite);
                     foreach (X509Certificate2 cert in store.Certificates)
@@ -127,7 +127,7 @@ namespace System.Net.Security.Tests
 
             try
             {
-                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+                using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
                 {
                     store.Open(OpenFlags.ReadWrite);
                     foreach (X509Certificate2 cert in store.Certificates)
@@ -206,7 +206,7 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.IsWindows)
             {
                 X509Certificate2 ephemeral = endEntity;
-                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
                 ephemeral.Dispose();
             }
 

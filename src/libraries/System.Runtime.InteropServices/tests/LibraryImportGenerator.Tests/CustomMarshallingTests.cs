@@ -102,6 +102,8 @@ namespace LibraryImportGenerator.IntegrationTests
                     }
 
                     public void FromUnmanaged(int value) { }
+
+                    public void Free() {}
                 }
             }
         }

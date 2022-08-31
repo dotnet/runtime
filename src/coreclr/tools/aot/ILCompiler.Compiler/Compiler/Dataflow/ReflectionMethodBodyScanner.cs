@@ -275,7 +275,7 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Type_GetNestedType:
                 case IntrinsicId.Nullable_GetUnderlyingType:
                 case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType(1, "System.Reflection.MethodInfo"):
-                case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
+                case var fieldOrPropertyIntrinsic when fieldOrPropertyIntrinsic == IntrinsicId.Expression_Field || fieldOrPropertyIntrinsic == IntrinsicId.Expression_Property:
                 case IntrinsicId.Type_get_BaseType:
                 case IntrinsicId.Type_GetConstructor:
                 case IntrinsicId.MethodBase_GetMethodFromHandle:
@@ -317,6 +317,7 @@ namespace ILCompiler.Dataflow
 
                             ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
 
+                            bool aotUnsafeDelegate = IsAotUnsafeDelegate(calledMethod.Signature.ReturnType);
                             bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
                             for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
                             {
@@ -327,7 +328,13 @@ namespace ILCompiler.Dataflow
                                         marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
                                 }
 
+                                aotUnsafeDelegate |= IsAotUnsafeDelegate(calledMethod.Signature[paramIndex]);
                                 comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
+                            }
+
+                            if (aotUnsafeDelegate)
+                            {
+                                diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, calledMethod.GetDisplayName());
                             }
 
                             if (comDangerousMethod)
@@ -454,7 +461,7 @@ namespace ILCompiler.Dataflow
 
                 //
                 // System.Object
-                // 
+                //
                 // GetType()
                 //
                 case IntrinsicId.Object_GetType:
@@ -522,7 +529,7 @@ namespace ILCompiler.Dataflow
                     break;
 
                 default:
-                    throw new NotImplementedException("Unhandled instrinsic");
+                    throw new NotImplementedException("Unhandled intrinsic");
             }
 
             // If we get here, we handled this as an intrinsic.  As a convenience, if the code above
@@ -545,7 +552,7 @@ namespace ILCompiler.Dataflow
                     }
                     else if (uniqueValue is SystemTypeValue)
                     {
-                        // SystemTypeValue can fullfill any requirement, so it's always valid
+                        // SystemTypeValue can fulfill any requirement, so it's always valid
                         // The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
                     }
                     else
@@ -561,6 +568,13 @@ namespace ILCompiler.Dataflow
             {
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
+        }
+
+        static bool IsAotUnsafeDelegate(TypeDesc parameterType)
+        {
+            TypeSystemContext context = parameterType.Context;
+            return parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate)
+                    || parameterType == context.GetWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate).BaseType;
         }
 
         static bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)

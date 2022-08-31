@@ -238,7 +238,7 @@ namespace Internal.Runtime
         RareFlags,
 
         /// <summary>
-        /// Index of the dispatch map pointer in the DispathMap table
+        /// Index of the dispatch map pointer in the DispatchMap table
         /// </summary>
         DispatchMap,
 

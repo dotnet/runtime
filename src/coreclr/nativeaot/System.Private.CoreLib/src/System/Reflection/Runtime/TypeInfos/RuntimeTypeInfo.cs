@@ -53,6 +53,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsByRefLike { get; }
         public sealed override bool IsCollectible => false;
+        public abstract override string Name { get; }
 
         public abstract override Assembly Assembly { get; }
 
@@ -187,38 +188,38 @@ namespace System.Reflection.Runtime.TypeInfos
             return defaultMemberName != null ? GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
         }
 
-        public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
+        public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
         {
             // restrictions and known limitations compared to CoreCLR:
             // - only interface.GetMethods() reflection visible interface methods are returned
             // - all visible members of the interface must be reflection invokeable
-            // - this type and interfaceType must not be an open generic type
+            // - this type and ifaceType must not be an open generic type
             // - if this type and the method implementing the interface method are abstract, an exception is thrown
 
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            if (interfaceType is null)
-                throw new ArgumentNullException(nameof(interfaceType));
+            if (ifaceType is null)
+                throw new ArgumentNullException(nameof(ifaceType));
 
-            if (!(interfaceType is RuntimeTypeInfo))
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
+            if (!(ifaceType is RuntimeTypeInfo))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
-            RuntimeTypeHandle interfaceTypeHandle = interfaceType.TypeHandle;
+            RuntimeTypeHandle interfaceTypeHandle = ifaceType.TypeHandle;
 
             ReflectionCoreExecution.ExecutionEnvironment.VerifyInterfaceIsImplemented(TypeHandle, interfaceTypeHandle);
-            Debug.Assert(interfaceType.IsInterface);
+            Debug.Assert(ifaceType.IsInterface);
             Debug.Assert(!IsInterface);
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // runtime magic. We don't have accurate interface maps for them.
-            if (IsSZArray && interfaceType.IsGenericType)
+            if (IsSZArray && ifaceType.IsGenericType)
                 throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
-            ReflectionCoreExecution.ExecutionEnvironment.GetInterfaceMap(this, interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
+            ReflectionCoreExecution.ExecutionEnvironment.GetInterfaceMap(this, ifaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
 
             InterfaceMapping im;
-            im.InterfaceType = interfaceType;
+            im.InterfaceType = ifaceType;
             im.TargetType = this;
             im.InterfaceMethods = interfaceMethods;
             im.TargetMethods = targetMethods;
@@ -416,7 +417,7 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType()
         {
-            // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
+            // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
             return this.GetArrayTypeWithTypeHandle();
@@ -446,7 +447,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             // We intentionally don't validate the number of arguments or their suitability to the generic type's constraints.
-            // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
+            // In a pay-for-play world, this can cause needless missing metadata exceptions. There is no harm in creating
             // the Type object for an inconsistent generic type - no MethodTable will ever match it so any attempt to "invoke" it
             // will throw an exception.
             bool foundSignatureType = false;
@@ -498,18 +499,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return this.InternalDeclaringType;
-            }
-        }
-
-        public sealed override string Name
-        {
-            get
-            {
-                Type? rootCauseForFailure = null;
-                string? name = InternalGetNameIfAvailable(ref rootCauseForFailure);
-                if (name == null)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(rootCauseForFailure);
-                return name;
             }
         }
 
@@ -605,16 +594,12 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal EnumInfo EnumInfo => Cache.EnumInfo;
-
         internal abstract Type InternalDeclaringType { get; }
 
         //
         // Return the full name of the "defining assembly" for the purpose of computing TypeInfo.AssemblyQualifiedName;
         //
         internal abstract string InternalFullNameOfAssembly { get; }
-
-        internal abstract override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure);
 
         //
         // Left unsealed as HasElement types must override this.
@@ -649,11 +634,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return 0 != (Classification & TypeClassification.IsDelegate);
             }
         }
-
-        //
-        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
-        //
-        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
 
         //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)

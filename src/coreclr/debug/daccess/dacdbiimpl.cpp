@@ -185,7 +185,7 @@ void DeleteDbiMemory(void* p)
     }
     else
     {
-        ::delete (BYTE*)p;
+        ::delete [] (BYTE*)p;
     }
 }
 
@@ -512,7 +512,7 @@ BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
         // 4) assign the object to g_pDebugger.
         // 5) later, LS initialization code will assign g_pDebugger->m_fLeftSideInitialized = TRUE.
         //
-        // The memory write in #5 is atomic.  There is no window where we're reading unitialized data.
+        // The memory write in #5 is atomic.  There is no window where we're reading uninitialized data.
 
         return (g_pDebugger->m_fLeftSideInitialized != 0);
     }
@@ -1212,7 +1212,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemend for DAC.
+    // implemented for DAC.
     if (pTargetIL == 0 && !pModule->IsReflection())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
@@ -2875,7 +2875,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
             thCurrent = methodInst[i - cGenericClassTypeParams];
         }
 
-        // There is the possiblity that we'll get this far with a dump and not fail, but still
+        // There is the possibility that we'll get this far with a dump and not fail, but still
         // not be able to get full info for a particular param.
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
         {
@@ -3618,7 +3618,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
 
     // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
     // pLoaderAllocator is DACized. Cast it so we don't try to to a Host to Target translation.
-    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager(TO_TADDR(pLoaderAllocator->GetVirtualCallStubManager()));
+    VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
     LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
     if (pVcsMgr)
     {
@@ -5871,7 +5871,7 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
     return hr;
 }
 
-// Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+// Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
 ULONG DacDbiInterfaceImpl::GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle)
 {
     DD_ENTER_MAY_THROW;

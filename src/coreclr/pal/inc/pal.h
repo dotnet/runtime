@@ -80,50 +80,6 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 extern bool g_arm64_atomics_present;
 #endif
 
-/******************* Processor-specific glue  *****************************/
-
-#ifndef _MSC_VER
-
-#if defined(__i686__) && !defined(_M_IX86)
-#define _M_IX86 600
-#elif defined(__i586__) && !defined(_M_IX86)
-#define _M_IX86 500
-#elif defined(__i486__) && !defined(_M_IX86)
-#define _M_IX86 400
-#elif defined(__i386__) && !defined(_M_IX86)
-#define _M_IX86 300
-#elif defined(__x86_64__) && !defined(_M_AMD64)
-#define _M_AMD64 100
-#elif defined(__arm__) && !defined(_M_ARM)
-#define _M_ARM 7
-#elif defined(__aarch64__) && !defined(_M_ARM64)
-#define _M_ARM64 1
-#elif defined(__loongarch64) && !defined(_M_LOONGARCH64)
-#define _M_LOONGARCH64 1
-#elif defined(__s390x__) && !defined(_M_S390X)
-#define _M_S390X 1
-#elif defined(__powerpc__) && !defined(_M_PPC64)
-#define _M_PPC64 1
-#endif
-
-#if defined(_M_IX86) && !defined(HOST_X86)
-#define HOST_X86
-#elif defined(_M_AMD64) && !defined(HOST_AMD64)
-#define HOST_AMD64
-#elif defined(_M_ARM) && !defined(HOST_ARM)
-#define HOST_ARM
-#elif defined(_M_ARM64) && !defined(HOST_ARM64)
-#define HOST_ARM64
-#elif defined(_M_LOONGARCH64) && !defined(HOST_LOONGARCH64)
-#define HOST_LOONGARCH64
-#elif defined(_M_S390X) && !defined(HOST_S390X)
-#define HOST_S390X
-#elif defined(_M_PPC64) && !defined(HOST_POWERPC64)
-#define HOST_POWERPC64
-#endif
-
-#endif // !_MSC_VER
-
 /******************* ABI-specific glue *******************************/
 
 #define MAX_PATH 260
@@ -452,7 +408,8 @@ enum
     GenerateDumpFlagsNone = 0x00,
     GenerateDumpFlagsLoggingEnabled = 0x01,
     GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04
+    GenerateDumpFlagsCrashReportEnabled = 0x04,
+    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
 };
 
 PALIMPORT
@@ -1269,16 +1226,6 @@ GetExitCodeProcess(
            IN HANDLE hProcess,
            IN LPDWORD lpExitCode);
 
-PALIMPORT
-BOOL
-PALAPI
-GetProcessTimes(
-        IN HANDLE hProcess,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpExitTime,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
-
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
 #define WAIT_ABANDONED   0x00000080
@@ -1597,7 +1544,7 @@ typedef struct _XMM_SAVE_AREA32 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -1843,7 +1790,7 @@ typedef struct _NEON128 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2025,7 +1972,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2161,7 +2108,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_LOONGARCH64)
 
-//Please refence "src/pal/src/arch/loongarch64/asmconstants.h"
+// Please refer to src/coreclr/pal/src/arch/loongarch64/asmconstants.h
 #define CONTEXT_LOONGARCH64   0x00800000
 
 #define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1)
@@ -2202,7 +2149,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2436,8 +2383,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     DWORD ContextFlags;
 
-    // 
-    // Integer  Registers 
+    //
+    // Integer  Registers
     //
 
     DWORD64 R0;
@@ -2550,7 +2497,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 R30;
     PDWORD64 R31;
 
-    // 
+    //
     // Need to add Floating point non-volatile registers.
     //
 
@@ -2687,7 +2634,7 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(HOST_ARM64)
-#define PAL_CS_NATIVE_DATA_SIZE 116
+#define PAL_CS_NATIVE_DATA_SIZE 104
 #elif defined(__linux__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__linux__) && defined(__x86_64__)
@@ -2706,8 +2653,9 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 48
 #elif defined(__linux__) && defined(__loongarch64)
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
+#define PAL_CS_NATIVE_DATA_SIZE 96
 #else
-#warning
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
 
@@ -3452,9 +3400,9 @@ BitScanReverse64(
     return qwMask != 0;
 }
 
-FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
+FORCEINLINE void PAL_InterlockedOperationBarrier()
 {
-#ifdef HOST_ARM64
+#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     // On arm64, most of the __sync* functions generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
@@ -3466,9 +3414,6 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
     // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
-    __sync_synchronize();
-#endif // HOST_ARM64
-#ifdef HOST_LOONGARCH64
     __sync_synchronize();
 #endif
 }
@@ -3504,7 +3449,7 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
     else                                                        \
     {                                                           \
         RETURN_TYPE result = INTRINSIC_NAME;                    \
-        PAL_ArmInterlockedOperationBarrier();                   \
+        PAL_InterlockedOperationBarrier();                      \
         return result;                                          \
     }                                                           \
 }                                                               \
@@ -3516,7 +3461,7 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 {                                                               \
     RETURN_TYPE result = INTRINSIC_NAME;                        \
-    PAL_ArmInterlockedOperationBarrier();                       \
+    PAL_InterlockedOperationBarrier();                          \
     return result;                                              \
 }                                                               \
 
@@ -3797,6 +3742,8 @@ YieldProcessor()
     __asm__ __volatile__( "yield");
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
+#elif defined(HOST_RISCV64)
+    __asm__ __volatile__( "wfi");
 #else
     return;
 #endif
@@ -4284,15 +4231,11 @@ inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
 }
 #endif
 
-#if defined(__llvm__)
-#define HAS_ROTL __has_builtin(_rotl)
-#define HAS_ROTR __has_builtin(_rotr)
-#else
-#define HAS_ROTL 0
-#define HAS_ROTR 0
+#ifndef __has_builtin
+#define __has_builtin(x) 0
 #endif
 
-#if !HAS_ROTL
+#if !__has_builtin(_rotl)
 /*++
 Function:
 _rotl
@@ -4310,14 +4253,14 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
     retval = (value << shift) | (value >> (sizeof(int) * CHAR_BIT - shift));
     return retval;
 }
-#endif // !HAS_ROTL
+#endif // !__has_builtin(_rotl)
 
 // On 64 bit unix, make the long an int.
 #ifdef HOST_64BIT
 #define _lrotl _rotl
-#endif // HOST_64BIT
+#endif
 
-#if !HAS_ROTR
+#if !__has_builtin(_rotr)
 
 /*++
 Function:
@@ -4337,7 +4280,7 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
     return retval;
 }
 
-#endif // !HAS_ROTR
+#endif // !__has_builtin(_rotr)
 
 PALIMPORT int __cdecl abs(int);
 // clang complains if this is declared with __int64
@@ -4551,23 +4494,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
 PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
-
-/******************* PAL-specific I/O completion port *****************/
-
-typedef struct _PAL_IOCP_CPU_INFORMATION {
-    union {
-        FILETIME ftLastRecordedIdleTime;
-        FILETIME ftLastRecordedCurrentTime;
-    } LastRecordedTime;
-    FILETIME ftLastRecordedKernelTime;
-    FILETIME ftLastRecordedUserTime;
-} PAL_IOCP_CPU_INFORMATION;
-
-PALIMPORT
-INT
-PALAPI
-PAL_GetCPUBusyTime(
-    IN OUT PAL_IOCP_CPU_INFORMATION *lpPrevCPUInfo);
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF

@@ -700,7 +700,7 @@ namespace System.Numerics
             // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
             //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
             // There is just one complication: depending on the sign on a, either x or y suffers from
-            // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
+            // cancelation when |b| << |a|. We can get around this by noting that our formulas imply
             // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
             // from cancelation, we can compute the other with just a division. This is basically just
             // the right way to evaluate the quadratic formula without cancelation.
@@ -1613,7 +1613,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToChecked<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToChecked<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // so we'll throw an OverflowException for this scenario for integer types and
@@ -1805,14 +1805,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToSaturating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToSaturating<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // and there isn't really a well-defined way to "saturate" to just a real value.
@@ -1949,14 +1949,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToTruncating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToTruncating<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // so we'll only consider the real part for the purposes of truncation.
@@ -2085,7 +2085,7 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

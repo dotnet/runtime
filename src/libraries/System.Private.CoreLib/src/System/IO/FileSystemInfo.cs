@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -14,7 +15,7 @@ namespace System.IO
         protected string FullPath = null!;          // fully qualified path of the file or directory
         protected string OriginalPath = null!;      // path passed in by the user
 
-        internal string _name = null!; // Fields initiated in derived classes
+        internal string? _name;
 
         private string? _linkTarget;
         private bool _linkTargetIsValid;
@@ -55,7 +56,14 @@ namespace System.IO
             }
         }
 
-        public virtual string Name => _name;
+        public virtual string Name
+        {
+            get
+            {
+                Debug.Fail("Property is abstract in the ref assembly and both Directory/FileInfo override it.");
+                return _name!;
+            }
+        }
 
         // Whether a file/directory exists
         public virtual bool Exists

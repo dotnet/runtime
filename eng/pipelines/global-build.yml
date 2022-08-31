@@ -74,7 +74,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
+# Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
 # specified. Catches cases where we depend on Configuration also being specified
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -90,7 +90,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build Mono + Libraries. This excercises the code path where we build libraries without
+# Build Mono + Libraries. This exercises the code path where we build libraries without
 # first building CoreCLR
 #
 - template: /eng/pipelines/common/platform-matrix.yml

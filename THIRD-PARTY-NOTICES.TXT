@@ -70,12 +70,12 @@ License notice for Zlib
 -----------------------
 
 https://github.com/madler/zlib
-http://zlib.net/zlib_license.html
+https://zlib.net/zlib_license.html
 
 /* zlib.h -- interface of the 'zlib' general purpose compression library
-  version 1.2.11, January 15th, 2017
+  version 1.2.12, March 27th, 2022
 
-  Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
+  Copyright (C) 1995-2022 Jean-loup Gailly and Mark Adler
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -1109,6 +1109,13 @@ Excerpted from 'The Practice of Programming
 by Brian W. Kernighan and Rob Pike
 
 You may use this code for any purpose, as long as you leave the copyright notice and book citation attached.
+
+Notice for Euclidean Affine Functions and Applications to Calendar
+Algorithms
+-------------------------------
+
+Aspects of Date/Time processing based on algorithm described in "Euclidean Affine Functions and Applications to Calendar
+Algorithms", Cassio Neri and Lorenz Schneider. https://arxiv.org/pdf/2102.06959.pdf
 
 License notice for amd/aocl-libm-ose
 -------------------------------

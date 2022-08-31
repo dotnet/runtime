@@ -312,7 +312,7 @@ static struct ifaddrs *get_link_info(struct nlmsghdr *message)
                 break;
 
             case IFLA_BROADCAST:
-                LOG_DEBUG("   interface broadcast (%lu bytes)\n", RTA_PAYLOAD(attribute));
+                LOG_DEBUG("   interface broadcast (%zu bytes)\n", RTA_PAYLOAD(attribute));
                 if (fill_ll_address(&sa, net_interface, RTA_DATA(attribute), RTA_PAYLOAD(attribute)) < 0) {
                     goto error;
                 }
@@ -320,7 +320,7 @@ static struct ifaddrs *get_link_info(struct nlmsghdr *message)
                 break;
 
             case IFLA_ADDRESS:
-                LOG_DEBUG("   interface address (%lu bytes)\n", RTA_PAYLOAD(attribute));
+                LOG_DEBUG("   interface address (%zu bytes)\n", RTA_PAYLOAD(attribute));
                 if (fill_ll_address(&sa, net_interface, RTA_DATA(attribute), RTA_PAYLOAD(attribute)) < 0) {
                     goto error;
                 }
@@ -352,7 +352,7 @@ static struct ifaddrs *find_interface_by_index(int index, struct ifaddrs **ifadd
         return NULL;
 
     /* Normally expensive, but with the small amount of links in the chain we'll deal with it's not
-     * worth the extra houskeeping and memory overhead
+     * worth the extra housekeeping and memory overhead
      */
     cur = *ifaddrs_head;
     while (cur) {
@@ -509,7 +509,7 @@ static struct ifaddrs *get_link_address(struct nlmsghdr *message, struct ifaddrs
                 LOG_DEBUG("     attribute type: LOCAL");
                 if (ifa->ifa_addr) {
                     /* P2P protocol, set the dst/broadcast address union from the original address.
-                     * Since ifa_addr is set it means IFA_ADDRESS occured earlier and that address
+                     * Since ifa_addr is set it means IFA_ADDRESS occurred earlier and that address
                      * is indeed the P2P destination one.
                      */
                     ifa->ifa_dstaddr = ifa->ifa_addr;
@@ -531,7 +531,7 @@ static struct ifaddrs *get_link_address(struct nlmsghdr *message, struct ifaddrs
             case IFA_ADDRESS:
                 LOG_DEBUG("     attribute type: ADDRESS");
                 if (ifa->ifa_addr) {
-                    /* Apparently IFA_LOCAL occured earlier and we have a P2P connection
+                    /* Apparently IFA_LOCAL occurred earlier and we have a P2P connection
                      * here. IFA_LOCAL carries the destination address, move it there
                      */
                     ifa->ifa_dstaddr = ifa->ifa_addr;
@@ -570,7 +570,7 @@ static struct ifaddrs *get_link_address(struct nlmsghdr *message, struct ifaddrs
         attribute = RTA_NEXT(attribute, length);
     }
 
-    /* glibc stores the associated interface name in the address if IFA_LABEL never occured */
+    /* glibc stores the associated interface name in the address if IFA_LABEL never occurred */
     if (!ifa->ifa_name) {
         char *name = get_interface_name_by_index((int)(net_address->ifa_index), ifaddrs_head);
         LOG_DEBUG("   address has no name/label, getting one from interface\n");

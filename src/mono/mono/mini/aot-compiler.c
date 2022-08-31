@@ -5232,8 +5232,28 @@ MONO_RESTORE_WARNING
 			continue;
 		}
 
-		if (m_class_is_valuetype (klass) && !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
+		if ((m_class_is_valuetype (klass) || ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT))
+			&& !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
 			!(m_class_get_nested_in (klass) && strstr (m_class_get_name (m_class_get_nested_in (klass)), "<PrivateImplementationDetails>") == m_class_get_name (m_class_get_nested_in (klass)))) {
+			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+		}
+	}
+
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		MonoClass *klass;
+
+		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
+		klass = mono_class_get_checked (acfg->image, token, error);
+
+		if (!klass) {
+			mono_error_cleanup (error);
+			continue;
+		}
+
+		if (m_class_is_ginst (klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) && can_marshal_struct (klass)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
@@ -5322,7 +5342,7 @@ static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass
 static void
 add_generic_class (MonoAotCompile *acfg, MonoClass *klass, gboolean force, const char *ref)
 {
-	/* This might lead to a huge code blowup so only do it if neccesary */
+	/* This might lead to a huge code blowup so only do it if necessary */
 	if (!mono_aot_mode_is_full (&acfg->aot_opts) && !mono_aot_mode_is_hybrid (&acfg->aot_opts) && !force)
 		return;
 
@@ -8646,7 +8666,7 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 {
 	if (m_class_get_type_token (klass))
 		return TRUE;
-	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR))
+	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR))
 		return TRUE;
 	if (m_class_get_rank (klass))
 		return can_encode_class (acfg, m_class_get_element_class (klass));
@@ -10189,6 +10209,16 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
+
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && LLVM_API_VERSION >= 1400
+	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
+		/*
+		 * LLVM 14 added a 'crc32' mattr which needs to be explicitly enabled to
+		 * add support for the crc32 sse instructions.
+		 */
+		acfg->aot_opts.llvm_cpu_attr = g_strdup_printf ("%s,crc32", acfg->aot_opts.llvm_cpu_attr);
+#endif
+
 	/*
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes
 	 * a lot of time, and doesn't seem to save much space.
@@ -12608,7 +12638,8 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_NAME "clang"
 #define LD_OPTIONS "-m32 -dynamiclib"
 #elif defined(TARGET_X86) && !defined(TARGET_MACH)
-#define LD_OPTIONS "-m elf_i386 -Bsymbolic"
+#define LD_NAME "ld"
+#define LD_OPTIONS "--shared -m elf_i386"
 #elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "--shared -Wl,-Bsymbolic"
@@ -12706,7 +12737,12 @@ compile_asm (MonoAotCompile *acfg)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
-	g_string_append_printf (str, "%s%s %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+	if (acfg->aot_opts.tool_prefix)
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+	else if (acfg->aot_opts.llvm_only)
+		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
+	else
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";
@@ -13342,19 +13378,16 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 
 		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
 		guint32 mibcGroupMethodEntryToken = read32 (cur + 1);
-		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token %x is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
+		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token '%x' is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
 		cur += op_size;
 
-		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
-		mono_error_assert_ok (error);
-
-		MonoClass *method_class = mono_method_get_class (methodEntry);
-		if (!method_class)
+		// Skip methods in the profile that are not found
+		ERROR_DECL(method_entry_error);
+		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, method_entry_error);
+		if (!is_ok (method_entry_error)) {
+			mono_error_cleanup (method_entry_error);
 			continue;
-
-		MonoImage *method_image = mono_class_get_image (method_class);
-		if (!method_image)
-			continue;
+		}
 
 		count += add_single_profile_method (acfg, methodEntry);
 	}

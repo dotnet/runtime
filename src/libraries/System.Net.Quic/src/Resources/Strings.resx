@@ -181,7 +181,7 @@
     <value>The remote certificate is invalid because of errors in the certificate chain: {0}</value>
   </data>
   <data name="net_quic_internal_error" xml:space="preserve">
-    <value>An internal error has occured. {0}</value>
+    <value>An internal error has occurred. {0}</value>
   </data>
   <data name="net_quic_tls_version_notsupported" xml:space="preserve">
     <value>Could not use a TLS version required by Quic. TLS 1.3 may have been disabled in the registry.</value>
@@ -196,7 +196,7 @@
     <value>The local address is already in use.</value>
   </data>
   <data name="net_quic_host_unreachable" xml:space="preserve">
-    <value>The server is currnetly unreachable.</value>
+    <value>The server is currently unreachable.</value>
   </data>
   <data name="net_quic_connection_refused" xml:space="preserve">
     <value>The server refused the connection.</value>

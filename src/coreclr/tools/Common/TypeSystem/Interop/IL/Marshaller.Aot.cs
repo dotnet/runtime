@@ -1183,7 +1183,7 @@ namespace Internal.TypeSystem.Interop
             MarshallerLocalVariable = emitter.NewLocal(customMarshallerType);
             var cookie = MarshalAsDescriptor.Cookie;
 
-            // Custom marshaller initialization should not be catched, so initialize early
+            // Custom marshaller initialization should not be caught, so initialize early
             ILCodeStream fnptrLoadStream = _ilCodeStreams.FunctionPointerLoadStream;
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(marshallerType));

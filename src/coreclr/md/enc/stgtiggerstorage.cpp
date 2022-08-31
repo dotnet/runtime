@@ -793,7 +793,7 @@ TiggerStorage::WriteSignature(
     sSig.SetSignature(STORAGE_MAGIC_SIG);
     sSig.SetMajorVer(FILE_VER_MAJOR);
     sSig.SetMinorVer(FILE_VER_MINOR);
-    sSig.SetExtraDataOffset(0); // We have no extra inforation
+    sSig.SetExtraDataOffset(0); // We have no extra information
     sSig.SetVersionStringLength(alignedVersionSize);
     IfFailRet(m_pStgIO->Write(&sSig, sizeof(STORAGESIGNATURE), &cbWritten));
     IfFailRet(m_pStgIO->Write(pVersion, versionSize, &cbWritten));

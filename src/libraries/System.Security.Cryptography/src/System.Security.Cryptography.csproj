@@ -167,6 +167,10 @@
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</Link>
     </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
@@ -416,6 +420,12 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.Load.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequestLoadOptions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Build.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.CdpExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Load.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
@@ -448,6 +458,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500RelativeDistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityInformationAccessExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />
@@ -477,6 +488,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationFlag.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationMode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationReason.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Store.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectAlternativeNameExtension.cs" />
@@ -544,13 +556,9 @@
              Link="Common\Interop\Browser\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" /> 
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesManagedTransform.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesSubtleCryptoTransform.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Browser.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
@@ -564,7 +572,6 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Native.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
@@ -576,7 +583,6 @@
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Native.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.NotSupported.cs" />
@@ -584,9 +590,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
-    <Compile Include="System\Security\Cryptography\AesImplementation.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(NeedOpenSslInitializer)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

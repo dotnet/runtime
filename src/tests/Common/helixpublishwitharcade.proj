@@ -33,7 +33,6 @@
         HelixTargetQueues=$(_HelixTargetQueues);
         HelixType=$(_HelixType);
         PublishTestResults=$(_PublishTestResults);
-        RunCrossGen=$(_RunCrossGen);
         RunCrossGen2=$(_RunCrossGen2);
         CompositeBuildMode=$(_CompositeBuildMode);
         LongRunningGCTests=$(_LongRunningGCTests);
@@ -489,12 +488,10 @@
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
     <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(Configuration)</HelixConfiguration>
     <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(Configuration)-$(Scenario)</HelixConfiguration>
-    <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
     <TestRunNamePrefix Condition="'$(RuntimeFlavor)' != ''">$(RuntimeFlavor) </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) $(Scenario) @ </TestRunNamePrefix>
@@ -514,7 +511,6 @@
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
-    <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
@@ -536,7 +532,6 @@
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
-    <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />

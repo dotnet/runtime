@@ -259,18 +259,14 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        // This 'using' shouldn't be necessary in general. However, HTTP3 does not remove the request stream from the
-                        // active stream table until the user disposes the response (or it gets finalized).
-                        // This means the connection will fail to shut down promptly.
-                        // See https://github.com/dotnet/runtime/issues/58072
-                        using HttpResponseMessage resp = await getResponse;
+                        HttpResponseMessage resp = await getResponse;
                         Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync);
                         Task readTask = readOrCopyToAsync ?
                             respStream.ReadAsync(new byte[1], 0, 1, cts.Token) :
                             respStream.CopyToAsync(Stream.Null, 10, cts.Token);
                         cts.Cancel();
                         await readTask;
-                    });
+                    }).WaitAsync(TimeSpan.FromSeconds(30));
                     try
                     {
                         clientFinished.SetResult(true);
@@ -499,7 +495,7 @@ namespace System.Net.Http.Functional.Tests
                     canSeekFunc: () => true,
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
-                    positionSetFunc: _ => {},
+                    positionSetFunc: _ => { },
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
@@ -535,7 +531,7 @@ namespace System.Net.Http.Functional.Tests
                     canSeekFunc: () => true,
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
-                    positionSetFunc: _ => {},
+                    positionSetFunc: _ => { },
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
@@ -584,14 +580,14 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (var invoker = new HttpMessageInvoker(CreateHttpClientHandler()))
                     using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion })
-                    try
-                    {
-                        using (HttpResponseMessage resp = await invoker.SendAsync(TestAsync, req, cancellationTokenSource.Token))
+                        try
                         {
-                            Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                            using (HttpResponseMessage resp = await invoker.SendAsync(TestAsync, req, cancellationTokenSource.Token))
+                            {
+                                Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                            }
                         }
-                    }
-                    catch (OperationCanceledException) { }
+                        catch (OperationCanceledException) { }
                 },
                 async server =>
                 {

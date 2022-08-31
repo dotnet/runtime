@@ -478,7 +478,7 @@ namespace System.Xml.Serialization
             return XmlQualifiedName.Empty;
         }
 
-        [return: NotNullIfNotNull("o")]
+        [return: NotNullIfNotNull(nameof(o))]
         private static string? GetSchemaItem(XmlSchemaObject? o, string? ns, string? details)
         {
             if (o == null)

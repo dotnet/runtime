@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Xml;
+
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -397,17 +398,17 @@ namespace ILCompiler
             }
 
             // Now sweep unreachable basic blocks by replacing them with nops
-            bool hasUnmarkedIntructions = false;
+            bool hasUnmarkedInstruction = false;
             foreach (var flag in flags)
             {
                 if ((flag & OpcodeFlags.InstructionStart) != 0 &&
                     (flag & OpcodeFlags.Mark) == 0)
                 {
-                    hasUnmarkedIntructions = true;
+                    hasUnmarkedInstruction = true;
                 }
             }
 
-            if (!hasUnmarkedIntructions)
+            if (!hasUnmarkedInstruction)
                 return method;
 
             byte[] newBody = (byte[])methodBytes.Clone();

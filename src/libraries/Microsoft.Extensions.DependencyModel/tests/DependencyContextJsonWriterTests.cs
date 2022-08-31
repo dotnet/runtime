@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "package",
                                         "PackageName",
                                         "1.2.3",
-                                        "HASH+/==", // verify that '+' and '/' is not getting escaped to workaround bug in older xunit https://github.com/dotnet/core-setup/issues/7137
+                                        "HASH+/==", // verify that '+' and '/' is not getting escaped to workaround bug in older xunit https://github.com/dotnet/runtime/issues/3678
                                         new [] {"Banana.dll"},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")

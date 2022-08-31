@@ -947,7 +947,7 @@ namespace System.Xml.Xsl.Qil
 
             XmlExtensionFunction extFunc = new XmlExtensionFunction(node.Name.LocalName, node.Name.NamespaceUri, node.ClrMethod);
             QilList actualArgs = node.Arguments;
-            Check(actualArgs.Count == extFunc.Method.GetParameters().Length, actualArgs, "InvokeEarlyBound argument count must match function's argument count");
+            Check(actualArgs.Count == extFunc.Method!.GetParameters().Length, actualArgs, "InvokeEarlyBound argument count must match function's argument count");
 
             for (int i = 0; i < actualArgs.Count; i++)
             {

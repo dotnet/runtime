@@ -64,7 +64,7 @@ namespace System.Configuration
             _configRecord = (MgmtConfigurationRecord)configRoot.GetConfigRecord(configPath);
 
             // Create another MgmtConfigurationRecord for the location that is a child of the above record.
-            // Note that this does not match the resolution hiearchy that is used at runtime.
+            // Note that this does not match the resolution hierarchy that is used at runtime.
             if (!string.IsNullOrEmpty(locationSubPath))
             {
                 _configRecord = MgmtConfigurationRecord.Create(

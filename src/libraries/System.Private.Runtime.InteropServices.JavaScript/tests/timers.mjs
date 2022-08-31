@@ -3,7 +3,7 @@
 
 export function log(message) {
     // uncomment for debugging
-    console.log(message);
+    // console.log(message);
 }
 
 export function install() {

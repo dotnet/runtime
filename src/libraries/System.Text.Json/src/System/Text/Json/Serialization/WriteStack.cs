@@ -93,6 +93,12 @@ namespace System.Text.Json
         /// </summary>
         public bool IsContinuation => _continuationCount != 0;
 
+        /// <summary>
+        /// Indicates that the root-level JsonTypeInfo is the result of
+        /// polymorphic dispatch from the internal System.Object converter.
+        /// </summary>
+        public bool IsPolymorphicRootValue;
+
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
 
@@ -133,22 +139,17 @@ namespace System.Text.Json
             }
         }
 
-        /// <summary>
-        /// Initialize the state without delayed initialization of the JsonTypeInfo.
-        /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
+        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false, bool supportAsync = false)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoForRootType(type);
-            return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
-        }
-
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation, bool supportAsync)
-        {
-            Debug.Assert(!supportAsync || supportContinuation, "supportAsync implies supportContinuation.");
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
+            Debug.Assert(!IsContinuation);
+            Debug.Assert(CurrentDepth == 0);
 
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -156,11 +157,6 @@ namespace System.Text.Json
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
             }
-
-            SupportContinuation = supportContinuation;
-            SupportAsync = supportAsync;
-
-            return jsonTypeInfo.Converter;
         }
 
         /// <summary>
@@ -434,6 +430,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

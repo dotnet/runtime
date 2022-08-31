@@ -74,7 +74,7 @@ namespace System.ComponentModel
             // The char case conversion specified in the mask. Required for formatting the string when requested.
             public CaseConversion CaseConversion;
 
-            // The char type according to the mask language indentifiers. (Separator, Editable char...).
+            // The char type according to the mask language identifiers. (Separator, Editable char...).
             // Required for validating the input char.
             public CharType CharType;
 

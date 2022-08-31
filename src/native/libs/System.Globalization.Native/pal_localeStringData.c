@@ -405,7 +405,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
 PAL Function:
 GetLocaleTimeFormat
 
-Obtains time format information (in ICU format, it needs to be coverted to .NET Format).
+Obtains time format information (in ICU format, it needs to be converted to .NET's format).
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,

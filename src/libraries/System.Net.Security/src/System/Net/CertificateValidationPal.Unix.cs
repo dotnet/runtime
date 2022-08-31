@@ -43,11 +43,13 @@ namespace System.Net
             {
                 QueryContextRemoteCertificate(securityContext, out remoteContext);
 
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext == null || remoteContext.IsInvalid)
                 {
-                    remoteContext.DangerousAddRef(ref gotReference);
-                    result = new X509Certificate2(remoteContext.DangerousGetHandle());
+                    return null;
                 }
+
+                remoteContext.DangerousAddRef(ref gotReference);
+                result = new X509Certificate2(remoteContext.DangerousGetHandle());
 
                 if (retrieveChainCertificates)
                 {
@@ -58,7 +60,7 @@ namespace System.Net
                     }
 
                     using (SafeSharedX509StackHandle chainStack =
-                        Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
+                        Interop.OpenSsl.GetPeerCertificateChain((SafeSslHandle)securityContext))
                     {
                         if (!chainStack.IsInvalid)
                         {
@@ -106,7 +108,7 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList(((SafeDeleteSslContext)securityContext).SslContext))
+            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList((SafeSslHandle)securityContext))
             {
                 if (names.IsInvalid)
                 {
@@ -160,7 +162,7 @@ namespace System.Net
             remoteCertContext = null;
             try
             {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(((SafeDeleteSslContext)securityContext).SslContext);
+                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
                 // Note that cert ownership is transferred to SafeFreeCertContext
                 remoteCertContext = new SafeFreeCertContext(remoteCertificate);
                 return 0;

@@ -277,7 +277,7 @@ field-table {
 	#public and not static
 	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x06
 
-	#field is constant but has no row in the contant table
+	#field is constant but has no row in the constant table
 	#LAMESPEC this check is missing from the spec
 	invalid offset table-row ( 4 0 ) or-ushort 0x50
 

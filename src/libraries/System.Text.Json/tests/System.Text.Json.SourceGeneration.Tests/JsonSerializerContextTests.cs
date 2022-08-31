@@ -24,9 +24,33 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void VariousGenericsAreSupported()
         {
-            Assert.NotNull(GenericContext<object>.Default);
-            Assert.NotNull(ContextGenericContainer<object>.NestedInGenericContainerContext.Default);
+            AssertGenericContext(GenericContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedInGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default);
+
             Assert.NotNull(NestedGenericTypesContext.Default);
+            var original = new MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>()
+            {
+                DataT = 1,
+                DataT1 = 10,
+                DataT2 = 100
+            };
+            Type type = typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>);
+            string json = JsonSerializer.Serialize(original, type, NestedGenericTypesContext.Default);
+            var deserialized = (MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>)JsonSerializer.Deserialize(json, type, NestedGenericTypesContext.Default);
+            Assert.Equal(1, deserialized.DataT);
+            Assert.Equal(10, deserialized.DataT1);
+            Assert.Equal(100, deserialized.DataT2);
+
+            static void AssertGenericContext(JsonSerializerContext context)
+            {
+                Assert.NotNull(context);
+                string json = JsonSerializer.Serialize(new JsonMessage { Message = "Hi" }, typeof(JsonMessage), context);
+                JsonMessage deserialized = (JsonMessage)JsonSerializer.Deserialize(json, typeof(JsonMessage), context);
+                Assert.Equal("Hi", deserialized.Message);
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -143,6 +167,60 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(2, personInfo.Properties.Count);
             Assert.Equal("firstName", personInfo.Properties[0].Name);
             Assert.Equal("lastName", personInfo.Properties[1].Name);
+        }
+
+        [Fact]
+        public static void FastPathSerialization_ResolvingJsonTypeInfo()
+        {
+            JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
+
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new JsonMessage { Message = "Hi" };
+            string expectedJson = """{"Message":"Hi","Length":2}""";
+
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, jsonMessageInfo));
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, options));
+
+            // Throws since deserialization without metadata is not supported
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonMessage>(expectedJson, jsonMessageInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonMessage>(expectedJson, options));
+        }
+
+        [Fact]
+        public static void FastPathSerialization_CombinedContext_ThrowsInvalidOperationException()
+        {
+            // TODO change exception assertions once https://github.com/dotnet/runtime/issues/71933 is fixed.
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(FastPathSerializationContext.Default, new DefaultJsonTypeInfoResolver())
+            };
+
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new JsonMessage { Message = "Hi" };
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, jsonMessageInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, options));
+
+            JsonTypeInfo<ClassWithJsonMessage> classInfo = (JsonTypeInfo<ClassWithJsonMessage>)options.GetTypeInfo(typeof(ClassWithJsonMessage));
+            Assert.Null(classInfo.SerializeHandler);
+
+            var largerValue = new ClassWithJsonMessage { Message = value };
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, classInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, options));
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class FastPathSerializationContext : JsonSerializerContext
+        { }
+
+        public class ClassWithJsonMessage
+        {
+            public JsonMessage Message { get; set; }
         }
 
         [Theory]
@@ -302,6 +380,37 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(@"[""Cee""]", json);
         }
 
+        // Regression test for https://github.com/dotnet/runtime/issues/74652
+        [Fact]
+        public static void ClassWithStringValuesRoundtrips()
+        {
+            JsonSerializerOptions options = ClassWithStringValuesContext.Default.Options;
+
+            ClassWithStringValues obj = new()
+            {
+                StringValuesProperty = new(new[] { "abc", "def" })
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/61734
+        [Fact]
+        public static void ClassWithDictionaryPropertyRoundtrips()
+        {
+            JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
+
+            ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
+            {
+                ["foo"] = "bar",
+                ["test"] = "baz",
+            });
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
+        }
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum TestEnum
         {
@@ -316,7 +425,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithPocoListDictionaryAndNullable))]
         internal partial class ClassWithPocoListDictionaryAndNullablePropertyContext : JsonSerializerContext
         {
+        }
 
+        [JsonSerializable(typeof(ClassWithStringValues))]
+        internal partial class ClassWithStringValuesContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(ClassWithDictionaryProperty))]
+        internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
         }
 
         internal class ClassWithPocoListDictionaryAndNullable

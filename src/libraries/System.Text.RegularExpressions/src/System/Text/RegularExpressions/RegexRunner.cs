@@ -243,16 +243,17 @@ namespace System.Text.RegularExpressions
             runtextend = text.Length;
             runtextpos = textstart;
 
-            if (runmatch is null)
+            Match? m = runmatch;
+            if (m is null)
             {
                 // Use a hashtabled Match object if the capture numbers are sparse
                 runmatch = runregex!.caps is null ?
-                    new Match(runregex, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart) :
-                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+                    new Match(runregex, runregex.capsize, runtext, text.Length) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, text.Length);
             }
             else
             {
-                runmatch.Reset(runregex!, runtext, runtextbeg, runtextend, runtextstart);
+                m.Reset(runtext, text.Length);
             }
 
             // Note we test runcrawl, because it is the last one to be allocated

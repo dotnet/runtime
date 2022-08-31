@@ -597,7 +597,7 @@ private:
 //    * code:Module.m_pAvailableClasses - this is a table that lets you look up the types (the code:EEClass)
 //        for all the types in the module
 //
-// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed exectuable files.
+// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed executable files.
 class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE

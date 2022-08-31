@@ -1550,7 +1550,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                 }
                 else
                 {
-                    // if a concrete type can be cast to the constraint, then this constraint will be satisifed
+                    // if a concrete type can be cast to the constraint, then this constraint will be satisfied
                     if (thElem.CanCastTo(thConstraint))
                     {
                         // Static virtual methods need an extra check when an abstract type is used for instantiation

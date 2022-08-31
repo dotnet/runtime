@@ -170,7 +170,7 @@ namespace System.Reflection
             PositionImpl = accessor.Position;
             AttrsImpl = accessor.Attributes;
 
-            // Strictly speeking, property's don't contain paramter tokens
+            // Strictly speeking, property's don't contain parameter tokens
             // However we need this to make ca's work... oh well...
             m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
             m_scope = accessor.m_scope;

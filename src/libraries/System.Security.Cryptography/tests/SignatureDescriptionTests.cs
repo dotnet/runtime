@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<NullReferenceException>(() => def = sig.CreateDeformatter(dsa));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Operation is not supported on Unix
         public void Digest()
         {

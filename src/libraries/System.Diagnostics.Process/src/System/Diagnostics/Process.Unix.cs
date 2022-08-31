@@ -67,7 +67,7 @@ namespace System.Diagnostics
 
             // Check if we know the process has exited. This avoids us targeting another
             // process that has a recycled PID. This only checks our internal state, the Kill call below
-            // activly checks if the process is still alive.
+            // actively checks if the process is still alive.
             if (GetHasExited(refresh: false))
             {
                 return;
@@ -1060,7 +1060,7 @@ namespace System.Diagnostics
 
         public bool Responding => true;
 
-        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
+        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
         private static unsafe void EnsureInitialized()
         {

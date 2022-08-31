@@ -1848,7 +1848,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("MoveToFirstAttribute/MoveToNextAttribute succesive calls")]
+        [Variation("MoveToFirstAttribute/MoveToNextAttribute successive calls")]
         public int TAXmlDecl_3()
         {
             ReloadSource();

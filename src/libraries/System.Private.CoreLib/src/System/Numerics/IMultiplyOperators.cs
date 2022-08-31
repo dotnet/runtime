@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will multiply <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the product of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     public interface IMultiplyOperators<TSelf, TOther, TResult>
-        where TSelf : IMultiplyOperators<TSelf, TOther, TResult>
+        where TSelf : IMultiplyOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>

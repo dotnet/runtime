@@ -19,7 +19,7 @@
  DbgTransportSession was originally designed around cross-machine debugging via sockets and it is supposed to
  handle network interruptions. Right now we use pipes (see TwoWaypipe) and don't expect to have connection issues.
  But there seem to be no good reason to try hard to get rid of existing working protocol even if it's a bit
- cautious about connection quality. So please KEEP IN MIND THAT SOME COMMENTS REFERING TO NETWORK AND SOCKETS
+ cautious about connection quality. So please KEEP IN MIND THAT SOME COMMENTS REFERRING TO NETWORK AND SOCKETS
  CAN BE OUTDATED.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -53,7 +53,7 @@
 struct DebuggerIPCEvent;
 struct DbgEventBufferEntry;
 
-// Some simple ad-hoc debug only transport logging. This output is too chatty for an exisitng CLR logging
+// Some simple ad-hoc debug only transport logging. This output is too chatty for an existng CLR logging
 // channel (and we've run out of bits for an additional channel) and is likely to be of limited use to anyone
 // besides the transport developer (and even then only occasionally).
 //
@@ -212,7 +212,7 @@ enum DbgTransportFaultSide
     FS_Right    = 0x20000000,
 };
 
-// Network operations which are candiates for fault injection.
+// Network operations which are candidates for fault injection.
 enum DbgTransportFaultOp
 {
     FO_Connect  = 0x01000000,
@@ -305,7 +305,7 @@ class DbgTransportSession
 {
 public:
     // No real work done in the constructor. Use Init() instead.
-    DbgTransportSession();
+    DbgTransportSession() = default;
 
     // Cleanup what is allocated/created in Init()
     ~DbgTransportSession();
@@ -422,7 +422,7 @@ private:
     // error is raised) and which incoming messages are valid.
     enum SessionState
     {
-        SS_Closed,      // No session and no attempt is being made to form one
+        SS_Closed = 0,  // No session and no attempt is being made to form one
         SS_Opening_NC,  // Session is being formed but no connection is established yet
         SS_Opening,     // Session is being formed, the low level connection is in place
         SS_Open,        // Session is fully formed and normal transport messages can be sent and received

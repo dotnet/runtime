@@ -652,7 +652,7 @@ namespace System.Reflection.Metadata.Tests
         {
             // AppCS has 2 modules
             var expMods = new string[] { "ModuleCS01.mod", "ModuleVB01.mod" };
-            var expHashs = new byte[][]
+            var expHashes = new byte[][]
             {
                 // ModuleCS01.mod - 2B 56 10 8B 34 A1 DC CD CC B5 CF 66 5E 43 94 5E 09 9F 34 A3
                 new byte[] { 0x2B, 0x56, 0x10, 0x8B, 0x34, 0xA1, 0xDC, 0xCD, 0xCC, 0xB5, 0xCF, 0x66, 0x5E, 0x43, 0x94, 0x5E, 0x09, 0x9F, 0x34, 0xA3 },
@@ -686,10 +686,10 @@ namespace System.Reflection.Metadata.Tests
                 Assert.True(file.ContainsMetadata);
 
                 var hv = reader.GetBlobBytes(file.HashValue);
-                Assert.Equal(hv.Length, expHashs[i].Length);
+                Assert.Equal(hv.Length, expHashes[i].Length);
                 for (int j = 0; j < hv.Length; j++)
                 {
-                    Assert.Equal(hv[j], expHashs[i][j]);
+                    Assert.Equal(hv[j], expHashes[i][j]);
                 }
 
                 i++;
@@ -710,7 +710,7 @@ namespace System.Reflection.Metadata.Tests
         {
             // AppCS has 2 modules
             var expMods = new string[] { "ModuleCS00.mod" };
-            var expHashs = new byte[][]
+            var expHashes = new byte[][]
             {
                 // ModuleCS00.mod
                 // new byte [] { 0xd4, 0x6b, 0xec, 0x25, 0x47, 0x01, 0x20, 0x30, 0x05, 0x42, 0x34, 0x4b, 0x31, 0x22, 0x44, 0xd8, 0x1c, 0x87, 0xd0, 0x98 },

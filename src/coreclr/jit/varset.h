@@ -88,7 +88,7 @@ const unsigned lclMAX_TRACKED = UInt64Bits;
 
 #else
 
-#error "Unrecognized BitSet implemention for VarSet."
+#error "Unrecognized BitSet implementation for VarSet."
 
 #endif
 
@@ -163,7 +163,7 @@ const unsigned lclMAX_ALLSET_TRACKED = UInt64Bits;
 #define ALLVARSET_REP_IS_CLASS 1
 
 #else
-#error "Unrecognized BitSet implemention for AllVarSet."
+#error "Unrecognized BitSet implementation for AllVarSet."
 #endif
 
 // These types should be used as the types for ALLVARSET_TP arguments and return values, respectively.

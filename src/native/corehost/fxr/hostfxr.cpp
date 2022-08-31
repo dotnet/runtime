@@ -504,7 +504,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
 //
 //    required_buffer_size
 //      If the return value is HostApiBufferTooSmall, then
-//      required_buffer_size is set to the minimium buffer
+//      required_buffer_size is set to the minimum buffer
 //      size necessary to contain the result including the
 //      null terminator.
 //

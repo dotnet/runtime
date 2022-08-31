@@ -66,11 +66,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return LocalContext;
         }
 
-        public IEcmaModule GetTargetModule(FieldDesc field)
-        {
-            return GetModuleTokenForField(field).Module;
-        }
-
         public IEcmaModule GetTargetModule(MethodDesc method)
         {
             return GetModuleTokenForMethod(method).Module;
@@ -84,11 +79,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ModuleToken GetModuleTokenForMethod(MethodDesc method)
         {
             return Resolver.GetModuleTokenForMethod(method, throwIfNotFound: false, allowDynamicallyCreatedReference: false);
-        }
-
-        public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
-        {
-            return Resolver.GetModuleTokenForField(field, throwIfNotFound);
         }
 
         public bool Equals(SignatureContext other)

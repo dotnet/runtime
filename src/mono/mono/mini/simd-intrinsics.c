@@ -306,18 +306,20 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
-				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
-					ins->inst_c0 = OP_FMUL;
-					return ins;
-				} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
-					ins->inst_c0 = OP_FMUL;
-					return ins;
+				if (strcmp ("Vector4", m_class_get_name (klass)) && strcmp ("Vector2", m_class_get_name (klass))) {
+					if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
+						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
+						ins->inst_c1 = arg_type;
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
+						ins->inst_c0 = OP_FMUL;
+						return ins;
+					} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
+						ins->inst_c1 = arg_type;
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+						ins->inst_c0 = OP_FMUL;
+						return ins;
+					}
 				}
 				instc0 = OP_FMUL;
 				break;
@@ -512,8 +514,15 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 {
 	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
 	int vector_size = mono_class_value_size (vector_class, NULL);
-	MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
-	int element_size = mono_class_value_size (element_class, NULL);
+	int element_size;
+	if (!strcmp ("Vector4", m_class_get_name (vector_class)))
+		element_size = vector_size / 4;
+	else if (!strcmp ("Vector2", m_class_get_name (vector_class)))
+		element_size = vector_size / 2;
+	else {
+		MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
+		element_size = mono_class_value_size (element_class, NULL);
+	}
 	gboolean has_single_element = vector_size == element_size;
 
 	// If there's just one element we need to extract it instead of summing the whole array
@@ -709,6 +718,13 @@ emit_hardware_intrinsics (
 		if (!info)
 			goto support_probe_complete;
 		id = info->id;
+
+#ifdef TARGET_ARM64
+		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
+			goto support_probe_complete;
+		}
+#endif
+
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
@@ -783,7 +799,7 @@ emit_vector_create_elementwise (
 	return ins;
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM) 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 static int
 type_to_xinsert_op (MonoTypeEnum type)
@@ -977,7 +993,7 @@ is_element_type_primitive (MonoType *vector_type)
 
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
+{	
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
@@ -1549,20 +1565,20 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return NULL;
 }
 
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-#ifdef TARGET_AMD64
-
 // System.Numerics.Vector2/Vector3/Vector4
 static guint16 vector2_methods[] = {
 	SN_ctor,
 	SN_Abs,
+	SN_Add,
 	SN_CopyTo,
+	SN_Divide,
 	SN_Dot,
 	SN_GetElement,
 	SN_Max,
 	SN_Min,
+	SN_Multiply,
 	SN_SquareRoot,
+	SN_Subtract,
 	SN_WithElement,
 	SN_get_Item,
 	SN_get_One,
@@ -1715,6 +1731,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
 	}
+	case SN_Add:
+	case SN_Divide:
+	case SN_Multiply:
+	case SN_Subtract:
 	case SN_op_Addition:
 	case SN_op_Division:
 	case SN_op_Multiply:
@@ -1723,34 +1743,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Min:
 		if (!(!fsig->hasthis && fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
-		ins->inst_c1 = etype->type;
-
-		switch (id) {
-		case SN_op_Addition:
-			ins->inst_c0 = OP_FADD;
-			break;
-		case SN_op_Division:
-			ins->inst_c0 = OP_FDIV;
-			break;
-		case SN_op_Multiply:
-			ins->inst_c0 = OP_FMUL;
-			break;
-		case SN_op_Subtraction:
-			ins->inst_c0 = OP_FSUB;
-			break;
-		case SN_Max:
-			ins->inst_c0 = OP_FMAX;
-			break;
-		case SN_Min:
-			ins->inst_c0 = OP_FMIN;
-			break;
-		default:
-			g_assert_not_reached ();
-			break;
-		}
-		return ins;
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	case SN_Dot: {
+#ifdef TARGET_ARM64
+		int instc0 = OP_FMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
+		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
+#elif defined(TARGET_AMD64)
 		if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
 			return NULL;
 
@@ -1766,6 +1765,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+#else
+		return NULL;
+#endif
 	}
 	case SN_Abs: {
 		// MAX(x,0-x)
@@ -1793,9 +1795,15 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return ins;
 	}
 	case SN_SquareRoot: {
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, MONO_TYPE_R4, fsig, args);
+#elif defined(TARGET_AMD64)
 		ins = emit_simd_ins (cfg, klass, OP_XOP_X_X, args [0]->dreg, -1);
 		ins->inst_c0 = (IntrinsicId)INTRINS_SSE_SQRT_PS;
 		return ins;
+#else
+		return NULL;
+#endif
 	}
 	case SN_CopyTo:
 		// FIXME:
@@ -1807,9 +1815,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	return NULL;
 }
 
-#endif /* TARGET_AMD64 */
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
-#if defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
 
 static guint16 vector_methods [] = {
 	SN_ConvertToDouble,
@@ -3295,6 +3303,7 @@ static SimdIntrinsic bmi2_methods [] = {
 static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
+	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
 
@@ -4000,6 +4009,72 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 }
 #endif // !TARGET_ARM64
 
+#ifdef TARGET_WASM
+
+static SimdIntrinsic packedsimd_methods [] = {
+	{SN_And},
+	{SN_Bitmask},
+	{SN_CompareEqual},
+	{SN_CompareNotEqual},
+	{SN_ExtractLane},
+	{SN_ReplaceLane},
+	{SN_Shuffle},
+	{SN_Splat},
+	{SN_Swizzle},
+	{SN_get_IsSupported},
+};
+
+static const IntrinGroup supported_wasm_intrinsics [] = {
+	{ "PackedSimd", 0, packedsimd_methods, sizeof (packedsimd_methods) },
+};
+
+static MonoInst*
+emit_packedsimd_intrinsics (
+	MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
+	MonoClass *klass, const IntrinGroup *intrin_group,
+	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
+	gboolean is_64bit)
+{
+	if (!is_element_type_primitive (fsig->params [0]))
+		return NULL;
+
+	switch (id) {
+		case SN_And:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND, arg0_type, fsig, args);
+		case SN_Bitmask:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
+		case SN_CompareEqual:
+			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
+		case SN_CompareNotEqual:
+			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
+		case SN_ExtractLane: {
+			int extract_op = type_to_xextract_op (arg0_type);
+			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		}
+		case SN_ReplaceLane: {
+			int insert_op = type_to_xinsert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		}
+		case SN_Splat: {
+			MonoType *etype = get_vector_t_elem_type (fsig->ret);
+			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
+			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+		}
+		case SN_Shuffle:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
+		case SN_Swizzle:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
+	}
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
+#endif // TARGET_WASM
+
 #ifdef TARGET_ARM64
 static
 MonoInst*
@@ -4027,6 +4102,12 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector`1")){
 		return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics")) {
+		//if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Vector3", class_name))
+		if (!strcmp ("Vector4", class_name))
+			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 
 	return NULL;
@@ -4063,6 +4144,12 @@ static
 MonoInst*
 arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
+			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
+			emit_packedsimd_intrinsics);
+	}
+
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
 			return emit_sri_vector (cfg, cmethod, fsig, args);

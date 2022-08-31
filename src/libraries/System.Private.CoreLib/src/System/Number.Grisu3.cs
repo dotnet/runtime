@@ -469,7 +469,7 @@ namespace System
             // If the function returns true then:
             //      v == (double)(buffer * 10^decimalExponent)
             //
-            // The digits in the buffer are the shortest represenation possible (no 0.09999999999999999 instead of 0.1).
+            // The digits in the buffer are the shortest representation possible (no 0.09999999999999999 instead of 0.1).
             // The shorter representation will even be chosen if the longer one would be closer to v.
             //
             // The last digit will be closest to the actual v.

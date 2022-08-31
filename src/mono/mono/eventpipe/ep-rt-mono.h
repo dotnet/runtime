@@ -140,7 +140,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_empty) (const queue_type *queue) { \
 		EP_ASSERT (queue != NULL); \
-		return g_queue_is_empty (queue->queue); \
+		return (g_queue_is_empty (queue->queue) == TRUE) ? true : false; \
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_valid) (const queue_type *queue) { return (queue != NULL && queue->queue != NULL); }
 
@@ -258,7 +258,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
 #define EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, ep_rt_hash_map_hash_callback_t hash_callback, ep_rt_hash_map_equal_callback_t eq_callback, void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
 		EP_ASSERT (hash_map != NULL); \
 		EP_ASSERT (key_free_callback == NULL); \
 		hash_map->table = g_hash_table_new_full ((GHashFunc)hash_callback, (GEqualFunc)eq_callback, (GDestroyNotify)key_free_callback, (GDestroyNotify)value_free_callback); \
@@ -270,6 +270,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value) { \
 		EP_ASSERT (hash_map != NULL); \
+		EP_ASSERT (!g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, NULL)); \
 		g_hash_table_insert (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
 		return true; \
 	} \
@@ -280,7 +281,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, lookup) (const hash_map_type *hash_map, const key_type key, value_type *value) { \
 		EP_ASSERT (hash_map != NULL && value != NULL); \
 		gpointer _value = NULL; \
-		bool result = g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, &_value); \
+		bool result = (g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, &_value) == TRUE) ? true : false; \
 		*value = ((value_type)(gsize)_value); \
 		return result; \
 	} \
@@ -380,6 +381,8 @@ extern int64_t ep_rt_mono_system_timestamp_get (void);
 extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 extern MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
 extern EventPipeThread * ep_rt_mono_thread_get_or_create (void);
+extern uint32_t ep_stack_hash_key_hash (const void *key);
+extern bool ep_stack_hash_key_equal (const void *key1, const void *key2);
 
 static
 inline
@@ -877,6 +880,24 @@ EP_RT_DEFINE_HASH_MAP_REMOVE(metadata_labels_hash, ep_rt_metadata_labels_hash_ma
 EP_RT_DEFINE_HASH_MAP(stack_hash, ep_rt_stack_hash_map_t, StackHashKey *, StackHashEntry *)
 EP_RT_DEFINE_HASH_MAP_ITERATOR(stack_hash, ep_rt_stack_hash_map_t, ep_rt_stack_hash_map_iterator_t, StackHashKey *, StackHashEntry *)
 
+#ifdef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+static
+inline
+guint
+ep_rt_stack_hash_key_hash (gconstpointer key)
+{
+	return (guint)ep_stack_hash_key_hash (key);
+}
+
+static
+inline
+gboolean
+ep_rt_stack_hash_key_equal (gconstpointer key1, gconstpointer key2)
+{
+	return !!ep_stack_hash_key_equal (key1, key2);
+}
+#endif
+
 /*
  * EventPipeProvider.
  */
@@ -979,15 +1000,6 @@ ep_rt_config_value_get_output_streaming (void)
 		enable = true;
 	g_free (value);
 	return enable;
-}
-
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	// Only supports portable thread pool.
-	return true;
 }
 
 static

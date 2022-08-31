@@ -1119,7 +1119,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			method = jinfo_get_method (ji);
 		else
 			method = get_method_from_stack_frame (ji, generic_info);
-		if (jinfo_get_method (ji)->wrapper_type) {
+		int wrapper_type = jinfo_get_method (ji)->wrapper_type;
+		if (wrapper_type && wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) {
 			char *s;
 
 			sf->method = NULL;
@@ -1344,7 +1345,12 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 
 	unwinder_init (&unwinder);
 
-	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
+#ifdef HOST_WASI
+	gboolean ignore_end_of_stack = true;
+#else
+	gboolean ignore_end_of_stack = false;
+#endif
+	while (ignore_end_of_stack || MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
 		res = unwinder_unwind_frame (&unwinder, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, get_reg_locations ? new_reg_locations : NULL, &frame);
 		if (!res)
@@ -2042,7 +2048,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 				}
 
 				ERROR_DECL (isinst_error); // FIXME not used https://github.com/mono/mono/pull/3055/files#r240548187
-				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, error)) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && !MONO_CLASS_IS_INTERFACE_INTERNAL (catch_class) && mono_object_isinst_checked (ex_obj, catch_class, error)) {
 					/* runtime invokes catch even unhandled exceptions */
 					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 					g_list_free (trace_ips);
@@ -2107,8 +2113,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	gboolean stack_overflow = FALSE;
 	MonoContext initial_ctx;
 	MonoMethod *method;
-	int frame_count = 0;
+	// int frame_count = 0; // used for debugging
 	gint32 filter_idx, first_filter_idx = 0;
+
 	MonoObject *ex_obj = NULL;
 	MonoObject *non_exception = NULL;
 	Unwinder unwinder;
@@ -2350,8 +2357,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			ip = MONO_CONTEXT_GET_IP (ctx);
 
 		method = jinfo_get_method (ji);
-		frame_count ++;
-		//printf ("[%d] %s.\n", frame_count, mono_method_full_name (method, TRUE));
+		// frame_count ++;
+		// printf ("[%d] %s.\n", frame_count, mono_method_full_name (method, TRUE));
 
 		if (stack_overflow) {
 			free_stack = (guint32)((guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)));
@@ -2421,6 +2428,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 				error_init (error);
 				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE &&
+					 !MONO_CLASS_IS_INTERFACE_INTERNAL (catch_class) &&
 				     mono_object_isinst_checked (ex_obj, catch_class, error)) || filtered) {
 					/*
 					 * This guards against the situation that we abort a thread that is executing a finally clause
@@ -2490,7 +2498,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.clause_index = i;
 						jit_tls->resume_state.il_state = frame.il_state;
 
-						/* Instruct the intepreter to unwind back to AOTed code */
+						/* Instruct the interpreter to unwind back to AOTed code */
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, NULL, NULL);
 					}
 

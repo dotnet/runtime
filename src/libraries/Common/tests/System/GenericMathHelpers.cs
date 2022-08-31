@@ -29,11 +29,27 @@ namespace System
 
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
 
+        public static TSelf ReadBigEndian(byte[] source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);
+
+        public static TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) => TSelf.ReadBigEndian(source, startIndex, isUnsigned);
+
+        public static TSelf ReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);
+
+        public static TSelf ReadLittleEndian(byte[] source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
+
+        public static TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) => TSelf.ReadLittleEndian(source, startIndex, isUnsigned);
+
+        public static TSelf ReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
+
         public static TSelf RotateLeft(TSelf value, int rotateAmount) => TSelf.RotateLeft(value, rotateAmount);
 
         public static TSelf RotateRight(TSelf value, int rotateAmount) => TSelf.RotateRight(value, rotateAmount);
 
         public static TSelf TrailingZeroCount(TSelf value) => TSelf.TrailingZeroCount(value);
+
+        public static bool TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadBigEndian(source, isUnsigned, out value);
+
+        public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadLittleEndian(source, isUnsigned, out value);
 
         public static int GetByteCount(TSelf value) => value.GetByteCount();
 

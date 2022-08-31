@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection.Metadata;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -40,12 +39,30 @@ namespace ILCompiler
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
             }
+#if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
                 sb.Append(property.Name);
                 sb.Append('.');
                 sb.Append(property.GetMethod == method ? "get" : "set");
+                return sb.ToString();
             }
+            else if (method.GetEventForAccessor() is EventPseudoDesc @event)
+            {
+                sb.Append(@event.Name);
+                sb.Append('.');
+                string accessor;
+                if (method.Name == @event.AddMethod.Name)
+                    accessor = "add";
+                else if (method.Name == @event.RemoveMethod.Name)
+                    accessor = "remove";
+                else if (method.Name == @event.RaiseMethod.Name)
+                    accessor = "raise";
+                else
+                    throw new NotSupportedException();
+                sb.Append(accessor);
+            }
+#endif
             else
             {
                 sb.Append(method.Name);
@@ -104,7 +121,7 @@ namespace ILCompiler
                 .Append('.')
                 .Append(property.Name).ToString();
         }
-        
+
         public static string GetDisplayName(this EventPseudoDesc @event)
         {
             return new StringBuilder(@event.OwningType.GetDisplayName())

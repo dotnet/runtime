@@ -38,11 +38,10 @@ namespace System.Text.RegularExpressions
         internal GroupCollection? _groupcoll;
 
         // input to the match
-        internal Regex? _regex;
-        internal int _textbeg;
-        internal int _textpos;
-        internal int _textend;
-        internal int _textstart;
+        internal readonly Regex? _regex;
+        internal int _textbeg; // 0 while the match is being generated, then bumped in Tidy to the actual beginning
+        internal int _textpos; // position offset from beginning
+        internal int _textend; // input length while the match is being generated, them bumped in Tidy to be the end
 
         // output from the match
         internal readonly int[][] _matches;
@@ -50,29 +49,25 @@ namespace System.Text.RegularExpressions
         internal bool _balancing;        // whether we've done any balancing with this match.  If we
                                          // have done balancing, we'll need to do extra work in Tidy().
 
-        internal Match(Regex? regex, int capcount, string? text, int begpos, int len, int startpos) :
+        internal Match(Regex? regex, int capcount, string? text, int textLength) :
             base(text, new int[2], 0, "0")
         {
             _regex = regex;
             _matchcount = new int[capcount];
             _matches = new int[capcount][];
             _matches[0] = _caps;
-            _textbeg = begpos;
-            _textend = begpos + len;
-            _textstart = startpos;
+            _textend = textLength;
             _balancing = false;
         }
 
         /// <summary>Returns an empty Match object.</summary>
-        public static Match Empty { get; } = new Match(null, 1, string.Empty, 0, 0, 0);
+        public static Match Empty { get; } = new Match(null, 1, string.Empty, 0);
 
-        internal void Reset(Regex regex, string? text, int textbeg, int textend, int textstart)
+        internal void Reset(string? text, int textLength)
         {
-            _regex = regex;
             Text = text;
-            _textbeg = textbeg;
-            _textend = textend;
-            _textstart = textstart;
+            _textbeg = 0;
+            _textend = textLength;
 
             int[] matchcount = _matchcount;
             for (int i = 0; i < matchcount.Length; i++)
@@ -278,7 +273,14 @@ namespace System.Text.RegularExpressions
 
             int[] matchcount = _matchcount;
             _capcount = matchcount[0]; // used to indicate Success
-            _textpos = textpos; // used to determine where to perform next match
+
+            // Used for NextMatch. During the matching process these stored the span-based offsets.
+            // If there was actually a beginning supplied, all of these need to be shifted by that
+            // beginning value.
+            Debug.Assert(_textbeg == 0);
+            _textbeg = beginningOfSpanSlice;
+            _textpos = beginningOfSpanSlice + textpos;
+            _textend += beginningOfSpanSlice;
 
             int[][] matches = _matches;
             int[] interval = matches[0];
@@ -380,8 +382,8 @@ namespace System.Text.RegularExpressions
     {
         private new readonly Hashtable _caps;
 
-        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string? text, int begpos, int len, int startpos) :
-            base(regex, capcount, text, begpos, len, startpos)
+        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string? text, int textLength) :
+            base(regex, capcount, text, textLength)
         {
             _caps = caps;
         }

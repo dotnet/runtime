@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Tests
 
         // The returned types on .NET Framework can differ when the machine is in FIPS mode.
         // So check hash algorithms via a more complicated manner.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("MD5", typeof(MD5))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#md5", typeof(MD5))]
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("System.Security.Cryptography.HMAC", typeof(HMACSHA1))]
         [InlineData("System.Security.Cryptography.KeyedHashAlgorithm", typeof(HMACSHA1))]
@@ -106,36 +106,23 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> NamedSymmetricAlgorithmCreateData
-        {
-            get
-            {
-                yield return new object[] { "AES", typeof(Aes) };
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+        [InlineData("AES", typeof(Aes))]
 #pragma warning disable SYSLIB0022 // Rijndael types are obsolete
-                yield return new object[] { "Rijndael", typeof(Rijndael) };
-                yield return new object[] { "System.Security.Cryptography.Rijndael", typeof(Rijndael) };
+        [InlineData("Rijndael", typeof(Rijndael))]
+        [InlineData("System.Security.Cryptography.Rijndael", typeof(Rijndael))]
+        [InlineData("http://www.w3.org/2001/04/xmlenc#aes128-cbc", typeof(Rijndael))]
+        [InlineData("http://www.w3.org/2001/04/xmlenc#aes192-cbc", typeof(Rijndael))]
+        [InlineData("http://www.w3.org/2001/04/xmlenc#aes256-cbc", typeof(Rijndael))]
 #pragma warning restore SYSLIB0022
-
-                if (PlatformDetection.IsNotBrowser)
-                {
-#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
-                    yield return new object[] { "http://www.w3.org/2001/04/xmlenc#aes128-cbc", typeof(Rijndael) };
-                    yield return new object[] { "http://www.w3.org/2001/04/xmlenc#aes192-cbc", typeof(Rijndael) };
-                    yield return new object[] { "http://www.w3.org/2001/04/xmlenc#aes256-cbc", typeof(Rijndael) };
-#pragma warning restore SYSLIB0022
-                    yield return new object[] { "3DES", typeof(TripleDES) };
-                    yield return new object[] { "TripleDES", typeof(TripleDES) };
-                    yield return new object[] { "System.Security.Cryptography.TripleDES", typeof(TripleDES) };
-                    yield return new object[] { "http://www.w3.org/2001/04/xmlenc#tripledes-cbc", typeof(TripleDES) };
-                    yield return new object[] { "DES", typeof(DES) };
-                    yield return new object[] { "System.Security.Cryptography.DES", typeof(DES) };
-                    yield return new object[] { "http://www.w3.org/2001/04/xmlenc#des-cbc", typeof(DES) };
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(NamedSymmetricAlgorithmCreateData))]
+        [InlineData("3DES", typeof(TripleDES))]
+        [InlineData("TripleDES", typeof(TripleDES))]
+        [InlineData("System.Security.Cryptography.TripleDES", typeof(TripleDES))]
+        [InlineData("http://www.w3.org/2001/04/xmlenc#tripledes-cbc", typeof(TripleDES))]
+        [InlineData("DES", typeof(DES))]
+        [InlineData("System.Security.Cryptography.DES", typeof(DES))]
+        [InlineData("http://www.w3.org/2001/04/xmlenc#des-cbc", typeof(DES))]
         public static void NamedSymmetricAlgorithmCreate(string identifier, Type baseType)
         {
             using (SymmetricAlgorithm created = SymmetricAlgorithm.Create(identifier))
@@ -145,7 +132,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("RSA", typeof(RSA))]
         [InlineData("System.Security.Cryptography.RSA", typeof(RSA))]
@@ -159,7 +146,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
@@ -182,7 +169,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(AsymmetricAlgorithm.Create(identifier));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public static void NamedCreate_Mismatch()
         {
@@ -247,7 +234,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddOID(string.Empty, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AddAlgorithm_CreateFromName_ReturnsMapped()
         {
@@ -295,7 +282,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void StaticCreateMethods()
         {
@@ -371,15 +358,6 @@ namespace System.Security.Cryptography.Tests
                 yield return new object[] { "HMACSHA512", "System.Security.Cryptography.HMACSHA512", true };
                 yield return new object[] { "System.Security.Cryptography.HMACSHA512", null, true };
 
-                yield return new object[] { "AES", "System.Security.Cryptography.AesCryptoServiceProvider", true };
-                yield return new object[] { "System.Security.Cryptography.AesCryptoServiceProvider", "System.Security.Cryptography.AesCryptoServiceProvider", true };
-                yield return new object[] { "AesManaged", typeof(AesManaged).FullName, true };
-                yield return new object[] { "System.Security.Cryptography.AesManaged", typeof(AesManaged).FullName, true };
-#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
-                yield return new object[] { "Rijndael", typeof(RijndaelManaged).FullName, true };
-                yield return new object[] { "System.Security.Cryptography.Rijndael", typeof(RijndaelManaged).FullName, true };
-#pragma warning restore SYSLIB0022 // Rijndael types are obsolete
-
                 if (PlatformDetection.IsBrowser)
                 {
                     // Hash functions
@@ -444,9 +422,15 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "RC2", "System.Security.Cryptography.RC2CryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.RC2", "System.Security.Cryptography.RC2CryptoServiceProvider", true };
 #pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+                    yield return new object[] { "Rijndael", typeof(RijndaelManaged).FullName, true };
+                    yield return new object[] { "System.Security.Cryptography.Rijndael", typeof(RijndaelManaged).FullName, true };
                     yield return new object[] { "System.Security.Cryptography.SymmetricAlgorithm", typeof(RijndaelManaged).FullName, true };
 #pragma warning restore SYSLIB0022 // Rijndael types are obsolete
+                    yield return new object[] { "AES", "System.Security.Cryptography.AesCryptoServiceProvider", true };
                     yield return new object[] { "AesCryptoServiceProvider", "System.Security.Cryptography.AesCryptoServiceProvider", true };
+                    yield return new object[] { "System.Security.Cryptography.AesCryptoServiceProvider", "System.Security.Cryptography.AesCryptoServiceProvider", true };
+                    yield return new object[] { "AesManaged", typeof(AesManaged).FullName, true };
+                    yield return new object[] { "System.Security.Cryptography.AesManaged", typeof(AesManaged).FullName, true };
 
                     // Xml Dsig/ Enc Hash algorithms
                     yield return new object[] { "http://www.w3.org/2000/09/xmldsig#sha1", "System.Security.Cryptography.SHA1CryptoServiceProvider", true };
@@ -481,6 +465,7 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "2.5.29.14", "System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.15", "System.Security.Cryptography.X509Certificates.X509KeyUsageExtension", true };
                     yield return new object[] { "2.5.29.17", "System.Security.Cryptography.X509Certificates.X509SubjectAlternativeNameExtension", true };
+                    yield return new object[] { "2.5.29.35", "System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.37", "System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension", true };
                     yield return new object[] { "X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain", true };
 
@@ -494,7 +479,8 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AllValidNames))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [MemberData(nameof(AllValidNames))]
         public static void CreateFromName_AllValidNames(string name, string typeName, bool supportsUnixMac)
         {
             bool isWindows = OperatingSystem.IsWindows();

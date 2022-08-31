@@ -2582,6 +2582,8 @@ namespace Internal.IL
 
             var size = Pop();
 
+            Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
+
             CheckIsInteger(size);
 
             Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));

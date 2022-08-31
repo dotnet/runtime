@@ -422,13 +422,13 @@ class Runtime_34587
 
             if (X86BaseIsSupported)
             {
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= (RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64);
             }
 
             if (X86BaseX64IsSupported)
             {
                 succeeded &= X86BaseIsSupported;
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= (RuntimeInformation.ProcessArchitecture == Architecture.X64);
             }
 
             return succeeded;

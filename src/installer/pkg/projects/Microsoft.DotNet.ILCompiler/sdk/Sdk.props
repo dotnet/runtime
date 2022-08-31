@@ -17,6 +17,6 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <!-- Only import the build props if the NativeAot package isn't referenced via NuGet. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.props" Condition="'$(PublishAot)' == 'true' and '$(ILCompilerTargetsPath)' == ''" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.props" Condition="'$(ILCompilerTargetsPath)' == ''" />
 
 </Project>

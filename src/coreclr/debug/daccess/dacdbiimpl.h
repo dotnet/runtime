@@ -1023,7 +1023,7 @@ protected:
     // if the specified module is a WinRT module then isWinRT will equal TRUE
     HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT);
 
-    // Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     ULONG GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle);
 
 private:

@@ -366,7 +366,7 @@ namespace System.Xml
                 return new XmlBoundElement(prefix, localName, namespaceURI, this);
             }
 
-            // This is the 1st time an element is beeing created on an empty XmlDataDocument - unbind special listeners, bind permanent ones and then go on w/
+            // This is the 1st time an element is being created on an empty XmlDataDocument - unbind special listeners, bind permanent ones and then go on w/
             // creation of this element
             EnsurePopulatedMode();
             Debug.Assert(_fDataRowCreatedSpecial == false);
@@ -657,7 +657,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void EnsureFoliation(XmlBoundElement rowElem, ElementState foliation)
         {
-            if (rowElem.IsFoliated) //perf reason, avoid unecessary lock.
+            if (rowElem.IsFoliated) //perf reason, avoid unnecessary lock.
                 return;
             ForceFoliation(rowElem, foliation);
         }
@@ -1293,7 +1293,7 @@ namespace System.Xml
             }
         }
 
-        // load all data from tree structre into datarows
+        // load all data from tree structure into datarows
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(XmlBoundElement? rowElem, XmlNode node)
         {
@@ -1641,7 +1641,7 @@ namespace System.Xml
             Debug.Assert(row != null);
             Debug.Assert(rowElement != null);
 
-            // If user has cascading relationships, then columnChangeList will contains the changed columns only for the last row beeing cascaded
+            // If user has cascading relationships, then columnChangeList will contains the changed columns only for the last row being cascaded
             // but there will be multiple ROM events
             if (_columnChangeList.Count > 0)
             {
@@ -1681,7 +1681,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnDeletingRow(DataRow row, XmlBoundElement rowElement)
         {
-            // Note that this function is beeing called even if ignoreDataSetEvents == true.
+            // Note that this function is being called even if ignoreDataSetEvents == true.
 
             // Foliate, so we can be able to preserve the nodes even if the DataRow has no longer values for the crtRecord.
             if (IsFoliated(rowElement))
@@ -2078,7 +2078,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnRowChanging(object sender, DataRowChangeEventArgs args)
         {
-            // We foliate the region each time the assocaited row gets deleted
+            // We foliate the region each time the associated row gets deleted
             DataRow row = args.Row;
             if (args.Action == DataRowAction.Delete && row.Element != null)
             {
@@ -2106,7 +2106,7 @@ namespace System.Xml
                     switch (args.Action)
                     {
                         case DataRowAction.Add:
-                            // DataRow is beeing added to the table (Table.Rows.Add is beeing called)
+                            // DataRow is being added to the table (Table.Rows.Add is being called)
                             break;
 
                         case DataRowAction.Delete:
@@ -2149,7 +2149,7 @@ namespace System.Xml
                             break;
 
                         case DataRowAction.Change:
-                            // A DataRow field is beeing changed
+                            // A DataRow field is being changed
                             //    - state transition from New (AKA PendingInsert) to New (AKA PendingInsert)
                             //    - state transition from Unchanged to Modified (AKA PendingChange)
                             //    - state transition from Modified (AKA PendingChange) to Modified (AKA PendingChange)
@@ -2161,7 +2161,7 @@ namespace System.Xml
                                 object proposedValue = row[c, DataRowVersion.Proposed];
                                 object currentValue = row[c, DataRowVersion.Current];
                                 // Foliate if proposedValue is DBNull; this way the DataPointer objects will point to a disconnected fragment after
-                                // the DBNull value is beeing set
+                                // the DBNull value is being set
                                 if (Convert.IsDBNull(proposedValue) && !Convert.IsDBNull(currentValue))
                                 {
                                     // Foliate only for non-hidden columns (since hidden cols are not represented in XML)
@@ -2903,7 +2903,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNonRowElementInsertedInTree(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
         {
-            // non-row-elem is beeing inserted
+            // non-row-elem is being inserted
             DataRow? row = rowElement.Row;
             // Region should already have an associated data row (otherwise how was the original row-elem inserted ?)
             Debug.Assert(row != null);
@@ -2920,7 +2920,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNonRowElementInsertedInFragment(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
         {
-            // non-row-elem is beeing inserted
+            // non-row-elem is being inserted
             DataRow? row = rowElement.Row;
             // Region should already have an associated data row (otherwise how was the original row-elem inserted ?)
             Debug.Assert(row != null);
@@ -2956,7 +2956,7 @@ namespace System.Xml
             DataRow parentRow = parentRowElem.Row;
             // We should set it only if there is a nested relationship between this child and parent regions
             DataRelation[] relations = childRow.Table.NestedParentRelations;
-            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatable
+            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatible
             {
                 SetNestedParentRow(childRow, parentRow);
             }

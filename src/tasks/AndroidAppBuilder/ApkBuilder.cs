@@ -28,6 +28,7 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
@@ -181,7 +182,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
+        var extensionsToIgnore = new List<string> { ".so", ".a" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -302,7 +303,7 @@ public class ApkBuilder
                     }
                 }
 
-                // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
                 if (!File.Exists(componentLibToLink))
                 {
                     logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
@@ -340,6 +341,11 @@ public class ApkBuilder
             {
                 defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
             }
+        }
+
+        if (ForceFullAOT)
+        {
+            defines.AppendLine("add_definitions(-DFULL_AOT=1)");
         }
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))

@@ -30,7 +30,7 @@ namespace Internal.Reflection.Core.Execution
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
-        protected abstract object? Invoke(object? thisObject, object?[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
+        protected abstract object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen);
 
         // This property is used to retrieve the target method pointer. It is used by the RuntimeMethodHandle.GetFunctionPointer API

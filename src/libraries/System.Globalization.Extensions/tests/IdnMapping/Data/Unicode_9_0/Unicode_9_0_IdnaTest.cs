@@ -26,7 +26,14 @@ namespace System.Globalization.Tests
 
             Type = ConvertStringToType(split[0].Trim());
             Source = EscapedToLiteralString(split[1], lineNumber);
-            bool validDomainName = (split.Length != 5 || split[4].Trim() != "NV8");
+            bool validDomainName = (split.Length != 5 || split[4].Trim() != "NV8"); 
+            
+            // Server 2019 uses ICU 61.0 whose IDNA does not support the following cases. Ignore these entries there.
+            if (PlatformDetection.IsWindowsServer2019 && Source.EndsWith("\ud802\udf8b\u3002\udb40\udd0a", StringComparison.Ordinal))
+            {
+                Source = "";
+            }
+
             UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[2], lineNumber), Source, validDomainName);
             ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value);
             LineNumber = lineNumber;

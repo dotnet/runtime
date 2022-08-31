@@ -98,7 +98,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             // the xUnit SynchronizationContext - AsyncTestSyncContext interferes with the current SynchronizationContext
             // used by AsyncOperation when there is exception thrown -> the SC.OperationCompleted() is not called.
             // use  new SC here to avoid this issue
-            var orignal = SynchronizationContext.Current;
+            var original = SynchronizationContext.Current;
             try
             {
                 SynchronizationContext.SetSynchronizationContext(null);
@@ -111,7 +111,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             }
             finally
             {
-                SynchronizationContext.SetSynchronizationContext(orignal);
+                SynchronizationContext.SetSynchronizationContext(original);
             }
         }
 

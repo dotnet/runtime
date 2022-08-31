@@ -258,14 +258,22 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task UnrelatedAssemblyOrModuleTargetDiagnostic_DoesNotCauseException()
+        public async Task UnrelatedAttributes_DoesNotCauseException()
         {
             string source = """
                 using System.Reflection;
                 using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
 
                 [assembly:AssemblyMetadata("MyKey", "MyValue")]
                 [module:SkipLocalsInit]
+                
+                public class X
+                {
+                    void Foo([MarshalAs(UnmanagedType.I4)] int i)
+                    {
+                    }
+                }
                 """;
 
             await VerifyCS.VerifyAnalyzerAsync(source);

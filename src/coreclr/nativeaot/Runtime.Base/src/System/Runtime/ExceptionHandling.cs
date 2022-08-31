@@ -208,7 +208,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 
-            // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
+            // The classlib's function should never return and should not throw. If it does, then we fail our way...
             FallbackFailFast(reason, unhandledException);
         }
 
@@ -588,7 +588,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
-        private static void DispatchEx(ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
+        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
@@ -847,7 +847,7 @@ namespace System.Runtime
             AssertNotRuntimeObject(pClauseType);
 #endif
 
-            return TypeCast.IsInstanceOfClass(pClauseType, exception) != null;
+            return TypeCast.IsInstanceOfException(pClauseType, exception);
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)

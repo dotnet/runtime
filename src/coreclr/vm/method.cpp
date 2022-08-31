@@ -218,7 +218,7 @@ BaseDomain *MethodDesc::GetDomain()
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     return AppDomain::GetCurrentDomain();
 }
@@ -241,6 +241,24 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 #endif //!DACCESS_COMPILE
 
+
+//*******************************************************************************
+LPCUTF8 MethodDesc::GetNameThrowing()
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 result = GetName();
+    if (result == NULL)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_METADATA_CORRUPT);
+    }
+    return result;
+}
+
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetName(USHORT slot)
 {
@@ -260,7 +278,8 @@ LPCUTF8 MethodDesc::GetName()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
-    }CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     if (IsArray())
     {
@@ -340,7 +359,7 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
 /*
  * Function to get a method's full name, something like
- * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
+ * void [System.Private.CoreLib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
 VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {
@@ -841,7 +860,7 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
 #ifdef _PREFAST_
@@ -879,7 +898,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
 #ifdef _PREFAST_
@@ -1264,7 +1283,7 @@ WORD MethodDesc::GetComSlot()
     // COM slots are biased from MethodTable slots depending on interface type
     WORD numExtraSlots = ComMethodTable::GetNumExtraSlots(pMT->GetComInterfaceType());
 
-    // Normal interfaces are layed out the same way as in the MethodTable, while
+    // Normal interfaces are laid out the same way as in the MethodTable, while
     // sparse interfaces need to go through an extra layer of mapping.
     WORD slot;
 

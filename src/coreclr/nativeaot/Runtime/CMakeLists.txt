@@ -50,6 +50,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablecore.cpp
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
+    ${GC_DIR}/softwarewritewatch.cpp
 )
 
 set(SERVER_GC_SOURCES
@@ -189,7 +190,6 @@ endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/CallingConventionConverterHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
@@ -207,6 +207,12 @@ include_directories(${ARCH_SOURCES_DIR})
 
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
+
+if(CLR_CMAKE_TARGET_UNIX)
+  add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
+  add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
+endif()
+
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STRESS>)
@@ -224,6 +230,7 @@ if(WIN32)
   add_definitions(-DFEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
 else()
+  add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})

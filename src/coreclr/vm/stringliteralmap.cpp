@@ -297,10 +297,6 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    m_PinnedHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
-#endif
 }
 
 GlobalStringLiteralMap::~GlobalStringLiteralMap()
@@ -638,10 +634,7 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     _ASSERTE (VolatileLoad(&pEntry->m_dwRefCount) == 0);
 
 #ifdef _DEBUG
-    memset (pEntry, 0xc, sizeof(StringLiteralEntry));
-#endif
-
-#ifdef _DEBUG
+    memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
     pEntry->m_bDeleted = TRUE;
 #endif
 

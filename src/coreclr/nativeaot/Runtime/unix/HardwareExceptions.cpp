@@ -281,7 +281,7 @@ bool IsDivByZeroAnIntegerOverflow(void* context)
 
     uint8_t code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;

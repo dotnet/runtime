@@ -121,9 +121,9 @@ We use and recommend the following workflow:
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.
 
-### Up for Grabs
+### Help Wanted (Up for Grabs)
 
-The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
+The team marks the most straightforward issues as [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted). This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
 ### Commit Messages
 

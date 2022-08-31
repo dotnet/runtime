@@ -846,6 +846,14 @@ MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
 #endif
 
+// wasm specific SIMD v128
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", VREG, XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", VREG, XREG, XREG)
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 
 MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)
@@ -1343,6 +1351,8 @@ MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
 MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
+MINI_OP(OP_X86_MOVE_R8_TO_FPSTACK,    "x86_move_r8_to_fpstack", NONE, FREG, NONE)
+MINI_OP(OP_X86_MOVE_R4_TO_FPSTACK,    "x86_move_r4_to_fpstack", NONE, FREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
