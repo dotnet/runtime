@@ -121,30 +121,56 @@ These can be set in one of three ways:
 ## Specifying method names
 
 Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
-* The environment variable is a space-separated list of patterns that can be quoted if they need to contain spaces.
-* Patterns can contain * and ? wildcards matching respectively any characters and any 1 character.
-* If the pattern contains a ':' character, then the string matched against is prefixed with `ClassName:`.
-* If the pattern contains a '(' character, then the string matched against is suffixed with its signature.
+* The JitDisasm string is a space-separated list of patterns. Patterns can arbitrarily contain both * (match any characters) and ? (match any 1 character).
+* The string matched against depends on characters in the pattern:
+  + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
+  + If the pattern contains a '(' character, the string matched against is suffixed by the signature
+  + If the class name (part before colon) contains a '<', the class contains its generic instantiation
+  + If the method name (part between colon and '(' contains a '<', the method contains its generic instantiation
 
-In particular, the matching is done against strings of the following format which coincides with how the JIT displays method signatures:
+In particular, the matching is done against strings of the following format which coincides with how the JIT displays method signatures (so these can be copy pasted into the environment variable).
 ```
-[<ClassName>:]<MethodName>[([<types>)]
+[ClassName[<Inst>]:]MethodName[<Instantiation>][(<types>)]
 ```
 
-In debug builds the class name is allowed to contain the namespace as well and the JIT will try to match both with and without the namespace.
+For example, consider
+```csharp
+namespace MyNamespace
+{
+    public class C<T1, T2>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void M<T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        {
+        }
+    }
+}
 
-The following are equivalent:
-* `WriteLine`
-* `*:WriteLine`
-* `*:WriteLine(*)`
+new C<sbyte, string>().M<int, object>(default, default, default, default); // compilation 1
+new C<int, int>().M<int, int>(default, default, default, default); // compilation 2
+```
 
-So are the following:
-* `*`
-* `*:*`
-* `*:*(*)`
+The full strings are:
 
-The following will only match the string overload of `Console.WriteLine`:
-* `Console:WriteLine(String)`
+```
+MyNamespace.C`2<byte,System.__Canon>:M<int,System.__Canon>(byte,System.__Canon,int,System.__Canon)
+MyNamespace.C`2<int,int>:M<int,int>(int,int,int,int)
+```
+
+The following are equivalent and matches both compilations:
+```
+M
+*C`2:M
+*C`2<*>:M<*>(*)
+MyNamespace.C`2:M
+```
+
+The following match only the first compilation:
+```
+M<int,*Canon>
+MyNamespace.C`2<byte,*>:M
+M(*Canon)
+```
 
 ## Useful COMPlus variables
 
