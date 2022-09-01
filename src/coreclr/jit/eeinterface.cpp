@@ -111,55 +111,40 @@ void Compiler::eePrintMethod(StringPrinter*        p,
 
     if (includeSignature)
     {
-        size_t signatureIndex = p->GetLength();
-        bool   failed         = true;
+        p->Printf("(");
 
-        auto closure = [&]() {
-            p->Printf("(");
+        CORINFO_ARG_LIST_HANDLE argLst = sig->args;
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            if (i > 0)
+                p->Printf(",");
 
-            CORINFO_ARG_LIST_HANDLE argLst = sig->args;
-            for (unsigned i = 0; i < sig->numArgs; i++)
+            CORINFO_CLASS_HANDLE vcClsHnd;
+            var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
+            switch (type)
             {
-                if (i > 0)
-                    p->Printf(",");
-
-                CORINFO_CLASS_HANDLE vcClsHnd;
-                var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
-                switch (type)
+                case TYP_REF:
+                case TYP_STRUCT:
                 {
-                    case TYP_REF:
-                    case TYP_STRUCT:
+                    CORINFO_CLASS_HANDLE clsHnd = eeGetArgClass(sig, argLst);
+                    // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
+                    if (clsHnd != NO_CLASS_HANDLE)
                     {
-                        CORINFO_CLASS_HANDLE clsHnd = eeGetArgClass(sig, argLst);
-                        // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
-                        if (clsHnd != NO_CLASS_HANDLE)
-                        {
-                            eePrintType(p, clsHnd, includeNamespaces, true);
-                            break;
-                        }
-                    }
-
-                        FALLTHROUGH;
-                    default:
-                        eePrintJitType(p, type);
+                        eePrintType(p, clsHnd, includeNamespaces, true);
                         break;
+                    }
                 }
 
-                argLst = info.compCompHnd->getArgNext(argLst);
+                    FALLTHROUGH;
+                default:
+                    eePrintJitType(p, type);
+                    break;
             }
 
-            p->Printf(")");
-
-            failed = false;
-        };
-
-        eeRunFunctorWithSPMIErrorTrap(closure);
-
-        if (failed)
-        {
-            p->Truncate(signatureIndex);
-            p->Printf("(<failed to print signature>)");
+            argLst = info.compCompHnd->getArgNext(argLst);
         }
+
+        p->Printf(")");
 
         if (includeReturnType)
         {
@@ -205,20 +190,40 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
         return methodName;
     }
 
-    CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
-    CORINFO_SIG_INFO     sig;
+    StringPrinter        p(getAllocator(CMK_DebugOnly));
+    CORINFO_CLASS_HANDLE clsHnd  = NO_CLASS_HANDLE;
     bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
         clsHnd = info.compCompHnd->getMethodClass(hnd);
+        CORINFO_SIG_INFO sig;
         eeGetMethodSig(hnd, &sig);
+        eePrintMethod(&p, clsHnd, hnd, &sig,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ true,
+                      /* includeMethodInstantiation */ true,
+                      /* includeSignature */ true, includeReturnType, includeThisSpecifier);
+
     });
 
-    CORINFO_SIG_INFO* pSig = success ? &sig : nullptr;
-    StringPrinter     p(getAllocator(CMK_DebugOnly));
-    eePrintMethod(&p, clsHnd, hnd, pSig,
-                  /* includeNamespaces */ true,
-                  /* includeClassInstantiation */ true,
-                  /* includeMethodInstantiation */ true,
-                  /* includeSignature */ pSig != nullptr, includeReturnType, includeThisSpecifier);
+    if (!success)
+    {
+        // Try with bare minimum
+        p.Truncate(0);
+
+        success = eeRunFunctorWithSPMIErrorTrap([&]() {
+            eePrintMethod(&p, clsHnd, hnd,
+                          /* sig */ nullptr,
+                          /* includeNamespaces */ true,
+                          /* includeClassInstantiation */ false,
+                          /* includeMethodInstantiation */ false,
+                          /* includeSignature */ false, includeReturnType, includeThisSpecifier);
+        });
+
+        if (!success)
+        {
+            p.Truncate(0);
+            p.Printf("hackishClassName:hackishMethodName(?)");
+        }
+    }
 
     return p.GetBuffer();
 }

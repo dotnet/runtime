@@ -151,7 +151,7 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
     StringPrinter printer(comp->getAllocator(CMK_DebugOnly), buffer, ArrLen(buffer));
     MethodName*   prevPattern = nullptr;
 
-    for (MethodName *name = m_names; name != nullptr; prevPattern = name, name = name->m_next)
+    for (MethodName* name = m_names; name != nullptr; name = name->m_next)
     {
         if ((prevPattern == nullptr) || (name->m_containsClassName != prevPattern->m_containsClassName) ||
             (name->m_classNameContainsInstantiation != prevPattern->m_classNameContainsInstantiation) ||
@@ -159,13 +159,21 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
             (name->m_containsSignature != prevPattern->m_containsSignature))
         {
             printer.Truncate(0);
-            comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd, sigInfo,
-                                /* includeNamespaces */ true,
-                                /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
-                                /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
-                                /* includeSignature */ name->m_containsSignature,
-                                /* includeReturnType */ false,
-                                /* includeThis */ false);
+            bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
+                comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
+                                    sigInfo,
+                                    /* includeNamespaces */ true,
+                                    /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
+                                    /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
+                                    /* includeSignature */ name->m_containsSignature,
+                                    /* includeReturnType */ false,
+                                    /* includeThis */ false);
+            });
+
+            if (!success)
+                continue;
+
+            prevPattern = name;
         }
 
         if (matchGlob(name->m_patternStart, name->m_patternEnd, printer.GetBuffer()))

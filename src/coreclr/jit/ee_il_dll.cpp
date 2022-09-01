@@ -1509,7 +1509,12 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
     StringPrinter printer(getAllocator(CMK_DebugOnly));
-    eePrintType(&printer, clsHnd, true, true);
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
+    {
+        printer.Truncate(0);
+        printer.Printf("hackishClassName");
+    }
+
     return printer.GetBuffer();
 }
 
