@@ -11375,40 +11375,7 @@ public:
         m_buffer[m_bufferIndex] = '\0';
     }
 
-    void Printf(const char* format, ...)
-    {
-        va_list args;
-        va_start(args, &format);
-
-        while (true)
-        {
-            size_t bufferLeft = m_bufferMax - m_bufferIndex;
-            assert(bufferLeft >= 1); // always fit null terminator
-
-            va_list argsCopy;
-            va_copy(argsCopy, args);
-            int printed = vsnprintf_s(m_buffer + m_bufferIndex, bufferLeft, _TRUNCATE, format, argsCopy);
-            va_end(argsCopy);
-
-            if (printed < 0)
-            {
-                // buffer too small
-                size_t newSize   = m_bufferMax * 2;
-                char*  newBuffer = m_alloc.allocate<char>(newSize);
-                memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
-
-                m_buffer    = newBuffer;
-                m_bufferMax = newSize;
-            }
-            else
-            {
-                m_bufferIndex = m_bufferIndex + static_cast<size_t>(printed);
-                break;
-            }
-        }
-
-        va_end(args);
-    }
+    void Printf(const char* format, ...);
 };
 
 /*****************************************************************************
