@@ -20,17 +20,12 @@ jobs:
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
-      - name: wasmbuildtestsContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
           ]
     jobParameters:
@@ -56,3 +51,4 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - buildwasmapps
+

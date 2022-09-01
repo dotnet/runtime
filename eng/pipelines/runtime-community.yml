@@ -55,7 +55,7 @@ jobs:
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -64,7 +64,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -93,7 +93,7 @@ jobs:
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono
@@ -102,7 +102,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -121,7 +121,7 @@ jobs:
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono
@@ -130,7 +130,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       ${{ if eq(variables['isRollingBuild'], true) }}:
         # extra steps, run tests
