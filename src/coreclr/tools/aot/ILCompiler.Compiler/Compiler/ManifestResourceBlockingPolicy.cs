@@ -39,7 +39,7 @@ namespace ILCompiler
                 || (resourceName.StartsWith("ILLink.") && resourceName.EndsWith(".xml")));
         }
 
-        private class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
 
@@ -59,7 +59,7 @@ namespace ILCompiler
             }
         }
 
-        private class AssemblyFeatureInfo
+        private sealed class AssemblyFeatureInfo
         {
             public EcmaModule Module { get; }
 
@@ -100,7 +100,7 @@ namespace ILCompiler
             }
         }
 
-        private class SubstitutionsReader : ProcessXmlBase
+        private sealed class SubstitutionsReader : ProcessXmlBase
         {
             private readonly HashSet<string> _substitutions = new HashSet<string>();
 

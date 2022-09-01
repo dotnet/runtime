@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
 				.ToILScanner ();
 
-			ILScanResults results = scanner.Scan ();
+			_ = scanner.Scan ();
 		}
 
 		public static void ComputeDefaultOptions (out TargetOS os, out TargetArchitecture arch)
@@ -119,7 +119,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
+		private static IReadOnlyCollection<MethodDesc> CreateInitializerList (CompilerTypeSystemContext context, ILCompilerOptions options)
 		{
 			List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc> ();
 

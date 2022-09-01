@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using Internal.TypeSystem;
 
@@ -11,8 +10,8 @@ namespace TypeSystemTests
 {
     public class InterfacesTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public InterfacesTests()
         {
