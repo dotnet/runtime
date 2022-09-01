@@ -233,7 +233,7 @@ public sealed partial class QuicStream
         return valueTask;
     }
 
-    /// <inheritdoc cref="ReadAsync(System.Memory{byte},System.Threading.CancellationToken)"/>
+    /// <inheritdoc cref="System.IO.Stream.ReadAsync(System.Memory{byte},System.Threading.CancellationToken)"/>
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -307,12 +307,12 @@ public sealed partial class QuicStream
         return totalCopied;
     }
 
-    /// <inheritdoc cref="WriteAsync(System.ReadOnlyMemory{byte},System.Threading.CancellationToken)"/>
+    /// <inheritdoc cref="System.IO.Stream.WriteAsync(System.ReadOnlyMemory{byte},System.Threading.CancellationToken)"/>
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         => WriteAsync(buffer, completeWrites: false, cancellationToken);
 
 
-    /// <inheritdoc cref="WriteAsync(System.ReadOnlyMemory{byte},System.Threading.CancellationToken)"/>
+    /// <inheritdoc cref="System.IO.Stream.WriteAsync(System.ReadOnlyMemory{byte},System.Threading.CancellationToken)"/>
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>

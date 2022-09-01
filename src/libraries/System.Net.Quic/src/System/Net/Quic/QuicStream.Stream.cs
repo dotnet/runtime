@@ -25,7 +25,7 @@ public partial class QuicStream : Stream
     /// <inheritdoc />
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="System.IO.Stream.SetLength(long)" />
     public override void SetLength(long value) => throw new NotSupportedException();
 
     // Read and Write timeouts.
