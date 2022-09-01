@@ -240,7 +240,7 @@ namespace Microsoft.Interop.JavaScript
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
             incrementalContext.Environment,
-            incrementalContext.SignatureContext.ElementTypeInformation,
+            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSExportData,
             incrementalContext.SignatureContext,
             (elementInfo, ex) =>

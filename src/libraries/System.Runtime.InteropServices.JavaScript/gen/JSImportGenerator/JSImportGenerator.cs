@@ -153,10 +153,10 @@ namespace Microsoft.Interop.JavaScript
             BlockSyntax stubCode)
         {
             // Create stub function
-            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
-                .AddAttributeLists(stub.AdditionalAttributes.ToArray())
+            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.SignatureContext.StubReturnType, userDeclaredMethod.Identifier)
+                .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
-                .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
+                .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
@@ -254,7 +254,7 @@ namespace Microsoft.Interop.JavaScript
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
             incrementalContext.Environment,
-            incrementalContext.SignatureContext.ElementTypeInformation,
+            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSImportData,
             incrementalContext.SignatureContext,
             (elementInfo, ex) =>
