@@ -3,6 +3,7 @@
 
 using System.Text;
 using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
@@ -12,6 +13,10 @@ namespace System.IO.Tests
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
         static bool IsBindMountSupportedAndOnUnixAndSuperUser => IsBindMountSupported && PlatformDetection.IsUnixAndSuperUser;
+
+        static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported && UsingNewNormalization;
+
+        static bool IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization => RemoteExecutor.IsSupported && LongPathsAreNotBlocked && UsingNewNormalization;
 
         #region Utilities
 
@@ -121,23 +126,29 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndUsingNewNormalization))]
         public void ExtendedDirectoryWithSubdirectories()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
-            testDir.CreateSubdirectory(GetTestFileName());
-            Assert.Throws<IOException>(() => Delete(testDir.FullName));
-            Assert.True(testDir.Exists);
+            RemoteExecutor.Invoke(() =>
+            {
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
+                testDir.CreateSubdirectory(GetTestFileName());
+                Assert.Throws<IOException>(() => Delete(testDir.FullName));
+                Assert.True(testDir.Exists);
+            }).Dispose();
         }
 
-        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization))]
         public void LongPathExtendedDirectory()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500));
-            Delete(testDir.FullName);
-            Assert.False(testDir.Exists);
+            RemoteExecutor.Invoke(() =>
+            {
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500));
+                Delete(testDir.FullName);
+                Assert.False(testDir.Exists);
+            }).Dispose();
         }
 
         #endregion
