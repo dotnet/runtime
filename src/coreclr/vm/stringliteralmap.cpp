@@ -207,7 +207,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         if (pStrObj != nullptr && preferFrozenObjectHeap && ppPinnedString != nullptr)
         {
             Object* underlyingStrObj = *reinterpret_cast<Object**>(pStrObj);
-            if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(underlyingStrObj))
+            if (underlyingStrObj->IsFrozen())
             {
                 *ppPinnedString = underlyingStrObj;
             }

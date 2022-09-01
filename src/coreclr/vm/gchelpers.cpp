@@ -839,9 +839,7 @@ STRINGREF AllocateString( DWORD cchStringLength )
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.
-    //
-    // If the value below is changed, also change AllocateUtf8String.
-    if (cchStringLength > 0x3FFFFFDF)
+    if (cchStringLength > CORINFO_String_MaxLength)
         ThrowOutOfMemory();
 
     SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
@@ -877,9 +875,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.
-    //
-    // If the value below is changed, also change AllocateUtf8String.
-    if (cchStringLength > 0x3FFFFFDF)
+    if (cchStringLength > CORINFO_String_MaxLength)
         ThrowOutOfMemory();
 
     const SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
@@ -888,15 +884,12 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
     if (preferFrozenHeap)
     {
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-        if (foh != nullptr)
+        orString = static_cast<StringObject*>(foh->AllocateObject(g_pStringClass, totalSize));
+        if (orString != nullptr)
         {
-            orString = static_cast<StringObject*>(foh->AllocateObject(g_pStringClass, totalSize));
-            if (orString != nullptr)
-            {
-                orString->SetStringLength(cchStringLength);
-                _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
-                orStringRef = ObjectToSTRINGREF(orString);
-            }
+            orString->SetStringLength(cchStringLength);
+            _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
+            orStringRef = ObjectToSTRINGREF(orString);
         }
     }
     if (orString == nullptr)
