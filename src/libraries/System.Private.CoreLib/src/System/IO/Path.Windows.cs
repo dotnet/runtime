@@ -253,7 +253,7 @@ namespace System.IO
                 }
                 catch (IOException ex) when (i < 100 && Win32Marshal.TryMakeWin32ErrorCodeFromHR(ex.HResult) == Interop.Errors.ERROR_FILE_EXISTS)
                 {
-                    i++; // If there's a read-only temp volume, don't loop forever
+                    i++; // Don't let unforeseen circumstances cause us to loop forever
                     continue; // File already exists: very, very unlikely
                 }
 
