@@ -183,10 +183,12 @@ namespace System.IO
             static uint GetTempPathW(int bufferLen, ref char buffer)
             {
                 delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
+#pragma warning disable IDE0074 // Use compound assignment
                 if (func == null)
                 {
                     func = s_GetTempPathWFunc = GetGetTempPathWFunc();
                 }
+#pragma warning restore IDE0074
 
                 int lastError;
                 uint retVal;

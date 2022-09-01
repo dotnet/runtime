@@ -197,7 +197,6 @@
 #define IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER 0x17d9
 #define IDS_EE_NDIRECT_BADNATL_CALLCONV         0x17df
 #define IDS_EE_CANNOTCAST                       0x17e0
-#define IDS_EE_NOTISOMORPHIC                    0x17e1
 
 #define IDS_EE_NOCUSTOMMARSHALER                0x17e7
 #define IDS_EE_SIZECONTROLOUTOFRANGE            0x17e8

@@ -32,6 +32,7 @@ class HostBuilder implements DotnetHostBuilder {
         config: runtimeHelpers.config,
     };
 
+    // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             Object.assign(this.moduleConfig!, moduleConfig);
@@ -42,6 +43,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withConsoleForwarding(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -55,6 +57,30 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
+    withExitOnUnhandledError(): DotnetHostBuilder {
+        const handler = function fatal_handler(event: Event, error: any) {
+            event.preventDefault();
+            try {
+                mono_exit(1, error);
+            } catch (err) {
+                // no not re-throw from the fatal handler
+            }
+        };
+        try {
+            // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+            if (ENVIRONMENT_IS_WEB) {
+                window.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
+                window.addEventListener("error", (event) => handler(event, event.error));
+            }
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAsyncFlushOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -68,6 +94,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withExitCodeLogging(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -81,6 +108,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withElementOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -94,6 +122,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     //  todo fallback later by debugLevel
     withWaitingForDebugger(level: number): DotnetHostBuilder {
         try {
@@ -217,7 +246,7 @@ class HostBuilder implements DotnetHostBuilder {
             throw err;
         }
     }
-    
+
     withApplicationArgumentsFromQuery(): DotnetHostBuilder {
         try {
             if (!globalThis.window) {

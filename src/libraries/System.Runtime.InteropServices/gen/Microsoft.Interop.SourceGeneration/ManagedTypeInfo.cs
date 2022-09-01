@@ -15,7 +15,17 @@ namespace Microsoft.Interop
     /// </summary>
     public abstract record ManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName)
     {
-        public TypeSyntax Syntax { get; } = SyntaxFactory.ParseTypeName(FullTypeName);
+        private TypeSyntax? _syntax;
+        public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
+
+        protected ManagedTypeInfo(ManagedTypeInfo original)
+        {
+            FullTypeName = original.FullTypeName;
+            DiagnosticFormattedName = original.DiagnosticFormattedName;
+            // Explicitly don't initialize _syntax here. We want Syntax to be recalculated
+            // from the results of a with-expression, which assigns the new property values
+            // to the result of this constructor.
+        }
 
         public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)
         {

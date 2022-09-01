@@ -2949,6 +2949,9 @@ PhaseStatus Compiler::fgFindOperOrder()
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
 // and computing lvaOutgoingArgSpaceSize.
 //
+// Returns:
+//    Suitable phase status
+//
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
 //
@@ -2959,8 +2962,10 @@ PhaseStatus Compiler::fgFindOperOrder()
 //    after optimization (in case calls are removed) and need to look at
 //    all possible calls in the method.
 //
-void Compiler::fgSimpleLowering()
+PhaseStatus Compiler::fgSimpleLowering()
 {
+    bool madeChanges = false;
+
 #if FEATURE_FIXED_OUT_ARGS
     unsigned outgoingArgSpaceSize = 0;
 #endif // FEATURE_FIXED_OUT_ARGS
@@ -3036,6 +3041,7 @@ void Compiler::fgSimpleLowering()
 
                     JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
                     DISPRANGE(LIR::ReadOnlyRange(arr, tree));
+                    madeChanges = true;
                     break;
                 }
 
@@ -3043,6 +3049,7 @@ void Compiler::fgSimpleLowering()
                 {
                     // Add in a call to an error routine.
                     fgSetRngChkTarget(tree, false);
+                    madeChanges = true;
                     break;
                 }
 
@@ -3133,18 +3140,7 @@ void Compiler::fgSimpleLowering()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef DEBUG
-    if (verbose && fgRngChkThrowAdded)
-    {
-        printf("\nAfter fgSimpleLowering() added some RngChk throw blocks");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-        printf("\n");
-    }
-
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************************************
@@ -3465,28 +3461,25 @@ bool Compiler::fgFuncletsAreCold()
 
 #endif // defined(FEATURE_EH_FUNCLETS)
 
-/*-------------------------------------------------------------------------
- *
- * Walk the basic blocks list to determine the first block to place in the
- * cold section.  This would be the first of a series of rarely executed blocks
- * such that no succeeding blocks are in a try region or an exception handler
- * or are rarely executed.
- */
-
+//------------------------------------------------------------------------
+// fgDetermineFirstColdBlock: figure out where we might split the block
+//    list to put some blocks into the cold code section
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    Walk the basic blocks list to determine the first block to place in the
+//    cold section.  This would be the first of a series of rarely executed blocks
+//    such that no succeeding blocks are in a try region or an exception handler
+//    or are rarely executed.
+//
 PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In fgDetermineFirstColdBlock()\n");
-    }
-#endif // DEBUG
-
     // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
     assert(fgSafeBasicBlockCreation);
-
     assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
