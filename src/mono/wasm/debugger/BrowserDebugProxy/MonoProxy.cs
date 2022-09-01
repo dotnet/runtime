@@ -174,12 +174,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         // Don't process events from sessions we aren't tracking unless they have asyncStackTraceId
                         if (!contexts.ContainsKey(sessionId) && args["asyncStackTraceId"] != null)
                         {
-                            contexts[sessionId] = contexts.First().Value.Clone(sessionId);
-                            var store = await LoadStore(sessionId, true, token);
-                            foreach (var source in store.AllSources())
-                            {
-                                await OnSourceFileAdded(sessionId, source, contexts[sessionId], true, token);
-                            }
+                            await CreateAsyncExecutionContext(sessionId, token);
                         }
 
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
@@ -251,6 +246,17 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
+
+        protected async Task CreateAsyncExecutionContext(SessionId sessionId, CancellationToken token)
+        {
+            contexts[sessionId] = contexts.First().Value.Clone(sessionId);
+            var store = await LoadStore(sessionId, true, token);
+            foreach (var source in store.AllSources())
+            {
+                await OnSourceFileAdded(sessionId, source, contexts[sessionId], true, token);
+            }
+        }
+
         protected virtual async Task SendResume(SessionId id, CancellationToken token)
         {
             await SendCommand(id, "Debugger.resume", new JObject(), token);
