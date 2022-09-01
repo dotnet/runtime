@@ -32,8 +32,12 @@ variables:
   value: .NETCore
 - name: _DotNetValidationArtifactsCategory
   value: .NETCoreValidation
-- name: PostBuildSign
-  value: true
+- ${{ if or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/')) }}:
+  - name: PostBuildSign
+    value: false
+- ${{ else }}:
+  - name: PostBuildSign
+    value: true
 
 stages:
 - stage: Build
