@@ -473,7 +473,7 @@ namespace System.Net.Mail.Tests
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
 
-            Task sendTask = client.SendMailAsync(message, cts.Token);
+            Task sendTask = Task.Run(() => client.SendMailAsync(message, cts.Token));
 
             cts.Cancel();
             await Task.Delay(500);
