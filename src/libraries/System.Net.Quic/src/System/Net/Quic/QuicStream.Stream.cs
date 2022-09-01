@@ -14,22 +14,32 @@ public partial class QuicStream : Stream
 {
     // Seek and length.
     /// <inheritdoc />
+    /// <summary>Gets a value indicating whether the <see cref="T:System.Net.Quic.QuicStream" /> supports seeking.</summary>
     public override bool CanSeek => false;
 
     /// <inheritdoc />
+    /// <summary>Gets the length of the data available on the stream. This property is not currently supported and always throws a <see cref="T:System.NotSupportedException" />.</summary>
+    /// <exception cref="T:System.NotSupportedException">Any use of this property.</exception>
     public override long Length => throw new NotSupportedException();
 
     /// <inheritdoc />
+    /// <summary>Gets or sets the position within the current stream. This property is not currently supported and always throws a <see cref="T:System.NotSupportedException" />.</summary>
+    /// <exception cref="T:System.NotSupportedException">Any use of this property.</exception>
     public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
     /// <inheritdoc />
+    /// <summary>Sets the current position of the stream to the given value. This method is not currently supported and always throws a <see cref="T:System.NotSupportedException" />.</summary>
+    /// <exception cref="T:System.NotSupportedException">Any use of this method.</exception>
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-    /// <inheritdoc cref="System.IO.Stream.SetLength(long)" />
+    /// <inheritdoc />
+    /// <summary>Sets the length of the stream. This method is not currently supported and always throws a <see cref="T:System.NotSupportedException" />.</summary>
+    /// <exception cref="T:System.NotSupportedException">Any use of this method.</exception>
     public override void SetLength(long value) => throw new NotSupportedException();
 
     // Read and Write timeouts.
     /// <inheritdoc />
+    /// <summary>Gets a value that determines whether the <see cref="T:System.Net.Quic.QuicStream" /> can timeout.</summary>
     public override bool CanTimeout => true;
 
     private TimeSpan _readTimeout = Timeout.InfiniteTimeSpan;
@@ -75,6 +85,7 @@ public partial class QuicStream : Stream
 
     // Read boilerplate.
     /// <inheritdoc />
+    /// <summary>Gets a value indicating whether the <see cref="T:System.Net.Quic.QuicStream" /> supports reading.</summary>
     public override bool CanRead => Volatile.Read(ref _disposed) == 0 && _canRead;
 
     /// <inheritdoc />
@@ -137,6 +148,7 @@ public partial class QuicStream : Stream
 
     // Write boilerplate.
     /// <inheritdoc />
+    /// <summary>Gets a value indicating whether the <see cref="T:System.Net.Quic.QuicStream" /> supports writing.</summary>
     public override bool CanWrite => Volatile.Read(ref _disposed) == 0 && _canWrite;
 
     /// <inheritdoc />
