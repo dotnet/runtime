@@ -1357,13 +1357,7 @@ namespace System.Xml
 
             Debug.Assert(chars != null);
 
-            int i = 0;
-            while (i < strLen1 && chars[strPos1 + i] == str2[i])
-            {
-                i++;
-            }
-
-            return i == strLen1;
+            return chars.AsSpan(strPos1, strLen1).SequenceEqual(str2.AsSpan());
         }
 
         // XML whitespace characters, <spec>http://www.w3.org/TR/REC-xml#NT-S</spec>
