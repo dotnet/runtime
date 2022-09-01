@@ -556,10 +556,14 @@ namespace ILCompiler
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
-                foreach (var method in methodsThatNeedILBodies)
-                    _methodsWhichNeedMutableILBodies.Add(method);
+                if (methodsThatNeedILBodies != null)
+                    foreach (var method in methodsThatNeedILBodies)
+                        _methodsWhichNeedMutableILBodies.Add(method);
             }
         }
+
+        [ThreadStatic]
+        private int s_methodsCompiledPerThread = 0;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -744,8 +748,19 @@ namespace ILCompiler
                 {
                     using (PerfEventSource.StartStopEvents.JitMethodEvents())
                     {
-                        // Create only 1 CorInfoImpl per thread.
-                        // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                        s_methodsCompiledPerThread++;
+
+                        if (_parallelism == 1)
+                        {
+                            // Create only 1 CorInfoImpl per thread if not using parallelism
+                            // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                        }
+                        else
+                        {
+                            if ((s_methodsCompiledPerThread % 1000) == 0)
+                               _corInfoImpls.Remove(Thread.CurrentThread);
+                        }
+
                         CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                         corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
                     }
