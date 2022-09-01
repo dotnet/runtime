@@ -141,7 +141,7 @@ namespace System
             get => _username;
             set
             {
-                _username = value ?? string.Empty;
+                _username = EncodeUserName(value);
                 _changed = true;
             }
         }
@@ -254,6 +254,26 @@ namespace System
         public override bool Equals([NotNullWhen(true)] object? rparam) => rparam is not null && Uri.Equals(rparam.ToString());
 
         public override int GetHashCode() => Uri.GetHashCode();
+
+        private string EncodeUserName(string input)
+        {
+            if (input == null)
+            {
+                return string.Empty;
+            }
+
+            if (input.AsSpan().IndexOfAny(@"/\?#@") < 0)
+            {
+                return input;
+            }
+
+            return input
+                .Replace("/", "%2F", StringComparison.Ordinal)
+                .Replace(@"\", "%5C", StringComparison.Ordinal)
+                .Replace("?", "%3F", StringComparison.Ordinal)
+                .Replace("#", "%23", StringComparison.Ordinal)
+                .Replace("@", "%40", StringComparison.Ordinal)
+        }
 
         private void SetFieldsFromUri()
         {
