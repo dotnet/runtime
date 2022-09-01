@@ -515,6 +515,55 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task FixInPropertyAccessor ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresAssemblyFilesAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+					get { return M1(); }
+					set { field = M1(); }
+				}
+			}
+			""";
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresAssemblyFilesAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+			        [RequiresAssemblyFiles("Calls C.M1()")]
+			        get { return M1(); }
+
+			        [RequiresAssemblyFiles("Calls C.M1()")]
+			        set { field = M1(); }
+				}
+			}
+			""";
+			var diag = new[] {
+				// /0/Test0.cs(12,16): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
+				// /0/Test0.cs(13,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
+			};
+			return VerifyRequiresAssemblyFilesCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
 		public Task FixInField ()
 		{
 			var src = $$"""
@@ -657,10 +706,10 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				[RequiresAssemblyFiles("message")]
 				public int M1() => 0;
 
-			    [RequiresAssemblyFiles()]
-			    public event EventHandler E1
+				public event EventHandler E1
 				{
-					add
+			        [RequiresAssemblyFiles()]
+			        add
 					{
 						var a = M1();
 					}
