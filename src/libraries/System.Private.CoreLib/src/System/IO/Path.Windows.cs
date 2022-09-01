@@ -53,7 +53,7 @@ namespace System.IO
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
             if (path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                throw new ArgumentException(SR.Argument_NullCharInPath, nameof(path));
 
             return GetFullPathInternal(path);
         }
@@ -67,7 +67,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 
             if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_NullCharInPath);
 
             if (IsPathFullyQualified(path))
                 return GetFullPathInternal(path);
