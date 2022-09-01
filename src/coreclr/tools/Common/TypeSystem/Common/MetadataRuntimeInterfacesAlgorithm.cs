@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -37,13 +36,11 @@ namespace Internal.TypeSystem
         /// so the algorithm works by computing the uninstantiated form, and then
         /// specializing each interface as needed.
         /// </summary>
-        private DefType[] ComputeRuntimeInterfacesForInstantiatedType(InstantiatedType instantiatedType)
+        private static DefType[] ComputeRuntimeInterfacesForInstantiatedType(InstantiatedType instantiatedType)
         {
             MetadataType uninstantiatedType = (MetadataType)instantiatedType.GetTypeDefinition();
 
-            DefType[] genericTypeDefinitionInterfaces = uninstantiatedType.RuntimeInterfaces;
-
-            return InstantiatedType.InstantiateTypeArray(uninstantiatedType.RuntimeInterfaces, instantiatedType.Instantiation, new Instantiation());
+            return InstantiatedType.InstantiateTypeArray(uninstantiatedType.RuntimeInterfaces, instantiatedType.Instantiation, default(Instantiation));
         }
 
         /// <summary>
@@ -58,7 +55,7 @@ namespace Internal.TypeSystem
             if (explicitInterfaces.Length == 0)
                 return baseTypeInterfaces;
 
-            ArrayBuilder<DefType> interfacesArray = new ArrayBuilder<DefType>();
+            ArrayBuilder<DefType> interfacesArray = default(ArrayBuilder<DefType>);
             interfacesArray.Append(baseTypeInterfaces);
 
             foreach (DefType iface in explicitInterfaces)

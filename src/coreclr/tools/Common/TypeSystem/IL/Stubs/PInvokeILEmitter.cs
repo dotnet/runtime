@@ -444,7 +444,7 @@ namespace Internal.IL.Stubs
             }
             catch (InvalidProgramException ex)
             {
-                Debug.Assert(!String.IsNullOrEmpty(ex.Message));
+                Debug.Assert(!string.IsNullOrEmpty(ex.Message));
                 return MarshalHelpers.EmitExceptionBody(ex.Message, method);
             }
         }

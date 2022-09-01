@@ -5,12 +5,8 @@
 
 #pragma warning disable 649
 
-using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Reflection;
 using Internal.NativeFormat;
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat
 {

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -18,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public SealedVTableNode(TypeDesc type)
         {
-            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the 
+            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the
             // sealed vtable and dispatch map of the System.Array basetype instead.
             // Pointer arrays also follow the same path
             Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
@@ -42,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         /// <summary>
-        /// Returns the number of sealed vtable slots on the type. This API should only be called after successfully 
+        /// Returns the number of sealed vtable slots on the type. This API should only be called after successfully
         /// building the sealed vtable slots.
         /// </summary>
         public int NumSealedVTableEntries
@@ -63,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Returns the slot of a method in the sealed vtable, or -1 if not found. This API should only be called after 
+        /// Returns the slot of a method in the sealed vtable, or -1 if not found. This API should only be called after
         /// successfully building the sealed vtable slots.
         /// </summary>
         public int ComputeSealedVTableSlot(MethodDesc method)

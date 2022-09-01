@@ -64,7 +64,7 @@ namespace ILCompiler
             return sb.ToString();
         }
 
-        private class CoreDisassembler : IDisposable
+        private sealed class CoreDisassembler : IDisposable
         {
             private IntPtr _handle;
 
