@@ -1390,6 +1390,8 @@ MINI_OP(OP_AMD64_MUL_REG_MEMBASE,        "amd64_mul_reg_membase", IREG, IREG, IR
 
 MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
+
+MINI_OP(OP_AMD64_NEGATION,               "amd64_negation", XREG, XREG, NONE)
 #endif
 
 #if  defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)

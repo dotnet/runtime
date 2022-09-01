@@ -396,11 +396,10 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	int op = -1;
 	switch (id) {
 		case SN_Negate:
-			op = 42; // TODO 
+			op = OP_AMD64_NEGATION;
 			break;
 		default:
 			return NULL;
-			//g_assert_not_reached ();
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
 #elif defined(TARGET_WASM)

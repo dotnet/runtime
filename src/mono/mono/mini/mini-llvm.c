@@ -11276,6 +11276,22 @@ MONO_RESTORE_WARNING
 		}
 #endif
 
+#ifdef TARGET_AMD64
+		case OP_AMD64_NEGATION: {
+			gboolean is_float = FALSE; 
+			if ( ins->inst_c1 == MONO_TYPE_R4 || ins->inst_c1 == MONO_TYPE_R8 ) 
+				is_float = TRUE; 
+			
+			LLVMValueRef result; 
+			if ( is_float ) 
+				result = LLVMBuildFNeg (builder, lhs, ""); 
+			else 
+				result = LLVMBuildNeg (builder, lhs, ""); 
+				
+			values [ins->dreg] = result;
+		}
+#endif
+
 		case OP_DUMMY_USE:
 			break;
 
