@@ -161,7 +161,7 @@ namespace System.Formats.Tar.Tests
         {
             await using MemoryStream archiveStream = new MemoryStream();
             await using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
-            await Assert.ThrowsAsync<ArgumentException>(async () => await writer.WriteEntryAsync(new UstarTarEntry(entryType, "link")));
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(new UstarTarEntry(entryType, "link")));
         }
     }
 }
