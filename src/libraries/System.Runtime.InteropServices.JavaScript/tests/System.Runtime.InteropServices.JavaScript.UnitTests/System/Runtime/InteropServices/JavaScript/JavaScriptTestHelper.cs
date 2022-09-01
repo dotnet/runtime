@@ -45,6 +45,48 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return DateTime.Now;
         }
 
+        // the methods in the region have signature for which we have optimized path in the call marshaler
+        // it's the combination of number of arguments and void vs result
+        // see mono_wasm_bind_js_function and mono_wasm_bind_cs_function
+        #region Optimized
+
+        public static int optimizedReached = 0;
+        [JSExport]
+        public static void Optimized0V()
+        {
+            optimizedReached++;
+        }
+        [JSImport("invoke0V", "JavaScriptTestHelper")]
+        public static partial void invoke0V();
+
+        [JSExport]
+        public static void Optimized1V(int a1)
+        {
+            optimizedReached+= a1;
+        }
+        [JSImport("invoke1V", "JavaScriptTestHelper")]
+        public static partial void invoke1V(int a1);
+
+        [JSExport]
+        public static int Optimized1R(int a1)
+        {
+            optimizedReached += a1;
+            return a1 + 1;
+        }
+        [JSImport("invoke1R", "JavaScriptTestHelper")]
+        public static partial int invoke1R(int a1);
+
+        [JSExport]
+        public static int Optimized2R(int a1, int a2)
+        {
+            optimizedReached += a1+ a2;
+            return a1 + a2 +1;
+        }
+        [JSImport("invoke2R", "JavaScriptTestHelper")]
+        public static partial int invoke2R(int a1, int a2);
+
+        #endregion
+
         [JSImport("create_function", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
         public static partial Func<int, int, int> createMath([JSMarshalAs<JSType.String>] string a, [JSMarshalAs<JSType.String>] string b, [JSMarshalAs<JSType.String>] string code);
