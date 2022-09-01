@@ -48,9 +48,22 @@ namespace System.Net.WebSockets
         public async Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             bool disposeHandler = false;
-            invoker ??= new HttpMessageInvoker(SetupHandler(options, out disposeHandler));
-            HttpResponseMessage? response = null;
+            if (invoker is null)
+            {
+                if (options.HttpVersion.Major >= 2 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+                {
+                    throw new ArgumentException(SR.net_WebSockets_CustomInvokerRequiredForHttp2, nameof(options));
+                }
 
+                invoker = new HttpMessageInvoker(SetupHandler(options, out disposeHandler));
+            }
+            else if (!options.AreCompatibleWithCustomInvoker())
+            {
+                // This will not throw if the Proxy is a DefaultWebProxy.
+                throw new ArgumentException(SR.net_WebSockets_OptionsIncompatibleWithCustomInvoker, nameof(options));
+            }
+
+            HttpResponseMessage? response = null;
             bool disposeResponse = false;
 
             // force non-secure request to 1.1 whenever it is possible as HttpClient does
@@ -237,12 +250,7 @@ namespace System.Net.WebSockets
             // Create the handler for this request and populate it with all of the options.
             // Try to use a shared handler rather than creating a new one just for this request, if
             // the options are compatible.
-            if (options.Credentials == null &&
-                !options.UseDefaultCredentials &&
-                options.Proxy == null &&
-                options.Cookies == null &&
-                options.RemoteCertificateValidationCallback == null &&
-                (options._clientCertificates?.Count ?? 0) == 0)
+            if (options.AreCompatibleWithCustomInvoker() && options.Proxy is null)
             {
                 disposeHandler = false;
                 handler = s_defaultHandler;
@@ -518,7 +526,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Used as a sentinel to indicate that ClientWebSocket should use the system's default proxy.</summary>
-        private sealed class DefaultWebProxy : IWebProxy
+        internal sealed class DefaultWebProxy : IWebProxy
         {
             public static DefaultWebProxy Instance { get; } = new DefaultWebProxy();
             public ICredentials? Credentials { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
