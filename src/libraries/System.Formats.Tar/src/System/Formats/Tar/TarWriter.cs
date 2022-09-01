@@ -209,7 +209,7 @@ namespace System.Formats.Tar
         /// </item>
         /// </list>
         /// </remarks>
-        /// <exception cref="InvalidDataException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
@@ -252,7 +252,7 @@ namespace System.Formats.Tar
         /// </item>
         /// </list>
         /// </remarks>
-        /// <exception cref="InvalidDataException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
