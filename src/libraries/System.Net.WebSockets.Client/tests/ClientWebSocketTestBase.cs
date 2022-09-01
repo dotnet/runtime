@@ -118,10 +118,12 @@ namespace System.Net.WebSockets.Client.Tests
 
         internal HttpMessageInvoker? GetInvoker()
         {
-            var handler = new HttpClientHandler
+            var handler = new HttpClientHandler();
+
+            if (PlatformDetection.IsNotBrowser)
             {
-                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            };
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
 
             ConfigureCustomHandler?.Invoke(handler);
 
