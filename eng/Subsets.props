@@ -483,6 +483,9 @@
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'clr' and '$(CoreCLRConfiguration)' != ''">%(AdditionalProperties);Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'mono' and '$(MonoConfiguration)' != ''">%(AdditionalProperties);Configuration=$(MonoConfiguration)</AdditionalProperties>
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs' and '$(LibrariesConfiguration)' != ''">%(AdditionalProperties);Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+      <!-- Propagate host configuration for libs build since live host is used for testing -->
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs' and '$(HostConfiguration)' != ''">%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'host' and '$(HostConfiguration)' != ''">%(AdditionalProperties);Configuration=$(HostConfiguration)</AdditionalProperties>
     </ProjectToBuild>
   </ItemGroup>
 
