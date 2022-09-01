@@ -1508,9 +1508,9 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
 
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    char* result;
-    eeFormatClassName(&result, 0, clsHnd);
-    return result;
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    eePrintType(&printer, clsHnd, true, true);
+    return printer.GetBuffer();
 }
 
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF

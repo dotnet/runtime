@@ -7,6 +7,8 @@
 #include "switches.h"
 
 struct CORINFO_SIG_INFO;
+typedef struct CORINFO_CLASS_STRUCT_*  CORINFO_CLASS_HANDLE;
+typedef struct CORINFO_METHOD_STRUCT_* CORINFO_METHOD_HANDLE;
 class ICorJitHost;
 
 class JitConfigValues
@@ -21,6 +23,8 @@ public:
             const char* m_patternStart;
             const char* m_patternEnd;
             bool        m_containsClassName;
+            bool        m_classNameContainsInstantiation;
+            bool        m_methodNameContainsInstantiation;
             bool        m_containsSignature;
         };
 
@@ -47,7 +51,7 @@ public:
         {
             return m_names == nullptr;
         }
-        bool contains(const char* methodName, const char* className, CORINFO_SIG_INFO* sigInfo) const;
+        bool contains(CORINFO_METHOD_HANDLE methodHnd, CORINFO_CLASS_HANDLE classHnd, CORINFO_SIG_INFO* sigInfo) const;
     };
 
 private:

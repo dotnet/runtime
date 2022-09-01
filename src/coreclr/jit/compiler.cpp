@@ -2532,7 +2532,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (pfAltJit->contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.altJit = true;
         }
@@ -2613,7 +2613,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
-        if (JitConfig.JitImportBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitImportBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             assert(!"JitImportBreak reached");
         }
@@ -2628,7 +2628,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         if (!compIsForInlining())
         {
-            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 verboseDump = true;
             }
@@ -2863,12 +2863,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.dspOrder = true;
             }
 
-            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitGCDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspGCtbls = true;
             }
 
-            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.disAsm = true;
             }
@@ -2878,17 +2878,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.disAsmSpilled = true;
             }
 
-            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitUnwindDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspUnwind = true;
             }
 
-            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitEHDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspEHTable = true;
             }
 
-            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDebugDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspDebugInfo = true;
             }
@@ -2926,7 +2926,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
         }
@@ -2936,7 +2936,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // JitEarlyExpandMDArraysFilter.
         if (JitConfig.JitEarlyExpandMDArrays() == 0)
         {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
                                                                   &info.compMethodInfo->args))
             {
                 opts.compJitEarlyExpandMDArrays = true;
@@ -2977,7 +2977,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf(""); // in our logic this causes a flush
     }
 
-    if (JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         assert(!"JitBreak reached");
     }
@@ -2989,8 +2989,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     if (verbose ||
-        JitConfig.JitDebugBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args) ||
-        JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        JitConfig.JitDebugBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
+        JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         compDebugBreak = true;
     }
@@ -3009,15 +3009,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         s_pJitFunctionFileInitialized = true;
     }
 #else  // DEBUG
-    if (!JitConfig.JitDisasm().isEmpty())
+    if (JitConfig.JitDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
-        const char* className  = eeGetClassName(info.compClassHnd);
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-
-        if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
-        {
-            opts.disAsm = true;
-        }
+        opts.disAsm = true;
     }
 #endif // !DEBUG
 
@@ -3185,21 +3179,21 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
         // This is useful for debugging on a checked build.  Note that we still only do procedure
         // splitting in the zapper.
-        if (JitConfig.JitForceProcedureSplitting().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitForceProcedureSplitting().contains(info.compMethodHnd, info.compClassHnd,
                                                             &info.compMethodInfo->args))
         {
             opts.compProcedureSplitting = true;
         }
 
         // JitNoProcedureSplitting will always disable procedure splitting.
-        if (JitConfig.JitNoProcedureSplitting().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitNoProcedureSplitting().contains(info.compMethodHnd, info.compClassHnd,
                                                          &info.compMethodInfo->args))
         {
             opts.compProcedureSplitting = false;
         }
         //
         // JitNoProcedureSplittingEH will disable procedure splitting in functions with EH.
-        if (JitConfig.JitNoProcedureSplittingEH().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitNoProcedureSplittingEH().contains(info.compMethodHnd, info.compClassHnd,
                                                            &info.compMethodInfo->args))
         {
             opts.compProcedureSplittingEH = false;
@@ -3300,7 +3294,7 @@ bool Compiler::compJitHaltMethod()
     /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
     /* Note that this these two "Jit" environment variables also work for ngen images */
 
-    if (JitConfig.JitHalt().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitHalt().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
@@ -3404,7 +3398,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     }
 
     if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return false;
     }
@@ -3687,7 +3681,7 @@ void Compiler::compSetOptimizationLevel()
 
     if (!theMinOptsValue)
     {
-        if (JitConfig.JitMinOptsName().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitMinOptsName().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             theMinOptsValue = true;
         }
@@ -4191,8 +4185,7 @@ const char* Compiler::compGetStressMessage() const
         {
             // Or is it excluded via name?
             if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 // Not excluded -- stress can happen
                 stressMessage = " JitStress";
@@ -5360,13 +5353,13 @@ bool Compiler::skipMethod()
         return true;
     }
 
-    if (JitConfig.JitExclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitExclude().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
 
     if (!JitConfig.JitInclude().isEmpty() &&
-        !JitConfig.JitInclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        !JitConfig.JitInclude().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }

@@ -42,12 +42,29 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
             return;
         }
 
-        MethodName* name          = static_cast<MethodName*>(host->allocateMemory(sizeof(MethodName)));
-        name->m_next              = m_names;
-        name->m_patternStart      = start;
-        name->m_patternEnd        = end;
-        name->m_containsClassName = memchr(start, ':', end - start) != nullptr;
-        name->m_containsSignature = memchr(start, '(', end - start) != nullptr;
+        MethodName* name              = static_cast<MethodName*>(host->allocateMemory(sizeof(MethodName)));
+        name->m_next                  = m_names;
+        name->m_patternStart          = start;
+        name->m_patternEnd            = end;
+        const char* colon             = static_cast<const char*>(memchr(start, ':', end - start));
+        const char* startOfMethodName = colon != nullptr ? colon + 1 : start;
+
+        const char* parens          = static_cast<const char*>(memchr(startOfMethodName, '(', end - startOfMethodName));
+        const char* endOfMethodName = parens != nullptr ? parens : end;
+        name->m_methodNameContainsInstantiation = memchr(startOfMethodName, '<', endOfMethodName - startOfMethodName);
+
+        if (colon != nullptr)
+        {
+            name->m_containsClassName              = true;
+            name->m_classNameContainsInstantiation = memchr(start, '<', colon - start) != nullptr;
+        }
+        else
+        {
+            name->m_containsClassName              = false;
+            name->m_classNameContainsInstantiation = false;
+        }
+
+        name->m_containsSignature = parens != nullptr;
         m_names                   = name;
     };
 
@@ -55,18 +72,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
     const char* curChar;
     for (curChar = curPatternStart; *curChar != '\0'; curChar++)
     {
-        if ((curChar == curPatternStart) && (*curChar == '"'))
-        {
-            do
-            {
-                curChar++;
-            } while (*curChar != '"' && *curChar != '\0');
-
-            // Remove initial quotation mark
-            commitPattern(curPatternStart + 1, curChar);
-            curPatternStart = curChar + 1;
-        }
-        else if (*curChar == ' ')
+        if (*curChar == ' ')
         {
             commitPattern(curPatternStart, curChar);
             curPatternStart = curChar + 1;
@@ -130,51 +136,40 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
     }
 }
 
-bool JitConfigValues::MethodSet::contains(const char*       methodName,
-                                          const char*       className,
-                                          CORINFO_SIG_INFO* sigInfo) const
+bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
+                                          CORINFO_CLASS_HANDLE  classHnd,
+                                          CORINFO_SIG_INFO*     sigInfo) const
 {
-    // names[hasClassName][hasSignature]
-    char*     names[2][2] = {};
-    Compiler* comp        = JitTls::GetCompiler();
-
-    // Try to match any the entries in the list.
-    for (MethodName* name = m_names; name != nullptr; name = name->m_next)
+    if (isEmpty())
     {
-        char*& nameStr = names[name->m_containsClassName ? 1 : 0][name->m_containsSignature ? 1 : 0];
-        if (nameStr == nullptr)
+        return false;
+    }
+
+    Compiler*     comp = JitTls::GetCompiler();
+    char          buffer[1024];
+    StringPrinter printer(comp->getAllocator(CMK_DebugOnly), buffer, ArrLen(buffer));
+    MethodName*   prevPattern = nullptr;
+
+    for (MethodName *name = m_names; name != nullptr; prevPattern = name, name = name->m_next)
+    {
+        if ((prevPattern == nullptr) || (name->m_containsClassName != prevPattern->m_containsClassName) ||
+            (name->m_classNameContainsInstantiation != prevPattern->m_classNameContainsInstantiation) ||
+            (name->m_methodNameContainsInstantiation != prevPattern->m_methodNameContainsInstantiation) ||
+            (name->m_containsSignature != prevPattern->m_containsSignature))
         {
-            const int NAME_STR_SIZE = 1024;
-            nameStr                 = static_cast<char*>(_alloca(NAME_STR_SIZE));
-            comp->eeFormatMethodName(&nameStr, NAME_STR_SIZE, name->m_containsClassName ? className : nullptr,
-                                     methodName, name->m_containsSignature ? sigInfo : nullptr,
-                                     /* includeReturnType */ false,
-                                     /* includeThis */ false);
+            printer.Truncate(0);
+            comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
+                                name->m_containsSignature ? sigInfo : nullptr,
+                                /* includeNamespaces */ true, name->m_classNameContainsInstantiation,
+                                name->m_methodNameContainsInstantiation,
+                                /* includeReturnType */ false,
+                                /* includeThis */ false);
         }
 
-        if (matchGlob(name->m_patternStart, name->m_patternEnd, nameStr))
+        if (matchGlob(name->m_patternStart, name->m_patternEnd, printer.GetBuffer()))
         {
             return true;
         }
-
-#ifdef DEBUG
-        if (name->m_containsClassName)
-        {
-            // Maybe className doesn't include the namespace. Try to match that.
-            const char* methName = strchr(nameStr, ':');
-            if (methName != nullptr)
-            {
-                const char* nsSep = methName;
-                while ((nsSep > nameStr) && (*nsSep != '.'))
-                    nsSep--;
-
-                if ((nsSep != nameStr) && matchGlob(name->m_patternStart, name->m_patternEnd, nsSep + 1))
-                {
-                    return true;
-                }
-            }
-        }
-#endif
     }
 
     return false;

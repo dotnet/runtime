@@ -663,8 +663,8 @@ PhaseStatus Compiler::fgInline()
     }
 
 #ifdef DEBUG
-    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods().contains(info.compMethodName, info.compClassName,
-                                                                        &info.compMethodInfo->args);
+    fgPrintInlinedMethods =
+        JitConfig.JitPrintInlinedMethods().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 #endif // DEBUG
 
     noway_assert(fgFirstBB != nullptr);

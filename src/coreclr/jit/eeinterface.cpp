@@ -21,63 +21,88 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
-/*****************************************************************************/
-
-void Compiler::eeFormatMethodName(char**            buffer,
-                                  size_t            bufferMax,
-                                  const char*       className,
-                                  const char*       methodName,
-                                  CORINFO_SIG_INFO* sig,
-                                  bool              includeReturnType,
-                                  bool              includeThis)
+void Compiler::eePrintJitType(StringPrinter* p, var_types jitType)
 {
-    if (*buffer == nullptr)
+    p->Printf("%s", varTypeName(jitType));
+}
+
+void Compiler::eePrintType(StringPrinter*       p,
+                           CORINFO_CLASS_HANDLE clsHnd,
+                           bool                 includeNamespace,
+                           bool                 includeInstantiation)
+{
+    const char* namespaceName;
+    const char* className = info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
+    if (className == nullptr)
     {
-        *buffer   = new (this, CMK_DebugOnly) char[64];
-        bufferMax = 64;
+        namespaceName = nullptr;
+        className     = "<no class name>";
     }
 
-    size_t bufferIndex = 0;
-    auto ensureChars   = [&](size_t numChars) {
-        if (bufferIndex + numChars >= bufferMax) // >= due to null terminator
-        {
-            size_t newSize = max(bufferMax, 32);
-            while (bufferIndex + numChars >= newSize)
-                newSize *= 2;
+    if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
+        p->Printf("%s.%s", namespaceName, className);
+    else
+        p->Printf("%s", className);
 
-            char* newBuffer = new (this, CMK_DebugOnly) char[newSize];
-            memcpy(newBuffer, *buffer, bufferIndex);
+    if (!includeInstantiation)
+        return;
 
-            *buffer   = newBuffer;
-            bufferMax = newSize;
-        }
-    };
-
-    if (className != nullptr)
+    char pref = '<';
+    for (unsigned typeArgIndex = 0;; typeArgIndex++)
     {
-        ensureChars(strlen(className) + 1);
-        bufferIndex += sprintf(*buffer + bufferIndex, "%s:", className);
+        CORINFO_CLASS_HANDLE typeArg = info.compCompHnd->getTypeInstantiationArgument(clsHnd, typeArgIndex);
+
+        if (typeArg == NO_CLASS_HANDLE)
+            break;
+
+        p->Printf("%c", pref);
+        pref = ',';
+
+        CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(typeArg);
+        if (typ == CORINFO_TYPE_UNDEF)
+            eePrintType(p, typeArg, includeNamespace, true);
+        else
+            eePrintJitType(p, JITtype2varType(typ));
     }
 
-    ensureChars(strlen(methodName));
-    bufferIndex += sprintf(*buffer + bufferIndex, "%s", methodName);
+    if (pref != '<')
+        p->Printf(">");
+}
+
+void Compiler::eePrintMethod(StringPrinter*        p,
+                             CORINFO_CLASS_HANDLE  clsHnd,
+                             CORINFO_METHOD_HANDLE methHnd,
+                             CORINFO_SIG_INFO*     sig,
+                             bool                  includeNamespaces,
+                             bool                  includeClassInstantiation,
+                             bool                  includeMethodInstantiation,
+                             bool                  includeReturnType,
+                             bool                  includeThis)
+{
+    if (clsHnd != NO_CLASS_HANDLE)
+    {
+        eePrintType(p, clsHnd, includeNamespaces, includeClassInstantiation);
+        p->Printf(":");
+    }
+
+    const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
+    p->Printf("%s", methName);
 
     if (sig != nullptr)
     {
-        size_t signatureIndex = bufferIndex;
+        size_t signatureIndex = p->GetLength();
         bool   failed         = true;
 
-        char sigTypeBuffer[512];
-
         auto closure = [&]() {
-            ensureChars(1);
-            bufferIndex += sprintf(*buffer + bufferIndex, "(");
+            p->Printf("(");
 
             CORINFO_ARG_LIST_HANDLE argLst = sig->args;
             for (unsigned i = 0; i < sig->numArgs; i++)
             {
-                const char* result;
-                var_types   type = eeGetArgType(argLst, sig);
+                if (i > 0)
+                    p->Printf(",");
+
+                var_types type = eeGetArgType(argLst, sig);
                 switch (type)
                 {
                     case TYP_REF:
@@ -87,32 +112,21 @@ void Compiler::eeFormatMethodName(char**            buffer,
                         // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            char* sigParamType = sigTypeBuffer;
-                            eeFormatClassName(&sigParamType, ArrLen(sigTypeBuffer), clsHnd);
-                            result = sigParamType;
+                            eePrintType(p, clsHnd, includeNamespaces, true);
                             break;
                         }
                     }
 
                         FALLTHROUGH;
                     default:
-                        result = varTypeName(type);
+                        eePrintJitType(p, type);
                         break;
-                }
-
-                ensureChars(strlen(result));
-                bufferIndex += sprintf(*buffer + bufferIndex, "%s", result);
-                if (i != sig->numArgs - 1)
-                {
-                    ensureChars(1);
-                    bufferIndex += sprintf(*buffer + bufferIndex, ",");
                 }
 
                 argLst = info.compCompHnd->getArgNext(argLst);
             }
 
-            ensureChars(1);
-            bufferIndex += sprintf(*buffer + bufferIndex, ")");
+            p->Printf(")");
 
             failed = false;
         };
@@ -121,18 +135,16 @@ void Compiler::eeFormatMethodName(char**            buffer,
 
         if (failed)
         {
-            bufferIndex = signatureIndex;
-            ensureChars(strlen("(<failed to print signature>)"));
-            bufferIndex += sprintf(*buffer + bufferIndex, "(<failed to print signature>)");
+            p->Truncate(signatureIndex);
+            p->Printf("(<failed to print signature>)");
         }
 
         if (includeReturnType)
         {
-            const char* result;
-
             var_types retType = JITtype2varType(sig->retType);
             if (retType != TYP_VOID)
             {
+                p->Printf(":");
                 switch (retType)
                 {
                     case TYP_REF:
@@ -141,82 +153,24 @@ void Compiler::eeFormatMethodName(char**            buffer,
                         CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            char* sigType = sigTypeBuffer;
-                            eeFormatClassName(&sigType, ArrLen(sigTypeBuffer), clsHnd);
-                            result = sigType;
+                            eePrintType(p, clsHnd, includeNamespaces, true);
                             break;
                         }
                     }
                         FALLTHROUGH;
                     default:
-                        result = varTypeName(retType);
+                        eePrintJitType(p, retType);
                         break;
                 }
-
-                ensureChars(1 + strlen(result));
-                bufferIndex += sprintf(*buffer + bufferIndex, ":%s", result);
             }
         }
 
-        // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the
-        // first
-        // element of the arg type list
+        // Does it have a 'this' pointer? Don't count explicit this, which has
+        // the this pointer type as the first element of the arg type list
         if (includeThis && sig->hasThis() && !sig->hasExplicitThis())
         {
-            ensureChars(strlen(":this"));
-            bufferIndex += sprintf(*buffer + bufferIndex, ":this");
+            p->Printf(":this");
         }
-    }
-
-    (*buffer)[bufferIndex] = '\0';
-}
-
-void Compiler::eeFormatClassName(char** buffer, size_t bufferMax, CORINFO_CLASS_HANDLE clsHnd)
-{
-    bool failed  = true;
-    auto closure = [&]() {
-        int len       = 0;
-        int lenNeeded = info.compCompHnd->appendClassName(nullptr, &len, clsHnd, true, false, false);
-        lenNeeded++; // null terminator
-
-        char16_t* classNameStr;
-        if (lenNeeded < 4096)
-            classNameStr = static_cast<char16_t*>(_alloca(static_cast<size_t>(lenNeeded) * sizeof(char16_t)));
-        else
-            classNameStr = new (this, CMK_DebugOnly) char16_t[lenNeeded];
-
-        len                        = lenNeeded;
-        char16_t* classNameStrCopy = classNameStr;
-        int       result = info.compCompHnd->appendClassName(&classNameStrCopy, &len, clsHnd, true, false, false);
-        assert(result == lenNeeded - 1);
-        assert(classNameStr[result] == 0);
-
-        int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, (wchar_t*)classNameStr, -1, nullptr, 0, nullptr, nullptr);
-        if (utf8Len == 0)
-            return;
-
-        if (bufferMax < static_cast<size_t>(utf8Len))
-        {
-            *buffer   = new (this, CMK_DebugOnly) char[utf8Len];
-            bufferMax = static_cast<size_t>(utf8Len);
-        }
-
-        failed =
-            WszWideCharToMultiByte(CP_UTF8, 0, (wchar_t*)classNameStr, -1, *buffer, utf8Len, nullptr, nullptr) == 0;
-    };
-
-    eeRunFunctorWithSPMIErrorTrap(closure);
-
-    if (failed)
-    {
-        const char placeholderName[] = "hackishClassName";
-        if (bufferMax < ArrLen(placeholderName))
-        {
-            *buffer   = new (this, CMK_DebugOnly) char[ArrLen(placeholderName)];
-            bufferMax = ArrLen(placeholderName);
-        }
-
-        strcpy_s(*buffer, bufferMax, placeholderName);
     }
 }
 
@@ -229,28 +183,21 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
         return methodName;
     }
 
-    char* fullClassName = nullptr;
-    eeFormatClassName(&fullClassName, 0, info.compCompHnd->getMethodClass(hnd));
+    CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+    CORINFO_SIG_INFO     sig;
+    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        clsHnd = info.compCompHnd->getMethodClass(hnd);
+        eeGetMethodSig(hnd, &sig);
+    });
 
-    struct FilterSPMIParams
-    {
-        Compiler*             pThis;
-        CORINFO_METHOD_HANDLE hnd;
-        CORINFO_SIG_INFO      sig;
-    };
+    CORINFO_SIG_INFO* pSig = success ? &sig : nullptr;
+    StringPrinter     p(getAllocator(CMK_DebugOnly));
+    eePrintMethod(&p, clsHnd, hnd, pSig,
+                  /* includeNamespaces */ true,
+                  /* includeClassInstantiation */ true,
+                  /* includeMethodInstantiation */ true, includeReturnType, includeThisSpecifier);
 
-    FilterSPMIParams param;
-    param.pThis = this;
-    param.hnd   = hnd;
-
-    bool success = eeRunWithSPMIErrorTrap<
-        FilterSPMIParams>([](FilterSPMIParams* pParam) { pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig); },
-                          &param);
-
-    CORINFO_SIG_INFO* psig    = success ? &param.sig : nullptr;
-    char*             retName = nullptr;
-    eeFormatMethodName(&retName, 0, fullClassName, methodName, psig, includeReturnType, includeThisSpecifier);
-    return retName;
+    return p.GetBuffer();
 }
 
 #endif // defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)

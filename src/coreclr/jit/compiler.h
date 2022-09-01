@@ -7562,15 +7562,20 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
-    void eeFormatMethodName(char**            buffer,
-                            size_t            bufferMax,
-                            const char*       className,
-                            const char*       methodName,
-                            CORINFO_SIG_INFO* sig,
-                            bool              includeReturnType,
-                            bool              includeThis);
-
-    void eeFormatClassName(char** buffer, size_t bufferMax, CORINFO_CLASS_HANDLE clsHnd);
+    void eePrintJitType(class StringPrinter* printer, var_types jitType);
+    void eePrintType(class StringPrinter* printer,
+                     CORINFO_CLASS_HANDLE clsHnd,
+                     bool                 includeNamespaces,
+                     bool                 includeInstantiation);
+    void eePrintMethod(class StringPrinter*  printer,
+                       CORINFO_CLASS_HANDLE  clsHnd,
+                       CORINFO_METHOD_HANDLE methodHnd,
+                       CORINFO_SIG_INFO*     sig,
+                       bool                  includeNamespaces,
+                       bool                  includeClassInstantiation,
+                       bool                  includeMethodInstantiation,
+                       bool                  includeReturnType,
+                       bool                  includeThis);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
@@ -11328,6 +11333,78 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+
+class StringPrinter
+{
+    CompAllocator m_alloc;
+    char*         m_buffer;
+    size_t        m_bufferMax;
+    size_t        m_bufferIndex = 0;
+
+public:
+    StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
+        : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
+    {
+        if ((m_buffer == nullptr) || (m_bufferMax == 0))
+        {
+            m_bufferMax = 128;
+            m_buffer    = alloc.allocate<char>(m_bufferMax);
+        }
+
+        m_buffer[0] = '\0';
+    }
+
+    size_t GetLength()
+    {
+        return m_bufferIndex;
+    }
+    char* GetBuffer()
+    {
+        assert(m_buffer[GetLength()] == '\0');
+        return m_buffer;
+    }
+    void Truncate(size_t newLength)
+    {
+        assert(newLength <= m_bufferIndex);
+        m_bufferIndex           = newLength;
+        m_buffer[m_bufferIndex] = '\0';
+    }
+
+    void Printf(const char* format, ...)
+    {
+        va_list args;
+        va_start(args, &format);
+
+        while (true)
+        {
+            size_t bufferLeft = m_bufferMax - m_bufferIndex;
+            assert(bufferLeft >= 1); // always fit null terminator
+
+            va_list argsCopy;
+            va_copy(argsCopy, args);
+            int printed = vsnprintf_s(m_buffer + m_bufferIndex, bufferLeft, _TRUNCATE, format, argsCopy);
+            va_end(argsCopy);
+
+            if (printed < 0)
+            {
+                // buffer too small
+                size_t newSize   = m_bufferMax * 2;
+                char*  newBuffer = m_alloc.allocate<char>(newSize);
+                memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
+
+                m_buffer    = newBuffer;
+                m_bufferMax = newSize;
+            }
+            else
+            {
+                m_bufferIndex = m_bufferIndex + static_cast<size_t>(printed);
+                break;
+            }
+        }
+
+        va_end(args);
+    }
+};
 
 /*****************************************************************************
  *
