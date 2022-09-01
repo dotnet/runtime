@@ -1675,6 +1675,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     {
         TRACE("GetProcessIdDisambiguationKey: getline() FAILED");
         SetLastError(ERROR_INVALID_HANDLE);
+        free(line);
         return FALSE;
     }
 
