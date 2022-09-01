@@ -11290,6 +11290,19 @@ MONO_RESTORE_WARNING
 				
 			values [ins->dreg] = result;
 		}
+
+		case OP_AMD64_ONESCOMPLEMENT: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			LLVMTypeRef elem_t = LLVMGetElementType (t);
+			unsigned int elems = LLVMGetVectorSize (t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+			LLVMTypeRef intermediate_elem_t = LLVMIntType (elem_bits);
+			LLVMTypeRef intermediate_t = LLVMVectorType (intermediate_elem_t, elems);
+			LLVMValueRef lhs_int = convert (ctx, lhs, intermediate_t); // TODO replace with vec128 type 
+			LLVMValueRef result = LLVMBuildNot (builder, lhs_int, "");
+
+			values [ins->dreg] = result;
+		}
 #endif
 
 		case OP_DUMMY_USE:
