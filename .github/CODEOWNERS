@@ -74,7 +74,8 @@
 /src/mono/nuget/*Workload.Mono.Toolchain*/ @lewing @radical
 /src/mono/nuget/*MonoAOTCompiler*/ @lewing @radical
 
-/src/tests/BuildWasmApps/ @radical
+/src/mono/wasm/Wasm* @radical
+/src/mono/wasm/testassets @radical
 /src/tasks/WasmAppBuilder/ @radical
 /src/tasks/WorkloadBuildTasks/ @radical
 /src/tasks/AotCompilerTask/ @radical

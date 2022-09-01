@@ -2,8 +2,7 @@
 
 Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
 
-The rest of this document covers advanced topics only.
-
+The rest of this document covers advanced topics only. Adding an explicit package reference to `Microsoft.DotNet.ILCompiler` will generate warning when publishing and it can run into version errors. When possible, use the PublishAot property to publish a native AOT application.
 
 ## Using daily builds
 
@@ -34,7 +33,21 @@ or by adding the following element to the project file:
 
 ## Cross-architecture compilation
 
-Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. To target win-arm64 on a Windows x64 host, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
+Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
+
+```xml
+    <PropertyGroup>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+```
+
+Targeting win-arm64 on a Windows x64 host machine,
+
+```bash
+> dotnet publish -r win-arm64 -c Release
+```
+
+To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK support is not sufficient (note that these scenarios will generate warnings for using explicit package references), in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.2.22103.2" />
 ```

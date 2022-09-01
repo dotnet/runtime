@@ -401,7 +401,7 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
-volatile bool g_processShutdownHasStarted = false;
+volatile Thread* g_threadPerformingShutdown = NULL;
 
 static void DllThreadDetach()
 {
@@ -413,7 +413,7 @@ static void DllThreadDetach()
     {
         // Once shutdown starts, RuntimeThreadShutdown callbacks are ignored, implying that
         // it is no longer guaranteed that exiting threads will be detached.
-        if (!g_processShutdownHasStarted)
+        if (g_threadPerformingShutdown != NULL)
         {
             ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
             RhFailFast();
@@ -439,9 +439,17 @@ void RuntimeThreadShutdown(void* thread)
     }
 #else
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
+
+    // Do not do shutdown for the thread that performs the shutdown.
+    // other threads could be terminated before it and could leave TLS locked
+    if ((Thread*)thread == g_threadPerformingShutdown)
+    {
+        return;
+    }
+
 #endif
 
-    ThreadStore::DetachCurrentThread(g_processShutdownHasStarted);
+    ThreadStore::DetachCurrentThread(g_threadPerformingShutdown != NULL);
 }
 
 extern "C" bool RhInitialize()
@@ -474,11 +482,11 @@ COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
 COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
     // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
-    g_processShutdownHasStarted = true;
+    g_threadPerformingShutdown = ThreadStore::RawGetCurrentThread();
 }
 
 #ifdef _WIN32
-EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, void* /*pvReserved*/)
+EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, void* pvReserved)
 {
     switch (dwReason)
     {

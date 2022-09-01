@@ -567,7 +567,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             out JsonParameterInfo? jsonParameterInfo)
         {
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+            Debug.Assert(state.Current.JsonTypeInfo.Kind == JsonTypeInfoKind.Object);
 
             ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
 

@@ -87,12 +87,9 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static, 0,
                             Context.GetWellKnownType(WellKnownType.Void),
                             TypeDesc.EmptyTypes);
-                }
 
                 return _signature;
             }

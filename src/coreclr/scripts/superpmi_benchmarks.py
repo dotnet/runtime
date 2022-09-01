@@ -215,7 +215,7 @@ def build_and_run(coreclr_args, output_mch_name):
         make_executable(script_name)
 
         run_command([
-            python_path, os.path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
+            python_path, os.path.join(superpmi_directory, "superpmi.py"), "collect", "--clean", "-core_root", core_root,
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
             script_name], _exit_on_fail=True)
 

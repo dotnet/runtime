@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
-        
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");

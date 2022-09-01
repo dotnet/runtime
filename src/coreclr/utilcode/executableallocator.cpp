@@ -259,7 +259,7 @@ bool ExecutableAllocator::Initialize()
     return true;
 }
 
-//#define ENABLE_CACHED_MAPPINGS
+#define ENABLE_CACHED_MAPPINGS
 
 void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {
