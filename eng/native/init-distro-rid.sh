@@ -196,6 +196,7 @@ initDistroRidGlobal()
         fi
 
         __DistroRid="${distroRid}"
+        export __DistroRid
     fi
 
     if [ -z "$__DistroRid" ]; then
@@ -203,6 +204,5 @@ initDistroRidGlobal()
         exit 1
     fi
 
-    export __DistroRid
     echo "__DistroRid: ${__DistroRid}"
 }
