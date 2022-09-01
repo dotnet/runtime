@@ -541,17 +541,17 @@ namespace System.Security.Cryptography.Cose.Tests
             MultiSign = 98
         }
 
-        internal static void WriteDummyCritHeaderValue(CborWriter writer)
+        internal static void WriteDummyCritHeaderValue(CborWriter writer, bool useIndefiniteLength = false)
         {
-            writer.WriteStartArray(1);
+            writer.WriteStartArray(useIndefiniteLength ? null : 1);
             writer.WriteInt32(42);
             writer.WriteEndArray();
         }
 
-        internal static byte[] GetDummyCritHeaderValue()
+        internal static byte[] GetDummyCritHeaderValue(bool useIndefiniteLength = false)
         {
             var writer = new CborWriter();
-            WriteDummyCritHeaderValue(writer);
+            WriteDummyCritHeaderValue(writer, useIndefiniteLength);
             return writer.Encode();
         }
 

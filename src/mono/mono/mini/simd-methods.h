@@ -619,3 +619,9 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh)
 METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
+// Wasm
+METHOD(Bitmask)
+METHOD(Splat)
+METHOD(ExtractLane)
+METHOD(ReplaceLane)
+METHOD(Swizzle)

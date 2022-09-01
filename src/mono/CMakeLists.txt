@@ -215,6 +215,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
   add_definitions(-D_THREAD_SAFE)
+  set(HAVE_CGROUP_SUPPORT 1)
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
   add_link_options(-Wl,-z,relro)
   add_link_options(-Wl,-z,now)

@@ -405,6 +405,12 @@ void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void *
     GcEnumObject((PTR_OBJECTREF)pRef, flags, (EnumGcRefCallbackFunc *)pfnEnumCallback, (EnumGcRefScanContext *)pvCallbackData);
 }
 
+// static
+void RedhawkGCInterface::EnumGcRefConservatively(PTR_RtuObjectRef pRef, void* pfnEnumCallback, void* pvCallbackData)
+{
+    GcEnumObject((PTR_OBJECTREF)pRef, GC_CALL_INTERIOR | GC_CALL_PINNED, (EnumGcRefCallbackFunc*)pfnEnumCallback, (EnumGcRefScanContext*)pvCallbackData);
+}
+
 #ifndef DACCESS_COMPILE
 
 // static
@@ -1018,8 +1024,8 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && (!defined(TARGET_ARM64) || !defined(TARGET_UNIX))
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for ARM64 and UNIX
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
+#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
 #endif
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)

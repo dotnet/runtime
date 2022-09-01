@@ -433,6 +433,34 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             Assert.Equal(tx.TransactionInformation.DistributedIdentifier, tx2.TransactionInformation.DistributedIdentifier);
         });
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    public void GetDtcTransaction()
+        => Test(() =>
+        {
+            using var tx = new CommittableTransaction();
+
+            var outcomeReceived = new AutoResetEvent(false);
+
+            var enlistment = new TestEnlistment(
+                Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeReceived);
+
+            Assert.Equal(Guid.Empty, tx.PromoterType);
+
+            tx.EnlistVolatile(enlistment, EnlistmentOptions.None);
+
+            // Forces promotion to MSDTC, returns an ITransaction for use only with System.EnterpriseServices.
+            _ = TransactionInterop.GetDtcTransaction(tx);
+
+            Assert.Equal(TransactionStatus.Active, tx.TransactionInformation.Status);
+            Assert.Equal(TransactionInterop.PromoterTypeDtc, tx.PromoterType);
+
+            tx.Commit();
+
+            Assert.True(outcomeReceived.WaitOne(Timeout));
+            Assert.Equal(EnlistmentOutcome.Committed, enlistment.Outcome);
+            Retry(() => Assert.Equal(TransactionStatus.Committed, tx.TransactionInformation.Status));
+        });
+
     private static void Test(Action action)
     {
         // Temporarily skip on 32-bit where we have an issue.
