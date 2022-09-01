@@ -7,10 +7,13 @@
     <WasmDebugLevel>1</WasmDebugLevel>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <NativeFileReference Include="fibonacci.c" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <PropertyGroup>
     <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
