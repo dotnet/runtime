@@ -11,39 +11,44 @@ using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.Unicode;
 
+#pragma warning disable SA1121 // Use built-in type alias
+using SkipChecks = System.Boolean;
+using CheckBytes = System.Byte;
+using CheckChars = System.Char;
+
 namespace System.Buffers.Text
 {
     public static partial class Ascii
     {
-        public static bool Equals(System.ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length && Equals<bool>(right, left) == EqualsResult.Match;
+        public static bool Equals(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length && Equals<SkipChecks>(right, left) == EqualsResult.Match;
 
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
-            => left.Length == right.Length && EqualsIgnoreCase<bool>(left, right) == EqualsResult.Match;
+            => left.Length == right.Length && EqualsIgnoreCase<SkipChecks>(left, right) == EqualsResult.Match;
 
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
             => left.Length == right.Length && Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), left.Length);
 
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length && Equals<bool>(right, left) == EqualsResult.Match;
+            => left.Length == right.Length && Equals<SkipChecks>(right, left) == EqualsResult.Match;
 
         public static unsafe bool StartsWith(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<char>(value, text.Slice(0, value.Length))));
+            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckChars>(value, text.Slice(0, value.Length))));
 
         public static unsafe bool EndsWith(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<char>(value, text.Slice(text.Length - value.Length))));
+            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckChars>(value, text.Slice(text.Length - value.Length))));
 
         public static unsafe bool StartsWith(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<byte>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckBytes>(text.Slice(0, value.Length), value)));
 
         public static unsafe bool EndsWith(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<byte>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckBytes>(text.Slice(text.Length - value.Length), value)));
 
         public static bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckBytes>(text.Slice(0, value.Length), value)));
 
         public static bool EndsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckBytes>(text.Slice(text.Length - value.Length), value)));
 
         // TODO adsitnik: discuss whether this overload should exists, as the only difference with ROS.StartsWith(ROS, StringComparison.OrdinalIgnoreCase)
         // is throwing an exception for non-ASCII characters found in value
@@ -84,16 +89,16 @@ namespace System.Buffers.Text
         }
 
         public static unsafe bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<char>(value, text.Slice(0, value.Length))));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckChars>(value, text.Slice(0, value.Length))));
 
         public static unsafe bool EndsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<char>(value, text.Slice(text.Length - value.Length))));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckChars>(value, text.Slice(text.Length - value.Length))));
 
         public static unsafe bool StartsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckBytes>(text.Slice(0, value.Length), value)));
 
         public static unsafe bool EndsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckBytes>(text.Slice(text.Length - value.Length), value)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Map(EqualsResult equalsResult)
@@ -109,7 +114,7 @@ namespace System.Buffers.Text
 
         private static EqualsResult Equals<TCheck>(ReadOnlySpan<char> chars, ReadOnlySpan<byte> bytes) where TCheck : struct
         {
-            Debug.Assert(typeof(TCheck) == typeof(byte) || typeof(TCheck) == typeof(char) || typeof(TCheck) == typeof(bool));
+            Debug.Assert(typeof(TCheck) == typeof(CheckBytes) || typeof(TCheck) == typeof(CheckChars) || typeof(TCheck) == typeof(SkipChecks));
             Debug.Assert(chars.Length == bytes.Length);
 
             if (!Vector128.IsHardwareAccelerated || chars.Length < Vector128<ushort>.Count)
@@ -119,14 +124,14 @@ namespace System.Buffers.Text
                     char c = chars[i];
                     byte b = bytes[i];
 
-                    if (typeof(TCheck) == typeof(char))
+                    if (typeof(TCheck) == typeof(CheckChars))
                     {
                         if (!UnicodeUtility.IsAsciiCodePoint(c))
                         {
                             return EqualsResult.NonAsciiFound;
                         }
                     }
-                    else if (typeof(TCheck) == typeof(byte))
+                    else if (typeof(TCheck) == typeof(CheckBytes))
                     {
                         if (!UnicodeUtility.IsAsciiCodePoint(b))
                         {
@@ -156,14 +161,14 @@ namespace System.Buffers.Text
                     charValues = Vector256.LoadUnsafe(ref currentCharsSearchSpace);
                     byteValues = Vector128.LoadUnsafe(ref currentBytesSearchSpace);
 
-                    if (typeof(TCheck) == typeof(char))
+                    if (typeof(TCheck) == typeof(CheckChars))
                     {
                         if (charValues.AsByte().ExtractMostSignificantBits() != 0)
                         {
                             return EqualsResult.NonAsciiFound;
                         }
                     }
-                    else if (typeof(TCheck) == typeof(byte))
+                    else if (typeof(TCheck) == typeof(CheckBytes))
                     {
                         if (byteValues.ExtractMostSignificantBits() != 0)
                         {
@@ -188,14 +193,14 @@ namespace System.Buffers.Text
                     charValues = Vector256.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
                     byteValues = Vector128.LoadUnsafe(ref oneVectorAwayFromBytesEnd);
 
-                    if (typeof(TCheck) == typeof(char))
+                    if (typeof(TCheck) == typeof(CheckChars))
                     {
                         if (charValues.AsByte().ExtractMostSignificantBits() != 0)
                         {
                             return EqualsResult.NonAsciiFound;
                         }
                     }
-                    else if (typeof(TCheck) == typeof(byte))
+                    else if (typeof(TCheck) == typeof(CheckBytes))
                     {
                         if (byteValues.ExtractMostSignificantBits() != 0)
                         {
@@ -226,14 +231,14 @@ namespace System.Buffers.Text
                     charValues = Vector128.LoadUnsafe(ref currentCharsSearchSpace);
                     byteValues = Vector64.LoadUnsafe(ref currentBytesSearchSpace);
 
-                    if (typeof(TCheck) == typeof(char))
+                    if (typeof(TCheck) == typeof(CheckChars))
                     {
                         if (ASCIIUtility.VectorContainsNonAsciiChar(charValues))
                         {
                             return EqualsResult.NonAsciiFound;
                         }
                     }
-                    else if (typeof(TCheck) == typeof(byte))
+                    else if (typeof(TCheck) == typeof(CheckBytes))
                     {
                         if (VectorContainsNonAsciiChar(byteValues))
                         {
@@ -258,14 +263,14 @@ namespace System.Buffers.Text
                     charValues = Vector128.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
                     byteValues = Vector64.LoadUnsafe(ref oneVectorAwayFromBytesEnd);
 
-                    if (typeof(TCheck) == typeof(char))
+                    if (typeof(TCheck) == typeof(CheckChars))
                     {
                         if (ASCIIUtility.VectorContainsNonAsciiChar(charValues))
                         {
                             return EqualsResult.NonAsciiFound;
                         }
                     }
-                    else if (typeof(TCheck) == typeof(byte))
+                    else if (typeof(TCheck) == typeof(CheckBytes))
                     {
                         if (VectorContainsNonAsciiChar(byteValues))
                         {
@@ -293,14 +298,14 @@ namespace System.Buffers.Text
                 uint valueA = chars[i];
                 uint valueB = bytes[i];
 
-                if (typeof(TCheck) == typeof(char))
+                if (typeof(TCheck) == typeof(CheckChars))
                 {
                     if (!UnicodeUtility.IsAsciiCodePoint(valueA))
                     {
                         return EqualsResult.NonAsciiFound;
                     }
                 }
-                else if (typeof(TCheck) == typeof(byte))
+                else if (typeof(TCheck) == typeof(CheckBytes))
                 {
                     if (!UnicodeUtility.IsAsciiCodePoint(valueB))
                     {
@@ -337,7 +342,7 @@ namespace System.Buffers.Text
                 uint valueA = text[i];
                 uint valueB = value[i];
 
-                if (typeof(TCheck) == typeof(byte))
+                if (typeof(TCheck) == typeof(CheckBytes))
                 {
                     if (!UnicodeUtility.IsAsciiCodePoint(valueB))
                     {
@@ -397,3 +402,4 @@ namespace System.Buffers.Text
         }
     }
 }
+#pragma warning restore SA1121 // Use built-in type alias
