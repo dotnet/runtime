@@ -121,7 +121,7 @@ These can be set in one of three ways:
 ## Specifying method names
 
 Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
-* The JitDisasm string is a space-separated list of patterns. Patterns can arbitrarily contain both * (match any characters) and ? (match any 1 character).
+* The JitDisasm string is a space-separated list of patterns. Patterns can arbitrarily contain both '*' (match any characters) and '?' (match any 1 character).
 * The string matched against depends on characters in the pattern:
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
   + If the pattern contains a '(' character, the string matched against is suffixed by the signature
