@@ -6,9 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeEquality.cs">
-      <HasDisasmCheck>true</HasDisasmCheck>
+      <!-- Uncomment when more JitDasm wildcard fixes are in, and update SuperFileCheck to include enclosing type names and type parameters for JitDisasm - this is to prevent method name ambiguities -->
+      <!-- <HasDisasmCheck>true</HasDisasmCheck> -->
     </Compile>
-
-    <CLRTestEnvironmentVariable Include="DOTNET_JitDisasm" Value="P:* Q:*" />
   </ItemGroup>
 </Project>
