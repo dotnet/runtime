@@ -284,7 +284,8 @@ set(interp_sources
     interp/mintops.c
     interp/transform.c
     interp/tiering.h
-    interp/tiering.c)
+    interp/tiering.c
+    interp/jiterpreter.c)
 set(interp_stub_sources
     interp-stubs.c)
 

@@ -35,6 +35,10 @@
 #include "transform.h"
 #include "tiering.h"
 
+#if HOST_BROWSER
+#include "jiterpreter.h"
+#endif
+
 MonoInterpStats mono_interp_stats;
 
 #define DEBUG 0
@@ -256,7 +260,7 @@ interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_
 }
 
 /* Inserts a new instruction after prev_ins. prev_ins must be in cbb */
-static InterpInst*
+InterpInst*
 interp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode)
 {
 	return interp_insert_ins_bb (td, td->cbb, prev_ins, opcode);
@@ -835,6 +839,9 @@ handle_branch (TransformData *td, int long_op, int offset)
 
 	InterpBasicBlock *target_bb = td->offset_to_bb [target];
 	g_assert (target_bb);
+
+	if (offset < 0)
+		target_bb->backwards_branch_target = TRUE;
 
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
@@ -4909,6 +4916,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_CALL: {
 			gboolean need_seq_point = FALSE;
 
+			td->cbb->contains_call_instruction = TRUE;
+
 			if (sym_seq_points && !mono_bitset_test_fast (seq_point_locs, td->ip + 5 - header->code))
 				need_seq_point = TRUE;
 
@@ -5749,6 +5758,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->sp -= csignature->param_count;
 					guint32 params_stack_size = tos_offset - get_tos_offset (td);
 
+					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_STRING_UNOPT);
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
 					td->last_ins->data [1] = params_stack_size;
@@ -5765,6 +5775,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 					call_args [csignature->param_count + 1] = -1;
 
+					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_STRING);
 					td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 					push_type (td, stack_type [ret_mt], klass);
@@ -5792,6 +5803,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->sp -= csignature->param_count;
 				int param_size = tos - get_tos_offset (td);
 
+				td->cbb->contains_call_instruction = TRUE;
 				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
 				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				td->last_ins->data [1] = param_size;
@@ -5848,12 +5860,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					InterpInst *newobj_fast;
 
 					if (is_vt) {
+						td->cbb->contains_call_instruction = TRUE;
 						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT);
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 					} else {
 						MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 						goto_if_nok (error, exit);
+						td->cbb->contains_call_instruction = TRUE;
 						newobj_fast = interp_add_ins (td, MINT_NEWOBJ);
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = get_data_item_index (td, vtable);
@@ -5865,6 +5879,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (!td->aggressive_inlining)
 						INLINE_FAILURE;
 				} else {
+					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_SLOW);
 					g_assert (!m_class_is_valuetype (klass));
 					interp_ins_set_dreg (td->last_ins, dreg);
@@ -8123,6 +8138,7 @@ generate_compacted_code (TransformData *td)
 			*ip++ = MINT_TIER_PATCHPOINT;
 			*ip++ = (guint16)bb->index;
 		}
+
 		while (ins) {
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
@@ -10004,6 +10020,9 @@ retry:
 	if (td->optimized) {
 		interp_optimize_code (td);
 		interp_alloc_offsets (td);
+#if HOST_BROWSER
+		jiterp_insert_entry_points (td);
+#endif
 	}
 
 	generate_compacted_code (td);
