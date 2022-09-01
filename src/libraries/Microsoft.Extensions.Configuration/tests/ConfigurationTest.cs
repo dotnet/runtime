@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Microsoft.Extensions.Configuration.Memory;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
@@ -1000,6 +1002,99 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(2, keys.Count);
             Assert.Equal("2", keys[0]);
             Assert.Equal("10", keys[1]);
+        }
+
+        [Theory]
+        [ClassData(typeof(OverrideGetChildKeysConfigurationProviders))]
+        public void ConfigurationGetChildrenNotOptimizedConfigurationProvider(IConfigurationProvider provider)
+        {
+            // Arrange
+            var dic2 = new Dictionary<string, string>()
+            {
+                {"key2", "val"},
+            };
+            var src1 = new FixedProviderConfigurationSource(provider);
+            var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.Add(src1);
+            configurationBuilder.Add(memConfigSrc2);
+            var configSorted = configurationBuilder.Build();
+            configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.Add(memConfigSrc2);
+            configurationBuilder.Add(src1);
+            var configNotSorted = configurationBuilder.Build();
+
+            // Act
+            var keysSorted = configSorted.GetChildren().Select(c => c.Key).ToList();
+            var keysNotSorted = configNotSorted.GetChildren().Select(c => c.Key).ToList();
+
+            // Assert
+            Assert.Equal(3, keysSorted.Count);
+            Assert.Equal(3, keysNotSorted.Count);
+
+            // The keys should be sorted by the 2nd IConfigurationProvider
+            // because it inherits from helper class ConfigurationProvider.
+            Assert.Equal("key1", keysSorted[0]);
+            Assert.Equal("key2", keysSorted[1]);
+            Assert.Equal("key3", keysSorted[2]);
+            Assert.Equal("key2", keysNotSorted[0]);
+            Assert.Equal("key3", keysNotSorted[1]);
+            Assert.Equal("key1", keysNotSorted[2]);
+        }
+
+        private class OverrideGetChildKeysConfigurationProviders : TheoryData<IConfigurationProvider>
+        {
+            public OverrideGetChildKeysConfigurationProviders()
+            {
+                Add(new InheritHelperClassButOverrideMethodGetChildKeysConfigurationProvider());
+                Add(new NotInheritHelperClassConfigurationProvider());
+            }
+
+            public static IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+            {
+                if (parentPath != null)
+                {
+                    throw new ArgumentException("Not support parentPath");
+                }
+
+                if (earlierKeys.Any())
+                {
+                    throw new ArgumentException("Not support earlierKeys");
+                }
+
+                // For the IConfigurationProvider implementation that not inherit from helper class ConfigurationProvider,
+                // the returned keys might not be sorted.
+                yield return "key3";
+                yield return "key1";
+            }
+        }
+
+        private class FixedProviderConfigurationSource : IConfigurationSource
+        {
+            private readonly IConfigurationProvider provider;
+            public FixedProviderConfigurationSource(IConfigurationProvider provider)
+            {
+                this.provider = provider;
+            }
+
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => provider;
+        }
+
+        private class InheritHelperClassButOverrideMethodGetChildKeysConfigurationProvider : ConfigurationProvider
+        {
+            public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+                => OverrideGetChildKeysConfigurationProviders.GetChildKeys(earlierKeys, parentPath);
+        }
+
+        private class NotInheritHelperClassConfigurationProvider : IConfigurationProvider
+        {
+            public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+                => OverrideGetChildKeysConfigurationProviders.GetChildKeys(earlierKeys, parentPath);
+
+            public IChangeToken GetReloadToken() => throw new NotImplementedException();
+            public void Load() => throw new NotImplementedException();
+            public void Set(string key, string? value) => throw new NotImplementedException();
+            public bool TryGet(string key, out string? value) => throw new NotImplementedException();
         }
     }
 }
