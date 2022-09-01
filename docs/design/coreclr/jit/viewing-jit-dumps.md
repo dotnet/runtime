@@ -153,22 +153,22 @@ new C<int, int>().M<int, int>(default, default, default, default); // compilatio
 The full strings are:
 
 ```
-MyNamespace.C`2<byte,System.__Canon>:M<int,System.__Canon>(byte,System.__Canon,int,System.__Canon)
-MyNamespace.C`2<int,int>:M<int,int>(int,int,int,int)
+MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,int,System.__Canon)
+MyNamespace.C`2[int,int]:M[int,int](int,int,int,int)
 ```
 
 The following are equivalent and matches both compilations:
 ```
 M
 *C`2:M
-*C`2<*>:M<*>(*)
+*C`2[*]:M[*](*)
 MyNamespace.C`2:M
 ```
 
 The following match only the first compilation:
 ```
-M<int,*Canon>
-MyNamespace.C`2<byte,*>:M
+M[int,*Canon]
+MyNamespace.C`2[byte,*]:M
 M(*Canon)
 ```
 

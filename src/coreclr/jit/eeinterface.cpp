@@ -47,7 +47,7 @@ void Compiler::eePrintType(StringPrinter*       p,
     if (!includeInstantiation)
         return;
 
-    char pref = '<';
+    char pref = '[';
     for (unsigned typeArgIndex = 0;; typeArgIndex++)
     {
         CORINFO_CLASS_HANDLE typeArg = info.compCompHnd->getTypeInstantiationArgument(clsHnd, typeArgIndex);
@@ -60,8 +60,8 @@ void Compiler::eePrintType(StringPrinter*       p,
         eePrintTypeOrJitAlias(p, typeArg, includeNamespace, true);
     }
 
-    if (pref != '<')
-        p->Printf(">");
+    if (pref != '[')
+        p->Printf("]");
 }
 
 void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
@@ -98,7 +98,7 @@ void Compiler::eePrintMethod(StringPrinter*        p,
 
     if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
     {
-        p->Printf("<");
+        p->Printf("[");
         for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
         {
             if (i > 0)
@@ -106,8 +106,7 @@ void Compiler::eePrintMethod(StringPrinter*        p,
 
             eePrintTypeOrJitAlias(p, sig->sigInst.methInst[i], includeNamespaces, true);
         }
-
-        p->Printf(">");
+        p->Printf("]");
     }
 
     if (includeSignature)
