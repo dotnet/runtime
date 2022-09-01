@@ -12741,7 +12741,15 @@ void gc_heap::distribute_free_regions()
 
             // we may have a deficit or  - if background GC is going on - a surplus.
             // adjust the budget per heap accordingly
-            ptrdiff_t adjustment_per_heap = (balance + (n_heaps - 1)) / n_heaps;
+            ptrdiff_t adjustment_per_heap;
+            if (balance < 0)
+            {
+                adjustment_per_heap = balance / n_heaps;
+            }
+            else
+            {
+                adjustment_per_heap = (balance + (n_heaps - 1)) / n_heaps;
+            }
 
 #ifdef MULTIPLE_HEAPS
             for (int i = 0; i < n_heaps; i++)
@@ -12797,18 +12805,34 @@ void gc_heap::distribute_free_regions()
         {
             gc_heap* hp = g_heaps[i];
 
-            if (hp->free_regions[kind].get_num_free_regions() > heap_budget_in_region_units[i][kind])
+            if (hp->free_regions[kind].get_num_free_regions() >= heap_budget_in_region_units[i][kind])
             {
                 dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions",
-                    hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind],
+                    hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind] + 1,
                     kind_name[kind],
                     i,
                     hp->free_regions[kind].get_num_free_regions()));
 
-                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
+                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]-1);
             }
         }
         // finally go through all the heaps and distribute any surplus regions to heaps having too few free regions
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            // first pass: fill all the regions having less than budget - 1
+            if (hp->free_regions[kind].get_num_free_regions() + 1 < heap_budget_in_region_units[i][kind])
+            {
+                int64_t num_added_regions = add_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind] - 1);
+                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id, budget is %Id",
+                    num_added_regions,
+                    kind_name[kind],
+                    i,
+                    hp->free_regions[kind].get_num_free_regions(),
+                    heap_budget_in_region_units[i][kind]));
+            }
+        }
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
@@ -12818,14 +12842,16 @@ void gc_heap::distribute_free_regions()
             const int i = 0;
 #endif //MULTIPLE_HEAPS
 
+            // second pass: fill all the regions having less than budget
             if (hp->free_regions[kind].get_num_free_regions() < heap_budget_in_region_units[i][kind])
             {
                 int64_t num_added_regions = add_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
-                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id",
+                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id, budget is %Id",
                     num_added_regions,
                     kind_name[kind],
                     i,
-                    hp->free_regions[kind].get_num_free_regions()));
+                    hp->free_regions[kind].get_num_free_regions(),
+                    heap_budget_in_region_units[i][kind]));
             }
             hp->free_regions[kind].sort_by_committed_and_age();
         }
@@ -45026,7 +45052,7 @@ HRESULT GCHeap::Initialize()
     gc_heap* hp = gc_heap::g_heaps[0];
 
     dynamic_data* gen0_dd = hp->dynamic_data_of (0);
-    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 3);
+    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 6);
 
     bool can_use_cpu_groups = GCToOSInterface::CanEnableGCCPUGroups();
     GCConfig::SetGCCpuGroup(can_use_cpu_groups);
