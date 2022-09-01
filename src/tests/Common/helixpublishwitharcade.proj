@@ -625,11 +625,9 @@
     <HelixPostCommand Include="set spmi_collection_type=run" />
     <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
     <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\superpmi_scripts\superpmi.py" />
-    <!-- temporary disable for hack: <HelixPostCommand Include="set spmi_collection_partition=%HELIX_WORKITEM_ID%" /> -->
-    <HelixPostCommand Include="set spmi_collection_partition=0" />
     <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
     <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
-    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_partition%.%spmi_collection_mch_file_tag%" />
+    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_mch_file_tag%" />
     <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
     <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
     <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG -core_root %CORE_ROOT% --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
@@ -669,11 +667,9 @@
     <HelixPostCommand Include="export spmi_collection_type=run" />
     <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
     <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD\superpmi_scripts\superpmi.py" />
-    <!-- temporary disable for hack: <HelixPostCommand Include="export spmi_collection_partition=$HELIX_WORKITEM_ID" /> -->
-    <HelixPostCommand Include="export spmi_collection_partition=0" />
     <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
     <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
-    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_partition.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
     <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
     <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
     <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
@@ -748,14 +744,14 @@
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      <DownloadFilesFromResults>coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
 
     <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      <DownloadFilesFromResults>coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.0.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
 
     <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
