@@ -36,7 +36,7 @@ void Compiler::eePrintType(StringPrinter*       p,
     if (className == nullptr)
     {
         namespaceName = nullptr;
-        className     = "<no class name>";
+        className     = "<unnamed>";
     }
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
