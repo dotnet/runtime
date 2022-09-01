@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
@@ -16,6 +18,11 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSSignatureContext : IEquatable<JSSignatureContext>
     {
+        private static SymbolDisplayFormat s_typeNameFormat { get; } = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes
+        );
+
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
         internal static readonly string GeneratorVersion = typeof(JSImportGenerator).Assembly.GetName().Version.ToString();
@@ -118,14 +125,8 @@ namespace Microsoft.Interop.JavaScript
             };
             int typesHash = Math.Abs((int)hash);
 
-
-
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            string qualifiedName;
-            var ns = string.Join(".", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.NamespaceName).Select(x => x.ToString()).ToArray());
-            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.ClassName).Select(x => x.ToString()).ToArray());
-            var qclasses = method.ContainingType.ContainingNamespace == null ? ns : ns + "." + cn;
-            qualifiedName = $"[{env.Compilation.AssemblyName}]{qclasses}:{method.Name}";
+            string qualifiedName = GetFullyQualifiedMethodName(env, method);
 
             return new JSSignatureContext()
             {
@@ -141,6 +142,17 @@ namespace Microsoft.Interop.JavaScript
                 BindingName = "__signature_" + method.Name + "_" + typesHash,
                 GeneratorFactory = generatorFactory
             };
+        }
+
+        private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
+        {
+            // Mono style nested class name format.
+            string typeName = method.ContainingType.ToDisplayString(s_typeNameFormat).Replace(".", "/");
+
+            if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
+                typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
+
+            return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
         }
 
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
