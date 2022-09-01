@@ -1,0 +1,49 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyName>SuperFileCheck</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Massage the RuntimeIdentifier into an JITTools package RID that we can download -->
+    <_jitToolsRidPlatformIndex>$(RuntimeIdentifier.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
+    <JITToolsRidWithoutPlatform>$(RuntimeIdentifier.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
+    <JITToolsRidPlatform>$(RuntimeIdentifier.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
+
+    <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>
+
+    <!-- OSX builds have a version -->
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'x64'">osx.10.12</JITToolsRidWithoutPlatform>
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'arm64'">osx.11.0</JITToolsRidWithoutPlatform>
+
+    <JITToolsRid Condition="'$(JITToolsRid)' == ''">$(JITToolsRidWithoutPlatform)-$(JITToolsRidPlatform)</JITToolsRid>
+
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-musl-arm64'">$(runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
+      <Version>$(JITToolsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
