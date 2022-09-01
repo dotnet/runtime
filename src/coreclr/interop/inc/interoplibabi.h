@@ -10,6 +10,7 @@ namespace InteropLib
 {
     namespace ABI
     {
+        // Updating this also requires updating ComInterfaceDispatch::GetInstance<T>.
 #ifdef HOST_64BIT
         const size_t DispatchAlignmentThisPtr = 64; // Should be a power of 2.
 #else
