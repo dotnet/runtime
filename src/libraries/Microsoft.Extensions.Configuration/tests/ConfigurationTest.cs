@@ -1057,9 +1057,9 @@ namespace Microsoft.Extensions.Configuration.Test
                     throw new ArgumentException("Not support parentPath");
                 }
 
-                if (earlierKeys.Any())
+                foreach (var key in earlierKeys)
                 {
-                    throw new ArgumentException("Not support earlierKeys");
+                    yield return key;
                 }
 
                 // For the IConfigurationProvider implementation that not inherit from helper class ConfigurationProvider,
@@ -1091,10 +1091,21 @@ namespace Microsoft.Extensions.Configuration.Test
             public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
                 => OverrideGetChildKeysConfigurationProviders.GetChildKeys(earlierKeys, parentPath);
 
-            public IChangeToken GetReloadToken() => throw new NotImplementedException();
-            public void Load() => throw new NotImplementedException();
-            public void Set(string key, string? value) => throw new NotImplementedException();
-            public bool TryGet(string key, out string? value) => throw new NotImplementedException();
+            public IChangeToken GetReloadToken() => new ConfigurationReloadToken();
+
+            public void Load()
+            {
+            }
+
+            public void Set(string key, string? value)
+            {
+            }
+
+            public bool TryGet(string key, out string? value)
+            {
+                value = "val";
+                return true;
+            }
         }
     }
 }
