@@ -129,7 +129,7 @@ namespace ILLink.RoslynAnalyzer
 					invocationExpression.Expression is IdentifierNameSyntax ident1 &&
 					ident1.Identifier.ValueText.Equals ("nameof"))
 					return;
-				else if (parentNode is NameMemberCrefSyntax)
+				else if (parentNode is CrefSyntax)
 					return;
 
 				parentNode = parentNode.Parent;
