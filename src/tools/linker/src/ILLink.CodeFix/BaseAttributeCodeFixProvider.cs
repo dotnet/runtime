@@ -97,7 +97,7 @@ namespace ILLink.CodeFix
 				case LambdaExpressionSyntax:
 					return null;
 
-				case LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.MethodOrConstructor):
+				case LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax or AccessorDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.MethodOrConstructor):
 				case PropertyDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Property):
 				case FieldDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Field):
 				case EventDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Event):

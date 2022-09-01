@@ -34,6 +34,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task CustomWarningUsage ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task MarkHandlerUsage ()
 		{
 			return RunTest (allowMissingWarnings: true);

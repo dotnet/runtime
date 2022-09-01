@@ -322,6 +322,55 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task FixInPropertyAccessor ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresUnreferencedCodeAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+					get { return M1(); }
+					set { field = M1(); }
+				}
+			}
+			""";
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresUnreferencedCodeAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+			        [RequiresUnreferencedCode("Calls C.M1()")]
+			        get { return M1(); }
+
+			        [RequiresUnreferencedCode("Calls C.M1()")]
+			        set { field = M1(); }
+				}
+			}
+			""";
+			var diag = new[] {
+				// /0/Test0.cs(12,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
+				// /0/Test0.cs(13,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
+			};
+			return VerifyRequiresUnreferencedCodeCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
 		public Task InvocationOnDynamicType ()
 		{
 			var source = $$"""

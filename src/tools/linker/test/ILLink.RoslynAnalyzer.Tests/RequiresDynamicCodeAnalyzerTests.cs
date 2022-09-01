@@ -284,5 +284,54 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			// Can't apply RDC on properties at the moment
 			return VerifyRequiresDynamicCodeCodeFix (src, src, diag, diag);
 		}
+
+		[Fact]
+		public Task FixInPropertyAccessor ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+					get { return M1(); }
+					set { field = M1(); }
+				}
+			}
+			""";
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				public int M1() => 0;
+
+				public int field;
+
+				private int M2 {
+			        [RequiresDynamicCode("Calls C.M1()")]
+			        get { return M1(); }
+
+			        [RequiresDynamicCode("Calls C.M1()")]
+			        set { field = M1(); }
+				}
+			}
+			""";
+			var diag = new[] {
+				// /0/Test0.cs(12,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
+				// /0/Test0.cs(13,17): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
+			};
+			return VerifyRequiresDynamicCodeCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
+		}
 	}
 }
