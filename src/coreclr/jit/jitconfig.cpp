@@ -51,7 +51,8 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
 
         const char* parens          = static_cast<const char*>(memchr(startOfMethodName, '(', end - startOfMethodName));
         const char* endOfMethodName = parens != nullptr ? parens : end;
-        name->m_methodNameContainsInstantiation = memchr(startOfMethodName, '<', endOfMethodName - startOfMethodName);
+        name->m_methodNameContainsInstantiation =
+            memchr(startOfMethodName, '<', endOfMethodName - startOfMethodName) != nullptr;
 
         if (colon != nullptr)
         {
@@ -158,10 +159,11 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
             (name->m_containsSignature != prevPattern->m_containsSignature))
         {
             printer.Truncate(0);
-            comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
-                                name->m_containsSignature ? sigInfo : nullptr,
-                                /* includeNamespaces */ true, name->m_classNameContainsInstantiation,
-                                name->m_methodNameContainsInstantiation,
+            comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd, sigInfo,
+                                /* includeNamespaces */ true,
+                                /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
+                                /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
+                                /* includeSignature */ name->m_containsSignature,
                                 /* includeReturnType */ false,
                                 /* includeThis */ false);
         }

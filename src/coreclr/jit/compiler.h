@@ -7567,6 +7567,10 @@ public:
                      CORINFO_CLASS_HANDLE clsHnd,
                      bool                 includeNamespaces,
                      bool                 includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer,
+                               CORINFO_CLASS_HANDLE clsHnd,
+                               bool                 includeNamespaces,
+                               bool                 includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
@@ -7574,6 +7578,7 @@ public:
                        bool                  includeNamespaces,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
+                       bool                  includeSignature,
                        bool                  includeReturnType,
                        bool                  includeThis);
 

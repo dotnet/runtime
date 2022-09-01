@@ -57,16 +57,23 @@ void Compiler::eePrintType(StringPrinter*       p,
 
         p->Printf("%c", pref);
         pref = ',';
-
-        CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(typeArg);
-        if (typ == CORINFO_TYPE_UNDEF)
-            eePrintType(p, typeArg, includeNamespace, true);
-        else
-            eePrintJitType(p, JITtype2varType(typ));
+        eePrintTypeOrJitAlias(p, typeArg, includeNamespace, true);
     }
 
     if (pref != '<')
         p->Printf(">");
+}
+
+void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
+                                     CORINFO_CLASS_HANDLE clsHnd,
+                                     bool                 includeNamespace,
+                                     bool                 includeInstantiation)
+{
+    CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(clsHnd);
+    if (typ == CORINFO_TYPE_UNDEF)
+        eePrintType(p, clsHnd, includeNamespace, includeInstantiation);
+    else
+        eePrintJitType(p, JitType2PreciseVarType(typ));
 }
 
 void Compiler::eePrintMethod(StringPrinter*        p,
@@ -76,6 +83,7 @@ void Compiler::eePrintMethod(StringPrinter*        p,
                              bool                  includeNamespaces,
                              bool                  includeClassInstantiation,
                              bool                  includeMethodInstantiation,
+                             bool                  includeSignature,
                              bool                  includeReturnType,
                              bool                  includeThis)
 {
@@ -88,7 +96,21 @@ void Compiler::eePrintMethod(StringPrinter*        p,
     const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
     p->Printf("%s", methName);
 
-    if (sig != nullptr)
+    if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
+    {
+        p->Printf("<");
+        for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
+        {
+            if (i > 0)
+                p->Printf(",");
+
+            eePrintTypeOrJitAlias(p, sig->sigInst.methInst[i], includeNamespaces, true);
+        }
+
+        p->Printf(">");
+    }
+
+    if (includeSignature)
     {
         size_t signatureIndex = p->GetLength();
         bool   failed         = true;
@@ -102,7 +124,8 @@ void Compiler::eePrintMethod(StringPrinter*        p,
                 if (i > 0)
                     p->Printf(",");
 
-                var_types type = eeGetArgType(argLst, sig);
+                CORINFO_CLASS_HANDLE vcClsHnd;
+                var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
                 switch (type)
                 {
                     case TYP_REF:
@@ -141,7 +164,7 @@ void Compiler::eePrintMethod(StringPrinter*        p,
 
         if (includeReturnType)
         {
-            var_types retType = JITtype2varType(sig->retType);
+            var_types retType = JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
                 p->Printf(":");
@@ -195,7 +218,8 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
     eePrintMethod(&p, clsHnd, hnd, pSig,
                   /* includeNamespaces */ true,
                   /* includeClassInstantiation */ true,
-                  /* includeMethodInstantiation */ true, includeReturnType, includeThisSpecifier);
+                  /* includeMethodInstantiation */ true,
+                  /* includeSignature */ pSig != nullptr, includeReturnType, includeThisSpecifier);
 
     return p.GetBuffer();
 }
