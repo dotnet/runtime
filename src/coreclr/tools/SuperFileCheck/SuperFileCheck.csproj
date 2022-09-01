@@ -1,4 +1,4 @@
-<Project>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>SuperFileCheck</AssemblyName>
     <OutputType>Exe</OutputType>
@@ -12,6 +12,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>
