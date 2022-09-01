@@ -59,7 +59,7 @@ namespace System.Net.Quic
         ConnectionIdle = 10,
         ProtocolError = 11,
         OperationAborted = 12,
-        OSDoesNotSupportIPv6 = 13
+        AddressNotAvailable = 13
     }
     public sealed partial class QuicException : System.IO.IOException
     {

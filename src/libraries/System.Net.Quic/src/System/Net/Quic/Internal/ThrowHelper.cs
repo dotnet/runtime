@@ -73,7 +73,7 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.InvalidAddress, null, SR.net_quic_invalid_address);
             if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
             if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, null, SR.net_quic_protocol_error);
-            if (status == QUIC_STATUS_ADDRESS_NOT_AVAILABLE) return new QuicException(QuicError.OSDoesNotSupportIPv6, null, SR.net_quic_os_does_not_support_ipv6);
+            if (status == QUIC_STATUS_ADDRESS_NOT_AVAILABLE) return new QuicException(QuicError.AddressNotAvailable, null, SR.net_quic_address_not_available);
 
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||

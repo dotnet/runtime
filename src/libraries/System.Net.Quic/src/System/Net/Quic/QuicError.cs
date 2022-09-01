@@ -74,8 +74,8 @@ namespace System.Net.Quic
         OperationAborted,
 
         /// <summary>
-        /// OS does not support IPv6
+        /// The requested address does not exist on the machine
         /// </summary>
-        OSDoesNotSupportIPv6
+        AddressNotAvailable
     }
 }
