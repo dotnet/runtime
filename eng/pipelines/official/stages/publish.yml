@@ -17,7 +17,6 @@ stages:
   - template: /eng/common/templates/job/publish-build-assets.yml
     parameters:
       publishUsingPipelines: true
-      publishAssetsImmediately: true
       dependsOn: PrepareSignedArtifacts
       pool:
         name: NetCore1ESPool-Internal
@@ -35,7 +34,6 @@ stages:
     enableSigningValidation: false
     enableNugetValidation: false
     enableSourceLinkValidation: false
-    publishAssetsImmediately: true
     SDLValidationParameters:
       enable: false
       artifactNames:
