@@ -464,7 +464,7 @@ namespace System.Tests
             yield return new object[] { (char)2, "Value2" };
             yield return new object[] { (char)4, null };
         }
-        
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetName_CharEnum_TestData))]
         public void GetName_InvokeCharEnum_ReturnsExpected(object value, string expected)
@@ -479,7 +479,7 @@ namespace System.Tests
             yield return new object[] { true, "Value1" };
             yield return new object[] { false, "Value2" };
         }
-        
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetName_BoolEnum_TestData))]
         public void GetName_InvokeBoolEnum_ReturnsExpected(object value, string expected)
@@ -1307,7 +1307,6 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetUnderlyingType(null)); // Enum type is null
             AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetUnderlyingType(typeof(Enum))); // Enum type is simply an enum
-            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetUnderlyingType(typeof(int))); // Enum type is a primtive type
         }
 
         [Fact]
@@ -1444,7 +1443,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetNames(null));
         }
-        
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(int))]

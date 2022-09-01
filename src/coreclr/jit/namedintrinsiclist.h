@@ -69,7 +69,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Equality,
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
-    NI_System_Type_GetTypeCode,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,

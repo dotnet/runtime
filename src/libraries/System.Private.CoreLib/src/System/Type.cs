@@ -438,7 +438,6 @@ namespace System
             return cls;
         }
 
-        [Intrinsic]
         public static TypeCode GetTypeCode(Type? type)
         {
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
