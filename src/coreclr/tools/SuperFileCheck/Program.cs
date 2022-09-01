@@ -39,22 +39,7 @@ namespace SuperFileCheck
             var superFileCheckDir = Path.GetDirectoryName(superFileCheckPath);
             if (superFileCheckDir != null)
             {
-                var relativeFileCheckPath = "FileCheck";
-
-                // TODO: Update to handle other OS/Architectures
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-                    {
-                        relativeFileCheckPath = "runtimes\\win-x64\\native\\FileCheck";
-                    }
-                    else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    {
-                        relativeFileCheckPath = "runtimes\\win-arm64\\native\\FileCheck";
-                    }
-                }
-
-                FileCheckPath = Path.Combine(superFileCheckDir, relativeFileCheckPath);
+                FileCheckPath = Path.Combine(superFileCheckDir, "FileCheck");
             }
             else
             {

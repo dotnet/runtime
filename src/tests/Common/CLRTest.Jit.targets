@@ -219,7 +219,7 @@ IF NOT DEFINED DoLink (
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n "$RunningDisasmChecks" ]]
 then
-@(DisasmCheckFiles -> '  dotnet SuperFileCheck.dll --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(Identity)" < "$(BashDisasmOutputFile)"
+@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) < "$(BashDisasmOutputFile)"
   ERRORLEVEL=$?
   if [[ $ERRORLEVEL -ne 0 ]]
   then
@@ -243,7 +243,7 @@ fi]]>)
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 if DEFINED RunningDisasmChecks (
-@(DisasmCheckFiles -> '  dotnet SuperFileCheck.dll --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(Identity)" < "$(BatchDisasmOutputFile)"
+@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) < "$(BatchDisasmOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
     Exit /b 1

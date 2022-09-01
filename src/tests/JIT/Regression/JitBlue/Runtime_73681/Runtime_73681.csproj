@@ -9,5 +9,6 @@
     </Compile>
 
     <CLRTestEnvironmentVariable Include="DOTNET_JitDisasm" Value="CallFoo" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDiffableDasm" Value="1" />
   </ItemGroup>
 </Project>
