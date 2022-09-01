@@ -126,7 +126,7 @@ public sealed partial class QuicStream
     /// </summary>
     public Task WritesClosed => _sendTcs.GetFinalTask();
 
-    /// <inheritdoc cref="object.ToString"/>
+    /// <inheritdoc />
     public override string ToString() => _handle.ToString();
 
     /// <summary>

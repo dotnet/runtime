@@ -13,16 +13,29 @@ namespace System.Net.Quic;
 public partial class QuicStream : Stream
 {
     // Seek and length.
+    /// <inheritdoc />
     public override bool CanSeek => false;
+
+    /// <inheritdoc />
     public override long Length => throw new NotSupportedException();
+
+    /// <inheritdoc />
     public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+    /// <inheritdoc />
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    /// <inheritdoc />
     public override void SetLength(long value) => throw new NotSupportedException();
 
     // Read and Write timeouts.
+    /// <inheritdoc />
     public override bool CanTimeout => true;
+
     private TimeSpan _readTimeout = Timeout.InfiniteTimeSpan;
     private TimeSpan _writeTimeout = Timeout.InfiniteTimeSpan;
+
+    /// <inheritdoc />
     public override int ReadTimeout
     {
         get
@@ -40,6 +53,8 @@ public partial class QuicStream : Stream
             _readTimeout = TimeSpan.FromMilliseconds(value);
         }
     }
+
+    /// <inheritdoc />
     public override int WriteTimeout
     {
         get
@@ -59,21 +74,32 @@ public partial class QuicStream : Stream
     }
 
     // Read boilerplate.
+    /// <inheritdoc />
     public override bool CanRead => Volatile.Read(ref _disposed) == 0 && _canRead;
+
+    /// <inheritdoc />
     public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         => TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
+
+    /// <inheritdoc />
     public override int EndRead(IAsyncResult asyncResult)
         => TaskToApm.End<int>(asyncResult);
+
+    /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count)
     {
         ValidateBufferArguments(buffer, offset, count);
         return Read(buffer.AsSpan(offset, count));
     }
+
+    /// <inheritdoc />
     public override int ReadByte()
     {
         byte b = 0;
         return Read(MemoryMarshal.CreateSpan(ref b, 1)) != 0 ? b : -1;
     }
+
+    /// <inheritdoc />
     public override int Read(Span<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -101,6 +127,8 @@ public partial class QuicStream : Stream
             cts?.Dispose();
         }
     }
+
+    /// <inheritdoc />
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         ValidateBufferArguments(buffer, offset, count);
@@ -108,20 +136,31 @@ public partial class QuicStream : Stream
     }
 
     // Write boilerplate.
+    /// <inheritdoc />
     public override bool CanWrite => Volatile.Read(ref _disposed) == 0 && _canWrite;
+
+    /// <inheritdoc />
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         => TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+
+    /// <inheritdoc />
     public override void EndWrite(IAsyncResult asyncResult)
         => TaskToApm.End(asyncResult);
+
+    /// <inheritdoc />
     public override void Write(byte[] buffer, int offset, int count)
     {
         ValidateBufferArguments(buffer, offset, count);
         Write(buffer.AsSpan(offset, count));
     }
+
+    /// <inheritdoc />
     public override void WriteByte(byte value)
     {
         Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
     }
+
+    /// <inheritdoc />
     public override void Write(ReadOnlySpan<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -145,6 +184,8 @@ public partial class QuicStream : Stream
             cts?.Dispose();
         }
     }
+
+    /// <inheritdoc />
     public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         ValidateBufferArguments(buffer, offset, count);
@@ -152,13 +193,18 @@ public partial class QuicStream : Stream
     }
 
     // Flush.
+
+    /// <inheritdoc />
     public override void Flush()
         => FlushAsync().GetAwaiter().GetResult();
+
+    /// <inheritdoc />
     public override Task FlushAsync(CancellationToken cancellationToken = default)
         // NOP for now
         => Task.CompletedTask;
 
     // Dispose.
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         DisposeAsync().AsTask().GetAwaiter().GetResult();
