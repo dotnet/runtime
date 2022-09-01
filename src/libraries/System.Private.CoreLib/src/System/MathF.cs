@@ -442,7 +442,7 @@ namespace System
                     if (AdvSimd.IsSupported)
                         return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
                     // manually fold BitDecrement(0.5f)
-                    return Truncate(value + CopySign(0.49999997f, x));
+                    return Truncate(x + CopySign(0.49999997f, x));
                 }
             }
 
@@ -481,7 +481,7 @@ namespace System
                     case MidpointRounding.AwayFromZero:
                     {
                         // manually fold BitDecrement(0.5f)
-                        value = Truncate(value + CopySign(0.49999997f, x));
+                        value = Truncate(x + CopySign(0.49999997f, x));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero
