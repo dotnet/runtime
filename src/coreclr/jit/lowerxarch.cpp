@@ -3423,11 +3423,15 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             // from including it in the computed result. We need to do this for both op1 and
             // op2 in case one of them is `NaN` (because Zero * NaN == NaN)
 
-            simd12_t simd12Val = {};
+            simd16_t simd16Val = {};
 
-            simd12Val.i32[0] = -1;
-            simd12Val.i32[1] = -1;
-            simd12Val.i32[2] = -1;
+            simd16Val.i32[0] = -1;
+            simd16Val.i32[1] = -1;
+            simd16Val.i32[2] = -1;
+            simd16Val.i32[3] = +0;
+
+            simdType = TYP_SIMD16;
+            simdSize = 16;
 
             // We will be constructing the following parts:
             //   ...
@@ -3448,7 +3452,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   ...
 
             GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType, simdBaseJitType);
-            vecCon1->gtSimd12Val   = simd12Val;
+            vecCon1->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op1, vecCon1);
 
@@ -3477,7 +3481,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   ...
 
             GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType, simdBaseJitType);
-            vecCon2->gtSimd12Val   = simd12Val;
+            vecCon2->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op2, vecCon2);
 
