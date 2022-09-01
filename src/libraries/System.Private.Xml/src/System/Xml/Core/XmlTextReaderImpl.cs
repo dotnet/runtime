@@ -3643,7 +3643,7 @@ namespace System.Xml
                 }
             }
 
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
+            if (!_ps.StartsWith(XmlDeclarationBeginning) ||
                  XmlCharType.IsNameSingleChar(_ps.chars![_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
@@ -3744,7 +3744,7 @@ namespace System.Xml
                 switch (_ps.chars[_ps.charPos])
                 {
                     case 'v':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "version") && xmlDeclState == 0)
+                        if (((nameEndPos - _ps.charPos) == "version".Length) && _ps.StartsWith("version") && xmlDeclState == 0)
                         {
                             if (!isTextDecl)
                             {
@@ -3754,7 +3754,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 'e':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "encoding") &&
+                        if (((nameEndPos - _ps.charPos) == "encoding".Length) && _ps.StartsWith("encoding") &&
                             (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0)))
                         {
                             if (!isTextDecl)
@@ -3766,7 +3766,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 's':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
+                        if (((nameEndPos - _ps.charPos) == "standalone".Length) && _ps.StartsWith("standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
                             attr = AddAttributeNoChecks("standalone", 1);
@@ -3835,7 +3835,7 @@ namespace System.Xml
                         // version
                         case 0:
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
-                            if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "1.0"))
+                            if ((pos - _ps.charPos) == "1.0".Length && _ps.StartsWith("1.0"))
                             {
                                 if (!isTextDecl)
                                 {
@@ -3861,11 +3861,11 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "yes"))
+                            if ((pos - _ps.charPos) == "yes".Length && _ps.StartsWith("yes"))
                             {
                                 _standalone = true;
                             }
-                            else if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "no"))
+                            else if ((pos - _ps.charPos) == "no".Length && _ps.StartsWith("no"))
                             {
                                 _standalone = false;
                             }
@@ -3997,7 +3997,7 @@ namespace System.Xml
                                     {
                                         goto ReadData;
                                     }
-                                    if (XmlConvert.StrEqual(chars, pos, 6, "CDATA["))
+                                    if (_ps.StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         ParseCData();
@@ -4217,7 +4217,7 @@ namespace System.Xml
                                     {
                                         goto ReadData;
                                     }
-                                    if (XmlConvert.StrEqual(chars, pos, 6, "CDATA["))
+                                    if (_ps.StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         ParseCData();
@@ -4424,7 +4424,7 @@ namespace System.Xml
             {
                 int startPos = _ps.charPos;
                 int prefixLen = colonPos - startPos;
-                if (prefixLen == _lastPrefix.Length && XmlConvert.StrEqual(chars, startPos, prefixLen, _lastPrefix))
+                if (prefixLen == _lastPrefix.Length && chars.AsSpan(startPos).StartsWith(_lastPrefix))
                 {
                     _curNode.SetNamedNode(XmlNodeType.Element,
                                           _nameTable.Add(chars, colonPos + 1, pos - colonPos - 1),
@@ -4600,7 +4600,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
             if (startTagNode.prefix.Length == 0)
             {
-                if (!XmlConvert.StrEqual(chars, _ps.charPos, locLen, startTagNode.localName))
+                if (!chars.AsSpan(_ps.charPos).StartsWith(startTagNode.localName))
                 {
                     ThrowTagMismatch(startTagNode);
                 }
@@ -4609,9 +4609,9 @@ namespace System.Xml
             else
             {
                 int colonPos = _ps.charPos + prefLen;
-                if (!XmlConvert.StrEqual(chars, _ps.charPos, prefLen, startTagNode.prefix) ||
+                if (!chars.AsSpan(_ps.charPos).StartsWith(startTagNode.prefix) ||
                         chars[colonPos] != ':' ||
-                        !XmlConvert.StrEqual(chars, colonPos + 1, locLen, startTagNode.localName))
+                        !chars.AsSpan(colonPos + 1).StartsWith(startTagNode.localName))
                 {
                     ThrowTagMismatch(startTagNode);
                 }
@@ -6732,7 +6732,7 @@ namespace System.Xml
                 }
             }
 
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 7, "DOCTYPE"))
+            if (!_ps.StartsWith("DOCTYPE"))
             {
                 ThrowUnexpectedToken((!_rootElementParsed && _dtdInfo == null) ? "DOCTYPE" : "<!--");
             }
@@ -6814,7 +6814,7 @@ namespace System.Xml
                     }
                 }
                 // check 'PUBLIC'
-                if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 6, "PUBLIC"))
+                if (!_ps.StartsWith("PUBLIC"))
                 {
                     ThrowUnexpectedToken("PUBLIC");
                 }
@@ -6851,7 +6851,7 @@ namespace System.Xml
                     }
                 }
                 // check 'SYSTEM'
-                if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 6, "SYSTEM"))
+                if (!_ps.StartsWith("SYSTEM"))
                 {
                     ThrowUnexpectedToken("SYSTEM");
                 }
@@ -7725,7 +7725,7 @@ namespace System.Xml
                 _attrNeedNamespaceLookup = true;
                 int startPos = _ps.charPos;
                 int prefixLen = colonPos - startPos;
-                if (prefixLen == _lastPrefix.Length && XmlConvert.StrEqual(_ps.chars, startPos, prefixLen, _lastPrefix))
+                if (prefixLen == _lastPrefix.Length && _ps.StartsWith(_lastPrefix))
                 {
                     return AddAttribute(_nameTable.Add(_ps.chars, colonPos + 1, endNamePos - colonPos - 1),
                                          _lastPrefix,
@@ -8274,7 +8274,7 @@ namespace System.Xml
                     case IncrementalReadState.PI:
                         if (ParsePIValue(out startPos, out pos))
                         {
-                            Debug.Assert(XmlConvert.StrEqual(_ps.chars, _ps.charPos - 2, 2, "?>"));
+                            Debug.Assert(_ps.chars.AsSpan(_ps.charPos - 2).StartsWith("?>"));
                             _ps.charPos -= 2;
                             _incReadState = IncrementalReadState.Text;
                         }
@@ -8282,7 +8282,7 @@ namespace System.Xml
                     case IncrementalReadState.Comment:
                         if (ParseCDataOrComment(XmlNodeType.Comment, out startPos, out pos))
                         {
-                            Debug.Assert(XmlConvert.StrEqual(_ps.chars, _ps.charPos - 3, 3, "-->"));
+                            Debug.Assert(_ps.chars.AsSpan(_ps.charPos - 3).StartsWith("-->"));
                             _ps.charPos -= 3;
                             _incReadState = IncrementalReadState.Text;
                         }
@@ -8290,7 +8290,7 @@ namespace System.Xml
                     case IncrementalReadState.CDATA:
                         if (ParseCDataOrComment(XmlNodeType.CDATA, out startPos, out pos))
                         {
-                            Debug.Assert(XmlConvert.StrEqual(_ps.chars, _ps.charPos - 3, 3, "]]>"));
+                            Debug.Assert(_ps.chars.AsSpan(_ps.charPos - 3).StartsWith("]]>"));
                             _ps.charPos -= 3;
                             _incReadState = IncrementalReadState.Text;
                         }
@@ -8410,7 +8410,7 @@ namespace System.Xml
                                     {
                                         goto ReadData;
                                     }
-                                    if (XmlConvert.StrEqual(chars, pos + 2, 7, "[CDATA["))
+                                    if (chars.AsSpan(pos + 2).StartsWith("[CDATA["))
                                     {
                                         pos += 9;
                                         _incReadState = IncrementalReadState.CDATA;
@@ -8429,7 +8429,8 @@ namespace System.Xml
 
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
                                         int endPos = ParseQName(true, 2, out _);
-                                        if (XmlConvert.StrEqual(chars, _ps.charPos + 2, endPos - _ps.charPos - 2, _curNode.GetNameWPrefix(_nameTable)) &&
+                                        string checkName = _curNode.GetNameWPrefix(_nameTable);
+                                        if ((endPos - _ps.charPos - 2) == checkName.Length && chars.AsSpan(_ps.charPos + 2).StartsWith(checkName) &&
                                             (_ps.chars[endPos] == '>' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
                                             if (--_incReadDepth > 0)
@@ -8468,7 +8469,7 @@ namespace System.Xml
 
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
                                         int endPos = ParseQName(true, 1, out _);
-                                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos + 1, endPos - _ps.charPos - 1, _curNode.localName) &&
+                                        if ((endPos - _ps.charPos - 1) == _curNode.localName.Length && _ps.chars.AsSpan(_ps.charPos + 1).StartsWith(_curNode.localName) &&
                                             (_ps.chars[endPos] == '>' || _ps.chars[endPos] == '/' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
                                             _incReadDepth++;

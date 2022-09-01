@@ -1347,19 +1347,6 @@ namespace System.Xml
             return null;
         }
 
-        // Compares the given character interval and string and returns true if the characters are identical
-        internal static bool StrEqual(char[]? chars, int strPos1, int strLen1, string str2)
-        {
-            if (strLen1 != str2.Length)
-            {
-                return false;
-            }
-
-            Debug.Assert(chars != null);
-
-            return chars.AsSpan(strPos1, strLen1).SequenceEqual(str2.AsSpan());
-        }
-
         // XML whitespace characters, <spec>http://www.w3.org/TR/REC-xml#NT-S</spec>
         internal static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 
