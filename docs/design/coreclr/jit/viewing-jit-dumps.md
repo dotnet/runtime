@@ -157,7 +157,7 @@ MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,i
 MyNamespace.C`2[int,int]:M[int,int](int,int,int,int)
 ```
 
-The following are equivalent and matches both compilations:
+The following are equivalent and match both compilations:
 ```
 M
 *C`2:M
