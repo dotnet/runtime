@@ -149,6 +149,15 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (Case("(?>[^z]+)z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
                     yield return (Case("(?>(?>[^z]+))z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
                     yield return (Case("(?>[^z]*)z123"), "zzzzxyxyxyz123", options, 4, 10, true, "xyxyxyz123");
+                    yield return (Case("(?>a*)a"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>a*)a+"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>a+)a+"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>.*)."), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>.*).+"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>.+).+"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>\\w*)\\w"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>\\w*)\\w+"), "aaa", options, 0, 3, false, "");
+                    yield return (Case("(?>\\w+)\\w+"), "aaa", options, 0, 3, false, "");
 
                     yield return (Case("(?>[^12]+)1"), "121231", options, 0, 6, true, "31");
                     yield return (Case("(?>[^123]+)1"), "12312341", options, 0, 8, true, "41");

@@ -53,7 +53,6 @@ jobs:
     jobParameters:
       testGroup: innerloop
       readyToRun: true
-      crossgen2: true
       compositeBuildMode: true
       displayNameArgs: Composite
       liveLibrariesBuildConfig: Release

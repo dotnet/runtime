@@ -5135,28 +5135,52 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         srcType = varTypeToUnsigned(srcType);
     }
 
-    if (!node->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(srcType)))
+    if (!node->gtOverflow())
     {
-#ifdef DEBUG
-        // If converting to float/double, the operand must be 4 or 8 byte in size.
-        if (varTypeIsFloating(castToType))
+        // Some casts will be able to use the source from memory.
+        bool srcIsContainable = false;
+
+        if (varTypeIsFloating(castToType) || varTypeIsFloating(srcType))
         {
-            unsigned opSize = genTypeSize(srcType);
-            assert(opSize == 4 || opSize == 8);
-        }
+#ifdef DEBUG
+            // If converting to float/double, the operand must be 4 or 8 byte in size.
+            if (varTypeIsFloating(castToType))
+            {
+                unsigned opSize = genTypeSize(srcType);
+                assert(opSize == 4 || opSize == 8);
+            }
 #endif // DEBUG
 
-        // U8 -> R8 conversion requires that the operand be in a register.
-        if (srcType != TYP_ULONG)
+            // U8 -> R8 conversion requires that the operand be in a register.
+            if (srcType != TYP_ULONG)
+            {
+                if (castOp->IsCnsNonZeroFltOrDbl())
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else
+                {
+                    srcIsContainable = true;
+                }
+            }
+        }
+        else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
         {
-            if ((IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp)) || castOp->IsCnsNonZeroFltOrDbl())
+            // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+            if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+            {
+                srcIsContainable = true;
+            }
+        }
+
+        if (srcIsContainable && IsSafeToContainMem(node, castOp))
+        {
+            if (IsContainableMemoryOp(castOp))
             {
                 MakeSrcContained(node, castOp);
             }
             else
             {
-                // Mark castOp as reg optional to indicate codegen
-                // can still generate code if it is on stack.
                 castOp->SetRegOptional();
             }
         }

@@ -9,6 +9,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
     public sealed partial class BinaryFormatter : IFormatter
     {
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public object Deserialize(Stream serializationStream)
             => throw new PlatformNotSupportedException(SR.BinaryFormatter_SerializationNotSupportedOnThisPlatform);
