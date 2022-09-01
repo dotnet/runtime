@@ -800,7 +800,7 @@ mono_debugger_agent_init_internal (void)
 	mono_profiler_set_gc_finalized_callback (prof, gc_finalized);
 
 	mono_init_debugger_agent_common (&prof);
-	
+
 	pending_assembly_loads = g_ptr_array_new ();
 
 	log_level = agent_config.log_level;
@@ -826,7 +826,7 @@ mono_debugger_agent_init_internal (void)
 	if (agent_config.setpgid)
 		setpgid (0, 0);
 #endif
-	
+
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
 }
