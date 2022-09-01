@@ -1351,7 +1351,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public void AutoReplenishPreservesTimeWithTimerJitter()
+        public void AutoReplenishIgnoresTimerJitter()
         {
             var replenishmentPeriod = TimeSpan.FromMinutes(10);
             using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
@@ -1372,8 +1372,36 @@ namespace System.Threading.RateLimiting.Test
             // Replenish 1 millisecond less than ReplenishmentPeriod while AutoReplenishment is enabled
             Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds - 1);
 
-            // Timer ran faster than ReplenishmentPeriod so a full token wasn't added.
-            // Internally the limiter is tracking that so the next timer call will add to the previous partial token
+            Assert.Equal(8, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Replenish 1 millisecond longer than ReplenishmentPeriod while AutoReplenishment is enabled
+            Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds + 1);
+
+            Assert.Equal(9, limiter.GetStatistics().CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public void ManualReplenishPreservesTimeWithTimerJitter()
+        {
+            var replenishmentPeriod = TimeSpan.FromMinutes(10);
+            using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = replenishmentPeriod,
+                AutoReplenishment = false,
+                TokensPerPeriod = 1,
+            });
+
+            var lease = limiter.AttemptAcquire(permitCount: 3);
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Replenish 1 millisecond less than ReplenishmentPeriod while AutoReplenishment is enabled
+            Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds - 1);
+
             Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
 
             // Replenish 1 millisecond longer than ReplenishmentPeriod while AutoReplenishment is enabled
