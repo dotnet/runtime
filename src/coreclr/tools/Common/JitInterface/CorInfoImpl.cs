@@ -474,8 +474,24 @@ namespace Internal.JitInterface
 #endif
                 );
 #pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+#if READYTORUN
+            if (_methodColdCodeNode != null)
+            {
+                var relocs2 = _coldCodeRelocs.ToArray();
+                Array.Sort(relocs2, (x, y) => (x.Offset - y.Offset));
+                var coldObjectData = new ObjectNode.ObjectData(_coldCode,
+                    relocs2,
+                    alignment,
+                    new ISymbolDefinitionNode[] { _methodColdCodeNode });
+                _methodColdCodeNode.SetCode(coldObjectData);
+                _methodCodeNode.SetColdCodeNode(_methodColdCodeNode);
+            }
+#endif
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
+#endif
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
@@ -615,7 +631,9 @@ namespace Internal.JitInterface
             }
 
             _methodCodeNode = null;
-
+#if READYTORUN
+            _methodColdCodeNode = null;
+#endif
             _code = null;
             _coldCode = null;
 
@@ -624,10 +642,18 @@ namespace Internal.JitInterface
 
             _codeRelocs = default(ArrayBuilder<Relocation>);
             _roDataRelocs = default(ArrayBuilder<Relocation>);
-
+#if READYTORUN
+            _coldCodeRelocs = default(ArrayBuilder<Relocation>);
+#endif
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
             _frameInfos = null;
+
+#if READYTORUN
+            _numColdFrameInfos = 0;
+            _usedColdFrameInfos = 0;
+            _coldFrameInfos = null;
+#endif
 
             _gcInfo = null;
             _ehClauses = null;
@@ -3358,6 +3384,12 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+#if READYTORUN
+        private int _numColdFrameInfos;
+        private int _usedColdFrameInfos;
+        private FrameInfo[] _coldFrameInfos;
+#endif
+
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
@@ -3368,6 +3400,10 @@ namespace Internal.JitInterface
 
             if (args.coldCodeSize != 0)
             {
+
+#if READYTORUN
+                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
                 args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
                 args.coldCodeBlockRW = args.coldCodeBlock;
             }
@@ -3411,11 +3447,27 @@ namespace Internal.JitInterface
             {
                 _frameInfos = new FrameInfo[_numFrameInfos];
             }
+
+#if READYTORUN
+            if (_numColdFrameInfos > 0)
+            {
+                _coldFrameInfos = new FrameInfo[_numColdFrameInfos];
+            }
+#endif
         }
 
         private void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize)
         {
-            _numFrameInfos++;
+#if READYTORUN
+            if (isColdCode)
+            {
+                _numColdFrameInfos++;
+            }
+            else
+#endif
+            {
+                _numFrameInfos++;
+            }
         }
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
@@ -3431,11 +3483,15 @@ namespace Internal.JitInterface
                     flags |= FrameInfoFlags.ReversePInvoke;
             }
 
-            byte[] blobData = new byte[unwindSize];
+            byte[] blobData = null;
 
-            for (uint i = 0; i < unwindSize; i++)
+            if (pUnwindBlock != null || pColdCode == null)
             {
-                blobData[i] = pUnwindBlock[i];
+                blobData = new byte[unwindSize];
+                for (uint i = 0; i < unwindSize; i++)
+                {
+                    blobData[i] = pUnwindBlock[i];
+                }
             }
 
 #if !READYTORUN
@@ -3446,8 +3502,18 @@ namespace Internal.JitInterface
                 blobData = CompressARM64CFI(blobData);
             }
 #endif
-
-            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+#if READYTORUN
+            if (pColdCode == null)
+#endif
+            {
+                _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#if READYTORUN
+            else
+            {
+                _coldFrameInfos[_usedColdFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#endif
         }
 
         private void* allocGCInfo(UIntPtr size)
@@ -3488,7 +3554,9 @@ namespace Internal.JitInterface
 
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
-
+#if READYTORUN
+        private ArrayBuilder<Relocation> _coldCodeRelocs;
+#endif
 
         /// <summary>
         /// Various type of block.
@@ -3566,6 +3634,11 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     length = _roData.Length;
                     return ref _roDataRelocs;
+#if READYTORUN
+                case BlockType.ColdCode:
+                    length = _coldCode.Length;
+                    return ref _coldCodeRelocs;
+#endif
                 default:
                     throw new NotImplementedException("Arbitrary relocs");
             }
@@ -3639,8 +3712,13 @@ namespace Internal.JitInterface
                     break;
 
                 case BlockType.ColdCode:
-                    // TODO: Arbitrary relocs
+#if READYTORUN
+                    Debug.Assert(_methodColdCodeNode != null);
+                    relocTarget = _methodColdCodeNode;
+                    break;
+#else
                     throw new NotImplementedException("ColdCode relocs");
+#endif
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;

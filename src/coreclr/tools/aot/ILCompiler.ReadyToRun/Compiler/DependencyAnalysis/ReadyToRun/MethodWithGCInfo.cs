@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -19,7 +19,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodDesc _method;
 
         private ObjectData _methodCode;
+#if READYTORUN
+        private MethodColdCodeNode _methodColdCodeNode;
+#endif
         private FrameInfo[] _frameInfos;
+#if READYTORUN
+        private FrameInfo[] _coldFrameInfos;
+#endif
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
         private byte[] _debugLocInfos;
@@ -44,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
                 InitializeFrameInfos(Array.Empty<FrameInfo>());
+#if READYTORUN
+                InitializeColdFrameInfos(Array.Empty<FrameInfo>());
+#endif
             }
             _lateTriggeredCompilation = context.CompilationCurrentPhase != 0;
             RegisterInlineeModuleIndices(context);
@@ -130,10 +139,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public MethodColdCodeNode GetColdCodeNode() => _methodColdCodeNode;
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
             Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
+
+#if READYTORUN
+            if (_methodColdCodeNode != null)
+            {
+                Relocation[] coldRelocations = _methodColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
+                if (relocations == null)
+                {
+                    relocations = coldRelocations;
+                }
+                else if (coldRelocations != null)
+                {
+                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
+                }
+            }
+#endif
 
             if (relocations == null)
             {
@@ -246,6 +271,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
 
+            if (this.GetColdCodeNode() != null)
+            {
+                dependencyList.Add(this.GetColdCodeNode(), "cold");
+            }
+
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
@@ -281,6 +311,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
+
+#if READYTORUN
+        public FrameInfo[] ColdFrameInfos => _coldFrameInfos;
+#endif
+
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
         public MethodDesc[] InlinedMethods => _inlinedMethods;
@@ -301,6 +336,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 };
             }
         }
+
+#if READYTORUN
+        public void InitializeColdFrameInfos(FrameInfo[] coldFrameInfos)
+        {
+            Debug.Assert(_coldFrameInfos == null);
+            _coldFrameInfos = coldFrameInfos;
+            // TODO: x86 (see InitializeFrameInfos())
+        }
+#endif
 
         public void InitializeGCInfo(byte[] gcInfo)
         {
@@ -359,5 +403,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
 
         public override string ToString() => _method.ToString();
+
+#if READYTORUN
+        public void SetColdCodeNode(MethodColdCodeNode methodColdCodeNode)
+        {
+            _methodColdCodeNode = methodColdCodeNode;
+        }
+#endif
     }
 }

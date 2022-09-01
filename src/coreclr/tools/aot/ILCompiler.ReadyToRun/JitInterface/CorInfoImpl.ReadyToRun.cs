@@ -444,6 +444,7 @@ namespace Internal.JitInterface
 
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
+        private MethodColdCodeNode _methodColdCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private HashSet<MethodDesc> _inlinedMethods;
@@ -451,6 +452,12 @@ namespace Internal.JitInterface
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
+        private bool _hasColdCode;
+
+        public bool HasColdCode()
+        {
+            return _hasColdCode;
+        }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -666,6 +673,8 @@ namespace Internal.JitInterface
                 {
                     PublishEmptyCode();
                 }
+
+                _hasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
             }
         }
@@ -1337,6 +1346,9 @@ namespace Internal.JitInterface
         {
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
             _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
+#if READYTORUN
+            _methodCodeNode.InitializeColdFrameInfos(Array.Empty<FrameInfo>());
+#endif
         }
 
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)

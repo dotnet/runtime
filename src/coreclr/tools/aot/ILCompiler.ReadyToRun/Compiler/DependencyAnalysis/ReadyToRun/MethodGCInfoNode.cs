@@ -39,11 +39,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int[] CalculateFuncletOffsets(NodeFactory factory)
         {
-            int[] offsets = new int[_methodNode.FrameInfos.Length];
+            int coldCodeUnwindInfoCount = 0;
+            if (_methodNode.GetColdCodeNode() != null)
+            {
+                coldCodeUnwindInfoCount = _methodNode.ColdFrameInfos.Length;
+            }
+
+            int[] offsets = new int[_methodNode.FrameInfos.Length + coldCodeUnwindInfoCount];
             if (!factory.RuntimeFunctionsGCInfo.Deduplicator.TryGetValue(this, out var deduplicatedResult))
             {
                 throw new Exception("Did not properly initialize deduplicator");
             }
+
             int offset = deduplicatedResult.OffsetFromBeginningOfArray;
             for (int frameInfoIndex = 0; frameInfoIndex < deduplicatedResult._methodNode.FrameInfos.Length; frameInfoIndex++)
             {
@@ -60,6 +67,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
                 }
             }
+
+            if (_methodNode.GetColdCodeNode() != null)
+            {
+                // TODO: Take a look at deduplicatedResult
+                for (int frameInfoIndex = 0; frameInfoIndex < _methodNode.ColdFrameInfos.Length; frameInfoIndex++)
+                {
+                    offsets[frameInfoIndex + _methodNode.FrameInfos.Length] = offset;
+                    byte[] blobData = _methodNode.ColdFrameInfos[frameInfoIndex].BlobData;
+                    if (blobData != null)
+                    {
+                        offset += blobData.Length;
+                        offset += (-offset & 3); // 4-alignment for the personality routine
+                        if (factory.Target.Architecture != TargetArchitecture.X86)
+                        {
+                            offset += sizeof(uint); // personality routine
+                        }
+                    }
+                    else
+                    {
+                        // TODO: Update/Verify this amount
+                        offset += 16;
+                    }
+                }
+            }
+
             return offsets;
         }
 
@@ -164,6 +196,64 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     yield return new GCInfoComponent(_methodNode.GCInfo);
                 }
             }
+#if READYTORUN
+            if (_methodNode.GetColdCodeNode() != null)
+            {
+                for (int frameInfoIndex = 0; frameInfoIndex < _methodNode.ColdFrameInfos.Length; frameInfoIndex++)
+                {
+                    byte[] unwindInfo = _methodNode.ColdFrameInfos[frameInfoIndex].BlobData;
+
+                    if (unwindInfo == null)
+                    {
+                        // Chain unwind info
+                        byte[] header = new byte[4];
+                        int i = 0;
+                        header[i++] = 1 + (4 << 3); // Version = 1, UNW_FLAG_CHAININFO
+                        header[i++] = 0; // SizeOfProlog = 0
+                        header[i++] = 0; // CountOfCode = 0
+                        header[i++] = _methodNode.FrameInfos[0].BlobData[3]; // Copying frame and frame offset from main function
+                        yield return new GCInfoComponent(header);
+                        yield return new GCInfoComponent(_methodNode, 0);
+                        yield return new GCInfoComponent(_methodNode, _methodNode.Size);
+                        // TODO: Is this correct? 
+                        yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo.StartSymbol, this.OffsetFromBeginningOfArray);
+                    }
+                    else
+                    {
+                        if (targetArch == TargetArchitecture.X64)
+                        {
+                            // On Amd64, patch the first byte of the unwind info by setting the flags to EHANDLER | UHANDLER
+                            // as that's what CoreCLR does (zapcode.cpp, ZapUnwindData::Save).
+                            const byte UNW_FLAG_EHANDLER = 1;
+                            const byte UNW_FLAG_UHANDLER = 2;
+                            const byte FlagsShift = 3;
+
+                            unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
+                        }
+                        else if ((targetArch == TargetArchitecture.ARM) || (targetArch == TargetArchitecture.ARM64))
+                        {
+                            // Set the 'X' bit to indicate that there is a personality routine associated with this method
+                            unwindInfo[2] |= 1 << 4;
+                        }
+
+                        yield return new GCInfoComponent(unwindInfo);
+
+                        if (targetArch != TargetArchitecture.X86)
+                        {
+                            bool isFilterFunclet = (_methodNode.ColdFrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
+                            ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
+                            int codeDelta = 0;
+                            if (targetArch == TargetArchitecture.ARM)
+                            {
+                                // THUMB_CODE
+                                codeDelta = 1;
+                            }
+                            yield return new GCInfoComponent(personalityRoutine, codeDelta);
+                        }
+                    }
+                }
+            }
+#endif
         }
 
         class MethodGCInfoNodeDeduplicatingComparer : IEqualityComparer<MethodGCInfoNode>
