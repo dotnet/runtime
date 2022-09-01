@@ -48,7 +48,7 @@ internal sealed unsafe class MsQuicApi
         }
     }
 
-    internal static Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
+    private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
     internal static MsQuicApi Api => _api.Value;
 
     internal static bool IsQuicSupported { get; }
@@ -74,7 +74,7 @@ internal sealed unsafe class MsQuicApi
 
             try
             {
-                // check version
+                // Check version
                 int arraySize = 4;
                 uint* libVersion = stackalloc uint[arraySize];
                 uint size = (uint)arraySize * sizeof(uint);
@@ -132,7 +132,7 @@ internal sealed unsafe class MsQuicApi
         }
     }
 
-    internal static MsQuicApi AllocateMsQuicApi()
+    private static MsQuicApi AllocateMsQuicApi()
     {
         Debug.Assert(IsQuicSupported);
 
@@ -145,11 +145,11 @@ internal sealed unsafe class MsQuicApi
         throw new Exception("Failed to create MsQuicApi instance");
     }
 
-    internal static bool TryLoadMsQuic(out IntPtr msQuicHandle) =>
+    private static bool TryLoadMsQuic(out IntPtr msQuicHandle) =>
         NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
         NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
 
-    internal static bool TryOpenMsQuic(IntPtr msQuicHandle, out QUIC_API_TABLE* apiTable)
+    private static bool TryOpenMsQuic(IntPtr msQuicHandle, out QUIC_API_TABLE* apiTable)
     {
         apiTable = null;
         if (!NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
@@ -168,7 +168,7 @@ internal sealed unsafe class MsQuicApi
         return true;
     }
 
-    internal static bool TryCloseMsQuic(IntPtr msQuicHandle, QUIC_API_TABLE* apiTable)
+    private static bool TryCloseMsQuic(IntPtr msQuicHandle, QUIC_API_TABLE* apiTable)
     {
         if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
         {
