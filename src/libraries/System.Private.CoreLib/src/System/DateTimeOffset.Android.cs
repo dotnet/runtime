@@ -44,9 +44,6 @@ namespace System
                         if (s_loadAndroidTZData == null)
                         {
                             s_loadAndroidTZData = new Thread(() => {
-                                // We only want to start one background thread
-                                s_startNewBackgroundThread = false;
-
                                 // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
                                 Thread.Sleep(1000);
 
@@ -63,7 +60,14 @@ namespace System
                     }
 
                     if (s_startNewBackgroundThread)
+                    {
+                        // Because Start does not block the calling thread,
+                        // setting the boolean flag to false immediately after should
+                        // prevent two calls to DateTimeOffset.Now in quick succession
+                        // from both reaching here.
                         s_loadAndroidTZData.Start();
+                        s_startNewBackgroundThread = false;
+                    }
                 }
 
 
