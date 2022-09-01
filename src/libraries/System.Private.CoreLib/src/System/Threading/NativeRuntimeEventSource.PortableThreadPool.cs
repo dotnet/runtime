@@ -269,7 +269,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIOEnqueue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
                     false);
             }
         }
@@ -315,7 +315,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIODequeue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIOPack(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 

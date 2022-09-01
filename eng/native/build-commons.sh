@@ -234,23 +234,19 @@ __HostOS=$os
 __BuildOS=$os
 
 # Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(($(sysctl -n hw.ncpu)+1))
+  __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+  __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
 elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  __NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-  if command -v nproc > /dev/null 2>&1; then
-    __NumProc=$(nproc --all)
-  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
-    __NumProc=$(getconf _NPROCESSORS_ONLN)
-  else
-    __NumProc=1
-  fi
+  __NumProc=1
 fi
 
 while :; do

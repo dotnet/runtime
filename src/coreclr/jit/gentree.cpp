@@ -7713,7 +7713,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     else
     {
         ValueNum vn = divisor->gtVNPair.GetLiberal();
-        if (comp->vnStore->IsVNConstant(vn))
+        if (comp->vnStore && comp->vnStore->IsVNConstant(vn))
         {
             divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
         }

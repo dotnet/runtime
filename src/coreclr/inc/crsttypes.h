@@ -120,22 +120,19 @@ enum CrstType
     CrstSystemDomain = 102,
     CrstSystemDomainDelayedUnloadList = 103,
     CrstThreadIdDispenser = 104,
-    CrstThreadpoolTimerQueue = 105,
-    CrstThreadpoolWaitThreads = 106,
-    CrstThreadpoolWorker = 107,
-    CrstThreadStore = 108,
-    CrstTieredCompilation = 109,
-    CrstTypeEquivalenceMap = 110,
-    CrstTypeIDMap = 111,
-    CrstUMEntryThunkCache = 112,
-    CrstUMEntryThunkFreeListLock = 113,
-    CrstUniqueStack = 114,
-    CrstUnresolvedClassLock = 115,
-    CrstUnwindInfoTableLock = 116,
-    CrstVSDIndirectionCellLock = 117,
-    CrstWrapperTemplate = 118,
-    CrstFrozenObjectHeap = 119,
-    kNumberOfCrstTypes = 120
+    CrstThreadStore = 105,
+    CrstTieredCompilation = 106,
+    CrstTypeEquivalenceMap = 107,
+    CrstTypeIDMap = 108,
+    CrstUMEntryThunkCache = 109,
+    CrstUMEntryThunkFreeListLock = 110,
+    CrstUniqueStack = 111,
+    CrstUnresolvedClassLock = 112,
+    CrstUnwindInfoTableLock = 113,
+    CrstVSDIndirectionCellLock = 114,
+    CrstWrapperTemplate = 115,
+    CrstFrozenObjectHeap = 116,
+    kNumberOfCrstTypes = 117
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -159,7 +156,7 @@ int g_rgCrstLevelMap[] =
     -1,         // CrstClrNotification
     6,          // CrstCodeFragmentHeap
     9,          // CrstCodeVersioning
-    0,          // CrstCOMCallWrapper
+    3,          // CrstCOMCallWrapper
     5,          // CrstCOMWrapperCache
     3,          // CrstDataTest1
     0,          // CrstDataTest2
@@ -251,9 +248,6 @@ int g_rgCrstLevelMap[] =
     13,         // CrstSystemDomain
     0,          // CrstSystemDomainDelayedUnloadList
     0,          // CrstThreadIdDispenser
-    7,          // CrstThreadpoolTimerQueue
-    7,          // CrstThreadpoolWaitThreads
-    13,         // CrstThreadpoolWorker
     12,         // CrstThreadStore
     8,          // CrstTieredCompilation
     4,          // CrstTypeEquivalenceMap
@@ -375,9 +369,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstSystemDomain",
     "CrstSystemDomainDelayedUnloadList",
     "CrstThreadIdDispenser",
-    "CrstThreadpoolTimerQueue",
-    "CrstThreadpoolWaitThreads",
-    "CrstThreadpoolWorker",
     "CrstThreadStore",
     "CrstTieredCompilation",
     "CrstTypeEquivalenceMap",

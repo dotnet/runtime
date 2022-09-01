@@ -282,6 +282,28 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestSequentialTypeLayoutClass16Align()
+        {
+            MetadataType classType = _testModule.GetType("Sequential", "Class16Align");
+            Assert.Equal(0x18, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector16Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
         public void TestAutoLayoutStruct()
         {
             MetadataType structWithIntCharType = _testModule.GetType("Auto", "StructWithIntChar");
@@ -780,6 +802,28 @@ namespace TypeSystemTests
             MetadataType minPackingType = _testModule.GetType("Auto", "MinPacking`1");
             InstantiatedType inst = minPackingType.MakeInstantiatedType(_context.GetWellKnownType(type));
             Assert.Equal(expectedSize, inst.InstanceFieldSize.AsInt);
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutClass16Align()
+        {
+            MetadataType classType = _testModule.GetType("Auto", "Class16Align");
+            Assert.Equal(0x18, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector16Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
         }
 
         [Fact]

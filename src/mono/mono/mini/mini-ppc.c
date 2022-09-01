@@ -1891,7 +1891,7 @@ typedef struct {
 if (0 && ins->inst_true_bb->native_offset) { \
 	ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
 } else { \
-	int br_disp = ins->inst_true_bb->max_offset - offset;	\
+	int br_disp = ins->inst_true_bb->max_offset - cpos;	\
 	if (!ppc_is_imm16 (br_disp + 8 * 1024) || !ppc_is_imm16 (br_disp - 8 * 1024)) {	\
 		MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 		ovfj->data.bb = ins->inst_true_bb;	\
@@ -1915,7 +1915,7 @@ if (0 && ins->inst_true_bb->native_offset) { \
  */
 #define EMIT_COND_SYSTEM_EXCEPTION_FLAGS(b0,b1,exc_name)            \
         do {                                                        \
-		int br_disp = cfg->bb_exit->max_offset - offset;	\
+		int br_disp = cfg->bb_exit->max_offset - cpos;	\
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->data.exception = (exc_name);	\
@@ -5142,8 +5142,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
+				g_assert (ppc_is_imm32 (inst->inst_offset));
+				g_assert (ppc_is_imm32 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
 				/* FIXME: what if there is no class? */
 				if (sig->pinvoke && !sig->marshalling_disabled && mono_class_from_mono_type_internal (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
@@ -5171,21 +5171,39 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						                         (sizeof (target_mgreg_t) - ainfo->bytes) * 8);
 							ppc_stptr (code, ppc_r0, doffset, inst->inst_basereg);
 #else
-							if (mono_class_native_size (inst->klass, NULL) == 1) {
-							  ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-							} else if (mono_class_native_size (inst->klass, NULL) == 2) {
-								ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-							} else if (mono_class_native_size (inst->klass, NULL) == 4) {  // WDS -- maybe <=4?
-								ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-							} else {
-								ppc_stptr (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);  // WDS -- Better way?
+							if (ppc_is_imm16 (inst->inst_offset)) {
+								if (mono_class_native_size (inst->klass, NULL) == 1) {
+								ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+								} else if (mono_class_native_size (inst->klass, NULL) == 2) {
+									ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+								} else if (mono_class_native_size (inst->klass, NULL) == 4) {  // WDS -- maybe <=4?
+									ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+								} else {
+									ppc_stptr (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);  // WDS -- Better way?
+								}
+							}
+							else if (ppc_is_imm32 (inst->inst_offset)) {
+								ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+							}
+							else {
+								g_assert_not_reached();
 							}
 #endif
 						} else
 #endif
 						{
-							ppc_stptr (code, ainfo->reg + cur_reg, doffset,
-									inst->inst_basereg);
+							if (ppc_is_imm16 (inst->inst_offset)) {
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset,
+										inst->inst_basereg);
+							}
+							else if (ppc_is_imm32 (inst->inst_offset)) {
+								ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+							}
+							else {
+								g_assert_not_reached();
+							}
 						}
 					}
 					soffset += sizeof (target_mgreg_t);

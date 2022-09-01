@@ -240,7 +240,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-    VirtualCallStubManager *m_pVirtualCallStubManager;
+    PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -599,7 +599,7 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-    inline VirtualCallStubManager *GetVirtualCallStubManager()
+    inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pVirtualCallStubManager;

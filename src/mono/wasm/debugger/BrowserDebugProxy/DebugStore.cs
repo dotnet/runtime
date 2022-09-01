@@ -1001,8 +1001,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                             methods[entryRow] = methodInfo;
 
-                            if (source != null)
-                                source.AddMethod(methodInfo);
+                            source?.AddMethod(methodInfo);
 
                             typeInfo.Methods.Add(methodInfo);
                         }
@@ -1061,8 +1060,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
                     methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
 
-                    if (source != null)
-                        source.AddMethod(methodInfo);
+                    source?.AddMethod(methodInfo);
 
                     typeInfo.Methods.Add(methodInfo);
                 }
@@ -1469,11 +1467,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     try
                     {
+                        string unescapedFileName = Uri.UnescapeDataString(file_name);
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
                             });
                     }
                     catch (Exception e)
