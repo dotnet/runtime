@@ -465,7 +465,7 @@ namespace System.Formats.Tar
             // If the destination contains a directory segment, need to check that it exists
             if (!string.IsNullOrEmpty(directoryPath) && !Path.Exists(directoryPath))
             {
-                throw new IOException(string.Format(SR.IO_PathNotFound_NoPathName, filePath));
+                throw new IOException(string.Format(SR.IO_PathNotFound_Path, filePath));
             }
 
             if (!Path.Exists(filePath))
@@ -529,7 +529,7 @@ namespace System.Formats.Tar
                 DataStream?.CopyTo(fs);
             }
 
-            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+            AttemptSetLastWriteTime(destinationFileName, ModificationTime);
         }
 
         // Asynchronously extracts the current entry as a regular file into the specified destination.
@@ -551,7 +551,19 @@ namespace System.Formats.Tar
                 }
             }
 
-            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+            AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+        }
+
+        private static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
+        {
+            try
+            {
+                File.SetLastWriteTime(destinationFileName, lastWriteTime.LocalDateTime); // SetLastWriteTime expects local time
+            }
+            catch
+            {
+                // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
+            }
         }
 
         private FileStreamOptions CreateFileStreamOptions(bool isAsync)

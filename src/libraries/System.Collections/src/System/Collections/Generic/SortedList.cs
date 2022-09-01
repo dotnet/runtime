@@ -516,7 +516,12 @@ namespace System.Collections.Generic
             Capacity = newCapacity;
         }
 
-        // Returns the value of the entry at the given index.
+        /// <summary>
+        /// Gets the value corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <returns>The value corresponding to the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index was out of range.</exception>
         public TValue GetValueAtIndex(int index)
         {
             if (index < 0 || index >= _size)
@@ -524,7 +529,12 @@ namespace System.Collections.Generic
             return values[index];
         }
 
-        // Sets the value of the entry at the given index.
+        /// <summary>
+        /// Updates the value corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <param name="value">The value with which to replace the entry at the specified index.</param>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index was out of range.</exception>
         public void SetValueAtIndex(int index, TValue value)
         {
             if (index < 0 || index >= _size)
@@ -553,7 +563,12 @@ namespace System.Collections.Generic
             return new Enumerator(this, Enumerator.KeyValuePair);
         }
 
-        // Returns the key of the entry at the given index.
+        /// <summary>
+        /// Gets the key corresponding to the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the key within the entire <see cref="SortedList{TKey, TValue}"/>.</param>
+        /// <returns>The key corresponding to the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified index is out of range.</exception>
         public TKey GetKeyAtIndex(int index)
         {
             if (index < 0 || index >= _size)

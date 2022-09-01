@@ -402,7 +402,8 @@ enum class DoNotEnregisterReason
     OneAsgRetyping,       // fgMorphOneAsgBlockOp prevents this local from being enregister.
     SwizzleArg,           // the local is passed using LCL_FLD as another type.
     BlockOpRet,           // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,        // the local is used to do SP check
+    ReturnSpCheck,        // the local is used to do SP check on return from function
+    CallSpCheck,          // the local is used to do SP check on every call
     SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
     HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
 };
@@ -529,10 +530,9 @@ public:
                                   // 32-bit target.  For implicit byref parameters, this gets hijacked between
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
-    unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
-    unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
-    unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
+    unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
+    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
+    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -1377,11 +1377,20 @@ public:
     }
 };
 
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+};
+
 // interface to hide linearscan implementation from rest of compiler
 class LinearScanInterface
 {
 public:
-    virtual void doLinearScan()                                = 0;
+    virtual PhaseStatus doLinearScan()                         = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1413,13 +1422,12 @@ enum class PhaseChecks
     CHECK_ALL
 };
 
-// Specify compiler data that a phase might modify
-enum class PhaseStatus : unsigned
+// Specify which dumps should be run after each phase
+//
+enum class PhaseDumps
 {
-    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
-    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
+    DUMP_NONE,
+    DUMP_ALL
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
@@ -2220,7 +2228,7 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
-    void fgCreateFiltersForGenericExceptions();
+    bool fgCreateFiltersForGenericExceptions();
 
     void fgCheckForLoopsInHandlers();
 
@@ -2929,7 +2937,6 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
-    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4148,9 +4155,7 @@ private:
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
 
-#if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
-#endif
 
 #ifdef DEBUG
     static LONG jitNestingLevel;
@@ -4342,7 +4347,7 @@ public:
     }
 
     BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
-    void fgEnsureFirstBBisScratch();
+    bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
 
@@ -4464,6 +4469,8 @@ public:
 
     PhaseStatus fgTransformPatchpoints();
 
+    PhaseStatus fgMorphInit();
+
     PhaseStatus fgInline();
 
     PhaseStatus fgRemoveEmptyTry();
@@ -4525,7 +4532,7 @@ public:
     // The number of separate return points in the method.
     unsigned fgReturnCount;
 
-    void fgAddInternal();
+    PhaseStatus fgAddInternal();
 
     enum class FoldResult
     {
@@ -4636,7 +4643,11 @@ public:
 
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
-    void fgSimpleLowering();
+    PhaseStatus fgSimpleLowering();
+
+#if FEATURE_LOOP_ALIGN
+    PhaseStatus placeLoopAlignInstructions();
+#endif
 
     GenTree* fgInitThisClass();
 
@@ -5047,7 +5058,7 @@ protected:
     template <typename CanRemoveBlockBody>
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    void fgComputeReachability(); // Perform flow graph node reachability analysis.
+    PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
@@ -5225,7 +5236,7 @@ public:
 
     unsigned fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting = nullptr);
 
-    void fgPostImportationCleanup();
+    PhaseStatus fgPostImportationCleanup();
 
     void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
@@ -5278,8 +5289,8 @@ public:
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
-    void fgCreateFuncletPrologBlocks();
-    void fgCreateFunclets();
+    void        fgCreateFuncletPrologBlocks();
+    PhaseStatus fgCreateFunclets();
 #else  // !FEATURE_EH_FUNCLETS
     bool fgRelocateEHRegions();
 #endif // !FEATURE_EH_FUNCLETS
@@ -5304,10 +5315,10 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    void     fgComputeBlockAndEdgeWeights();
-    weight_t fgComputeMissingBlockWeights();
-    void fgComputeCalledCount(weight_t returnWeight);
-    void fgComputeEdgeWeights();
+    PhaseStatus fgComputeBlockAndEdgeWeights();
+    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
+    bool fgComputeCalledCount(weight_t returnWeight);
+    PhaseStatus fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
 
@@ -5319,7 +5330,8 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
+    PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgFindOperOrder();
 
@@ -5758,7 +5770,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -5777,7 +5789,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
-    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
@@ -5793,7 +5805,8 @@ public:
 private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-    void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree);
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
 
@@ -5899,7 +5912,7 @@ private:
     static fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
 #endif
 
-    void fgPromoteStructs();
+    PhaseStatus fgPromoteStructs();
     void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
@@ -5908,12 +5921,12 @@ private:
 
     // Change implicit byrefs' types from struct to pointer, and for any that were
     // promoted, create new promoted struct temps.
-    void fgRetypeImplicitByRefArgs();
+    PhaseStatus fgRetypeImplicitByRefArgs();
 
     // Clear up annotations for any struct promotion temps created for implicit byrefs.
     void fgMarkDemotedImplicitByRefArgs();
 
-    void fgMarkAddressExposedLocals();
+    PhaseStatus fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
@@ -5960,6 +5973,7 @@ private:
 public:
     void optInit();
 
+    PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
     GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
@@ -6695,7 +6709,7 @@ protected:
 #define FMT_CSE "CSE #%02u"
 
 public:
-    void optOptimizeValnumCSEs();
+    PhaseStatus optOptimizeValnumCSEs();
 
 protected:
     void     optValnumCSE_Init();
@@ -6704,7 +6718,7 @@ protected:
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
-    void optValnumCSE_Heuristic();
+    bool optValnumCSE_Heuristic();
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -6777,16 +6791,16 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
 
     // Copy propagation functions.
-    void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
+    bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
+    bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     void optCopyPropPushDef(GenTree*             defNode,
                             GenTreeLclVarCommon* lclNode,
                             unsigned             lclNum,
                             LclNumToLiveDefsMap* curSsaName);
     unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
-    void optVnCopyProp();
+    PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
 
     /**************************************************************************
@@ -7289,7 +7303,7 @@ public:
     void optAssertionRemove(AssertionIndex index);
 
     // Assertion prop data flow functions.
-    void       optAssertionPropMain();
+    PhaseStatus optAssertionPropMain();
     Statement* optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
     bool optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP* optInitAssertionDataflowFlags();
@@ -7358,6 +7372,7 @@ public:
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -8835,7 +8850,7 @@ private:
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
 #endif
@@ -8850,14 +8865,13 @@ private:
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit = (1ULL << isa);
-        if ((opts.compSupportsISAReported & isaBit) == 0)
+        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA & isaBit) != 0))
-                ((Compiler*)this)->opts.compSupportsISAExactly |= isaBit;
-            ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
+            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+                ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
+            ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
-        return (opts.compSupportsISAExactly & isaBit) != 0;
+        return (opts.compSupportsISAExactly.HasInstructionSet(isa));
 #else
         return false;
 #endif
@@ -8879,7 +8893,7 @@ private:
     // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        if (opts.compSupportsISA.HasInstructionSet(isa))
         {
             return compExactlyDependsOn(isa);
         }
@@ -8894,7 +8908,7 @@ private:
     {
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
-        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
+        return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
     bool canUseVexEncoding() const
@@ -8999,19 +9013,19 @@ public:
         JitFlags* jitFlags; // all flags passed from the EE
 
         // The instruction sets that the compiler is allowed to emit.
-        uint64_t compSupportsISA;
+        CORINFO_InstructionSetFlags compSupportsISA;
         // The instruction sets that were reported to the VM as being used by the current method. Subset of
         // compSupportsISA.
-        uint64_t compSupportsISAReported;
+        CORINFO_InstructionSetFlags compSupportsISAReported;
         // The instruction sets that the compiler is allowed to take advantage of implicitly during optimizations.
         // Subset of compSupportsISA.
         // The instruction sets available in compSupportsISA and not available in compSupportsISAExactly can be only
         // used via explicit hardware intrinsics.
-        uint64_t compSupportsISAExactly;
+        CORINFO_InstructionSetFlags compSupportsISAExactly;
 
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-            compSupportsISA = isas.GetFlagsRaw();
+            compSupportsISA = isas;
         }
 
         unsigned compFlags; // method attributes
@@ -9326,6 +9340,9 @@ public:
         // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
         bool compJitEarlyExpandMDArrays;
 
+        // Collect 64 bit counts for PGO data.
+        bool compCollect64BitCounts;
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -9505,6 +9522,7 @@ public:
     }
 
     const char* compGetTieringName(bool wantShortName = false) const;
+    const char* compGetPgoSourceName() const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt() const
@@ -9874,6 +9892,7 @@ public:
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
+    PhaseDumps  activePhaseDumps;        // the currently active phase dumps
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
@@ -10020,6 +10039,7 @@ public:
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
         unsigned m_returnSpCheck;
+        unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
@@ -10405,10 +10425,11 @@ public:
     GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
     ShadowParamVarInfo* gsShadowVarInfo;            // Table used by shadow param analysis code
 
-    void gsGSChecksInitCookie();   // Grabs cookie variable
-    void gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
-    bool gsFindVulnerableParams(); // Shadow param analysis code
-    void gsParamsToShadows();      // Insert copy code and replave param uses by shadow
+    PhaseStatus gsPhase();
+    void        gsGSChecksInitCookie();   // Grabs cookie variable
+    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    bool        gsFindVulnerableParams(); // Shadow param analysis code
+    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
 
     static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk

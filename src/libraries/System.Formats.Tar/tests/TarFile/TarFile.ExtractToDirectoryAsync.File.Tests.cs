@@ -56,6 +56,33 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [Fact]
+        public async Task SetsLastModifiedTimeOnExtractedFiles()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string inDir = Path.Join(root.Path, "indir");
+            string inFile = Path.Join(inDir, "file");
+
+            string tarFile = Path.Join(root.Path, "file.tar");
+
+            string outDir = Path.Join(root.Path, "outdir");
+            string outFile = Path.Join(outDir, "file");
+
+            Directory.CreateDirectory(inDir);
+            File.Create(inFile).Dispose();
+            var dt = new DateTime(2001, 1, 2, 3, 4, 5, DateTimeKind.Local);
+            File.SetLastWriteTime(inFile, dt);
+
+            await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: inDir, destinationFileName: tarFile, includeBaseDirectory: false);
+
+            Directory.CreateDirectory(outDir);
+            await TarFile.ExtractToDirectoryAsync(sourceFileName: tarFile, destinationDirectoryName: outDir, overwriteFiles: false);
+
+            Assert.True(File.Exists(outFile));
+            Assert.InRange(File.GetLastWriteTime(outFile).Ticks, dt.AddSeconds(-3).Ticks, dt.AddSeconds(3).Ticks); // include some slop for filesystem granularity
+        }
+
         [Theory]
         [InlineData(TestTarFormat.v7)]
         [InlineData(TestTarFormat.ustar)]

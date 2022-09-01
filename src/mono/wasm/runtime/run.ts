@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
@@ -108,12 +108,14 @@ async function flush_node_streams() {
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
-            if (reason instanceof Error)
-                Module.printErr(INTERNAL.mono_wasm_stringify_as_error_with_stack(reason));
-            else if (typeof reason == "string")
-                Module.printErr(reason);
-            else
-                Module.printErr(JSON.stringify(reason));
+            if (!runtimeHelpers.config.logExitCode) {
+                if (reason instanceof Error)
+                    Module.printErr(mono_wasm_stringify_as_error_with_stack(reason));
+                else if (typeof reason == "string")
+                    Module.printErr(reason);
+                else
+                    Module.printErr(JSON.stringify(reason));
+            }
         }
         else {
             reason = new runtimeHelpers.ExitStatus(exit_code);
