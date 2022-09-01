@@ -187,10 +187,11 @@ namespace System.IO.Tests
                 Assert.Equal("tmpXXXXXX.tmp".Length, fileName.Length);
                 Assert.EndsWith(".tmp", fileName);
 
-                const string validChars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                const string ValidChars = "abcdefghijklmnopqrstuvwxyz0123456789";
                 for (int i = 3; i < 9; i++)
                 {
-                    Assert.True(validChars.Contains(char.ToLowerInvariant(fileName[i])));
+                    // Unix allows upper and lower case
+                    Assert.True(ValidChars.Contains(char.ToLowerInvariant(fileName[i])));
                 }
 
                 Assert.Equal(-1, tmpFile.IndexOfAny(Path.GetInvalidPathChars()));
