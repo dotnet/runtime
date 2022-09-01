@@ -296,13 +296,16 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                var add = _fillRate * (nowTicks - _lastReplenishmentTick) * TickFrequency;
+                double add;
 
-                // special case the scenario when TokenLimit is 1 so that it doesn't potentially take two timer calls to fully update the token by 1
-                // other limits are hit by this, but they are a lot smoother in practice so it isn't as bad that two timer calls may be needed
-                if (_options.TokenLimit == 1 && _options.AutoReplenishment)
+                // Trust the timer to be close enough to when we want to replenish, this avoids issues with Timer jitter where it might be .99 seconds instead of 1, and 1.1 seconds the next time etc.
+                if (_options.AutoReplenishment)
                 {
-                    add = 1;
+                    add = _options.TokensPerPeriod;
+                }
+                else
+                {
+                    add = _fillRate * (nowTicks - _lastReplenishmentTick) * TickFrequency;
                 }
 
                 _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);
