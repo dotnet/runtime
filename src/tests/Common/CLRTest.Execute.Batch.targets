@@ -124,6 +124,14 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(HasBatchDisasmCheck)' != 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunningDisasmChecks%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE RunningDisasmChecks IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
 
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
@@ -303,7 +311,7 @@ if defined RunCrossGen (
 )
 
 REM Change to runtime config check
-if NOT "$(BatchDisasmOutputFile)"=="" (
+if NOT "%RunningDisasmChecks%"=="" (
   ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% ^> $(BatchDisasmOutputFile)
   %LAUNCHER% %ExePath% %CLRTestExecutionArguments% > $(BatchDisasmOutputFile)
 ) ELSE (

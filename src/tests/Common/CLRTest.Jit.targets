@@ -187,49 +187,55 @@ IF NOT DEFINED DoLink (
   </Target>
 
   <Target Name="GetDisasmCheckBashScript"
-          Returns="$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)">
+          Returns="$(HasBashDisasmCheck);$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)">
     <ItemGroup>
       <BashDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
-      <DoBashDisasmCheck>false</DoBashDisasmCheck>
-      <DoBashDisasmCheck Condition="@(BashDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</DoBashDisasmCheck>
+      <HasBashDisasmCheck>false</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="@(BashDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</HasBashDisasmCheck>
 
-      <BashDisasmOutputFile></BashDisasmOutputFile>
-      <BashDisasmOutputFile Condition="'$(DoBashDisasmCheck)' == 'true'">%scriptPath%/__jit_disasm.out</BashDisasmOutputFile>
+      <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
+      <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">%scriptPath%/__jit_disasm.out</BashDisasmOutputFile>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
-      <BashDisasmCheckPostCommands Condition="'$(DoBashDisasmCheck)' == 'true'"><![CDATA[
-@(BashDisasmCheckFile -> 'FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BashDisasmOutputFile)"
-ERRORLEVEL=$?
-if [[ $ERRORLEVEL -ne 0 ]];
+      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+if [[ -n "$RunningDisasmChecks" ]]
 then
-  echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
-  exit 1
+@(BashDisasmCheckFile -> '  FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BashDisasmOutputFile)"
+  ERRORLEVEL=$?
+  if [[ $ERRORLEVEL -ne 0 ]]
+  then
+    echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
+    exit 1
+  fi
+')
 fi
-']]>)
+]]>)
       </BashDisasmCheckPostCommands>
     </PropertyGroup>
   </Target>
 
   <Target Name="GetDisasmCheckBatchScript"
-          Returns="$(DoBatchDisasmCheck);$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)">
+          Returns="$(HasBatchDisasmCheck);$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)">
     <ItemGroup>
       <BatchDisasmCheckFile Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
-      <DoBatchDisasmCheck>false</DoBatchDisasmCheck>
-      <DoBatchDisasmCheck Condition="@(BatchDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</DoBatchDisasmCheck>
+      <HasBatchDisasmCheck>false</HasBatchDisasmCheck>
+      <HasBatchDisasmCheck Condition="@(BatchDisasmCheckFile->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'windows' And '$(TargetArchitecture)' == 'x64'">true</HasBatchDisasmCheck>
 
-      <BatchDisasmOutputFile></BatchDisasmOutputFile>
-      <BatchDisasmOutputFile Condition="'$(DoBatchDisasmCheck)' == 'true'">%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
+      <BatchDisasmOutputFile>NUL</BatchDisasmOutputFile>
+      <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">%scriptPath%\__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
-      <BatchDisasmCheckPostCommands Condition="'$(DoBatchDisasmCheck)' == 'true'"><![CDATA[
-@(BatchDisasmCheckFile -> 'FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BatchDisasmOutputFile)"
-IF NOT "!ERRORLEVEL!" == "0" (
-  ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
-  Exit /b 1
+      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+if DEFINED RunningDisasmChecks (
+  @(BatchDisasmCheckFile -> 'FileCheck.exe --allow-unused-prefixes --check-prefixes CHECK,$(TargetArchitecture.ToUpperInvariant()) "%(FullPath)" < "$(BatchDisasmOutputFile)"
+  IF NOT "!ERRORLEVEL!" == "0" (
+    ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
+    Exit /b 1
+  )
 )
 ']]>)
       </BatchDisasmCheckPostCommands>

@@ -115,6 +115,14 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HasBashDisasmCheck)' != 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [[ -n "$RunningDisasmChecks" ]]
+then
+  echo SKIPPING EXECUTION BECAUSE RunningDisasmChecks IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
