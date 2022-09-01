@@ -135,7 +135,7 @@ jobs:
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.jobParameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCore1ESPool-Svc-Public
+          name:  NetCore-Svc-Public
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
@@ -154,7 +154,7 @@ jobs:
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Svc-Public
+          name: NetCore-Svc-Public
           demands: ImageOverride -equals windows.vs2022.amd64.open
 
 
