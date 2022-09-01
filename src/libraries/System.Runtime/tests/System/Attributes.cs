@@ -330,11 +330,14 @@ namespace System.Tests
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
+            Assert.Equal(1, customAttributes.Count(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.RefSafetyRulesAttribute"));
             // [System.Security.UnverifiableCodeAttribute()]
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
             // [System.Diagnostics.DebuggableAttribute((Boolean)True, (Boolean)False)]
-            Assert.Equal(4, customAttributes.Count);
+            // [System.Runtime.CompilerServices.RefSafetyRulesAttribute((Int32)11)]
+            Assert.Equal(5, customAttributes.Count);
+            Assert.Equal(4, customAttributes.FindIndex(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.RefSafetyRulesAttribute"));
         }
 
         [Fact]
