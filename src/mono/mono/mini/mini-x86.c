@@ -3192,11 +3192,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CHECK_THIS:
-			/* ensure ins->sreg1 is not NULL
-			 * note that cmp DWORD PTR [eax], eax is one byte shorter than
-			 * cmp DWORD PTR [eax], 0
-		         */
-			x86_alu_membase_reg (code, X86_CMP, ins->sreg1, 0, ins->sreg1);
+			/* ensure ins->sreg1 is not NULL */
+			x86_alu_membase8_reg (code, X86_CMP, ins->sreg1, 0, ins->sreg1);
 			break;
 		case OP_ARGLIST: {
 			int hreg = ins->sreg1 == X86_EAX? X86_ECX: X86_EAX;

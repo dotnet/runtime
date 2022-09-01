@@ -1,16 +1,7 @@
-import createDotnetRuntime from './dotnet.js'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-function wasm_exit(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    if (exit_code) tests_done_elem.style.background = "red";
-    document.body.appendChild(tests_done_elem);
-
-    if (reason) console.error(reason);
-    console.log(`WASM EXIT ${exit_code}`);
-}
+import { dotnet, exit } from './dotnet.js'
 
 let progressElement = null;
 
@@ -61,37 +52,18 @@ function onInputValueChanged(exports, inputElement) {
 
 try {
     const inputElement = document.getElementById("inputN");
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime callback');
-        return {
-            configSrc: "./mono-config.json",
-            onConfigLoaded: (config) => {
-                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
-                console.log('user code Module.onConfigLoaded');
-                // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
-            },
-            preInit: () => { console.log('user code Module.preInit'); },
-            preRun: () => { console.log('user code Module.preRun'); },
-            onRuntimeInitialized: () => {
-                console.log('user code Module.onRuntimeInitialized');
-                // here we could use API passed into this callback
-                // Module.FS.chdir("/");
-            },
-            onDotnetReady: () => {
-                // This is called after all assets are loaded.
-                console.log('user code Module.onDotnetReady');
-            },
-            postRun: () => { console.log('user code Module.postRun'); },
-        }
-    });
-    console.log('user code after createDotnetRuntime()');
+    const { setModuleImports, getAssemblyExports, runMain } = await dotnet
+        .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
+
     setModuleImports("main.js", {
-	Sample: {
-	    Test: {
-		updateProgress
-	    }
-	}
+        Sample: {
+            Test: {
+                updateProgress
+            }
+        }
     });
 
     const exports = await getAssemblyExports(assemblyName);
@@ -101,7 +73,7 @@ try {
     inputElement.addEventListener("change", onInputValueChanged(exports, inputElement));
 
     let exit_code = await runMain(assemblyName, []);
-    wasm_exit(exit_code);
+    exit(exit_code);
 } catch (err) {
-    wasm_exit(2, err);
+    exit(2, err);
 }
