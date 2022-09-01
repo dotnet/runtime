@@ -15,6 +15,18 @@ namespace System.Buffers.Text
 {
     public static partial class Ascii
     {
+        public static bool Equals(System.ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length && Equals<bool>(right, left) == EqualsResult.Match;
+
+        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+            => left.Length == right.Length && EqualsIgnoreCase<bool>(left, right) == EqualsResult.Match;
+
+        public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length && Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), left.Length);
+
+        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length && Equals<bool>(right, left) == EqualsResult.Match;
+
         public static unsafe bool StartsWith(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
             => value.IsEmpty || (text.Length >= value.Length && Map(Equals<char>(value, text.Slice(0, value.Length))));
 
@@ -28,10 +40,10 @@ namespace System.Buffers.Text
             => value.IsEmpty || (text.Length >= value.Length && Map(Equals<byte>(text.Slice(text.Length - value.Length), value)));
 
         public static bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(0, value.Length), value)));
 
         public static bool EndsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<byte>(text.Slice(text.Length - value.Length), value)));
 
         // TODO adsitnik: discuss whether this overload should exists, as the only difference with ROS.StartsWith(ROS, StringComparison.OrdinalIgnoreCase)
         // is throwing an exception for non-ASCII characters found in value
@@ -97,7 +109,7 @@ namespace System.Buffers.Text
 
         private static EqualsResult Equals<TCheck>(ReadOnlySpan<char> chars, ReadOnlySpan<byte> bytes) where TCheck : struct
         {
-            Debug.Assert(typeof(TCheck) == typeof(byte) || typeof(TCheck) == typeof(char));
+            Debug.Assert(typeof(TCheck) == typeof(byte) || typeof(TCheck) == typeof(char) || typeof(TCheck) == typeof(bool));
             Debug.Assert(chars.Length == bytes.Length);
 
             if (!Vector128.IsHardwareAccelerated || chars.Length < Vector128<ushort>.Count)
@@ -316,7 +328,7 @@ namespace System.Buffers.Text
             return EqualsResult.Match;
         }
 
-        private static EqualsResult EqualsIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
+        private static EqualsResult EqualsIgnoreCase<TCheck>(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value) where TCheck : struct
         {
             Debug.Assert(text.Length == value.Length);
 
@@ -325,9 +337,12 @@ namespace System.Buffers.Text
                 uint valueA = text[i];
                 uint valueB = value[i];
 
-                if (!UnicodeUtility.IsAsciiCodePoint(valueB))
+                if (typeof(TCheck) == typeof(byte))
                 {
-                    return EqualsResult.NonAsciiFound; // value must not contain non-ASCII characters
+                    if (!UnicodeUtility.IsAsciiCodePoint(valueB))
+                    {
+                        return EqualsResult.NonAsciiFound; // value must not contain non-ASCII characters
+                    }
                 }
 
                 if (valueA == valueB)

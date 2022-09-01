@@ -7097,6 +7097,10 @@ namespace System.Buffers.Text
         public static int GetIndexOfFirstNonAsciiChar(System.ReadOnlySpan<char> buffer) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
         public static bool EndsWith(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
         public static bool EndsWith(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static bool EndsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
