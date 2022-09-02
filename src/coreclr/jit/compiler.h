@@ -8942,6 +8942,7 @@ public:
     bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;             // Does the method do a tailcall
     bool compTailPrefixSeen;           // Does the method IL have tail. prefix
+    bool compMayConvertTailCallToLoop; // Does the method have a recursive tail call that we may convert to a loop?
     bool compLocallocSeen;             // Does the method IL have localloc opcode
     bool compLocallocUsed;             // Does the method use localloc.
     bool compLocallocOptimized;        // Does the method have an optimized localloc

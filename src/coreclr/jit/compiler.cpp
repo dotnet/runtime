@@ -1896,16 +1896,17 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed         = false;
-    compLongUsed          = false;
-    compTailCallUsed      = false;
-    compTailPrefixSeen    = false;
-    compLocallocSeen      = false;
-    compLocallocUsed      = false;
-    compLocallocOptimized = false;
-    compQmarkRationalized = false;
-    compQmarkUsed         = false;
-    compFloatingPointUsed = false;
+    compJmpOpUsed                = false;
+    compLongUsed                 = false;
+    compTailCallUsed             = false;
+    compTailPrefixSeen           = false;
+    compMayConvertTailCallToLoop = false;
+    compLocallocSeen             = false;
+    compLocallocUsed             = false;
+    compLocallocOptimized        = false;
+    compQmarkRationalized        = false;
+    compQmarkUsed                = false;
+    compFloatingPointUsed        = false;
 
     compSuppressedZeroInit = false;
 

@@ -10661,6 +10661,8 @@ DONE:
                     " as having a backward branch.\n",
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
+
+            compMayConvertTailCallToLoop = true;
         }
 
         // We only do these OSR checks in the root method because:
