@@ -2894,7 +2894,7 @@ public:
             ) = 0;
 
     // This function returns the method name and if 'moduleName' is non-null,
-    // it sets it to something that will says what contains the method (a class
+    // it sets it to something that contains the method (a class
     // name, or a module name). Note that the moduleName parameter is for
     // diagnostics only.
     //
