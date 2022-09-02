@@ -458,7 +458,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -473,7 +472,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -484,7 +482,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -496,7 +493,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
     {
         _localEndPoint = data.Address->ToIPEndPoint();
@@ -507,7 +503,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerAddressChanged(ref PEER_ADDRESS_CHANGED_DATA data)
     {
         _remoteEndPoint = data.Address->ToIPEndPoint();
@@ -518,7 +513,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -540,7 +534,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
