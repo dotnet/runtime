@@ -203,8 +203,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();

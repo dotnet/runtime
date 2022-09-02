@@ -89,8 +89,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]  // Uses P/Invokes
         public void TrueForNonRegularFile()
         {
             string fileName = GetTestFilePath();
