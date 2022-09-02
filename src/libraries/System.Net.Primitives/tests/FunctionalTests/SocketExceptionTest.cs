@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -45,7 +46,7 @@ namespace System.Net.Primitives.Functional.Tests
                 }
                 catch(SocketException ex)
                 {
-                    Assert.Equal(ep.ToString(), ex.Message);
+                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode) + " " + ep.ToString(), ex.Message);
                 }
             }
         }
