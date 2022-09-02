@@ -277,7 +277,7 @@ if DEFINED RunningDisasmChecks (
       $(CLRTestBatchPreCommands)
 if DEFINED RunningDisasmChecks (
 @(DisasmCheckFiles -> '  $(ArtifactsDir)tests\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\Common\SuperFileCheck\SuperFileCheck\$(OutputRid)\publish\SuperFileCheck.exe --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
-  set /p DOTNET_JitDisasm= < $(BatchDisasmOutputFile)
+  set /p DOTNET_JitDisasm= < $(BatchDisasmListOutputFile)
   set DOTNET_JitDiffableDasm=1
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
