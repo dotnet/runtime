@@ -3744,7 +3744,7 @@ namespace System.Xml
                 switch (_ps.chars[_ps.charPos])
                 {
                     case 'v':
-                        if (((nameEndPos - _ps.charPos) == "version".Length) && _ps.StartsWith("version") && xmlDeclState == 0)
+                        if (nameEndPos - _ps.charPos == "version".Length && _ps.StartsWith("version") && xmlDeclState == 0)
                         {
                             if (!isTextDecl)
                             {
@@ -3754,7 +3754,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 'e':
-                        if (((nameEndPos - _ps.charPos) == "encoding".Length) && _ps.StartsWith("encoding") &&
+                        if (nameEndPos - _ps.charPos == "encoding".Length && _ps.StartsWith("encoding") &&
                             (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0)))
                         {
                             if (!isTextDecl)
@@ -3766,7 +3766,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 's':
-                        if (((nameEndPos - _ps.charPos) == "standalone".Length) && _ps.StartsWith("standalone") &&
+                        if (nameEndPos - _ps.charPos == "standalone".Length && _ps.StartsWith("standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
                             attr = AddAttributeNoChecks("standalone", 1);
@@ -3835,7 +3835,7 @@ namespace System.Xml
                         // version
                         case 0:
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
-                            if ((pos - _ps.charPos) == "1.0".Length && _ps.StartsWith("1.0"))
+                            if (pos - _ps.charPos == "1.0".Length && _ps.StartsWith("1.0"))
                             {
                                 if (!isTextDecl)
                                 {
@@ -3861,11 +3861,11 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            if ((pos - _ps.charPos) == "yes".Length && _ps.StartsWith("yes"))
+                            if (pos - _ps.charPos == "yes".Length && _ps.StartsWith("yes"))
                             {
                                 _standalone = true;
                             }
-                            else if ((pos - _ps.charPos) == "no".Length && _ps.StartsWith("no"))
+                            else if (pos - _ps.charPos == "no".Length && _ps.StartsWith("no"))
                             {
                                 _standalone = false;
                             }
@@ -3997,7 +3997,7 @@ namespace System.Xml
                                     {
                                         goto ReadData;
                                     }
-                                    if (_ps.StartsWith("CDATA["))
+                                    if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         ParseCData();
@@ -4217,7 +4217,7 @@ namespace System.Xml
                                     {
                                         goto ReadData;
                                     }
-                                    if (_ps.StartsWith("CDATA["))
+                                    if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         ParseCData();
@@ -8469,7 +8469,7 @@ namespace System.Xml
 
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
                                         int endPos = ParseQName(true, 1, out _);
-                                        if ((endPos - _ps.charPos - 1) == _curNode.localName.Length && _ps.chars.AsSpan(_ps.charPos + 1).StartsWith(_curNode.localName) &&
+                                        if (endPos - _ps.charPos - 1 == _curNode.localName.Length && _ps.chars.AsSpan(_ps.charPos + 1).StartsWith(_curNode.localName) &&
                                             (_ps.chars[endPos] == '>' || _ps.chars[endPos] == '/' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
                                             _incReadDepth++;

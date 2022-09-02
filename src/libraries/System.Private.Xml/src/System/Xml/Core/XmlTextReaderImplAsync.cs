@@ -1321,7 +1321,7 @@ namespace System.Xml
                 switch (_ps.chars[_ps.charPos])
                 {
                     case 'v':
-                        if (((nameEndPos - _ps.charPos) == "version".Length) && _ps.StartsWith("version") && xmlDeclState == 0)
+                        if (nameEndPos - _ps.charPos == "version".Length && _ps.StartsWith("version") && xmlDeclState == 0)
                         {
                             if (!isTextDecl)
                             {
@@ -1331,7 +1331,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 'e':
-                        if (((nameEndPos - _ps.charPos) == "encoding".Length) && _ps.StartsWith("encoding") &&
+                        if (nameEndPos - _ps.charPos == "encoding".Length && _ps.StartsWith("encoding") &&
                             (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0)))
                         {
                             if (!isTextDecl)
@@ -1343,7 +1343,7 @@ namespace System.Xml
                         }
                         goto default;
                     case 's':
-                        if (((nameEndPos - _ps.charPos) == "standalone".Length) && _ps.StartsWith("standalone") &&
+                        if (nameEndPos - _ps.charPos == "standalone".Length && _ps.StartsWith("standalone") &&
                             (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
                             attr = AddAttributeNoChecks("standalone", 1);
@@ -1434,11 +1434,11 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            if ((pos - _ps.charPos) == "yes".Length && _ps.StartsWith("yes"))
+                            if (pos - _ps.charPos == "yes".Length && _ps.StartsWith("yes"))
                             {
                                 _standalone = true;
                             }
-                            else if ((pos - _ps.charPos) == "no".Length && _ps.StartsWith("no"))
+                            else if (pos - _ps.charPos == "no".Length && _ps.StartsWith("no"))
                             {
                                 _standalone = false;
                             }
@@ -4467,7 +4467,7 @@ namespace System.Xml
                     Throw(SR.Xml_UnexpectedEOF, "DOCTYPE");
                 }
             }
-            if (_ps.StartsWith("DOCTYPE"))
+            if (!_ps.StartsWith("DOCTYPE"))
             {
                 ThrowUnexpectedToken((!_rootElementParsed && _dtdInfo == null) ? "DOCTYPE" : "<!--");
             }
