@@ -27,6 +27,10 @@ Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t obj
     }
     CONTRACTL_END
 
+#ifndef FEATURE_BASICFREEZE
+    return nullptr;
+#endif
+
     CrstHolder ch(&m_Crst);
 
     // Quick way to disable Frozen Heaps

@@ -35,7 +35,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAll
 
 // Allocate a string
 STRINGREF AllocateString(DWORD cchStringLength);
-STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap);
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIsFrozen);
 
 OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 

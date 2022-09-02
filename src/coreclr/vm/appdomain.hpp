@@ -2465,13 +2465,10 @@ public:
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
         WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_BASICFREEZE
         if (m_FrozenObjectHeapManager == NULL)
         {
-            SystemDomain::LazyInitFrozenObjectsHeap();
+            LazyInitFrozenObjectsHeap();
         }
-#endif
         return m_FrozenObjectHeapManager;
     }
 #endif // DACCESS_COMPILE

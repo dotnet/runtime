@@ -22,7 +22,7 @@ class StringLiteralEntry;
 // Allocate 16 entries (approx size sizeof(StringLiteralEntry)*16)
 #define MAX_ENTRIES_PER_CHUNK 16
 
-STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap);
+STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap, bool* pIsFrozen);
 
 // Loader allocator specific string literal map.
 class StringLiteralMap
@@ -123,13 +123,21 @@ class StringLiteralEntryArray;
 // Ref counted entry representing a string literal.
 class StringLiteralEntry
 {
+    #define SLE_IS_FROZEN      (1u << 31)
+    #define SLE_IS_OVERFLOWN   (1u << 30)
+    #define SLE_REFCOUNT_MASK  (SLE_IS_FROZEN | SLE_IS_OVERFLOWN)
+
 private:
-    StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj)
+    StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen)
     : m_pStringObj(pStringObj), m_dwRefCount(1)
 #ifdef _DEBUG
       , m_bDeleted(FALSE)
 #endif
     {
+        if (isFrozen)
+        {
+            SetStringFrozen();
+        }
         LIMITED_METHOD_CONTRACT;
     }
 protected:
@@ -152,7 +160,7 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION((LONG)VolatileLoad(&m_dwRefCount) > 0);
+            PRECONDITION(GetRefCount() > 0);
             PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
@@ -160,9 +168,11 @@ public:
         _ASSERTE (!m_bDeleted);
 
         // We will keep the item alive forever if the refcount overflowed
-        if ((LONG)VolatileLoad(&m_dwRefCount) < 0)
+        if (IsRefCountOverflowed())
             return;
 
+        // the following increment may set SLE_IS_OVERFLOWN bit on it's own if we have more than
+        // 1073741823 strings in the map
         VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) + 1);
     }
 #ifndef DACCESS_COMPILE
@@ -192,17 +202,17 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION(VolatileLoad(&m_dwRefCount) > 0);
+            PRECONDITION(GetRefCount() > 0);
             PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
 
         // We will keep the item alive forever if the refcount overflowed
-        if ((LONG)VolatileLoad(&m_dwRefCount) < 0)
+        if (IsRefCountOverflowed())
             return;
 
         VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) - 1);
-        if (VolatileLoad(&m_dwRefCount) == 0)
+        if (GetRefCount() == 0)
         {
             _ASSERTE(SystemDomain::GetGlobalStringLiteralMapNoCreate());
             SystemDomain::GetGlobalStringLiteralMapNoCreate()->RemoveStringLiteralEntry(this);
@@ -212,7 +222,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    LONG GetRefCount()
+    DWORD GetRefCount()
     {
         CONTRACTL
         {
@@ -224,7 +234,7 @@ public:
 
         _ASSERTE (!m_bDeleted);
 
-        return (VolatileLoad(&m_dwRefCount));
+        return VolatileLoad(&m_dwRefCount) & SLE_REFCOUNT_MASK;
     }
 
     STRINGREF* GetStringObject()
@@ -259,15 +269,30 @@ public:
         pStringData->SetStringBuffer (thisChars);
     }
 
-    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj);
+    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen);
     static void DeleteEntry (StringLiteralEntry *pEntry);
+
+    bool IsStringFrozen()
+    {
+        return VolatileLoad(&m_dwRefCount) & SLE_IS_FROZEN;
+    }
+
+    void SetStringFrozen()
+    {
+        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_FROZEN);
+    }
+
+    bool IsRefCountOverflowed()
+    {
+        return VolatileLoad(&m_dwRefCount) & SLE_IS_OVERFLOWN;
+    }
 
 private:
     STRINGREF*                  m_pStringObj;
     union
     {
-        DWORD                       m_dwRefCount;
-        StringLiteralEntry         *m_pNext;
+        DWORD                   m_dwRefCount;
+        StringLiteralEntry      *m_pNext;
     };
 
 #ifdef _DEBUG

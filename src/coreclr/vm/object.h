@@ -219,13 +219,6 @@ class Object
         return dac_cast<PTR_BYTE>(this);
     }
 
-    // Is object located in a frozen segment?
-    bool IsFrozen()
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetHeader()->GetBits() & BIT_SBLK_FROZEN) != 0;
-    }
-
 #ifdef _DEBUG
     // TRUE if the header has a real SyncBlockIndex (i.e. it has an entry in the
     // SyncTable, though it doesn't necessarily have an entry in the SyncBlockCache)

@@ -862,13 +862,15 @@ STRINGREF AllocateString( DWORD cchStringLength )
 
 }
 
-STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIsFrozen)
 {
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
+
+    _ASSERT(pIsFrozen != nullptr);
 
     STRINGREF orStringRef = NULL;
     StringObject* orString = nullptr;
@@ -890,11 +892,13 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
             orString->SetStringLength(cchStringLength);
             _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
             orStringRef = ObjectToSTRINGREF(orString);
+            *pIsFrozen = true;
         }
     }
     if (orString == nullptr)
     {
         orStringRef = AllocateString(cchStringLength);
+        *pIsFrozen = false;
     }
     return orStringRef;
 }
