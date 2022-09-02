@@ -53,7 +53,11 @@ variables:
 
 resources:
   containers:
-    - template: /eng/pipelines/installer/installer-container-resources.yml
+  # Define auxilary containers used by the installer jobs
+  - container: debpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
+  - container: rpmpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
 
 jobs:
 

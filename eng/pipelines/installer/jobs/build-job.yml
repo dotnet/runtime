@@ -22,7 +22,7 @@ parameters:
   pool: ''
   pgoType: ''
 
-  # The target names here should match container names in ../installer-container-resources.yml
+  # The target names here should match container names in the resources section in our pipelines, like runtime.yml
   packageDistroList:
   - target: debpkg
     packageType: deb
