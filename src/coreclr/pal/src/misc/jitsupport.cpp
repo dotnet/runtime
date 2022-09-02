@@ -155,7 +155,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 {
     _ASSERTE(flags);
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
