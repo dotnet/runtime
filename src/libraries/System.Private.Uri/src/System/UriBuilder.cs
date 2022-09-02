@@ -262,6 +262,9 @@ namespace System
                 return string.Empty;
             }
 
+            // The following characters ("/" / "\" / "?" / "#" / "@") are from the gen-delims group.
+            // We have to escape them to avoid corrupting the rest of the Uri string.
+            // Other characters like spaces or non-ASCII will be escaped by Uri, we can ignore them here.
             if (input.AsSpan().IndexOfAny(@"/\?#@") < 0)
             {
                 return input;
