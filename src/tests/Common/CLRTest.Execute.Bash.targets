@@ -436,8 +436,7 @@ $(CLRTestBashPostCommands)
     </PropertyGroup>
     <PropertyGroup>
       <BashEnvironmentVariables>
-@(CLRTestBashEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
-@(CLRTestEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
+@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
 
@@ -535,6 +534,7 @@ if [ -n "$__TestEnv" ]%3B then
     source $__TestEnv
 fi
 
+$(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
@@ -543,7 +543,6 @@ $(SuperPMICollectionBashScript)
 # Allow precommands to override the ExePath
 ExePath=$(InputAssemblyName)
 export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
-$(BashEnvironmentVariables)
 # PreCommands
 $(BashCLRTestPreCommands)
 # Launch
