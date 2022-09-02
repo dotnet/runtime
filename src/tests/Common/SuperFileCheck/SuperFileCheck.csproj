@@ -10,9 +10,9 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,6 +39,10 @@
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
