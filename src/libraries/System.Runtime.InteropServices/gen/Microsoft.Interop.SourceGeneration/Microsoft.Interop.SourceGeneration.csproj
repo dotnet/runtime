@@ -5,6 +5,7 @@
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <!-- Code included from System.Runtime.InteropServices -->

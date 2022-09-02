@@ -300,7 +300,7 @@ namespace Microsoft.Interop
             }
 
             // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, typeof(VtableIndexStubGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, virtualMethodIndexAttr, typeof(VtableIndexStubGenerator).Assembly);
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 

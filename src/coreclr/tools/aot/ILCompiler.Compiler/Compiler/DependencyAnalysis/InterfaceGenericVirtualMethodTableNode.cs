@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
 
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for an interface GVM call.
-        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the 
+        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the
         /// GVM hashtable entries for the compiled types.
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var openCallingMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openCallingMethod);
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openCallingMethodNameAndSig), "interface gvm table calling method signature"));
-            
+
             // Implementation could be null if this is a default interface method reabstraction or diamond. We need to record those.
             if (implementationMethod != null)
             {
@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If the implementation method is implementing some interface method, compute which
             // interface explicitly implemented on the type that the current method implements an interface method for.
-            // We need this because at runtime, the interfaces explicitly implemented on the type will have 
+            // We need this because at runtime, the interfaces explicitly implemented on the type will have
             // runtime-determined signatures that we can use to make generic substitutions and check for interface matching.
             if (!openImplementationType.IsInterface)
             {
@@ -105,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
                     _interfaceImpls[openImplementationMethod] = new Dictionary<TypeDesc, HashSet<int>>();
                 if (!_interfaceImpls[openImplementationMethod].ContainsKey(openImplementationType))
                     _interfaceImpls[openImplementationMethod][openImplementationType] = new HashSet<int>();
-                
+
                 int numIfacesAdded = 0;
                 for (int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
                 {
@@ -190,10 +190,10 @@ namespace ILCompiler.DependencyAnalysis
                         Debug.Assert(_interfaceImpls.ContainsKey(impl));
 
                         var ifaceImpls = _interfaceImpls[impl];
-                    
+
                         // First, emit how many types have method implementations for this interface method entry
                         vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)ifaceImpls.Count));
-                    
+
                         // Emit each type that implements the interface method, and the interface signatures for the interfaces implemented by the type
                         foreach (var currentImpl in ifaceImpls)
                         {
@@ -201,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(implementationType));
                             vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant(typeId));
-                    
+
                             // Emit information on which interfaces the current method entry provides implementations for
                             vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)currentImpl.Value.Count));
                             foreach (var ifaceId in currentImpl.Value)

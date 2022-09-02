@@ -660,12 +660,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            UInt16 flags = EETypeBuilderHelpers.ComputeFlags(_type);
+            ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
             if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
             {
                 // Generic array enumerators use special variance rules recognized by the runtime
-                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                flags |= (ushort)EETypeFlags.GenericVarianceFlag;
             }
 
             if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
@@ -673,12 +673,12 @@ namespace ILCompiler.DependencyAnalysis
                 // Runtime casting logic relies on all interface types implemented on arrays
                 // to have the variant flag set (even if all the arguments are non-variant).
                 // This supports e.g. casting uint[] to ICollection<int>
-                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                flags |= (ushort)EETypeFlags.GenericVarianceFlag;
             }
 
             if (_type.IsIDynamicInterfaceCastable)
             {
-                flags |= (UInt16)EETypeFlags.IDynamicInterfaceCastableFlag;
+                flags |= (ushort)EETypeFlags.IDynamicInterfaceCastableFlag;
             }
 
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
@@ -688,17 +688,17 @@ namespace ILCompiler.DependencyAnalysis
             // that it should indirect through the import address table
             if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
             {
-                flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
+                flags |= (ushort)EETypeFlags.RelatedTypeViaIATFlag;
             }
 
             if (HasOptionalFields)
             {
-                flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
+                flags |= (ushort)EETypeFlags.OptionalFieldsFlag;
             }
 
             if (this is ClonedConstructedEETypeNode)
             {
-                flags |= (UInt16)EETypeKind.ClonedEEType;
+                flags |= (ushort)EETypeKind.ClonedEEType;
             }
 
             objData.EmitShort((short)flags);
@@ -1050,7 +1050,7 @@ namespace ILCompiler.DependencyAnalysis
             ComputeValueTypeFieldPadding();
         }
 
-        void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
+        private void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
         {
             uint flags = 0;
 
@@ -1102,7 +1102,7 @@ namespace ILCompiler.DependencyAnalysis
         /// To support boxing / unboxing, the offset of the value field of a Nullable type is recorded on the MethodTable.
         /// This is variable according to the alignment requirements of the Nullable&lt;T&gt; type parameter.
         /// </summary>
-        void ComputeNullableValueOffset()
+        private void ComputeNullableValueOffset()
         {
             if (!_type.IsNullable)
                 return;
@@ -1194,8 +1194,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.TypeSystemContext.SupportsUniversalCanon
                     || (factory.TypeSystemContext.SupportsCanon && (type != type.ConvertToCanonForm(CanonicalFormKind.Specific))))
                 {
-                    if (dependencies == null)
-                        dependencies = new DependencyList();
+                    dependencies ??= new DependencyList();
 
                     dependencies.Add(factory.NecessaryTypeSymbol(type), "Static block owning type is necessary for canonically equivalent reflection");
                 }
@@ -1221,8 +1220,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc universalCanonMethodNonCanonicalized = method.MakeInstantiatedMethod(new Instantiation(universalCanonArray));
                     MethodDesc universalCanonGVMMethod = universalCanonMethodNonCanonicalized.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
-                    if (dependencies == null)
-                        dependencies = new DependencyList();
+                    dependencies ??= new DependencyList();
 
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
                 }

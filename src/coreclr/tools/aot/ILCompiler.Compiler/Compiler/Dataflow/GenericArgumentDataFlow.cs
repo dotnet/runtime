@@ -20,10 +20,10 @@ namespace ILCompiler.Dataflow
 {
     public readonly struct GenericArgumentDataFlow
     {
-        readonly Logger _logger;
-        readonly NodeFactory _factory;
-        readonly FlowAnnotations _annotations;
-        readonly MessageOrigin _origin;
+        private readonly Logger _logger;
+        private readonly NodeFactory _factory;
+        private readonly FlowAnnotations _annotations;
+        private readonly MessageOrigin _origin;
 
         public GenericArgumentDataFlow(Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin)
         {
@@ -47,7 +47,7 @@ namespace ILCompiler.Dataflow
             return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, new GenericParameterOrigin(genericParameter));
         }
 
-        DependencyList RequireDynamicallyAccessedMembers(
+        private DependencyList RequireDynamicallyAccessedMembers(
             in DiagnosticContext diagnosticContext,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
