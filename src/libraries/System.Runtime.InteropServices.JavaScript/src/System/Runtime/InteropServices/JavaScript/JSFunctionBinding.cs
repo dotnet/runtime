@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
         #region intentionally opaque internal structure
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
-        internal JSObject? JSFunction;
+        internal IntPtr FnHandle;
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         internal struct JSBindingHeader
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
-            InvokeJSImpl(signature.JSFunction!, arguments);
+            InvokeImportImpl(signature.FnHandle, arguments);
         }
 
         /// <summary>
@@ -167,6 +167,20 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeImportImpl(IntPtr fnHandle, Span<JSMarshalerArgument> arguments)
+        {
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Interop.Runtime.InvokeImport(fnHandle, ptr);
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
@@ -176,7 +190,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
 
-            signature.JSFunction = JSHostImplementation.CreateCSOwnedProxy(jsFunctionHandle);
+            signature.FnHandle = jsFunctionHandle;
 
             return signature;
         }

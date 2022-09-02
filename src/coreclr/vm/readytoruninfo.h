@@ -94,7 +94,7 @@ public:
 
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
-    PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return m_pNextR2RForUnrelatedCode; }
+    PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(m_pNextR2RForUnrelatedCode) & ~0x1); }
     void RegisterUnrelatedR2RModule();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);

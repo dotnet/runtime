@@ -172,8 +172,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-      <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
+      <HelixPreCommands>$(HelixPreCommands);@(HelixPreCommand)</HelixPreCommands>
+      <HelixPostCommands>$(HelixPostCommands);@(HelixPostCommand)</HelixPostCommands>
       <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
       <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
       <IncludeHelixCorrelationPayload Condition="'$(IncludeHelixCorrelationPayload)' == '' and '$(HelixCorrelationPayload)' != ''">true</IncludeHelixCorrelationPayload>

@@ -75,7 +75,7 @@ namespace Internal.TypeSystem
             public const int IsInt128OrHasInt128Fields = 0x800;
         }
 
-        private class StaticBlockInfo
+        private sealed class StaticBlockInfo
         {
             public StaticsBlock NonGcStatics;
             public StaticsBlock GcStatics;
@@ -83,17 +83,15 @@ namespace Internal.TypeSystem
             public StaticsBlock ThreadGcStatics;
         }
 
-        ThreadSafeFlags _fieldLayoutFlags;
-
-        LayoutInt _instanceFieldSize;
-        LayoutInt _instanceFieldAlignment;
-        LayoutInt _instanceByteCountUnaligned;
-        LayoutInt _instanceByteAlignment;
+        private ThreadSafeFlags _fieldLayoutFlags;
+        private LayoutInt _instanceFieldSize;
+        private LayoutInt _instanceFieldAlignment;
+        private LayoutInt _instanceByteCountUnaligned;
+        private LayoutInt _instanceByteAlignment;
 
         // Information about various static blocks is rare, so we keep it out of line.
-        StaticBlockInfo _staticBlockInfo;
-
-        ValueTypeShapeCharacteristics _valueTypeShapeCharacteristics;
+        private StaticBlockInfo _staticBlockInfo;
+        private ValueTypeShapeCharacteristics _valueTypeShapeCharacteristics;
 
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers

@@ -48,9 +48,9 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            var jsty = (JSFunctionTypeInfo)info.ManagedType;
+            var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)info.MarshallingAttributeInfo).TypeInfo;
             var sourceTypes = jsty.ArgsTypeInfo
-                .Select(a => ParseTypeName(a.FullTypeName))
+                .Select(a => a.Syntax)
                 .ToArray();
 
             if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)

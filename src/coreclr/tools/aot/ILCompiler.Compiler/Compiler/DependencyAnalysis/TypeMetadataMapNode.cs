@@ -5,7 +5,6 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -56,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
                 // not unifying to the same System.Type at runtime.
                 if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity) && !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(mappingEntry.Entity))
                     continue;
-                
+
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
                 IEETypeNode typeSymbol = factory.NecessaryTypeSymbol(mappingEntry.Entity);
 

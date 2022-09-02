@@ -85,7 +85,7 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
         {
             OBJECTREF objRef;
         } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
+        gc.objRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         gc.objRef = obj.Get();
@@ -327,7 +327,8 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
             OBJECTREF throwableRef;
             REFLECTMETHODREF methodRef;
         } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
+        gc.throwableRef = NULL;
+        gc.methodRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         // Creating the StubMethodInfo isn't cheap, so check

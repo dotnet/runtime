@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
-using Debug = System.Diagnostics.Debug;
 
 using Internal.NativeFormat;
 
@@ -106,7 +105,7 @@ namespace Internal.TypeSystem.Ecma
             }
             else
             {
-                _genericParameters = TypeDesc.EmptyTypes;
+                _genericParameters = EmptyTypes;
             }
         }
 
