@@ -147,6 +147,31 @@ export function getClass1() {
     return cname;
 }
 let dllExports;
+
+export function invoke0V() {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized0V'];
+    fn();
+}
+
+export function invoke1V(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1V'];
+    fn(arg1);
+}
+
+export function invoke1R(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1R'];
+    return fn(arg1);
+}
+
+export function invoke2R(arg1, arg2) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized2R'];
+    return fn(arg1, arg2);
+}
+
 export function invoke1(arg1, name) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');
@@ -169,6 +194,59 @@ export function invoke2(arg1, name) {
     const res = fn(arg1);
     // console.log(`invoke1: res ${res !== null ? typeof res : '<null>'}`)
     return res;
+}
+
+export function invokeStructClassRecords(arg1) {
+    return [
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedClass.DoubleNestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedRecordClass.DoubleNestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedStruct.DoubleNestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.NestedRecordStruct.DoubleNestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperStruct.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperStruct.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperStruct.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperStruct.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordClass.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordClass.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordClass.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordClass.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordStruct.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordStruct.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordStruct.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelperRecordStruct.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedClass.DoubleNestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordClass.DoubleNestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedStruct.DoubleNestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperNoNamespace.NestedRecordStruct.DoubleNestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStructNoNamespace.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStructNoNamespace.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStructNoNamespace.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStructNoNamespace.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperStructNoNamespace.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClassNoNamespace.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClassNoNamespace.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClassNoNamespace.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClassNoNamespace.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordClassNoNamespace.NestedRecordStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStructNoNamespace.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedRecordClass.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedStruct.EchoString(arg1),
+        dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedRecordStruct.EchoString(arg1),
+    ];
 }
 
 export async function awaitvoid(arg1) {

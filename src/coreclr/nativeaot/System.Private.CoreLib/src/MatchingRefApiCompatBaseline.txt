@@ -209,7 +209,6 @@ TypesMustExist : Type 'System.MDArray' does not exist in the reference but it do
 MembersMustExist : Member 'public void System.ModuleHandle..ctor(System.Reflection.Module)' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.RuntimeExceptionHelpers' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.RuntimeType' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'public System.String System.Type.InternalNameIfAvailable.get()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Boolean System.TypedReference.IsNull.get()' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Diagnostics.DebugAnnotations' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Diagnostics.DebuggerGuidedStepThroughAttribute' does not exist in the reference but it does exist in the implementation.
@@ -229,7 +228,6 @@ TypesMustExist : Type 'System.Reflection.DynamicInvokeInfo' does not exist in th
 TypesMustExist : Type 'System.Reflection.EnumInfo' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.Reflection.MissingMetadataException' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.RuntimeAssembly' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.RuntimeAssemblyName' does not exist in the reference but it does exist in the implementation.

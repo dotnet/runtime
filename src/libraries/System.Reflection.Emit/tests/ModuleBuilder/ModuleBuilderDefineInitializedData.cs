@@ -58,10 +58,8 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             FieldBuilder field = module.DefineInitializedData("MyField", new byte[] { 1, 0, 1 }, FieldAttributes.Public);
             module.CreateGlobalFunctions();
-            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
-            {
-                Assert.Null(field.DeclaringType);
-            }
+
+            Assert.Null(field.DeclaringType);
             Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
 
@@ -86,13 +84,10 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
             module.CreateGlobalFunctions();
 
-            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
-            {
-                Assert.Null(field4Byte_1.DeclaringType);
-                Assert.Null(field8Byte_1.DeclaringType);
-                Assert.Null(field4Byte_2.DeclaringType);
-                Assert.Null(field8Byte_2.DeclaringType);
-            }
+            Assert.Null(field4Byte_1.DeclaringType);
+            Assert.Null(field8Byte_1.DeclaringType);
+            Assert.Null(field4Byte_2.DeclaringType);
+            Assert.Null(field8Byte_2.DeclaringType);
 
             var checkTypeBuilder = module.DefineType("CheckType", TypeAttributes.Public);
             CreateLoadAddressMethod("LoadAddress1", field1Byte);

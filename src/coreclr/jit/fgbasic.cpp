@@ -231,7 +231,7 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
 // Returns:
-//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//   True, if a new basic block was allocated.
 //
 // Notes:
 //   This should be called before adding on-entry initialization code to
@@ -249,12 +249,12 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 //
 //   Can be called at any time, and can be called multiple times.
 //
-void Compiler::fgEnsureFirstBBisScratch()
+bool Compiler::fgEnsureFirstBBisScratch()
 {
     // Have we already allocated a scratch block?
     if (fgFirstBBisScratch())
     {
-        return;
+        return false;
     }
 
     assert(fgFirstBBScratch == nullptr);
@@ -303,6 +303,8 @@ void Compiler::fgEnsureFirstBBisScratch()
         printf("New scratch " FMT_BB "\n", block->bbNum);
     }
 #endif
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -6492,6 +6494,58 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 
     /* If afterBlk falls through, we insert a jump around newBlk */
     fgConnectFallThrough(afterBlk, newBlk->bbNext);
+
+    // If the loop table is valid, add this block to the appropriate loop.
+    // Note we don't verify (via flow) that this block actually belongs
+    // to the loop, just that it is lexically within the span of blocks
+    // in the loop.
+    //
+    if (optLoopTableValid)
+    {
+        BasicBlock* const bbPrev = newBlk->bbPrev;
+        BasicBlock* const bbNext = newBlk->bbNext;
+
+        if ((bbPrev != nullptr) && (bbNext != nullptr))
+        {
+            BasicBlock::loopNumber const prevLoopNum = bbPrev->bbNatLoopNum;
+            BasicBlock::loopNumber const nextLoopNum = bbNext->bbNatLoopNum;
+
+            if ((prevLoopNum != BasicBlock::NOT_IN_LOOP) && (nextLoopNum != BasicBlock::NOT_IN_LOOP))
+            {
+                if (prevLoopNum == nextLoopNum)
+                {
+                    newBlk->bbNatLoopNum = prevLoopNum;
+                }
+                else
+                {
+                    BasicBlock::loopNumber const prevParentLoopNum = optLoopTable[prevLoopNum].lpParent;
+                    BasicBlock::loopNumber const nextParentLoopNum = optLoopTable[nextLoopNum].lpParent;
+
+                    if (nextParentLoopNum == prevLoopNum)
+                    {
+                        // next is in child loop
+                        newBlk->bbNatLoopNum = prevLoopNum;
+                    }
+                    else if (prevParentLoopNum == nextLoopNum)
+                    {
+                        // prev is in child loop
+                        newBlk->bbNatLoopNum = nextLoopNum;
+                    }
+                    else
+                    {
+                        // next and prev are siblings
+                        assert(prevParentLoopNum == nextParentLoopNum);
+                        newBlk->bbNatLoopNum = prevParentLoopNum;
+                    }
+                }
+            }
+        }
+
+        if (newBlk->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            JITDUMP("Marked " FMT_BB " as lying within " FMT_LP "\n", newBlk->bbNum, newBlk->bbNatLoopNum);
+        }
+    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

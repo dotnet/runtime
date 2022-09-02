@@ -11,6 +11,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class CallSiteFactory : IServiceProviderIsService
     {
         private const int DefaultSlot = 0;

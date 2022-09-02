@@ -144,6 +144,8 @@ namespace System.Data
         {
             internal static readonly Func<object, T?> s_unbox = Create();
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090:MakeGenericMethod",
+                Justification = "'NullableField<TElem> where TElem : struct' implies 'TElem : new()'. Nullable does not make use of new() so it is safe.")]
             private static Func<object, T?> Create()
             {
                 if (typeof(T).IsValueType && default(T) == null)

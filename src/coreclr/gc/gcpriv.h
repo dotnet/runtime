@@ -648,7 +648,7 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() {}
+    etw_bucket_info() = default;
 
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
@@ -1206,11 +1206,31 @@ enum bookkeeping_element
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     software_write_watch_table_element,
 #endif
+#ifdef USE_REGIONS
+    region_to_generation_table_element,
+#endif //USE_REGIONS
     seg_mapping_table_element,
 #ifdef BACKGROUND_GC
     mark_array_element,
 #endif
     total_bookkeeping_elements
+};
+
+class mark_queue_t
+{
+    static const size_t slot_count = 16;
+    uint8_t* slot_table[slot_count];
+    size_t curr_slot_index;
+
+public:
+    mark_queue_t();
+
+    uint8_t *queue_mark(uint8_t *o);
+    uint8_t *queue_mark(uint8_t *o, int condemned_gen);
+
+    uint8_t* get_next_marked();
+
+    void verify_empty();
 };
 
 //class definition of the internal class
@@ -1238,6 +1258,8 @@ class gc_heap
 #endif //defined (WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
 
     friend void PopulateDacVars(GcDacVars *gcDacVars);
+
+    friend class mark_queue_t;
 
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
@@ -1378,6 +1400,12 @@ public:
     PER_HEAP
     void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP
+    void set_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP
+    void clear_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP
+    void clear_region_demoted (heap_segment* region);
+    PER_HEAP
     void decide_on_demotion_pin_surv (heap_segment* region);
     PER_HEAP
     void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
@@ -1445,6 +1473,12 @@ public:
     // This relocates the SIP regions and return the next non SIP region.
     PER_HEAP
     heap_segment* relocate_advance_to_non_sip (heap_segment* region);
+
+    PER_HEAP_ISOLATED
+    void verify_region_to_generation_map();
+
+    PER_HEAP_ISOLATED
+    void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
 #ifdef STRESS_REGIONS
     PER_HEAP
     void pin_by_gc (uint8_t* object);
@@ -1596,17 +1630,16 @@ public:
     static
     void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
 
+    static
+    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
+
 #ifdef USE_REGIONS
     static
     bool on_used_changed (uint8_t* left);
 
     static
     bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
-#endif //USE_REGIONS
-
-    static
-    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
-
+#else //USE_REGIONS
     static
     int grow_brick_card_tables (uint8_t* start,
                                 uint8_t* end,
@@ -1614,6 +1647,7 @@ public:
                                 heap_segment* new_seg,
                                 gc_heap* hp,
                                 BOOL loh_p);
+#endif //USE_REGIONS
 
     PER_HEAP_ISOLATED
     BOOL is_mark_set (uint8_t* o);
@@ -2001,11 +2035,11 @@ protected:
 #ifndef USE_REGIONS
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
-#endif //!USE_REGIONS
     PER_HEAP
     heap_segment* get_segment (size_t size, gc_oh_num oh);
     PER_HEAP_ISOLATED
     void release_segment (heap_segment* sg);
+#endif //!USE_REGIONS
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -2395,6 +2429,9 @@ protected:
     void mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
     PER_HEAP
     void mark_object_simple1 (uint8_t* o, uint8_t* start THREAD_NUMBER_DCL);
+
+    PER_HEAP
+    void drain_mark_queue();
 
 #ifdef MH_SC_MARK
     PER_HEAP
@@ -3083,6 +3120,8 @@ protected:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
     PER_HEAP_ISOLATED
     bool is_in_condemned_gc (uint8_t* o);
@@ -3673,6 +3712,39 @@ public:
     size_t* old_card_survived_per_region;
     PER_HEAP_ISOLATED
     size_t region_count;
+
+    // table mapping region number to generation
+    // there are actually two generation numbers per entry:
+    // - the region's current generation
+    // - the region's planned generation, i.e. after the GC
+    // and there are flags
+    // - whether the region is sweep in plan
+    // - and whether the region is demoted
+    enum region_info : uint8_t
+    {
+        // lowest 2 bits are current generation number
+        RI_GEN_0        = 0x0,
+        RI_GEN_1        = 0x1,
+        RI_GEN_2        = 0x2,
+        RI_GEN_MASK     = 0x3,
+
+        // we have 4 bits available for flags, of which 2 are used
+        RI_SIP          = 0x4,
+        RI_DEMOTED      = 0x8,
+
+        // top 2 bits are planned generation number
+        RI_PLAN_GEN_SHR = 0x6, // how much to shift the value right to obtain plan gen
+        RI_PLAN_GEN_0   = 0x00,
+        RI_PLAN_GEN_1   = 0x40,
+        RI_PLAN_GEN_2   = 0x80,
+        RI_PLAN_GEN_MASK= 0xC0,
+    };
+    PER_HEAP_ISOLATED
+    region_info* map_region_to_generation;
+    // same table as above, but skewed so that we can index
+    // directly with address >> min_segment_size_shr
+    PER_HEAP_ISOLATED
+    region_info* map_region_to_generation_skewed;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
@@ -3723,7 +3795,13 @@ public:
     PER_HEAP
     void exit_gc_done_event_lock();
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    VOLATILE(uint8_t*)  ephemeral_low;      //lowest ephemeral address
+
+    PER_HEAP_ISOLATED
+    VOLATILE(uint8_t*)  ephemeral_high;     //highest ephemeral address
+#else //!USE_REGIONS
     PER_HEAP
     uint8_t*  ephemeral_low;      //lowest ephemeral address
 
@@ -4040,7 +4118,10 @@ public:
     size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    bool enable_special_regions_p;
+#else //USE_REGIONS
     PER_HEAP_ISOLATED
     size_t min_segment_size;
 
@@ -4089,13 +4170,19 @@ protected:
     PER_HEAP
     uint64_t time_bgc_last;
 
-//#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t*       gc_low; // low end of the lowest region being condemned
+
+    PER_HEAP_ISOLATED
+    uint8_t*       gc_high; // high end of the highest region being condemned
+#else // USE_REGIONS
     PER_HEAP
     uint8_t*       gc_low; // lowest address being condemned
 
     PER_HEAP
     uint8_t*       gc_high; // highest address being condemned
-//#endif //USE_REGIONS
+#endif //USE_REGIONS
 
     PER_HEAP
     size_t      mark_stack_tos;
@@ -5066,6 +5153,8 @@ protected:
     PER_HEAP_ISOLATED
     size_t bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
+    PER_HEAP
+    mark_queue_t mark_queue;
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

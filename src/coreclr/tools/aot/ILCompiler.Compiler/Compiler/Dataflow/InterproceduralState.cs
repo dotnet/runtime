@@ -20,7 +20,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 namespace ILCompiler.Dataflow
 {
     // Wrapper that implements IEquatable for MethodBody.
-    readonly record struct MethodBodyValue(MethodIL MethodBody) : IEquatable<MethodBodyValue>
+    internal readonly record struct MethodBodyValue(MethodIL MethodBody) : IEquatable<MethodBodyValue>
     {
         bool IEquatable<MethodBodyValue>.Equals(ILCompiler.Dataflow.MethodBodyValue other)
             => other.MethodBody.OwningMethod == MethodBody.OwningMethod;
@@ -30,12 +30,14 @@ namespace ILCompiler.Dataflow
 
     // Tracks the set of methods which get analyzer together during interprocedural analysis,
     // and the possible states of hoisted locals in state machine methods and lambdas/local functions.
-    struct InterproceduralState : IEquatable<InterproceduralState>
+#pragma warning disable CA1067 // Override Object.Equals(object) when implementing IEquatable<T>
+    internal struct InterproceduralState : IEquatable<InterproceduralState>
+#pragma warning restore CA1067 // Override Object.Equals(object) when implementing IEquatable<T>
     {
-        readonly ILProvider _ilProvider;
+        private readonly ILProvider _ilProvider;
         public ValueSet<MethodBodyValue> MethodBodies;
         public HoistedLocalState HoistedLocals;
-        readonly InterproceduralStateLattice lattice;
+        private readonly InterproceduralStateLattice lattice;
 
         public InterproceduralState(ILProvider ilProvider, ValueSet<MethodBodyValue> methodBodies, HoistedLocalState hoistedLocals, InterproceduralStateLattice lattice)
             => (_ilProvider, MethodBodies, HoistedLocals, this.lattice) = (ilProvider, methodBodies, hoistedLocals, lattice);
@@ -119,7 +121,7 @@ namespace ILCompiler.Dataflow
         public MultiValue GetHoistedLocal(HoistedLocalKey key)
             => HoistedLocals.Get(key);
 
-        bool TryGetMethodBody(MethodDesc method, [NotNullWhen(true)] out MethodIL? methodBody)
+        private bool TryGetMethodBody(MethodDesc method, [NotNullWhen(true)] out MethodIL? methodBody)
         {
             methodBody = null;
 
@@ -135,7 +137,7 @@ namespace ILCompiler.Dataflow
         }
     }
 
-    struct InterproceduralStateLattice : ILattice<InterproceduralState>
+    internal struct InterproceduralStateLattice : ILattice<InterproceduralState>
     {
         private readonly ILProvider _ilProvider;
         public readonly ValueSetLattice<MethodBodyValue> MethodBodyLattice;

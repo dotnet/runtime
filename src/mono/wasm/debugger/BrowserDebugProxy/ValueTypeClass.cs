@@ -221,11 +221,8 @@ namespace BrowserDebugProxy
                 RemovePropertiesFrom(result.OtherMembers);
             }
 
-            if (result == null)
-            {
-                // 4 - fields + properties
-                result = _combinedResult.Clone();
-            }
+            // 4 - fields + properties
+            result ??= _combinedResult.Clone();
 
             return result;
 

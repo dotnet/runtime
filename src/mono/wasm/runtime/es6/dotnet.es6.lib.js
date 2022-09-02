@@ -26,6 +26,7 @@ let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
+    __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 }
 let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
@@ -34,7 +35,7 @@ if (ENVIRONMENT_IS_NODE) {
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
-    __dotnet_replacements);
+    __dotnet_replacements, __callbackAPI);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 var fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
@@ -47,6 +48,7 @@ var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
     PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
+    PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
 }
 `,
 };
@@ -86,19 +88,13 @@ const linked_functions = [
     "mono_wasm_compile_function_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
+    "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
-
-    // pal_crypto_webworker.c
-    "dotnet_browser_can_use_subtle_crypto_impl",
-    "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_sign",
-    "dotnet_browser_encrypt_decrypt",
-    "dotnet_browser_derive_bits",
 
     #if USE_PTHREADS
     /// mono-threads-wasm.c

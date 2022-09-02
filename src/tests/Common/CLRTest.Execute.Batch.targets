@@ -306,7 +306,7 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 
 $(BatchIlrtTestLaunchCmds)
 
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :TakeLock
 )
 
@@ -319,7 +319,7 @@ if NOT "%RunningDisasmChecks%"=="" (
 )
 
 set CLRTestExitCode=!ERRORLEVEL!
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :ReleaseLock
 )
 $(BatchLinkerTestCleanupCmds)

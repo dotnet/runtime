@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.IO
@@ -51,6 +52,29 @@ namespace System.IO
         [UnsupportedOSPlatform("windows")]
         public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
             => CreateDirectoryCore(path, unixCreateMode);
+
+        /// <summary>
+        /// Creates a uniquely-named, empty directory in the current user's temporary directory.
+        /// </summary>
+        /// <param name="prefix">An optional string to add to the beginning of the subdirectory name.</param>
+        /// <returns>An object that represents the directory that was created.</returns>
+        /// <exception cref="ArgumentException"><paramref name="prefix" /> contains a directory separator.</exception>
+        /// <exception cref="IOException">A new directory cannot be created.</exception>
+        public static unsafe DirectoryInfo CreateTempSubdirectory(string? prefix = null)
+        {
+            EnsureNoDirectorySeparators(prefix);
+
+            string path = CreateTempSubdirectoryCore(prefix);
+            return new DirectoryInfo(path, isNormalized: true);
+        }
+
+        private static void EnsureNoDirectorySeparators(string? value, [CallerArgumentExpression("value")] string? paramName = null)
+        {
+            if (value is not null && value.AsSpan().IndexOfAny(PathInternal.DirectorySeparators) >= 0)
+            {
+                throw new ArgumentException(SR.Argument_DirectorySeparatorInvalid, paramName);
+            }
+        }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         public static bool Exists([NotNullWhen(true)] string? path)

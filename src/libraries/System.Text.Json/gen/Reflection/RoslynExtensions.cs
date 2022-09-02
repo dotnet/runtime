@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
@@ -9,7 +10,8 @@ namespace System.Text.Json.Reflection
 {
     internal static class RoslynExtensions
     {
-        public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
+        [return: NotNullIfNotNull("typeSymbol")]
+        public static Type? AsType(this ITypeSymbol? typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
             if (typeSymbol == null)
             {

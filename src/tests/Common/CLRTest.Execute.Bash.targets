@@ -321,7 +321,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -336,7 +336,7 @@ fi
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
@@ -355,7 +355,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -364,7 +364,7 @@ $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
@@ -584,7 +584,7 @@ $(BashCLRTestExitCodeCheck)
       File="$(ExecutionBashScriptPath)"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
-    <Exec Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
+    <Exec Condition="'$(SkipChmodOfGeneratedCommandScript)' != 'true'" Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
   </Target>
 
 </Project>

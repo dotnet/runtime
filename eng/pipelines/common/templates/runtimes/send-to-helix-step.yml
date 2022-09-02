@@ -15,7 +15,6 @@ parameters:
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
-  runCrossGen: ''
   runCrossGen2: ''
   runPALTestsDir: ''
   compositeBuildMode: false
@@ -46,7 +45,6 @@ steps:
       _HelixSource: ${{ parameters.helixSource }}
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
-      _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}

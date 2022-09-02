@@ -312,7 +312,7 @@ static struct ifaddrs *get_link_info(struct nlmsghdr *message)
                 break;
 
             case IFLA_BROADCAST:
-                LOG_DEBUG("   interface broadcast (%lu bytes)\n", RTA_PAYLOAD(attribute));
+                LOG_DEBUG("   interface broadcast (%zu bytes)\n", RTA_PAYLOAD(attribute));
                 if (fill_ll_address(&sa, net_interface, RTA_DATA(attribute), RTA_PAYLOAD(attribute)) < 0) {
                     goto error;
                 }
@@ -320,7 +320,7 @@ static struct ifaddrs *get_link_info(struct nlmsghdr *message)
                 break;
 
             case IFLA_ADDRESS:
-                LOG_DEBUG("   interface address (%lu bytes)\n", RTA_PAYLOAD(attribute));
+                LOG_DEBUG("   interface address (%zu bytes)\n", RTA_PAYLOAD(attribute));
                 if (fill_ll_address(&sa, net_interface, RTA_DATA(attribute), RTA_PAYLOAD(attribute)) < 0) {
                     goto error;
                 }
