@@ -2715,10 +2715,11 @@ uint64_t gc_heap::total_loh_a_last_bgc = 0;
 #endif //BGC_SERVO_TUNING
 
 size_t gc_heap::eph_gen_starts_size = 0;
-heap_segment* gc_heap::segment_standby_list;
 #if defined(USE_REGIONS)
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
 region_free_list gc_heap::global_free_huge_regions;
+#else
+heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -13650,7 +13651,9 @@ gc_heap::init_semi_shared()
         goto cleanup;
 #endif //FEATURE_BASICFREEZE
 
+#ifndef USE_REGIONS
     segment_standby_list = 0;
+#endif //USE_REGIONS
 
     if (!full_gc_approach_event.CreateManualEventNoThrow(FALSE))
     {
@@ -44597,6 +44600,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     }
 
+#ifndef USE_REGIONS
     //destroy all segments on the standby list
     while(gc_heap::segment_standby_list != 0)
     {
@@ -44608,6 +44612,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif //MULTIPLE_HEAPS
         gc_heap::segment_standby_list = next_seg;
     }
+#endif // USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 
