@@ -15,14 +15,12 @@
     <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
     <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
 
-    <!-- From the target rid (for example fedora.36-x64), derive the TargetArch ('x64') and the DistroRid ('fedora-x64'). -->
+    <!-- From the target rid (for example fedora.36-x64), derive the TargetArch ('x64'). -->
     <_targetRidArchIndex>$(TargetRid.LastIndexOf('-'))</_targetRidArchIndex>
     <TargetArch>$(TargetRid.Substring($(_targetRidArchIndex)).TrimStart('-'))</TargetArch>
-    <_distroRidIndex>$(TargetRid.IndexOf('.'))</_distroRidIndex>
-    <DistroRid Condition="'$(DistroRid)' == '' and '$(_distroRidIndex)' != '-1'">$(TargetRid.Substring(0, $(_distroRidIndex)))-$(TargetArch)</DistroRid>
 
-    <!-- BaseRid is an expected known rid in the graph that DistroRid is compatible with. -->
-    <BaseRid Condition="'$(BaseRid)' == ''">linux-$(TargetArch)</BaseRid>
+    <!-- BaseRidOS is an expected known rid in the graph that TargetRid is compatible with. -->
+    <BaseRidOS Condition="'$(BaseRidOS)' == ''">linux</BaseRidOS>
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
@@ -42,8 +40,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifiers=$(DistroRid)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseRid)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseRidOS)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
