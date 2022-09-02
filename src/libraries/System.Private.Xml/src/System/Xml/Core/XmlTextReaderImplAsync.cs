@@ -1221,7 +1221,7 @@ namespace System.Xml
                 }
             }
 
-            if (!_ps.StartsWith(XmlDeclarationBeginning) ||
+            if (!_ps.chars.AsSpan(_ps.charPos).StartsWith(XmlDeclarationBeginning) ||
                  XmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
@@ -1408,7 +1408,7 @@ namespace System.Xml
                         // version
                         case 0:
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
-                            if ((pos - _ps.charPos) == "1.0".Length && _ps.StartsWith("1.0"))
+                            if (_ps.chars.AsSpan(_ps.charPos).StartsWith("1.0"))
                             {
                                 if (!isTextDecl)
                                 {
@@ -4465,7 +4465,7 @@ namespace System.Xml
                     Throw(SR.Xml_UnexpectedEOF, "DOCTYPE");
                 }
             }
-            if (!_ps.StartsWith("DOCTYPE"))
+            if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("DOCTYPE"))
             {
                 ThrowUnexpectedToken((!_rootElementParsed && _dtdInfo == null) ? "DOCTYPE" : "<!--");
             }
@@ -4549,7 +4549,7 @@ namespace System.Xml
                     }
                 }
                 // check 'PUBLIC'
-                if (!_ps.StartsWith("PUBLIC"))
+                if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("PUBLIC"))
                 {
                     ThrowUnexpectedToken("PUBLIC");
                 }
@@ -4586,7 +4586,7 @@ namespace System.Xml
                     }
                 }
                 // check 'SYSTEM'
-                if (!_ps.StartsWith("SYSTEM"))
+                if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("SYSTEM"))
                 {
                     ThrowUnexpectedToken("SYSTEM");
                 }

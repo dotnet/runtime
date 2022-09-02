@@ -114,8 +114,6 @@ namespace System.Xml
                     return charPos - lineStartPos;
                 }
             }
-
-            internal bool StartsWith(string prefix) => chars.AsSpan(charPos).StartsWith(prefix);
         }
 
         //
