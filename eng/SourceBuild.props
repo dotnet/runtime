@@ -18,8 +18,8 @@
     <!-- From the target rid (for example fedora.36-x64), derive the TargetArch ('x64') and the DistroRid ('fedora-x64'). -->
     <_targetRidArchIndex>$(TargetRid.LastIndexOf('-'))</_targetRidArchIndex>
     <TargetArch>$(TargetRid.Substring($(_targetRidArchIndex)).TrimStart('-'))</TargetArch>
-    <_distroRidIndex>$(TargetRid.FirstIndexOf('.'))</_distroRidIndex>
-    <DistroRid Condition="'$(DistroRid)' == '' and '$(_distroRidIndex)' != '-1'">$(TargetRid.Substring(0, $(_distroRidIndex))-$(TargetArch)</DistroRid>
+    <_distroRidIndex>$(TargetRid.IndexOf('.'))</_distroRidIndex>
+    <DistroRid Condition="'$(DistroRid)' == '' and '$(_distroRidIndex)' != '-1'">$(TargetRid.Substring(0, $(_distroRidIndex)))-$(TargetArch)</DistroRid>
 
     <!-- BaseRid is an expected known rid in the graph that DistroRid is compatible with. -->
     <BaseRid Condition="'$(BaseRid)' == ''">linux-$(TargetArch)</BaseRid>
