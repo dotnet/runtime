@@ -24,10 +24,10 @@ parameters:
 
   # The target names here should match container names in the resources section in our pipelines, like runtime.yml
   packageDistroList:
-  - target: debpkg
+  - target: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
     packageType: deb
     packagingArgs: /p:BuildDebPackage=true
-  - target: rpmpkg
+  - target: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
     packageType: rpm
     packagingArgs: /p:BuildRpmPackage=true
 
