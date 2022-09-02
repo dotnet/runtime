@@ -142,6 +142,7 @@ jobs:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: true
             targetRID: banana.24-x64
+            runtimeOS: linux
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO

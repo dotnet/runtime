@@ -15,9 +15,10 @@
     <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
     <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
 
-    <!-- From the target rid (for example fedora.36-x64), derive the TargetArch ('x64'). -->
-    <_targetRidArchIndex>$(TargetRid.LastIndexOf('-'))</_targetRidArchIndex>
-    <TargetArch>$(TargetRid.Substring($(_targetRidArchIndex)).TrimStart('-'))</TargetArch>
+    <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
+    <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
+    <RuntimeOS>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</RuntimeOS>
+    <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
 
     <!-- BaseRidOS is an expected known rid in the graph that TargetRid is compatible with. -->
     <BaseRidOS Condition="'$(BaseRidOS)' == ''">linux</BaseRidOS>
@@ -38,6 +39,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) --portablebuild $(SourceBuildPortable)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(RuntimeOS)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseRidOS)</InnerBuildArgs>
