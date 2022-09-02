@@ -382,8 +382,9 @@ stages:
   #
   # Installer Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
       jobParameters:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
@@ -424,8 +425,9 @@ stages:
   #
   # PGO Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
       buildConfig: Release
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}

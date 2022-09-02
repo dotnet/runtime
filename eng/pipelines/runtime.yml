@@ -51,6 +51,10 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
+resources:
+  containers:
+    - template: /eng/pipelines/installer/installer-container-resources.yml
+
 jobs:
 
 #
@@ -874,8 +878,9 @@ jobs:
 # These are always built since they only take like 15 minutes
 # we expect these to be done before we finish libraries or coreclr testing.
 #
-- template: /eng/pipelines/installer/installer-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
+    jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
       - Linux_musl_arm
@@ -892,8 +897,9 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
-- template: /eng/pipelines/installer/installer-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
+    jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
     buildConfig: Release
     platforms:
       - OSX_arm64

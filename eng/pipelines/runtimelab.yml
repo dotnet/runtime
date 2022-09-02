@@ -114,8 +114,9 @@ stages:
 
   # Installer official builds need to build installers and need the libraries all configurations build
   - ${{ if eq(variables.isOfficialBuild, true) }}:
-    - template: /eng/pipelines/installer/installer-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
+        jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
         jobParameters:
           liveRuntimeBuildConfig: Release
           liveLibrariesBuildConfig: Release
