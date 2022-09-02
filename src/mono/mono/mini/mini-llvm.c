@@ -11284,24 +11284,22 @@ MONO_RESTORE_WARNING
 			
 			LLVMValueRef result; 
 			if ( is_float ) 
-				result = LLVMBuildFNeg (builder, lhs, ""); 
+				result = LLVMBuildFNeg (builder, lhs, "amd64_fneg"); 
 			else 
-				result = LLVMBuildNeg (builder, lhs, ""); 
+				result = LLVMBuildNeg (builder, lhs, "amd64_neg"); 
 				
 			values [ins->dreg] = result;
+			break;
 		}
 
 		case OP_AMD64_ONESCOMPLEMENT: {
-			LLVMTypeRef t = LLVMTypeOf (lhs);
-			LLVMTypeRef elem_t = LLVMGetElementType (t);
-			unsigned int elems = LLVMGetVectorSize (t);
-			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
-			LLVMTypeRef intermediate_elem_t = LLVMIntType (elem_bits);
-			LLVMTypeRef intermediate_t = LLVMVectorType (intermediate_elem_t, elems);
-			LLVMValueRef lhs_int = convert (ctx, lhs, intermediate_t); // TODO replace with vec128 type 
-			LLVMValueRef result = LLVMBuildNot (builder, lhs_int, "");
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "amd64_not");
+			result = convert (ctx, result, ret_t);
 
 			values [ins->dreg] = result;
+			break;
 		}
 #endif
 

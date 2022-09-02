@@ -396,9 +396,11 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	int op = -1;
 	switch (id) {
 		case SN_Negate:
+		case SN_op_UnaryNegation: 
 			op = OP_AMD64_NEGATION;
 			break;
 		case SN_OnesComplement:
+		case SN_op_OnesComplement:
 			op = OP_AMD64_ONESCOMPLEMENT;
 			break;
 		default:
