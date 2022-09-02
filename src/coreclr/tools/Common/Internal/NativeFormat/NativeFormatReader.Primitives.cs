@@ -7,9 +7,7 @@
 // Utilities to read native data from images, that are written by the NativeFormatWriter engine
 // ---------------------------------------------------------------------------
 
-using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Internal.NativeFormat
 {

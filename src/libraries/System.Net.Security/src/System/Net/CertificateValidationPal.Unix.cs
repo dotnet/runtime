@@ -43,11 +43,13 @@ namespace System.Net
             {
                 QueryContextRemoteCertificate(securityContext, out remoteContext);
 
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext == null || remoteContext.IsInvalid)
                 {
-                    remoteContext.DangerousAddRef(ref gotReference);
-                    result = new X509Certificate2(remoteContext.DangerousGetHandle());
+                    return null;
                 }
+
+                remoteContext.DangerousAddRef(ref gotReference);
+                result = new X509Certificate2(remoteContext.DangerousGetHandle());
 
                 if (retrieveChainCertificates)
                 {

@@ -25,6 +25,8 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
         /// <remarks>When using this constructor, <see cref="TarEntryFormat.Pax"/> is used as the default format of the entries written to the archive using the <see cref="WriteEntry(string, string?)"/> method.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> does not support writing.</exception>
         public TarWriter(Stream archiveStream)
             : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
         {
@@ -35,6 +37,8 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
         public TarWriter(Stream archiveStream, bool leaveOpen = false)
             : this(archiveStream, TarEntryFormat.Pax, leaveOpen)
         {
@@ -50,7 +54,7 @@ namespace System.Formats.Tar
         /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
         /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
-        /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
@@ -58,7 +62,7 @@ namespace System.Formats.Tar
 
             if (!archiveStream.CanWrite)
             {
-                throw new IOException(SR.IO_NotSupported_UnwritableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnwritableStream);
             }
 
             if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
@@ -209,13 +213,15 @@ namespace System.Formats.Tar
         /// </item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
-        /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="entry"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             WriteEntryInternal(entry);
         }
 
@@ -250,8 +256,9 @@ namespace System.Formats.Tar
         /// </item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentException">The entry type is <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/> and the <see cref="TarEntry.LinkName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
-        /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="entry"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
         {
@@ -262,6 +269,7 @@ namespace System.Formats.Tar
 
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
@@ -298,7 +306,7 @@ namespace System.Formats.Tar
 
                 default:
                     Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format));
             }
 
             _wroteEntries = true;
@@ -320,7 +328,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
                 TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
             };
             await task.ConfigureAwait(false);
 
@@ -364,6 +372,17 @@ namespace System.Formats.Tar
             string? actualEntryName = string.IsNullOrEmpty(entryName) ? Path.GetFileName(fileName) : entryName;
 
             return (fullPath, actualEntryName);
+        }
+
+        private static void ValidateEntryLinkName(TarEntryType entryType, string? linkName)
+        {
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                if (string.IsNullOrEmpty(linkName))
+                {
+                    throw new ArgumentException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty, "entry");
+                }
+            }
         }
     }
 }

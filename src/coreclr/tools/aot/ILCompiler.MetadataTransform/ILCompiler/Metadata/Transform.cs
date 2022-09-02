@@ -62,7 +62,7 @@ namespace ILCompiler.Metadata
                     }
 
                     return _policy.IsBlocked((Cts.MetadataType)type);
-            }            
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Cose
     /// </summary>
     public sealed class CoseSign1Message : CoseMessage
     {
-        private const int Sign1ArrayLength = 4;
+        internal const int Sign1ArrayLength = 4;
         private const int Sign1SizeOfCborTag = 1;
         private readonly byte[] _signature;
 

@@ -12,7 +12,7 @@ namespace ILCompiler
 {
     internal delegate void RootAdder(object o, string reason);
 
-    internal class RootingServiceProvider : IRootingServiceProvider
+    internal sealed class RootingServiceProvider : IRootingServiceProvider
     {
         private readonly NodeFactory _factory;
         private readonly RootAdder _rootAdder;

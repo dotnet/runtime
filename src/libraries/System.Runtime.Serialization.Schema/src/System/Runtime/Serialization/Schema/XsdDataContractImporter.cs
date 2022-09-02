@@ -66,12 +66,8 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_dataContractSet == null)
-                {
-                    _dataContractSet = Options == null ? new DataContractSet(null, null, null) :
-                                                        new DataContractSet(Options.DataContractSurrogate, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
-                }
-                return _dataContractSet;
+                return _dataContractSet ??= Options == null ? new DataContractSet(null, null, null) :
+                                                            new DataContractSet(Options.DataContractSurrogate, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
             }
         }
 
@@ -288,9 +284,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_singleTypeNameArray == null)
-                    _singleTypeNameArray = new XmlQualifiedName[1];
-                return _singleTypeNameArray;
+                return _singleTypeNameArray ??= new XmlQualifiedName[1];
             }
         }
 
@@ -298,9 +292,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_singleElementArray == null)
-                    _singleElementArray = new XmlSchemaElement[1];
-                return _singleElementArray;
+                return _singleElementArray ??= new XmlSchemaElement[1];
             }
         }
 

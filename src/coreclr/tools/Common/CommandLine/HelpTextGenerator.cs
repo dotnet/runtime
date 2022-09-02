@@ -65,7 +65,7 @@ namespace Internal.CommandLine
             sb.Append(usageHeader);
 
             if (syntaxElements.Any())
-                sb.Append(@" ");
+                sb.Append(' ');
 
             var syntaxIndent = usageHeader.Length + 1;
             var syntaxMaxWidth = maxWidth - syntaxIndent;
@@ -169,7 +169,7 @@ namespace Internal.CommandLine
         {
             var sb = new StringBuilder();
 
-            sb.Append(@"[");
+            sb.Append('[');
             sb.Append(option.GetDisplayName());
 
             if (!option.IsFlag)
@@ -178,7 +178,7 @@ namespace Internal.CommandLine
             if (option.IsList)
                 sb.Append(@"...");
 
-            sb.Append(@"]");
+            sb.Append(']');
 
             return sb.ToString();
         }
@@ -252,7 +252,7 @@ namespace Internal.CommandLine
                 }
 
                 if (sb.Length > 0)
-                    sb.Append(@" ");
+                    sb.Append(' ');
 
                 sb.Append(token);
             }

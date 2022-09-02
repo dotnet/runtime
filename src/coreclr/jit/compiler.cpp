@@ -2263,10 +2263,9 @@ void Compiler::compSetProcessor()
     // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-
-    opts.compSupportsISA         = 0;
-    opts.compSupportsISAReported = 0;
-    opts.compSupportsISAExactly  = 0;
+    opts.compSupportsISA.Reset();
+    opts.compSupportsISAReported.Reset();
+    opts.compSupportsISAExactly.Reset();
 
 #if defined(TARGET_XARCH)
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -2363,10 +2362,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
-#ifdef UNIX_AMD64_ABI
-    opts.compNeedToAlignFrame = false;
-#endif // UNIX_AMD64_ABI
-    memset(&opts, 0, sizeof(opts));
+    opts = {};
 
     if (compIsForInlining())
     {
@@ -3200,6 +3196,21 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif
     }
+
+#ifdef TARGET_64BIT
+    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+
+#ifdef DEBUG
+    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
+    {
+        CLRRandom rng;
+        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
+        opts.compCollect64BitCounts = rng.Next(2) == 0;
+    }
+#endif
+#else
+    opts.compCollect64BitCounts = false;
+#endif
 
 #ifdef DEBUG
 

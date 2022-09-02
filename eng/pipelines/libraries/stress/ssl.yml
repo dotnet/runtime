@@ -30,7 +30,7 @@ jobs:
   displayName: Docker Linux
   timeoutInMinutes: 120
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore-Public
     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
   steps:
@@ -55,7 +55,7 @@ jobs:
   displayName: Docker NanoServer
   timeoutInMinutes: 120
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore-Public
     demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:
