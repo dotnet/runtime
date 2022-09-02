@@ -270,13 +270,13 @@ namespace System.Formats.Tar.Tests
 
             string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.gnu.ToString(), testCaseName);
             string tarExtractedPath = Path.Join(root.Path, "tarExtracted");
-            Directory.CreateDirectory(tarExtractedPath); // rename to gnuTarExtractedPath et al
+            Directory.CreateDirectory(tarExtractedPath);
 
             // extract with /usr/bin/tar
             ExtractWithTarTool(archivePath, tarExtractedPath);
 
             // create archive with TarFile
-            string dotnetTarArchive = Path.Join(root.Path, "dotnetTarArchive");
+            string dotnetTarArchive = Path.Join(root.Path, "dotnetTarArchive.tar");
             TarFile.CreateFromDirectory(tarExtractedPath, dotnetTarArchive, includeBaseDirectory: false);
 
             // extract TarFile's archive with /usr/bin/tar

@@ -621,10 +621,10 @@ namespace System.Formats.Tar.Tests
             tarToolProcess.StartInfo.FileName = "/usr/bin/tar";
             tarToolProcess.StartInfo.Arguments = $"-xf {source} -C {destination}";
 
-            tarToolProcess.StartInfo.UseShellExecute = false;
             tarToolProcess.StartInfo.RedirectStandardOutput = true;
             tarToolProcess.Start();
 
+            tarToolProcess.StandardOutput.ReadToEnd();
             tarToolProcess.WaitForExit();
 
             Assert.Equal(0, tarToolProcess.ExitCode);
