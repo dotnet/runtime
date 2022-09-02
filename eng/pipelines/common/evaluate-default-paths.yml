@@ -186,6 +186,7 @@ jobs:
 
     # libraries with some wasm specific code
     - subset: wasm_libraries
+      include:
       - src/libraries/Common/*
       - src/libraries/System.Console/*
       - src/libraries/System.Diagnostics.FileVersionInfo/tests/*
