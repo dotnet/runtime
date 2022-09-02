@@ -1857,7 +1857,7 @@ class SuperPMIReplayAsmDiffs:
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     # First write an overview table
-                    write_fh.write("|Collection|MinOpts (bytes)|Opts (bytes)|Overall (bytes)|\n")
+                    write_fh.write("|Collection|MinOpts (bytes)|FullOpts (bytes)|Overall (bytes)|\n")
                     write_fh.write("|---|---|---|---|\n")
                     for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                         if not has_diffs:
@@ -2125,7 +2125,7 @@ class SuperPMIReplayThroughputDiff:
                     return "<span style=\"color:{}\">{}{:.2f}%</span>".format(color, plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
 
                 if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
-                    write_fh.write("|Collection|Overall|MinOpts|Opts|\n")
+                    write_fh.write("|Collection|MinOpts|FullOpts|Overall|\n")
                     write_fh.write("|---|---|---|---|\n")
                     for mch_file, base, diff in tp_diffs:
                         def format_pct_for_col(col):
