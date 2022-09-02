@@ -141,7 +141,7 @@ namespace System
             get => _username;
             set
             {
-                _username = EncodeUserName(value);
+                _username = EncodeUserInfo(value);
                 _changed = true;
             }
         }
@@ -152,7 +152,7 @@ namespace System
             get => _password;
             set
             {
-                _password = value ?? string.Empty;
+                _password = EncodeUserInfo(value);
                 _changed = true;
             }
         }
@@ -255,7 +255,7 @@ namespace System
 
         public override int GetHashCode() => Uri.GetHashCode();
 
-        private string EncodeUserName(string input)
+        private static string EncodeUserInfo(string? input)
         {
             if (input == null)
             {
@@ -272,7 +272,7 @@ namespace System
                 .Replace(@"\", "%5C", StringComparison.Ordinal)
                 .Replace("?", "%3F", StringComparison.Ordinal)
                 .Replace("#", "%23", StringComparison.Ordinal)
-                .Replace("@", "%40", StringComparison.Ordinal)
+                .Replace("@", "%40", StringComparison.Ordinal);
         }
 
         private void SetFieldsFromUri()
