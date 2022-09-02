@@ -295,21 +295,6 @@ jobs:
           parameters.archType,
           parameters.liveLibrariesBuildConfig) }}
     steps:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
-        # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
-        - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
-          displayName: Clear NuGet http cache (if exists)
-
-        - task: MicroBuildSigningPlugin@2
-          displayName: Install MicroBuild plugin for Signing
-          inputs:
-            signType: $(SignType)
-            zipSources: false
-            feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-          continueOnError: false
-          condition: and(succeeded(), in(variables['SignType'], 'real', 'test'), eq(${{ parameters.isOfficialBuild }}, true))
-
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
