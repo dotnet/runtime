@@ -43,6 +43,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [Theory]
         [MemberData(nameof(ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
         public async Task ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions)
         {
             using var ws = new ClientWebSocket();
