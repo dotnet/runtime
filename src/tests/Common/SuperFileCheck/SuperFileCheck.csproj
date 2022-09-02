@@ -10,9 +10,12 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <UseAppHost>true</UseAppHost>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -222,7 +222,7 @@ IF NOT DEFINED DoLink (
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n "$RunningDisasmChecks" ]]
 then
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
+@(DisasmCheckFiles -> '  $(ArtifactsDir)tests/coreclr/windows.${TargetArchitecture}.$(Configuration)/Common/SuperFileCheck/SuperFileCheck/$(OutputRid)/publish/SuperFileCheck --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
   ERRORLEVEL=$?
   if [[ $ERRORLEVEL -ne 0 ]]
   then
@@ -235,7 +235,7 @@ fi]]>)
       <CLRTestBashPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n "$RunningDisasmChecks" ]]
 then
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
+@(DisasmCheckFiles -> '  $(ArtifactsDir)tests/coreclr/windows.${TargetArchitecture}.${Configuration}/Common/SuperFileCheck/SuperFileCheck/$(OutputRid)/publish/SuperFileCheck --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
   export DOTNET_JitDisasm=$(cat $(BashDisasmListOutputFile))
   export DOTNET_JitDiffableDasm=1
@@ -264,7 +264,7 @@ fi]]>)
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 if DEFINED RunningDisasmChecks (
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
+@(DisasmCheckFiles -> '  $(ArtifactsDir)tests\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\Common\SuperFileCheck\SuperFileCheck\$(OutputRid)\publish\SuperFileCheck.exe --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
     Exit /b 1
@@ -276,7 +276,7 @@ if DEFINED RunningDisasmChecks (
 <![CDATA[
       $(CLRTestBatchPreCommands)
 if DEFINED RunningDisasmChecks (
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
+@(DisasmCheckFiles -> '  $(ArtifactsDir)tests\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\Common\SuperFileCheck\SuperFileCheck\$(OutputRid)\publish\SuperFileCheck.exe --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
   set /p DOTNET_JitDisasm= < $(BatchDisasmOutputFile)
   set DOTNET_JitDiffableDasm=1
   IF NOT "!ERRORLEVEL!" == "0" (

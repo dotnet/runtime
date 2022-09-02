@@ -125,6 +125,11 @@ build_Tests()
     echo "Building tests via $nextCommand"
     eval $nextCommand
 
+    # SuperFileCheck must be published in order to have the native libraries.
+    nextCommand="\"$__RepoRootDir/src/tests/Common/SuperFileCheck/SuperFileCheck.csproj ${buildArgs[@]}"
+    echo "Building SuperFileCheck via $nextCommand"
+    eval $nextCommand
+
     # Make sure everything is OK
     if [[ "$?" -ne 0 ]]; then
         echo "${__ErrMsgPrefix}${__MsgPrefix}Failed to build tests. See the build logs:"
