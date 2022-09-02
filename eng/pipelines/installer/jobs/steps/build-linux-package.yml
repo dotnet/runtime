@@ -1,6 +1,6 @@
 parameters:
   packageType: null
-  target: null
+  target: ''
   packageStepDescription: null
   packagingArgs: ''
   subsetArg: ''

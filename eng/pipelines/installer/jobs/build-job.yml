@@ -89,7 +89,7 @@ jobs:
     - name: BuildAction
       value: -test
 
-    - ${{ if eq(variables.SkipTests, true) }}:
+    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), eq(parameters.crossBuild, true), eq(parameters.pgoType, 'PGO')), true) }}:
       - name: BuildAction
         value: ''
 
@@ -368,7 +368,7 @@ jobs:
             - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
               parameters:
                 packageType: ${{ packageBuild.packageType }}
-                image: ${{ packageBuild.image }}
+                target: ${{ packageBuild.target }}
                 packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
                 subsetArg: $(installersSubsetArg)
                 packagingArgs: ${{ packageBuild.packagingArgs }}
@@ -392,7 +392,6 @@ jobs:
           name: ${{ coalesce(parameters.name, parameters.platform) }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           runtimeVariant: ${{ parameters.runtimeVariant }}
-          skipTests: ${{ variables.SkipTests }}
           isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
           pgoType: ${{ parameters.pgoType }}
 
