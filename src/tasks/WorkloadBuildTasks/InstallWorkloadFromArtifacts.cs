@@ -97,6 +97,8 @@ namespace Microsoft.Workload.Build.Tasks
 
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
+
+                    File.WriteAllText(req.StampPath, string.Empty);
                 }
 
                 return !Log.HasLoggedErrors;
@@ -399,6 +401,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string ManifestName => Workload.GetMetadata("ManifestName");
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
+            public string StampPath => Target.GetMetadata("StampPath");
             public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
             public string WorkloadId => Workload.ItemSpec;
 
