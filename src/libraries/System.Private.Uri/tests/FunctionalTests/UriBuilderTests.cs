@@ -196,6 +196,7 @@ namespace System.PrivateUri.Tests
         [InlineData("username", "username")]
         [InlineData("", "")]
         [InlineData(null, "")]
+        [InlineData(@"user/\?#@name", "user%2F%5C%3F%23%40name")]
         public void UserName_Get_Set(string value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
@@ -212,6 +213,7 @@ namespace System.PrivateUri.Tests
         [InlineData("password", "password")]
         [InlineData("", "")]
         [InlineData(null, "")]
+        [InlineData(@"pass/\?#@word", "pass%2F%5C%3F%23%40word")]
         public void Password_Get_Set(string value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo1:PLACEHOLDER@domain/path?query#fragment");
