@@ -199,6 +199,8 @@ jobs:
       nameSuffix: NativeAOT
       buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      extraStepsParameters:
+        libsConfig: Release
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -221,6 +223,8 @@ jobs:
       nameSuffix: NativeAOT
       buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      extraStepsParameters:
+        libsConfig: Release
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -245,6 +249,8 @@ jobs:
       nameSuffix: NativeAOT
       buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      extraStepsParameters:
+        libsConfig: Release
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
