@@ -3852,7 +3852,19 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 //
 GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt)
 {
-    GenTree* const rhs = asg->gtGetOp2();
+    GenTree* rhs = asg->gtGetOp2();
+
+    // Try and simplify the RHS.
+    //
+    bool madeChanges = false;
+    if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
+    {
+        if (optZeroObjAssertionProp(rhs, assertions))
+        {
+            madeChanges = true;
+            rhs         = asg->gtGetOp2();
+        }
+    }
 
     // If we're assigning a value to a lcl/field that already has
     // that value, suppress the assignment.
@@ -3870,7 +3882,7 @@ GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* 
     if (optLocalAssertionProp)
     {
         GenTreeLclVarCommon* lhsVarTree = nullptr;
-        if (asg->OperIsSsaDef() && asg->DefinesLocal(this, &lhsVarTree))
+        if (asg->DefinesLocal(this, &lhsVarTree))
         {
             unsigned const       lhsLclNum      = lhsVarTree->GetLclNum();
             LclVarDsc* const     lhsLclDsc      = lvaGetDesc(lhsLclNum);
@@ -3889,42 +3901,17 @@ GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* 
                     //
                     // The latter part of the if below is a heuristic.
                     //
-                    // If we elimiate the assignment for integral lclVars it can lead to
+                    // If we elimiate a zero assignment for integral lclVars it can lead to
                     // unnecessary cloning. We need to make sure `optExtractInitTestIncr`
-                    // still sees constant loop iter lower bounds.
+                    // still sees zero loop iter lower bounds.
                     //
                     if (rhs->IsIntegralConst(0) && (lhsLclIsStruct || varTypeIsGC(lhsVarTree)))
                     {
                         JITDUMP(
                             "[%06u] is assigning a constant zero to a struct field or gc local that is already zero\n",
                             dspTreeID(asg));
-                        INDEBUG(optPrintAssertion(lhsAssertion));
+                        JITDUMPEXEC(optPrintAssertion(lhsAssertion));
                         canOptimize = true;
-                    }
-
-                    // LHS is zero. Is RHS known to be zero from prior assertions?
-                    //
-                    if (!canOptimize && rhs->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-                    {
-                        unsigned const       rhsLclNum      = rhs->AsLclVarCommon()->GetLclNum();
-                        LclVarDsc* const     rhsLclDsc      = lvaGetDesc(rhsLclNum);
-                        bool const           rhsLclIsStruct = varTypeIsStruct(rhsLclDsc->TypeGet());
-                        AssertionIndex const rhsIndex =
-                            optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, rhsLclNum,
-                                                               rhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT, 0,
-                                                               assertions);
-                        if (rhsIndex != NO_ASSERTION_INDEX)
-                        {
-                            AssertionDsc* const rhsAssertion = optGetAssertion(rhsIndex);
-
-                            if ((rhsAssertion->assertionKind == OAK_EQUAL) && (rhsAssertion->op2.u1.iconVal == 0))
-                            {
-                                INDEBUG(optPrintAssertion(lhsAssertion));
-                                INDEBUG(optPrintAssertion(rhsAssertion));
-                                JITDUMP("[%06u] is assigning zero to local that is already zero\n", dspTreeID(asg));
-                                canOptimize = true;
-                            }
-                        }
                     }
 
                     if (canOptimize)
@@ -3945,14 +3932,11 @@ GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* 
         }
     }
 
-    // If we couldn't remove the assign, see if we can simplify it to an init.
+    // We might have simplified the RHS but were not able to remove the assignment
     //
-    if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
+    if (madeChanges)
     {
-        if (optZeroObjAssertionProp(rhs, assertions))
-        {
-            return optAssertionProp_Update(asg, asg, stmt);
-        }
+        return optAssertionProp_Update(asg, asg, stmt);
     }
 
     return nullptr;

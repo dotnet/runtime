@@ -1969,12 +1969,12 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
     }
 }
 
-ValueNum ValueNumStore::VNForZeroObj(CORINFO_CLASS_HANDLE structHnd)
+ValueNum ValueNumStore::VNForZeroObj(ClassLayout* layout)
 {
-    assert(structHnd != NO_CLASS_HANDLE);
+    assert(layout != nullptr);
 
-    ValueNum structHndVN = VNForHandle(ssize_t(structHnd), GTF_ICON_CLASS_HDL);
-    ValueNum zeroObjVN   = VNForFunc(TYP_STRUCT, VNF_ZeroObj, structHndVN);
+    ValueNum layoutVN  = VNForIntPtrCon(reinterpret_cast<ssize_t>(layout));
+    ValueNum zeroObjVN = VNForFunc(TYP_STRUCT, VNF_ZeroObj, layoutVN);
 
     return zeroObjVN;
 }
@@ -7465,7 +7465,7 @@ PhaseStatus Compiler::fgValueNumber()
                     if (isZeroed)
                     {
                         // By default we will zero init these LclVars
-                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetStructHnd())
+                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout())
                                                       : vnStore->VNZeroForType(typ);
                     }
                     else
@@ -8327,20 +8327,23 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             {
                 ValueNum   initObjVN  = ValueNumStore::NoVN;
                 bool const isZeroInit = rhs->IsIntegralConst(0);
-                if (isEntire && isZeroInit)
+                if (isZeroInit && isEntire)
                 {
                     // Note that it is possible to see pretty much any kind of type for the local
                     // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
-                    initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetStructHnd())
+                    initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetLayout())
                                                                      : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
                 }
                 else if (isZeroInit)
                 {
-                    initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout->GetClassHandle())
+                    // Non-entire zeroing
+                    initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout)
                                                                : vnStore->VNZeroForType(lhs->TypeGet());
                 }
                 else
                 {
+                    // Non-zero init, or non-entire block zero init
+                    //
                     // Non-zero block init is very rare so we'll use a simple, unique VN here.
                     initObjVN = vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet());
                 }
