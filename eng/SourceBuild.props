@@ -17,8 +17,7 @@
 
     <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
-    <TargetRidWithoutPlatform>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetRidWithoutPlatform>
-    <TargetRidPlatform>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetRidPlatform>
+    <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
@@ -26,7 +25,7 @@
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>
-      <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetRidPlatform)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildNonPortable)' == 'true'">$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
@@ -36,7 +35,6 @@
       <InnerBuildArgs>$(InnerBuildArgs) --portablebuild $(SourceBuildPortable)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
     </PropertyGroup>
