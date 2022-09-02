@@ -7095,6 +7095,10 @@ namespace System.Buffers.Text
         public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static int GetIndexOfFirstNonAsciiByte(System.ReadOnlySpan<byte> buffer) { throw null; }
         public static int GetIndexOfFirstNonAsciiChar(System.ReadOnlySpan<char> buffer) { throw null; }
+        public static int IndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int IndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static int LastIndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int LastIndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
         public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }

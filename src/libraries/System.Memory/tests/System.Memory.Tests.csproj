@@ -16,6 +16,7 @@
     <Compile Include="Ascii\CaseConversionTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiByteTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiCharTests.cs" />
+    <Compile Include="Ascii\IndexOfTests.cs" />
     <Compile Include="Ascii\StartsEndsWithTests.cs" />
     <Compile Include="Ascii\TrimTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
