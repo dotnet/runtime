@@ -380,7 +380,7 @@ jobs:
           # independent installers on this leg, but we need to do it somewhere.)
           # Currently, Linux_arm64 supports 'rpm' type only.
           - ${{ if or(not(eq(parameters.platform, 'Linux_arm64')), eq(packageBuild.packageType, 'rpm')) }}:
-            - template: steps/build-linux-package.yml
+            - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
               parameters:
                 packageType: ${{ packageBuild.packageType }}
                 image: ${{ packageBuild.image }}
@@ -402,7 +402,7 @@ jobs:
             ne(variables['DisableVSPublish'], 'true'),
             ne(variables['PostBuildSign'], 'true'))
 
-      - template: steps/upload-job-artifacts.yml
+      - template: /eng/pipelines/installer/jobs/steps/upload-job-artifacts.yml
         parameters:
           name: ${{ coalesce(parameters.name, parameters.platform) }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
