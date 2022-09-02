@@ -3,7 +3,26 @@
       <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
   </ItemGroup>
 
-  <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
+  <Target Name="PrintRuntimePackPath" AfterTargets="ResolveFrameworkReferences" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <Error Text="Expected to find a ResolvedRuntimePack item, but found none."
+           Condition="@(ResolvedRuntimePack -> Count()) == 0" />
+
+    <Error Text="Missing PackageDirectory metadata on ResolvedRuntimePack: @(ResolvedRuntimePack -> '%(Identity), %(NugetPackageId), %(NuGetPackageVersion), %(NuGetPackageDirectory)')"
+           Condition="'%(ResolvedRuntimePack.PackageDirectory)' == ''" />
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
+
+    <Error Text="Missing NuGetPackageVersion metadata on ResolvedRuntimePack: @(ResolvedRuntimePack -> '%(Identity), %(NugetPackageId), %(NuGetPackageVersion), %(NuGetPackageDirectory)')"
+           Condition="'%(ResolvedRuntimePack.NuGetPackageVersion)' == ''" />
+    <Message Text="** ResolvedRuntimePack Version : %(ResolvedRuntimePack.NuGetPackageVersion)" Importance="High" />
+
+    <!-- Using internal properties for the version here. This will be fixed when net6-on-7 workload testing
+         changes land -->
+    <Error Condition="$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0')) and
+                      '%(ResolvedRuntimePack.NuGetPackageVersion)' != $(_RuntimePackInWorkloadVersion7)"
+           Text="Expected Runtime pack version = '$(_RuntimePackInWorkloadVersion7)', but got '%(ResolvedRuntimePack.NuGetPackageVersion)'" />
+
+    <Error Condition="$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0')) and
+                      '%(ResolvedRuntimePack.NuGetPackageVersion)' != $(_RuntimePackInWorkloadVersion6)"
+           Text="Expected Runtime pack version = '$(_RuntimePackInWorkloadVersion6)', but got '%(ResolvedRuntimePack.NuGetPackageVersion)'" />
   </Target>
 </Project>
