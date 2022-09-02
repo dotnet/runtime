@@ -67,7 +67,7 @@ internal sealed unsafe partial class MsQuicApi
 
         try
         {
-            if (!TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable))
+            if (!TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable, out _))
             {
                 return;
             }
@@ -136,12 +136,17 @@ internal sealed unsafe partial class MsQuicApi
     {
         Debug.Assert(IsQuicSupported);
 
+        int openStatus = MsQuic.QUIC_STATUS_INTERNAL_ERROR;
+
         if (TryLoadMsQuic(out IntPtr msQuicHandle) &&
-            TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable))
+            TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable, out openStatus))
         {
             return new MsQuicApi(apiTable);
         }
 
+        ThrowHelper.ThrowIfMsQuicError(openStatus);
+
+        // this should unreachable as TryOpenMsQuic returns non-success status on failure
         throw new Exception("Failed to create MsQuicApi instance");
     }
 
@@ -149,18 +154,30 @@ internal sealed unsafe partial class MsQuicApi
         NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
         NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
 
-    private static bool TryOpenMsQuic(IntPtr msQuicHandle, out QUIC_API_TABLE* apiTable)
+    private static bool TryOpenMsQuic(IntPtr msQuicHandle, out QUIC_API_TABLE* apiTable, out int openStatus)
     {
         apiTable = null;
         if (!NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, "Failed to get MsQuicOpenVersion export in msquic library.");
+            }
+
+            openStatus = MsQuic.QUIC_STATUS_NOT_FOUND;
             return false;
         }
 
         QUIC_API_TABLE* table = null;
         delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
-        if (StatusFailed(msQuicOpenVersion((uint)MsQuicVersion.Major, &table)))
+        openStatus = msQuicOpenVersion((uint)MsQuicVersion.Major, &table);
+        if (StatusFailed(openStatus))
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, $"MsQuicOpenVersion returned {openStatus} status code.");
+            }
+
             return false;
         }
 
