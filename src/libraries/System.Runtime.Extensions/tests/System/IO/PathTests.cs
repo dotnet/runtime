@@ -256,8 +256,11 @@ namespace System.IO.Tests
                     File.Delete(badTemp);
                     Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // non existent
 
-                    Environment.SetEnvironmentVariable(tempEnvVar, "|||");
-                    Assert.Throws<IOException>(() => Path.GetTempFileName()); // invalid path
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Environment.SetEnvironmentVariable(tempEnvVar, "|||");
+                        Assert.Throws<IOException>(() => Path.GetTempFileName()); // invalid path
+                    }
                 }
                 finally
                 {

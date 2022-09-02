@@ -111,7 +111,8 @@ namespace System.IO
             // Create, open, and close the temp file.
             fixed (byte* pPath = path)
             {
-                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength));
+                // if this returns ENOENT it's because TMPDIR doesn't exist, so isDirError:true
+                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength), tempPath, isDirError:true);
                 Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
             }
 
