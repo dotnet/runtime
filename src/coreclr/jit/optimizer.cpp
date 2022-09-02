@@ -4773,7 +4773,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     // Duplicate the condition and invert it
     GenTree* cond = gtCloneExpr(last->gtGetOp1());
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+    cond->gtOper  = GenTree::ReverseRelop(cond->gtOper);
 
     // Create a select node.
     GenTreeConditional* select =
@@ -4819,7 +4819,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Update the flow from the original block.
     fgRemoveAllRefPreds(block->bbNext, block);
     block->bbJumpKind = BBJ_ALWAYS;
-
 
 #ifdef DEBUG
     if (verbose)
