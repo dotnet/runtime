@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -30,25 +29,6 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Null(e.InnerException);
             Assert.Equal(message, e.Message);
             Assert.Contains(message, e.ToString());
-        }
-
-        [Fact]
-        public static void Create_SocketConnectException_Success()
-        {
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 55555);
-                Assert.ThrowsAsync<SocketException>(() => socket.ConnectAsync(ep));
-                try
-                {
-                    socket.Connect(ep);
-                    Assert.Fail("Socket Connect should throw SocketException in this case.");
-                }
-                catch(SocketException ex)
-                {
-                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode) + " " + ep.ToString(), ex.Message);
-                }
-            }
         }
     }
 }

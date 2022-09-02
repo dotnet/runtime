@@ -5,12 +5,12 @@ namespace System.Net.Sockets
 {
     internal static partial class SocketExceptionFactory
     {
-        public static SocketException CreateSocketException(int socketError, EndPoint? endPoint)
+        public static SocketException CreateSocketException(int socketError, EndPoint endPoint)
         {
             int nativeErr = (int)socketError;
 
             // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
-            if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out Interop.Error interopErr))
+            if (SocketErrorPal.TryGetNativeErrorForSocketError(socketError, out Interop.Error interopErr))
             {
                 nativeErr = interopErr.Info().RawErrno;
             }

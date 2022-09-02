@@ -5,7 +5,7 @@ namespace System.Net.Sockets
 {
     internal static partial class SocketExceptionFactory
     {
-        public static SocketException CreateSocketException(int socketError, EndPoint? endPoint)
+        public static SocketException CreateSocketException(int socketError, EndPoint endPoint)
         {
             // Windows directly maps socketError to native error code.
             return new SocketException(socketError, CreateMessage(socketError, endPoint));

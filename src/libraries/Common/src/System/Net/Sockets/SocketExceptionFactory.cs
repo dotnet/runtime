@@ -7,10 +7,9 @@ namespace System.Net.Sockets
 {
     internal static partial class SocketExceptionFactory
     {
-        private static string CreateMessage(int nativeSocketError, EndPoint? endPoint)
+        private static string CreateMessage(int nativeSocketError, EndPoint endPoint)
         {
-            string message = Marshal.GetPInvokeErrorMessage(nativeSocketError);
-            return endPoint == null ? message : message + " " + endPoint.ToString();
+            return Marshal.GetPInvokeErrorMessage(nativeSocketError) + " " + endPoint.ToString();
         }
     }
 }
