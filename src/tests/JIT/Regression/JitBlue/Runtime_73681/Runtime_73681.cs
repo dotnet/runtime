@@ -12,13 +12,11 @@ public class Program
         return 100;
     }
 
-    // CHECK-LABEL: Assembly listing for method Program:CallFoo
-    // This is testing that a constrained.callvirt through a T variable doesn't use a helper lookup.
-    // CHECK-NOT: CORINFO_HELP
-    // CHECK: Total bytes
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallFoo<T>(T val) where T : IFace
     {
+        // This is testing that a constrained.callvirt through a T variable doesn't use a helper lookup.
+        // CHECK-NOT: CORINFO_HELP
         return val.Foo();
     }
 }
