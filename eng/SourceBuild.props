@@ -19,6 +19,8 @@
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
     <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
 
+    <AdditionalRuntimeIdentifierParent Condition="'$(AdditionalRuntimeIdentifierParent)' == ''">linux-$(TargetArch)</AdditionalRuntimeIdentifierParent>
+
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
@@ -37,6 +39,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(AdditionalRuntimeIdentifierParent)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
