@@ -9,7 +9,7 @@ steps:
 ## Run NuGet Authentication for each of the side containers
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
   - task: NuGetAuthenticate@0
-  target: ${{ parameters.target }}
+    target: ${{ parameters.target }}
 - script: |
     $(BuildScript) \
       --ci \
