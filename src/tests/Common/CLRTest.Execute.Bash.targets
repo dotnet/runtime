@@ -325,7 +325,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
-# Change to runtime config check
 if [[ -n "$RunningDisasmChecks" ]]; then
   echo $LAUNCHER $ExePath $(printf "'%s' " "${CLRTestExecutionArguments[@]}") \> $(BashDisasmOutputFile)
   $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}" > $(BashDisasmOutputFile)
