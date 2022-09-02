@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -610,6 +611,23 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { name };
             }
+        }
+
+        public static void ExtractWithTarTool(string source, string destination)
+        {
+            Assert.True(!OperatingSystem.IsWindows(), "This method is unsupported on Windows.");
+
+            using Process tarToolProcess = new Process();
+            tarToolProcess.StartInfo.FileName = "/usr/bin/tar";
+            tarToolProcess.StartInfo.Arguments = $"-xf {source} -C {destination}";
+
+            tarToolProcess.StartInfo.UseShellExecute = false;
+            tarToolProcess.StartInfo.RedirectStandardOutput = true;
+            tarToolProcess.Start();
+
+            tarToolProcess.WaitForExit();
+
+            Assert.Equal(0, tarToolProcess.ExitCode);
         }
     }
 }

@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -252,6 +254,58 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
             Assert.Null(reader.GetNextEntry());
+        }
+
+        [ConditionalTheory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [MemberData(nameof(GetPaxAndGnuTestCaseNames))]
+        public void ResultingArchive_CanBeExtractedByOtherTools(string testCaseName)
+        {
+            if (testCaseName == "specialfiles" && !PlatformDetection.IsSuperUser)
+            {
+                throw new SkipTestException("specialfiles needs sudo permissions for extraction");
+            }
+
+            using TempDirectory root = new TempDirectory();
+
+            string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.gnu.ToString(), testCaseName);
+            string tarExtractedPath = Path.Join(root.Path, "tarExtracted");
+            Directory.CreateDirectory(tarExtractedPath); // rename to gnuTarExtractedPath et al
+
+            // extract with /usr/bin/tar
+            ExtractWithTarTool(archivePath, tarExtractedPath);
+
+            // create archive with TarFile
+            string dotnetTarArchive = Path.Join(root.Path, "dotnetTarArchive");
+            TarFile.CreateFromDirectory(tarExtractedPath, dotnetTarArchive, includeBaseDirectory: false);
+
+            // extract TarFile's archive with /usr/bin/tar
+            string dotnetTarExtractedPath = Path.Join(root.Path, "dotnetTarExtracted");
+            Directory.CreateDirectory(dotnetTarExtractedPath);
+            ExtractWithTarTool(dotnetTarArchive, dotnetTarExtractedPath);
+
+            // compare results
+            Dictionary<string, FileSystemInfo> expectedEntries = GetFileSystemInfosRecursive(tarExtractedPath).ToDictionary(fsi => fsi.FullName.Substring(tarExtractedPath.Length));
+
+            foreach (var actualEntry in GetFileSystemInfosRecursive(dotnetTarExtractedPath))
+            {
+                string keyPath = actualEntry.FullName.Substring(dotnetTarExtractedPath.Length);
+
+                Assert.True(expectedEntries.TryGetValue(keyPath, out FileSystemInfo expectedEntry), "Entry not expected.");
+                Assert.Equal(expectedEntry.Attributes, actualEntry.Attributes);
+                Assert.Equal(expectedEntry.LinkTarget, actualEntry.LinkTarget);
+
+                expectedEntries.Remove(keyPath);
+            }
+
+            // All expected entries should've been found and removed.
+            Assert.Equal(0, expectedEntries.Count);
+        }
+
+        private static FileSystemEnumerable<FileSystemInfo> GetFileSystemInfosRecursive(string path)
+        {
+            var enumerationOptions = new EnumerationOptions { RecurseSubdirectories = true };
+            return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
         }
     }
 }
