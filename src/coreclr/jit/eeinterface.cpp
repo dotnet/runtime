@@ -112,8 +112,8 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
                                      bool                 includeNamespace,
                                      bool                 includeInstantiation)
 {
-    CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(clsHnd);
-    if (typ == CORINFO_TYPE_UNDEF)
+    CorInfoType typ = info.compCompHnd->asCorInfoType(clsHnd);
+    if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
     {
         eePrintType(p, clsHnd, includeNamespace, includeInstantiation);
     }
