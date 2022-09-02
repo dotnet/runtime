@@ -288,12 +288,6 @@ set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command 
 echo %BuildCommand%
 %BuildCommand%
 
-REM SuperFileCheck must be published in order to have the native libraries.
-set BuildCommand=dotnet publish %__RepoRootDir%/src/tests/Common/SuperFileCheck/SuperFileCheck.csproj %__msbuildArgs%
-
-echo %BuildCommand%
-%BuildCommand%
-
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Test build failed. Refer to the build log files for details:
     echo     %__BuildLog%

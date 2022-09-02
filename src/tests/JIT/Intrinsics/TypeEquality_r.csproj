@@ -5,9 +5,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TypeEquality.cs">
-      <!-- Uncomment when more JitDasm wildcard fixes are in, and update SuperFileCheck to include enclosing type names and type parameters for JitDisasm - this is to prevent method name ambiguities -->
-      <!-- <HasDisasmCheck>true</HasDisasmCheck> -->
-    </Compile>
+    <Compile Include="TypeEquality.cs" />
   </ItemGroup>
 </Project>

@@ -13,10 +13,6 @@ class X<Q>
    [MethodImpl(MethodImplOptions.NoInlining)]
    public static bool Is(object o)
    {
-        // CHECK: CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
-        // CHECK: [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
-        // CHECK: System.Object:GetType():System.Type:this
-        // CHECK: [System.Type:op_Equality(System.Type,System.Type):bool]
         return typeof(Q) == o.GetType();
    }
 
@@ -50,11 +46,6 @@ class X
    [MethodImpl(MethodImplOptions.NoInlining)]
    public static bool Is<P,Q>()
    {
-      // CHECK: CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
-      // CHECK: [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
-      // CHECK: CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
-      // CHECK: [System.Type:GetTypeFromHandle(System.RuntimeTypeHandle):System.Type]
-      // CHECK: [System.Type:op_Equality(System.Type,System.Type):bool]
        return typeof(Q) == typeof(P);
    }
 }
