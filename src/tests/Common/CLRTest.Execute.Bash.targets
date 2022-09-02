@@ -326,7 +326,7 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
 fi
 
 # Change to runtime config check
-if [[ -n "$(BashDisasmOutputFile)" ]]; then
+if [[ -n "$RunningDisasmChecks" ]]; then
   echo $LAUNCHER $ExePath $(printf "'%s' " "${CLRTestExecutionArguments[@]}") \> $(BashDisasmOutputFile)
   $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}" > $(BashDisasmOutputFile)
 else

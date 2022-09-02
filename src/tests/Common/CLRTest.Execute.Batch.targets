@@ -310,7 +310,6 @@ if defined RunCrossGen (
   call :TakeLock
 )
 
-REM Change to runtime config check
 if NOT "%RunningDisasmChecks%"=="" (
   ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% ^> $(BatchDisasmOutputFile)
   %LAUNCHER% %ExePath% %CLRTestExecutionArguments% > $(BatchDisasmOutputFile)
