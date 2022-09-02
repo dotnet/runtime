@@ -195,7 +195,7 @@
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmExceptionHandling)' == 'true'" />
-      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmSIMD)' == 'true'" />
+      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
@@ -524,7 +524,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
-      <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmSIMD)' == 'true'" />
+      <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmExceptionHandling)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
