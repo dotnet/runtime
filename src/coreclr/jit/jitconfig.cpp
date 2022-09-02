@@ -103,7 +103,7 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
 {
     // Invariant: [stringStart..backtrackStr) matches [patternStart..backtrackPattern)
     const char* backtrackPattern = nullptr;
-    const char* backtrackStr = nullptr;
+    const char* backtrackStr     = nullptr;
 
     while (true)
     {
@@ -115,7 +115,7 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
         else if (*pattern == '*')
         {
             backtrackPattern = ++pattern;
-            backtrackStr = str;
+            backtrackStr     = str;
             continue;
         }
         else if (*str == '\0')
@@ -136,7 +136,7 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
 
         // Consume one more character for the wildcard.
         pattern = backtrackPattern;
-        str = ++backtrackStr;
+        str     = ++backtrackStr;
     }
 }
 
