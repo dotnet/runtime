@@ -1318,7 +1318,7 @@ namespace System.Xml
                 int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
 
                 NodeData? attr = null;
-                switch (_ps.chars.AsSpan(_ps.charPos, nameEndPos - _ps.charPos))
+                switch (_ps.chars.AsSpan(_ps.charPos..nameEndPos))
                 {
                     case "version":
                         if (xmlDeclState == 0)
@@ -1432,18 +1432,18 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            if (pos - _ps.charPos == "yes".Length && _ps.StartsWith("yes"))
+                            switch (_ps.chars.AsSpan(_ps.charPos..pos))
                             {
-                                _standalone = true;
-                            }
-                            else if (pos - _ps.charPos == "no".Length && _ps.StartsWith("no"))
-                            {
-                                _standalone = false;
-                            }
-                            else
-                            {
-                                Debug.Assert(!isTextDecl);
-                                Throw(SR.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
+                                case "yes":
+                                    _standalone = true;
+                                    break;
+                                case "no":
+                                    _standalone = false;
+                                    break;
+                                default:
+                                    Debug.Assert(!isTextDecl);
+                                    Throw(SR.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
+                                    break;
                             }
                             if (!isTextDecl)
                             {
