@@ -363,8 +363,7 @@ $(CLRTestBatchPostCommands)
     </PropertyGroup>
     <PropertyGroup>
       <BatchEnvironmentVariables>
-@(CLRTestBatchEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
-@(CLRTestEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
+@(CLRTestBatchEnvironmentVariable -> '%(Identity)', '%0d%0a')
       </BatchEnvironmentVariables>
     </PropertyGroup>
 
@@ -450,16 +449,16 @@ IF NOT "%__TestEnv%"=="" (
     )
 )
 
+REM Environment Variables
+$(BatchEnvironmentVariables)
+
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 
 $(IlasmRoundTripBatchScript)
 
-REM Allow test environment variables or precommands to override the ExePath
+REM Allow precommands to override the ExePath
 set ExePath=$(InputAssemblyName)
 set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
-
-REM Environment Variables
-$(BatchEnvironmentVariables)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
