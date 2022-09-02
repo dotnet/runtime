@@ -593,7 +593,7 @@ namespace System.Text.Json
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "Dynamic path is guarded by the runtime feature switch.")]
         internal static MemberAccessor MemberAccessorStrategy =>
-            s_MemberAccessorStrategy ??=
+            s_memberAccessorStrategy ??=
 #if NETCOREAPP
                 // if dynamic code isn't supported, fallback to reflection
                 RuntimeFeature.IsDynamicCodeSupported ?
@@ -605,7 +605,7 @@ namespace System.Text.Json
                     new ReflectionMemberAccessor();
 #endif
 
-        private static MemberAccessor? s_MemberAccessorStrategy;
+        private static MemberAccessor? s_memberAccessorStrategy;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for modification.
