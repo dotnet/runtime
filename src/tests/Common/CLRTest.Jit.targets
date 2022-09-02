@@ -219,7 +219,7 @@ IF NOT DEFINED DoLink (
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n "$RunningDisasmChecks" ]]
 then
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) < "$(BashDisasmOutputFile)"
+@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
   ERRORLEVEL=$?
   if [[ $ERRORLEVEL -ne 0 ]]
   then
@@ -243,15 +243,32 @@ fi]]>)
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 if DEFINED RunningDisasmChecks (
-@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) < "$(BatchDisasmOutputFile)"
+@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
 )]]>
       </BatchDisasmCheckPostCommands>
+
+      <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
+<![CDATA[
+      $(CLRTestBatchPreCommands)
+if DEFINED RunningDisasmChecks (
+@(DisasmCheckFiles -> '  dotnet $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > !scriptPath!\__jit_disasm_list.out
+  set /p DOTNET_JitDisasm= < !scriptPath!\__jit_disasm_list.out
+  set DOTNET_JitDiffableDasm=1
+  IF NOT "!ERRORLEVEL!" == "0" (
+    ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
+    Exit /b 1
+  )', '%0d%0a')
+)]]>
+      </CLRTestBatchPreCommands>
     </PropertyGroup>
   </Target>
+
+  <PropertyGroup>
+  </PropertyGroup>
 
   <PropertyGroup Condition="$(RunWithGcStress) != ''" >
     <CLRTestBatchPreCommands>
