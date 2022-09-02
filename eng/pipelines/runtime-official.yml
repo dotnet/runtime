@@ -393,6 +393,7 @@ stages:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      buildConfig: Release
       jobParameters:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
