@@ -19,6 +19,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
+// StringPrinter::Printf:
+//   Print a formatted string.
+//
+// Arguments:
+//    format - the format
+//
 void StringPrinter::Printf(const char* format, ...)
 {
     va_list args;
@@ -56,12 +63,30 @@ void StringPrinter::Printf(const char* format, ...)
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
-void Compiler::eePrintJitType(StringPrinter* p, var_types jitType)
+//------------------------------------------------------------------------
+// eePrintJitType:
+//   Print a JIT type.
+//
+// Arguments:
+//    printer - the printer
+//    jitType - the JIT type
+//
+void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 {
-    p->Printf("%s", varTypeName(jitType));
+    printer->Printf("%s", varTypeName(jitType));
 }
 
-void Compiler::eePrintType(StringPrinter*       p,
+//------------------------------------------------------------------------
+// eePrintType:
+//   Print a type given by a class handle.
+//
+// Arguments:
+//    printer              - the printer
+//    clsHnd               - Handle for the class
+//    includeNamespace     - Whether to print namespaces before type names
+//    includeInstantiation - Whether to print the instantiation of the class
+//
+void Compiler::eePrintType(StringPrinter*       printer,
                            CORINFO_CLASS_HANDLE clsHnd,
                            bool                 includeNamespace,
                            bool                 includeInstantiation)
@@ -76,10 +101,10 @@ void Compiler::eePrintType(StringPrinter*       p,
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
     {
-        p->Printf("%s.", namespaceName);
+        printer->Printf("%s.", namespaceName);
     }
 
-    p->Printf("%s", className);
+    printer->Printf("%s", className);
 
     if (!includeInstantiation)
     {
@@ -96,18 +121,29 @@ void Compiler::eePrintType(StringPrinter*       p,
             break;
         }
 
-        p->Printf("%c", pref);
+        printer->Printf("%c", pref);
         pref = ',';
-        eePrintTypeOrJitAlias(p, typeArg, includeNamespace, true);
+        eePrintTypeOrJitAlias(printer, typeArg, includeNamespace, true);
     }
 
     if (pref != '[')
     {
-        p->Printf("]");
+        printer->Printf("]");
     }
 }
 
-void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
+//------------------------------------------------------------------------
+// eePrintTypeOrJitAlias:
+//   Print a type given by a class handle. If the type is a primitive type,
+//   prints its JIT alias.
+//
+// Arguments:
+//    printer              - the printer
+//    clsHnd               - Handle for the class
+//    includeNamespace     - Whether to print namespaces before type names
+//    includeInstantiation - Whether to print the instantiation of the class
+//
+void Compiler::eePrintTypeOrJitAlias(StringPrinter*       printer,
                                      CORINFO_CLASS_HANDLE clsHnd,
                                      bool                 includeNamespace,
                                      bool                 includeInstantiation)
@@ -115,15 +151,32 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
     CorInfoType typ = info.compCompHnd->asCorInfoType(clsHnd);
     if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
     {
-        eePrintType(p, clsHnd, includeNamespace, includeInstantiation);
+        eePrintType(printer, clsHnd, includeNamespace, includeInstantiation);
     }
     else
     {
-        eePrintJitType(p, JitType2PreciseVarType(typ));
+        eePrintJitType(printer, JitType2PreciseVarType(typ));
     }
 }
 
-void Compiler::eePrintMethod(StringPrinter*        p,
+//------------------------------------------------------------------------
+// eePrintMethod:
+//   Print a method given by a method handle, its owning class handle and its
+//   signature.
+//
+// Arguments:
+//    printer                    - the printer
+//    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
+//    sig                        - The signature of the method.
+//    includeNamespaces          - Whether to print namespaces before type names.
+//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
+//    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
+//    includeSignature           - Whether to print the signature.
+//    includeReturnType          - Whether to include the return type at the end.
+//    includeThisSpecifier       - Whether to include a specifier at the end for whether the method is an instance
+//    method.
+//
+void Compiler::eePrintMethod(StringPrinter*        printer,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
@@ -132,41 +185,41 @@ void Compiler::eePrintMethod(StringPrinter*        p,
                              bool                  includeMethodInstantiation,
                              bool                  includeSignature,
                              bool                  includeReturnType,
-                             bool                  includeThis)
+                             bool                  includeThisSpecifier)
 {
     if (clsHnd != NO_CLASS_HANDLE)
     {
-        eePrintType(p, clsHnd, includeNamespaces, includeClassInstantiation);
-        p->Printf(":");
+        eePrintType(printer, clsHnd, includeNamespaces, includeClassInstantiation);
+        printer->Printf(":");
     }
 
     const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
-    p->Printf("%s", methName);
+    printer->Printf("%s", methName);
 
     if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
     {
-        p->Printf("[");
+        printer->Printf("[");
         for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
         {
             if (i > 0)
             {
-                p->Printf(",");
+                printer->Printf(",");
             }
 
-            eePrintTypeOrJitAlias(p, sig->sigInst.methInst[i], includeNamespaces, true);
+            eePrintTypeOrJitAlias(printer, sig->sigInst.methInst[i], includeNamespaces, true);
         }
-        p->Printf("]");
+        printer->Printf("]");
     }
 
     if (includeSignature)
     {
-        p->Printf("(");
+        printer->Printf("(");
 
         CORINFO_ARG_LIST_HANDLE argLst = sig->args;
         for (unsigned i = 0; i < sig->numArgs; i++)
         {
             if (i > 0)
-                p->Printf(",");
+                printer->Printf(",");
 
             CORINFO_CLASS_HANDLE vcClsHnd;
             var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
@@ -179,28 +232,28 @@ void Compiler::eePrintMethod(StringPrinter*        p,
                     // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
                     if (clsHnd != NO_CLASS_HANDLE)
                     {
-                        eePrintType(p, clsHnd, includeNamespaces, true);
+                        eePrintType(printer, clsHnd, includeNamespaces, true);
                         break;
                     }
                 }
 
                     FALLTHROUGH;
                 default:
-                    eePrintJitType(p, type);
+                    eePrintJitType(printer, type);
                     break;
             }
 
             argLst = info.compCompHnd->getArgNext(argLst);
         }
 
-        p->Printf(")");
+        printer->Printf(")");
 
         if (includeReturnType)
         {
             var_types retType = JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
-                p->Printf(":");
+                printer->Printf(":");
                 switch (retType)
                 {
                     case TYP_REF:
@@ -209,13 +262,13 @@ void Compiler::eePrintMethod(StringPrinter*        p,
                         CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            eePrintType(p, clsHnd, includeNamespaces, true);
+                            eePrintType(printer, clsHnd, includeNamespaces, true);
                             break;
                         }
                     }
                         FALLTHROUGH;
                     default:
-                        eePrintJitType(p, retType);
+                        eePrintJitType(printer, retType);
                         break;
                 }
             }
@@ -223,13 +276,25 @@ void Compiler::eePrintMethod(StringPrinter*        p,
 
         // Does it have a 'this' pointer? Don't count explicit this, which has
         // the this pointer type as the first element of the arg type list
-        if (includeThis && sig->hasThis() && !sig->hasExplicitThis())
+        if (includeThisSpecifier && sig->hasThis() && !sig->hasExplicitThis())
         {
-            p->Printf(":this");
+            printer->Printf(":this");
         }
     }
 }
 
+//------------------------------------------------------------------------
+// eeGetMethodFullName:
+//   Get a string describing a method.
+//
+// Arguments:
+//    hnd                  - the method handle
+//    includeReturnType    - Whether to include the return type in the string
+//    includeThisSpecifier - Whether to include a specifier for whether this is an instance method.
+//
+// Returns:
+//   The string.
+//
 const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier)
 {
     const char* className;

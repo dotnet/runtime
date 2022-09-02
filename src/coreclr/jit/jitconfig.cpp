@@ -99,9 +99,10 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
     m_names = nullptr;
 }
 
+// Quadratic string matching algorithm that supports * and ? wildcards
 static bool matchGlob(const char* pattern, const char* patternEnd, const char* str)
 {
-    // Invariant: [stringStart..backtrackStr) matches [patternStart..backtrackPattern)
+    // Invariant: [patternStart..backtrackPattern) matches [stringStart..backtrackStr)
     const char* backtrackPattern = nullptr;
     const char* backtrackStr     = nullptr;
 

@@ -7582,7 +7582,7 @@ public:
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
                        bool                  includeReturnType,
-                       bool                  includeThis);
+                       bool                  includeThisSpecifier);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
@@ -11367,6 +11367,7 @@ public:
     {
         return m_bufferIndex;
     }
+
     char* GetBuffer()
     {
         assert(m_buffer[GetLength()] == '\0');
