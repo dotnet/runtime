@@ -628,6 +628,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("\u4F1A", 0);
         }
 
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(",")]
+        [InlineData(",,")]
+        [InlineData(" , , ")]
+        public void CacheControlHeaderValue_EmptyValue_Parsed(string value)
+        {
+            Assert.NotNull(CacheControlHeaderValue.Parse(value));
+
+            Assert.True(CacheControlHeaderValue.TryParse(value, out CacheControlHeaderValue headerValue));
+            Assert.NotNull(headerValue);
+        }
+
         [Fact]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
@@ -653,20 +669,6 @@ namespace System.Net.Http.Tests
             CheckInvalidTryParse("no-cache no-store", 0);
             CheckInvalidTryParse("invalid =", 0);
             CheckInvalidTryParse("\u4F1A", 0);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidAndValidValueStrings_ReturnsEmptyValue()
-        {
-            // Invalids
-            CheckInvalidParseReturnsValue("no-cache,=");
-            CheckInvalidParseReturnsValue("max-age=123x");
-
-            // Valids
-            CheckValidParseReturnsValue(" , no-store, min-fresh=123");
-            CheckValidParseReturnsValue("");
-            CheckValidParseReturnsValue(null);
-            CheckValidParseReturnsValue(string.Empty);
         }
 
         [Fact]
@@ -758,22 +760,6 @@ namespace System.Net.Http.Tests
             CacheControlHeaderValue result = null;
             Assert.False(CacheControlHeaderValue.TryParse(input, out result));
             Assert.Null(result);
-        }
-
-        private static void CheckInvalidParseReturnsValue(string? input)
-        {
-            bool parsed = CacheControlHeaderValue.TryParse(input, out CacheControlHeaderValue parsedValue);
-            Assert.False(parsed);
-            Assert.IsType<CacheControlHeaderValue>(parsedValue);
-            Assert.False(parsedValue is null);
-        }
-
-        private static void CheckValidParseReturnsValue(string? input)
-        {
-            bool parsed = CacheControlHeaderValue.TryParse(input, out CacheControlHeaderValue parsedValue);
-            Assert.True(parsed);
-            Assert.IsType<CacheControlHeaderValue>(parsedValue);
-            Assert.False(parsedValue is null);
         }
         #endregion
     }
