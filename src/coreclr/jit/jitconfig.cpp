@@ -52,12 +52,12 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         const char* parens          = static_cast<const char*>(memchr(startOfMethodName, '(', end - startOfMethodName));
         const char* endOfMethodName = parens != nullptr ? parens : end;
         name->m_methodNameContainsInstantiation =
-            memchr(startOfMethodName, '<', endOfMethodName - startOfMethodName) != nullptr;
+            memchr(startOfMethodName, '[', endOfMethodName - startOfMethodName) != nullptr;
 
         if (colon != nullptr)
         {
             name->m_containsClassName              = true;
-            name->m_classNameContainsInstantiation = memchr(start, '<', colon - start) != nullptr;
+            name->m_classNameContainsInstantiation = memchr(start, '[', colon - start) != nullptr;
         }
         else
         {
@@ -113,10 +113,14 @@ static bool matchGlob(const char* pattern, const char* patternEnd, const char* s
             while (true)
             {
                 if (matchGlob(pattern + 1, patternEnd, str))
+                {
                     return true;
+                }
 
                 if (*str == '\0')
+                {
                     return false;
+                }
 
                 str++;
             }

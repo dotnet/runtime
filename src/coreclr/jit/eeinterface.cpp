@@ -75,12 +75,16 @@ void Compiler::eePrintType(StringPrinter*       p,
     }
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
-        p->Printf("%s.%s", namespaceName, className);
-    else
-        p->Printf("%s", className);
+    {
+        p->Printf("%s.", namespaceName);
+    }
+
+    p->Printf("%s", className);
 
     if (!includeInstantiation)
+    {
         return;
+    }
 
     char pref = '[';
     for (unsigned typeArgIndex = 0;; typeArgIndex++)
@@ -88,7 +92,9 @@ void Compiler::eePrintType(StringPrinter*       p,
         CORINFO_CLASS_HANDLE typeArg = info.compCompHnd->getTypeInstantiationArgument(clsHnd, typeArgIndex);
 
         if (typeArg == NO_CLASS_HANDLE)
+        {
             break;
+        }
 
         p->Printf("%c", pref);
         pref = ',';
@@ -96,7 +102,9 @@ void Compiler::eePrintType(StringPrinter*       p,
     }
 
     if (pref != '[')
+    {
         p->Printf("]");
+    }
 }
 
 void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
@@ -106,9 +114,13 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter*       p,
 {
     CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(clsHnd);
     if (typ == CORINFO_TYPE_UNDEF)
+    {
         eePrintType(p, clsHnd, includeNamespace, includeInstantiation);
+    }
     else
+    {
         eePrintJitType(p, JitType2PreciseVarType(typ));
+    }
 }
 
 void Compiler::eePrintMethod(StringPrinter*        p,
@@ -137,7 +149,9 @@ void Compiler::eePrintMethod(StringPrinter*        p,
         for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
         {
             if (i > 0)
+            {
                 p->Printf(",");
+            }
 
             eePrintTypeOrJitAlias(p, sig->sigInst.methInst[i], includeNamespaces, true);
         }

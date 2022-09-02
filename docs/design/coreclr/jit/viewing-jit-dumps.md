@@ -125,15 +125,15 @@ Some environment variables such as `COMPlus_JitDump` take a set of patterns spec
 * The string matched against depends on characters in the pattern:
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
   + If the pattern contains a '(' character, the string matched against is suffixed by the signature
-  + If the class name (part before colon) contains a '<', the class contains its generic instantiation
-  + If the method name (part between colon and '(' contains a '<', the method contains its generic instantiation
+  + If the class name (part before colon) contains a '[', the class contains its generic instantiation
+  + If the method name (part between colon and '(') contains a '[', the method contains its generic instantiation
 
 In particular, the matching is done against strings of the following format which coincides with how the JIT displays method signatures (so these can be copy pasted into the environment variable).
 ```
-[ClassName[<Inst>]:]MethodName[<Instantiation>][(<types>)]
+[ClassName[Instantiation]:]MethodName[Instantiation][(<types>)]
 ```
 
-For example, consider
+For example, consider the following:
 ```csharp
 namespace MyNamespace
 {
@@ -150,14 +150,16 @@ new C<sbyte, string>().M<int, object>(default, default, default, default); // co
 new C<int, int>().M<int, int>(default, default, default, default); // compilation 2
 ```
 
-The full strings are:
+The full names of these instantiations are the following, as printed by `COMPlus_JitDisasmSummary`:
 
 ```
 MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,int,System.__Canon)
 MyNamespace.C`2[int,int]:M[int,int](int,int,int,int)
 ```
+Note that ``C`2`` here is the name put into metadata by Roslyn; the suffix is not added by RyuJIT.
+For Powershell users keep in mind that backtick is the escape character and itself has to be escaped via double backtick.
 
-The following are equivalent and match both compilations:
+The following strings will match both compilations:
 ```
 M
 *C`2:M
