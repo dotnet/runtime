@@ -16,6 +16,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
+  [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
@@ -35,6 +36,8 @@ function Get-Help() {
   Write-Host "                                 Pass a comma-separated list to build for multiple configurations."
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -help (-h)                     Print help and exit."
+  Write-Host "  -hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
+  Write-Host "                                 [Default: Debug]"
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android or Browser."
@@ -246,6 +249,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }

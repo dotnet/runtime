@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
         private readonly int _allocationSiteId;
-        
+
         public FrozenObjectNode(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             _owningType = owningType;

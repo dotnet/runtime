@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -15,19 +10,18 @@ namespace TypeSystemTests
 {
     public class ArchitectureSpecificFieldLayoutTests
     {
-        TestTypeSystemContext _contextX86;
-        ModuleDesc _testModuleX86;
-        TestTypeSystemContext _contextX64;
-        ModuleDesc _testModuleX64;
-        TestTypeSystemContext _contextX64Windows;
-        ModuleDesc _testModuleX64Windows;
-        TestTypeSystemContext _contextX64Linux;
-        ModuleDesc _testModuleX64Linux;
-        TestTypeSystemContext _contextARM;
-        ModuleDesc _testModuleARM;
-
-        TestTypeSystemContext _contextARM64;
-        ModuleDesc _testModuleARM64;
+        private TestTypeSystemContext _contextX86;
+        private ModuleDesc _testModuleX86;
+        private TestTypeSystemContext _contextX64;
+        private ModuleDesc _testModuleX64;
+        private TestTypeSystemContext _contextX64Windows;
+        private ModuleDesc _testModuleX64Windows;
+        private TestTypeSystemContext _contextX64Linux;
+        private ModuleDesc _testModuleX64Linux;
+        private TestTypeSystemContext _contextARM;
+        private ModuleDesc _testModuleARM;
+        private TestTypeSystemContext _contextARM64;
+        private ModuleDesc _testModuleARM64;
 
         public ArchitectureSpecificFieldLayoutTests()
         {
@@ -344,20 +338,20 @@ namespace TypeSystemTests
             Assert.Equal(0x4, tX86.InstanceByteAlignment.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0xC, tARM.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0xC, tX86.InstanceByteCountUnaligned.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceByteCount.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceByteCount.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceByteCount.AsInt);
+            Assert.Equal(0xC, tARM.InstanceByteCount.AsInt);
+            Assert.Equal(0xC, tX86.InstanceByteCount.AsInt);
 
             Assert.Equal(0x8, tX64.InstanceFieldAlignment.AsInt);
             Assert.Equal(0x4, tARM.InstanceFieldAlignment.AsInt);
             Assert.Equal(0x4, tX86.InstanceFieldAlignment.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceFieldSize.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceFieldSize.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceFieldSize.AsInt);
+            Assert.Equal(0xC, tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(0xC, tX86.InstanceFieldSize.AsInt);
 
             Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
             Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
@@ -468,13 +462,13 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData("StructStructByte_StructByteAuto", new int[]{1,1,1}, new int[]{2,2,2})]
-        [InlineData("StructStructByte_Struct2BytesAuto", new int[]{2,2,2}, new int[]{4,4,4})]
-        [InlineData("StructStructByte_Struct3BytesAuto", new int[]{4,4,4}, new int[]{8,8,8})]
-        [InlineData("StructStructByte_Struct4BytesAuto", new int[]{4,4,4}, new int[]{8,8,8})]
-        [InlineData("StructStructByte_Struct5BytesAuto", new int[]{8,4,4}, new int[]{16,12,12})]
-        [InlineData("StructStructByte_Struct8BytesAuto", new int[]{8,4,4}, new int[]{16,12,12})]
-        [InlineData("StructStructByte_Struct9BytesAuto", new int[]{8,4,4}, new int[]{24,16,16})]
+        [InlineData("StructStructByte_StructByteAuto", new int[] { 1, 1, 1 }, new int[] { 2, 2, 2 })]
+        [InlineData("StructStructByte_Struct2BytesAuto", new int[] { 2, 2, 2 }, new int[] { 4, 4, 4 })]
+        [InlineData("StructStructByte_Struct3BytesAuto", new int[] { 4, 4, 4 }, new int[] { 8, 8, 8 })]
+        [InlineData("StructStructByte_Struct4BytesAuto", new int[] { 4, 4, 4 }, new int[] { 8, 8, 8 })]
+        [InlineData("StructStructByte_Struct5BytesAuto", new int[] { 8, 4, 4 }, new int[] { 16, 12, 12 })]
+        [InlineData("StructStructByte_Struct8BytesAuto", new int[] { 8, 4, 4 }, new int[] { 16, 12, 12 })]
+        [InlineData("StructStructByte_Struct9BytesAuto", new int[] { 8, 4, 4 }, new int[] { 24, 16, 16 })]
         public void TestAlignmentBehavior_AutoAlignmentRules(string wrapperType, int[] alignment, int[] size)
         {
             string _namespace = "Sequential";

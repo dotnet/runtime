@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using ILCompiler.IBC;
 
 using Internal.Pgo;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -38,10 +36,9 @@ namespace ILCompiler
     {
         public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
-            if (method == null)
-                throw new ArgumentNullException("method");
-
-            Method = method;
+#pragma warning disable CA1507 // Use nameof to express symbol names
+            Method = method ?? throw new ArgumentNullException("method");
+#pragma warning restore CA1507 // Use nameof to express symbol names
             Flags = flags;
             ScenarioMask = scenarioMask;
             ExclusiveWeight = exclusiveWeight;
