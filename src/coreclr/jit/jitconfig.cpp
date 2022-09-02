@@ -101,43 +101,42 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
 
 static bool matchGlob(const char* pattern, const char* patternEnd, const char* str)
 {
+    // Invariant: [stringStart..backtrackStr) matches [patternStart..backtrackPattern)
+    const char* backtrackPattern = nullptr;
+    const char* backtrackStr = nullptr;
+
     while (true)
     {
         if (pattern == patternEnd)
         {
-            return *str == '\0';
+            if (*str == '\0')
+                return true;
+        }
+        else if (*pattern == '*')
+        {
+            backtrackPattern = ++pattern;
+            backtrackStr = str;
+            continue;
+        }
+        else if (*str == '\0')
+        {
+            // No match since pattern needs at least one char in remaining cases.
+        }
+        else if ((*pattern == '?') || (*pattern == *str))
+        {
+            pattern++;
+            str++;
+            continue;
         }
 
-        if (*pattern == '*')
-        {
-            while (true)
-            {
-                if (matchGlob(pattern + 1, patternEnd, str))
-                {
-                    return true;
-                }
-
-                if (*str == '\0')
-                {
-                    return false;
-                }
-
-                str++;
-            }
-        }
-
-        if (*str == '\0')
-        {
+        // In this case there was no match, see if we can backtrack to a wild
+        // card and consume one more character from the string.
+        if ((backtrackPattern == nullptr) || (*backtrackStr == '\0'))
             return false;
-        }
 
-        if ((*pattern != '?') && (*pattern != *str))
-        {
-            return false;
-        }
-
-        pattern++;
-        str++;
+        // Consume one more character for the wildcard.
+        pattern = backtrackPattern;
+        str = ++backtrackStr;
     }
 }
 
