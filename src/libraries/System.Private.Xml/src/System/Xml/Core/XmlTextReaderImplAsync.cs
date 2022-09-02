@@ -1318,10 +1318,10 @@ namespace System.Xml
                 int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
 
                 NodeData? attr = null;
-                switch (_ps.chars[_ps.charPos])
+                switch (_ps.chars.AsSpan(_ps.charPos, nameEndPos - _ps.charPos))
                 {
-                    case 'v':
-                        if (nameEndPos - _ps.charPos == "version".Length && _ps.StartsWith("version") && xmlDeclState == 0)
+                    case "version":
+                        if (xmlDeclState == 0)
                         {
                             if (!isTextDecl)
                             {
@@ -1330,9 +1330,8 @@ namespace System.Xml
                             break;
                         }
                         goto default;
-                    case 'e':
-                        if (nameEndPos - _ps.charPos == "encoding".Length && _ps.StartsWith("encoding") &&
-                            (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0)))
+                    case "encoding":
+                        if (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0))
                         {
                             if (!isTextDecl)
                             {
@@ -1342,9 +1341,8 @@ namespace System.Xml
                             break;
                         }
                         goto default;
-                    case 's':
-                        if (nameEndPos - _ps.charPos == "standalone".Length && _ps.StartsWith("standalone") &&
-                            (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
+                    case "standalone":
+                        if ((xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
                             attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
