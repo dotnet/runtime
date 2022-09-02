@@ -5,10 +5,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TypeEquality.cs">
-      <HasDisasmCheck>true</HasDisasmCheck>
-    </Compile>
-
-    <CLRTestEnvironmentVariable Include="DOTNET_JitDisasm" Value="P:* Q:*" />
+    <Compile Include="TypeEquality.cs" />
   </ItemGroup>
 </Project>
