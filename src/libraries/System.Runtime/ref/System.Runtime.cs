@@ -7097,8 +7097,16 @@ namespace System.Buffers.Text
         public static int GetIndexOfFirstNonAsciiChar(System.ReadOnlySpan<char> buffer) { throw null; }
         public static int IndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
         public static int IndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static int IndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static int IndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int IndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int IndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static int LastIndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
         public static int LastIndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
+        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
+        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
         public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }

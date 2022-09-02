@@ -53,40 +53,10 @@ namespace System.Buffers.Text
         // TODO adsitnik: discuss whether this overload should exists, as the only difference with ROS.StartsWith(ROS, StringComparison.OrdinalIgnoreCase)
         // is throwing an exception for non-ASCII characters found in value
         public static bool StartsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-        {
-            if (value.IsEmpty)
-            {
-                return true;
-            }
-            else if (!IsAscii(value))
-            {
-                ThrowNonAsciiFound();
-            }
-            else if (value.Length > text.Length)
-            {
-                return false;
-            }
-
-            return Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(text), ref MemoryMarshal.GetReference(value), value.Length);
-        }
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckChars>(text.Slice(0, value.Length), value)));
 
         public static bool EndsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-        {
-            if (value.IsEmpty)
-            {
-                return true;
-            }
-            else if (!IsAscii(value))
-            {
-                ThrowNonAsciiFound();
-            }
-            else if (value.Length > text.Length)
-            {
-                return false;
-            }
-
-            return Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(text.Slice(text.Length - value.Length)), ref MemoryMarshal.GetReference(value), value.Length);
-        }
+            => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckChars>(text.Slice(text.Length - value.Length), value)));
 
         public static unsafe bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
             => value.IsEmpty || (text.Length >= value.Length && Map(EqualsIgnoreCase<CheckChars>(value, text.Slice(0, value.Length))));
@@ -310,6 +280,43 @@ namespace System.Buffers.Text
                     if (!UnicodeUtility.IsAsciiCodePoint(valueB))
                     {
                         return EqualsResult.NonAsciiFound;
+                    }
+                }
+
+                if (valueA == valueB)
+                {
+                    continue; // exact match
+                }
+
+                valueA |= 0x20u;
+                if ((uint)(valueA - 'a') > (uint)('z' - 'a'))
+                {
+                    return EqualsResult.NoMatch; // not exact match, and first input isn't in [A-Za-z]
+                }
+
+                if (valueA != (valueB | 0x20u))
+                {
+                    return EqualsResult.NoMatch;
+                }
+            }
+
+            return EqualsResult.Match;
+        }
+
+        private static EqualsResult EqualsIgnoreCase<TCheck>(ReadOnlySpan<char> text, ReadOnlySpan<char> value) where TCheck : struct
+        {
+            Debug.Assert(text.Length == value.Length);
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                uint valueA = text[i];
+                uint valueB = value[i];
+
+                if (typeof(TCheck) == typeof(CheckChars))
+                {
+                    if (!UnicodeUtility.IsAsciiCodePoint(valueB))
+                    {
+                        return EqualsResult.NonAsciiFound; // value must not contain non-ASCII characters
                     }
                 }
 
