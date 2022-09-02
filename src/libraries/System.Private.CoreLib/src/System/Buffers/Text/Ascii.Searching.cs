@@ -110,7 +110,7 @@ namespace System.Buffers.Text
             };
 
         [DoesNotReturn]
-        private static bool ThrowNonAsciiFound() => throw new ArgumentException("TODO adsitnik", "value");
+        private static bool ThrowNonAsciiFound() => throw new ArgumentException(SR.Arg_ContainsNonAscii, "value");
 
         private static EqualsResult Equals<TCheck>(ReadOnlySpan<char> chars, ReadOnlySpan<byte> bytes) where TCheck : struct
         {
