@@ -174,9 +174,7 @@ public:
         const DWORD refCount = GetRefCount() + 1;
         if (refCount & SLE_IS_OVERFLOWED)
         {
-            // We just overflowed m_dwRefCount (1073741823 + 1), make refCount = 1 and leave a mark SLE_IS_OVERFLOWED
-            // so the object will be always alive now
-            VolatileStore(&m_dwRefCount, (DWORD)(SLE_IS_OVERFLOWED | 1));
+            SetRefCountOverflowed();
         }
         else
         {
@@ -293,6 +291,11 @@ public:
     bool IsRefCountOverflowed()
     {
         return VolatileLoad(&m_dwRefCount) & SLE_IS_OVERFLOWED;
+    }
+
+    void SetRefCountOverflowed()
+    {
+        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_OVERFLOWED);
     }
 
 private:
