@@ -1314,7 +1314,7 @@ jobs:
                 /p:TreatWarningsAsErrors=true
                 /p:ContinuousIntegrationBuild=true
                 /t:InstallWorkloadUsingArtifacts
-                $(Build.SourcesDirectory)/src/tests/Workload.Mobile.Tests.csproj
+                $(Build.SourcesDirectory)/src/tests/Workload.Mobile.Tests/Workload.Mobile.Tests.csproj
               name: prep_workloads
               displayName: Prepare workloads
 
