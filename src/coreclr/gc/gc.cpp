@@ -4473,8 +4473,12 @@ public:
         return ((ArrayBase *)this)->GetNumComponents();
     }
 
-    void Validate(BOOL bDeep=TRUE)
+    void Validate(BOOL bDeep=TRUE, BOOL bVerifyNextHeader = FALSE, BOOL bVerifySyncBlock = FALSE)
     {
+        // declaration of extra parameters just so the call site would need no #ifdefs
+        UNREFERENCED_PARAMETER(bVerifyNextHeader);
+        UNREFERENCED_PARAMETER(bVerifySyncBlock);
+
         MethodTable * pMT = GetMethodTable();
 
         _ASSERTE(pMT->SanityCheck());
@@ -6085,20 +6089,22 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_CPUS];
         uint16_t node_no[MAX_SUPPORTED_CPUS];
         uint16_t max_node_no = 0;
-        for (uint16_t i = 0; i < n_heaps; i++)
+        uint16_t heap_num;
+        for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
+            if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
                 break;
-            if (!do_numa || node_no[i] == NUMA_NODE_UNDEFINED)
-                node_no[i] = 0;
-            max_node_no = max(max_node_no, node_no[i]);
+            assert(proc_no[heap_num] < MAX_SUPPORTED_CPUS);
+            if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
+                node_no[heap_num] = 0;
+            max_node_no = max(max_node_no, node_no[heap_num]);
         }
 
         // Pass 2: assign heap numbers by numa node
         int cur_heap_no = 0;
         for (uint16_t cur_node_no = 0; cur_node_no <= max_node_no; cur_node_no++)
         {
-            for (int i = 0; i < n_heaps; i++)
+            for (int i = 0; i < heap_num; i++)
             {
                 if (node_no[i] != cur_node_no)
                     continue;
@@ -44831,7 +44837,9 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
+    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // heaps as that is the number of slots we have allocated for handle tables.
+    g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 
     if (nhp_from_config)
     {
@@ -44940,6 +44948,7 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
+    assert (nhp <= g_num_processors);
     gc_heap::n_heaps = nhp;
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, nhp);
 #else
@@ -44974,7 +44983,7 @@ HRESULT GCHeap::Initialize()
         int available_mem_th = 10;
         if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
         {
-            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(GCToOSInterface::GetTotalProcessorCount()));
+            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
             available_mem_th = min (available_mem_th, adjusted_available_mem_th);
         }
 
@@ -45145,14 +45154,9 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-#ifdef _DEBUG
-    if (object)
-    {
-        ((CObjectHeader*)object)->Validate();
-    }
-#endif //_DEBUG
-
     uint8_t* o = (uint8_t*)object;
+
+    bool is_marked;
 
     if (gc_heap::settings.condemned_generation == max_generation)
     {
@@ -45165,27 +45169,35 @@ bool GCHeap::IsPromoted(Object* object)
 #ifdef BACKGROUND_GC
         if (gc_heap::settings.concurrent)
         {
-            bool is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
+            is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
                             hp->background_marked (o));
-            return is_marked;
         }
         else
 #endif //BACKGROUND_GC
         {
-            return (!((o < hp->highest_address) && (o >= hp->lowest_address))
-                    || hp->is_mark_set (o));
+            is_marked = (!((o < hp->highest_address) && (o >= hp->lowest_address))
+                        || hp->is_mark_set (o));
         }
     }
     else
     {
 #ifdef USE_REGIONS
-        return (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
+        is_marked = (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
 #else
         gc_heap* hp = gc_heap::heap_of (o);
-        return (!((o < hp->gc_high) && (o >= hp->gc_low))
-                || hp->is_mark_set (o));
+        is_marked = (!((o < hp->gc_high) && (o >= hp->gc_low))
+                   || hp->is_mark_set (o));
 #endif //USE_REGIONS
     }
+
+#ifdef _DEBUG
+    if (o)
+    {
+        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+    }
+#endif //_DEBUG
+
+    return is_marked;
 }
 
 size_t GCHeap::GetPromotedBytes(int heap_index)

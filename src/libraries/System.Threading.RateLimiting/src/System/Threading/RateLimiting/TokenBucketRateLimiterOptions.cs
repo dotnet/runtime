@@ -12,6 +12,7 @@ namespace System.Threading.RateLimiting
         /// Specifies the minimum period between replenishments.
         /// Must be set to a value >= <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
+        /// <remarks><see cref="TimeSpan.Zero"/> means the limiter will never replenish.</remarks>
         public TimeSpan ReplenishmentPeriod { get; set; } = TimeSpan.Zero;
 
         /// <summary>

@@ -15612,6 +15612,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             compSuppressedZeroInit       = true;
                         }
 
+                        // The constructor may store "this", with subsequent code mutating the underlying local
+                        // through the captured reference. To correctly spill the node we'll push onto the stack
+                        // in such a case, we must mark the temp as potentially aliased.
+                        lclDsc->lvHasLdAddrOp = true;
+
                         // Obtain the address of the temp
                         newObjThisPtr =
                             gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
@@ -16621,6 +16626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                                lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
                                 op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
@@ -20203,18 +20209,25 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         return;
     }
 
-    GenTree* lclVarTree;
-
+    GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
-    if (isAddressInLocal && varTypeIsStruct(lclVarTree))
+    if (isAddressInLocal)
     {
-        inlCurArgInfo->argIsByRefToStructLocal = true;
-#ifdef FEATURE_SIMD
-        if (lvaTable[lclVarTree->AsLclVarCommon()->GetLclNum()].lvSIMDType)
+        LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
+
+        if (varTypeIsStruct(lclVarTree))
         {
-            pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
-        }
+            inlCurArgInfo->argIsByRefToStructLocal = true;
+#ifdef FEATURE_SIMD
+            if (varDsc->lvSIMDType)
+            {
+                pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
+            }
 #endif // FEATURE_SIMD
+        }
+
+        // Spilling code relies on correct aliasability annotations.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
@@ -22001,6 +22014,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     //
                     // Ideally, we then inline the boxed method and and if it turns out not to modify
                     // the copy, we can undo the copy too.
+                    GenTree* localCopyThis = nullptr;
+
                     if (requiresInstMethodTableArg)
                     {
                         // Perform a trial box removal and ask for the type handle tree that fed the box.
@@ -22014,7 +22029,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             // If that worked, turn the box into a copy to a local var
                             //
                             JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
-                            GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                            localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
                             if (localCopyThis != nullptr)
                             {
@@ -22055,7 +22070,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     else
                     {
                         JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
-                        GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                        localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
                         if (localCopyThis != nullptr)
                         {
@@ -22078,6 +22093,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                     if (optimizedTheBox)
                     {
+                        assert(localCopyThis->OperIs(GT_ADDR));
+
+                        // We may end up inlining this call, so the local copy must be marked as "aliased",
+                        // making sure the inlinee importer will know when to spill references to its value.
+                        lvaGetDesc(localCopyThis->AsUnOp()->gtOp1->AsLclVar())->lvHasLdAddrOp = true;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())

@@ -4,7 +4,6 @@
 using System;
 
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {

@@ -561,8 +561,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 case TYP_SIMD12:
                 case TYP_SIMD16:
                 {
-                    simd16_t             constValue = vecCon->gtSimd16Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+                    simd16_t constValue = {};
+
+                    if (vecCon->TypeIs(TYP_SIMD12))
+                        memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
+                    else
+                        constValue = vecCon->gtSimd16Val;
+
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
@@ -7881,9 +7887,9 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 
     for (GenTreeFieldList::Use& use : fieldList->Uses())
     {
-        GenTree* const fieldNode   = use.GetNode();
-        const unsigned fieldOffset = use.GetOffset();
-        var_types      fieldType   = use.GetType();
+        GenTree* const  fieldNode   = use.GetNode();
+        const unsigned  fieldOffset = use.GetOffset();
+        const var_types fieldType   = use.GetType();
 
         // Long-typed nodes should have been handled by the decomposition pass, and lowering should have sorted the
         // field list in descending order by offset.
@@ -7906,8 +7912,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         int        adjustment  = roundUp(currentOffset - fieldOffset, 4);
         if (fieldIsSlot && !varTypeIsSIMD(fieldType))
         {
-            fieldType         = genActualType(fieldType);
-            unsigned pushSize = genTypeSize(fieldType);
+            unsigned pushSize = genTypeSize(genActualType(fieldType));
             assert((pushSize % 4) == 0);
             adjustment -= pushSize;
             while (adjustment != 0)
@@ -7955,13 +7960,22 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             }
         }
 
-        bool canStoreWithPush = fieldIsSlot;
-        bool canLoadWithPush  = varTypeIsI(fieldNode) || genIsValidIntReg(argReg);
+        bool canStoreFullSlot = fieldIsSlot;
+        bool canLoadFullSlot  = genIsValidIntReg(argReg);
+        if (argReg == REG_NA)
+        {
+            assert((genTypeSize(fieldNode) <= TARGET_POINTER_SIZE));
+            assert(genTypeSize(genActualType(fieldNode)) == genTypeSize(genActualType(fieldType)));
 
-        if (canStoreWithPush && canLoadWithPush)
+            // We can widen local loads if the excess only affects padding bits.
+            canLoadFullSlot = (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) || fieldNode->isUsedFromSpillTemp() ||
+                              (fieldNode->OperIsLocalRead() && (genTypeSize(fieldNode) >= genTypeSize(fieldType)));
+        }
+
+        if (canStoreFullSlot && canLoadFullSlot)
         {
             assert(m_pushStkArg);
-            assert(genTypeSize(fieldNode) == TARGET_POINTER_SIZE);
+            assert(genTypeSize(fieldNode) <= TARGET_POINTER_SIZE);
             inst_TT(INS_push, emitActualTypeSize(fieldNode), fieldNode);
 
             currentOffset -= TARGET_POINTER_SIZE;
@@ -7984,9 +7998,10 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                 }
                 else
                 {
-                    // TODO-XArch-CQ: using "ins_Load" here is conservative, as it will always
-                    // extend, which we can avoid if the field type is smaller than the node type.
-                    inst_RV_TT(ins_Load(fieldNode->TypeGet()), emitTypeSize(fieldNode), intTmpReg, fieldNode);
+                    // Use the smaller "mov" instruction in case we do not need a sign/zero-extending load.
+                    instruction loadIns  = canLoadFullSlot ? INS_mov : ins_Load(fieldNode->TypeGet());
+                    emitAttr    loadSize = canLoadFullSlot ? EA_PTRSIZE : emitTypeSize(fieldNode);
+                    inst_RV_TT(loadIns, loadSize, intTmpReg, fieldNode);
                 }
 
                 argReg = intTmpReg;
@@ -8001,13 +8016,16 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             else
 #endif // defined(FEATURE_SIMD)
             {
-                genStoreRegToStackArg(fieldType, argReg, fieldOffset - currentOffset);
+                // Using wide stores here avoids having to reserve a byteable register when we could not
+                // use "push" due to the field node being an indirection (i. e. for "!canLoadFullSlot").
+                var_types storeType = canStoreFullSlot ? genActualType(fieldType) : fieldType;
+                genStoreRegToStackArg(storeType, argReg, fieldOffset - currentOffset);
             }
 
             if (m_pushStkArg)
             {
-                // We always push a slot-rounded size
-                currentOffset -= genTypeSize(fieldType);
+                // We always push a slot-rounded size.
+                currentOffset -= roundUp(genTypeSize(fieldType), TARGET_POINTER_SIZE);
             }
         }
 

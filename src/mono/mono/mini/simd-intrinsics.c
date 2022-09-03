@@ -937,6 +937,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Narrow,
 	SN_Negate,
 	SN_OnesComplement,
+	SN_Shuffle,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_Sum,
@@ -1370,6 +1371,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	} 
+	case SN_Shuffle: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+#ifdef TARGET_WASM
+		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
+#else
+		return NULL;
+#endif
+	}
 	case SN_Sum: {
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))

@@ -2,6 +2,23 @@
 parameters:
   extraSubsets: ''
 
+  # _* parameters are being used as a const array,
+  # do not set them when using the template
+  _const_paths:
+    _wasm_specific_only: [
+        eng/testing/ProvisioningVersions.props
+        eng/testing/scenarios/BuildWasmAppsJobsList.txt
+        eng/testing/tests.wasm.targets
+        src/libraries/sendtohelix-wasm.targets
+        src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+        src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+        src/mono/wasi/*
+        src/mono/wasm/*
+        src/tasks/WasmAppBuilder/*
+        src/tasks/WasmBuildTasks/*
+        src/tasks/WorkloadBuildTasks/*
+    ]
+
 jobs:
 - template: /eng/pipelines/common/evaluate-paths-job.yml
   parameters:
@@ -28,13 +45,16 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
-    - subset: mono
+
+    - subset: mono_excluding_wasm
       include:
       - src/libraries/System.Private.CoreLib/*
       - src/native/libs/Common/*
       - src/native/libs/System.Globalization.Native/*
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
+
       - eng/Version.Details.xml
       - '*.md'
       - LICENSE.TXT
@@ -46,11 +66,11 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - src/mono/wasm/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
+
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
@@ -68,14 +88,10 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
       - eng/pipelines/common/evaluate-default-paths.yml
+
     - subset: runtimetests
       include:
       - src/tests/*
-      exclude:
-      # wasm runtime changes will trigger all wasm jobs anyway
-      - src/mono/wasm/*
-      - src/mono/wasm/*
-      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: installer
       include:
       - docs/manpages/*
@@ -95,6 +111,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
+
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
     # Specifically runtime directories which are higher risk of
@@ -108,61 +125,83 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-      exclude:
-      - '*'
     - subset: coreclr_jit
       include:
       - src/coreclr/jit/*
+
+    #
+    # ** WASM **
+    # Changes in *only* Wasm.Build.Tests, or debugger, are very self-contained,
+    # so we try to avoid triggering only those relevants tests
+    #
     - subset: wasmbuildtests
       include:
-      - src/tasks/*
-      - src/mono/wasm/Directory.Build*
-      - src/mono/wasm/Wasm.Build.Tests/*
+      - eng/Version.Details.xml
+      - eng/Versions.props
+      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/workloads-testing.targets
+      - src/libraries/sendtohelix*
+      - src/mono/mono/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - src/mono/wasm/build/*
+      - src/mono/wasm/emscripten-version.txt
       - src/mono/wasm/host/*
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
-      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
-      - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
-      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
-      - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
-      - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
-      - src/mono/mono/*
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
-      - eng/testing/workloads-testing.targets
-      - eng/Version.Details.xml
-      - eng/Versions.props
-      - src/mono/wasm/emscripten-version.txt
-      - src/libraries/sendtohelix*
-      exclude:
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/tasks/*
+
     - subset: wasmdebuggertests
       include:
-      - src/mono/wasm/debugger/*
-      - src/mono/wasm/runtime/*
-      - src/mono/wasm/Directory.Build*
-      - src/mono/wasm/debugger/Wasm.Debugger.Tests/*
       - eng/testing/ProvisioningVersions.props
       - src/mono/mono/*
-      exclude:
-      - eng/pipelines/common/evaluate-default-paths.yml
-    - subset: allwasm
-      include:
-      - eng/Version.Details.xml
-      - src/mono/*.proj
-      - src/mono/Directory.Build*
-      - src/mono/CMakeLists.txt
-      - src/mono/System.Private.CoreLib/*
-      - src/mono/mono/*
-      - src/mono/wasm/emscripten-version.txt
-      - src/mono/wasm/build/*
-      - src/mono/wasm/data/aot-tests/*
+      - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
-      - src/mono/wasm/test-main.js
-      - src/mono/wasm/wasm.proj
+
+    - subset: any_other_than_wasm_wbt_dbg
       exclude:
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasm/debugger/*
+
+    - subset: wasm_wbt_or_dbg
+      include:
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasm/debugger/*
+
+    - subset: wasm
+      include:
+      - ${{ parameters._const_paths._wasm_specific_only }}
+      # other paths that should also trigger wasm jobs
+      - src/mono/*
+
+    # anything other than wasm-specific paths
+    - subset: non_wasm
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
+
+      # having this ensures that change in evaluate-default-paths.yml won't
+      # trigger non-onlywasm jobs
       - eng/pipelines/common/evaluate-default-paths.yml
+
+    # anything other than mono, or wasm specific paths
+    - subset: non_mono_and_wasm
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
+
+      - eng/testing/tests.mobile.targets
+      - src/mono/*
+      - src/tasks/AndroidAppBuilder/*
+      - src/tasks/AotCompilerTask/*
+      - src/tasks/AppleAppBuilder/*
+      - src/tasks/MonoTargetsTasks/*
+      - src/tasks/WasmAppBuilder/*
+      - src/tasks/WasmBuildTasks/*
+      - src/tasks/WorkloadBuildTasks/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

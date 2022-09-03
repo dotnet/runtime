@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 using AssemblyName = System.Reflection.AssemblyName;
@@ -19,8 +17,6 @@ namespace ILCompiler.DependencyAnalysis
             // not for correctness, so this shortcut is okay.
 
             type = null;
-            referenceModule = null;
-
             int i = 0;
 
             // Consume type name part
@@ -75,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
             referenceModule = callingModule;
             if (assemblyName.Length > 0)
             {
-                referenceModule = context.ResolveAssembly(new AssemblyName(assemblyName.ToString()), false);    
+                referenceModule = context.ResolveAssembly(new AssemblyName(assemblyName.ToString()), false);
             }
 
             if (referenceModule == null)
@@ -96,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             type = mdType;
-            
+
             return type != null;
         }
     }

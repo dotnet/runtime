@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Runtime;
-using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -45,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
             ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
             if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-                rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
+                rareFlags |= EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
