@@ -672,15 +672,6 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsEmptyValue()
-        {
-            bool parsed = CacheControlHeaderValue.TryParse("no-cache,=", out CacheControlHeaderValue parsedValue);
-            Assert.True(parsed);
-            Assert.IsType<CacheControlHeaderValue>(parsedValue);
-            Assert.False(parsedValue is null);
-        }
-
-        [Fact]
         public void TryParseAndAddRawHeaderValue_AddEmptyAfterValid_NoEmptyValuesAdded()
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");

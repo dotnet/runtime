@@ -374,7 +374,7 @@ namespace System.Net.Http.Headers
 
             if (CacheControlHeaderParser.Parser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (CacheControlHeaderValue)output ?? new CacheControlHeaderValue();
+                parsedValue = (CacheControlHeaderValue)output! ?? new CacheControlHeaderValue();
                 return true;
             }
             return false;
