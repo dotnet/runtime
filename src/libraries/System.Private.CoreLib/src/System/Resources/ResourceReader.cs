@@ -65,7 +65,7 @@ namespace System.Resources
         // initialization must be protected by lock (this).
         private BinaryReader _store;
         // Used by RuntimeResourceSet and this class's enumerator.
-        // Accesses must be protected by lock(_resCache). 
+        // Accesses must be protected by lock(_resCache).
         internal Dictionary<string, ResourceLocator>? _resCache;
         private long _nameSectionOffset;  // Offset to name section of file.
         private long _dataSectionOffset;  // Offset to Data section of file.
