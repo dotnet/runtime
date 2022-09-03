@@ -17,5 +17,6 @@ namespace Wasm.Build.Tests
         internal static readonly string? SkipProjectCleanup        = Environment.GetEnvironmentVariable("SKIP_PROJECT_CLEANUP");
         internal static readonly string? XHarnessCliPath           = Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
         internal static readonly string? BuiltNuGetsPath           = Environment.GetEnvironmentVariable("BUILT_NUGETS_PATH");
+        internal static readonly string? BrowserPathForTests       = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_TESTS");
     }
 }
