@@ -9717,8 +9717,16 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			LLVMTypeRef etype = LLVMGetElementType (LLVMTypeOf (lhs));
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			g_assert (LLVMGetElementType (LLVMTypeOf (rhs)) == etype);
+			LLVMValueRef indexes [16];
+			for (int i = 0; i < nelems; ++i)
+				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
+			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
+			for (int i = 0; i < nelems; ++i)
+				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
 			break;
 		}
 #endif
