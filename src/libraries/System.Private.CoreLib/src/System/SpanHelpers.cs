@@ -517,12 +517,9 @@ namespace System
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<long>.Count);
                 do
                 {
-                    ref int firstInt = ref Unsafe.As<long, int>(ref first);
-                    ref int lastInt = ref Unsafe.As<long, int>(ref last);
-
                     // Load in values from beginning and end of the array.
-                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref firstInt);
-                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref lastInt);
+                    Vector128<long> tempFirst = Vector128.LoadUnsafe(ref first);
+                    Vector128<long> tempLast = Vector128.LoadUnsafe(ref last);
 
                     // Shuffle to reverse each vector:
                     //     +-------+
@@ -532,12 +529,12 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref firstInt);
-                    tempFirst.StoreUnsafe(ref lastInt);
+                    tempLast.StoreUnsafe(ref first);
+                    tempFirst.StoreUnsafe(ref last);
 
                     first = ref Unsafe.Add(ref first, (nuint)Vector128<long>.Count);
                     last = ref Unsafe.Subtract(ref last, (nuint)Vector128<long>.Count);
