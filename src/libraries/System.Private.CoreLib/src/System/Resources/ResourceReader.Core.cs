@@ -55,6 +55,8 @@ namespace System.Resources
             "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
+            Debug.Assert(Monitor.IsEntered(this));
+
             if (!AllowCustomResourceTypes)
             {
                 throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
@@ -94,6 +96,8 @@ namespace System.Resources
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
         {
+            Debug.Assert(Monitor.IsEntered(this));
+
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire
             // method body with "return false;", skipping all reflection code below.
 

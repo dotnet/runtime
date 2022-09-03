@@ -283,6 +283,8 @@ namespace System.Resources
             object? value;
             ResourceLocator resEntry;
 
+            // Lock the cache first, then the reader (reader locks implicitly through its methods).
+            // Lock order MUST match ResourceReader.ResourceEnumerator.Entry to avoid deadlock.
             lock (cache)
             {
                 // Find the offset within the data section
@@ -295,7 +297,7 @@ namespace System.Resources
 
                     // When data type cannot be cached
                     dataPos = resEntry.DataPosition;
-                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos, out _);
+                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos);
                 }
 
                 dataPos = reader.FindPosForResource(key);
@@ -353,14 +355,11 @@ namespace System.Resources
             return value;
         }
 
-        private static object? ReadValue (ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
+        private static object? ReadValue(ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
         {
             object? value;
             ResourceTypeCode typeCode;
 
-            // Normally calling LoadString or LoadObject requires
-            // taking a lock.  Note that in this case, we took a
-            // lock before calling this method.
             if (isString)
             {
                 value = reader.LoadString(dataPos);
