@@ -1307,7 +1307,7 @@ jobs:
         additionalSteps:
             - script: >-
                 ./dotnet.sh build
-                /p:TargetOS=android
+                /p:TargetOS=Android
                 /p:TargetArchitecture=x64
                 /p:Configuration=Release
                 /nr:false
