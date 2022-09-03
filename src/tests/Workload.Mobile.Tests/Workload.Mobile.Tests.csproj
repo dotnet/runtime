@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)-android</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
     <BundleXunitRunner>true</BundleXunitRunner>
@@ -19,6 +19,13 @@
     <!--<IsWasmProject>false</IsWasmProject>-->
     <!--<UseDefaultTestHost>true</UseDefaultTestHost>-->
   </PropertyGroup>
+
+  <ItemGroup>
+    <WorkloadIdForTesting Include="android"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
+  </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
 </Project>

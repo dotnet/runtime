@@ -342,7 +342,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x86
+    #- Android_x86
     - Android_x64
     variables:
       # map dependencies variables to local variables
