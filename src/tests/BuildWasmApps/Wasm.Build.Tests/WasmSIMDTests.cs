@@ -48,7 +48,9 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // https://github.com/dotnet/runtime/issues/75044 - disabled for V8, and NodeJS
+        //[MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.Chrome })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void PublishWithSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
         {
