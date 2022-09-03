@@ -1307,8 +1307,8 @@ jobs:
         additionalSteps:
             - script: >-
                 ./dotnet.sh build
-                /p:TargetOS=${{ parameters.osGroup }}
-                /p:TargetArchitecture=${{ parameters.archType }}
+                /p:TargetOS=android
+                /p:TargetArchitecture=x64
                 /p:Configuration=${{ parameters.buildConfig }}
                 /nr:false
                 /p:TreatWarningsAsErrors=true
