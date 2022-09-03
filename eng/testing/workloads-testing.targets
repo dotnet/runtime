@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
-    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
