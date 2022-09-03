@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
     {
         private bool _isInNodeSet;
 
-        public CanonicalXmlSignificantWhitespace(string strData, XmlDocument doc, bool defaultNodeSetInclusionState)
+        public CanonicalXmlSignificantWhitespace(string? strData, XmlDocument doc, bool defaultNodeSetInclusionState)
             : base(strData, doc)
         {
             _isInNodeSet = defaultNodeSetInclusionState;

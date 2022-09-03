@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class DSAKeyValue : KeyInfoClause
     {
-        private DSA? _key;
+        private DSA _key;
 
         //
         // public constructors
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Xml
             _key = DSA.Create();
         }
 
-        public DSAKeyValue(DSA? key)
+        public DSAKeyValue(DSA key)
         {
             _key = key;
         }
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public DSA? Key
+        public DSA Key
         {
             get { return _key; }
             set { _key = value; }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml
 
         internal override XmlElement GetXml(XmlDocument xmlDocument)
         {
-            DSAParameters dsaParams = _key!.ExportParameters(false);
+            DSAParameters dsaParams = _key.ExportParameters(false);
 
             XmlElement keyValueElement = xmlDocument.CreateElement(KeyValueElementName, SignedXml.XmlDsigNamespaceUrl);
             XmlElement dsaKeyValueElement = xmlDocument.CreateElement(DSAKeyValueElementName, SignedXml.XmlDsigNamespaceUrl);

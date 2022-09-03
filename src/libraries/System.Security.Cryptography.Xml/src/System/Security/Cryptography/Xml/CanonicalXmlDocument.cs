@@ -83,12 +83,12 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlWhitespace CreateWhitespace(string? prefix)
         {
-            return new CanonicalXmlWhitespace(prefix!, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlWhitespace(prefix, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlSignificantWhitespace CreateSignificantWhitespace(string? text)
         {
-            return new CanonicalXmlSignificantWhitespace(text!, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlSignificantWhitespace(text, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlProcessingInstruction CreateProcessingInstruction(string target, string? data)
