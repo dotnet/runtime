@@ -3852,7 +3852,7 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     CONTRACTL_END;
 
     ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    if (InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pITypeInfo, pNew, NULL) == NULL)
     {
         SafeAddRef(pNew);
     }
