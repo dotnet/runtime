@@ -63,6 +63,23 @@
     <Compile Include="$(RepoRoot)src\libraries\Common\tests\Tests\RandomizedTestOrderAssemblyInfo.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' != 'Browser'">
+    <WorkloadIdForTesting Include="android;android-33;maui-android" Condition="'$(TargetOS)' == 'Android'" />
+    <WorkloadIdForTesting Include="ios;maui-ios" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'" />
+    <WorkloadIdForTesting Include="macos;maccatalyst;maui-maccatalyst" Condition="'$(TargetOS)' == 'MacCatalyst'" />
+    <WorkloadIdForTesting Include="tvos"               Condition="'$(TargetOS)' == 'tvOS'" />
+    <!--<WorkloadIdForTesting Include="maui" />-->
+    <!--<WorkloadIdForTesting Include="maui-desktop" Condition="" />-->
+    <!--<WorkloadIdForTesting Include="maui-mobile" Condition="" />-->
+    <!--<WorkloadIdForTesting Include="maui-tizen" Condition="" />-->
+    <!--<WorkloadIdForTesting Include="maui-windows" Condition="" />-->
+    <!--<WorkloadIdForTesting Include="runtimes-windows" Condition="" />-->
+
+    <WorkloadIdForTesting ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)tests.android.targets"
           Condition="'$(TargetOS)' == 'Android'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
