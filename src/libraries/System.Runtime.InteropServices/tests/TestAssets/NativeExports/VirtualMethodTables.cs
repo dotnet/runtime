@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace NativeExports
 {
-    internal unsafe static class VirtualMethodTables
+    public unsafe static class VirtualMethodTables
     {
         struct StaticFunctionTable
         {
