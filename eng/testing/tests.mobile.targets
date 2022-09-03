@@ -64,18 +64,19 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' != 'Browser'">
-    <WorkloadIdForTesting Include="android;android-33;maui-android" Condition="'$(TargetOS)' == 'Android'" />
-    <WorkloadIdForTesting Include="ios;maui-ios" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'" />
-    <WorkloadIdForTesting Include="macos;maccatalyst;maui-maccatalyst" Condition="'$(TargetOS)' == 'MacCatalyst'" />
-    <WorkloadIdForTesting Include="tvos"               Condition="'$(TargetOS)' == 'tvOS'" />
-    <!--<WorkloadIdForTesting Include="maui" />-->
-    <!--<WorkloadIdForTesting Include="maui-desktop" Condition="" />-->
-    <!--<WorkloadIdForTesting Include="maui-mobile" Condition="" />-->
-    <!--<WorkloadIdForTesting Include="maui-tizen" Condition="" />-->
-    <!--<WorkloadIdForTesting Include="maui-windows" Condition="" />-->
-    <!--<WorkloadIdForTesting Include="runtimes-windows" Condition="" />-->
+    <_WorkloadIds Include="android;android-33;maui-android" Condition="'$(TargetOS)' == 'Android'" />
+    <_WorkloadIds Include="ios;maui-ios" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'" />
+    <_WorkloadIds Include="macos;maccatalyst;maui-maccatalyst" Condition="'$(TargetOS)' == 'MacCatalyst'" />
+    <_WorkloadIds Include="tvos"               Condition="'$(TargetOS)' == 'tvOS'" />
+    <!--<_WorkloadIds Include="maui" />-->
+    <!--<_WorkloadIds Include="maui-desktop" Condition="" />-->
+    <!--<_WorkloadIds Include="maui-mobile" Condition="" />-->
+    <!--<_WorkloadIds Include="maui-tizen" Condition="" />-->
+    <!--<_WorkloadIds Include="maui-windows" Condition="" />-->
+    <!--<_WorkloadIds Include="runtimes-windows" Condition="" />-->
 
-    <WorkloadIdForTesting ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+    <WorkloadIdForTesting Include="@(_WorkloadIds)"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
   </ItemGroup>
