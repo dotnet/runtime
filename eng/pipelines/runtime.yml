@@ -1315,7 +1315,7 @@ jobs:
                 /p:ContinuousIntegrationBuild=true
                 /t:InstallWorkloadUsingArtifacts
                 $(Build.SourcesDirectory)/src/tests/Workload.Mobile.Tests.csproj
-              name: prep-workloads
+              name: prep_workloads
               displayName: Prepare workloads
 
         #creator: dotnet-bot
