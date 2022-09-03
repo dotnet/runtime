@@ -124,8 +124,8 @@ class StringLiteralEntryArray;
 class StringLiteralEntry
 {
     #define SLE_IS_FROZEN      (1u << 31)
-    #define SLE_IS_OVERFLOWN   (1u << 30)
-    #define SLE_REFCOUNT_MASK  (SLE_IS_FROZEN | SLE_IS_OVERFLOWN)
+    #define SLE_IS_OVERFLOWED  (1u << 30)
+    #define SLE_REFCOUNT_MASK  (SLE_IS_FROZEN | SLE_IS_OVERFLOWED)
 
 private:
     StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen)
@@ -160,7 +160,7 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION(GetRefCount() > 0);
+            PRECONDITION(GetRefCount() != 0);
             PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
@@ -171,9 +171,17 @@ public:
         if (IsRefCountOverflowed())
             return;
 
-        // the following increment may set SLE_IS_OVERFLOWN bit on it's own if we have more than
-        // 1073741823 strings in the map
-        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) + 1);
+        const DWORD refCount = GetRefCount() + 1;
+        if (refCount & SLE_IS_OVERFLOWED)
+        {
+            // We just overflowed m_dwRefCount (1073741823 + 1), make refCount = 1 and leave a mark SLE_IS_OVERFLOWED
+            // so the object will be always alive now
+            VolatileStore(&m_dwRefCount, (DWORD)(SLE_IS_OVERFLOWED | 1));
+        }
+        else
+        {
+            VolatileStore(&m_dwRefCount, refCount);
+        }
     }
 #ifndef DACCESS_COMPILE
     FORCEINLINE static void StaticRelease(StringLiteralEntry* pEntry)
@@ -234,7 +242,7 @@ public:
 
         _ASSERTE (!m_bDeleted);
 
-        return VolatileLoad(&m_dwRefCount) & SLE_REFCOUNT_MASK;
+        return VolatileLoad(&m_dwRefCount) & ~SLE_REFCOUNT_MASK;
     }
 
     STRINGREF* GetStringObject()
@@ -284,7 +292,7 @@ public:
 
     bool IsRefCountOverflowed()
     {
-        return VolatileLoad(&m_dwRefCount) & SLE_IS_OVERFLOWN;
+        return VolatileLoad(&m_dwRefCount) & SLE_IS_OVERFLOWED;
     }
 
 private:
