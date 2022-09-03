@@ -17,7 +17,7 @@ steps:
 
   # Build coreclr native test output
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} -p:BuildNativeAotFrameworkObjects=true -p:LibrariesConfiguration=${{ parameters.libsConfig }}
+    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:BuildNativeAotFrameworkObjects=true /p:LibrariesConfiguration=${{ parameters.libsConfig }}
       displayName: Build tests
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} '${{ parameters.testFilter }}' -p:LibrariesConfiguration=${{ parameters.libsConfig }}
@@ -25,7 +25,7 @@ steps:
 
   - ${{ if eq(parameters.runSingleFileTests, true) }}:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests $(buildConfigUpper) ${{ parameters.archType }} -p:LibrariesConfiguration=${{ parameters.libsConfig }}
+      - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests $(buildConfigUpper) ${{ parameters.archType }} /p:LibrariesConfiguration=${{ parameters.libsConfig }}
         displayName: Run tests in single file mode
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }} -p:LibrariesConfiguration=${{ parameters.libsConfig }}
