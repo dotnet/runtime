@@ -5764,15 +5764,10 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-#ifdef TARGET_ARMARCH
                 divMod->SetOper(GT_CAST);
-                divMod->SetUnsigned();
                 divMod->AsCast()->gtCastType = TYP_INT;
-#else
-                divMod->SetOper(GT_BITCAST);
-#endif
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
+                divMod->gtOp1                = mulhi;
+                divMod->gtOp2                = nullptr;
             }
         }
 
