@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="parentPath">The parent path.</param>
         /// <returns>The child keys.</returns>
-        IEnumerable<string> GetKeys(string? parentPath)
+        IEnumerable<string> GetChildKeys(string? parentPath)
             => GetChildKeys(System.Linq.Enumerable.Empty<string>(), parentPath);
 #endif
     }

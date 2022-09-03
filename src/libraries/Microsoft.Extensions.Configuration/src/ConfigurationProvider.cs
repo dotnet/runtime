@@ -63,20 +63,20 @@ namespace Microsoft.Extensions.Configuration
             string? parentPath)
         {
             var results = new List<string>();
-            results.AddRange(GetKeys(parentPath));
+            results.AddRange(GetChildKeys(parentPath));
             results.AddRange(earlierKeys);
             results.Sort(ConfigurationKeyComparer.Comparison);
             return results;
         }
 
-        public virtual IEnumerable<string> GetKeys(string? parentPath)
+        public virtual IEnumerable<string> GetChildKeys(string? parentPath)
         {
-            var res = new List<string>();
+            var results = new List<string>();
             if (parentPath is null)
             {
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
-                    res.Add(Segment(kv.Key, 0));
+                    results.Add(Segment(kv.Key, 0));
                 }
             }
             else
@@ -89,12 +89,12 @@ namespace Microsoft.Extensions.Configuration
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
                         kv.Key[parentPath.Length] == ':')
                     {
-                        res.Add(Segment(kv.Key, parentPath.Length + 1));
+                        results.Add(Segment(kv.Key, parentPath.Length + 1));
                     }
                 }
             }
 
-            return res;
+            return results;
         }
 
         private static string Segment(string key, int prefixLength)

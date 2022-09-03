@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Configuration
             // Note P = number of providers, K = max number of keys per provider,
             // The time complexity is O(K*P*log(K*P))
             var allKeys = providers
-                    .SelectMany(p => p.GetKeys(path))
+                    .SelectMany(p => p.GetChildKeys(path))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(key => key, ConfigurationKeyComparer.Instance);
 #else

@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Configuration
     {
         System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath);
 #if NET7_0_OR_GREATER
-        System.Collections.Generic.IEnumerable<string> GetKeys(string? parentPath)
+        System.Collections.Generic.IEnumerable<string> GetChildKeys(string? parentPath)
             => GetChildKeys(System.Linq.Enumerable.Empty<string>(), parentPath);
 #endif
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
