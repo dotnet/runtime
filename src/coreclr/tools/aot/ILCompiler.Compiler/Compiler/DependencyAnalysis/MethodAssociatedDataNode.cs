@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {

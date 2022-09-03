@@ -5063,11 +5063,12 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     if (allProfileWeightsAreValid)
     {
-        // Update the weight for bTest
+        // Update the weight for bTest. Normally, this reduces the weight of the bTest, except in odd
+        // cases of stress modes with inconsistent weights.
         //
         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
                 weightNext);
-        bTest->bbWeight = weightNext;
+        bTest->inheritWeight(block->bbNext);
 
         // Determine the new edge weights.
         //

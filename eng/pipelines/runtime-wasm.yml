@@ -12,10 +12,10 @@ jobs:
 #
 # Evaluate paths
 #
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
+- template: /eng/pipelines/common/evaluate-default-paths.yml
 
 - template: /eng/pipelines/runtime-extra-platforms-wasm.yml
   parameters:
+    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
     isRollingBuild: ${{ variables.isRollingBuild }}

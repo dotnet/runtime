@@ -326,7 +326,8 @@ namespace
                 PTRARRAYREF arrRefTmp;
                 PTRARRAYREF arrRef;
             } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
+            gc.arrRefTmp = NULL;
+            gc.arrRef = NULL;
             GCPROTECT_BEGIN(gc);
 
             // Only add objects that are in the correct thread
@@ -695,11 +696,9 @@ namespace
             OBJECTREF implRef;
             OBJECTREF instRef;
         } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
-        GCPROTECT_BEGIN(gc);
-
         gc.implRef = impl;
         gc.instRef = instance;
+        GCPROTECT_BEGIN(gc);
 
         // Check the object's SyncBlock for a managed object wrapper.
         SyncBlock* syncBlock = gc.instRef->GetSyncBlock();
@@ -807,13 +806,12 @@ namespace
             OBJECTREF wrapperMaybeRef;
             OBJECTREF objRefMaybe;
         } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
+        gc.implRef = impl;
+        gc.wrapperMaybeRef = wrapperMaybe;
+        gc.objRefMaybe = NULL;
         GCPROTECT_BEGIN(gc);
 
         STRESS_LOG4(LF_INTEROP, LL_INFO1000, "Get or Create EOC: (Identity: 0x%p) (Flags: %x) (Maybe: 0x%p) (ID: %lld)\n", identity, flags, OBJECTREFToObject(wrapperMaybe), wrapperId);
-
-        gc.implRef = impl;
-        gc.wrapperMaybeRef = wrapperMaybe;
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
         InteropLib::OBJECTHANDLE handle = NULL;
@@ -1121,10 +1119,9 @@ namespace InteropLibImports
                 OBJECTREF implRef;
                 OBJECTREF objsEnumRef;
             } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
             gc.implRef = NULL; // Use the globally registered implementation.
+            gc.objsEnumRef = NULL;
+            GCPROTECT_BEGIN(gc);
 
             // Pass the objects along to get released.
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
@@ -1228,11 +1225,10 @@ namespace InteropLibImports
                 OBJECTREF wrapperMaybeRef;
                 OBJECTREF objRef;
             } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
             gc.implRef = NULL; // Use the globally registered implementation.
             gc.wrapperMaybeRef = NULL; // No supplied wrapper here.
+            gc.objRef = NULL;
+            GCPROTECT_BEGIN(gc);
 
             // Get wrapper for external object
             bool success = TryGetOrCreateObjectForComInstanceInternal(
@@ -1315,7 +1311,7 @@ namespace InteropLibImports
             {
                 OBJECTREF objRef;
             } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
+            gc.objRef = NULL;
             GCPROTECT_BEGIN(gc);
 
             // Get the target of the external object's reference.

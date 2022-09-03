@@ -8428,41 +8428,43 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
-#ifdef TARGET_64BIT
-    // On 64-bit platforms, we disable pinvoke inlining inside of try regions.
-    // Note that this could be needed on other architectures too, but we
-    // haven't done enough investigation to know for sure at this point.
-    //
-    // Here is the comment from JIT64 explaining why:
-    //   [VSWhidbey: 611015] - because the jitted code links in the
-    //   Frame (instead of the stub) we rely on the Frame not being
-    //   'active' until inside the stub.  This normally happens by the
-    //   stub setting the return address pointer in the Frame object
-    //   inside the stub.  On a normal return, the return address
-    //   pointer is zeroed out so the Frame can be safely re-used, but
-    //   if an exception occurs, nobody zeros out the return address
-    //   pointer.  Thus if we re-used the Frame object, it would go
-    //   'active' as soon as we link it into the Frame chain.
-    //
-    //   Technically we only need to disable PInvoke inlining if we're
-    //   in a handler or if we're in a try body with a catch or
-    //   filter/except where other non-handler code in this method
-    //   might run and try to re-use the dirty Frame object.
-    //
-    //   A desktop test case where this seems to matter is
-    //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+    // For platforms that use per-P/Invoke InlinedCallFrame initialization,
+    // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
+    // The runtime can correctly unwind out of an InlinedCallFrame and out of managed code. However,
+    // it cannot correctly unwind out of an InlinedCallFrame and stop at that frame without also unwinding
+    // at least one managed frame. In particular, the runtime struggles to restore non-volatile registers
+    // from the top-most unmanaged call before the InlinedCallFrame. As a result, the runtime does not support
+    // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
     if (block->hasTryIndex())
     {
         // This does not apply to the raw pinvoke call that is inside the pinvoke
         // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
         // otherwise we would end up with a stub that recursively calls itself, and end
         // up with a stack overflow.
+        // This works correctly because the runtime never emits a catch block in a managed-to-native
+        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
+        // P/Invoke helpers, this condition will need to be revisited.
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
         {
             return true;
         }
 
-        return false;
+        // Check if this block's try block or any containing try blocks have catch handlers.
+        // If any of the containing try blocks have catch handlers,
+        // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
+        // we can inline a P/Invoke into this block in the try since the code will not resume execution
+        // in the same method after throwing an exception if only fault or finally handlers are executed.
+        for (unsigned int ehIndex = block->getTryIndex(); ehIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             ehIndex              = ehGetEnclosingTryIndex(ehIndex))
+        {
+            if (ehGetDsc(ehIndex)->HasCatchHandler())
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 #endif // TARGET_64BIT
 
@@ -15014,53 +15016,60 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 tiRetVal        = se.seTypeInfo;
                 op1             = tree;
 
-                // If the expression to dup is simple, just clone it.
-                // Otherwise spill it to a temp, and reload the temp twice.
-                bool cloneExpr = false;
+                // In unoptimized code we leave the decision of
+                // cloning/creating temps up to impCloneExpr, while in
+                // optimized code we prefer temps except for some cases we know
+                // are profitable.
 
-                if (!opts.compDbgCode)
+                if (opts.OptimizationEnabled())
                 {
+                    bool clone = false;
                     // Duplicate 0 and +0.0
                     if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
                     {
-                        cloneExpr = true;
+                        clone = true;
                     }
                     // Duplicate locals and addresses of them
                     else if (op1->IsLocal())
                     {
-                        cloneExpr = true;
+                        clone = true;
                     }
-                    else if (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal() &&
+                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1) &&
                              (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
                     {
-                        cloneExpr = true;
+                        // We mark implicit byrefs with GTF_GLOB_REF (see gtNewFieldRef for why).
+                        // Avoid cloning for these.
+                        clone = (op1->gtFlags & GTF_GLOB_REF) == 0;
+                    }
+
+                    if (clone)
+                    {
+                        op2 = gtCloneExpr(op1);
+                    }
+                    else
+                    {
+                        const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
+                        impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
+                        var_types type = genActualType(lvaTable[tmpNum].TypeGet());
+
+                        // Propagate type info to the temp from the stack and the original tree
+                        if (type == TYP_REF)
+                        {
+                            assert(lvaTable[tmpNum].lvSingleDef == 0);
+                            lvaTable[tmpNum].lvSingleDef = 1;
+                            JITDUMP("Marked V%02u as a single def local\n", tmpNum);
+                            lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
+                        }
+
+                        op1 = gtNewLclvNode(tmpNum, type);
+                        op2 = gtNewLclvNode(tmpNum, type);
                     }
                 }
                 else
                 {
-                    // Always clone for debug mode
-                    cloneExpr = true;
+                    op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("DUP instruction"));
                 }
-
-                if (!cloneExpr)
-                {
-                    const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
-                    impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
-                    var_types type = genActualType(lvaTable[tmpNum].TypeGet());
-                    op1            = gtNewLclvNode(tmpNum, type);
-
-                    // Propagate type info to the temp from the stack and the original tree
-                    if (type == TYP_REF)
-                    {
-                        assert(lvaTable[tmpNum].lvSingleDef == 0);
-                        lvaTable[tmpNum].lvSingleDef = 1;
-                        JITDUMP("Marked V%02u as a single def local\n", tmpNum);
-                        lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
-                    }
-                }
-
-                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("DUP instruction"));
 
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
                 impPushOnStack(op1, tiRetVal);
@@ -15602,6 +15611,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             lclDsc->lvSuppressedZeroInit = 1;
                             compSuppressedZeroInit       = true;
                         }
+
+                        // The constructor may store "this", with subsequent code mutating the underlying local
+                        // through the captured reference. To correctly spill the node we'll push onto the stack
+                        // in such a case, we must mark the temp as potentially aliased.
+                        lclDsc->lvHasLdAddrOp = true;
 
                         // Obtain the address of the temp
                         newObjThisPtr =
@@ -16612,6 +16626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                                lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
                                 op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
@@ -20194,18 +20209,25 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         return;
     }
 
-    GenTree* lclVarTree;
-
+    GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
-    if (isAddressInLocal && varTypeIsStruct(lclVarTree))
+    if (isAddressInLocal)
     {
-        inlCurArgInfo->argIsByRefToStructLocal = true;
-#ifdef FEATURE_SIMD
-        if (lvaTable[lclVarTree->AsLclVarCommon()->GetLclNum()].lvSIMDType)
+        LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
+
+        if (varTypeIsStruct(lclVarTree))
         {
-            pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
-        }
+            inlCurArgInfo->argIsByRefToStructLocal = true;
+#ifdef FEATURE_SIMD
+            if (varDsc->lvSIMDType)
+            {
+                pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
+            }
 #endif // FEATURE_SIMD
+        }
+
+        // Spilling code relies on correct aliasability annotations.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
@@ -21992,6 +22014,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     //
                     // Ideally, we then inline the boxed method and and if it turns out not to modify
                     // the copy, we can undo the copy too.
+                    GenTree* localCopyThis = nullptr;
+
                     if (requiresInstMethodTableArg)
                     {
                         // Perform a trial box removal and ask for the type handle tree that fed the box.
@@ -22005,7 +22029,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             // If that worked, turn the box into a copy to a local var
                             //
                             JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
-                            GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                            localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
                             if (localCopyThis != nullptr)
                             {
@@ -22046,7 +22070,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     else
                     {
                         JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
-                        GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                        localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
                         if (localCopyThis != nullptr)
                         {
@@ -22069,6 +22093,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                     if (optimizedTheBox)
                     {
+                        assert(localCopyThis->OperIs(GT_ADDR));
+
+                        // We may end up inlining this call, so the local copy must be marked as "aliased",
+                        // making sure the inlinee importer will know when to spill references to its value.
+                        lvaGetDesc(localCopyThis->AsUnOp()->gtOp1->AsLclVar())->lvHasLdAddrOp = true;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())

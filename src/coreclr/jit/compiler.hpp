@@ -3886,13 +3886,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2
-    if (fgNoStructParamPromotion)
-    {
-        // The struct parameter is not enregistered
-        return PROMOTION_TYPE_DEPENDENT;
-    }
-
 // We have a parameter that could be enregistered
 #if defined(TARGET_ARM)
     // TODO-Cleanup: return INDEPENDENT for arm32.
