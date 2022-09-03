@@ -129,4 +129,10 @@
   <data name="net_WebSockets_ClientWindowBitsNegotiationFailure" xml:space="preserve">
     <value>The WebSocket failed to negotiate max client window bits. The client requested {0} but the server responded with {1}.</value>
   </data>
+  <data name="net_WebSockets_OptionsIncompatibleWithCustomInvoker" xml:space="preserve">
+    <value>UseDefaultCredentials, Credentials, Proxy, ClientCertificates, RemoteCertificateValidationCallback and Cookies must not be set on ClientWebSocketOptions when an HttpMessageInvoker instance is also specified. These options should be set on the HttpMessageInvoker's underlying HttpMessageHandler instead.</value>
+  </data>
+  <data name="net_WebSockets_CustomInvokerRequiredForHttp2" xml:space="preserve">
+    <value>An HttpMessageInvoker instance must be passed to ConnectAsync when using HTTP/2.</value>
+  </data>
 </root>
