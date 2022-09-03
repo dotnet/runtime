@@ -217,7 +217,7 @@ const char* GlobalizationNative_GetICUDTName(const char* culture)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
-#if !defined(STATIC_SHIM_COMPILE)
+#if !defined(LOCAL_BUILD)
 // Static NativeAOT compilation does not have
 // GlobalizationNative_LoadICUData() as entrypoint
     if (!isDataSet)

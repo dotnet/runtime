@@ -15,7 +15,7 @@
 #include "pal_icushim_internal_android.h"
 #else
 
-#if !defined(STATIC_SHIM_COMPILE)
+#if !defined(LOCAL_BUILD)
 #define U_DISABLE_RENAMING 1
 #endif
 
