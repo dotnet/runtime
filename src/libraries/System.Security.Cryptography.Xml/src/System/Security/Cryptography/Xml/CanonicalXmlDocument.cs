@@ -91,9 +91,9 @@ namespace System.Security.Cryptography.Xml
             return new CanonicalXmlSignificantWhitespace(text!, this, _defaultNodeSetInclusionState);
         }
 
-        public override XmlProcessingInstruction CreateProcessingInstruction(string target, string data)
+        public override XmlProcessingInstruction CreateProcessingInstruction(string target, string? data)
         {
-            return new CanonicalXmlProcessingInstruction(target, data, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlProcessingInstruction(target, data!, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlComment CreateComment(string? data)

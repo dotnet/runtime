@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Xml
 
                                 // We should not discard comments here!!!
                                 resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
-                                hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver!, baseUri), resolver , baseUri);
+                                hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver!, baseUri), resolver, baseUri);
                                 break;
                             }
 
@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.Xml
                     case ReferenceTargetType.XmlElement:
                         // We need to create a DocumentNavigator out of the XmlElement
                         resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
-                        hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget!, resolver!, baseUri), resolver , baseUri);
+                        hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget!, resolver!, baseUri), resolver, baseUri);
                         break;
                     default:
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, _uri);
