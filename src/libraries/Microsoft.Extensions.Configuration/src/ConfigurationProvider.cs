@@ -63,24 +63,20 @@ namespace Microsoft.Extensions.Configuration
             string? parentPath)
         {
             var results = new List<string>();
-            results.AddRange(GetChildKeysInternal(parentPath));
+            results.AddRange(GetKeys(parentPath));
             results.AddRange(earlierKeys);
             results.Sort(ConfigurationKeyComparer.Comparison);
             return results;
         }
 
-        /// <summary>
-        /// Returns the list of keys that this provider has.
-        /// </summary>
-        /// <param name="parentPath">The path for the parent IConfiguration.</param>
-        /// <returns>The list of keys for this provider.</returns>
-        internal IEnumerable<string> GetChildKeysInternal(string? parentPath)
+        public virtual IEnumerable<string> GetKeys(string? parentPath)
         {
+            var res = new List<string>();
             if (parentPath is null)
             {
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
-                    yield return Segment(kv.Key, 0);
+                    res.Add(Segment(kv.Key, 0));
                 }
             }
             else
@@ -93,10 +89,12 @@ namespace Microsoft.Extensions.Configuration
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
                         kv.Key[parentPath.Length] == ':')
                     {
-                        yield return Segment(kv.Key, parentPath.Length + 1);
+                        res.Add(Segment(kv.Key, parentPath.Length + 1));
                     }
                 }
             }
+
+            return res;
         }
 
         private static string Segment(string key, int prefixLength)

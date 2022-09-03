@@ -46,5 +46,16 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="parentPath">The parent path.</param>
         /// <returns>The child keys.</returns>
         IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath);
+
+#if NET7_0_OR_GREATER
+        /// <summary>
+        /// Returns the configuration keys for a given parent path based on this
+        /// <see cref="IConfigurationProvider"/> data.
+        /// </summary>
+        /// <param name="parentPath">The parent path.</param>
+        /// <returns>The child keys.</returns>
+        IEnumerable<string> GetKeys(string? parentPath)
+            => GetChildKeys(System.Linq.Enumerable.Empty<string>(), parentPath);
+#endif
     }
 }
