@@ -1309,7 +1309,7 @@ jobs:
                 ./dotnet.sh build
                 /p:TargetOS=android
                 /p:TargetArchitecture=x64
-                /p:Configuration=${{ parameters.buildConfig }}
+                /p:Configuration=Release
                 /nr:false
                 /p:TreatWarningsAsErrors=true
                 /p:ContinuousIntegrationBuild=true
