@@ -345,68 +345,6 @@ namespace System.Runtime
             return success ? (int)nFrames : -(int)nFrames;
         }
 
-        // The GC conservative reporting descriptor is a special structure of data that the GC
-        // parses to determine whether there are specific regions of memory that it should not
-        // collect or move around.
-        // During garbage collection, the GC will inspect the data in this structure, and verify that:
-        //  1) _magic is set to the magic number (also hard coded on the GC side)
-        //  2) The reported region is valid (checks alignments, size, within bounds of the thread memory, etc...)
-        //  3) The ConservativelyReportedRegionDesc pointer must be reported by a frame which does not make a pinvoke transition.
-        //  4) The value of the _hash field is the computed hash of _regionPointerLow with _regionPointerHigh
-        //  5) The region must be IntPtr aligned, and have a size which is also IntPtr aligned
-        // If all conditions are satisfied, the region of memory starting at _regionPointerLow and ending at
-        // _regionPointerHigh will be conservatively reported.
-        // This can only be used to report memory regions on the current stack and the structure must itself
-        // be located on the stack.
-        public struct ConservativelyReportedRegionDesc
-        {
-            internal const ulong MagicNumber64 = 0x87DF7A104F09E0A9UL;
-            internal const uint MagicNumber32 = 0x4F09E0A9;
-
-            internal UIntPtr _magic;
-            internal UIntPtr _regionPointerLow;
-            internal UIntPtr _regionPointerHigh;
-            internal UIntPtr _hash;
-        }
-
-        [RuntimeExport("RhInitializeConservativeReportingRegion")]
-        public static unsafe void RhInitializeConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc, void* bufferBegin, int cbBuffer)
-        {
-            Debug.Assert((((int)bufferBegin) & (sizeof(IntPtr) - 1)) == 0, "Buffer not IntPtr aligned");
-            Debug.Assert((cbBuffer & (sizeof(IntPtr) - 1)) == 0, "Size of buffer not IntPtr aligned");
-
-            UIntPtr regionPointerLow = (UIntPtr)bufferBegin;
-            UIntPtr regionPointerHigh = (UIntPtr)(((byte*)bufferBegin) + cbBuffer);
-
-            // Setup pointers to start and end of region
-            regionDesc->_regionPointerLow = regionPointerLow;
-            regionDesc->_regionPointerHigh = regionPointerHigh;
-
-            // Activate the region for processing
-#if TARGET_64BIT
-            ulong hash = ConservativelyReportedRegionDesc.MagicNumber64;
-            hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerLow;
-            hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerHigh;
-
-            regionDesc->_hash = new UIntPtr(hash);
-            regionDesc->_magic = new UIntPtr(ConservativelyReportedRegionDesc.MagicNumber64);
-#else
-            uint hash = ConservativelyReportedRegionDesc.MagicNumber32;
-            hash = ((hash << 13) ^ hash) ^ (uint)regionPointerLow;
-            hash = ((hash << 13) ^ hash) ^ (uint)regionPointerHigh;
-
-            regionDesc->_hash = new UIntPtr(hash);
-            regionDesc->_magic = new UIntPtr(ConservativelyReportedRegionDesc.MagicNumber32);
-#endif
-        }
-
-        // Disable conservative reporting
-        [RuntimeExport("RhDisableConservativeReportingRegion")]
-        public static unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc)
-        {
-            regionDesc->_magic = default(UIntPtr);
-        }
-
         [RuntimeExport("RhCreateThunksHeap")]
         public static object RhCreateThunksHeap(IntPtr commonStubAddress)
         {

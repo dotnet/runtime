@@ -871,6 +871,18 @@ namespace System.Runtime.InteropServices
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static NFloat IBinaryNumber<NFloat>.AllBitsSet
+        {
+#if TARGET_64BIT
+            [NonVersionable]
+            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
+#else
+            [NonVersionable]
+            get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(NFloat value) => NativeType.IsPow2(value._value);
 
@@ -1112,20 +1124,30 @@ namespace System.Runtime.InteropServices
         }
 
         //
-        // IFloatingPointIeee754
+        // IFloatingPointConstants
         //
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
         public static NFloat E => new NFloat(NativeType.E);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        public static NFloat Pi => new NFloat(NativeType.Pi);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        public static NFloat Tau => new NFloat(NativeType.Tau);
+
+        //
+        // IFloatingPointIeee754
+        //
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         public static NFloat NegativeZero => new NFloat(NativeType.NegativeZero);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
-        public static NFloat Pi => new NFloat(NativeType.Pi);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
-        public static NFloat Tau => new NFloat(NativeType.Tau);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static NFloat BitDecrement(NFloat x) => new NFloat(NativeType.BitDecrement(x._value));
@@ -1245,6 +1267,63 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<NFloat>.IsCanonical(NFloat value) => true;
@@ -1413,14 +1492,14 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1526,26 +1605,26 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1675,7 +1754,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1703,8 +1782,8 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
 
-        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
-        public static NFloat Root(NFloat x, int n) => new NFloat(NativeType.Root(x._value, n));
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static NFloat RootN(NFloat x, int n) => new NFloat(NativeType.RootN(x._value, n));
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static NFloat Sqrt(NFloat x) => new NFloat(NativeType.Sqrt(x._value));
@@ -1733,17 +1812,26 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static NFloat Acos(NFloat x) => new NFloat(NativeType.Acos(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static NFloat Asin(NFloat x) => new NFloat(NativeType.Asin(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static NFloat Atan(NFloat x) => new NFloat(NativeType.Atan(x._value));
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
-        public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static NFloat Cos(NFloat x) => new NFloat(NativeType.Cos(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static NFloat Sin(NFloat x) => new NFloat(NativeType.Sin(x._value));
@@ -1751,32 +1839,24 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (NFloat Sin, NFloat Cos) SinCos(NFloat x)
         {
-            var (sin, cos) = MathF.SinCos((float)x);
+            var (sin, cos) = NativeType.SinCos(x._value);
             return (new NFloat(sin), new NFloat(cos));
         }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (NFloat SinPi, NFloat CosPi) SinCosPi(NFloat x)
+        {
+            var (sinPi, cosPi) = NativeType.SinCosPi(x._value);
+            return (new NFloat(sinPi), new NFloat(cosPi));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static NFloat Tan(NFloat x) => new NFloat(NativeType.Tan(x._value));
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value, y._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value, y._value));
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value));
     }
 }

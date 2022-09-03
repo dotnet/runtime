@@ -229,7 +229,7 @@ HRESULT HENUMInternal::EnumWithCount(
         return S_FALSE;
     }
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     cTokens = min ( (pEnum->u.m_ulEnd - pEnum->u.m_ulCur), cMax);
 
     if (pEnum->m_EnumType == MDSimpleEnum)
@@ -295,7 +295,7 @@ HRESULT HENUMInternal::EnumWithCount(
     // Number of tokens must always be a multiple of 2.
     _ASSERTE(! ((pEnum->u.m_ulEnd - pEnum->u.m_ulCur) % 2) );
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     cTokens = min ( (pEnum->u.m_ulEnd - pEnum->u.m_ulCur), cMax * 2);
 
     // get the embedded dynamic array

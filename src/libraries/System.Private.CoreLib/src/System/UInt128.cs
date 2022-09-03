@@ -22,11 +22,13 @@ namespace System
     {
         internal const int Size = 16;
 
-        // Unix System V ABI actually requires this to be little endian
-        // order and not `upper, lower` on big endian systems.
-
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
         private readonly ulong _lower;
         private readonly ulong _upper;
+#endif
 
         /// <summary>Initializes a new instance of the <see cref="UInt128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
@@ -285,7 +287,7 @@ namespace System
             }
             else
             {
-                // For values greater than than 2^104 we basically do the same as before but we need to account
+                // For values greater than 2^104 we basically do the same as before but we need to account
                 // for the precision loss that double will have. As such, the lower value effectively drops the
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
@@ -847,6 +849,121 @@ namespace System
             return ulong.TrailingZeroCount(value._lower);
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<UInt128>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out UInt128 value)
+        {
+            UInt128 result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > Size) && (source[..^Size].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - Size);
+
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<UInt128>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Big Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<UInt128>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out UInt128 value)
+        {
+            UInt128 result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[^1]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > Size) && (source[Size..].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<UInt128>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Little Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part, then reverse endianness to
+                    // ensure the order is correct. This is more efficient than iterating in reverse
+                    // due to current JIT limitations
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        UInt128 part = Unsafe.Add(ref sourceRef, i);
+                        part <<= (i * 8);
+                        result |= part;
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<UInt128>.GetShortestBitLength()
         {
@@ -906,6 +1023,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static UInt128 IBinaryNumber<UInt128>.AllBitsSet => new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(UInt128 value) => PopCount(value) == 1U;
 
@@ -939,28 +1059,28 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower < right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower <= right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
                 || (left._upper == right._upper) && (left._lower > right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
@@ -1041,12 +1161,32 @@ namespace System
                 // we need to get a Span<uint> containing the value represented
                 // in the least number of elements possible.
 
+                // We need to ensure that we end up with 4x uints representing the bits from
+                // least significant to most significant so the math will be correct on both
+                // little and big endian systems. So we'll just allocate the relevant buffer
+                // space and then write out the four parts using the native endianness of the
+                // system.
+
                 uint* pLeft = stackalloc uint[Size / sizeof(uint)];
-                quotient.WriteLittleEndianUnsafe(new Span<byte>(pLeft, Size));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 0), (uint)(quotient._lower >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 1), (uint)(quotient._lower >> 32));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
+
                 Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
 
+                // Repeat the same operation with the divisor
+
                 uint* pRight = stackalloc uint[Size / sizeof(uint)];
-                divisor.WriteLittleEndianUnsafe(new Span<byte>(pRight, Size));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 0), (uint)(divisor._lower >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 1), (uint)(divisor._lower >> 32));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
+
                 Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];
@@ -1184,10 +1324,10 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(UInt128 left, UInt128 right) => (left._lower == right._lower) && (left._upper == right._upper);
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(UInt128 left, UInt128 right) => (left._lower != right._lower) || (left._upper != right._upper);
 
         //
@@ -1333,6 +1473,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static UInt128 INumberBase<UInt128>.Abs(UInt128 value) => value;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<UInt128>.IsCanonical(UInt128 value) => true;
 
@@ -1398,7 +1595,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromChecked<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromChecked<TOther>(TOther value, out UInt128 result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1460,7 +1661,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromSaturating<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromSaturating<TOther>(TOther value, out UInt128 result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1522,7 +1727,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromTruncating<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromTruncating<TOther>(TOther value, out UInt128 result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1584,7 +1793,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertToChecked<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<UInt128>.TryConvertToChecked<TOther>(UInt128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1651,14 +1860,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertToSaturating<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<UInt128>.TryConvertToSaturating<TOther>(UInt128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1731,14 +1940,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertToTruncating<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<UInt128>.TryConvertToTruncating<TOther>(UInt128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1805,7 +2014,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1820,7 +2029,7 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
         public static UInt128 operator <<(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we
@@ -1853,10 +2062,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
         public static UInt128 operator >>(UInt128 value, int shiftAmount) => value >>> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static UInt128 operator >>>(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we

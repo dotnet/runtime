@@ -194,10 +194,7 @@ namespace System.Xml.Schema
             }
             if (attdef.Presence == SchemaDeclBase.Use.Default || attdef.Presence == SchemaDeclBase.Use.Fixed)
             { //Not adding RequiredFixed here
-                if (_defaultAttdefs == null)
-                {
-                    _defaultAttdefs = new List<IDtdDefaultAttributeInfo>();
-                }
+                _defaultAttdefs ??= new List<IDtdDefaultAttributeInfo>();
                 _defaultAttdefs.Add(attdef);
             }
         }

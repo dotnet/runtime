@@ -91,7 +91,7 @@ Function :
     FMTMSG__watoi
 
     Converts a wide string repersentation of an integer number
-    into a interger number.
+    into a integer number.
 
     Returns a integer number, or 0 on failure. 0 is not a valid number
     for FormatMessage inserts.
@@ -333,7 +333,7 @@ FormatMessageW(
     if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) &&
          ( dwLanguageId != 0) )
     {
-        ERROR( "Invalid language indentifier.\n" );
+        ERROR( "Invalid language identifier.\n" );
         SetLastError( ERROR_RESOURCE_LANG_NOT_FOUND );
         goto exit;
     }
@@ -400,7 +400,7 @@ FormatMessageW(
         }
         if ( !lpWorkingString )
         {
-            ERROR( "Invalid error indentifier.\n" );
+            ERROR( "Invalid error identifier.\n" );
             SetLastError( ERROR_INVALID_ADDRESS );
         }
         goto exit;
@@ -456,7 +456,7 @@ FormatMessageW(
                     lpSourceString++;
                     if ( iswdigit( *lpSourceString ) )
                     {
-                        ERROR( "Invalid insert indentifier.\n" );
+                        ERROR( "Invalid insert identifier.\n" );
                         SetLastError( ERROR_INVALID_PARAMETER );
                         lpWorkingString = NULL;
                         nCount = 0;
@@ -466,7 +466,7 @@ FormatMessageW(
                 Index = FMTMSG__watoi( Number );
                 if ( Index == 0 )
                 {
-                    ERROR( "Invalid insert indentifier.\n" );
+                    ERROR( "Invalid insert identifier.\n" );
                     SetLastError( ERROR_INVALID_PARAMETER );
                     lpWorkingString = NULL;
                     nCount = 0;

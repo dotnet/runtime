@@ -2123,7 +2123,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 If m_CheckPreamble Then
                     If BytesMatch(ByteBuffer, m_Preamble) Then
                         ByteBufferStartIndex = m_Preamble.Length
-                        Count -= m_Preamble.Length ' Reduce the valid byte count if ByteBuffer was shrinked.
+                        Count -= m_Preamble.Length ' Reduce the valid byte count if ByteBuffer was shrunk.
                     End If
                     m_CheckPreamble = False
                     ' In case of an empty file with BOM at the beginning return FALSE.

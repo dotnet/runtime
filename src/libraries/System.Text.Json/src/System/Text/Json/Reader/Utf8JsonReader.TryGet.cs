@@ -129,7 +129,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
 
-            ReadOnlySpan<byte> unescapedSource = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> unescapedSource;
             byte[]? rentedBuffer = null;
             int valueLength;
 
@@ -182,7 +182,7 @@ namespace System.Text.Json
             Debug.Assert(ValueIsEscaped);
 
             byte[]? rentedBuffer = null;
-            ReadOnlySpan<byte> source = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> source;
 
             if (HasValueSequence)
             {
@@ -1227,7 +1227,7 @@ namespace System.Text.Json
 
         internal bool TryGetDateTimeCore(out DateTime value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {
@@ -1292,7 +1292,7 @@ namespace System.Text.Json
 
         internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {
@@ -1358,7 +1358,7 @@ namespace System.Text.Json
 
         internal bool TryGetGuidCore(out Guid value)
         {
-            ReadOnlySpan<byte> span = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> span;
 
             if (HasValueSequence)
             {

@@ -161,8 +161,7 @@ namespace System.Security.Permissions
                         }
                         if (addToNewIDRoles)
                         {
-                            if (idroles == null)
-                                idroles = new List<IDRole>();
+                            idroles ??= new List<IDRole>();
                             idroles.Add(new IDRole(newAuthenticated, newID, newRole));
                         }
                     }

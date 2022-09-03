@@ -192,7 +192,7 @@ namespace System.ServiceProcess
                         return _dependentServices;
                     }
 
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     if (lastError != Interop.Errors.ERROR_MORE_DATA)
                         throw new Win32Exception(lastError);
 
@@ -305,7 +305,7 @@ namespace System.ServiceProcess
                     return _servicesDependedOn;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -384,7 +384,7 @@ namespace System.ServiceProcess
                 using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_CONFIG);
                 bool success = Interop.Advapi32.QueryServiceConfig(serviceHandle, IntPtr.Zero, 0, out int bytesNeeded);
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -575,7 +575,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;
@@ -606,7 +606,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;
@@ -625,19 +625,15 @@ namespace System.ServiceProcess
 
         private static SafeServiceHandle GetDataBaseHandleWithAccess(string machineName, int serviceControlManagerAccess)
         {
-            SafeServiceHandle? databaseHandle;
-            if (machineName.Equals(DefaultMachineName) || machineName.Length == 0)
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess));
-            }
-            else
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
-            }
+            var databaseHandle = new SafeServiceHandle();
+            Marshal.InitHandle(databaseHandle, machineName.Equals(DefaultMachineName) || machineName.Length == 0 ?
+                Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess) :
+                Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
 
             if (databaseHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                databaseHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenSC, machineName), inner);
             }
 
@@ -652,10 +648,7 @@ namespace System.ServiceProcess
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
-            if (_serviceManagerHandle == null)
-            {
-                _serviceManagerHandle = GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
-            }
+            _serviceManagerHandle ??= GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
         }
 
         /// <summary>
@@ -686,10 +679,12 @@ namespace System.ServiceProcess
         {
             GetDataBaseHandleWithConnectAccess();
 
-            var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
+            var serviceHandle = new SafeServiceHandle();
+            Marshal.InitHandle(serviceHandle, Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
             if (serviceHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                serviceHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenService, ServiceName, _machineName), inner);
             }
 

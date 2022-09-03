@@ -51,6 +51,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">

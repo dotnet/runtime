@@ -196,7 +196,7 @@ namespace System.Data.OleDb
             {
                 object? value = command.GetPropertyValue(OleDbPropertySetGuid.Rowset, ODB.DBPROP_IRow);
 
-                // SQLOLEDB always returns VARIANT_FALSE for DBPROP_IROW, so base the answer on existance
+                // SQLOLEDB always returns VARIANT_FALSE for DBPROP_IROW, so base the answer on existence
                 supportIRow = !(value is OleDbPropertyStatus);
                 _supportIRow = supportIRow;
                 _hasSupportIRow = true;

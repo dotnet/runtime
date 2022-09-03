@@ -35,17 +35,7 @@ namespace System.Xml.Schema
             get { return _nameTable; }
         }
 
-        protected SchemaNames SchemaNames
-        {
-            get
-            {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
-            }
-        }
+        protected SchemaNames SchemaNames => _schemaNames ??= new SchemaNames(_nameTable);
 
         protected ValidationEventHandler? EventHandler
         {

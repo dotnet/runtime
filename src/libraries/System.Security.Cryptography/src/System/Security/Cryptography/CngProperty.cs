@@ -77,16 +77,7 @@ namespace System.Security.Cryptography
             if (other._value == null)
                 return false;
 
-            if (_value.Length != other._value.Length)
-                return false;
-
-            for (int i = 0; i < _value.Length; i++)
-            {
-                if (_value[i] != other._value[i])
-                    return false;
-            }
-
-            return true;
+            return _value.AsSpan().SequenceEqual(other._value);
         }
 
         public override int GetHashCode()

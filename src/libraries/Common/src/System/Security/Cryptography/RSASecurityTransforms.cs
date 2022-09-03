@@ -556,11 +556,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    if (_keys != null)
-                    {
-                        // Do not set _keys to null, in order to prevent rehydration.
-                        _keys.Dispose();
-                    }
+                    // Do not set _keys to null, in order to prevent rehydration.
+                    _keys?.Dispose();
                 }
 
                 base.Dispose(disposing);

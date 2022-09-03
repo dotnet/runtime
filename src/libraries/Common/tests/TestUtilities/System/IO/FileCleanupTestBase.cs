@@ -163,7 +163,7 @@ namespace System.IO
                 return Guid.NewGuid().ToString("N");
             }
 
-            if (!PlatformDetection.IsCaseSensitiveOS)
+            if (!PlatformDetection.FileCreateCaseSensitive)
             {
                 return $"/tmp/{Guid.NewGuid().ToString("N")}";
             }

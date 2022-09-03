@@ -12,8 +12,6 @@
 
 #define WASM_REG_0 0
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
@@ -77,8 +75,6 @@ typedef struct {
 
 /* must be at a power of 2 and >= 8 */
 #define MONO_ARCH_FRAME_ALIGNMENT 16
-
-#define MONO_ARCH_USE_FPSTACK FALSE
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?

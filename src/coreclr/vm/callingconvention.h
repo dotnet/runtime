@@ -1186,6 +1186,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     TypeHandle thValueType;
     CorElementType argType = this->GetNextArgumentType(m_argNum++, &thValueType);
 
+    // TypedReference behaves like a valuetype
+    if (argType == ELEMENT_TYPE_TYPEDBYREF)
+    {
+        argType = ELEMENT_TYPE_VALUETYPE;
+        thValueType = TypeHandle(g_TypedReferenceMT);
+    }
+
     int argSize = MetaSig::GetElemSize(argType, thValueType);
 
     m_argType = argType;

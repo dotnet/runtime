@@ -573,7 +573,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			memcpy (&new_ctx->regs [MONO_PPC_FIRST_SAVED_GREG], lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (host_mgreg_t) * MONO_SAVED_GREGS);
 			/* the calling IP is in the parent frame */
 			sframe = (MonoPPCStackFrame*)sframe->sp;
-			/* we substract 4, so that the IP points into the call instruction */
+			/* we subtract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
 		} else {
 			regs [ppc_lr] = ctx->sc_ir;
@@ -589,7 +589,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			if (!success)
 				return FALSE;
 
-			/* we substract 4, so that the IP points into the call instruction */
+			/* we subtract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);
 			MONO_CONTEXT_SET_BP (new_ctx, cfa);
 

@@ -4096,7 +4096,7 @@ namespace CoreXml.Test.XLinq
                                 new XElement("LINE", "As one, in suffering all, that suffers nothing,"),
                                 new XElement("LINE", "A man that fortune's buffets and rewards"),
                                 new XElement("LINE", "Hast ta'en with equal thanks: and blest are those"),
-                                new XElement("LINE", "Whose blood and judgment are so well commingled,"),
+                                new XElement("LINE", "Whose blood and judgment are so well comingled,"),
                                 new XElement("LINE", "That they are not a pipe for fortune's finger"),
                                 new XElement("LINE", "To sound what stop she please. Give me that man"),
                                 new XElement("LINE", "That is not passion's slave, and I will wear him"),

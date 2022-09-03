@@ -114,16 +114,6 @@ typedef enum {
 #define DOTNET_IPC_V1_ADVERTISE_MAGIC "ADVR_V1"
 #define DOTNET_IPC_V1_ADVERTISE_SIZE 34
 
-#if BIGENDIAN
-#define DS_VAL16(x)    (((x) >> 8) | ((x) << 8))
-#define DS_VAL32(y)    (((y) >> 24) | (((y) >> 8) & 0x0000FF00L) | (((y) & 0x0000FF00L) << 8) | ((y) << 24))
-#define DS_VAL64(z)    (((uint64_t)DS_VAL32(z) << 32) | DS_VAL32((z) >> 32))
-#else
-#define DS_VAL16(x) x
-#define DS_VAL32(x) x
-#define DS_VAL64(x) x
-#endif // BIGENDIAN
-
 typedef int32_t ds_ipc_result_t;
 
 #define DS_IPC_S_OK ((ds_ipc_result_t)(0L))

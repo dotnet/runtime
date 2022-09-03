@@ -185,6 +185,7 @@ ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int
 
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 ICALL_EXPORT gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check);
+ICALL_EXPORT gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check);
 
 ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle);
 

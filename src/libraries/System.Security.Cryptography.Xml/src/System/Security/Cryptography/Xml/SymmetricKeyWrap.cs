@@ -237,9 +237,8 @@ namespace System.Security.Cryptography.Xml
                     }
                 }
                 // checksum the key
-                for (int index = 0; index < 8; index++)
-                    if (rgbA[index] != s_rgbAES_KW_IV[index])
-                        throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
+                if (!rgbA.AsSpan().SequenceEqual(s_rgbAES_KW_IV.AsSpan()))
+                    throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
                 return rgbOutput;
             }
             finally

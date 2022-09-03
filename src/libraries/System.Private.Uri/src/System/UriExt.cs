@@ -323,8 +323,7 @@ namespace System
                     return false;
             }
 
-            if (result is null)
-                result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
+            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
             result?.DebugSetLeftCtor();
             return e is null && result != null && result.IsAbsoluteUri;
@@ -523,7 +522,7 @@ namespace System
                 //
                 // Check escaping for authority
                 //
-                // IPv6 hosts cannot be properly validated by CheckCannonical
+                // IPv6 hosts cannot be properly validated by CheckCanonical
                 if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
                 {
                     idx = _info.Offset.User;

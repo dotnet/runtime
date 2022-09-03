@@ -62,7 +62,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''

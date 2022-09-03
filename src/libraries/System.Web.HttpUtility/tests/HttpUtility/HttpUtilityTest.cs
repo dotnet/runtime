@@ -443,6 +443,16 @@ namespace System.Web.Tests
             Assert.Equal(expected, HttpUtility.ParseQueryString(expected).ToString());
         }
 
+
+        [Fact]
+        public void ParseQueryString_nullValue_ToString()
+        {
+            var nameValueCollection = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            nameValueCollection.Add("baz", null);
+            var s = nameValueCollection.ToString();
+            Assert.Equal(string.Empty, s);
+        }
+
         #endregion ParseQueryString
 
         #region UrlDecode(ToBytes)

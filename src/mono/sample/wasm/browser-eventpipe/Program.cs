@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
@@ -64,7 +65,7 @@ namespace Sample
         }
     }
 
-    public class Test
+    public partial class Test
     {
         public static void Main(string[] args)
         {
@@ -93,9 +94,24 @@ namespace Sample
             return recursiveFib (n - 1) + recursiveFib (n - 2);
         }
 
+#if false
+            // dead code to prove that starting user threads isn't possible on the perftracing runtime
+            public static void Meth() {
+                    Thread.Sleep (500);
+                    while (!GetCancellationToken().IsCancellationRequested) {
+                            Console.WriteLine ("ping");
+                            Thread.Sleep (500);
+                    }
+            }
+#endif
+
+        [JSExport]
         public static async Task<double> StartAsyncWork(int N)
         {
             CancellationToken ct = GetCancellationToken();
+#if false
+            new Thread(new ThreadStart(Meth)).Start();
+#endif
             await Task.Delay(1);
             long b;
             WasmHelloEventSource.Instance.NewCallsCounter();
@@ -119,11 +135,13 @@ namespace Sample
             }
         }
 
+        [JSExport]
         public static void StopWork()
         {
             cts.Cancel();
         }
 
+        [JSExport]
         public static string GetIterationsDone()
         {
             return iterations.ToString();

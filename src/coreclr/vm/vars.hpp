@@ -212,7 +212,7 @@ class OBJECTREF {
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
 
-            // allow explict casts
+            // allow explicit casts
         explicit OBJECTREF(Object *pObject);
 
         void Validate(BOOL bDeep = TRUE, BOOL bVerifyNextHeader = TRUE, BOOL bVerifySyncBlock = TRUE);
@@ -363,7 +363,6 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
-GPTR_DECL(MethodTable,      g_pByReferenceClass);
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
@@ -621,25 +620,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #ifndef MAXULONGLONG
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
-
-struct TPIndex
-{
-    DWORD m_dwIndex;
-    TPIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit TPIndex (DWORD id)
-    : m_dwIndex(id)
-    {}
-    BOOL operator==(const TPIndex& tpindex) const
-    {
-        return m_dwIndex == tpindex.m_dwIndex;
-    }
-    BOOL operator!=(const TPIndex& tpindex) const
-    {
-        return m_dwIndex != tpindex.m_dwIndex;
-    }
-};
 
 // Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
 // neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex

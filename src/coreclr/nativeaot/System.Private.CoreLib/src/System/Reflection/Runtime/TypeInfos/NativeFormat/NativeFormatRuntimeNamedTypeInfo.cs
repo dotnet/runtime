@@ -168,12 +168,15 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            ConstantStringValueHandle nameHandle = _typeDefinition.Name;
-            string name = nameHandle.GetString(_reader);
+            get
+            {
+                ConstantStringValueHandle nameHandle = _typeDefinition.Name;
+                string name = nameHandle.GetString(_reader);
 
-            return name.EscapeTypeNameIdentifier();
+                return name.EscapeTypeNameIdentifier();
+            }
         }
 
         protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
@@ -294,9 +297,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                if (_lazyNamespaceChain == null)
-                    _lazyNamespaceChain = new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
-                return _lazyNamespaceChain;
+                return _lazyNamespaceChain ??= new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
             }
         }
 

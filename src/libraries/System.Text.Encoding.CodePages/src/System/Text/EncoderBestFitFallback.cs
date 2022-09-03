@@ -72,8 +72,7 @@ namespace System.Text
                 lock (InternalSyncObject)
                 {
                     // Double check before we do it again.
-                    if (_oFallback.arrayBestFit == null)
-                        _oFallback.arrayBestFit = fallback.encoding.GetBestFitUnicodeToBytesData();
+                    _oFallback.arrayBestFit ??= fallback.encoding.GetBestFitUnicodeToBytesData();
                 }
             }
         }

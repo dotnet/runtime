@@ -120,18 +120,12 @@ namespace System
     */
 
     // This class contains only static members and does not require the serializable attribute.
-    internal static
-    class DateTimeFormat
+    internal static class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
         internal const long NullOffset = long.MinValue;
 
-        internal static char[] allStandardFormats =
-        {
-            'd', 'D', 'f', 'F', 'g', 'G',
-            'm', 'M', 'o', 'O', 'r', 'R',
-            's', 't', 'T', 'u', 'U', 'y', 'Y',
-        };
+        internal const string AllStandardFormats = "dDfFgGmMoOrRstTuUyY";
 
         internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
         internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
@@ -299,7 +293,7 @@ namespace System
         // The pos should point to a quote character. This method will
         // append to the result StringBuilder the string enclosed by the quote character.
         //
-        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result)
+        internal static int ParseQuoteString(scoped ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -421,7 +415,7 @@ namespace System
             if (i < format.Length)
             {
                 repeat = 0;
-                // Find a "d", so contine the walk to see how may "d" that we can find.
+                // Find a "d", so continue the walk to see how may "d" that we can find.
                 while (++i < format.Length && format[i] == patternToMatch)
                 {
                     repeat++;
@@ -444,7 +438,7 @@ namespace System
         //  Actions: Format the DateTime instance using the specified format.
         //
         private static void FormatCustomized(
-            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
+            DateTime dateTime, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
         {
             Calendar cal = dtfi.Calendar;
 
@@ -1562,12 +1556,11 @@ namespace System
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < allStandardFormats.Length; i++)
+            foreach (char standardFormat in AllStandardFormats)
             {
-                string[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string dateTimes in GetAllDateTimes(dateTime, standardFormat, dtfi))
                 {
-                    results.Add(strings[j]);
+                    results.Add(dateTimes);
                 }
             }
 

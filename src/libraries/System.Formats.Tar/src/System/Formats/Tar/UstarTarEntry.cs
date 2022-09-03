@@ -28,7 +28,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public UstarTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.Ustar)
+            : base(entryType, entryName, TarEntryFormat.Ustar, isGea: false)
         {
             _header._prefix = string.Empty;
         }

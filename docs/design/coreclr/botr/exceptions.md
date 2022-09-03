@@ -262,7 +262,7 @@ When a C++ exception is thrown, and there is a missing UACH, the typical failure
 Runtime code into managed code
 ------------------------------
 
-The transition from the runtime into managed code has highly platform-dependent requirements. On 32-bit Windows platforms, the CLR's managed exception code requires that "COMPlusFrameHandler" is installed just before entering managed code. These transitions are handled by highly specialized helper functions, which take care of the appropriate exception handlers. It is very unlikely that any typical new calls into managed would use any other way in. In the event that the COMPlusFrameHander were missing, the most likely effect would be that exception handling code in the target managed code simply wouldn't be executed – no finally blocks, and no catch blocks.
+The transition from the runtime into managed code has highly platform-dependent requirements. On 32-bit Windows platforms, the CLR's managed exception code requires that "COMPlusFrameHandler" is installed just before entering managed code. These transitions are handled by highly specialized helper functions, which take care of the appropriate exception handlers. It is very unlikely that any typical new calls into managed would use any other way in. In the event that the COMPlusFrameHandler were missing, the most likely effect would be that exception handling code in the target managed code simply wouldn't be executed – no finally blocks, and no catch blocks.
 
 Runtime code into external native code
 --------------------------------------

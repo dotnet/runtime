@@ -318,9 +318,9 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        TypeConverter ICustomTypeDescriptor.GetConverter()
+        TypeConverter? ICustomTypeDescriptor.GetConverter()
         {
-            return null!;
+            return null;
         }
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
@@ -359,14 +359,8 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
-        {
-            if (_propertyDescriptors == null)
-            {
-                _propertyDescriptors = new PropertyDescriptorCollection(null);
-            }
-            return _propertyDescriptors;
-        }
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
+            _propertyDescriptors ??= new PropertyDescriptorCollection(null);
 
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {

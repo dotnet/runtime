@@ -75,8 +75,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareName(string name)
         {
-            if (_uniqueNames == null)
-                _uniqueNames = new UniqueList<string>();
+            _uniqueNames ??= new UniqueList<string>();
 
             return _uniqueNames.Add(name);
         }
@@ -95,8 +94,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareNameFilter(string locName, string nsUri)
         {
-            if (_uniqueFilters == null)
-                _uniqueFilters = new UniqueList<Int32Pair>();
+            _uniqueFilters ??= new UniqueList<Int32Pair>();
 
             return _uniqueFilters.Add(new Int32Pair(DeclareName(locName), DeclareName(nsUri)));
         }
@@ -131,8 +129,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             // Add mappings to list and return index
-            if (_prefixMappingsList == null)
-                _prefixMappingsList = new List<StringPair[]>();
+            _prefixMappingsList ??= new List<StringPair[]>();
 
             _prefixMappingsList.Add(prefixMappings);
             return _prefixMappingsList.Count - 1;
@@ -153,8 +150,7 @@ namespace System.Xml.Xsl.IlGen
         {
             int idx;
 
-            if (_globalNames == null)
-                _globalNames = new List<string>();
+            _globalNames ??= new List<string>();
 
             idx = _globalNames.Count;
             _globalNames.Add(name);
@@ -175,8 +171,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareEarlyBound(string namespaceUri, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type ebType)
         {
-            if (_earlyInfo == null)
-                _earlyInfo = new UniqueList<EarlyBoundInfo>();
+            _earlyInfo ??= new UniqueList<EarlyBoundInfo>();
 
             return _earlyInfo.Add(new EarlyBoundInfo(namespaceUri, ebType));
         }
@@ -184,16 +179,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all early bound information that is used by the query (null if none is used).
         /// </summary>
-        public EarlyBoundInfo[]? EarlyBound
-        {
-            get
-            {
-                if (_earlyInfo != null)
-                    return _earlyInfo.ToArray();
-
-                return null;
-            }
-        }
+        public EarlyBoundInfo[]? EarlyBound => _earlyInfo?.ToArray();
 
         /// <summary>
         /// Add "type" to the list of unique types that are used by this query.  Return the index of
@@ -201,8 +187,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareXmlType(XmlQueryType type)
         {
-            if (_uniqueXmlTypes == null)
-                _uniqueXmlTypes = new UniqueList<XmlQueryType>();
+            _uniqueXmlTypes ??= new UniqueList<XmlQueryType>();
 
             XmlQueryTypeFactory.CheckSerializability(type);
             return _uniqueXmlTypes.Add(type);
@@ -222,8 +207,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareCollation(string collation)
         {
-            if (_uniqueCollations == null)
-                _uniqueCollations = new UniqueList<XmlCollation>();
+            _uniqueCollations ??= new UniqueList<XmlCollation>();
 
             return _uniqueCollations.Add(XmlCollation.Create(collation));
         }

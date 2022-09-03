@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -416,8 +415,6 @@ namespace System
 
             if (Avx2.IsSupported && lastOffset >= (nuint)Vector256<int>.Count * 2)
             {
-                Vector256<int> reverseMask = Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0);
-
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector256<int>.Count);
                 do
                 {
@@ -433,8 +430,8 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Avx2.PermuteVar8x32(tempFirst, reverseMask);
-                    tempLast = Avx2.PermuteVar8x32(tempLast, reverseMask);
+                    tempFirst = Avx2.PermuteVar8x32(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Avx2.PermuteVar8x32(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref first);
@@ -445,7 +442,7 @@ namespace System
                     lastOffset -= (nuint)Vector256<int>.Count * 2;
                 } while (lastOffset >= (nuint)Vector256<int>.Count * 2);
             }
-            else if (Sse2.IsSupported && lastOffset >= (nuint)Vector128<int>.Count * 2)
+            else if (Vector128.IsHardwareAccelerated && lastOffset >= (nuint)Vector128<int>.Count * 2)
             {
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<int>.Count);
                 do
@@ -462,8 +459,8 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b00_01_10_11);
-                    tempLast = Sse2.Shuffle(tempLast, 0b00_01_10_11);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref first);
@@ -475,6 +472,7 @@ namespace System
                 } while (lastOffset >= (nuint)Vector128<int>.Count * 2);
             }
 
+            // Store any remaining values one-by-one
             ReverseInner(ref first, lastOffset);
         }
 
@@ -514,7 +512,7 @@ namespace System
                     lastOffset -= (nuint)Vector256<long>.Count * 2;
                 } while (lastOffset >= (nuint)Vector256<long>.Count * 2);
             }
-            else if (Sse2.IsSupported && lastOffset >= (nuint)Vector128<long>.Count * 2)
+            else if (Vector128.IsHardwareAccelerated && lastOffset >= (nuint)Vector128<long>.Count * 2)
             {
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<long>.Count);
                 do
@@ -534,8 +532,8 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b01_00_11_10);
-                    tempLast = Sse2.Shuffle(tempLast, 0b01_00_11_10);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref firstInt);
@@ -578,6 +576,7 @@ namespace System
                     return;
                 }
             }
+
             ReverseInner(ref elements, length);
         }
 

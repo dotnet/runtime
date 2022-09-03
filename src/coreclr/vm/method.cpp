@@ -218,7 +218,7 @@ BaseDomain *MethodDesc::GetDomain()
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     return AppDomain::GetCurrentDomain();
 }
@@ -241,6 +241,24 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 #endif //!DACCESS_COMPILE
 
+
+//*******************************************************************************
+LPCUTF8 MethodDesc::GetNameThrowing()
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 result = GetName();
+    if (result == NULL)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_METADATA_CORRUPT);
+    }
+    return result;
+}
+
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetName(USHORT slot)
 {
@@ -260,7 +278,8 @@ LPCUTF8 MethodDesc::GetName()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
-    }CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     if (IsArray())
     {
@@ -353,17 +372,15 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     PCCOR_SIGNATURE pSig;
 
     SString methodFullName;
-    StackScratchBuffer namespaceNameBuffer, methodNameBuffer;
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(namespaceNameBuffer),
-        methodName.GetUTF8(methodNameBuffer));
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     GetSig(&pSig, &cSig);
 
-    StackScratchBuffer buffer;
-    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(buffer), &qbOut, GetMDImport(), NULL);
+    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(), &qbOut, GetMDImport(), NULL);
     fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
 }
 
@@ -843,7 +860,7 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
 #ifdef _PREFAST_
@@ -881,7 +898,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
 #ifdef _PREFAST_
@@ -1266,7 +1283,7 @@ WORD MethodDesc::GetComSlot()
     // COM slots are biased from MethodTable slots depending on interface type
     WORD numExtraSlots = ComMethodTable::GetNumExtraSlots(pMT->GetComInterfaceType());
 
-    // Normal interfaces are layed out the same way as in the MethodTable, while
+    // Normal interfaces are laid out the same way as in the MethodTable, while
     // sparse interfaces need to go through an extra layer of mapping.
     WORD slot;
 
@@ -1820,7 +1837,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     MethodTable *pTargetMT = pTargetMDBeforeGenericMethodArgs->GetMethodTable();
 
     // No need to find/create a new generic instantiation if the target is the
-    // same as the static, i.e. the virtual method has not been overriden.
+    // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
         RETURN(pStaticMD);

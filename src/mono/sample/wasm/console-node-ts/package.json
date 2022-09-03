@@ -8,8 +8,6 @@
     "build": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
     "tsc": "tsc -p ."
   },
-  "dependencies": {
-  },
   "devDependencies": {
     "@types/node": "16.11.10",
     "typescript": "4.5.2"

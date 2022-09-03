@@ -171,7 +171,7 @@ FAIL:
     .field public float32 Z
 }
 
-// Make sure that the JIT produces an appropiate floating point constant.
+// Make sure that the JIT produces an appropriate floating point constant.
 // JIT's internal representation uses doubles to store constants, even
 // when constants are float-typed. This means that the JIT should first
 // create a float value having the required bit pattern and then convert
@@ -310,7 +310,7 @@ FAIL:
 
     call bool ObjRefInitBlk()
     brfalse FAIL
-    
+
     call bool SimdInitBlk()
     brfalse FAIL
 

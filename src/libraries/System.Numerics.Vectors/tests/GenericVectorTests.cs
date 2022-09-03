@@ -3246,6 +3246,53 @@ namespace System.Numerics.Tests
 
         #endregion
 
+        #region IsSupported Tests
+        [Fact]
+        public void IsSupportedByte() => TestIsSupported<byte>();
+
+        [Fact]
+        public void IsSupportedDouble() => TestIsSupported<double>();
+
+        [Fact]
+        public void IsSupportedInt16() => TestIsSupported<short>();
+
+        [Fact]
+        public void IsSupportedInt32() => TestIsSupported<int>();
+
+        [Fact]
+        public void IsSupportedInt64() => TestIsSupported<long>();
+
+        [Fact]
+        public void IsSupportedIntPtr() => TestIsSupported<nint>();
+
+        [Fact]
+        public void IsSupportedSByte() => TestIsSupported<sbyte>();
+
+        [Fact]
+        public void IsSupportedSingle() => TestIsSupported<float>();
+
+        [Fact]
+        public void IsSupportedUInt16() => TestIsSupported<ushort>();
+
+        [Fact]
+        public void IsSupportedUInt32() => TestIsSupported<uint>();
+
+        [Fact]
+        public void IsSupportedUInt64() => TestIsSupported<ulong>();
+
+        [Fact]
+        public void IsSupportedUIntPtr() => TestIsSupported<nuint>();
+
+        private static void TestIsSupported<T>()
+            where T : struct
+        {
+            Assert.True(Vector<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.True((bool)methodInfo.Invoke(null, null));
+        }
+        #endregion
+
         #region Helper Methods
         private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>
         {

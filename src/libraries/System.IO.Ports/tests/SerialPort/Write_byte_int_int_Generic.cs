@@ -26,16 +26,16 @@ namespace System.IO.Ports.Tests
         //to the write method and the testcase fails.
         private const double maxPercentageDifference = .15;
 
-        //The byte size used when veryifying exceptions that write will throw
+        //The byte size used when verifying exceptions that write will throw
         private const int BYTE_SIZE_EXCEPTION = 4;
 
-        //The byte size used when veryifying timeout
+        //The byte size used when verifying timeout
         private const int BYTE_SIZE_TIMEOUT = 4;
 
-        //The byte size used when veryifying BytesToWrite
+        //The byte size used when verifying BytesToWrite
         private const int BYTE_SIZE_BYTES_TO_WRITE = 4;
 
-        //The bytes size used when veryifying Handshake
+        //The bytes size used when verifying Handshake
         private const int BYTE_SIZE_HANDSHAKE = 8;
         private const int NUM_TRYS = 5;
 
@@ -71,7 +71,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying write method throws exception after a call to Cloes()");
+                Debug.WriteLine("Verifying write method throws exception after a call to Close()");
                 com.Open();
                 com.Close();
 

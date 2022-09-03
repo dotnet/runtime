@@ -179,10 +179,7 @@ namespace System.Xml
             _namespaceUri = string.Empty;
             _rawValue = string.Empty;
 
-            if (_attributePSVIInfo != null)
-            {
-                _attributePSVIInfo.Reset();
-            }
+            _attributePSVIInfo?.Reset();
 
             _nameWPrefix = null;
             _lineNo = 0;

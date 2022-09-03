@@ -5,7 +5,7 @@
 **
 ** Source:  vswprintf.h
 **
-** Purpose: Containts common testing functions for vswprintf
+** Purpose: Contains common testing functions for vswprintf
 **
 **
 **==========================================================================*/

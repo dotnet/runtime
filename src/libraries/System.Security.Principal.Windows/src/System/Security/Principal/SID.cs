@@ -612,7 +612,7 @@ namespace System.Security.Principal
             if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
-                throw new ArgumentException(new Win32Exception(error).Message, "sidType/domainSid");
+                throw new ArgumentException(Marshal.GetPInvokeErrorMessage(error), "sidType/domainSid");
 #pragma warning restore CS2208
             }
             else if (error != Interop.Errors.ERROR_SUCCESS)

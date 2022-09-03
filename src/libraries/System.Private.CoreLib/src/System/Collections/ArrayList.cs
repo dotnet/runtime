@@ -250,31 +250,12 @@ namespace System.Collections
         // It does a linear, O(n) search.  Equality is determined by calling
         // item.Equals().
         //
-        public virtual bool Contains(object? item)
-        {
-            if (item == null)
-            {
-                for (int i = 0; i < _size; i++)
-                    if (_items[i] == null)
-                        return true;
-                return false;
-            }
-            else
-            {
-                for (int i = 0; i < _size; i++)
-                    if (_items[i] is object o && o.Equals(item))
-                        return true;
-                return false;
-            }
-        }
+        public virtual bool Contains(object? item) => Array.IndexOf(_items, item, 0, _size) >= 0;
 
         // Copies this ArrayList into array, which must be of a
         // compatible array type.
         //
-        public virtual void CopyTo(Array array)
-        {
-            CopyTo(array, 0);
-        }
+        public virtual void CopyTo(Array array) => CopyTo(array, 0);
 
         // Copies this ArrayList into array, which must be of a
         // compatible array type.

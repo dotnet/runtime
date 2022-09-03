@@ -55,6 +55,8 @@ public:
         return !(*this == other);
     }
 
+    ICorDebugInfo::SourceTypes EncodeSourceTypes() const;
+
 #ifdef DEBUG
     // Dump textual representation of this ILLocation to jitstdout.
     void Dump() const;

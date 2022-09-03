@@ -399,10 +399,7 @@ namespace System.Linq.Expressions
         {
             Out($".Lambda {GetLambdaName(node)}<{node.Type}>");
 
-            if (_lambdas == null)
-            {
-                _lambdas = new Queue<LambdaExpression>();
-            }
+            _lambdas ??= new Queue<LambdaExpression>();
 
             // N^2 performance, for keeping the order of the lambdas.
             if (!_lambdas.Contains(node))

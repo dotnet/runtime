@@ -49,6 +49,31 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
+        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        /// </summary>
+        /// <param name="ruleSet">The encoding constraints for the writer.</param>
+        /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="ruleSet"/> is not defined.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="initialCapacity"/> is a negative number.</para>
+        /// </exception>
+        /// <remarks>
+        ///   Specifying <paramref name="initialCapacity" /> with a value of zero behaves as if no initial capacity were
+        ///   specified.
+        /// </remarks>
+        public AsnWriter(AsnEncodingRules ruleSet, int initialCapacity) : this(ruleSet)
+        {
+            if (initialCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (initialCapacity > 0)
+            {
+                _buffer = new byte[initialCapacity];
+            }
+        }
+
+        /// <summary>
         ///   Reset the writer to have no data, without releasing resources.
         /// </summary>
         public void Reset()
@@ -263,10 +288,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
-                {
-                    oldBytes.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG
@@ -449,10 +471,7 @@ namespace System.Formats.Asn1
 
         private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            if (_nestingStack == null)
-            {
-                _nestingStack = new Stack<StackFrame>();
-            }
+            _nestingStack ??= new Stack<StackFrame>();
 
             Debug.Assert(tag.IsConstructed);
             WriteTag(tag);
@@ -619,22 +638,6 @@ namespace System.Formats.Asn1
 
             Buffer.BlockCopy(tmp, 0, buffer, start, len);
             CryptoPool.Return(tmp, len);
-        }
-
-        internal static void Reverse(Span<byte> span)
-        {
-            int i = 0;
-            int j = span.Length - 1;
-
-            while (i < j)
-            {
-                byte tmp = span[i];
-                span[i] = span[j];
-                span[j] = tmp;
-
-                i++;
-                j--;
-            }
         }
 
         private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)

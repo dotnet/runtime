@@ -50,6 +50,11 @@ struct _rt_mono_array_iterator_internal_t {
 	int32_t index;
 };
 
+#ifdef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
+typedef GHashFunc ep_rt_hash_map_hash_callback_t;
+typedef GEqualFunc ep_rt_hash_map_equal_callback_t;
+#endif
+
 struct _rt_mono_table_internal_t {
 	GHashTable *table;
 };

@@ -5,7 +5,7 @@
 
 	<result>
 		DoNothing Function<xsl:if test="function-available('myObj:DoNothing')"> Test Pass</xsl:if>
-		Construtor Function<xsl:if test="function-available('myObj:MyObject')"> Test Pass</xsl:if>
+		Constructor Function<xsl:if test="function-available('myObj:MyObject')"> Test Pass</xsl:if>
 		Return Int  Function<xsl:if test="function-available('myObj:MyValue')"> Test Pass</xsl:if>
 		Return String Function<xsl:if test="function-available('myObj:Fn1')"> Test Pass</xsl:if>
 		ReturnInt  Function<xsl:if test="function-available('myObj:MyValue')"> Test Pass</xsl:if>

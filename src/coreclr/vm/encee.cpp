@@ -568,9 +568,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
                                 "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
-            StackScratchBuffer buffer;
-            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
+            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
+            LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
     } EX_END_CATCH(SwallowAllExceptions)
@@ -734,7 +733,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //   WARNING: This method cannot access any stack-data below its frame on the stack
 //   (i.e. anything allocated in a caller frame), so all stack-based arguments must
 //   EXPLICITLY be copied by value and this method cannot be inlined.  We may need to expand
-//   the stack frame to accomodate the new method, and so extra buffer space must have
+//   the stack frame to accommodate the new method, and so extra buffer space must have
 //   been allocated on the stack.  Note that passing a struct by value (via C++) is not
 //   enough to ensure its data is really copied (on x64, large structs may internally be
 //   passed by reference).  Thus we explicitly make copies of structs passed in, at the
@@ -752,9 +751,6 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     STATIC_CONTRACT_GC_TRIGGERS; // Sends IPC event
     STATIC_CONTRACT_THROWS;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    DWORD64 ssp = GetSSP(pContext);
-#endif
     // Create local copies of all structs passed as arguments to prevent them from being overwritten
     CONTEXT context;
     memcpy(&context, pContext, sizeof(CONTEXT));
@@ -833,13 +829,22 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // and return because we are potentially writing new vars onto the stack.
     pCurThread->SetFilterContext( NULL );
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (g_pDebugInterface->IsOutOfProcessSetContextEnabled())
+    {
+        g_pDebugInterface->SendSetThreadContextNeeded(pContext);
+    }
+    else
+    {
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    ClrRestoreNonvolatileContextWorker(pContext, ssp);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));

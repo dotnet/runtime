@@ -2064,7 +2064,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
-    // Verify we instrumented everthing we created schemas for.
+    // Verify we instrumented everything we created schemas for.
     //
     assert(fgCountInstrumentor->InstrCount() == fgCountInstrumentor->SchemaCount());
 
@@ -2780,7 +2780,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 bool     weightKnown = false;
                 if (info->m_incomingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all incoming edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all incoming edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_incomingEdges; edge != nullptr; edge = edge->m_nextIncomingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -2798,7 +2798,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 }
                 else if (info->m_outgoingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all outgoing edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all outgoing edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -3464,15 +3464,16 @@ void flowList::setEdgeWeights(weight_t theMinWeight, weight_t theMaxWeight, Basi
 // fgComputeBlockAndEdgeWeights: determine weights for blocks
 //   and optionally for edges
 //
-void Compiler::fgComputeBlockAndEdgeWeights()
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
 {
-    JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
-
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-
-    fgModified             = false;
-    fgHaveValidEdgeWeights = false;
-    fgCalledCount          = BB_UNITY_WEIGHT;
+    bool       madeChanges         = false;
+    fgModified                     = false;
+    fgHaveValidEdgeWeights         = false;
+    fgCalledCount                  = BB_UNITY_WEIGHT;
 
 #if DEBUG
     if (verbose)
@@ -3482,35 +3483,47 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     }
 #endif // DEBUG
 
-    const weight_t returnWeight = fgComputeMissingBlockWeights();
+    weight_t returnWeight = BB_UNITY_WEIGHT;
+
+    madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
 
     if (usingProfileWeights)
     {
-        fgComputeCalledCount(returnWeight);
+        madeChanges |= fgComputeCalledCount(returnWeight);
     }
     else
     {
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    fgComputeEdgeWeights();
+    PhaseStatus edgeStatus = fgComputeEdgeWeights();
+
+    if (edgeStatus != PhaseStatus::MODIFIED_NOTHING)
+    {
+        return edgeStatus;
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
 // fgComputeMissingBlockWeights: determine weights for blocks
 //   that were not profiled and do not yet have weights.
 //
+// Arguments
+//    returnWeight [out] - sum of weights for all return and throw blocks
+//
 // Returns:
-//   sum of weights for all return and throw blocks in the method
-
-weight_t Compiler::fgComputeMissingBlockWeights()
+//    true if any changes made
+//
+bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
 {
     BasicBlock* bSrc;
     BasicBlock* bDst;
     unsigned    iterations = 0;
     bool        changed;
     bool        modified = false;
-    weight_t    returnWeight;
+    weight_t    weight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -3518,8 +3531,8 @@ weight_t Compiler::fgComputeMissingBlockWeights()
     modified = false;
     do // while (changed)
     {
-        changed      = false;
-        returnWeight = 0;
+        changed = false;
+        weight  = 0;
         iterations++;
 
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
@@ -3584,6 +3597,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
 
+                // Handler entries are assumed to run rarely, except for
+                // finally blocks: These are executed regardless of if
+                // an exception is thrown, and thus should inherit weight.
+                if (bbIsHandlerBeg(bDst))
+                {
+                    bSrc = bDst->bbPreds->getBlock();
+
+                    // To minimize asmdiffs for now, modify weights only if splitting.
+                    if (fgFirstColdBlock != nullptr)
+                    {
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        {
+                            newWeight = bSrc->bbWeight;
+                        }
+                        else
+                        {
+                            newWeight = BB_ZERO_WEIGHT;
+                        }
+                    }
+                }
+
                 if ((newWeight != BB_MAX_WEIGHT) && (bDst->bbWeight != newWeight))
                 {
                     changed        = true;
@@ -3599,13 +3633,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
             }
+            else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
+            {
+                // Assume handler/filter entries are rarely executed.
+                // To avoid unnecessary loop iterations, set weight
+                // only if bDst->bbWeight is not already zero.
+
+                // To minimize asmdiffs for now, modify weights only if splitting.
+                if (fgFirstColdBlock != nullptr)
+                {
+                    changed  = true;
+                    modified = true;
+                    bDst->bbSetRunRarely();
+                }
+            }
 
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
             if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
-                returnWeight += bDst->bbWeight;
+                weight += bDst->bbWeight;
             }
         }
     }
@@ -3623,7 +3671,9 @@ weight_t Compiler::fgComputeMissingBlockWeights()
     }
 #endif
 
-    return returnWeight;
+    *returnWeight = weight;
+
+    return modified;
 }
 
 //-------------------------------------------------------------
@@ -3632,12 +3682,16 @@ weight_t Compiler::fgComputeMissingBlockWeights()
 //
 // Argument:
 //   returnWeight - sum of weights for all return and throw blocks
-
-void Compiler::fgComputeCalledCount(weight_t returnWeight)
+//
+// Returns:
+//   true if any changes were made
+//
+bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 {
     // When we are not using profile data we have already setup fgCalledCount
     // only set it here if we are using profile data
     assert(fgIsUsingProfileWeights());
+    bool madeChanges = false;
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
@@ -3679,6 +3733,7 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
     if (fgFirstBBisScratch())
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
+        madeChanges = true;
     }
 
 #if DEBUG
@@ -3687,12 +3742,17 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
         printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
     }
 #endif
+
+    return madeChanges;
 }
 
 //-------------------------------------------------------------
 // fgComputeEdgeWeights: compute edge weights from block weights
-
-void Compiler::fgComputeEdgeWeights()
+//
+// Returns:
+//   Suitable phase status
+//
+PhaseStatus Compiler::fgComputeEdgeWeights()
 {
     const bool isOptimizing        = opts.OptimizationEnabled();
     const bool usingProfileWeights = fgIsUsingProfileWeights();
@@ -3700,7 +3760,7 @@ void Compiler::fgComputeEdgeWeights()
     if (!isOptimizing || !usingProfileWeights)
     {
         JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     BasicBlock* bSrc;
@@ -4067,6 +4127,8 @@ EARLY_EXIT:;
 
     fgHaveValidEdgeWeights = !inconsistentProfileData;
     fgEdgeWeightsComputed  = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

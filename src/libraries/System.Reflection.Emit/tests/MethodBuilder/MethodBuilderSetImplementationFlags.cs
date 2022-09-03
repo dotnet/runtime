@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => method.SetImplementationFlags(MethodImplAttributes.Unmanaged));
         }
     }

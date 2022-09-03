@@ -614,7 +614,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForMarshalling == null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
             return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.None);
@@ -640,7 +640,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForMarshalling == null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
             return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.Unwrap);

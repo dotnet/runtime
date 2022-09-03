@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.Net.Security;
+using System.Net.Test.Common;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net.Test.Common;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -33,7 +35,7 @@ namespace System.Net.Security.Tests
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
             NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
-            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+            Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
         }
 
         [ConditionalFact(nameof(IsNtlmAvailable))]
@@ -53,10 +55,12 @@ namespace System.Net.Security.Tests
 
             Assert.True(fakeNtlmServer.IsAuthenticated);
             Assert.True(negotiateAuthentication.IsAuthenticated);
-            _ = negotiateAuthentication.RemoteIdentity;
-
-            negotiateAuthentication.Dispose();
-            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+            IIdentity remoteIdentity = negotiateAuthentication.RemoteIdentity;
+            using (remoteIdentity as IDisposable)
+            {
+                negotiateAuthentication.Dispose();
+                Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
+            }
         }
 
         [Fact]
@@ -184,6 +188,44 @@ namespace System.Net.Security.Tests
             DoNtlmExchange(fakeNtlmServer, ntAuth);
 
             Assert.False(fakeNtlmServer.IsAuthenticated);
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
+        public void NtlmSignatureTest()
+        {
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.EncryptAndSign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+
+            // Test MakeSignature on client side and decoding it on server side
+            ArrayBufferWriter<byte> output = new ArrayBufferWriter<byte>();
+            NegotiateAuthenticationStatusCode statusCode;
+            statusCode = ntAuth.Wrap(s_Hello, output, ntAuth.IsEncrypted, out bool isEncrypted);
+            Assert.Equal(16 + s_Hello.Length, output.WrittenCount);
+            // Unseal the content and check it
+            byte[] temp = new byte[s_Hello.Length];
+            fakeNtlmServer.Unwrap(output.WrittenSpan, temp);
+            Assert.Equal(s_Hello, temp);
+
+            // Test creating signature on server side and decoding it with VerifySignature on client side 
+            byte[] serverSignedMessage = new byte[16 + s_Hello.Length];
+            fakeNtlmServer.Wrap(s_Hello, serverSignedMessage);
+            output.Clear();
+            statusCode = ntAuth.Unwrap(serverSignedMessage, output, out isEncrypted);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
+            Assert.Equal(s_Hello.Length, output.WrittenCount);
+            Assert.Equal(s_Hello, output.WrittenSpan.ToArray());
         }
 
         private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NegotiateAuthentication ntAuth)

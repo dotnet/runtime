@@ -19,8 +19,8 @@ namespace System.Formats.Tar
         }
 
         // Constructor called when the user creates a TarEntry instance from scratch.
-        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
-            : base(entryType, entryName, format)
+        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format, bool isGea)
+            : base(entryType, entryName, format, isGea)
         {
             _header._uName = string.Empty;
             _header._gName = string.Empty;
@@ -99,7 +99,7 @@ namespace System.Formats.Tar
         /// <remarks><see cref="GroupName"/> is only used in Unix platforms.</remarks>
         public string GroupName
         {
-            get => _header._gName;
+            get => _header._gName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -114,7 +114,7 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentNullException">Cannot set a null user name.</exception>
         public string UserName
         {
-            get => _header._uName;
+            get => _header._uName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);

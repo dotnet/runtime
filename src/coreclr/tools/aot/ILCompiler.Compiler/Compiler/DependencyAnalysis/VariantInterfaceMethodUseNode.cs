@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     // This node represents the concept of a variant interface method being used.
-    // It has no direct depedencies, but may be referred to by conditional static 
+    // It has no direct dependencies, but may be referred to by conditional static
     // dependencies, or static dependencies from elsewhere.
     //
     // We only track the generic definition of the interface method being used.

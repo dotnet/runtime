@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set DOTNET_JitStressModeNamesOnly=1
+set DOTNET_JitStressModeNames=STRESS_NULL_OBJECT_CHECK
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export DOTNET_JitStressModeNamesOnly=1
+export DOTNET_JitStressModeNames=STRESS_NULL_OBJECT_CHECK
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

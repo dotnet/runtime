@@ -20,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
         private const uint BadTokenFixupValue = 0xFFFFFFFF;
 
         //
-        // Returns the template type handle for a generic instantation type
+        // Returns the template type handle for a generic instantiation type
         //
         public static TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
@@ -31,8 +31,7 @@ namespace Internal.Runtime.TypeLoader
             TypeDesc result = TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
+            result ??= TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
 
             return result;
 #endif
@@ -210,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         //
-        // Returns the template method for a generic method instantation
+        // Returns the template method for a generic method instantiation
         //
         public static InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
@@ -218,8 +217,7 @@ namespace Internal.Runtime.TypeLoader
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
+            result ??= TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             return result;
         }

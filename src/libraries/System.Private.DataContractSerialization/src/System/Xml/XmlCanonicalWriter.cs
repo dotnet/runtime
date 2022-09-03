@@ -58,21 +58,11 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            _writer ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _writer.SetOutput(stream, false, null);
 
-            if (_elementStream == null)
-            {
-                _elementStream = new MemoryStream();
-            }
-
-            if (_elementWriter == null)
-            {
-                _elementWriter = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            _elementStream ??= new MemoryStream();
+            _elementWriter ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _elementWriter.SetOutput(_elementStream, false, null);
 
             if (_xmlnsAttributes == null)
@@ -120,10 +110,8 @@ namespace System.Xml
 
         public void Close()
         {
-            if (_writer != null)
-                _writer.Close();
-            if (_elementWriter != null)
-                _elementWriter.Close();
+            _writer?.Close();
+            _elementWriter?.Close();
             if (_elementStream != null && _elementStream.Length > 512)
                 _elementStream = null!;
             _elementBuffer = null;
@@ -139,7 +127,8 @@ namespace System.Xml
             _inclusivePrefixes = null;
         }
 
-        public static void WriteDeclaration()
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This class is should roughly mirror the XmlNodeWriter API where this is an instance method.")]
+        public void WriteDeclaration()
         {
         }
 
@@ -914,19 +903,19 @@ namespace System.Xml
 
             public void Sort()
             {
-                object[] indeces = new object[_writer._attributeCount];
+                object[] indices = new object[_writer._attributeCount];
 
-                for (int i = 0; i < indeces.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
-                    indeces[i] = i;
+                    indices[i] = i;
                 }
 
-                Array.Sort(indeces, this);
+                Array.Sort(indices, this);
 
                 Attribute[] attributes = new Attribute[_writer._attributes!.Length];
-                for (int i = 0; i < indeces.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
-                    attributes[i] = _writer._attributes[(int)indeces[i]];
+                    attributes[i] = _writer._attributes[(int)indices[i]];
                 }
 
                 _writer._attributes = attributes;

@@ -79,11 +79,7 @@ namespace System.ComponentModel
                 {
                     if (o is WeakReference wr && !wr.IsAlive)
                     {
-                        if (cleanupList == null)
-                        {
-                            cleanupList = new List<object>();
-                        }
-
+                        cleanupList ??= new List<object>();
                         cleanupList.Add(wr);
                     }
                 }

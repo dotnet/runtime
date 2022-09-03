@@ -1138,6 +1138,36 @@ namespace System.Tests
             }
         }
 #endregion
+
+        [Fact]
+        public void GetEnumTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestEnum)) == TypeCode.Int32);
+        }
+
+        [Fact]
+        public void GetEnumNestedInGenericClassTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestGenericClass<TestClass>.NestedEnum)) == TypeCode.Int32);
+        }
+
+        public enum TestEnum
+        {
+            A,
+            B,
+            C
+        }
+
+        public class TestClass { }
+        public class TestGenericClass<T>
+        {
+            public enum NestedEnum
+            {
+                A,
+                B,
+                C
+            }
+        }
     }
 
     public class NonGenericClass { }

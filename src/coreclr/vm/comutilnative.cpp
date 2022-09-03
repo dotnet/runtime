@@ -1184,6 +1184,31 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCInterface::EnumerateConfigurationValues(configurationContext, callback);
+    END_QCALL;
+}
+
+void GCInterface::EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(configurationContext != nullptr);
+        PRECONDITION(callback != nullptr);
+    }
+    CONTRACTL_END;
+
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    pHeap->EnumerateConfigurationValues(configurationContext, callback);
+}
+
 #ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
 #else // HOST_64BIT

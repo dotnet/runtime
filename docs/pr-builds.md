@@ -3,7 +3,7 @@ When submitting a PR to the `dotnet/runtime` repository various builds will run 
 
 The `dotnet/runtime` validation system can become overwhelming as we need to cover a lot of build scenarios and test in all the platforms that we support. In order to try to make this more reliable and spend the least amount of time testing what the PR changes need we have various pipelines, required and optional that are covered in this document.
 
-Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evalute Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets we have based on paths see [here](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/common/evaluate-default-paths.yml). Also to understand how this mechanism works you can read this [comment](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
+Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evaluate Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets we have based on paths see [here](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/common/evaluate-default-paths.yml). Also to understand how this mechanism works you can read this [comment](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
 
 ### Runtime pipeline
 This is the "main" pipeline for the runtime product. In this pipeline we include the most critical tests and platforms where we have enough test resources in order to deliver test results in a reasonable amount of time. The tests executed in this pipeline for runtime and libraries are considered innerloop, are the tests that are executed locally when one runs tests locally.
@@ -66,7 +66,7 @@ Validation may fail for several reasons:
   * Add a comment `/azp run runtime`
   * Or, click on "re-run all checks" in the GitHub Checks tab
   * Or, simply close and reopen the PR.
-  * Or, ammend your commit with `--amend --no-edit` and force push to your branch.
+  * Or, amend your commit with `--amend --no-edit` and force push to your branch.
 
 ### Additional information:
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.

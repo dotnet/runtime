@@ -26,15 +26,14 @@ CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)          // Make the disas
 CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the process address next to each instruction of
                                                                // the disassembly
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
-CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
-                                                             // If set to "1", display the stats in textual format.
-                                                             // If set to "2", display the stats in csv format.
-                                                             // If set to "3", display the stats in summarize format.
-                                                             // Recommended to use with JitStdOutFile flag.
-CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))         // LSRA heuristics ordering
-CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
-CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)  // Whether absolute addr be encoded as PC-rel offset by
-                                                             // RyuJIT where possible
+CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)      // Display JIT Linear Scan Register Allocator statistics
+                                                            // If set to "1", display the stats in textual format.
+                                                            // If set to "2", display the stats in csv format.
+                                                            // If set to "3", display the stats in summarize format.
+                                                            // Recommended to use with JitStdOutFile flag.
+CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))        // LSRA heuristics ordering
+CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1) // Whether absolute addr be encoded as PC-rel offset by
+                                                            // RyuJIT where possible
 CONFIG_INTEGER(JitAssertOnMaxRAPasses, W("JitAssertOnMaxRAPasses"), 0)
 CONFIG_INTEGER(JitBreakEmitOutputInstr, W("JitBreakEmitOutputInstr"), -1)
 CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
@@ -137,7 +136,7 @@ CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
 
-// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump/NgenDump where
+// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump where
 // it's always set.
 CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
 // Prints a tree of inlinees for a specific method (use '*' for all methods)
@@ -174,8 +173,6 @@ CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStre
 
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
-CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen
-CONFIG_INTEGER(NgenOrder, W("NgenOrder"), 0)
 CONFIG_INTEGER(RunAltJitCode, W("RunAltJitCode"), 1) // If non-zero, and the compilation succeeds for an AltJit, then
                                                      // use the code. If zero, then we always throw away the generated
                                                      // code and fall back to the default compiler.
@@ -187,14 +184,16 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                     // Dumps disassembly for specified method
-CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies"))    // Only show JitDisasm and related info for methods
-                                                                // from this semicolon-delimited list of assemblies.
-CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)        // Dump interleaved GC Info for any method disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
+                                                             // from this semicolon-delimited list of assemblies.
+CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
+                                                                       // disassembled.
+CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)       // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -213,18 +212,7 @@ CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // D
                                                                             // exception handling
 CONFIG_METHODSET(JitStressOnly, W("JitStressOnly")) // Internal Jit stress mode: stress only the specified method(s)
 CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for the method
-///
-/// NGEN
-///
-CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for ngen
-CONFIG_METHODSET(NgenDump, W("NgenDump"))     // Same as JitDump, but for ngen
-CONFIG_METHODSET(NgenEHDump, W("NgenEHDump")) // Dump the EH table for the method, as reported to the VM
-CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
-CONFIG_METHODSET(NgenDebugDump, W("NgenDebugDump"))
-CONFIG_METHODSET(NgenUnwindDump, W("NgenUnwindDump")) // Dump the unwind codes for the method
-///
-/// JIT
-///
+
 CONFIG_METHODSET(JitDumpFg, W("JitDumpFg"))        // Dumps Xml/Dot Flowgraph for specified method
 CONFIG_STRING(JitDumpFgDir, W("JitDumpFgDir"))     // Directory for Xml/Dot flowgraph dump(s)
 CONFIG_STRING(JitDumpFgFile, W("JitDumpFgFile"))   // Filename for Xml/Dot flowgraph dump(s) (default: "default")
@@ -248,9 +236,6 @@ CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't d
 CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
                                                                  // order
 
-CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
-CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
-
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -260,18 +245,33 @@ CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit
                                                                  // STRESS_TAILCALL
 CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
 ///
-/// NGEN
-///
-CONFIG_METHODSET(NgenDumpFg, W("NgenDumpFg"))      // Ngen Xml/Dot flowgraph dump support
-CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml/Dot flowgraph dump support
-CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dump support
-///
 /// JIT Hardware Intrinsics
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
 
-#endif // defined(DEBUG)
+#else  // defined(DEBUG)
+
+// JitDisasm is supported in Release too
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
+#endif // !defined(DEBUG)
+
+CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0) // Prints all jitted methods to the console
+
+CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
+
+#ifdef DEBUG
+CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
+#endif
+
+CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
+                                                                       // array access
+
+#ifdef DEBUG
+CONFIG_METHODSET(JitEarlyExpandMDArraysFilter, W("JitEarlyExpandMDArraysFilter")) // Filter functions with early
+                                                                                  // expansion of multi-dimensional
+                                                                                  // array access
+#endif
 
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
@@ -408,6 +408,7 @@ CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop h
 CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop inversion on "for/while" loops
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
+CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -525,7 +526,7 @@ CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
 // 2 - adaptive (default)
 CONFIG_INTEGER(TC_PatchpointStrategy, W("TC_PatchpointStrategy"), 2)
 #if defined(DEBUG)
-// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
+// Randomly sprinkle patchpoints. Value is the likelihood any given stack-empty point becomes a patchpoint.
 CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
 // Place patchpoint at the specified IL offset, if possible. Overrides random placement.
 CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
@@ -565,6 +566,9 @@ CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute r
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 #endif // debug
+
+// Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
+CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph

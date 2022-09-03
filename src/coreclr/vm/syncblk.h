@@ -102,7 +102,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
-// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is layed out as follows:
+// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
 // - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
 // - following six bits (bits 10 thru 15) is recursion level used for the thin locks
@@ -458,7 +458,7 @@ private:
     AwareLock(DWORD indx)
         : m_Recursion(0),
 #ifndef DACCESS_COMPILE
-// PreFAST has trouble with intializing a NULL PTR_Thread.
+// PreFAST has trouble with initializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
 #endif // DACCESS_COMPILE
           m_TransientPrecious(0),
@@ -562,7 +562,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CLREvent::SetMonitorEvent works even if the event has not been intialized yet
+        // CLREvent::SetMonitorEvent works even if the event has not been initialized yet
         m_SemEvent.SetMonitorEvent();
 
         m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this);
@@ -983,7 +983,7 @@ class SyncBlock
     // space for the minimum, which is the pointer within an SLink.
     SLink       m_Link;
 
-    // This is the hash code for the object. It can either have been transfered
+    // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
     // be a full 32 bits.

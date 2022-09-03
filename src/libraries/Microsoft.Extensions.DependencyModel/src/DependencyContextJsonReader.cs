@@ -165,10 +165,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            if (compilationOptions == null)
-            {
-                compilationOptions = CompilationOptions.Default;
-            }
+            compilationOptions ??= CompilationOptions.Default;
 
             Target? runtimeTarget = SelectRuntimeTarget(targets, runtimeTargetName);
             runtimeTargetName = runtimeTarget?.Name;
@@ -844,7 +841,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         private string? Pool(string? s)
         {
             if (s == null)

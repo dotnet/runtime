@@ -297,6 +297,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         Result resp = await SendCommand(id, method, args, token);
 
+                        if (!resp.IsOk)
+                        {
+                            SendResponse(id, resp, token);
+                            return true;
+                        }
+
                         context.DebugId = resp.Value["DebugId"]?.ToString();
 
                         if (await IsRuntimeAlreadyReadyAlready(id, token))
@@ -504,6 +510,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setDebuggerProperty":
+                    {
+                        foreach (KeyValuePair<string, JToken> property in args)
+                        {
+                            switch (property.Key)
+                            {
+                                case "JustMyCodeStepping":
+                                    SetJustMyCode(id, (bool) property.Value, token);
+                                break;
+                                default:
+                                    logger.LogDebug($"DotnetDebugger.setDebuggerProperty failed for {property.Key} with value {property.Value}");
+                                break;
+                            }
+                        }
+                        return true;
+                    }
                 case "DotnetDebugger.setNextIP":
                     {
                         var loc = SourceLocation.Parse(args?["location"] as JObject);
@@ -550,22 +572,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
-                case "DotnetDebugger.justMyCode":
-                    {
-                        try
-                        {
-                            SetJustMyCode(id, args, token);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogDebug($"DotnetDebugger.justMyCode failed for {id} with args {args}: {ex}");
-                            SendResponse(id,
-                                Result.Exception(new ArgumentException(
-                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
-                                token);
-                        }
-                        return true;
-                    }
             }
 
             return false;
@@ -583,12 +589,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return applyUpdates;
         }
 
-        private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
+        private void SetJustMyCode(MessageId id, bool isEnabled, CancellationToken token)
         {
-            var isEnabled = args["enabled"]?.Value<bool>();
-            if (isEnabled == null)
-                throw new ArgumentException();
-            JustMyCode = isEnabled.Value;
+            JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
         internal async Task<Result> GetMethodLocation(MessageId id, JObject args, CancellationToken token)
@@ -610,7 +613,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 assembly = store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
-                return Result.Err("Assembly '" + aname + "' not found.");
+                return Result.Err($"Assembly '{aname}' not found," +
+                                    $"needed to get method location of '{typeName}:{methodName}'");
             }
 
             TypeInfo type = assembly.GetTypeByName(typeName);
@@ -741,6 +745,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (JustMyCode)
+                getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try
             {
                 switch (objectId.Scheme)
@@ -753,7 +759,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
-                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -1129,7 +1135,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (urlSymbolServerList.Count == 0)
                 return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.PdbInformationAvailable)
+            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
             var pdbName = Path.GetFileName(asm.PdbName);
@@ -1234,7 +1240,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {
@@ -1297,12 +1303,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var argsNew = JObject.FromObject(new
                 {
                     callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
-                    expression = "assembly_name_str + '|' + entrypoint_method_token",
+                    expression = "_assembly_name_str + '|' + _entrypoint_method_token",
                 });
                 Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
                 if (!assemblyAndMethodToken.IsOk)
                 {
-                    logger.LogDebug("Failure evaluating assembly_name_str + '|' + entrypoint_method_token");
+                    logger.LogDebug("Failure evaluating _assembly_name_str + '|' + _entrypoint_method_token");
                     return;
                 }
                 logger.LogDebug($"Entrypoint assembly and method token {assemblyAndMethodToken.Value["result"]["value"].Value<string>()}");
@@ -1469,7 +1475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
+        internal virtual async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
@@ -1552,18 +1558,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req)
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req, bool ifNoneFoundThenFindNext = false)
         {
             var comparer = new SourceLocation.LocationComparer();
             // if column is specified the frontend wants the exact matches
             // and will clear the bp if it isn't close enoug
-            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
-                .Distinct(comparer)
-                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
+            var bpLocations = store.FindBreakpointLocations(req, ifNoneFoundThenFindNext);
+            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = bpLocations.Distinct(comparer)
                 .OrderBy(l => l.Column)
                 .GroupBy(l => l.Id);
+            if (ifNoneFoundThenFindNext && !locations.Any())
+            {
+                locations = bpLocations.GroupBy(l => l.Id);
+            }
             return locations;
         }
+
         private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
@@ -1621,12 +1631,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return;
             }
 
-            var locations = GetBPReqLocations(store, req);
+            var locations = GetBPReqLocations(store, req, true);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
+            logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
-
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();

@@ -725,8 +725,6 @@ BOOL Assembler::EmitMethod(Method *pMethod)
     //--------------------------------------------------------------------------------
     if (pMethod->m_fEntryPoint)
     {
-        if(fIsInterface) report->error("Entrypoint in Interface: Method '%s'\n",pszMethodName);
-
         if (FAILED(m_pCeeFileGen->SetEntryPoint(m_pCeeFile, MethodToken)))
         {
             report->error("Failed to set entry point for method '%s'\n",pszMethodName);

@@ -84,7 +84,7 @@ namespace ComWrappersTests.Common
     }
 
     //
-    // Native interface defintion with managed wrapper for tracker object
+    // Native interface definition with managed wrapper for tracker object
     //
     sealed class MockReferenceTrackerRuntime
     {

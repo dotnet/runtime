@@ -194,7 +194,7 @@ namespace System
                         IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
                         if (dirHandle == IntPtr.Zero)
                         {
-                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
+                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirError: true);
                         }
 
                         try
@@ -287,15 +287,13 @@ namespace System
                         {
                             int n = RandomAccess.Read(sfh, buffer.AsSpan(index, count), index);
                             if (n == 0)
-                                ThrowHelper.ThrowEndOfFileException();
-
-                            int end = index + n;
-                            for (; index < end; index++)
                             {
-                                if (buffer[index] != rawData[index])
-                                {
-                                    return false;
-                                }
+                                ThrowHelper.ThrowEndOfFileException();
+                            }
+
+                            if (!buffer.AsSpan(index, n).SequenceEqual(rawData.AsSpan(index, n)))
+                            {
+                                return false;
                             }
 
                             count -= n;

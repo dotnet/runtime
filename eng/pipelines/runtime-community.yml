@@ -1,4 +1,23 @@
-trigger: none
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+    exclude:
+    - release/6.0*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 schedules:
   - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
@@ -19,7 +38,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# s390x
+# s390x & PPC64 little endian
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -30,6 +49,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_s390x
+    - Linux_ppc64le
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

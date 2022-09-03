@@ -72,10 +72,10 @@ namespace System.Net
             _writeHeader.PayloadSize = message.Length;
             _writeHeader.CopyTo(_writeHeaderBuffer, 0);
 
-            await TAdapter.WriteAsync(stream, _writeHeaderBuffer, 0, _writeHeaderBuffer.Length, cancellationToken).ConfigureAwait(false);
+            await TAdapter.WriteAsync(stream, _writeHeaderBuffer, cancellationToken).ConfigureAwait(false);
             if (message.Length != 0)
             {
-                await TAdapter.WriteAsync(stream, message, 0, message.Length, cancellationToken).ConfigureAwait(false);
+                await TAdapter.WriteAsync(stream, message, cancellationToken).ConfigureAwait(false);
             }
         }
     }

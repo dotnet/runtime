@@ -47,8 +47,7 @@ namespace System.Buffers.Text
                     return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
 
-            byte* pDigits = stackalloc byte[Number.DecimalNumberBufferLength];
-            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, pDigits, Number.DecimalNumberBufferLength);
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, stackalloc byte[Number.DecimalNumberBufferLength]);
 
             if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
             {

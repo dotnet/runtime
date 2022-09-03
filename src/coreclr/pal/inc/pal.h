@@ -74,6 +74,12 @@ extern "C" {
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
 typedef PVOID NATIVE_LIBRARY_HANDLE;
 
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+extern bool g_arm64_atomics_present;
+#endif
+
 /******************* Processor-specific glue  *****************************/
 
 #ifndef _MSC_VER
@@ -446,7 +452,8 @@ enum
     GenerateDumpFlagsNone = 0x00,
     GenerateDumpFlagsLoggingEnabled = 0x01,
     GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04
+    GenerateDumpFlagsCrashReportEnabled = 0x04,
+    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
 };
 
 PALIMPORT
@@ -1263,16 +1270,6 @@ GetExitCodeProcess(
            IN HANDLE hProcess,
            IN LPDWORD lpExitCode);
 
-PALIMPORT
-BOOL
-PALAPI
-GetProcessTimes(
-        IN HANDLE hProcess,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpExitTime,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
-
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
 #define WAIT_ABANDONED   0x00000080
@@ -1591,7 +1588,7 @@ typedef struct _XMM_SAVE_AREA32 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -1837,7 +1834,7 @@ typedef struct _NEON128 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2019,7 +2016,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2155,7 +2152,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_LOONGARCH64)
 
-//Please refence "src/pal/src/arch/loongarch64/asmconstants.h"
+// Please refer to src/coreclr/pal/src/arch/loongarch64/asmconstants.h
 #define CONTEXT_LOONGARCH64   0x00800000
 
 #define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1)
@@ -2196,7 +2193,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2430,8 +2427,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     DWORD ContextFlags;
 
-    // 
-    // Integer  Registers 
+    //
+    // Integer  Registers
     //
 
     DWORD64 R0;
@@ -2544,7 +2541,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 R30;
     PDWORD64 R31;
 
-    // 
+    //
     // Need to add Floating point non-volatile registers.
     //
 
@@ -2656,6 +2653,7 @@ PALIMPORT
 size_t
 PALAPI
 PAL_GetLogicalProcessorCacheSizeFromOS();
+#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
@@ -2663,7 +2661,7 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_P
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
 
-#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
+PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
 /* PAL_CS_NATIVE_DATA_SIZE is defined as sizeof(PAL_CRITICAL_SECTION_NATIVE_DATA) */
 
@@ -3466,6 +3464,55 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 #endif
 }
 
+#if defined(HOST_ARM64)
+
+#if defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+
+#define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
+{                                                               \
+    return INTRINSIC_NAME;                                      \
+}                                                               \
+
+#else   // !LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+
+#define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
+/* Function multiversioning will never inline a method that is  \
+   marked such. However, just to make sure that we don't see    \
+   surprises, explicitely mark them as noinline. */             \
+__attribute__((target("lse")))  __attribute__((noinline))       \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI Lse_##METHOD_DECL  \
+{                                                               \
+    return INTRINSIC_NAME;                                      \
+}                                                               \
+                                                                \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
+{                                                               \
+    if (g_arm64_atomics_present)                                \
+    {                                                           \
+        return Lse_##METHOD_INVOC;                              \
+    }                                                           \
+    else                                                        \
+    {                                                           \
+        RETURN_TYPE result = INTRINSIC_NAME;                    \
+        PAL_ArmInterlockedOperationBarrier();                   \
+        return result;                                          \
+    }                                                           \
+}                                                               \
+
+#endif  // LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+#else   // !HOST_ARM64
+
+#define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
+{                                                               \
+    RETURN_TYPE result = INTRINSIC_NAME;                        \
+    PAL_ArmInterlockedOperationBarrier();                       \
+    return result;                                              \
+}                                                               \
+
+#endif  // HOST_ARM64
+
 /*++
 Function:
 InterlockedAdd
@@ -3486,33 +3533,19 @@ Return Values
 
 The return value is the resulting added value.
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedAdd(
-    IN OUT LONG volatile *lpAddend,
-    IN LONG value)
-{
-    LONG result = __sync_add_and_fetch(lpAddend, value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedAdd( IN OUT LONG volatile *lpAddend, IN LONG value),
+    InterlockedAdd(lpAddend, value),
+    __sync_add_and_fetch(lpAddend, value)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedAdd64(
-    IN OUT LONGLONG volatile *lpAddend,
-    IN LONGLONG value)
-{
-    LONGLONG result = __sync_add_and_fetch(lpAddend, value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedAdd64(IN OUT LONGLONG volatile *lpAddend, IN LONGLONG value),
+    InterlockedAdd64(lpAddend, value),
+    __sync_add_and_fetch(lpAddend, value)
+)
 
 /*++
 Function:
@@ -3533,31 +3566,19 @@ Return Values
 The return value is the resulting incremented value.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedIncrement(
-    IN OUT LONG volatile *lpAddend)
-{
-    LONG result = __sync_add_and_fetch(lpAddend, (LONG)1);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedIncrement(IN OUT LONG volatile *lpAddend),
+    InterlockedIncrement(lpAddend),
+    __sync_add_and_fetch(lpAddend, (LONG)1)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedIncrement64(
-    IN OUT LONGLONG volatile *lpAddend)
-{
-    LONGLONG result = __sync_add_and_fetch(lpAddend, (LONGLONG)1);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedIncrement64(IN OUT LONGLONG volatile *lpAddend),
+    InterlockedIncrement64(lpAddend),
+    __sync_add_and_fetch(lpAddend, (LONGLONG)1)
+)
 
 /*++
 Function:
@@ -3578,33 +3599,21 @@ Return Values
 The return value is the resulting decremented value.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedDecrement(
-    IN OUT LONG volatile *lpAddend)
-{
-    LONG result = __sync_sub_and_fetch(lpAddend, (LONG)1);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedDecrement(IN OUT LONG volatile *lpAddend),
+    InterlockedDecrement(lpAddend),
+    __sync_sub_and_fetch(lpAddend, (LONG)1)
+)
 
 #define InterlockedDecrementRelease InterlockedDecrement
 
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedDecrement64(
-    IN OUT LONGLONG volatile *lpAddend)
-{
-    LONGLONG result = __sync_sub_and_fetch(lpAddend, (LONGLONG)1);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
+    InterlockedDecrement64(lpAddend),
+    __sync_sub_and_fetch(lpAddend, (LONGLONG)1)
+)
 
 /*++
 Function:
@@ -3627,33 +3636,19 @@ Return Values
 The function returns the initial value pointed to by Target.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedExchange(
-    IN OUT LONG volatile *Target,
-    IN LONG Value)
-{
-    LONG result = __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedExchange(IN OUT LONG volatile *Target, LONG Value),
+    InterlockedExchange(Target, Value),
+    __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedExchange64(
-    IN OUT LONGLONG volatile *Target,
-    IN LONGLONG Value)
-{
-    LONGLONG result = __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedExchange64(IN OUT LONGLONG volatile *Target, IN LONGLONG Value),
+    InterlockedExchange64(Target, Value),
+    __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+)
 
 /*++
 Function:
@@ -3678,47 +3673,29 @@ Return Values
 The return value is the initial value of the destination.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedCompareExchange(
-    IN OUT LONG volatile *Destination,
-    IN LONG Exchange,
-    IN LONG Comperand)
-{
-    LONG result =
-        __sync_val_compare_and_swap(
-            Destination, /* The pointer to a variable whose value is to be compared with. */
-            Comperand, /* The value to be compared */
-            Exchange /* The value to be stored */);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedCompareExchange(IN OUT LONG volatile *Destination, IN LONG Exchange, IN LONG Comperand),
+    InterlockedCompareExchange(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
 
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
 #define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
 // See the 32-bit variant in interlock2.s
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedCompareExchange64(
-    IN OUT LONGLONG volatile *Destination,
-    IN LONGLONG Exchange,
-    IN LONGLONG Comperand)
-{
-    LONGLONG result =
-        __sync_val_compare_and_swap(
-            Destination, /* The pointer to a variable whose value is to be compared with. */
-            Comperand, /* The value to be compared */
-            Exchange /* The value to be stored */);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
+    InterlockedCompareExchange64(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
 
 /*++
 Function:
@@ -3737,61 +3714,33 @@ Return Values
 The return value is the original value that 'Addend' pointed to.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedExchangeAdd(
-    IN OUT LONG volatile *Addend,
-    IN LONG Value)
-{
-    LONG result = __sync_fetch_and_add(Addend, Value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedExchangeAdd(IN OUT LONG volatile *Addend, IN LONG Value),
+    InterlockedExchangeAdd(Addend, Value),
+    __sync_fetch_and_add(Addend, Value)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedExchangeAdd64(
-    IN OUT LONGLONG volatile *Addend,
-    IN LONGLONG Value)
-{
-    LONGLONG result = __sync_fetch_and_add(Addend, Value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedExchangeAdd64(IN OUT LONGLONG volatile *Addend, IN LONGLONG Value),
+    InterlockedExchangeAdd64(Addend, Value),
+    __sync_fetch_and_add(Addend, Value)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedAnd(
-    IN OUT LONG volatile *Destination,
-    IN LONG Value)
-{
-    LONG result = __sync_fetch_and_and(Destination, Value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedAnd(IN OUT LONG volatile *Destination, IN LONG Value),
+    InterlockedAnd(Destination, Value),
+    __sync_fetch_and_and(Destination, Value)
+)
 
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedOr(
-    IN OUT LONG volatile *Destination,
-    IN LONG Value)
-{
-    LONG result = __sync_fetch_and_or(Destination, Value);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedOr(IN OUT LONG volatile *Destination, IN LONG Value),
+    InterlockedOr(Destination, Value),
+    __sync_fetch_and_or(Destination, Value)
+)
 
 #if defined(HOST_64BIT)
 #define InterlockedExchangePointer(Target, Value) \
@@ -4326,15 +4275,11 @@ inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
 }
 #endif
 
-#if defined(__llvm__)
-#define HAS_ROTL __has_builtin(_rotl)
-#define HAS_ROTR __has_builtin(_rotr)
-#else
-#define HAS_ROTL 0
-#define HAS_ROTR 0
+#ifndef __has_builtin
+#define __has_builtin(x) 0
 #endif
 
-#if !HAS_ROTL
+#if !__has_builtin(_rotl)
 /*++
 Function:
 _rotl
@@ -4352,14 +4297,14 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
     retval = (value << shift) | (value >> (sizeof(int) * CHAR_BIT - shift));
     return retval;
 }
-#endif // !HAS_ROTL
+#endif // !__has_builtin(_rotl)
 
 // On 64 bit unix, make the long an int.
 #ifdef HOST_64BIT
 #define _lrotl _rotl
-#endif // HOST_64BIT
+#endif
 
-#if !HAS_ROTR
+#if !__has_builtin(_rotr)
 
 /*++
 Function:
@@ -4379,7 +4324,7 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
     return retval;
 }
 
-#endif // !HAS_ROTR
+#endif // !__has_builtin(_rotr)
 
 PALIMPORT int __cdecl abs(int);
 // clang complains if this is declared with __int64
@@ -4593,23 +4538,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
 PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
-
-/******************* PAL-specific I/O completion port *****************/
-
-typedef struct _PAL_IOCP_CPU_INFORMATION {
-    union {
-        FILETIME ftLastRecordedIdleTime;
-        FILETIME ftLastRecordedCurrentTime;
-    } LastRecordedTime;
-    FILETIME ftLastRecordedKernelTime;
-    FILETIME ftLastRecordedUserTime;
-} PAL_IOCP_CPU_INFORMATION;
-
-PALIMPORT
-INT
-PALAPI
-PAL_GetCPUBusyTime(
-    IN OUT PAL_IOCP_CPU_INFORMATION *lpPrevCPUInfo);
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF

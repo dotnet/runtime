@@ -29,45 +29,13 @@ namespace System.Xml.Serialization
 
         internal ImportContext() : this(null, false) { }
 
-        internal SchemaObjectCache Cache
-        {
-            get
-            {
-                if (_cache == null)
-                    _cache = new SchemaObjectCache();
-                return _cache;
-            }
-        }
+        internal SchemaObjectCache Cache => _cache ??= new SchemaObjectCache();
 
-        internal Hashtable Elements
-        {
-            get
-            {
-                if (_elements == null)
-                    _elements = new Hashtable();
-                return _elements;
-            }
-        }
+        internal Hashtable Elements => _elements ??= new Hashtable();
 
-        internal Hashtable Mappings
-        {
-            get
-            {
-                if (_mappings == null)
-                    _mappings = new Hashtable();
-                return _mappings;
-            }
-        }
+        internal Hashtable Mappings => _mappings ??= new Hashtable();
 
-        public CodeIdentifiers TypeIdentifiers
-        {
-            get
-            {
-                if (_typeIdentifiers == null)
-                    _typeIdentifiers = new CodeIdentifiers();
-                return _typeIdentifiers;
-            }
-        }
+        public CodeIdentifiers TypeIdentifiers => _typeIdentifiers ??= new CodeIdentifiers();
 
         public bool ShareTypes
         {
@@ -88,45 +56,13 @@ namespace System.Xml.Serialization
         private StringCollection? _warnings;
         // UNDONE remove me soon, this is debug only code
         internal Hashtable looks = new Hashtable();
-        private Hashtable Graph
-        {
-            get
-            {
-                if (_graph == null)
-                    _graph = new Hashtable();
-                return _graph;
-            }
-        }
+        private Hashtable Graph => _graph ??= new Hashtable();
 
-        private Hashtable Hash
-        {
-            get
-            {
-                if (_hash == null)
-                    _hash = new Hashtable();
-                return _hash;
-            }
-        }
+        private Hashtable Hash => _hash ??= new Hashtable();
 
-        private Hashtable ObjectCache
-        {
-            get
-            {
-                if (_objectCache == null)
-                    _objectCache = new Hashtable();
-                return _objectCache;
-            }
-        }
+        private Hashtable ObjectCache => _objectCache ??= new Hashtable();
 
-        internal StringCollection Warnings
-        {
-            get
-            {
-                if (_warnings == null)
-                    _warnings = new StringCollection();
-                return _warnings;
-            }
-        }
+        internal StringCollection Warnings => _warnings ??= new StringCollection();
 
         internal XmlSchemaObject? AddItem(XmlSchemaObject? item, XmlQualifiedName? qname, XmlSchemas schemas)
         {
@@ -170,8 +106,8 @@ namespace System.Xml.Serialization
                 return true;
             if (o1.GetType() != o2.GetType())
                 return false;
-            if (Hash[o1] == null)
-                Hash[o1] = GetHash(o1);
+
+            Hash[o1] ??= GetHash(o1);
             int hash1 = (int)Hash[o1]!;
             int hash2 = GetHash(o2);
             if (hash1 != hash2)

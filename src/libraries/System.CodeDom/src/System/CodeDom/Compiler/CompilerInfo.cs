@@ -30,10 +30,7 @@ namespace System.CodeDom.Compiler
                 {
                     lock (this)
                     {
-                        if (_type == null)
-                        {
-                            _type = Type.GetType(_codeDomProviderTypeName);
-                        }
+                        _type ??= Type.GetType(_codeDomProviderTypeName);
                     }
                 }
 

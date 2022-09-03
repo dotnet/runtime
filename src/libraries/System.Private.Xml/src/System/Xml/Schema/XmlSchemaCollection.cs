@@ -290,11 +290,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
+                return _schemaNames ??= new SchemaNames(_nameTable);
             }
         }
 

@@ -428,7 +428,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
 // AddField - called when a new field is added by EnC
 //
 // Since instances of this class may already exist on the heap, we can't change the
-// runtime layout of the object to accomodate the new field.  Instead we hang the field
+// runtime layout of the object to accommodate the new field.  Instead we hang the field
 // off the syncblock (for instance fields) or in the FieldDesc for static fields.
 //
 // Here we just create the FieldDesc and link it to the class.  The actual storage will
@@ -1206,7 +1206,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
     //      }
     //      class B : A {
     //          [PreserveBaseOverrides]
-    //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+    //          DerivedRetType VirtualFunction() { .override A.VirtualFunction }
     //      }
     //      class C : B {
     //          MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
@@ -2236,7 +2236,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             // Display them
             if(debug) {
                 ssBuff.Printf("%s:\n", pszClassName);
-                OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                OutputDebugStringUtf8(ssBuff.GetUTF8());
             }
             else {
                  LOG((LF_CLASSLOADER, LL_ALWAYS, "%s:\n", pszClassName));
@@ -2250,7 +2250,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
 #endif
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else {
                     LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
@@ -2299,7 +2299,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
         if (debug)
         {
             ssBuff.Printf("Field layout for '%s':\n\n", pszClassName);
-            OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2326,7 +2326,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
                 FieldDesc *pFD = GetClass()->GetFieldDescList() + ((GetNumInstanceFields()-cParentInstanceFields) + i);
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
@@ -2404,7 +2404,7 @@ MethodTable::DebugDumpGCDesc(
         if (fDebug)
         {
             ssBuff.Printf("GC description for '%s':\n\n", pszClassName);
-            OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2438,7 +2438,7 @@ MethodTable::DebugDumpGCDesc(
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
                         pSeries->GetSeriesSize() + GetBaseSize() );
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
@@ -2503,7 +2503,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
         return clsIfNone;
 
     // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
+    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
 

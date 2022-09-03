@@ -30,7 +30,7 @@ namespace System.UnitTesting
 
         private static bool TryParseConstraint(Expression<Func<ExportDefinition, bool>> constraint, out string contractName, out IEnumerable<KeyValuePair<string, Type>> requiredMetadata)
         {
-            return ContraintParser.TryParseConstraint(constraint, out contractName, out requiredMetadata);
+            return ConstraintParser.TryParseConstraint(constraint, out contractName, out requiredMetadata);
         }
     }
 }

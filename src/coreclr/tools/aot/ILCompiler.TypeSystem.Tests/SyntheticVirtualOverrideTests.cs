@@ -59,7 +59,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestUnoverridenSyntheticEqualsAndGetHashCode()
+        public void TestUnoverriddenSyntheticEqualsAndGetHashCode()
         {
             //
             // Tests that the synthetic implementation on a base class is propagated to
@@ -82,10 +82,10 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestOverridenSyntheticEqualsAndGetHashCode()
+        public void TestOverriddenSyntheticEqualsAndGetHashCode()
         {
             //
-            // Tests that the synthetic implementation on a base class can be overriden by
+            // Tests that the synthetic implementation on a base class can be overridden by
             // derived classes.
             //
 
@@ -97,7 +97,7 @@ namespace TypeSystemTests
             Assert.Equal(4, virtualSlots.Count);
 
             List<MethodDesc> vtable = virtualSlots.Select(s => t.FindVirtualFunctionTargetMethodOnObjectType(s)).ToList();
-            
+
             Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "Finalize" && m.OwningType.IsObject);

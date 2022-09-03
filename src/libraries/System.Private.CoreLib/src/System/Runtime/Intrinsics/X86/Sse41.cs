@@ -26,26 +26,26 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
             ///   PEXTRQ reg/m64, xmm, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long Extract(Vector128<long> value, byte index) => Extract(value, index);
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
             ///   PEXTRQ reg/m64, xmm, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong Extract(Vector128<ulong> value, byte index) => Extract(value, index);
 
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<long> Insert(Vector128<long> value, long data, byte index) => Insert(value, data, index);
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) => Insert(value, data, index);
         }

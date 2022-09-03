@@ -463,6 +463,18 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgNode - The node of interest
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    assert(putArgNode->OperIs(GT_PUTARG_STK)); // No split args on XArch.
+    LowerPutArgStk(putArgNode);
+}
+
+//------------------------------------------------------------------------
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
@@ -732,7 +744,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     // We should never see the following casts as they are expected to be lowered
-    // apropriately or converted into helper calls by front-end.
+    // appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
@@ -3767,7 +3779,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         case TYP_USHORT:
         case TYP_UINT:
         {
-            node->gtType = TYP_UINT;
+            node->gtType = TYP_INT;
             node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
             node->ChangeHWIntrinsicId(NI_SSE2_ConvertToUInt32);
             break;
@@ -5358,12 +5370,12 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
             indirOpSource->ClearContained();
         }
         indirSrc->AsOp()->gtOp2->ClearRegOptional();
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode BinOp= source\n");
     }
     else
     {
         assert(GenTree::OperIsUnary(oper));
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
     }
     DISPTREERANGE(BlockRange(), storeInd);
 

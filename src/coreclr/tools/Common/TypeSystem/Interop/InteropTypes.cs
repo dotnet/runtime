@@ -117,11 +117,6 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "ArgIterator");
         }
 
-        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "ByReference`1");
-        }
-
         public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Span`1");
@@ -140,6 +135,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemRuntimeIntrinsicsVector64T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
+        }
+
+        public static bool IsInt128Type(TypeSystemContext context, TypeDesc type)
+        {
+            return type is DefType defType && defType.IsInt128OrHasInt128Fields;
         }
 
         public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)

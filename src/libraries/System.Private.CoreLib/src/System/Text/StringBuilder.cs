@@ -129,10 +129,8 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
-            if (value == null)
-            {
-                value = string.Empty;
-            }
+            value ??= string.Empty;
+
             if (startIndex > value.Length - length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
@@ -212,10 +210,7 @@ namespace System.Text
             }
 
             // Check values and set defaults
-            if (persistedString == null)
-            {
-                persistedString = string.Empty;
-            }
+            persistedString ??= string.Empty;
             if (persistedMaxCapacity < 1 || persistedString.Length > persistedMaxCapacity)
             {
                 throw new SerializationException(SR.Serialization_StringBuilderMaxCapacity);
@@ -537,7 +532,7 @@ namespace System.Text
         /// It is undefined what happens if the StringBuilder is modified while the chunk
         /// enumeration is incomplete.  StringBuilder is also not thread-safe, so operating
         /// on it with concurrent threads is illegal.  Finally the ReadOnlyMemory chunks returned
-        /// are NOT guarenteed to remain unchanged if the StringBuilder is modified, so do
+        /// are NOT guaranteed to remain unchanged if the StringBuilder is modified, so do
         /// not cache them for later use either.  This API's purpose is efficiently extracting
         /// the data of a CONSTANT StringBuilder.
         ///
@@ -1057,10 +1052,10 @@ namespace System.Text
             int nextCharIndex = m_ChunkLength;
             char[] chars = m_ChunkChars;
 
-            if ((uint)chars.Length > (uint)nextCharIndex)
+            if ((uint)nextCharIndex < (uint)chars.Length)
             {
                 chars[nextCharIndex] = value;
-                m_ChunkLength++;
+                m_ChunkLength = nextCharIndex + 1;
             }
             else
             {

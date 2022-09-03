@@ -24,34 +24,32 @@ namespace ConsoleApplication1
             public B[] b;
         }
 
-        
-
         static int Main(string[] args)
         {
-        		try
-        		{
-        			M();
-        			Console.WriteLine("PASS");
-        			return 100;        			
-        		}
-        		catch(TypeLoadException)
-        		{
-        			Console.WriteLine("Caught TypeLoadException, FAIL");
-        			return 99;
-        		}
-        		catch(Exception e)
-        		{
-        			Console.WriteLine("Caught unexpected exception");
-        			Console.WriteLine(e);
-        			Console.WriteLine("\nFAIL");
-        			return 99;        			
-        		}
+            try
+            {
+                M();
+                Console.WriteLine("PASS");
+                return 100;
+            }
+            catch(TypeLoadException)
+            {
+                Console.WriteLine("Caught TypeLoadException, FAIL");
+                return 99;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Caught unexpected exception");
+                Console.WriteLine(e);
+                Console.WriteLine("\nFAIL");
+                return 99;
+            }
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void M()
         {
-        	C obj = new C(); // exception occurs in the initializing this memeber
+            C obj = new C(); // exception occurs in the initializing this member
         }
     }
 }

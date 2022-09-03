@@ -578,10 +578,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
-                {
-                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
-                }
+                propertyList ??= new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
                 {
@@ -916,10 +913,7 @@ namespace System.ComponentModel
                 if (td == null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Hashtable();
                     _typeData[type] = td;
                 }
             }
@@ -1423,10 +1417,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
+                hashEntry ??= table[typeof(object)];
 
                 // If the entry is a type, create an instance of it and then
                 // replace the entry. This way we only need to create once.

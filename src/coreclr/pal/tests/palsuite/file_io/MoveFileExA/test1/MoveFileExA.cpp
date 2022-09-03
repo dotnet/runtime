@@ -15,15 +15,15 @@
 
 LPSTR lpSource_MoveFileExA_test1[4] = {
 						"src_existing.tmp",
-						"src_non-existant.tmp",
+						"src_non-existent.tmp",
 						"src_dir_existing",
-						"src_dir_non-existant"
+						"src_dir_non-existent"
 					};
 LPSTR lpDestination_MoveFileExA_test1[4]={
 						"dst_existing.tmp",
-						"dst_non-existant.tmp",
+						"dst_non-existent.tmp",
 						"dst_dir_existing",
-						"dst_dir_non-existant"
+						"dst_dir_non-existent"
 						};
 
 LPSTR lpFiles_MoveFileExA_test1[14] ={
@@ -31,16 +31,16 @@ LPSTR lpFiles_MoveFileExA_test1[14] ={
 						"src_dir_existing\\test02.tmp",
 						"dst_dir_existing\\test01.tmp",
 						"dst_dir_existing\\test02.tmp",
-						"src_dir_non-existant\\test01.tmp",
-						"src_dir_non-existant\\test02.tmp",
+						"src_dir_non-existent\\test01.tmp",
+						"src_dir_non-existent\\test02.tmp",
 						"dst_existing.tmp\\test01.tmp",
 						"dst_existing.tmp\\test02.tmp",
-						"dst_non-existant.tmp\\test01.tmp",
-						"dst_non-existant.tmp\\test02.tmp",
+						"dst_non-existent.tmp\\test01.tmp",
+						"dst_non-existent.tmp\\test02.tmp",
 						"dst_dir_existing\\test01.tmp",
 						"dst_dir_existing\\test02.tmp",
-						"dst_dir_non-existant\\test01.tmp",
-						"dst_dir_non-existant\\test02.tmp"
+						"dst_dir_non-existent\\test01.tmp",
+						"dst_dir_non-existent\\test02.tmp"
 						};
 
 DWORD dwFlag_MoveFileExA_test1[2] = {MOVEFILE_COPY_ALLOWED, MOVEFILE_REPLACE_EXISTING};

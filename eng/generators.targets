@@ -67,6 +67,9 @@
     <PropertyGroup>
         <LibraryImportGenerator_UseMarshalType>true</LibraryImportGenerator_UseMarshalType>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)' and '$(IncludeLibraryImportGeneratorSources)' != 'false'">
+    </ItemGroup>
   </Target>
 
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\Microsoft.Interop.LibraryImportGenerator.props" />

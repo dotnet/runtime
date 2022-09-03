@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
             IntPtr ret = Interop.Sys.LoadLibrary(libraryName);
             if (ret == IntPtr.Zero)
             {
-                string? message = Marshal.PtrToStringAnsi(Interop.Sys.GetLoadLibraryError());
+                string? message = Marshal.PtrToStringUTF8(Interop.Sys.GetLoadLibraryError());
                 errorTracker.TrackErrorMessage(message);
             }
 

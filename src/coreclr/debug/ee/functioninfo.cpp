@@ -952,7 +952,7 @@ void DebuggerJitInfo::LazyInitBounds()
     EX_CATCH
     {
         LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=0x%x Exception was thrown and caught\n", this));
-        // Just catch the exception. The DJI maps may or may-not be intialized,
+        // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -1230,7 +1230,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 // Init a DJI after it's jitted.
 void DebuggerJitInfo::Init(TADDR newAddress)
 {
-    // Shouldn't initialize while holding the lock b/c intialzing may call functions that lock,
+    // Shouldn't initialize while holding the lock b/c initializing may call functions that lock,
     // and thus we'd have a locking violation.
     _ASSERTE(!g_pDebugger->HasDebuggerDataLock());
 

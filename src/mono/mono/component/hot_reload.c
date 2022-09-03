@@ -138,6 +138,12 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass);
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
+static const char *
+hot_reload_get_capabilities (void);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -172,6 +178,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
 	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities
 };
 
 MonoComponentHotReload *
@@ -738,11 +746,12 @@ hot_reload_wait_for_update (uint32_t timeout_ms)
 }
 
 static void
-hot_reload_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
+hot_reload_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation, gboolean should_invalidate_transformed_code)
 {
 	g_assert (update_published < generation && generation <= update_alloc_frontier);
 	/* TODO: wait for all threads that are using old metadata to update. */
-	hot_reload_update_published_invoke_hook (alc, generation);
+	if (should_invalidate_transformed_code)
+		hot_reload_update_published_invoke_hook (alc, generation);
 	update_published = update_alloc_frontier;
 	mono_memory_write_barrier ();
 	publish_unlock ();
@@ -817,7 +826,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		}
 		/* The invariant is that once we made a copy in any previous generation, we'll make
 		 * a copy in this generation.  So subsequent generations can copy either from the
-		 * immediately preceeding generation or from the baseline if the preceeding
+		 * immediately preceding generation or from the baseline if the preceding
 		 * generation didn't make a copy. */
 
 		guint32 rows = count->prev_gen_rows + count->inserted_rows;
@@ -1086,7 +1095,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx G_GNUC_UN
  * single entry, and thus this would be an out-of-bounds access. That's where
  * the ENCMAP table comes into play: It will have an entry
  * `MONO_TOKEN_METHOD_DEF | 5`, so before accessing the new entry in the
- * minimal delta image, it has to be substracted. Thus the new relative index
+ * minimal delta image, it has to be subtracted. Thus the new relative index
  * is `1`, and no out-of-bounds acccess anymore.
  *
  * One can assume that ENCMAP is sorted (todo: verify this claim).
@@ -1136,7 +1145,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, 
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "relative index for token 0x%08x -> table 0x%02x row 0x%08x", token, table, return_val);
 			return return_val;
 		} else {
-			/* Otherwise we stopped either: because we saw an an entry for a row after
+			/* Otherwise we stopped either: because we saw an entry for a row after
 			 * the one we wanted - we were looking for a modification, but the encmap
 			 * has an addition; or, because we saw the last entry in the encmap and it
 			 * still wasn't for a row as high as the one we wanted.  either way, the
@@ -1374,8 +1383,9 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
  * function will fail and the metadata update should be aborted. This should
  * run before anything in the metadata world is updated. */
 static gboolean
-apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, gboolean *should_invalidate_transformed_code, MonoError *error)
 {
+	*should_invalidate_transformed_code = false;
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	guint32 rows = table_info_get_rows (table_enclog);
 
@@ -1432,6 +1442,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				continue; /* ok, allowed */
 			/* handled above */
@@ -1441,6 +1452,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
 		case MONO_TABLE_PROPERTYMAP: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_PROPERTY) {
 				g_assert (i + 1 < rows);
 				i++; /* skip the next record */
@@ -1457,10 +1469,12 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		}
 		case MONO_TABLE_PROPERTY: {
 			/* ok */
+			*should_invalidate_transformed_code = true;
 			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
 		}
 		case MONO_TABLE_EVENTMAP: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_EVENT) {
 				g_assert (i + 1 < rows);
 				i++; /* skip the next record */
@@ -1476,6 +1490,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			break;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
+			*should_invalidate_transformed_code = true;
 			if (is_addition) {
 				/* new rows are fine */
 				break;
@@ -1487,6 +1502,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
+			*should_invalidate_transformed_code = true;
 			if (!is_addition) {
 				/* modifying existing rows is ok, as long as the parent and ctor are the same */
 				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
@@ -1532,6 +1548,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_PARAM: {
+			*should_invalidate_transformed_code = true;
 			if (!is_addition) {
 				/* We only allow modifications where the parameter name doesn't change. */
 				uint32_t base_param [MONO_PARAM_SIZE];
@@ -1557,6 +1574,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_METHOD) {
 				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
 				g_assert (i + 1 < rows);
@@ -1602,8 +1620,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 		/*
 		 * So the way a non-default func_code works is that it's attached to the EnCLog
-		 * record preceeding the new member defintion (so e.g. an addMethod code will be on
-		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
+		 * record preceding the new member definition (so e.g. an addMethod code will be on
+		 * the preceding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
 			case ENC_FUNC_DEFAULT: /* default */
@@ -1966,14 +1984,14 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 
 }
 
-/* do actuall enclog application */
+/* do actual enclog application */
 static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	guint32 rows = table_info_get_rows (table_enclog);
 
-	/* NOTE: Suppressed colums
+	/* NOTE: Suppressed columns
 	 *
 	 * Certain column values in some tables in the deltas are not meant to be applied over the
 	 * previous generation. See CMiniMdRW::m_SuppressedDeltaColumns in CoreCLR.  For example the
@@ -2503,8 +2521,8 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
 
-
-	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
+	gboolean should_invalidate_transformed_code = false;
+	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, &should_invalidate_transformed_code, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
 		return;
@@ -2532,7 +2550,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	pass2_context_destroy (&pass2ctx);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
-	hot_reload_update_publish (alc, generation);
+	hot_reload_update_publish (alc, generation, should_invalidate_transformed_code);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
@@ -3111,4 +3129,24 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 	if (!info)
 		return 0;
 	return g_slist_length (info->added_fields);
+}
+
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	uint32_t count = 0;
+	GSList *members = hot_reload_get_added_members (klass);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		count++;
+	}
+	return count;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
 }

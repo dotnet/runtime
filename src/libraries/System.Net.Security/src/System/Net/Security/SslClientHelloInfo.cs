@@ -13,7 +13,7 @@ namespace System.Net.Security
         public readonly string ServerName { get; }
         public readonly SslProtocols SslProtocols { get; }
 
-        internal SslClientHelloInfo(string serverName, SslProtocols sslProtocols)
+        public SslClientHelloInfo(string serverName, SslProtocols sslProtocols)
         {
             ServerName = serverName;
             SslProtocols = sslProtocols;

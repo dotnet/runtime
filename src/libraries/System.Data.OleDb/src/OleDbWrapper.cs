@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     // SafeHandle wrapper around 'DataLinks' object which pools the native OLE DB providers.
@@ -313,7 +311,7 @@ namespace System.Data.OleDb
         // or it will be known that IDBCreateCommand is not supported
         internal unsafe void QueryInterfaceIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             // caching the fact if we have queried for IDBCreateCommand or not
@@ -371,7 +369,7 @@ namespace System.Data.OleDb
 
         internal void VerifyIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             Debug.Assert(constr.HaveQueriedForCreateCommand, "expected HaveQueriedForCreateCommand");

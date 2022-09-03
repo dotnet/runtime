@@ -2549,7 +2549,7 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
         if (isParamDirective)
         {
             // Setup the custom descr list so that we can record
-            // custom attributes on this generic param contraint
+            // custom attributes on this generic param constraint
             //
             m_pCustomDescrList = pGPC->CAList();
         }
@@ -2564,7 +2564,7 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
         if (isParamDirective)
         {
             // Setup the custom descr list so that we can record
-            // custom attributes on this generic param contraint
+            // custom attributes on this generic param constraint
             //
             m_pCustomDescrList = pNewGPCDescr->CAList();
         }

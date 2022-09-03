@@ -358,7 +358,7 @@ namespace System.Data.OleDb
             return ADP.InvalidOperation(SR.Format(SR.OleDb_IDBInfoNotSupported));
         }
 
-        // explictly used error codes
+        // explicitly used error codes
         internal const int ADODB_AlreadyClosedError = unchecked((int)0x800A0E78);
         internal const int ADODB_NextResultError = unchecked((int)0x800A0CB3);
 

@@ -21,23 +21,7 @@
  */
 //#define mono_compiler_barrier() asm volatile("": : :"memory")
 
-#ifdef HOST_WASM
-
-static inline void mono_memory_barrier (void)
-{
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-}
-
-#define mono_compiler_barrier() asm volatile("": : :"memory")
-
-#elif _MSC_VER
+#if _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -71,7 +55,7 @@ static inline void mono_memory_write_barrier (void)
 
 #define mono_compiler_barrier() _ReadWriteBarrier ()
 
-#elif defined(USE_GCC_ATOMIC_OPS)
+#elif defined(USE_GCC_ATOMIC_OPS) || defined(HOST_WASM)
 
 static inline void mono_memory_barrier (void)
 {

@@ -356,13 +356,6 @@ namespace System.Threading
             Debug.Assert(this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
-            if (!ThreadPool.UsePortableThreadPool)
-            {
-                // Currently implemented in unmanaged method Thread::InternalReset and
-                // called internally from the ThreadPool in NotifyWorkItemComplete.
-                return;
-            }
-
             if (_mayNeedResetForThreadPool)
             {
                 ResetThreadPoolThreadSlow();

@@ -139,6 +139,7 @@
     <TargetBits>32</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='loongarch64'">64</TargetBits>
   </PropertyGroup>
 
   <PropertyGroup>

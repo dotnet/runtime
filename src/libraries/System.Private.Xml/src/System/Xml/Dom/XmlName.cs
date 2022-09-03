@@ -94,10 +94,7 @@ namespace System.Xml
                             string n = $"{_prefix}:{_localName}";
                             lock (ownerDoc.NameTable)
                             {
-                                if (_name == null)
-                                {
-                                    _name = ownerDoc.NameTable.Add(n);
-                                }
+                                _name ??= ownerDoc.NameTable.Add(n);
                             }
                         }
                         else
