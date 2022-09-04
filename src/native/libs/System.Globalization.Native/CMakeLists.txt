@@ -59,7 +59,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
 )
 
-if (DEFINED LOCAL_BUILD)
+if (LOCAL_BUILD)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
     add_definitions(-DLOCAL_BUILD)
     add_definitions(-DSTATIC_ICU)
