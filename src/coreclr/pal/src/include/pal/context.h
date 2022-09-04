@@ -1018,18 +1018,12 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->Rip = pc;
 #elif defined(HOST_X86)
     pContext->Eip = pc;
-#elif defined(HOST_ARM64) || defined(HOST_ARM)
-    pContext->Pc = pc;
-#elif defined(HOST_LOONGARCH64)
-    pContext->Pc = pc;
-#elif defined(HOST_RISCV64)
-    pContext->Pc = pc;
 #elif defined(HOST_S390X)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
 #else
-#error "don't know how to set the program counter for this architecture"
+    pContext->Pc = pc;
 #endif
 }
 

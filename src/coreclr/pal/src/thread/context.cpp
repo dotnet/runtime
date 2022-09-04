@@ -35,11 +35,8 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_AREA_MASK 0xffff
 #ifdef HOST_X86
 #define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
-#elif defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64) || \
-      defined(HOST_S390X) || defined(HOST_POWERPC64)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
-#error Unexpected architecture.
+#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #endif
 
 #if !HAVE_MACH_EXCEPTIONS
