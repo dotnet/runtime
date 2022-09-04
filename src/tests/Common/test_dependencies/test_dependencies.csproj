@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
     <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\Common\PdbChecker\PdbChecker.csproj" />
   </ItemGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />

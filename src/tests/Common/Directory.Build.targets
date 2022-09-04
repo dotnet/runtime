@@ -41,6 +41,7 @@
       <RunTimeDependencyCopyLocal Include="@(NativeCopyLocalItems)" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
+      <RunTimeDependencyCopyLocal Include="$(XUnitTestBinBase)/Common/PdbChecker/PdbChecker/*.*" TargetDir="PdbChecker/" />
     </ItemGroup>
 
     <ItemGroup>
