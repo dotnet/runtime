@@ -128,18 +128,25 @@ class StringLiteralEntry
     #define SLE_REFCOUNT_MASK  (SLE_IS_FROZEN | SLE_IS_OVERFLOWED)
 
 private:
-    StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen)
+    StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj)
     : m_pStringObj(pStringObj), m_dwRefCount(1)
 #ifdef _DEBUG
       , m_bDeleted(FALSE)
 #endif
     {
-        if (isFrozen)
-        {
-            SetStringFrozen();
-        }
         LIMITED_METHOD_CONTRACT;
     }
+
+    StringLiteralEntry(EEStringData *pStringData, STRINGREF frozenStringObj)
+    : m_FrozenStringObj(frozenStringObj), m_dwRefCount(1)
+#ifdef _DEBUG
+      , m_bDeleted(FALSE)
+#endif
+    {
+        SetStringFrozen();
+        LIMITED_METHOD_CONTRACT;
+    }
+
 protected:
     ~StringLiteralEntry()
     {
@@ -252,7 +259,7 @@ public:
             PRECONDITION(CheckPointer(this));
         }
         CONTRACTL_END;
-        return m_pStringObj;
+        return IsStringFrozen() ? &m_FrozenStringObj : m_pStringObj;
     }
 
     void GetStringData(EEStringData *pStringData)
@@ -275,7 +282,12 @@ public:
         pStringData->SetStringBuffer (thisChars);
     }
 
-    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen);
+private:
+    static void* AllocateEntryInternal();
+
+public:
+    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF* pStringObj);
+    static StringLiteralEntry* AllocateFrozenEntry(EEStringData* pStringData, STRINGREF pFrozenStringObj);
     static void DeleteEntry (StringLiteralEntry *pEntry);
 
     bool IsStringFrozen()
@@ -299,7 +311,11 @@ public:
     }
 
 private:
-    STRINGREF*                  m_pStringObj;
+    union
+    {
+        STRINGREF*              m_pStringObj;
+        STRINGREF               m_FrozenStringObj;
+    };
     union
     {
         DWORD                   m_dwRefCount;

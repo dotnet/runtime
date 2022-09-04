@@ -495,28 +495,37 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
     StringLiteralEntry *pRet;
 
-    {
-    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
-
     // Create the COM+ string object.
     bool isFrozen = false;
     STRINGREF strObj = AllocateStringObject(pStringData, preferFrozenObjHeap, &isFrozen);
 
-    // Allocate a handle for the string.
-    SetObjectReference(pStrObj[0], (OBJECTREF) strObj);
+    if (isFrozen)
+    {
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
+        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+    }
+    else
+    {
+        // If it's not frozen we need to gc allocate a pinned handle to the non-pinned string object
+        PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable, 1);
 
-    // Allocate the StringLiteralEntry.
-    StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0], isFrozen));
-    pStrObj.SuppressRelease();
-    // Insert the handle to the string into the hash table.
-    m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
-    pEntry.SuppressRelease();
-    pRet = pEntry;
+        // Allocate a handle for the string.
+        SetObjectReference(pStrObj[0], strObj);
+
+        // Allocate the StringLiteralEntry.
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
+        pStrObj.SuppressRelease();
+        // Insert the handle to the string into the hash table.
+        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+    }
 
 #ifdef LOGGING
     LogStringLiteral("added", pStringData);
 #endif
-    }
 
     return pRet;
 }
@@ -581,7 +590,7 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
     // release method of the StringLiteralEntry.
 }
 
-StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj, bool isFrozen)
+void* StringLiteralEntry::AllocateEntryInternal()
 {
    CONTRACTL
     {
@@ -613,7 +622,17 @@ StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData,
     }
     _ASSERTE (pMem && "Unable to allocate String literal Entry");
 
-    return new (pMem) StringLiteralEntry (pStringData, pStringObj, isFrozen);
+    return pMem;
+}
+
+StringLiteralEntry* StringLiteralEntry::AllocateEntry(EEStringData* pStringData, STRINGREF* pStringObj)
+{
+    return new (AllocateEntryInternal()) StringLiteralEntry(pStringData, pStringObj);
+}
+
+StringLiteralEntry* StringLiteralEntry::AllocateFrozenEntry(EEStringData* pStringData, STRINGREF pFrozenStringObj)
+{
+    return new (AllocateEntryInternal()) StringLiteralEntry(pStringData, pFrozenStringObj);
 }
 
 void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
