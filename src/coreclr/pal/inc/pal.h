@@ -1494,6 +1494,38 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+
+//
+// Context Frame
+//
+//  This frame has a several purposes: 1) it is used as an argument to
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
+//  and 3) it is used in the user level thread creation routines.
+//
+//
+// The flags field within this record controls the contents of a CONTEXT
+// record.
+//
+// If the context record is used as an input parameter, then for each
+// portion of the context record controlled by a flag whose value is
+// set, it is assumed that such portion of the context record contains
+// valid context. If the context record is being used to modify a threads
+// context, then only that portion of the threads context is modified.
+//
+// If the context record is used as an output parameter to capture the
+// context of a thread, then only those portions of the thread's context
+// corresponding to set flags will be returned.
+//
+// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
+//
+// CONTEXT_INTEGER specifies R0-R12
+//
+// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
+//
+// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
+//      DBGWCR.
+//
+
 #elif defined(HOST_AMD64)
 // copied from winnt.h
 
@@ -1539,39 +1571,6 @@ typedef struct _XMM_SAVE_AREA32 {
     M128A XmmRegisters[16];
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
-
-//
-// Context Frame
-//
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-// CONTEXT_CONTROL specifies SegSs, Rsp, SegCs, Rip, and EFlags.
-//
-// CONTEXT_INTEGER specifies Rax, Rcx, Rdx, Rbx, Rbp, Rsi, Rdi, and R8-R15.
-//
-// CONTEXT_SEGMENTS specifies SegDs, SegEs, SegFs, and SegGs.
-//
-// CONTEXT_DEBUG_REGISTERS specifies Dr0-Dr3 and Dr6-Dr7.
-//
-// CONTEXT_MMX_REGISTERS specifies the floating point and extended registers
-//     Mm0/St0-Mm7/St7 and Xmm0-Xmm15).
-//
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
@@ -1786,37 +1785,6 @@ typedef struct _NEON128 {
     LONGLONG High;
 } NEON128, *PNEON128;
 
-//
-// Context Frame
-//
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
-//
-// CONTEXT_INTEGER specifies R0-R12
-//
-// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
-//
-// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
-//      DBGWCR.
-//
-
 typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
 
     //
@@ -1968,37 +1936,6 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define ARM64_MAX_BREAKPOINTS     8
 #define ARM64_MAX_WATCHPOINTS     2
 
-//
-// Context Frame
-//
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
-//
-// CONTEXT_INTEGER specifies R0-R12
-//
-// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
-//
-// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
-//      DBGWCR.
-//
-
 typedef struct _NEON128 {
     ULONGLONG Low;
     LONGLONG High;
@@ -2145,28 +2082,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define LOONGARCH64_MAX_BREAKPOINTS     8
 #define LOONGARCH64_MAX_WATCHPOINTS     2
 
-//
-// Context Frame
-//
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
@@ -2290,28 +2205,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define RISCV64_MAX_BREAKPOINTS     8
 #define RISCV64_MAX_WATCHPOINTS     2
 
-//
-// Context Frame
-//
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
@@ -2323,31 +2216,23 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Integer registers.
     //
-    DWORD64 R0;
     DWORD64 Ra;
-    DWORD64 Tp;
     DWORD64 Sp;
-    DWORD64 A0;//DWORD64 V0;
-    DWORD64 A1;//DWORD64 V1;
+    DWORD64 Gp;
+    DWORD64 Tp;
+    DWORD64 T0;
+    DWORD64 T1;
+    DWORD64 T2;
+    DWORD64 S0;
+    DWORD64 S1;
+    DWORD64 A0;
+    DWORD64 A1;
     DWORD64 A2;
     DWORD64 A3;
     DWORD64 A4;
     DWORD64 A5;
     DWORD64 A6;
     DWORD64 A7;
-    DWORD64 T0;
-    DWORD64 T1;
-    DWORD64 T2;
-    DWORD64 T3;
-    DWORD64 T4;
-    DWORD64 T5;
-    DWORD64 T6;
-    DWORD64 T7;
-    DWORD64 T8;
-    DWORD64 X0;
-    DWORD64 Fp;
-    DWORD64 S0;
-    DWORD64 S1;
     DWORD64 S2;
     DWORD64 S3;
     DWORD64 S4;
@@ -2355,6 +2240,13 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 S6;
     DWORD64 S7;
     DWORD64 S8;
+    DWORD64 S9;
+    DWORD64 S10;
+    DWORD64 S11;
+    DWORD64 T3;
+    DWORD64 T4;
+    DWORD64 T5;
+    DWORD64 T6;
     DWORD64 Pc;
 
     //
@@ -2371,8 +2263,20 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
+    PDWORD64 Ra;
+    PDWORD64 Tp;
+    PDWORD64 T0;
+    PDWORD64 T1;
     PDWORD64 S0;
     PDWORD64 S1;
+    PDWORD64 A0;
+    PDWORD64 A1;
+    PDWORD64 A2;
+    PDWORD64 A3;
+    PDWORD64 A4;
+    PDWORD64 A5;
+    PDWORD64 A6;
+    PDWORD64 A7;
     PDWORD64 S2;
     PDWORD64 S3;
     PDWORD64 S4;
@@ -2380,18 +2284,34 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S6;
     PDWORD64 S7;
     PDWORD64 S8;
-    PDWORD64 Fp;
-    PDWORD64 Tp;
-    PDWORD64 Ra;
+    PDWORD64 S9;
+    PDWORD64 S10;
+    PDWORD64 S11;
+    PDWORD64 T3;
+    PDWORD64 T4;
+    PDWORD64 T5;
+    PDWORD64 T6;
 
-    PDWORD64 F24;
-    PDWORD64 F25;
-    PDWORD64 F26;
-    PDWORD64 F27;
-    PDWORD64 F28;
-    PDWORD64 F29;
-    PDWORD64 F30;
-    PDWORD64 F31;
+    PDWORD64 FS0;
+    PDWORD64 FS1;
+    PDWORD64 FA0;
+    PDWORD64 FA1;
+    PDWORD64 FA2;
+    PDWORD64 FA3;
+    PDWORD64 FA4;
+    PDWORD64 FA5;
+    PDWORD64 FA6;
+    PDWORD64 FA7;
+    PDWORD64 FS2;
+    PDWORD64 FS3;
+    PDWORD64 FS4;
+    PDWORD64 FS5;
+    PDWORD64 FS6;
+    PDWORD64 FS7;
+    PDWORD64 FS8;
+    PDWORD64 FS9;
+    PDWORD64 FS10;
+    PDWORD64 FS11;
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #elif defined(HOST_S390X)

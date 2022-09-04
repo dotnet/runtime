@@ -157,40 +157,39 @@ using asm_sigcontext::_xstate;
 #define MCREG_Pc(mc)      ((mc).__pc)
 
 #elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this; its a placeholder"
+#error "TODO-RISCV64: review this"
 
-#define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
-#define MCREG_Tp(mc)      ((mc).__gregs[2])
-#define MCREG_Sp(mc)      ((mc).__gregs[3])
-#define MCREG_A0(mc)      ((mc).__gregs[4])
-#define MCREG_A1(mc)      ((mc).__gregs[5])
-#define MCREG_A2(mc)      ((mc).__gregs[6])
-#define MCREG_A3(mc)      ((mc).__gregs[7])
-#define MCREG_A4(mc)      ((mc).__gregs[8])
-#define MCREG_A5(mc)      ((mc).__gregs[9])
-#define MCREG_A6(mc)      ((mc).__gregs[10])
-#define MCREG_A7(mc)      ((mc).__gregs[11])
-#define MCREG_T0(mc)      ((mc).__gregs[12])
-#define MCREG_T1(mc)      ((mc).__gregs[13])
-#define MCREG_T2(mc)      ((mc).__gregs[14])
-#define MCREG_T3(mc)      ((mc).__gregs[15])
-#define MCREG_T4(mc)      ((mc).__gregs[16])
-#define MCREG_T5(mc)      ((mc).__gregs[17])
-#define MCREG_T6(mc)      ((mc).__gregs[18])
-#define MCREG_T7(mc)      ((mc).__gregs[19])
-#define MCREG_T8(mc)      ((mc).__gregs[20])
-#define MCREG_X0(mc)      ((mc).__gregs[21])
-#define MCREG_Fp(mc)      ((mc).__gregs[22])
-#define MCREG_S0(mc)      ((mc).__gregs[23])
-#define MCREG_S1(mc)      ((mc).__gregs[24])
-#define MCREG_S2(mc)      ((mc).__gregs[25])
-#define MCREG_S3(mc)      ((mc).__gregs[26])
-#define MCREG_S4(mc)      ((mc).__gregs[27])
-#define MCREG_S5(mc)      ((mc).__gregs[28])
-#define MCREG_S6(mc)      ((mc).__gregs[29])
-#define MCREG_S7(mc)      ((mc).__gregs[30])
-#define MCREG_S8(mc)      ((mc).__gregs[31])
+#define MCREG_Sp(mc)      ((mc).__gregs[2])
+#define MCREG_Gp(mc)      ((mc).__gregs[3])
+#define MCREG_Tp(mc)      ((mc).__gregs[4])
+#define MCREG_T0(mc)      ((mc).__gregs[5])
+#define MCREG_T1(mc)      ((mc).__gregs[6])
+#define MCREG_T2(mc)      ((mc).__gregs[7])
+#define MCREG_S0(mc)      ((mc).__gregs[8])
+#define MCREG_S1(mc)      ((mc).__gregs[9])
+#define MCREG_A0(mc)      ((mc).__gregs[10])
+#define MCREG_A1(mc)      ((mc).__gregs[11])
+#define MCREG_A2(mc)      ((mc).__gregs[12])
+#define MCREG_A3(mc)      ((mc).__gregs[13])
+#define MCREG_A4(mc)      ((mc).__gregs[14])
+#define MCREG_A5(mc)      ((mc).__gregs[15])
+#define MCREG_A6(mc)      ((mc).__gregs[16])
+#define MCREG_A7(mc)      ((mc).__gregs[17])
+#define MCREG_S2(mc)      ((mc).__gregs[18])
+#define MCREG_S3(mc)      ((mc).__gregs[19])
+#define MCREG_S4(mc)      ((mc).__gregs[20])
+#define MCREG_S5(mc)      ((mc).__gregs[21])
+#define MCREG_S6(mc)      ((mc).__gregs[22])
+#define MCREG_S7(mc)      ((mc).__gregs[23])
+#define MCREG_S8(mc)      ((mc).__gregs[24])
+#define MCREG_S9(mc)      ((mc).__gregs[25])
+#define MCREG_S10(mc)     ((mc).__gregs[26])
+#define MCREG_S11(mc)     ((mc).__gregs[27])
+#define MCREG_T3(mc)      ((mc).__gregs[28])
+#define MCREG_T4(mc)      ((mc).__gregs[29])
+#define MCREG_T5(mc)      ((mc).__gregs[30])
+#define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
 
 #else // HOST_LOONGARCH64
@@ -254,43 +253,6 @@ using asm_sigcontext::_xstate;
 #ifdef HOST_64BIT
 
 #if defined(HOST_LOONGARCH64)
-
-#define MCREG_R0(mc)      ((mc).gregs[0])
-#define MCREG_Ra(mc)      ((mc).gregs[1])
-#define MCREG_Tp(mc)      ((mc).gregs[2])
-#define MCREG_Sp(mc)      ((mc).gregs[3])
-#define MCREG_A0(mc)      ((mc).gregs[4])
-#define MCREG_A1(mc)      ((mc).gregs[5])
-#define MCREG_A2(mc)      ((mc).gregs[6])
-#define MCREG_A3(mc)      ((mc).gregs[7])
-#define MCREG_A4(mc)      ((mc).gregs[8])
-#define MCREG_A5(mc)      ((mc).gregs[9])
-#define MCREG_A6(mc)      ((mc).gregs[10])
-#define MCREG_A7(mc)      ((mc).gregs[11])
-#define MCREG_T0(mc)      ((mc).gregs[12])
-#define MCREG_T1(mc)      ((mc).gregs[13])
-#define MCREG_T2(mc)      ((mc).gregs[14])
-#define MCREG_T3(mc)      ((mc).gregs[15])
-#define MCREG_T4(mc)      ((mc).gregs[16])
-#define MCREG_T5(mc)      ((mc).gregs[17])
-#define MCREG_T6(mc)      ((mc).gregs[18])
-#define MCREG_T7(mc)      ((mc).gregs[19])
-#define MCREG_T8(mc)      ((mc).gregs[20])
-#define MCREG_X0(mc)      ((mc).gregs[21])
-#define MCREG_Fp(mc)      ((mc).gregs[22])
-#define MCREG_S0(mc)      ((mc).gregs[23])
-#define MCREG_S1(mc)      ((mc).gregs[24])
-#define MCREG_S2(mc)      ((mc).gregs[25])
-#define MCREG_S3(mc)      ((mc).gregs[26])
-#define MCREG_S4(mc)      ((mc).gregs[27])
-#define MCREG_S5(mc)      ((mc).gregs[28])
-#define MCREG_S6(mc)      ((mc).gregs[29])
-#define MCREG_S7(mc)      ((mc).gregs[30])
-#define MCREG_S8(mc)      ((mc).gregs[31])
-#define MCREG_Pc(mc)      ((mc).pc)
-
-#elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this; its a placeholder"
 
 #define MCREG_R0(mc)      ((mc).gregs[0])
 #define MCREG_Ra(mc)      ((mc).gregs[1])
@@ -649,44 +611,6 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 #define MCREG_S8(mc)      ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
 
-
-#elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this; its a placeholder"
-
-#define MCREG_R0(mc)      ((mc).regs[0])
-#define MCREG_Ra(mc)      ((mc).regs[1])
-#define MCREG_Tp(mc)      ((mc).regs[2])
-#define MCREG_Sp(mc)      ((mc).regs[3])
-#define MCREG_A0(mc)      ((mc).regs[4])
-#define MCREG_A1(mc)      ((mc).regs[5])
-#define MCREG_A2(mc)      ((mc).regs[6])
-#define MCREG_A3(mc)      ((mc).regs[7])
-#define MCREG_A4(mc)      ((mc).regs[8])
-#define MCREG_A5(mc)      ((mc).regs[9])
-#define MCREG_A6(mc)      ((mc).regs[10])
-#define MCREG_A7(mc)      ((mc).regs[11])
-#define MCREG_T0(mc)      ((mc).regs[12])
-#define MCREG_T1(mc)      ((mc).regs[13])
-#define MCREG_T2(mc)      ((mc).regs[14])
-#define MCREG_T3(mc)      ((mc).regs[15])
-#define MCREG_T4(mc)      ((mc).regs[16])
-#define MCREG_T5(mc)      ((mc).regs[17])
-#define MCREG_T6(mc)      ((mc).regs[18])
-#define MCREG_T7(mc)      ((mc).regs[19])
-#define MCREG_T8(mc)      ((mc).regs[20])
-#define MCREG_X0(mc)      ((mc).regs[21])
-#define MCREG_Fp(mc)      ((mc).regs[22])
-#define MCREG_S0(mc)      ((mc).regs[23])
-#define MCREG_S1(mc)      ((mc).regs[24])
-#define MCREG_S2(mc)      ((mc).regs[25])
-#define MCREG_S3(mc)      ((mc).regs[26])
-#define MCREG_S4(mc)      ((mc).regs[27])
-#define MCREG_S5(mc)      ((mc).regs[28])
-#define MCREG_S6(mc)      ((mc).regs[29])
-#define MCREG_S7(mc)      ((mc).regs[30])
-#define MCREG_S8(mc)      ((mc).regs[31])
-#define MCREG_Pc(mc)      ((mc).pc)
-
 #else // HOST_ARM64
 
 #ifdef TARGET_OSX
@@ -916,43 +840,6 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_S8(ptreg)      ((ptreg).regs[31])
 #define PTREG_Pc(ptreg)      ((ptreg).csr_epc)
 
-#elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this; its a placeholder"
-
-#define PTREG_R0(ptreg)      ((ptreg).regs[0])
-#define PTREG_Ra(ptreg)      ((ptreg).regs[1])
-#define PTREG_Tp(ptreg)      ((ptreg).regs[2])
-#define PTREG_Sp(ptreg)      ((ptreg).regs[3])
-#define PTREG_A0(ptreg)      ((ptreg).regs[4])
-#define PTREG_A1(ptreg)      ((ptreg).regs[5])
-#define PTREG_A2(ptreg)      ((ptreg).regs[6])
-#define PTREG_A3(ptreg)      ((ptreg).regs[7])
-#define PTREG_A4(ptreg)      ((ptreg).regs[8])
-#define PTREG_A5(ptreg)      ((ptreg).regs[9])
-#define PTREG_A6(ptreg)      ((ptreg).regs[10])
-#define PTREG_A7(ptreg)      ((ptreg).regs[11])
-#define PTREG_T0(ptreg)      ((ptreg).regs[12])
-#define PTREG_T1(ptreg)      ((ptreg).regs[13])
-#define PTREG_T2(ptreg)      ((ptreg).regs[14])
-#define PTREG_T3(ptreg)      ((ptreg).regs[15])
-#define PTREG_T4(ptreg)      ((ptreg).regs[16])
-#define PTREG_T5(ptreg)      ((ptreg).regs[17])
-#define PTREG_T6(ptreg)      ((ptreg).regs[18])
-#define PTREG_T7(ptreg)      ((ptreg).regs[19])
-#define PTREG_T8(ptreg)      ((ptreg).regs[20])
-#define PTREG_X0(ptreg)      ((ptreg).regs[21])
-#define PTREG_Fp(ptreg)      ((ptreg).regs[22])
-#define PTREG_S0(ptreg)      ((ptreg).regs[23])
-#define PTREG_S1(ptreg)      ((ptreg).regs[24])
-#define PTREG_S2(ptreg)      ((ptreg).regs[25])
-#define PTREG_S3(ptreg)      ((ptreg).regs[26])
-#define PTREG_S4(ptreg)      ((ptreg).regs[27])
-#define PTREG_S5(ptreg)      ((ptreg).regs[28])
-#define PTREG_S6(ptreg)      ((ptreg).regs[29])
-#define PTREG_S7(ptreg)      ((ptreg).regs[30])
-#define PTREG_S8(ptreg)      ((ptreg).regs[31])
-#define PTREG_Pc(ptreg)      ((ptreg).csr_epc)
-
 #endif // HOST_LOONGARCH64
 
 #if defined(HOST_POWERPC64)
@@ -1116,18 +1003,12 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->Rip;
 #elif defined(HOST_X86)
     return pContext->Eip;
-#elif defined(HOST_ARM64) || defined(HOST_ARM)
-    return pContext->Pc;
-#elif defined(HOST_LOONGARCH64)
-    return pContext->Pc;
-#elif defined(HOST_RISCV64)
-    return pContext->Pc;
 #elif defined(HOST_S390X)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
 #else
-#error "don't know how to get the program counter for this architecture"
+    return pContext->Pc;
 #endif
 }
 
@@ -1160,18 +1041,14 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->Ebp;
 #elif defined(HOST_ARM)
     return pContext->R7;
-#elif defined(HOST_ARM64)
-    return pContext->Fp;
-#elif defined(HOST_LOONGARCH64)
-    return pContext->Fp;
-#elif defined(HOST_RISCV64)
-    return pContext->Fp;
 #elif defined(HOST_S390X)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
+#elif defined(HOST_RISCV64)
+    return pContext->S0;
 #else
-#error "don't know how to get the frame pointer for this architecture"
+    return pContext->Fp;
 #endif
 }
 
