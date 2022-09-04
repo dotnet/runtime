@@ -18,14 +18,14 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public InvokerDeflateTests(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
+        protected override bool UseCustomInvoker => true;
     }
 
     public sealed class HttpClientDeflateTests : DeflateTests
     {
         public HttpClientDeflateTests(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+        protected override bool UseHttpClient => true;
     }
 
     [PlatformSpecific(~TestPlatforms.Browser)]
