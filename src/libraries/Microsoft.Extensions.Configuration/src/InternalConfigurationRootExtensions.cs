@@ -27,21 +27,18 @@ namespace Microsoft.Extensions.Configuration
             // No re-create the accumulated list, No sort,
             // Note P = number of providers, K = max number of keys per provider,
             // The time complexity is O(K*P*log(K*P))
-            var allKeys = providers
-                    .SelectMany(p => p.GetChildKeys(path))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(key => key, ConfigurationKeyComparer.Instance);
+            var allKeys = providers.SelectMany(p => p.GetChildKeys(path));
 #else
             // Legacy implementation: accumulate keys by passing the partial keys from one provider to the next,
             // If each provider re-create the accumulated list and sort inside,
             // the time complexity is O(K*P^2*log(K*P))
             var allKeys = providers
                     .Aggregate(Enumerable.Empty<string>(),
-                        (seed, source) => source.GetChildKeys(seed, path))
-                    .Distinct(StringComparer.OrdinalIgnoreCase);
+                        (seed, source) => source.GetChildKeys(seed, path));
 #endif
 
             IEnumerable<IConfigurationSection> children = allKeys
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
             if (reference is null)
             {

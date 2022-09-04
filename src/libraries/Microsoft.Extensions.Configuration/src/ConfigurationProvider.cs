@@ -63,15 +63,7 @@ namespace Microsoft.Extensions.Configuration
             string? parentPath)
         {
             var results = new List<string>();
-            results.AddRange(GetChildKeys(parentPath));
-            results.AddRange(earlierKeys);
-            results.Sort(ConfigurationKeyComparer.Comparison);
-            return results;
-        }
 
-        public virtual IEnumerable<string> GetChildKeys(string? parentPath)
-        {
-            var results = new List<string>();
             if (parentPath is null)
             {
                 foreach (KeyValuePair<string, string?> kv in Data)
@@ -93,6 +85,10 @@ namespace Microsoft.Extensions.Configuration
                     }
                 }
             }
+
+            results.AddRange(earlierKeys);
+
+            results.Sort(ConfigurationKeyComparer.Comparison);
 
             return results;
         }
