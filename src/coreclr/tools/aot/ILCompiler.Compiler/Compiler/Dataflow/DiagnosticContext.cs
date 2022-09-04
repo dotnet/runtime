@@ -11,11 +11,11 @@ namespace ILLink.Shared.TrimAnalysis
     public readonly partial struct DiagnosticContext
     {
         public readonly MessageOrigin Origin;
-        readonly bool _diagnosticsEnabled;
-        readonly bool _suppressTrimmerDiagnostics;
-        readonly bool _suppressAotDiagnostics;
-        readonly bool _suppressSingleFileDiagnostics;
-        readonly Logger _logger;
+        private readonly bool _diagnosticsEnabled;
+        private readonly bool _suppressTrimmerDiagnostics;
+        private readonly bool _suppressAotDiagnostics;
+        private readonly bool _suppressSingleFileDiagnostics;
+        private readonly Logger _logger;
 
         public DiagnosticContext(in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
         {

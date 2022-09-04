@@ -13,8 +13,6 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 using ILLink.Shared;
-
-using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
 using Internal.IL;
 
@@ -177,7 +175,7 @@ namespace ILCompiler
             return false;
         }
 
-        bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
+        private static bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
         {
             TypeSystemEntity warningOriginMember = warningOrigin;
             while (warningOriginMember != null)
@@ -193,7 +191,7 @@ namespace ILCompiler
             return false;
         }
 
-        bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
+        private static bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
         {
             if (provider == null)
                 return false;
@@ -223,7 +221,7 @@ namespace ILCompiler
                         || warningId.Length < 6
                         || !warningId.StartsWith("IL")
                         || (warningId.Length > 6 && warningId[6] != ':')
-                        || !int.TryParse(warningId.Substring(2, 4), out int suppressedCode))
+                        || !int.TryParse(warningId.AsSpan(2, 4), out int suppressedCode))
                     {
                         continue;
                     }
@@ -238,7 +236,7 @@ namespace ILCompiler
             return false;
         }
 
-        internal bool IsWarningAsError(int code)
+        internal static bool IsWarningAsError(int code)
         {
             // TODO: warnaserror
             return false;

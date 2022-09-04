@@ -44,8 +44,11 @@ readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional happened (e.g. bad arguments, Ctrl-C interrupt).
 readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or more tests failed.
 
-# Argument variables
+scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
+repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
 source "$repoRootDir/eng/native/init-os-and-arch.sh"
+
+# Argument variables
 buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
@@ -196,8 +199,6 @@ fi
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
-scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-repoRootDir=$scriptPath/../..
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"

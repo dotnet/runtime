@@ -25,10 +25,7 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable IDE0059");
         WriteLine();
 
-        WriteLine("using System;");
         WriteLine("using System.Reflection;");
-        WriteLine("using System.Collections.Generic;");
-        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
@@ -266,7 +263,7 @@ class ReaderGen : CsWriter
             if (record.Name == "ConstantStringValue")
             {
                 WriteLine("if (IsNull(handle))");
-                WriteLine("    return new ConstantStringValue();");
+                WriteLine("    return default(ConstantStringValue);");
             }
             WriteLine($"{record.Name} record;");
             WriteLine("record._reader = this;");

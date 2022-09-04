@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.X86
                     Arg1 = Register.EDX;
                     Result = Register.EAX;
                     break;
-                    
+
                 default:
                     throw new NotImplementedException();
             }

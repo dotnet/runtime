@@ -164,49 +164,6 @@ C_FUNC(\Name):
         brk #0
 .endm
 
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-.macro SAVE_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    x0, x1, [\reg, #(\ofs)]
-        stp                    x2, x3, [\reg, #(\ofs + 16)]
-        stp                    x4, x5, [\reg, #(\ofs + 32)]
-        stp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-.macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    d0, d1, [\reg, #(\ofs)]
-        stp                    d2, d3, [\reg, #(\ofs + 16)]
-        stp                    d4, d5, [\reg, #(\ofs + 32)]
-        stp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    x0, x1, [\reg, #(\ofs)]
-        ldp                    x2, x3, [\reg, #(\ofs + 16)]
-        ldp                    x4, x5, [\reg, #(\ofs + 32)]
-        ldp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    d0, d1, [\reg, #(\ofs)]
-        ldp                    d2, d3, [\reg, #(\ofs + 16)]
-        ldp                    d4, d5, [\reg, #(\ofs + 32)]
-        ldp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
 .macro EPILOG_BRANCH_REG reg
 
         br \reg

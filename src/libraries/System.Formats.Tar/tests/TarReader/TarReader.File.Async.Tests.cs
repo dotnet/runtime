@@ -230,7 +230,7 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(await reader.GetNextEntryAsync());
             Assert.NotNull(await reader.GetNextEntryAsync());
             Assert.NotNull(await reader.GetNextEntryAsync());
-            await Assert.ThrowsAsync<FormatException>(async () => await reader.GetNextEntryAsync());
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
         }
 
         [Fact]
@@ -268,7 +268,7 @@ namespace System.Formats.Tar.Tests
         {
             await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
             await using TarReader reader = new TarReader(archiveStream);
-            await Assert.ThrowsAsync<FormatException>(async () => await reader.GetNextEntryAsync());
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
         }
 
         [Fact]
