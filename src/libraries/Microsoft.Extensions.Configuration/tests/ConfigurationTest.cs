@@ -4,9 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Microsoft.Extensions.Configuration.Memory;
-using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
@@ -1097,7 +1095,7 @@ namespace Microsoft.Extensions.Configuration.Test
             public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
                 => OverrideGetChildKeysConfigurationProviders.GetChildKeys(earlierKeys, parentPath);
 
-            public IChangeToken GetReloadToken() => new ConfigurationReloadToken();
+            public Primitives.IChangeToken GetReloadToken() => new ConfigurationReloadToken();
 
             public void Load()
             {
