@@ -49,6 +49,8 @@ uc_addr (unw_tdep_context_t *uc, int reg)
 #ifdef __FreeBSD__
   if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_X30)
     return &uc->uc_mcontext.mc_gpregs.gp_x[reg];
+  else if (reg == UNW_AARCH64_X30)
+    return &uc->uc_mcontext.mc_gpregs.gp_lr;
   else if (reg == UNW_AARCH64_SP)
     return &uc->uc_mcontext.sp;
   else if (reg == UNW_AARCH64_PC)
@@ -58,7 +60,7 @@ uc_addr (unw_tdep_context_t *uc, int reg)
   else
     return NULL;
 #else /* __FreeBSD__ */
-  if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_X30)
+  if (reg >= UNW_AARCH64_X0 && reg <= UNW_AARCH64_X30)
     return &uc->uc_mcontext.regs[reg];
   else if (reg == UNW_AARCH64_SP)
     return &uc->uc_mcontext.sp;
