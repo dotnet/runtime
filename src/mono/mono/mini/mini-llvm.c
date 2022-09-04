@@ -9719,7 +9719,6 @@ MONO_RESTORE_WARNING
 		case OP_WASM_SIMD_SWIZZLE: {
 			LLVMTypeRef etype = LLVMGetElementType (LLVMTypeOf (lhs));
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			g_assert (LLVMGetElementType (LLVMTypeOf (rhs)) == etype);
 			LLVMValueRef indexes [16];
 			for (int i = 0; i < nelems; ++i)
 				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
