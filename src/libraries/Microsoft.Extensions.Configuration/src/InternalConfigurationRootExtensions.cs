@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<IConfigurationSection> children = providers
 #if NET7_0_OR_GREATER
                 .SelectMany(p => p.GetChildKeys(path))
+                .OrderBy(key => key, ConfigurationKeyComparer.Instance)
 #else
                 .Aggregate(Enumerable.Empty<string>(),
                         (seed, source) => source.GetChildKeys(seed, path))
