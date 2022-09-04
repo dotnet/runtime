@@ -6461,27 +6461,33 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 }
 
 void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
-                                                    CORINFO_CLASS_HANDLE result,
-                                                    unsigned             index)
+                                                    unsigned             index,
+                                                    CORINFO_CLASS_HANDLE result)
 {
     if (GetTypeInstantiationArgument == nullptr)
-        GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetTypeInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
     DWORDLONG value = CastHandle(result);
     GetTypeInstantiationArgument->Add(key, value);
     DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
 }
-void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
     GetTypeInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
 
     int itemIndex = -1;
     if (GetTypeInstantiationArgument != nullptr)
