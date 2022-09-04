@@ -135,7 +135,8 @@ public:
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,                  "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
     INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          "System.GC.ConserveMemory",          0,                  "Specifies how hard GC should try to conserve memory - values 0-9")                       \
-    INT_CONFIG   (GCWriteBarrier,            "GCWriteBarrier",            NULL,                                0,                  "Specifies whether GC should use more precise but slower write barrier")
+    INT_CONFIG   (GCWriteBarrier,            "GCWriteBarrier",            NULL,                                0,                  "Specifies whether GC should use more precise but slower write barrier")                  \
+    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the path of the standalone GC implementation.")                                
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
 class GCConfig
