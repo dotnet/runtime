@@ -96,6 +96,100 @@ namespace System.Numerics.Tests
         static bool IComparisonOperators<BinaryNumberDimHelper, BinaryNumberDimHelper, bool>.operator >=(BinaryNumberDimHelper left, BinaryNumberDimHelper right) => throw new NotImplementedException();
     }
 
+    public struct FloatingPointDimHelper : IFloatingPoint<FloatingPointDimHelper>
+    {
+        public float Value;
+
+        public FloatingPointDimHelper(float value)
+        {
+            Value = value;
+        }
+
+        static FloatingPointDimHelper IFloatingPoint<FloatingPointDimHelper>.Round(FloatingPointDimHelper x, int digits, MidpointRounding mode)
+            => new FloatingPointDimHelper(Single.Round(x.Value, digits, mode));
+
+        //
+        // The below are all not used for existing Dim tests, so they stay unimplemented
+        //
+
+        static FloatingPointDimHelper IFloatingPointConstants<FloatingPointDimHelper>.E => throw new NotImplementedException();
+        static FloatingPointDimHelper IFloatingPointConstants<FloatingPointDimHelper>.Pi => throw new NotImplementedException();
+        static FloatingPointDimHelper IFloatingPointConstants<FloatingPointDimHelper>.Tau => throw new NotImplementedException();
+        static FloatingPointDimHelper ISignedNumber<FloatingPointDimHelper>.NegativeOne => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.One => throw new NotImplementedException();
+        static int INumberBase<FloatingPointDimHelper>.Radix => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.Zero => throw new NotImplementedException();
+        static FloatingPointDimHelper IAdditiveIdentity<FloatingPointDimHelper, FloatingPointDimHelper>.AdditiveIdentity => throw new NotImplementedException();
+        static FloatingPointDimHelper IMultiplicativeIdentity<FloatingPointDimHelper, FloatingPointDimHelper>.MultiplicativeIdentity => throw new NotImplementedException();
+
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.Abs(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsCanonical(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsComplexNumber(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsEvenInteger(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsFinite(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsImaginaryNumber(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsInfinity(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsInteger(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsNaN(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsNegative(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsNegativeInfinity(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsNormal(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsOddInteger(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsPositive(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsPositiveInfinity(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsRealNumber(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsSubnormal(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.IsZero(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.MaxMagnitude(FloatingPointDimHelper x, FloatingPointDimHelper y) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.MaxMagnitudeNumber(FloatingPointDimHelper x, FloatingPointDimHelper y) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.MinMagnitude(FloatingPointDimHelper x, FloatingPointDimHelper y) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.MinMagnitudeNumber(FloatingPointDimHelper x, FloatingPointDimHelper y) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        static FloatingPointDimHelper INumberBase<FloatingPointDimHelper>.Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        static FloatingPointDimHelper ISpanParsable<FloatingPointDimHelper>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
+        static FloatingPointDimHelper IParsable<FloatingPointDimHelper>.Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
+
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertFromChecked<TOther>(TOther value, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertFromSaturating<TOther>(TOther value, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertFromTruncating<TOther>(TOther value, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertToChecked<TOther>(FloatingPointDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertToSaturating<TOther>(FloatingPointDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryConvertToTruncating<TOther>(FloatingPointDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<FloatingPointDimHelper>.TryParse(string? s, NumberStyles style, IFormatProvider? provider, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool ISpanParsable<FloatingPointDimHelper>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        static bool IParsable<FloatingPointDimHelper>.TryParse(string? s, IFormatProvider? provider, out FloatingPointDimHelper result) => throw new NotImplementedException();
+        int IComparable.CompareTo(object? obj) => throw new NotImplementedException();
+        int IComparable<FloatingPointDimHelper>.CompareTo(FloatingPointDimHelper other) => throw new NotImplementedException();
+        bool IEquatable<FloatingPointDimHelper>.Equals(FloatingPointDimHelper other) => throw new NotImplementedException();
+        int IFloatingPoint<FloatingPointDimHelper>.GetExponentByteCount() => throw new NotImplementedException();
+        int IFloatingPoint<FloatingPointDimHelper>.GetExponentShortestBitLength() => throw new NotImplementedException();
+        int IFloatingPoint<FloatingPointDimHelper>.GetSignificandBitLength() => throw new NotImplementedException();
+        int IFloatingPoint<FloatingPointDimHelper>.GetSignificandByteCount() => throw new NotImplementedException();
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
+        bool IFloatingPoint<FloatingPointDimHelper>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+        bool IFloatingPoint<FloatingPointDimHelper>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+        bool IFloatingPoint<FloatingPointDimHelper>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+        bool IFloatingPoint<FloatingPointDimHelper>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+        static FloatingPointDimHelper IUnaryPlusOperators<FloatingPointDimHelper, FloatingPointDimHelper>.operator +(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static FloatingPointDimHelper IAdditionOperators<FloatingPointDimHelper, FloatingPointDimHelper, FloatingPointDimHelper>.operator +(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static FloatingPointDimHelper IUnaryNegationOperators<FloatingPointDimHelper, FloatingPointDimHelper>.operator -(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static FloatingPointDimHelper ISubtractionOperators<FloatingPointDimHelper, FloatingPointDimHelper, FloatingPointDimHelper>.operator -(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static FloatingPointDimHelper IIncrementOperators<FloatingPointDimHelper>.operator ++(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static FloatingPointDimHelper IDecrementOperators<FloatingPointDimHelper>.operator --(FloatingPointDimHelper value) => throw new NotImplementedException();
+        static FloatingPointDimHelper IMultiplyOperators<FloatingPointDimHelper, FloatingPointDimHelper, FloatingPointDimHelper>.operator *(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static FloatingPointDimHelper IDivisionOperators<FloatingPointDimHelper, FloatingPointDimHelper, FloatingPointDimHelper>.operator /(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static FloatingPointDimHelper IModulusOperators<FloatingPointDimHelper, FloatingPointDimHelper, FloatingPointDimHelper>.operator %(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IEqualityOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator ==(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IEqualityOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator !=(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IComparisonOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator <(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IComparisonOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator >(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IComparisonOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator <=(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+        static bool IComparisonOperators<FloatingPointDimHelper, FloatingPointDimHelper, bool>.operator >=(FloatingPointDimHelper left, FloatingPointDimHelper right) => throw new NotImplementedException();
+    }
+
     public struct ExponentialFunctionsDimHelper : IExponentialFunctions<ExponentialFunctionsDimHelper>
     {
         public float Value;
