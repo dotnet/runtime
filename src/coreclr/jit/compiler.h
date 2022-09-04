@@ -7517,10 +7517,31 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
+    void eePrintJitType(class StringPrinter* printer, var_types jitType);
+    void eePrintType(class StringPrinter* printer,
+                     CORINFO_CLASS_HANDLE clsHnd,
+                     bool                 includeNamespaces,
+                     bool                 includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer,
+                               CORINFO_CLASS_HANDLE clsHnd,
+                               bool                 includeNamespaces,
+                               bool                 includeInstantiation);
+    void eePrintMethod(class StringPrinter*  printer,
+                       CORINFO_CLASS_HANDLE  clsHnd,
+                       CORINFO_METHOD_HANDLE methodHnd,
+                       CORINFO_SIG_INFO*     sig,
+                       bool                  includeNamespaces,
+                       bool                  includeClassInstantiation,
+                       bool                  includeMethodInstantiation,
+                       bool                  includeSignature,
+                       bool                  includeReturnType,
+                       bool                  includeThisSpecifier);
 
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
-    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
+    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
+                                    bool                  includeReturnType    = true,
+                                    bool                  includeThisSpecifier = true);
     unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
@@ -7744,6 +7765,12 @@ public:
     bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
     {
         return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    template <typename Functor>
+    bool eeRunFunctorWithSPMIErrorTrap(Functor f)
+    {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) { (*pf)(); }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -11266,6 +11293,46 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+
+class StringPrinter
+{
+    CompAllocator m_alloc;
+    char*         m_buffer;
+    size_t        m_bufferMax;
+    size_t        m_bufferIndex = 0;
+
+public:
+    StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
+        : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
+    {
+        if ((m_buffer == nullptr) || (m_bufferMax == 0))
+        {
+            m_bufferMax = 128;
+            m_buffer    = alloc.allocate<char>(m_bufferMax);
+        }
+
+        m_buffer[0] = '\0';
+    }
+
+    size_t GetLength()
+    {
+        return m_bufferIndex;
+    }
+
+    char* GetBuffer()
+    {
+        assert(m_buffer[GetLength()] == '\0');
+        return m_buffer;
+    }
+    void Truncate(size_t newLength)
+    {
+        assert(newLength <= m_bufferIndex);
+        m_bufferIndex           = newLength;
+        m_buffer[m_bufferIndex] = '\0';
+    }
+
+    void Printf(const char* format, ...);
+};
 
 /*****************************************************************************
  *
