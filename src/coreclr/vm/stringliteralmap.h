@@ -277,7 +277,7 @@ public:
         WCHAR *thisChars;
         int thisLength;
 
-        ObjectToSTRINGREF(*(StringObject**)m_pStringObj)->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
+        ObjectToSTRINGREF(*GetStringObject())->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
         pStringData->SetCharCount (thisLength); // thisLength is in WCHARs and that's what EEStringData's char count wants
         pStringData->SetStringBuffer (thisChars);
     }
