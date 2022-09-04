@@ -44,6 +44,7 @@
       <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
+      <RunTimeDependencyCopyLocal Include="$(XUnitTestBinBase)/Common/PdbChecker/PdbChecker/*.*" TargetDir="PdbChecker/" />
     </ItemGroup>
 
     <ItemGroup>
@@ -174,7 +175,7 @@
       <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' != 'windows'" Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
       <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' == 'windows'" Include="$(MonoArtifactsPath)coreclr$(LibSuffix)" TargetDir=""  />
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
-       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
     </ItemGroup>
 
     <Copy
