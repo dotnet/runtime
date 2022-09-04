@@ -64,6 +64,7 @@ namespace Microsoft.Extensions.Configuration
         protected ConfigurationProvider() { }
         protected System.Collections.Generic.IDictionary<string, string?> Data { get { throw null; } set { } }
         public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
+        public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public virtual void Load() { }
         protected void OnReload() { }
