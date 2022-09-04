@@ -1512,15 +1512,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // context of a thread, then only those portions of the thread's context
 // corresponding to set flags will be returned.
 //
-// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
-//
-// CONTEXT_INTEGER specifies R0-R12
-//
-// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
-//
-// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
-//      DBGWCR.
-//
 
 #elif defined(HOST_AMD64)
 // copied from winnt.h
