@@ -1498,10 +1498,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // Context Frame
 //
-//  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to construct a call frame for APC delivery,
-//  and 3) it is used in the user level thread creation routines.
-//
 //
 // The flags field within this record controls the contents of a CONTEXT
 // record.
