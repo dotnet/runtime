@@ -96,4 +96,83 @@ namespace System.Numerics.Tests
         static bool IComparisonOperators<BinaryNumberDimHelper, BinaryNumberDimHelper, bool>.operator >=(BinaryNumberDimHelper left, BinaryNumberDimHelper right) => throw new NotImplementedException();
     }
 
+    public struct ExponentialFunctionsDimHelper : IExponentialFunctions<ExponentialFunctionsDimHelper>
+    {
+        public float Value;
+
+        public ExponentialFunctionsDimHelper(float value)
+        {
+            Value = value;
+        }
+
+
+        static ExponentialFunctionsDimHelper IExponentialFunctions<ExponentialFunctionsDimHelper>.Exp10(ExponentialFunctionsDimHelper x) => new ExponentialFunctionsDimHelper(Single.Exp10(x.Value));
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.One => new ExponentialFunctionsDimHelper(1f);
+        static ExponentialFunctionsDimHelper ISubtractionOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator -(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right)
+            => new ExponentialFunctionsDimHelper(left.Value - right.Value);
+
+        //
+        //  The below are all not used for existing Dim tests, so they stay unimplemented
+        //
+
+        static ExponentialFunctionsDimHelper IFloatingPointConstants<ExponentialFunctionsDimHelper>.E => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IFloatingPointConstants<ExponentialFunctionsDimHelper>.Pi => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IFloatingPointConstants<ExponentialFunctionsDimHelper>.Tau => throw new NotImplementedException();
+        static int INumberBase<ExponentialFunctionsDimHelper>.Radix => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.Zero => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IAdditiveIdentity<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.AdditiveIdentity => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IMultiplicativeIdentity<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.MultiplicativeIdentity => throw new NotImplementedException();
+
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.Abs(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IExponentialFunctions<ExponentialFunctionsDimHelper>.Exp(ExponentialFunctionsDimHelper x) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IExponentialFunctions<ExponentialFunctionsDimHelper>.Exp2(ExponentialFunctionsDimHelper x) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsCanonical(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsComplexNumber(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsEvenInteger(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsFinite(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsImaginaryNumber(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsInfinity(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsInteger(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsNaN(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsNegative(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsNegativeInfinity(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsNormal(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsOddInteger(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsPositive(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsPositiveInfinity(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsRealNumber(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsSubnormal(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.IsZero(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.MaxMagnitude(ExponentialFunctionsDimHelper x, ExponentialFunctionsDimHelper y) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.MaxMagnitudeNumber(ExponentialFunctionsDimHelper x, ExponentialFunctionsDimHelper y) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.MinMagnitude(ExponentialFunctionsDimHelper x, ExponentialFunctionsDimHelper y) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.MinMagnitudeNumber(ExponentialFunctionsDimHelper x, ExponentialFunctionsDimHelper y) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper ISpanParsable<ExponentialFunctionsDimHelper>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IParsable<ExponentialFunctionsDimHelper>.Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertFromChecked<TOther>(TOther value, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertFromSaturating<TOther>(TOther value, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertFromTruncating<TOther>(TOther value, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertToChecked<TOther>(ExponentialFunctionsDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertToSaturating<TOther>(ExponentialFunctionsDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryConvertToTruncating<TOther>(ExponentialFunctionsDimHelper value, out TOther result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool INumberBase<ExponentialFunctionsDimHelper>.TryParse(string? s, NumberStyles style, IFormatProvider? provider, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool ISpanParsable<ExponentialFunctionsDimHelper>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        static bool IParsable<ExponentialFunctionsDimHelper>.TryParse(string? s, IFormatProvider? provider, out ExponentialFunctionsDimHelper result) => throw new NotImplementedException();
+        bool IEquatable<ExponentialFunctionsDimHelper>.Equals(ExponentialFunctionsDimHelper other) => throw new NotImplementedException();
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
+
+        static ExponentialFunctionsDimHelper IUnaryPlusOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator +(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IAdditionOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator +(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IUnaryNegationOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator -(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IIncrementOperators<ExponentialFunctionsDimHelper>.operator ++(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IDecrementOperators<ExponentialFunctionsDimHelper>.operator --(ExponentialFunctionsDimHelper value) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IMultiplyOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator *(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right) => throw new NotImplementedException();
+        static ExponentialFunctionsDimHelper IDivisionOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator /(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right) => throw new NotImplementedException();
+        static bool IEqualityOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, bool>.operator ==(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right) => throw new NotImplementedException();
+        static bool IEqualityOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, bool>.operator !=(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right) => throw new NotImplementedException();
+    }
 }
