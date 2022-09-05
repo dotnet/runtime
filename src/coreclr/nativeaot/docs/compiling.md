@@ -81,7 +81,7 @@ You can use this feature by adding the `StaticICULinking` property to your proje
     </PropertyGroup>
 ```
 
-This feature is only supported on Linux.
+This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
 ### Prerequisites
 
