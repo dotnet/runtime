@@ -79,6 +79,9 @@ You can use this feature by adding the `StaticICULinking` property to your proje
     <PropertyGroup>
       <StaticICULinking>true</StaticICULinking>
     </PropertyGroup>
+```
+
+This feature is only supported on Linux.
 
 ### Prerequisites
 
