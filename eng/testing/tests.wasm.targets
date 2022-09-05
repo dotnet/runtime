@@ -105,6 +105,8 @@
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
 
     <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) %AOT_BUILD_ARGS%</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">$(_AOTBuildCommand) %24AOT_BUILD_ARGS</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>

@@ -1,0 +1,47 @@
+<Project>
+  <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true'">
+    <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixRuntimeIntrinsicsItems</HelixExtensionTargets>
+    <_RuntimeIntrinsicsProjectName>System.Runtime.Intrinsics.Tests</_RuntimeIntrinsicsProjectName>
+  </PropertyGroup>
+
+  <!-- Only add simd/non-simd jobs for nodejs -->
+  <Target Name="_AddHelixRuntimeIntrinsicsItems"
+          Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and ('$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'WasmTestOnBrowser')">
+
+    <PropertyGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJs'">
+      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- remove the existing item -->
+      <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == '$(Scenario)-$(_RuntimeIntrinsicsProjectName)'" />
+
+      <HelixWorkItem Include="$(WorkItemPrefix)non-simd-$(_RuntimeIntrinsicsProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_RuntimeIntrinsicsProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="$(WorkItemPrefix)simd-$(_RuntimeIntrinsicsProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_RuntimeIntrinsicsProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+
+        <PreCommands>$(_AOTBuildArgsSIMD)</PreCommands>
+      </HelixWorkItem>
+
+      <_RuntimeIntrinsicsHelixItem
+                Include="@(HelixWorkItem)"
+                Condition="$([System.String]::new('%(HelixWorkItem.Identity)').EndsWith('-$(_RuntimeIntrinsicsProjectName)'))" />
+    </ItemGroup>
+
+    <Error Text="Something went wrong. Expected to have only two work items for $(_RuntimeIntrinsicsProjectName). But got @(_RuntimeIntrinsicsHelixItem)"
+           Condition="@(_RuntimeIntrinsicsHelixItem->Count()) != 2" />
+  </Target>
+</Project>
