@@ -15,6 +15,8 @@
                                        @(SharedFrameworkAssemblyWithoutReferenceAssembly)"
                               TargetPath="ref/$(NetCoreAppCurrent)"
                               Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+      <FrameworkListInputFile Include="@(SharedFrameworkAnalyzerAssembly)"
+                              TargetPath="%(SharedFrameworkAnalyzerAssembly.GeneratorProjectBaseTargetPath)" />
     </ItemGroup>
   </Target>
 
@@ -22,7 +24,7 @@
   <Target Name="GenerateFrameworkListFile"
           DependsOnTargets="GetGenerateFrameworkListFileInputs"
           AfterTargets="Build"
-          Condition="'@(SharedFrameworkAssembly)' != ''"
+          Condition="'@(SharedFrameworkAssembly)' != '' and '@(SharedFrameworkAnalyzerAssembly)' != ''"
           Inputs="@(FrameworkListInputFile)"
           Outputs="$(FrameworkListOutputPath)">
     <ItemGroup>
@@ -34,7 +36,7 @@
 
     <CreateFrameworkListFile Files="@(FrameworkListInputFile)"
                              TargetFile="$(FrameworkListOutputPath)"
-                             TargetFilePrefixes="ref/;runtimes/"
+                             TargetFilePrefixes="ref/;runtimes/;analyzers/"
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 

@@ -12,7 +12,6 @@
 
     <!-- Remove once the repo moves to a sufficiently high-enough version for file-scoped types -->
     <MicrosoftCodeAnalysisVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisVersion>
-
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
@@ -74,7 +73,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
-    <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />

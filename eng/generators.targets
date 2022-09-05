@@ -9,23 +9,27 @@
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
          when the project is a C# source project that:
          - doesn't target the latest TFM or
-         - references everything from the targeting pack (OOB) or
-         - references System.Private.CoreLib, or
-         - references System.Runtime.InteropServices -->
+         - doesn't reference the targeting pack (i.e. when inbox) and
+          - references System.Private.CoreLib, or
+          - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="LibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
                                   '$(IsSourceProject)' == 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
                                     '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)' or
-                                    '$(DisableImplicitFrameworkReferences)' != 'true' or
                                     (
-                                      '@(Reference)' != '' and
-                                      @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
-                                    ) or
-                                    (
-                                      '@(ProjectReference)' != '' and
-                                      @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))
+                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
+                                      (
+                                        (
+                                          '@(Reference)' != '' and
+                                          @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
+                                        ) or
+                                        (
+                                          '@(ProjectReference)' != '' and
+                                          @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))
+                                        )
+                                      )
                                     )
                                   )" />
   </ItemGroup>
@@ -55,22 +59,21 @@
                       OutputItemType="" />
   </ItemGroup>
 
-  <Target Name="ConfigureGenerators"
-          DependsOnTargets="ConfigureLibraryImportGenerator"
-          BeforeTargets="CoreCompile" />
-
-  <!-- Microsoft.Interop.LibraryImportGenerator -->
-  <Target Name="ConfigureLibraryImportGenerator"
-          Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))"
-          DependsOnTargets="ResolveProjectReferences"
-          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
-    <PropertyGroup>
-        <LibraryImportGenerator_UseMarshalType>true</LibraryImportGenerator_UseMarshalType>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)' and '$(IncludeLibraryImportGeneratorSources)' != 'false'">
-    </ItemGroup>
-  </Target>
-
-  <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\Microsoft.Interop.LibraryImportGenerator.props" />
+  <!--
+    Define all of the configuration options supported for the LibraryImportGenerator.
+    To use, set an MSBuild property with the name of the option to `true`.
+    See OptionsHelper.cs for more information on usage.
+  -->
+  <ItemGroup>
+      <!--
+        Use the System.Runtime.InteropServices.Marshal type instead of
+        the System.Runtime.InteropServices.MarshalEx type when emitting code.
+      -->
+      <CompilerVisibleProperty Include="LibraryImportGenerator_UseMarshalType" />
+      <!--
+        Generate a stub that forwards to a runtime implemented P/Invoke stub instead
+        of generating a stub that handles all of the marshalling.
+      -->
+      <CompilerVisibleProperty Include="LibraryImportGenerator_GenerateForwarders" />
+  </ItemGroup>
 </Project>

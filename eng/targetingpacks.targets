@@ -146,5 +146,15 @@
                                                       Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
       <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackAnalyzerReferenceWithProjectName Include="@(Analyzer->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                                      OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackIncludedAnalyzerReferenceWithProjectName)" />
+      <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
   </Target>
 </Project>
