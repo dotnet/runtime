@@ -45,16 +45,14 @@ internal class FirefoxProvider : WasmHostProvider
 
         try
         {
-            string args = $"-profile {GetProfilePath(Id)} -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
+            string args = $"-profile {GetProfilePath(Id)} -attach-console -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
             ProcessStartInfo? psi = GetProcessStartInfo(s_browserPath.Value, args, targetUrl);
             string? line = await LaunchHostAsync(
                                     psi,
                                     context,
                                     str =>
                                     {
-                                        // FIXME: instead of this, we can wait for the port to open
-                                        //for running debugger tests on firefox
-                                        if (str?.Contains("console.log: \"ready\"") == true)
+                                        if (str?.Contains("Started devtools server on ") == true)
                                             return $"http://localhost:{remoteDebuggingPort}";
 
                                         return null;
@@ -136,6 +134,7 @@ internal class FirefoxProvider : WasmHostProvider
             user_pref("devtools.debugger.remote-enabled", true);
             user_pref("devtools.debugger.prompt-connection", false);
             user_pref("devtools.console.stdout.content", true);
+            user_pref("browser.dom.window.dump.enabled", true);
             """;
 
         string profilePath = Path.GetFullPath(Path.Combine(DebuggerTestBase.DebuggerTestAppPath, $"test-profile-{Id}"));
