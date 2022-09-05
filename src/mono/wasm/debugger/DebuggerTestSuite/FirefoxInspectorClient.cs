@@ -118,6 +118,7 @@ class FirefoxInspectorClient : InspectorClient
 
     protected override Task? HandleMessage(string msg, CancellationToken token)
     {
+        Console.WriteLine($"recebendo - {msg}");
         var res = JObject.Parse(msg);
         if (res["type"]?.Value<string>() == "newSource")
         {
@@ -198,7 +199,7 @@ class FirefoxInspectorClient : InspectorClient
     {
         if (args == null)
             args = new JObject();
-
+        Console.WriteLine($"enviando - {args}");
         var tcs = new TaskCompletionSource<Result>();
         MessageId msgId;
         if (args["to"]?.Value<string>() is not string to_str)
