@@ -12743,23 +12743,27 @@ void gc_heap::distribute_free_regions()
         {
             dprintf (REGIONS_LOG, ("distributing the %Id %s regions deficit", -balance, kind_name[kind]));
 
+#ifdef MULTIPLE_HEAPS
             // we may have a deficit or  - if background GC is going on - a surplus.
             // adjust the budget per heap accordingly
-            ptrdiff_t adjustment_per_heap;
-            if (balance < 0)
+            if (balance != 0)
             {
-                adjustment_per_heap = balance / n_heaps;
-            }
-            else
-            {
-                adjustment_per_heap = (balance + (n_heaps - 1)) / n_heaps;
-            }
-
-#ifdef MULTIPLE_HEAPS
-            for (int i = 0; i < n_heaps; i++)
-            {
-                ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
-                heap_budget_in_region_units[i][kind] = max (0, new_budget);
+                ptrdiff_t curr_balance = 0;
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    curr_balance += balance;
+                    ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
+                    curr_balance -= adjustment_per_heap * n_heaps;
+                    ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
+                    dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
+                        i,
+                        heap_budget_in_region_units[i][kind],
+                        kind_name[kind],
+                        adjustment_per_heap,
+                        max (0, new_budget)));
+                    heap_budget_in_region_units[i][kind] = max (0, new_budget);
+                }
+                dprintf (REGIONS_LOG, ("left over balance: %Id", curr_balance));
             }
 #endif //MULTIPLE_HEAPS
         }
@@ -12809,34 +12813,19 @@ void gc_heap::distribute_free_regions()
         {
             gc_heap* hp = g_heaps[i];
 
-            if (hp->free_regions[kind].get_num_free_regions() >= heap_budget_in_region_units[i][kind])
+            if (hp->free_regions[kind].get_num_free_regions() > heap_budget_in_region_units[i][kind])
             {
-                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions",
-                    hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind] + 1,
-                    kind_name[kind],
-                    i,
-                    hp->free_regions[kind].get_num_free_regions()));
-
-                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]-1);
-            }
-        }
-        // finally go through all the heaps and distribute any surplus regions to heaps having too few free regions
-        for (int i = 0; i < n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-
-            // first pass: fill all the regions having less than budget - 1
-            if (hp->free_regions[kind].get_num_free_regions() + 1 < heap_budget_in_region_units[i][kind])
-            {
-                int64_t num_added_regions = add_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind] - 1);
-                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id, budget is %Id",
-                    num_added_regions,
+                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions, budget is %Id",
+                    hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind],
                     kind_name[kind],
                     i,
                     hp->free_regions[kind].get_num_free_regions(),
                     heap_budget_in_region_units[i][kind]));
+
+                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
             }
         }
+        // finally go through all the heaps and distribute any surplus regions to heaps having too few free regions
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
