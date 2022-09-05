@@ -1386,8 +1386,68 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
 #elif TARGET_AMD64
-		// TODO use log2(vector_length) * HorizontalAdd from SSSE3 to sum elems
-		return NULL;
+		// TODO use log2(vector_length) * HorizontalAdd from SSSE3 - 1 to sum elems
+		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if ( size != 16 ) 		// Works only with Vector128
+			return NULL;
+
+		int instc0 = -1;
+		switch (arg0_type) {
+			case MONO_TYPE_R4: {
+				instc0 = INTRINS_SSE_HADDPS;
+				break;
+			}
+			case MONO_TYPE_R8: {
+				instc0 = INTRINS_SSE_HADDPD;
+				break;
+			}
+			case MONO_TYPE_I2: {
+				instc0 = INTRINS_SSE_PHADDW;
+				break;
+			} 
+			default: {
+				instc0 = INTRINS_SSE_PHADDD;
+			}
+		}
+
+
+		MonoInst* tmp = emit_xzero (cfg, arg_class);
+		MonoInst* ins = NULL;
+
+		//MonoInst* ins = emit_simd_ins(cfg, klass, OP_XOP_X_X_X, args[0]->dreg, tmp->dreg);
+		//ins->inst_c0 = instc0;
+		//ins->inst_c1 = arg0_type;
+
+		// TODO check with CoreCLR if can be done more effectively
+		args[1] = tmp;
+		fsig->param_count = 2;
+		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, arg0_type, fsig, args);
+		args[0] = ins;
+		args[1] = tmp;
+		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, arg0_type, fsig, args);
+
+
+	
+		//return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, args);		
+		//ins = emit_simd_ins (cfg, klass, extract_op, args[0]->dreg, -1);
+		//return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, ins->args);
+		// emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, args [0]->dreg, -1);
+		//return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN2, ins->dreg, args [1]->dreg);
+
+
+		/*
+ 			OP_XOP_X_X_X, INTRINS_SSE_HADDPS (float), INTRINS_SSE_HADDPD(double), INTRINS_SSE_PHADDW(short), INTRINS_SSE_PHADDD(ints)
+
+		*/
+
+		// Extract result from vector
+		int extract_op = type_to_extract_op (arg0_type);
+		ins = emit_simd_ins (cfg, klass, extract_op, ins->dreg, -1);
+		ins->inst_c0 = 0;
+		ins->inst_c1 = arg0_type;
+
+		return ins;
 #else
 		return NULL;
 #endif
@@ -3215,7 +3275,7 @@ static SimdIntrinsic sse3_methods [] = {
 static SimdIntrinsic ssse3_methods [] = {
 	{SN_Abs, OP_SSSE3_ABS},
 	{SN_AlignRight},
-	{SN_HorizontalAdd, OP_XOP_X_X_X, INTRINS_SSE_PHADDW},
+	{SN_HorizontalAdd},
 	{SN_HorizontalAddSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHADDSW},
 	{SN_HorizontalSubtract},
 	{SN_HorizontalSubtractSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHSUBSW},
