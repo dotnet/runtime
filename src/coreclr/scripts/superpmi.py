@@ -1834,11 +1834,6 @@ class SuperPMIReplayAsmDiffs:
             with open(overall_md_summary_file, "w") as write_fh:
                 def format_delta(base, diff):
                     plus_if_positive = "+" if diff >= base else ""
-                    pct = ""
-                    if base > 0:
-                        pct = " ({}{:.2f}%)".format(plus_if_positive, (diff - base) / base * 100)
-
-                    #return "{}{:,d} B{}".format(plus_if_positive, diff - base, pct)
                     color = "red" if diff > base else "green"
                     return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
 
@@ -1856,26 +1851,35 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
-                    # First write an overview table
-                    write_fh.write("|Collection|MinOpts (bytes)|Opts (bytes)|Overall (bytes)|\n")
-                    write_fh.write("|---|---|---|---|\n")
-                    for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
-                        if not has_diffs:
-                            continue
+                    def write_table(col):
+                        write_fh.write("|Collection|Base size (KiB)|Diff size (bytes)|\n")
+                        write_fh.write("|---|---|---|\n")
+                        for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
+                            if not has_diffs:
+                                continue
 
-                        write_fh.write("|{}|{}|{}|{}|\n".format(
-                            mch_file,
-                            format_delta(
-                                int(base_metrics["MinOpts"]["Diffed code bytes"]),
-                                int(diff_metrics["MinOpts"]["Diffed code bytes"])),
-                            format_delta(
-                                int(base_metrics["FullOpts"]["Diffed code bytes"]),
-                                int(diff_metrics["FullOpts"]["Diffed code bytes"])),
-                            format_delta(
-                                int(base_metrics["Overall"]["Diffed code bytes"]),
-                                int(diff_metrics["Overall"]["Diffed code bytes"]))))
+                            write_fh.write("|{}|{:,.0f}|{}|\n".format(
+                                mch_file,
+                                int(base_metrics[col]["Diffed code bytes"]) / 1024,
+                                format_delta(
+                                    int(base_metrics[col]["Diffed code bytes"]),
+                                    int(diff_metrics[col]["Diffed code bytes"]))))
 
-                    write_fh.write("\n")
+                        write_fh.write("\n")
+
+                    write_table("Overall")
+
+                    def write_pivot_section(col):
+                        write_fh.write("\n<details>\n")
+                        sum_base = sum(int(base_metrics[col]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
+                        sum_diff = sum(int(diff_metrics[col]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+
+                        write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(col, format_delta(sum_base, sum_diff)))
+                        write_table(col)
+                        write_fh.write("\n</details>\n")
+
+                    write_pivot_section("MinOpts")
+                    write_pivot_section("FullOpts")
                 else:
                     write_fh.write("No diffs found.\n")
 
@@ -2125,20 +2129,34 @@ class SuperPMIReplayThroughputDiff:
                     return "<span style=\"color:{}\">{}{:.2f}%</span>".format(color, plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
 
                 if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
-                    write_fh.write("|Collection|Overall|MinOpts|Opts|\n")
-                    write_fh.write("|---|---|---|---|\n")
-                    for mch_file, base, diff in tp_diffs:
-                        def format_pct_for_col(col):
+                    def write_table(col):
+                        write_fh.write("|Collection|PDIFF|\n")
+                        write_fh.write("|---|---|\n")
+                        for mch_file, base, diff in tp_diffs:
                             base_instructions = int(base[col]["Diff executed instructions"])
                             diff_instructions = int(diff[col]["Diff executed instructions"])
-                            return format_pct(base_instructions, diff_instructions)
 
-                        if is_significant(base, diff):
-                            write_fh.write("|{}|{}|{}|{}|\n".format(
-                                mch_file,
-                                format_pct_for_col("MinOpts"),
-                                format_pct_for_col("FullOpts"),
-                                format_pct_for_col("Overall")))
+                            if is_significant_pct(base_instructions, diff_instructions):
+                                write_fh.write("|{}|{}|\n".format(
+                                    mch_file,
+                                    format_pct(base_instructions, diff_instructions)))
+
+                        write_fh.write("\n")
+
+                    write_table("Overall")
+
+                    def write_pivot_section(col):
+                        write_fh.write("\n<details>\n")
+                        sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
+                        sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
+
+                        write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff))))
+                        write_table(col)
+                        write_fh.write("\n</details>\n")
+
+                    write_pivot_section("MinOpts")
+                    write_pivot_section("FullOpts")
+
                 else:
                     write_fh.write("No significant throughput differences found\n")
 
