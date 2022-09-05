@@ -585,7 +585,7 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
         }
 #endif
 
-        if (pEntry->IsStringFrozen())
+        if (!pEntry->IsStringFrozen())
         {
             // Release the object handle that the entry was using.
             STRINGREF *pObjRef = pEntry->GetStringObject();
