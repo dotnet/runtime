@@ -1385,6 +1385,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
+#elif TARGET_AMD64
+		// TODO use log2(vector_length) * HorizontalAdd from SSSE3 to sum elems
+		return NULL;
 #else
 		return NULL;
 #endif
@@ -3212,7 +3215,7 @@ static SimdIntrinsic sse3_methods [] = {
 static SimdIntrinsic ssse3_methods [] = {
 	{SN_Abs, OP_SSSE3_ABS},
 	{SN_AlignRight},
-	{SN_HorizontalAdd},
+	{SN_HorizontalAdd, OP_XOP_X_X_X, INTRINS_SSE_PHADDW},
 	{SN_HorizontalAddSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHADDSW},
 	{SN_HorizontalSubtract},
 	{SN_HorizontalSubtractSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHSUBSW},
