@@ -2242,18 +2242,6 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(VNFuncArity(func) == 2);
 
-#ifdef DEBUG
-    ValueNum resultVN = VNForFunc(typ, func, arg0VN, arg1VN);
-
-    VNFuncApp app;
-    // We only expect to be using this function for VNFs that we cannot fold
-    // so validate that no folding occurred in the normal helper.
-    assert(GetVNFunc(resultVN, &app) && (app.m_func == func) && (app.m_arity == 2) && (app.m_args[0] == arg0VN) &&
-           (app.m_args[1] == arg1VN));
-
-    return resultVN;
-#else
-
     ValueNum resultVN;
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
@@ -2276,7 +2264,6 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     }
 
     return resultVN;
-#endif
 }
 
 //----------------------------------------------------------------------------------------
