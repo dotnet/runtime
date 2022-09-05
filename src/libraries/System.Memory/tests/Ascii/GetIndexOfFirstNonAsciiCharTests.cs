@@ -48,6 +48,7 @@ namespace System.Buffers.Text.Tests
         {
             Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiChar(buffer));
             Assert.True(Ascii.IsAscii(buffer));
+            Assert.All(buffer, character => Assert.True(Ascii.IsAscii(character)));
         }
 
         public static IEnumerable<object[]> ContainingNonAsciiCharactersBuffers
@@ -77,6 +78,11 @@ namespace System.Buffers.Text.Tests
         {
             Assert.Equal(expectedIndex, Ascii.GetIndexOfFirstNonAsciiChar(buffer));
             Assert.False(Ascii.IsAscii(buffer));
+
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                Assert.Equal(i != expectedIndex, Ascii.IsAscii(buffer[i]));
+            }
         }
     }
 }

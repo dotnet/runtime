@@ -72,5 +72,19 @@ namespace System.Buffers.Text
                 return ASCIIUtility.GetIndexOfFirstNonAsciiChar(pValue, valueLength) == valueLength;
             }
         }
+
+        /// <summary>
+        /// Determines whether the provided value is ASCII byte.
+        /// </summary>
+        /// <param name="value">The value to inspect.</param>
+        /// <returns>True if <paramref name="value"/> is ASCII, False otherwise.</returns>
+        public static unsafe bool IsAscii(byte value) => value <= 127;
+
+        /// <summary>
+        /// Determines whether the provided value is ASCII char.
+        /// </summary>
+        /// <param name="value">The value to inspect.</param>
+        /// <returns>True if <paramref name="value"/> is ASCII, False otherwise.</returns>
+        public static unsafe bool IsAscii(char value) => value <= 127;
     }
 }

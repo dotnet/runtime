@@ -7109,6 +7109,8 @@ namespace System.Buffers.Text
         public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsAscii(byte value) { throw null; }
+        public static bool IsAscii(char value) { throw null; }
         public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
         public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
         public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
