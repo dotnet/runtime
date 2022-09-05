@@ -72,14 +72,12 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#ifdef DEBUG
     const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
         assert(jitstdout != nullptr);
     }
-#endif // DEBUG
 
 #if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
