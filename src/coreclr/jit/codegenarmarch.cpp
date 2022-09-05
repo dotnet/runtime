@@ -4474,7 +4474,9 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 }
                 else
                 {
-                    assert(!"There are more unhandled nodes for contained index for ARM64");
+                    // Only BFIZ/CAST nodes should be present for for contained index on ARM64.
+                    // If there are more, we need to handle them here.
+                    unreached();
                 }
             }
 #endif
