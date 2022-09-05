@@ -15,6 +15,8 @@
       <File Include="$(CoreCLRILCompilerDir)*" TargetPath="tools" />
       <File Include="$(CoreCLRAotSdkDir)*" TargetPath="sdk" />
       <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" TargetPath="mibc" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and '$(TargetOS)' == 'Linux'">
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\minipal\*" TargetPath="native/src/minipal"/>
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\libs\Common\*" TargetPath="native/src/libs/Common"/>
