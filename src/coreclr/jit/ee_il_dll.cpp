@@ -1643,5 +1643,12 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
-
-#endif // DEBUG
+#else  // DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif // !DEBUG
