@@ -7,6 +7,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+
+    <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+    <WasmXHarnessArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(Scenario)' == 'WasmTestOnNodeJs' and
+                        '$(ContinuousIntegrationBuild)' != 'true'">$(WasmXHarnessArgs) --engine-arg=--experimental-wasm-simd</WasmXHarnessArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Vectors\Vector128Tests.cs" />
