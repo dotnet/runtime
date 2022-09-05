@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+
+#pragma warning disable SA1121 // Use built-in type alias
+using CheckNonAscii = System.Byte;
 
 namespace System.Buffers.Text
 {
@@ -24,28 +28,28 @@ namespace System.Buffers.Text
             => LastIndexOf<char, byte, WidenAsciiToUtf16>(text, value);
 
         public static int IndexOfIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => IndexOfIgnoreCase<byte, byte, ByteByteComparer>(text, value);
+            => IndexOfIgnoreCase<byte, byte>(text, value);
 
         public static int IndexOfIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-            => IndexOfIgnoreCase<char, char, CharCharComparer>(text, value);
+            => IndexOfIgnoreCase<char, char>(text, value);
 
         public static int IndexOfIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => IndexOfIgnoreCase<byte, char, ByteCharComparer>(text, value);
+            => IndexOfIgnoreCase<byte, char>(text, value);
 
         public static int IndexOfIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => IndexOfIgnoreCase<char, byte, CharByteComparer>(text, value);
+            => IndexOfIgnoreCase<char, byte>(text, value);
 
         public static int LastIndexOfIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => LastIndexOfIgnoreCase<byte, byte, ByteByteComparer>(text, value);
+            => LastIndexOfIgnoreCase<byte, byte>(text, value);
 
         public static int LastIndexOfIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-            => LastIndexOfIgnoreCase<char, char, CharCharComparer>(text, value);
+            => LastIndexOfIgnoreCase<char, char>(text, value);
 
         public static int LastIndexOfIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => LastIndexOfIgnoreCase<byte, char, ByteCharComparer>(text, value);
+            => LastIndexOfIgnoreCase<byte, char>(text, value);
 
         public static int LastIndexOfIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => LastIndexOfIgnoreCase<char, byte, CharByteComparer>(text, value);
+            => LastIndexOfIgnoreCase<char, byte>(text, value);
 
         private static int IndexOf<TText, TValue, TConverter>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
             where TText : unmanaged, IEquatable<TText>?
@@ -115,10 +119,9 @@ namespace System.Buffers.Text
             }
         }
 
-        private static int IndexOfIgnoreCase<TText, TValue, TComparer>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
-            where TText : unmanaged, IEquatable<TText>?
-            where TValue : unmanaged, IEquatable<TValue>?
-            where TComparer : struct, IComparer<TText, TValue>
+        private static int IndexOfIgnoreCase<TText, TValue>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
+            where TText : unmanaged, IEquatable<TText>?, INumberBase<TText>
+            where TValue : unmanaged, IEquatable<TValue>?, INumberBase<TValue>
         {
             if (value.IsEmpty)
             {
@@ -130,12 +133,13 @@ namespace System.Buffers.Text
             }
 
             TValue firstValue = value[0];
-            if (!TComparer.IsAscii(firstValue))
+            if (!UnicodeUtility.IsAsciiCodePoint(uint.CreateTruncating(firstValue)))
             {
                 ThrowNonAsciiFound();
             }
             TText valueHead = Unsafe.As<TValue, TText>(ref firstValue);
-            TText valueHeadDifferentCase = TComparer.GetDifferentCaseOrSame(firstValue);
+            char differentCase = GetDifferentCaseOrSame(Unsafe.As<TValue, char>(ref firstValue));
+            TText valueHeadDifferentCase = Unsafe.As<char, TText>(ref differentCase);
 
             int valueTailLength = value.Length - 1;
             if (valueTailLength == 0)
@@ -161,7 +165,7 @@ namespace System.Buffers.Text
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (Map(TComparer.EqualsIgnoreCase(text.Slice(offset + 1, value.Length - 1), value.Slice(1)))) // Map throws if non-ASCII char is found in value
+                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckNonAscii>(text.Slice(offset + 1, value.Length - 1), value.Slice(1)))) // Map throws if non-ASCII char is found in value
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -171,10 +175,9 @@ namespace System.Buffers.Text
             return -1;
         }
 
-        private static int LastIndexOfIgnoreCase<TText, TValue, TComparer>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
-            where TText : unmanaged, IEquatable<TText>?
-            where TValue : unmanaged, IEquatable<TValue>?
-            where TComparer : struct, IComparer<TText, TValue>
+        private static int LastIndexOfIgnoreCase<TText, TValue>(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value)
+            where TText : unmanaged, IEquatable<TText>?, INumberBase<TText>
+            where TValue : unmanaged, IEquatable<TValue>?, INumberBase<TValue>
         {
             if (value.IsEmpty)
             {
@@ -186,12 +189,13 @@ namespace System.Buffers.Text
             }
 
             TValue firstValue = value[0];
-            if (!TComparer.IsAscii(firstValue))
+            if (!UnicodeUtility.IsAsciiCodePoint(uint.CreateTruncating(firstValue)))
             {
                 ThrowNonAsciiFound();
             }
             TText valueHead = Unsafe.As<TValue, TText>(ref firstValue);
-            TText valueHeadDifferentCase = TComparer.GetDifferentCaseOrSame(firstValue);
+            char differentCase = GetDifferentCaseOrSame(Unsafe.As<TValue, char>(ref firstValue));
+            TText valueHeadDifferentCase = Unsafe.As<char, TText>(ref differentCase);
 
             int valueTailLength = value.Length - 1;
             if (valueTailLength == 0)
@@ -213,7 +217,7 @@ namespace System.Buffers.Text
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (Map(TComparer.EqualsIgnoreCase(text.Slice(relativeIndex + 1, value.Length - 1), value.Slice(1))))
+                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckNonAscii>(text.Slice(relativeIndex + 1, value.Length - 1), value.Slice(1))))
                     return relativeIndex;  // The tail matched. Return a successful find.
 
                 offset += remainingSearchSpaceLength - relativeIndex;
@@ -269,52 +273,6 @@ namespace System.Buffers.Text
                 }
             }
         }
-
-        private interface IComparer<TText, TValue>
-            where TText : unmanaged
-            where TValue : unmanaged
-        {
-            static abstract bool IsAscii(TValue value);
-
-            static abstract TText GetDifferentCaseOrSame(TValue value);
-
-            static abstract EqualsResult EqualsIgnoreCase(ReadOnlySpan<TText> text, ReadOnlySpan<TValue> value);
-        }
-
-        private readonly struct ByteByteComparer : IComparer<byte, byte>
-        {
-            public static bool IsAscii(byte value) => value <= 127;
-
-            public static byte GetDifferentCaseOrSame(byte value) => (byte)Ascii.GetDifferentCaseOrSame((char)value);
-
-            public static EqualsResult EqualsIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value) => EqualsIgnoreCase<byte>(text, value);
-        }
-
-        private readonly struct ByteCharComparer : IComparer<byte, char>
-        {
-            public static bool IsAscii(char value) => value <= 127;
-
-            public static byte GetDifferentCaseOrSame(char value) => (byte)Ascii.GetDifferentCaseOrSame(value);
-
-            public static EqualsResult EqualsIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value) => EqualsIgnoreCase<char>(value, text);
-        }
-
-        private readonly struct CharCharComparer : IComparer<char, char>
-        {
-            public static bool IsAscii(char value) => value <= 127;
-
-            public static char GetDifferentCaseOrSame(char value) => Ascii.GetDifferentCaseOrSame(value);
-
-            public static EqualsResult EqualsIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value) => EqualsIgnoreCase<char>(text, value);
-        }
-
-        private readonly struct CharByteComparer : IComparer<char, byte>
-        {
-            public static bool IsAscii(byte value) => value <= 127;
-
-            public static char GetDifferentCaseOrSame(byte value) => Ascii.GetDifferentCaseOrSame((char)value);
-
-            public static EqualsResult EqualsIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value) => EqualsIgnoreCase<byte>(text, value);
-        }
     }
 }
+#pragma warning restore SA1121 // Use built-in type alias
