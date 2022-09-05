@@ -71,51 +71,49 @@ class FirefoxInspectorClient : InspectorClient
             throw new Exception($"Failed to connect to the proxy at {endpoint}", se);
         }
     }
-    public async Task ProcessTabInfo(Result command, CancellationToken token)
+    public async Task<bool> ProcessTabInfo(Result command, CancellationToken token)
     {
+        if (command.Value?["result"]?["value"]?["tabs"] == null ||
+            command.Value?["result"]?["value"]?["tabs"]?.Value<JArray>()?.Count == 0 ||
+            command.Value?["result"]?["value"]?["tabs"]?[0]?["url"]?.Value<string>() == "about:blank")
+            return false;
         var toCmd = command.Value?["result"]?["value"]?["tabs"]?[0]?["actor"]?.Value<string>();
-            var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
-            var watcherId = res.Value?["result"]?["value"]?["actor"]?.Value<string>();
-            res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
-            res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
-            UpdateTarget(res.Value?["result"]?["value"]?["target"] as JObject);
-            await SendCommand("attach", JObject.FromObject(new
-                {
-                    type = "attach",
-                    options =  JObject.FromObject(new
-                        {
-                            pauseOnExceptions = false,
-                            ignoreCaughtExceptions = true,
-                            shouldShowOverlay = true,
-                            shouldIncludeSavedFrames = true,
-                            shouldIncludeAsyncLiveFrames = false,
-                            skipBreakpoints = false,
-                            logEventBreakpoints = false,
-                            observeAsmJS = true,
-                            breakpoints = new JArray(),
-                            eventBreakpoints = new JArray()
-                        }),
-                    to = ThreadActorId
-                }), token);
-            res = await SendCommand("getBreakpointListActor", JObject.FromObject(new { type = "getBreakpointListActor", to = watcherId}), token);
-            BreakpointActorId = res.Value?["result"]?["value"]?["breakpointList"]?["actor"]?.Value<string>();
+        var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
+        var watcherId = res.Value?["result"]?["value"]?["actor"]?.Value<string>();
+        res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
+        res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
+        UpdateTarget(res.Value?["result"]?["value"]?["target"] as JObject);
+        res = await SendCommand("attach", JObject.FromObject(new
+            {
+                type = "attach",
+                options =  JObject.FromObject(new
+                    {
+                        pauseOnExceptions = false,
+                        ignoreCaughtExceptions = true,
+                        shouldShowOverlay = true,
+                        shouldIncludeSavedFrames = true,
+                        shouldIncludeAsyncLiveFrames = false,
+                        skipBreakpoints = false,
+                        logEventBreakpoints = false,
+                        observeAsmJS = true,
+                        breakpoints = new JArray(),
+                        eventBreakpoints = new JArray()
+                    }),
+                to = ThreadActorId
+            }), token);
+        res = await SendCommand("getBreakpointListActor", JObject.FromObject(new { type = "getBreakpointListActor", to = watcherId}), token);
+        BreakpointActorId = res.Value?["result"]?["value"]?["breakpointList"]?["actor"]?.Value<string>();
+        return true;
     }
 
     public override async Task ProcessCommand(Result command, CancellationToken token)
     {
-        if (command.Value?["result"]?["value"]?["tabs"] != null && command.Value?["result"]?["value"]?["tabs"]?.Value<JArray>()?.Count > 0)
+        if (await ProcessTabInfo(command, token))
+            return;
+        do            
         {
-            await ProcessTabInfo(command, token);
-        }
-        else
-        {
-            var res = command;
-            while (res.Value?["result"]?["value"]?["tabs"] == null || res.Value?["result"]?["value"]?["tabs"]?.Value<JArray>()?.Count == 0)
-            {
-                res = await SendCommand("listTabs", JObject.FromObject(new { type = "listTabs", to = "root"}), token);
-            }
-            await ProcessTabInfo(res, token);
-        }
+            command = await SendCommand("listTabs", JObject.FromObject(new { type = "listTabs", to = "root"}), token);
+        } while (!await ProcessTabInfo(command, token));
     }
 
     protected override Task? HandleMessage(string msg, CancellationToken token)
