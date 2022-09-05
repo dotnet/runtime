@@ -1858,7 +1858,7 @@ class SuperPMIReplayAsmDiffs:
 
                         write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(col, format_delta(sum_base, sum_diff)))
                         write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
-                        write_fh.write("|---|---|---|\n")
+                        write_fh.write("|---|--:|--:|\n")
                         for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
                             if not has_diffs:
                                 continue
@@ -1883,7 +1883,7 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("<summary>Details</summary>\n\n")
 
                 write_fh.write("|Collection|Diffed contexts|MinOpts contexts|FullOpts contexts|Base missing contexts|Diff missing contexts|\n")
-                write_fh.write("|---|---|---|---|---|---|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|\n")
                 for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                     write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
                         mch_file,
@@ -2135,7 +2135,7 @@ class SuperPMIReplayThroughputDiff:
 
                         write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff)))
                         write_fh.write("|Collection|PDIFF|\n")
-                        write_fh.write("|---|---|\n")
+                        write_fh.write("|---|--:|\n")
                         for mch_file, base, diff in tp_diffs:
                             base_instructions = int(base[col]["Diff executed instructions"])
                             diff_instructions = int(diff[col]["Diff executed instructions"])
@@ -2159,7 +2159,7 @@ class SuperPMIReplayThroughputDiff:
                 for (disp, col) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
                     write_fh.write("{} contexts:\n\n".format(disp))
                     write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-                    write_fh.write("|---|---|---|---|\n")
+                    write_fh.write("|---|--:|--:|--:|\n")
                     for mch_file, base, diff in tp_diffs:
                         base_instructions = int(base[col]["Diff executed instructions"])
                         diff_instructions = int(diff[col]["Diff executed instructions"])
