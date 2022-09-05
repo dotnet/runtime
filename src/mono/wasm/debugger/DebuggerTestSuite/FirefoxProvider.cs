@@ -45,7 +45,7 @@ internal class FirefoxProvider : WasmHostProvider
 
         try
         {
-            string args = $"-profile {GetProfilePath(Id)} -attach-console -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
+            string args = $"-profile {GetProfilePath(Id)} -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
             ProcessStartInfo? psi = GetProcessStartInfo(s_browserPath.Value, args, targetUrl);
             string? line = await LaunchHostAsync(
                                     psi,

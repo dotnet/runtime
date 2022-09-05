@@ -75,7 +75,7 @@ class FirefoxInspectorClient : InspectorClient
     {
         if (command.Value?["result"]?["value"]?["tabs"] == null ||
             command.Value?["result"]?["value"]?["tabs"]?.Value<JArray>()?.Count == 0 ||
-            command.Value?["result"]?["value"]?["tabs"]?[0]?["url"]?.Value<string>() == "about:blank")
+            command.Value?["result"]?["value"]?["tabs"]?[0]?["url"]?.Value<string>()?.StartsWith("about:") == true)
             return false;
         var toCmd = command.Value?["result"]?["value"]?["tabs"]?[0]?["actor"]?.Value<string>();
         var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
