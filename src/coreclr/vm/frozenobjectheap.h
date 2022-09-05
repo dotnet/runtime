@@ -4,7 +4,6 @@
 #ifndef _FROZENOBJECTHEAP_H
 #define _FROZENOBJECTHEAP_H
 
-#include "common.h"
 #include "gcinterface.h"
 #include <sarray.h>
 
