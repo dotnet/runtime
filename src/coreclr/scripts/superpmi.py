@@ -1835,7 +1835,7 @@ class SuperPMIReplayAsmDiffs:
                 def format_delta(base, diff):
                     plus_if_positive = "+" if diff >= base else ""
                     color = "red" if diff > base else "green"
-                    return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
+                    return "<span style=\"color:{}\">{}{:,.3f}</span>".format(color, plus_if_positive, (diff - base) / 1000)
 
                 diffed_contexts = sum(int(diff_metrics["Overall"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
                 diffed_minopts_contexts = sum(int(diff_metrics["MinOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
@@ -1851,8 +1851,13 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
-                    def write_table(col):
-                        write_fh.write("|Collection|Base size (KiB)|Diff size (bytes)|\n")
+                    def write_pivot_section(col, open):
+                        write_fh.write("\n<details{}>\n".format(" open" if open else ""))
+                        sum_base = sum(int(base_metrics[col]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
+                        sum_diff = sum(int(diff_metrics[col]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+
+                        write_fh.write("<summary>{} ({} KB)</summary>\n\n".format(col, format_delta(sum_base, sum_diff)))
+                        write_fh.write("|Collection|Base size (KB)|Diff size (KB)|\n")
                         write_fh.write("|---|---|---|\n")
                         for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
                             if not has_diffs:
@@ -1860,26 +1865,16 @@ class SuperPMIReplayAsmDiffs:
 
                             write_fh.write("|{}|{:,.0f}|{}|\n".format(
                                 mch_file,
-                                int(base_metrics[col]["Diffed code bytes"]) / 1024,
+                                int(base_metrics[col]["Diffed code bytes"]),
                                 format_delta(
                                     int(base_metrics[col]["Diffed code bytes"]),
                                     int(diff_metrics[col]["Diffed code bytes"]))))
 
-                        write_fh.write("\n")
+                        write_fh.write("\n\n</details>\n")
 
-                    write_table("Overall")
-
-                    def write_pivot_section(col):
-                        write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[col]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
-                        sum_diff = sum(int(diff_metrics[col]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-
-                        write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(col, format_delta(sum_base, sum_diff)))
-                        write_table(col)
-                        write_fh.write("\n</details>\n")
-
-                    write_pivot_section("MinOpts")
-                    write_pivot_section("FullOpts")
+                    write_pivot_section("Overall", open=True)
+                    write_pivot_section("MinOpts", open=False)
+                    write_pivot_section("FullOpts", open=False)
                 else:
                     write_fh.write("No diffs found.\n")
 
@@ -2128,34 +2123,33 @@ class SuperPMIReplayThroughputDiff:
                     color = "red" if diff_instructions > base_instructions else "green"
                     return "<span style=\"color:{}\">{}{:.2f}%</span>".format(color, plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
 
-                if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
-                    def write_table(col):
+                significant_diffs = {}
+                for mch_file, base, diff in tp_diffs:
+                    significant_diffs[mch_file] = is_significant(base, diff)
+
+                if any(significant_diffs[mch_file] for (mch_file, _, _) in tp_diffs):
+                    def write_pivot_section(col, open):
+                        write_fh.write("\n<details{}>\n".format(" open" if open else ""))
+                        sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
+                        sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
+
+                        write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff)))
                         write_fh.write("|Collection|PDIFF|\n")
                         write_fh.write("|---|---|\n")
                         for mch_file, base, diff in tp_diffs:
                             base_instructions = int(base[col]["Diff executed instructions"])
                             diff_instructions = int(diff[col]["Diff executed instructions"])
 
-                            if is_significant_pct(base_instructions, diff_instructions):
+                            if significant_diffs[mch_file]:
                                 write_fh.write("|{}|{}|\n".format(
                                     mch_file,
                                     format_pct(base_instructions, diff_instructions)))
 
-                        write_fh.write("\n")
+                        write_fh.write("\n\n</details>\n")
 
-                    write_table("Overall")
-
-                    def write_pivot_section(col):
-                        write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
-                        sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
-
-                        write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff))))
-                        write_table(col)
-                        write_fh.write("\n</details>\n")
-
-                    write_pivot_section("MinOpts")
-                    write_pivot_section("FullOpts")
+                    write_pivot_section("Overall", open=True)
+                    write_pivot_section("MinOpts", open=False)
+                    write_pivot_section("FullOpts", open=False)
 
                 else:
                     write_fh.write("No significant throughput differences found\n")
