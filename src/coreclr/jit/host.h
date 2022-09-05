@@ -63,6 +63,7 @@ inline FILE* procstdout()
 }
 
 #undef stdout
+#define stdout use_jitstdout
 
 /*****************************************************************************/
 #endif
