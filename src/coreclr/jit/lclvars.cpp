@@ -227,7 +227,7 @@ void Compiler::lvaInitTypeRef()
 
     lvaTable         = getAllocator(CMK_LvaTable).allocate<LclVarDsc>(lvaTableCnt);
     size_t tableSize = lvaTableCnt * sizeof(*lvaTable);
-    memset(lvaTable, 0, tableSize);
+    memset((void*)lvaTable, 0, tableSize);
     for (unsigned i = 0; i < lvaTableCnt; i++)
     {
         new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
@@ -1378,6 +1378,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         // Codegen will need it for x86 scope info.
         varDsc->lvImplicitlyReferenced = 1;
 #endif // TARGET_X86
+        varDsc->lvHasLdAddrOp = 1;
 
         lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
 
@@ -2035,6 +2036,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (varDsc->lvIsParam && compiler->compGSReorderStackLayout)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsParam and compGSReorderStackLayout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvIsParam && compiler->fgNoStructParamPromotion)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled by fgNoStructParamPromotion\n", lclNum);
         return false;
     }
 

@@ -5767,7 +5767,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -5786,7 +5786,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
-    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
@@ -5802,7 +5802,8 @@ public:
 private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-    void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree);
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
 
@@ -7368,6 +7369,7 @@ public:
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -7562,10 +7564,31 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
+    void eePrintJitType(class StringPrinter* printer, var_types jitType);
+    void eePrintType(class StringPrinter* printer,
+                     CORINFO_CLASS_HANDLE clsHnd,
+                     bool                 includeNamespaces,
+                     bool                 includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer,
+                               CORINFO_CLASS_HANDLE clsHnd,
+                               bool                 includeNamespaces,
+                               bool                 includeInstantiation);
+    void eePrintMethod(class StringPrinter*  printer,
+                       CORINFO_CLASS_HANDLE  clsHnd,
+                       CORINFO_METHOD_HANDLE methodHnd,
+                       CORINFO_SIG_INFO*     sig,
+                       bool                  includeNamespaces,
+                       bool                  includeClassInstantiation,
+                       bool                  includeMethodInstantiation,
+                       bool                  includeSignature,
+                       bool                  includeReturnType,
+                       bool                  includeThisSpecifier);
 
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
-    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
+    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
+                                    bool                  includeReturnType    = true,
+                                    bool                  includeThisSpecifier = true);
     unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
@@ -7789,6 +7812,12 @@ public:
     bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
     {
         return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    template <typename Functor>
+    bool eeRunFunctorWithSPMIErrorTrap(Functor f)
+    {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) { (*pf)(); }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -8845,7 +8874,7 @@ private:
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
 #endif
@@ -8860,14 +8889,13 @@ private:
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit = (1ULL << isa);
-        if ((opts.compSupportsISAReported & isaBit) == 0)
+        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA & isaBit) != 0))
-                ((Compiler*)this)->opts.compSupportsISAExactly |= isaBit;
-            ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
+            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+                ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
+            ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
-        return (opts.compSupportsISAExactly & isaBit) != 0;
+        return (opts.compSupportsISAExactly.HasInstructionSet(isa));
 #else
         return false;
 #endif
@@ -8889,7 +8917,7 @@ private:
     // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        if (opts.compSupportsISA.HasInstructionSet(isa))
         {
             return compExactlyDependsOn(isa);
         }
@@ -8904,7 +8932,7 @@ private:
     {
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
-        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
+        return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
     bool canUseVexEncoding() const
@@ -9009,19 +9037,19 @@ public:
         JitFlags* jitFlags; // all flags passed from the EE
 
         // The instruction sets that the compiler is allowed to emit.
-        uint64_t compSupportsISA;
+        CORINFO_InstructionSetFlags compSupportsISA;
         // The instruction sets that were reported to the VM as being used by the current method. Subset of
         // compSupportsISA.
-        uint64_t compSupportsISAReported;
+        CORINFO_InstructionSetFlags compSupportsISAReported;
         // The instruction sets that the compiler is allowed to take advantage of implicitly during optimizations.
         // Subset of compSupportsISA.
         // The instruction sets available in compSupportsISA and not available in compSupportsISAExactly can be only
         // used via explicit hardware intrinsics.
-        uint64_t compSupportsISAExactly;
+        CORINFO_InstructionSetFlags compSupportsISAExactly;
 
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-            compSupportsISA = isas.GetFlagsRaw();
+            compSupportsISA = isas;
         }
 
         unsigned compFlags; // method attributes
@@ -9335,6 +9363,9 @@ public:
 
         // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
         bool compJitEarlyExpandMDArrays;
+
+        // Collect 64 bit counts for PGO data.
+        bool compCollect64BitCounts;
 
     } opts;
 
@@ -11311,6 +11342,46 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+
+class StringPrinter
+{
+    CompAllocator m_alloc;
+    char*         m_buffer;
+    size_t        m_bufferMax;
+    size_t        m_bufferIndex = 0;
+
+public:
+    StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
+        : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
+    {
+        if ((m_buffer == nullptr) || (m_bufferMax == 0))
+        {
+            m_bufferMax = 128;
+            m_buffer    = alloc.allocate<char>(m_bufferMax);
+        }
+
+        m_buffer[0] = '\0';
+    }
+
+    size_t GetLength()
+    {
+        return m_bufferIndex;
+    }
+
+    char* GetBuffer()
+    {
+        assert(m_buffer[GetLength()] == '\0');
+        return m_buffer;
+    }
+    void Truncate(size_t newLength)
+    {
+        assert(newLength <= m_bufferIndex);
+        m_bufferIndex           = newLength;
+        m_buffer[m_bufferIndex] = '\0';
+    }
+
+    void Printf(const char* format, ...);
+};
 
 /*****************************************************************************
  *

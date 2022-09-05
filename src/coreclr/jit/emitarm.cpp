@@ -7739,7 +7739,7 @@ void emitter::emitDispLargeJmp(
     // Next, display the unconditional branch
 
     // Reset the local instrDesc
-    memset(&idJmp, 0, sizeof(idJmp));
+    memset(pidJmp, 0, sizeof(instrDescJmp));
 
     pidJmp->idIns(INS_b);
     pidJmp->idInsFmt(IF_T2_J2);

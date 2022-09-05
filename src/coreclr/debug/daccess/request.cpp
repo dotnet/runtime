@@ -2892,7 +2892,7 @@ ClrDataAccess::GetOOMStaticData(struct DacpOomData *oomData)
 
     SOSDacEnter();
 
-    memset(oomData, 0, sizeof(DacpOomData));
+    *oomData = {};
 
     if (!GCHeapUtilities::IsServerHeap())
     {
@@ -2921,7 +2921,7 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpOomData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -2974,7 +2974,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (g_heap_type != GC_HEAP_SVR)
     {
@@ -3007,7 +3007,7 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode

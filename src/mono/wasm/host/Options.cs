@@ -812,14 +812,10 @@ namespace Mono.Options
             : base(comparer)
         {
             this.roSources = new ReadOnlyCollection<ArgumentSource>(sources);
-            this.localizer = localizer;
-            if (this.localizer == null)
+            this.localizer = localizer ?? delegate (string f)
             {
-                this.localizer = delegate (string f)
-                {
-                    return f;
-                };
-            }
+                return f;
+            };
         }
 
         private MessageLocalizerConverter localizer;
@@ -1104,8 +1100,7 @@ namespace Mono.Options
                 if (!Parse(argument, c))
                     Unprocessed(unprocessed, def, c, argument);
             }
-            if (c.Option != null)
-                c.Option.Invoke(c);
+            c.Option?.Invoke(c);
             return unprocessed;
         }
 
@@ -1854,13 +1849,9 @@ namespace Mono.Options
 
         public CommandSet Add(CommandSet nestedCommands)
         {
-            if (nestedCommands == null)
-                throw new ArgumentNullException(nameof(nestedCommands));
+            ArgumentNullException.ThrowIfNull(nestedCommands);
 
-            if (NestedCommandSets == null)
-            {
-                NestedCommandSets = new List<CommandSet>();
-            }
+            NestedCommandSets ??= new List<CommandSet>();
 
             if (!AlreadyAdded(nestedCommands))
             {

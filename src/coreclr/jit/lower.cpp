@@ -1425,7 +1425,7 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
                     break;
                 }
                 GenTree* node = use.GetNode();
-                if (varTypeIsFloating(node))
+                if (varTypeUsesFloatReg(node))
                 {
                     GenTree* intNode = LowerFloatArgReg(node, currRegNumber);
                     assert(intNode != nullptr);
@@ -1447,7 +1447,7 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
             // List fields were replaced in place.
             return arg;
         }
-        else if (varTypeIsFloating(arg))
+        else if (varTypeUsesFloatReg(arg))
         {
             GenTree* intNode = LowerFloatArgReg(arg, callArg->AbiInfo.GetRegNum());
             assert(intNode != nullptr);
@@ -1470,11 +1470,13 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
 //
 GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 {
+    assert(varTypeUsesFloatReg(arg));
+
     var_types floatType = arg->TypeGet();
-    assert(varTypeIsFloating(floatType));
-    var_types intType = (floatType == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
-    GenTree*  intArg  = comp->gtNewBitCastNode(intType, arg);
+    var_types intType   = (floatType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+    GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
+
 #ifdef TARGET_ARM
     if (floatType == TYP_DOUBLE)
     {
@@ -3824,6 +3826,11 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 assert(user->TypeIs(origType) || (returnType == user->TypeGet()));
                 break;
 
+            case GT_CALL:
+                // Argument lowering will deal with register file mismatches if needed.
+                assert(varTypeIsSIMD(origType));
+                break;
+
             case GT_STOREIND:
 #ifdef FEATURE_SIMD
                 if (varTypeIsSIMD(user))
@@ -5757,15 +5764,10 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-#ifdef TARGET_ARMARCH
                 divMod->SetOper(GT_CAST);
-                divMod->SetUnsigned();
                 divMod->AsCast()->gtCastType = TYP_INT;
-#else
-                divMod->SetOper(GT_BITCAST);
-#endif
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
+                divMod->gtOp1                = mulhi;
+                divMod->gtOp2                = nullptr;
             }
         }
 

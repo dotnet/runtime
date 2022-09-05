@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
-using Internal.Runtime;
 using Internal.IL;
 
 using ILCompiler.Dataflow;
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodIL.OwningMethod));
             _methodIL = methodIL;
         }
-        
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;

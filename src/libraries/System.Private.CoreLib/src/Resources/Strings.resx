@@ -1243,8 +1243,8 @@
   <data name="Argument_InvalidParamInfo" xml:space="preserve">
     <value>Invalid type for ParameterInfo member in Attribute class.</value>
   </data>
-  <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path.</value>
+  <data name="Argument_NullCharInPath" xml:space="preserve">
+    <value>Null character in path.</value>
   </data>
   <data name="Argument_InvalidResourceCultureName" xml:space="preserve">
     <value>The given culture name '{0}' cannot be used to locate a resource file. Resource filenames must consist of only letters, numbers, hyphens or underscores.</value>

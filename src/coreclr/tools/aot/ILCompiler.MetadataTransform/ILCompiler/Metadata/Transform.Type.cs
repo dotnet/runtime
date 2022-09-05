@@ -13,7 +13,7 @@ using TypeAttributes = System.Reflection.TypeAttributes;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.TypeDesc, MetadataRecord> _types =
             new EntityMap<Cts.TypeDesc, MetadataRecord>(EqualityComparer<Cts.TypeDesc>.Default);
@@ -86,8 +86,7 @@ namespace ILCompiler.Metadata
                     }
                     break;
             }
-            
- 
+
             Debug.Assert(rec is TypeDefinition || rec is TypeReference || rec is TypeSpecification);
 
             return rec;
@@ -178,7 +177,7 @@ namespace ILCompiler.Metadata
             Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
             MetadataRecord parentRecord = HandleType(containingType);
             TypeReference parentReferenceRecord = parentRecord as TypeReference;
-            
+
             if (parentReferenceRecord != null)
             {
                 // Easy case - parent type doesn't have a definition record.
@@ -377,7 +376,7 @@ namespace ILCompiler.Metadata
                 => entity.GetNestedTypes().GetEnumerator().MoveNext();
         }
 
-        private TypeAttributes GetTypeAttributes(Cts.MetadataType type)
+        private static TypeAttributes GetTypeAttributes(Cts.MetadataType type)
         {
             TypeAttributes result;
 

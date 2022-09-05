@@ -13,7 +13,7 @@ namespace System.Threading.RateLimiting
     /// </summary>
     public sealed class TokenBucketRateLimiter : ReplenishingRateLimiter
     {
-        private int _tokenCount;
+        private double _tokenCount;
         private int _queueCount;
         private long _lastReplenishmentTick;
         private long? _idleSince;
@@ -22,6 +22,7 @@ namespace System.Threading.RateLimiting
         private long _failedLeasesCount;
         private long _successfulLeasesCount;
 
+        private readonly double _fillRate;
         private readonly Timer? _renewTimer;
         private readonly TokenBucketRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -76,6 +77,7 @@ namespace System.Threading.RateLimiting
             };
 
             _tokenCount = options.TokenLimit;
+            _fillRate = (double)options.TokensPerPeriod / options.ReplenishmentPeriod.Ticks;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
 
@@ -91,7 +93,7 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
             return new RateLimiterStatistics()
             {
-                CurrentAvailablePermits = _tokenCount,
+                CurrentAvailablePermits = (long)_tokenCount,
                 CurrentQueuedCount = _queueCount,
                 TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
                 TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
@@ -210,7 +212,7 @@ namespace System.Threading.RateLimiting
 
         private RateLimitLease CreateFailedTokenLease(int tokenCount)
         {
-            int replenishAmount = tokenCount - _tokenCount + _queueCount;
+            int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
             // if TokensPerPeriod is larger than the replenishAmount needed then it would be 0
             Debug.Assert(_options.TokensPerPeriod > 0);
@@ -278,7 +280,7 @@ namespace System.Threading.RateLimiting
             limiter!.ReplenishInternal(nowTicks);
         }
 
-        // Used in tests that test behavior with specific time intervals
+        // Used in tests to avoid dealing with real time
         private void ReplenishInternal(long nowTicks)
         {
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
@@ -289,37 +291,35 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks)
+                if (_tokenCount == _options.TokenLimit)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                double add;
 
-                int availablePermits = _tokenCount;
-                TokenBucketRateLimiterOptions options = _options;
-                int maxPermits = options.TokenLimit;
-                int resourcesToAdd;
-
-                if (availablePermits < maxPermits)
+                // Trust the timer to be close enough to when we want to replenish, this avoids issues with Timer jitter where it might be .99 seconds instead of 1, and 1.1 seconds the next time etc.
+                if (_options.AutoReplenishment)
                 {
-                    resourcesToAdd = Math.Min(options.TokensPerPeriod, maxPermits - availablePermits);
+                    add = _options.TokensPerPeriod;
                 }
                 else
                 {
-                    // All tokens available, nothing to do
-                    return;
+                    add = _fillRate * (nowTicks - _lastReplenishmentTick) * TickFrequency;
                 }
+
+                _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);
+
+                _lastReplenishmentTick = nowTicks;
 
                 // Process queued requests
                 Deque<RequestRegistration> queue = _queue;
 
-                _tokenCount += resourcesToAdd;
                 Debug.Assert(_tokenCount <= _options.TokenLimit);
                 while (queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
-                          options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                          _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
@@ -327,7 +327,7 @@ namespace System.Threading.RateLimiting
                     {
                         // Request can be fulfilled
                         nextPendingRequest =
-                            options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                             ? queue.DequeueHead()
                             : queue.DequeueTail();
 

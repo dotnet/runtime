@@ -190,10 +190,11 @@ CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDis
 CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
                                                                        // disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)       // Dump inline compiler phases
+CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)      // Display native code when any register spilling occurs
+CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -561,7 +562,9 @@ CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo d
 CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
-#endif // debug
+CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
+                                                                                     // for some methods.
+#endif                                                                               // debug
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)

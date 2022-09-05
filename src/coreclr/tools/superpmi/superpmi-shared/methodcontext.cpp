@@ -1241,7 +1241,14 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, jitflags->GetFlagsRaw());
+
+    uint64_t *raw = jitflags->GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = jitflags->GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        printf("%016llX", raw[i]);
+    }
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -6455,27 +6462,33 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 }
 
 void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
-                                                    CORINFO_CLASS_HANDLE result,
-                                                    unsigned             index)
+                                                    unsigned             index,
+                                                    CORINFO_CLASS_HANDLE result)
 {
     if (GetTypeInstantiationArgument == nullptr)
-        GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetTypeInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
     DWORDLONG value = CastHandle(result);
     GetTypeInstantiationArgument->Add(key, value);
     DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
 }
-void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
     GetTypeInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
 
     int itemIndex = -1;
     if (GetTypeInstantiationArgument != nullptr)
@@ -7001,10 +7014,19 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     len -= t;
 
     // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw());
     buff += t;
     len -= t;
+
+    uint64_t *raw = corJitFlags.GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = corJitFlags.GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        t = sprintf_s(buff, len, " %016llX", raw[i]);
+        buff += t;
+        len -= t;
+    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
