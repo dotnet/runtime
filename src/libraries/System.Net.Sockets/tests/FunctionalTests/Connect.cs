@@ -199,6 +199,26 @@ namespace System.Net.Sockets.Tests
                 }
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
+    }
+
+    public sealed class ConnectSync : Connect<SocketHelperArraySync>
+    {
+        public ConnectSync(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
+    {
+        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectApm : Connect<SocketHelperApm>
+    {
+        public ConnectApm(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectTask : Connect<SocketHelperTask>
+    {
+        public ConnectTask(ITestOutputHelper output) : base(output) {}
 
         [OuterLoop]
         [Fact]
@@ -221,26 +241,6 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
-    }
-
-    public sealed class ConnectSync : Connect<SocketHelperArraySync>
-    {
-        public ConnectSync(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
-    {
-        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class ConnectApm : Connect<SocketHelperApm>
-    {
-        public ConnectApm(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class ConnectTask : Connect<SocketHelperTask>
-    {
-        public ConnectTask(ITestOutputHelper output) : base(output) {}
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
