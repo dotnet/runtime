@@ -247,7 +247,7 @@ namespace System.Net.WebSockets
         private static HttpMessageInvoker SetupInvoker(ClientWebSocketOptions options, out bool disposeInvoker)
         {
             // Create the invoker for this request and populate it with all of the options.
-            // If the options are compabible, try to reuse a shared invoker.
+            // If the options are compatible, reuse a shared invoker.
             if (options.AreCompatibleWithCustomInvoker())
             {
                 disposeInvoker = false;
