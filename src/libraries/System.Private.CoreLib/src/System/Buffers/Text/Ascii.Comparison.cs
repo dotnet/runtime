@@ -22,6 +22,44 @@ namespace System.Buffers.Text
 {
     public static partial class Ascii
     {
+        public static bool TryGetHashCode(ReadOnlySpan<char> value, out int hashCode)
+        {
+            if (!IsAscii(value))
+            {
+                hashCode = 0;
+                return false;
+            }
+
+            ulong seed = Marvin.DefaultSeed;
+            hashCode = Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), (uint)value.Length * 2, (uint)seed, (uint)(seed >> 32));
+            return true;
+        }
+
+        public static bool TryGetHashCodeIgnoreCase(ReadOnlySpan<char> value, out int hashCode)
+        {
+            ulong seed = Marvin.DefaultSeed;
+            hashCode = Marvin.ComputeHash32OrdinalIgnoreCase(ref MemoryMarshal.GetReference(value), value.Length, (uint)seed, (uint)(seed >> 32), out bool nonAsciiFound, stopOnNonAscii: true);
+            return !nonAsciiFound;
+        }
+
+        public static int GetHashCode(ReadOnlySpan<char> value)
+        {
+            if (!TryGetHashCode(value, out int hashCode))
+            {
+                ThrowNonAsciiFound();
+            }
+            return hashCode;
+        }
+
+        public static int GetHashCodeIgnoreCase(ReadOnlySpan<char> value)
+        {
+            if (!TryGetHashCodeIgnoreCase(value, out int hashCode))
+            {
+                ThrowNonAsciiFound();
+            }
+            return hashCode;
+        }
+
         public static bool Equals(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
             => left.Length == right.Length && Equals<SkipChecks>(right, left) == EqualsResult.Match;
 

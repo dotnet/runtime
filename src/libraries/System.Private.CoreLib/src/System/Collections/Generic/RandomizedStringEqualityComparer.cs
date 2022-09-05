@@ -92,7 +92,7 @@ namespace System.Collections.Generic
                 return Marvin.ComputeHash32OrdinalIgnoreCase(
                     ref obj.GetRawStringData(),
                     obj.Length,
-                    _seed.p0, _seed.p1);
+                    _seed.p0, _seed.p1, out _);
             }
         }
     }

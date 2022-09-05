@@ -15,7 +15,9 @@ namespace System
         /// Compute a Marvin OrdinalIgnoreCase hash and collapse it into a 32-bit hash.
         /// n.b. <paramref name="count"/> is specified as char count, not byte count.
         /// </summary>
-        public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1)
+        /// <remarks>Additional <paramref name="nonAsciiFound"/> is needed as it's impossible to distinguish
+        /// whether method returned 0 because it found some non-ASCII char or whether it calculated such hashcode.</remarks>
+        public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1, out bool nonAsciiFound, bool stopOnNonAscii = false)
         {
             uint ucount = (uint)count; // in chars
             nuint byteOffset = 0; // in bytes
@@ -71,10 +73,18 @@ namespace System
             Block(ref p0, ref p1);
             Block(ref p0, ref p1);
 
+            nonAsciiFound = false;
             return (int)(p1 ^ p0);
 
         NotAscii:
             Debug.Assert(ucount <= int.MaxValue); // this should fit into a signed int
+
+            nonAsciiFound = true;
+            if (stopOnNonAscii)
+            {
+                return 0;
+            }
+
             return ComputeHash32OrdinalIgnoreCaseSlow(ref Unsafe.AddByteOffset(ref data, byteOffset), (int)ucount, p0, p1);
         }
 
