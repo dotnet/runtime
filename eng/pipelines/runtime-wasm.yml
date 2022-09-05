@@ -19,3 +19,18 @@ jobs:
   parameters:
     isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
     isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Run AOT tests with SIMD enabled
+- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    nameSuffix: _SIMD_AOT
+    isExtraPlatformsBuild: false
+    isWasmOnlyBuild: true
+    extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
+    extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true /p:WasmEnableSIMD=true
+    runSmokeOnlyArg: ''
+    alwaysRun: true
+    scenarios:
+      - WasmTestOnNodeJS
