@@ -1,0 +1,27 @@
+# This pipeline is meant to be run manually. It contains
+# jobs that exercise extra/optional features for wasm, eg. SIMD
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+# Evaluate paths
+- template: /eng/pipelines/common/evaluate-default-paths.yml
+
+# Run AOT tests with SIMD enabled
+- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    nameSuffix: _SIMD_AOT
+    isExtraPlatformsBuild: false
+    isWasmOnlyBuild: true
+    extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
+    extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true /p:WasmEnableSIMD=true
+    runSmokeOnlyArg: ''
+    alwaysRun: true
+    scenarios:
+      - WasmTestOnNodeJS
