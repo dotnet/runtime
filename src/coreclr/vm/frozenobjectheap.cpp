@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-
 #include "frozenobjectheap.h"
-#include "memorypool.h"
-
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_CurrentHeap(nullptr)

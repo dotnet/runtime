@@ -497,18 +497,18 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
     bool isFrozen = false;
     STRINGREF strObj = AllocateStringObject(pStringData, preferFrozenObjHeap, &isFrozen);
-    GCPROTECT_BEGIN(strObj)
+    if (isFrozen)
     {
-        if (isFrozen)
-        {
-            _ASSERT(preferFrozenObjHeap);
-            StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
-            m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
-            pEntry.SuppressRelease();
-            pRet = pEntry;
-            _ASSERT(pRet->IsStringFrozen());
-        }
-        else
+        _ASSERT(preferFrozenObjHeap);
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
+        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+        _ASSERT(pRet->IsStringFrozen());
+    }
+    else
+    {
+        GCPROTECT_BEGIN(strObj)
         {
             // If it's not frozen we need to gc allocate a pinned handle to the non-pinned string object
             PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
@@ -524,8 +524,8 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
             pEntry.SuppressRelease();
             pRet = pEntry;
         }
+        GCPROTECT_END();
     }
-    GCPROTECT_END();
 
 #ifdef LOGGING
     LogStringLiteral("added", pStringData);
@@ -585,9 +585,12 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
         }
 #endif
 
-        // Release the object handle that the entry was using.
-        STRINGREF *pObjRef = pEntry->GetStringObject();
-        m_PinnedHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
+        if (pEntry->IsStringFrozen())
+        {
+            // Release the object handle that the entry was using.
+            STRINGREF *pObjRef = pEntry->GetStringObject();
+            m_PinnedHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
+        }
     }
 
     // We do not delete the StringLiteralEntry itself that will be done in the
