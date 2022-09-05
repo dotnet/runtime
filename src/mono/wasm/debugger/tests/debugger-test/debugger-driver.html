@@ -29,7 +29,12 @@
 		};
 
 		async function getAssemblyExports(assemblyName) {
-			return App.export_table[assemblyName] = await App.runtime.getAssemblyExports(assemblyName);
+			try {
+				return App.export_table[assemblyName] = await App.runtime.getAssemblyExports(assemblyName);
+			} catch (e) {
+				console.log(e);
+				return null;
+			}
 		}
 
 		function get_exported_method(assemblyName, methodName) {
