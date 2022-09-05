@@ -7111,9 +7111,13 @@ namespace System.Buffers.Text
         public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
         public static bool IsAscii(byte value) { throw null; }
         public static bool IsAscii(char value) { throw null; }
+        public static bool TryGetHashCode(System.ReadOnlySpan<byte> value, out int hashCode) { throw null; }
         public static bool TryGetHashCode(System.ReadOnlySpan<char> value, out int hashCode) { throw null; }
+        public static bool TryGetHashCodeIgnoreCase(System.ReadOnlySpan<byte> value, out int hashCode) { throw null; }
         public static bool TryGetHashCodeIgnoreCase(System.ReadOnlySpan<char> value, out int hashCode) { throw null; }
+        public static int GetHashCode(System.ReadOnlySpan<byte> value) { throw null; }
         public static int GetHashCode(System.ReadOnlySpan<char> value) { throw null; }
+        public static int GetHashCodeIgnoreCase(System.ReadOnlySpan<byte> value) { throw null; }
         public static int GetHashCodeIgnoreCase(System.ReadOnlySpan<char> value) { throw null; }
         public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
         public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }

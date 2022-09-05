@@ -22,6 +22,19 @@ namespace System.Buffers.Text
 {
     public static partial class Ascii
     {
+        public static bool TryGetHashCode(ReadOnlySpan<byte> value, out int hashCode)
+        {
+            if (!IsAscii(value))
+            {
+                hashCode = 0;
+                return false;
+            }
+
+            ulong seed = Marvin.DefaultSeed;
+            hashCode = Marvin.ComputeHash32(ref MemoryMarshal.GetReference(value), (uint)value.Length, (uint)seed, (uint)(seed >> 32));
+            return true;
+        }
+
         public static bool TryGetHashCode(ReadOnlySpan<char> value, out int hashCode)
         {
             if (!IsAscii(value))
@@ -35,6 +48,12 @@ namespace System.Buffers.Text
             return true;
         }
 
+        public static bool TryGetHashCodeIgnoreCase(ReadOnlySpan<byte> value, out int hashCode)
+        {
+            ulong seed = Marvin.DefaultSeed;
+            return Marvin.TryComputeHash32ForAsciiIgnoreCase(ref MemoryMarshal.GetReference(value), value.Length, (uint)seed, (uint)(seed >> 32), out hashCode);
+        }
+
         public static bool TryGetHashCodeIgnoreCase(ReadOnlySpan<char> value, out int hashCode)
         {
             ulong seed = Marvin.DefaultSeed;
@@ -42,9 +61,27 @@ namespace System.Buffers.Text
             return !nonAsciiFound;
         }
 
+        public static int GetHashCode(ReadOnlySpan<byte> value)
+        {
+            if (!TryGetHashCode(value, out int hashCode))
+            {
+                ThrowNonAsciiFound();
+            }
+            return hashCode;
+        }
+
         public static int GetHashCode(ReadOnlySpan<char> value)
         {
             if (!TryGetHashCode(value, out int hashCode))
+            {
+                ThrowNonAsciiFound();
+            }
+            return hashCode;
+        }
+
+        public static int GetHashCodeIgnoreCase(ReadOnlySpan<byte> value)
+        {
+            if (!TryGetHashCodeIgnoreCase(value, out int hashCode))
             {
                 ThrowNonAsciiFound();
             }
