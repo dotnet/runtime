@@ -263,10 +263,9 @@ public partial class Math
         OuterMethod();
     }
 
-    [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task<int> MethodWithDelegatesAsyncTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task MethodWithDelegatesAsyncTest()
     {
         await new Math().MethodWithDelegatesAsync();
-        return 0;
     }
 
     async System.Threading.Tasks.Task MethodWithDelegatesAsync()
