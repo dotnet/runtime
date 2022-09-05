@@ -138,12 +138,11 @@ private:
     }
 
     StringLiteralEntry(EEStringData *pStringData, STRINGREF frozenStringObj)
-    : m_FrozenStringObj(frozenStringObj), m_dwRefCount(1)
+    : m_FrozenStringObj(frozenStringObj), m_dwRefCount(1 | SLE_IS_FROZEN)
 #ifdef _DEBUG
       , m_bDeleted(FALSE)
 #endif
     {
-        SetStringFrozen();
         LIMITED_METHOD_CONTRACT;
     }
 
@@ -174,18 +173,16 @@ public:
 
         _ASSERTE (!m_bDeleted);
 
-        // We will keep the item alive forever if the refcount overflowed
-        if (IsRefCountOverflowed())
+        if (IsAlwaysAlive())
             return;
 
-        const DWORD refCount = GetRefCount() + 1;
-        if (refCount & SLE_IS_OVERFLOWED)
+        if ((GetRefCount() + 1) & SLE_IS_OVERFLOWED)
         {
-            SetRefCountOverflowed();
+            VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_OVERFLOWED);
         }
         else
         {
-            VolatileStore(&m_dwRefCount, refCount);
+            VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) + 1);
         }
     }
 #ifndef DACCESS_COMPILE
@@ -220,8 +217,7 @@ public:
         }
         CONTRACTL_END;
 
-        // We will keep the item alive forever if the refcount overflowed
-        if (IsRefCountOverflowed())
+        if (IsAlwaysAlive())
             return;
 
         VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) - 1);
@@ -295,19 +291,11 @@ public:
         return VolatileLoad(&m_dwRefCount) & SLE_IS_FROZEN;
     }
 
-    void SetStringFrozen()
+    bool IsAlwaysAlive()
     {
-        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_FROZEN);
-    }
-
-    bool IsRefCountOverflowed()
-    {
-        return VolatileLoad(&m_dwRefCount) & SLE_IS_OVERFLOWED;
-    }
-
-    void SetRefCountOverflowed()
-    {
-        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_OVERFLOWED);
+        // If string literal is either frozen or its counter overflowed
+        // we'll keep it always alive
+        return VolatileLoad(&m_dwRefCount) & (SLE_IS_OVERFLOWED | SLE_IS_FROZEN);
     }
 
 private:

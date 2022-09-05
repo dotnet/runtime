@@ -883,7 +883,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIs
     const SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
     _ASSERTE(totalSize > cchStringLength);
 
-    if (preferFrozenHeap)
+    if (preferFrozenHeap && cchStringLength > 0)
     {
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         orString = static_cast<StringObject*>(foh->AllocateObject(g_pStringClass, totalSize));

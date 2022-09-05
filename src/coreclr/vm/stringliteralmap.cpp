@@ -495,33 +495,37 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
     StringLiteralEntry *pRet;
 
-    // Create the COM+ string object.
     bool isFrozen = false;
     STRINGREF strObj = AllocateStringObject(pStringData, preferFrozenObjHeap, &isFrozen);
-
-    if (isFrozen)
+    GCPROTECT_BEGIN(strObj)
     {
-        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
-        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
-        pEntry.SuppressRelease();
-        pRet = pEntry;
-    }
-    else
-    {
-        // If it's not frozen we need to gc allocate a pinned handle to the non-pinned string object
-        PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable, 1);
+        if (isFrozen)
+        {
+            _ASSERT(preferFrozenObjHeap);
+            StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
+            m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+            pEntry.SuppressRelease();
+            pRet = pEntry;
+            _ASSERT(pRet->IsStringFrozen());
+        }
+        else
+        {
+            // If it's not frozen we need to gc allocate a pinned handle to the non-pinned string object
+            PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
 
-        // Allocate a handle for the string.
-        SetObjectReference(pStrObj[0], strObj);
+            // Allocate a handle for the string.
+            SetObjectReference(pStrObj[0], strObj);
 
-        // Allocate the StringLiteralEntry.
-        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
-        pStrObj.SuppressRelease();
-        // Insert the handle to the string into the hash table.
-        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
-        pEntry.SuppressRelease();
-        pRet = pEntry;
+            // Allocate the StringLiteralEntry.
+            StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
+            pStrObj.SuppressRelease();
+            // Insert the handle to the string into the hash table.
+            m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+            pEntry.SuppressRelease();
+            pRet = pEntry;
+        }
     }
+    GCPROTECT_END();
 
 #ifdef LOGGING
     LogStringLiteral("added", pStringData);
@@ -646,12 +650,10 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     CONTRACTL_END;
 
     _ASSERTE (pEntry->GetRefCount() == 0);
+    _ASSERTE (!pEntry->IsStringFrozen());
 
 #ifdef _DEBUG
-    if (!pEntry->IsStringFrozen())
-    {
-        memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
-    }
+    memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
     pEntry->m_bDeleted = TRUE;
 #endif
 
