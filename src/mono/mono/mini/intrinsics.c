@@ -2052,7 +2052,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib && 
 		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) || 
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
-		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated") || !strcmp (cmethod->name, "get_IsSupported")) {
+		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
