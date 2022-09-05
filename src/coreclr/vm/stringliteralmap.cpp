@@ -652,13 +652,20 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     }
     CONTRACTL_END;
 
-    _ASSERTE (pEntry->GetRefCount() == 0);
-    _ASSERTE (!pEntry->IsStringFrozen());
-
+    if (pEntry->IsStringFrozen())
+    {
 #ifdef _DEBUG
-    memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
-    pEntry->m_bDeleted = TRUE;
+        pEntry->m_bDeleted = TRUE;
 #endif
+    }
+    else
+    {
+       _ASSERTE (pEntry->GetRefCount() == 0);
+#ifdef _DEBUG
+        memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
+        pEntry->m_bDeleted = TRUE;
+#endif
+    }
 
     // The free list needs protection from the m_HashTableCrstGlobal
     pEntry->m_pNext = s_FreeEntryList;
