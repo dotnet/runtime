@@ -655,6 +655,7 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     if (pEntry->IsStringFrozen())
     {
 #ifdef _DEBUG
+        memset (&pEntry->m_FrozenStringObj, 0xc, sizeof(pEntry->m_FrozenStringObj));
         pEntry->m_bDeleted = TRUE;
 #endif
     }
