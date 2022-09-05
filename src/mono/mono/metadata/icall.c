@@ -2161,31 +2161,9 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			MonoGenericClass *gclass = type->data.generic_class;
 			g_assert (!gclass->context.class_inst->is_open);
 
-			if (mono_class_is_nullable (mono_class_from_mono_type_internal (type))) {
-				MonoClass *nklass = mono_class_from_mono_type_internal (type);
-
-				/*
-				 * Convert the boxed vtype into a Nullable structure.
-				 * This is complicated by the fact that Nullables have
-				 * a variable structure.
-				 */
-				MonoObjectHandle nullable = mono_object_new_handle (nklass, error);
-				return_if_nok (error);
-
-				MonoGCHandle nullable_gchandle = 0;
-				guint8 *nval = (guint8*)mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
-				mono_nullable_init_from_handle (nval, value, nklass);
-
-				isref = FALSE;
-				value_gchandle = nullable_gchandle;
-				v = (gchar*)nval;
-			}
-			else {
-				isref = !m_class_is_valuetype (gclass->container_class);
-				if (!isref && !MONO_HANDLE_IS_NULL (value)) {
-					v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
-				};
-			}
+			isref = !m_class_is_valuetype (gclass->container_class);
+			if (!isref && !MONO_HANDLE_IS_NULL (value))
+				v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
 			break;
 		}
 		default:
