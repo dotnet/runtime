@@ -2919,7 +2919,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 return WALK_CONTINUE;
             }
 
-            if (offset != eeGetEEInfo()->offsetOfDelegateFirstTarget)
+            if (offset != static_cast<ssize_t>(eeGetEEInfo()->offsetOfDelegateFirstTarget))
             {
                 return WALK_CONTINUE;
             }
