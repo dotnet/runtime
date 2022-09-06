@@ -268,6 +268,12 @@ namespace System.Security.Cryptography
         public abstract void SetHashAlgorithm(string strName);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
+    public sealed partial class AuthenticationTagMismatchException : System.Security.Cryptography.CryptographicException
+    {
+        public AuthenticationTagMismatchException() { }
+        public AuthenticationTagMismatchException(string? message) { }
+        public AuthenticationTagMismatchException(string? message, System.Exception? inner) { }
+    }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]

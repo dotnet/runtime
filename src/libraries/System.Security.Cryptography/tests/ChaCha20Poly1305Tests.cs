@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests
                 additionalData[0] ^= 1;
 
                 byte[] decrypted = new byte[dataLength];
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
             }
         }
@@ -271,7 +271,7 @@ namespace System.Security.Cryptography.Tests
 
                 tag[0] ^= 1;
 
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(nonce, data, tag, data));
                 Assert.Equal(new byte[data.Length], data);
             }
@@ -310,7 +310,7 @@ namespace System.Security.Cryptography.Tests
                 tag[0] ^= 1;
 
                 byte[] plaintext = RandomNumberGenerator.GetBytes(testCase.Plaintext.Length);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }

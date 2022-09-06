@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Tests
                 additionalData[0] ^= 1;
 
                 byte[] decrypted = new byte[dataLength];
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
             }
         }
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] plaintext = new byte[testCase.Plaintext.Length];
                 RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] plaintext = new byte[testCase.Plaintext.Length];
                 RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }

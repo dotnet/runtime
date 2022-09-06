@@ -283,6 +283,7 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
     <Compile Include="System\Security\Cryptography\Base64Transforms.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.cs" />

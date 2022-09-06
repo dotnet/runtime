@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
                 out bytesWritten))
             {
                 CryptographicOperations.ZeroMemory(plaintext);
-                throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                throw new AuthenticationTagMismatchException();
             }
 
             plaintextBytesWritten += bytesWritten;

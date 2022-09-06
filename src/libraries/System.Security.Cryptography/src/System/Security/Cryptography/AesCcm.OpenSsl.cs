@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
                 {
                     plaintext.Clear();
-                    throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                    throw new AuthenticationTagMismatchException();
                 }
 
                 if (plaintextBytesWritten != plaintext.Length)
