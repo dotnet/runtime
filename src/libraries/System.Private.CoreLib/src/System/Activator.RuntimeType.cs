@@ -126,7 +126,7 @@ namespace System
             // Issues IL2026 warning.
             Type? type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
-            //Issues IL2072 warning.
+            // Issues IL2072 warning.
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 
             return o != null ? new ObjectHandle(o) : null;

@@ -117,7 +117,8 @@ internal sealed class DtcProxyShimFactory
             _transactionDispenser = localDispenser;
             whereabouts = tmpWhereabouts;
 
-            [UnconditionalSuppressMessage("Trimming", "IL2050", Justification = "Leave me alone")]
+            [UnconditionalSuppressMessage("Trimming", "IL2050",
+                Justification = "The PInvoke has object/interface typed parameters which are potentially trim incompatible, but in this case they're OK")]
             static void DtcGetTransactionManagerExWLocal(string? pszHost, string? pszTmName, in Guid riid, int grfOptions, object? pvConfigPararms, out ITransactionDispenser ppvObject)
             {
                 DtcGetTransactionManagerExW(pszHost, pszTmName, riid, grfOptions, pvConfigPararms, out ppvObject);

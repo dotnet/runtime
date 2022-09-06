@@ -71,7 +71,9 @@ namespace System.ComponentModel
         private static readonly Type[] s_skipInterfaceAttributeList = InitializeSkipInterfaceAttributeList();
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2121:RedundantSuppression",
-            Justification = "The suppression is necessary when the feature is turned on")]
+            Justification = "Removal of the attributes depends on the System.Runtime.InteropServices.BuiltInComInterop.IsSupported feature switch." +
+            "Building with feature switch enabled will not trigger attribute removal making the suppression unnecessary." +
+            "When disabled, the attributes are removed and the suppression is necessary.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2045:AttributeRemoval",
             Justification = "The ComVisibleAttribute is marked for removal and it's referenced here. Since this array" +
                             "contains only attributes which are going to be ignored, removing such attribute" +

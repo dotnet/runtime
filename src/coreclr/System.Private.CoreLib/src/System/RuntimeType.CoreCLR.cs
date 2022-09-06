@@ -3929,7 +3929,6 @@ namespace System
                     }
 
                     // fast path??
-                    // IL2082
                     instance = CreateInstanceLocal(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else

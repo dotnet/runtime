@@ -126,33 +126,21 @@ namespace System.Linq
             // we cannot use the expression tree in a context which has only execution
             // permissions.  We should endeavour to translate constants into
             // new constants which have public types.
-            if (t.IsGenericType && ImplementsIGrouping(t))
+            if (t.IsGenericType && t.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>)))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
             if (!t.IsNestedPrivate)
                 return t;
-            if (TryGetImplementedIEnumerable(t, out Type? enumerableOfTType))
-                return enumerableOfTType;
+            foreach (Type iType in t.GetInterfaces())
+            {
+                if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    return iType;
+            }
             if (typeof(IEnumerable).IsAssignableFrom(t))
                 return typeof(IEnumerable);
             return t;
 
-            static bool ImplementsIGrouping(Type type) =>
-                type.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>));
 
-            static bool TryGetImplementedIEnumerable(Type type, [NotNullWhen(true)] out Type? interfaceType)
-            {
-                foreach (Type iType in type.GetInterfaces())
-                {
-                    if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    {
-                        interfaceType = iType;
-                        return true;
-                    }
-                }
 
-                interfaceType = null;
-                return false;
-            }
         }
 
         private Type GetEquivalentType(Type type)

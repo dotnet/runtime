@@ -959,6 +959,7 @@ namespace System.Reflection.Emit
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+            // Suppression can be removed after https://github.com/dotnet/linker/issues/2673 is resolved.
 #pragma warning disable IL2085
             return GetEvents(DefaultBindingFlags);
 #pragma warning restore IL2085
