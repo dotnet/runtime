@@ -25,8 +25,6 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -47,11 +45,14 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="entryType"/> is not supported in the specified format.</para></exception>
         public PaxTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             _header._prefix = string.Empty;
-            _header._extendedAttributes = new Dictionary<string, string>();
 
             Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
@@ -63,9 +64,6 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -86,13 +84,17 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> or <paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="entryType"/> is not supported in the specified format.</para></exception>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(extendedAttributes);
 
             Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
@@ -101,6 +103,9 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
+        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
+        /// <para>-or-</para>
+        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para></exception>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {
@@ -111,15 +116,14 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header._extendedAttributes = new Dictionary<string, string>(paxOther.ExtendedAttributes);
+                _header.InitializeExtendedAttributesWithExisting(paxOther.ExtendedAttributes);
             }
             else
             {
-                _header._extendedAttributes = new Dictionary<string, string>();
                 if (other is GnuTarEntry gnuOther)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
+                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
+                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
                 }
             }
 
@@ -144,14 +148,7 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes
-        {
-            get
-            {
-                _header._extendedAttributes ??= new Dictionary<string, string>();
-                return _readOnlyExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
-            }
-        }
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => _readOnlyExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
@@ -162,9 +159,8 @@ namespace System.Formats.Tar
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
-            Debug.Assert(_header._extendedAttributes != null);
-            bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
-            bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
+            bool containsATime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaATime);
+            bool containsCTime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
 
             if (!containsATime || !containsCTime)
             {
@@ -172,12 +168,12 @@ namespace System.Formats.Tar
 
                 if (!containsATime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
+                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
                 }
 
                 if (!containsCTime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
+                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
                 }
             }
         }

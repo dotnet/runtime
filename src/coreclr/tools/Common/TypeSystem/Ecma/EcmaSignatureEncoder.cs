@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata;
-
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -20,7 +17,7 @@ namespace Internal.TypeSystem.Ecma
 
     public class EcmaSignatureEncoder<TEntityHandleProvider> where TEntityHandleProvider : IEntityHandleProvider
     {
-        TEntityHandleProvider _entityHandleProvider;
+        private TEntityHandleProvider _entityHandleProvider;
 
         public EcmaSignatureEncoder(TEntityHandleProvider entityHandleProvider)
         {

@@ -55,7 +55,7 @@ get_job_and_set_in_progress (SgenThreadPoolContext *context)
 static ssize_t
 find_job_in_queue (SgenThreadPoolContext *context, SgenThreadPoolJob *job)
 {
-	for (ssize_t i = 0; i < context->job_queue.next_slot; ++i) {
+	for (size_t i = 0; i < context->job_queue.next_slot; ++i) {
 		if (context->job_queue.data [i] == job)
 			return i;
 	}

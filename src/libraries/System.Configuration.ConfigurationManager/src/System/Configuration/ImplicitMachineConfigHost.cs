@@ -81,6 +81,7 @@ namespace System.Configuration
         <section name='assemblyBinding' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
         <section name='satelliteassemblies' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
         <section name='startup' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
+        <section name='system.diagnostics' type='System.Diagnostics.SystemDiagnosticsSection, System.Configuration.ConfigurationManager' allowLocation='false' />
     </configSections>
     <configProtectedData defaultProvider='RsaProtectedConfigurationProvider'>
         <providers>

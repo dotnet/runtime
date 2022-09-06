@@ -953,7 +953,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(initialCount, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [InlineData(0)]
         [InlineData(10)]
         public void DebuggerAttributes_Success(int count)
@@ -966,7 +966,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(c, items.Cast<int>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerTypeProxy_Ctor_NullArgument_Throws()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();

@@ -29,15 +29,7 @@ internal static partial class Interop
         public ApplicationProtocolNegotiationExt ProtoNegoExt;
         public byte ProtocolIdSize;
         public fixed byte ProtocolId[MaxProtocolIdSize];
-        public ReadOnlySpan<byte> Protocol
-        {
-            get
-            {
-                fixed (byte* pid = ProtocolId)
-                {
-                    return new ReadOnlySpan<byte>(pid, ProtocolIdSize);
-                }
-            }
-        }
+        public ReadOnlySpan<byte> Protocol =>
+            MemoryMarshal.CreateReadOnlySpan(ref ProtocolId[0], ProtocolIdSize);
     }
 }

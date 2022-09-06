@@ -593,8 +593,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
     if (funcHasColdSection)
     {
-        assert(!isFunclet); // TODO-CQ: support hot/cold splitting with EH
-
         emitLocation* startLoc;
         emitLocation* endLoc;
         unwindGetFuncLocations(func, false, &startLoc, &endLoc);
@@ -1608,20 +1606,6 @@ void UnwindFragmentInfo::Allocate(
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
     UNATIVE_OFFSET codeSize;
-
-// We don't support hot/cold splitting with EH, so if there is cold code, this
-// better not be a funclet!
-// TODO-CQ: support funclets in cold code
-#ifdef DEBUG
-    if (JitConfig.JitFakeProcedureSplitting() && (pColdCode != NULL))
-    {
-        noway_assert(isHotCode && (funKind == CORJIT_FUNC_ROOT));
-    }
-    else
-#endif // DEBUG
-    {
-        noway_assert(isHotCode || (funKind == CORJIT_FUNC_ROOT));
-    }
 
     // Compute the final size, and start and end offsets of the fragment
 

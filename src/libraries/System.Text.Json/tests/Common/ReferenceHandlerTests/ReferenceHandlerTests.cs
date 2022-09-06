@@ -242,9 +242,6 @@ namespace System.Text.Json.Serialization.Tests
         public class DictionaryWithGenericCycle : Dictionary<string, DictionaryWithGenericCycle> { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task DictionaryLoop()
         {
             DictionaryWithGenericCycle root = new DictionaryWithGenericCycle();
@@ -261,9 +258,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task DictionaryPreserveDuplicateDictionaries()
         {
             DictionaryWithGenericCycle root = new DictionaryWithGenericCycle();
@@ -298,9 +292,6 @@ namespace System.Text.Json.Serialization.Tests
         public class DictionaryWithGenericCycleWithinList : Dictionary<string, List<DictionaryWithGenericCycleWithinList>> { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task DictionaryArrayLoop()
         {
             DictionaryWithGenericCycleWithinList root = new DictionaryWithGenericCycleWithinList();
@@ -316,9 +307,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task DictionaryPreserveDuplicateArrays()
         {
             DictionaryWithGenericCycleWithinList root = new DictionaryWithGenericCycleWithinList();
@@ -449,9 +437,6 @@ namespace System.Text.Json.Serialization.Tests
         public class ListWithGenericCycle : List<ListWithGenericCycle> { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task ArrayLoop()
         {
             ListWithGenericCycle root = new ListWithGenericCycle();
@@ -518,9 +503,6 @@ namespace System.Text.Json.Serialization.Tests
         public class ListWithGenericCycleWithinDictionary : List<Dictionary<string, ListWithGenericCycleWithinDictionary>> { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task ArrayDictionaryLoop()
         {
             ListWithGenericCycleWithinDictionary root = new ListWithGenericCycleWithinDictionary();
@@ -536,9 +518,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task ArrayPreserveDuplicateDictionaries()
         {
             ListWithGenericCycleWithinDictionary root = new ListWithGenericCycleWithinDictionary

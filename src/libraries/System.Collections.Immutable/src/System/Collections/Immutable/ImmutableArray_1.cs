@@ -449,6 +449,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
+        /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange<TDerived>(TDerived[] items) where TDerived : T
@@ -493,6 +494,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
+        /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
@@ -735,10 +737,7 @@ namespace System.Collections.Immutable
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndices == null)
-                    {
-                        removeIndices = new List<int>();
-                    }
+                    removeIndices ??= new List<int>();
 
                     removeIndices.Add(i);
                 }
@@ -809,10 +808,7 @@ namespace System.Collections.Immutable
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
             {
-                if (comparer == null)
-                {
-                    comparer = Comparer<T>.Default;
-                }
+                comparer ??= Comparer<T>.Default;
 
                 // Avoid copying the entire array when the array is already sorted.
                 bool outOfOrder = false;

@@ -58,6 +58,15 @@ namespace System.Net.Security
 
         /// <summary>Authentication token was identfied as duplicate, old, or out of expected sequence.</summary>
         /// <remarks>Maps to GSS_S_DUPLICATE_TOKEN, GSS_S_OLD_TOKEN, GSS_S_UNSEQ_TOKEN, and GSS_S_GAP_TOKEN status bits in GSSAPI when failure was indicated.</remarks>
-        OutOfSequence
+        OutOfSequence,
+
+        /// <status>Validation of RequiredProtectionLevel against negotiated protection level failed.</status>
+        SecurityQosFailed,
+
+        /// <status>Validation of the target name failed</status>
+        TargetUnknown,
+
+        /// <status>Validation of the impersonation level failed</status>
+        ImpersonationValidationFailed,
     }
 }

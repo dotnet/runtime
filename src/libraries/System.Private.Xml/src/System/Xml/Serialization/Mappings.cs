@@ -100,14 +100,14 @@ namespace System.Xml.Serialization
             set { _topLevelInSchema = value; }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeName(string? name)
         {
             if (name == null || name.Length == 0) return name;
             return XmlConvert.EncodeLocalName(name);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeQName(string? name)
         {
             if (name == null || name.Length == 0) return name;
@@ -122,7 +122,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? UnescapeName(string? name)
         {
             return XmlConvert.DecodeName(name);
@@ -514,24 +514,8 @@ namespace System.Xml.Serialization
             get { return _baseMapping != null && Members != null; }
         }
 
-        internal NameTable LocalElements
-        {
-            get
-            {
-                if (_elements == null)
-                    _elements = new NameTable();
-                return _elements;
-            }
-        }
-        internal NameTable LocalAttributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new NameTable();
-                return _attributes;
-            }
-        }
+        internal NameTable LocalElements => _elements ??= new NameTable();
+        internal NameTable LocalAttributes => _attributes ??= new NameTable();
         object? INameScope.this[string? name, string? ns]
         {
             get
@@ -593,13 +577,8 @@ namespace System.Xml.Serialization
 
         internal CodeIdentifiers Scope
         {
-            get
-            {
-                if (_scope == null)
-                    _scope = new CodeIdentifiers();
-                return _scope;
-            }
-            set { _scope = value; }
+            get => _scope ??= new CodeIdentifiers();
+            set => _scope = value;
         }
 
         internal MemberMapping? FindDeclaringMapping(MemberMapping member, out StructMapping? declaringMapping, string? parent)
@@ -1295,8 +1274,7 @@ namespace System.Xml.Serialization
                 if (_getSchemaMethod != null)
                 {
                     // get the type info
-                    if (_schemas == null)
-                        _schemas = new XmlSchemaSet();
+                    _schemas ??= new XmlSchemaSet();
                     object? typeInfo = _getSchemaMethod.Invoke(null, new object[] { _schemas });
                     _xsiType = XmlQualifiedName.Empty;
 

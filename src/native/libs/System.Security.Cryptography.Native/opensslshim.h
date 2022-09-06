@@ -9,7 +9,7 @@
 #pragma once
 
 // All the openssl includes need to be here to ensure that the APIs we use
-// are overriden to be called through our function pointers.
+// are overridden to be called through our function pointers.
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/bn.h>

@@ -9,8 +9,8 @@ parameters:
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
   compositeBuildMode: false
+  useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
   stagedBuild: false
@@ -112,6 +112,13 @@ jobs:
       - name: runtimeVariantArg
         value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
 
+    - name: codeFlowEnforcementArg
+      value: ''
+
+    - ${{ if ne(parameters.useCodeFlowEnforcement, '') }}:
+      - name: codeFlowEnforcementArg
+        value: '/p:UseCodeFlowEnforcement=${{ parameters.useCodeFlowEnforcement }}'
+
     - name: crossgenArg
       value: ''
     - name: LogNamePrefix
@@ -119,15 +126,9 @@ jobs:
 
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
-      # Switch R2R to use cg2 by default
         value: 'crossgen2'
       - name: LogNamePrefix
-        value: TestRunLogs_R2R
-      - ${{ if eq(parameters.crossgen2, true) }}:
-        - name: crossgenArg
-          value: 'crossgen2'
-        - name: LogNamePrefix
-          value: TestRunLogs_R2R_CG2
+        value: TestRunLogs_R2R_CG2
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
@@ -158,8 +159,8 @@ jobs:
     # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
     # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
     #
-    # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
-    # time needed to compile the test into native code with the Crossgen compiler.
+    # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
+    # time needed to compile the test into native code with the Crossgen2 compiler.
 
     - name: timeoutPerTestInMinutes
       value: 10
@@ -168,7 +169,7 @@ jobs:
     - ${{ if in(parameters.testGroup, 'outerloop') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
-    - ${{ if eq(parameters.crossgen2, true) }}:
+    - ${{ if eq(parameters.readyToRun, true) }}:
         - name: timeoutPerTestCollectionInMinutes
           value: 90
         - name: timeoutPerTestInMinutes
@@ -179,7 +180,7 @@ jobs:
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
       - name: timeoutPerTestInMinutes
         value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
       - name: timeoutPerTestInMinutes
@@ -223,7 +224,7 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+      ${{ if eq(parameters.archType, 'arm64') }}:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200
@@ -231,7 +232,7 @@ jobs:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
-    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
+    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
       timeoutInMinutes: 510
@@ -270,7 +271,7 @@ jobs:
 
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explictly download CoreCLR for Mono
+      # We need to explicitly download CoreCLR for Mono
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(coreClrProductRootFolderPath)
@@ -301,8 +302,8 @@ jobs:
     # during product build (so that we could zip up the files in their final test location
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
-    # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    # managed test artifacts. This step also generates the final test execution scripts.
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
 
 
@@ -312,7 +313,7 @@ jobs:
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
+    # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
       displayName: Generate CORE_ROOT
@@ -377,8 +378,7 @@ jobs:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
           runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
 
@@ -415,6 +415,10 @@ jobs:
           - jitstress2_tiered
           - zapdisable
           - tailcallstress
+        ${{ if in(parameters.testGroup, 'jitstress-random') }}:
+          scenarios:
+          - jitstress_random_1
+          - jitstress_random_2
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
           scenarios:
           - jitstress_isas_incompletehwintrinsic

@@ -35,6 +35,7 @@ namespace System.Security.Cryptography
 
         public static new SHA512 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA512? Create(string hashName) => (SHA512?)CryptoConfig.CreateFromName(hashName);
 

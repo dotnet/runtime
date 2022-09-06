@@ -93,29 +93,19 @@ namespace System
         internal RuntimeType m_type;
 
         public override int GetHashCode()
-        {
-            return m_type != null ? m_type.GetHashCode() : 0;
-        }
+            => m_type?.GetHashCode() ?? 0;
 
         public override bool Equals(object? obj)
-        {
-            if (!(obj is RuntimeTypeHandle))
-                return false;
-
-            RuntimeTypeHandle handle = (RuntimeTypeHandle)obj;
-            return handle.m_type == m_type;
-        }
+            => (obj is RuntimeTypeHandle handle) && ReferenceEquals(handle.m_type, m_type);
 
         public bool Equals(RuntimeTypeHandle handle)
-        {
-            return handle.m_type == m_type;
-        }
+            => ReferenceEquals(handle.m_type, m_type);
 
-        public IntPtr Value => m_type != null ? m_type.m_handle : IntPtr.Zero;
+        public IntPtr Value => m_type?.m_handle ?? 0;
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetValueInternal(RuntimeTypeHandle handle);
+        internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
+            => handle.m_type?.GetUnderlyingNativeHandle() ?? 0;
 
         internal RuntimeTypeHandle(RuntimeType type)
         {
@@ -883,7 +873,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1195,7 +1185,6 @@ namespace System
         private object? m_d;
         private int m_b;
         private object? m_e;
-        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169
 
@@ -1236,7 +1225,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1411,8 +1400,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
@@ -1517,8 +1506,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)

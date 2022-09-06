@@ -96,7 +96,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                options ??= JsonSerializerOptions.Default;
+                options ??= s_defaultOptions;
 
                 writer.WriteStartObject();
 
@@ -138,10 +138,7 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            if (Parent != null)
-            {
-                Parent.GetPath(path, this);
-            }
+            Parent?.GetPath(path, this);
         }
 
         internal void SetItem(string propertyName, JsonNode? value)

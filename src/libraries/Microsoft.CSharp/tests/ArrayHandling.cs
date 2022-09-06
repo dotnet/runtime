@@ -116,7 +116,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
-        public void NonSZ1RArrayLenght()
+        public void NonSZ1RArrayLength()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] {23}, new[] {-2});
             Assert.Equal(23, d.Length);

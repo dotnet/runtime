@@ -7,8 +7,6 @@
 class ThreadStore;
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 class ICodeManager;
-struct StaticGcDesc;
-typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 class TypeManager;
 enum GenericVarianceType : uint8_t;
 
@@ -108,8 +106,6 @@ public:
 
     static bool Initialize(HANDLE hPalInstance);
     void Destroy();
-
-    void EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData);
 
     bool ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP);
     bool ShouldHijackLoopForGcStress(uintptr_t CallsiteIP);

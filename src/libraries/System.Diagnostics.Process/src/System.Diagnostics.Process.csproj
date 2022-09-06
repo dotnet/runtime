@@ -211,8 +211,9 @@
              Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs"
              Link="Common\System\HResults.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeThreadHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />

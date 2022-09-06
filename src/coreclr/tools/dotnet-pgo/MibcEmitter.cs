@@ -212,11 +212,44 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static int GenerateMibcFile(TypeSystemContext tsc, FileInfo outputFileName, IEnumerable<MethodProfileData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
+        // ...
+        /// <summary>
+        /// Emit a global method "MibcConfig" that will contain key-value settings in the following format:
+        ///   ldstr "key1"
+        ///   ldstr "value1"
+        ///   pop
+        ///   pop
+        ///   ldstr "key2"
+        ///   ldstr "value2"
+        ///   pop
+        ///   pop
+        ///   ...
+        /// </summary>
+        public static void GenerateConfigData(MibcConfig config, TypeSystemMetadataEmitter emitter)
+        {
+            var buffer = new BlobBuilder();
+            var il = new InstructionEncoder(buffer);
+
+            foreach (FieldInfo mibcCfgField in typeof(MibcConfig).GetFields())
+            {
+                Debug.Assert(!mibcCfgField.IsStatic && mibcCfgField.FieldType == typeof(string));
+                il.LoadString(emitter.GetUserStringHandle(mibcCfgField.Name));
+                il.LoadString(emitter.GetUserStringHandle((string)mibcCfgField.GetValue(config) ?? ""));
+                il.OpCode(ILOpCode.Pop);
+                il.OpCode(ILOpCode.Pop);
+            }
+            il.OpCode(ILOpCode.Ret);
+            emitter.AddGlobalMethod(nameof(MibcConfig), il, 8);
+        }
+
+        public static int GenerateMibcFile(MibcConfig config, TypeSystemContext tsc, FileInfo outputFileName, IEnumerable<MethodProfileData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
         {
             TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
             emitter.InjectSystemPrivateCanon();
             emitter.AllowUseOfAddGlobalMethod();
+
+            if (config != null)
+                GenerateConfigData(config, emitter);
 
             SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
             StringBuilder mibcGroupNameBuilder = new StringBuilder();

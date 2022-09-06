@@ -21,19 +21,18 @@ namespace System.Reflection.Runtime.MethodInfos
             _parameterTypes = parameterTypes;
         }
 
-        protected sealed override object? Invoke(object? thisObject, object?[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            Debug.Assert(arguments != null);
-
             // This does not handle optional parameters. None of the methods we use custom invocation for have them.
             if (!(thisObject == null && 0 != (_options & InvokerOptions.AllowNullThis)))
                 ValidateThis(thisObject, _thisType.TypeHandle);
 
-            if (arguments.Length != _parameterTypes.Length)
+            int argCount = (arguments != null) ? arguments.Length : 0;
+            if (argCount != _parameterTypes.Length)
                 throw new TargetParameterCountException();
 
-            object[] convertedArguments = new object[arguments.Length];
-            for (int i = 0; i < arguments.Length; i++)
+            object[] convertedArguments = new object[argCount];
+            for (int i = 0; i < convertedArguments.Length; i++)
             {
                 convertedArguments[i] = RuntimeAugments.CheckArgument(arguments[i], _parameterTypes[i].TypeHandle, binderBundle);
             }

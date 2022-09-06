@@ -109,11 +109,8 @@ namespace System.IO.Packaging
 
             string partZipName = GetZipItemNameFromOpcName(PackUriHelper.GetStringForPartUri(partUri));
             ZipArchiveEntry? zipArchiveEntry = _zipArchive.GetEntry(partZipName);
-            if (zipArchiveEntry != null)
-            {
-                // Case of an atomic part.
-                zipArchiveEntry.Delete();
-            }
+            // Case of an atomic part.
+            zipArchiveEntry?.Delete();
 
             //Delete the content type for this part if it was specified as an override
             _contentTypeHelper.DeleteContentType((PackUriHelper.ValidatedPartUri)partUri);
@@ -339,10 +336,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (zipArchive != null)
-                {
-                    zipArchive.Dispose();
-                }
+                zipArchive?.Dispose();
 
                 throw;
             }
@@ -701,8 +695,7 @@ namespace System.IO.Packaging
             {
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
                 // in a normalized manner using the PartUriComparer
-                if (_overrideDictionary == null)
-                    _overrideDictionary = new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
+                _overrideDictionary ??= new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
             }
 
             private void ParseContentTypesFile(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)

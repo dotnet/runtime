@@ -21,7 +21,18 @@ Example for wasm:
                           VersionBand="$(SdkBandVersion)" />
 ```
 
-- Currently, this is used only by `src/tests/BuildWasmApps/Wasm.Build.Tests`
+- Currently, this is used only by `src/mono/wasm/Wasm.Build.Tests`
+
+## Multiple runtime packs
+
+The workload depends on three runtime packs - single threaded, multithreaded, and for perf tracing. If you have a local
+runtime build, for say multithreaded, then the workload install will fail because of missing runtime pack nugets for
+the other two variants.
+
+For non-CI builds, we build the same runtime pack nuget but with the different expected names. So, essentially you get all
+the expected nugets, but they are all the same except for the name.
+
+If you have all the nugets available, and want to avoid the above behavior then set `WasmSkipMissingRuntimeBuild=true`.
 
 ## Limitations:
 

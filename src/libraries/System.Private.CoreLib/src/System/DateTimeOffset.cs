@@ -34,7 +34,7 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct DateTimeOffset
+    public readonly partial struct DateTimeOffset
         : IComparable,
           ISpanFormattable,
           IComparable<DateTimeOffset>,
@@ -320,10 +320,6 @@ namespace System
             }
             _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
-
-        // Returns a DateTimeOffset representing the current date and time. The
-        // resolution of the returned value depends on the system timer.
-        public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
         public static DateTimeOffset UtcNow
         {
@@ -1031,19 +1027,19 @@ namespace System
         public static bool operator !=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime != right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime < right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime <= right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime > right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
 

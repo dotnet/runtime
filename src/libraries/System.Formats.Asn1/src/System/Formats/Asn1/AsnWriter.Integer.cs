@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -254,9 +255,8 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.3.2
-            if (value.Length > 1)
+            if (BinaryPrimitives.TryReadUInt16BigEndian(value, out ushort bigEndianValue))
             {
-                ushort bigEndianValue = (ushort)(value[0] << 8 | value[1]);
                 const ushort RedundancyMask = 0b1111_1111_1000_0000;
                 ushort masked = (ushort)(bigEndianValue & RedundancyMask);
 
@@ -278,15 +278,23 @@ namespace System.Formats.Asn1
         // T-REC-X.690-201508 sec 8.3
         private void WriteIntegerCore(Asn1Tag tag, BigInteger value)
         {
-            // TODO: Split this for netstandard vs netcoreapp for span-perf?.
+            Debug.Assert(!tag.IsConstructed);
+            WriteTag(tag);
+
+#if NETCOREAPP2_1_OR_GREATER
+            WriteLength(value.GetByteCount());
+            // WriteLength ensures the content-space
+            value.TryWriteBytes(_buffer.AsSpan(_offset), out int bytesWritten, isBigEndian: true);
+            _offset += bytesWritten;
+#else
             byte[] encoded = value.ToByteArray();
             Array.Reverse(encoded);
 
-            Debug.Assert(!tag.IsConstructed);
-            WriteTag(tag);
             WriteLength(encoded.Length);
+            // WriteLength ensures the content-space
             Buffer.BlockCopy(encoded, 0, _buffer, _offset, encoded.Length);
             _offset += encoded.Length;
+#endif
         }
     }
 }

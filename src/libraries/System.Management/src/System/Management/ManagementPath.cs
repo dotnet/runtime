@@ -128,7 +128,7 @@ namespace System.Management
 
         //Used internally to check whether a string passed in as a namespace is indeed syntactically correct
         //for a namespace (e.g. either has "\" or "/" in it or is the special case of "root")
-        //This doesn't check for the existance of that namespace, nor does it guarrantee correctness.
+        //This doesn't check for the existence of that namespace, nor does it guarrantee correctness.
         internal static bool IsValidNamespaceSyntax(string nsPath)
         {
             if (nsPath.Length != 0)
@@ -256,9 +256,13 @@ namespace System.Management
         {
             // Test/utilize isWbemPathShared *only* on public + internal members!
             if (wmiPath == null)
+            {
                 wmiPath = CreateWbemPath(path);
+            }
             else
+            {
                 SetWbemPath(wmiPath, path);
+            }
         }
 
         private static void SetWbemPath(IWbemPath wbemPath, string path)
@@ -676,7 +680,9 @@ namespace System.Management
 
             wmiPathTmp = CreateWbemPath(nsPath);
             if (wmiPath == null)
+            {
                 wmiPath = this.CreateWbemPath("");
+            }
             else if (isWbemPathShared)
             {
                 // Check if this IWbemPath is shared among multiple managed objects.
@@ -926,7 +932,9 @@ namespace System.Management
                 int status = (int)ManagementStatus.NoError;
 
                 if (wmiPath == null)
+                {
                     wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath();
+                }
                 else if (isWbemPathShared)
                 {
                     // Check if this IWbemPath is shared among multiple managed objects.
@@ -1086,7 +1094,7 @@ namespace System.Management
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the desitnation type, this will
+        ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </summary>
         /// <param name='context'>An ITypeDescriptorContext that provides a format context.</param>

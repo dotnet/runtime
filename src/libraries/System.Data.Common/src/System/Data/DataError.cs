@@ -46,10 +46,7 @@ namespace System.Data
             }
             else
             {
-                if (_errorList == null)
-                {
-                    _errorList = new ColumnError[initialCapacity];
-                }
+                _errorList ??= new ColumnError[initialCapacity];
                 int i = IndexOf(column);
                 _errorList[i]._column = column;
                 _errorList[i]._error = error;

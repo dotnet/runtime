@@ -119,8 +119,7 @@ namespace System.DirectoryServices.AccountManagement
                         _current = null;
                         _currentForeign = null;
 
-                        if (_foreignResultSet != null)
-                            _foreignResultSet.Dispose();
+                        _foreignResultSet?.Dispose();
                         _foreignResultSet = null;
                         return true;
                     }
@@ -195,8 +194,7 @@ namespace System.DirectoryServices.AccountManagement
                             _currentFakePrincipal = null;
                             _currentForeign = null;
 
-                            if (_foreignResultSet != null)
-                                _foreignResultSet.Dispose();
+                            _foreignResultSet?.Dispose();
                             _foreignResultSet = null;
                             return true;
                         }
@@ -297,8 +295,7 @@ namespace System.DirectoryServices.AccountManagement
                         _currentFakePrincipal = null;
                         _currentForeign = foreignPrincipal;
 
-                        if (_foreignResultSet != null)
-                            _foreignResultSet.Dispose();
+                        _foreignResultSet?.Dispose();
                         _foreignResultSet = null;
                         return true;
                     }
@@ -532,8 +529,7 @@ namespace System.DirectoryServices.AccountManagement
             _foreignMembers = samBookmark.foreignMembers;
             _foreignGroups = samBookmark.foreignGroups;
 
-            if (_foreignResultSet != null)
-                _foreignResultSet.Dispose();
+            _foreignResultSet?.Dispose();
 
             _foreignResultSet = samBookmark.foreignResultSet;
             _atBeginning = samBookmark.atBeginning;

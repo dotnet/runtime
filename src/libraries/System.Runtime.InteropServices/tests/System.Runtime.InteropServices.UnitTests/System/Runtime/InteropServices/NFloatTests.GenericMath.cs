@@ -218,6 +218,21 @@ namespace System.Runtime.InteropServices.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal(0UL, ~BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+            }
+            else
+            {
+                Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal(0U, ~BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+            }
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NFloat.NegativeInfinity));
@@ -275,81 +290,81 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.NegativeInfinity, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.MinValue, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NegativeOne, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(-MinNormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(-MaxSubnormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(-NFloat.Epsilon, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NegativeZero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.NaN, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(Zero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.Epsilon, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(MaxSubnormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(MinNormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(One, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.MaxValue, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThan(NFloat.PositiveInfinity, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.NegativeInfinity, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.MinValue, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NegativeOne, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(-MinNormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(-MaxSubnormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(-NFloat.Epsilon, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NegativeZero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.NaN, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(Zero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.Epsilon, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(MaxSubnormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(MinNormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(One, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.MaxValue, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThan(NFloat.PositiveInfinity, One));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.NegativeInfinity, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.MinValue, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NegativeOne, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(-MinNormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(-MaxSubnormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(-NFloat.Epsilon, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NegativeZero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.NaN, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(Zero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.Epsilon, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(MaxSubnormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(MinNormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(One, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.MaxValue, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_GreaterThanOrEqual(NFloat.PositiveInfinity, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.NegativeInfinity, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.MinValue, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NegativeOne, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(-MinNormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(-MaxSubnormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(-NFloat.Epsilon, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NegativeZero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.NaN, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(Zero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.Epsilon, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(MaxSubnormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(MinNormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(One, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.MaxValue, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_GreaterThanOrEqual(NFloat.PositiveInfinity, One));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.NegativeInfinity, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.MinValue, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NegativeOne, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(-MinNormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(-MaxSubnormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(-NFloat.Epsilon, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NegativeZero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.NaN, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(Zero, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.Epsilon, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(MaxSubnormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(MinNormal, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(One, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.MaxValue, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThan(NFloat.PositiveInfinity, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.NegativeInfinity, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.MinValue, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NegativeOne, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(-MinNormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(-MaxSubnormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(-NFloat.Epsilon, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NegativeZero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.NaN, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(Zero, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.Epsilon, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(MaxSubnormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(MinNormal, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(One, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.MaxValue, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThan(NFloat.PositiveInfinity, One));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.NegativeInfinity, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.MinValue, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NegativeOne, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(-MinNormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(-MaxSubnormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(-NFloat.Epsilon, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NegativeZero, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.NaN, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(Zero, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.Epsilon, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(MaxSubnormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(MinNormal, One));
-            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(One, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.MaxValue, One));
-            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat>.op_LessThanOrEqual(NFloat.PositiveInfinity, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.NegativeInfinity, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.MinValue, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NegativeOne, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(-MinNormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(-MaxSubnormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(-NFloat.Epsilon, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NegativeZero, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.NaN, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(Zero, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.Epsilon, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(MaxSubnormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(MinNormal, One));
+            Assert.True(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(One, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.MaxValue, One));
+            Assert.False(ComparisonOperatorsHelper<NFloat, NFloat, bool>.op_LessThanOrEqual(NFloat.PositiveInfinity, One));
         }
 
         //
@@ -473,41 +488,41 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.NegativeInfinity, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.MinValue, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NegativeOne, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(-MinNormal, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(-MaxSubnormal, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(-NFloat.Epsilon, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NegativeZero, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.NaN, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(Zero, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.Epsilon, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(MaxSubnormal, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(MinNormal, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(One, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.MaxValue, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Equality(NFloat.PositiveInfinity, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.NegativeInfinity, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.MinValue, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NegativeOne, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(-MinNormal, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(-MaxSubnormal, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(-NFloat.Epsilon, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NegativeZero, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.NaN, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(Zero, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.Epsilon, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(MaxSubnormal, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(MinNormal, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(One, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.MaxValue, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Equality(NFloat.PositiveInfinity, One));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.NegativeInfinity, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.MinValue, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NegativeOne, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(-MinNormal, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(-MaxSubnormal, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(-NFloat.Epsilon, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NegativeZero, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.NaN, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(Zero, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.Epsilon, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(MaxSubnormal, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(MinNormal, One));
-            Assert.False(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(One, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.MaxValue, One));
-            Assert.True(EqualityOperatorsHelper<NFloat, NFloat>.op_Inequality(NFloat.PositiveInfinity, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.NegativeInfinity, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.MinValue, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NegativeOne, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(-MinNormal, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(-MaxSubnormal, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(-NFloat.Epsilon, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NegativeZero, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.NaN, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(Zero, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.Epsilon, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(MaxSubnormal, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(MinNormal, One));
+            Assert.False(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(One, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.MaxValue, One));
+            Assert.True(EqualityOperatorsHelper<NFloat, NFloat, bool>.op_Inequality(NFloat.PositiveInfinity, One));
         }
 
         //

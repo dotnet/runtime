@@ -424,10 +424,12 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-
-        bool addPreciseMappings =
-            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
+
+        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
+
+        INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
+        INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
@@ -445,12 +447,12 @@ void CodeGen::genCodeForBBlist()
                     firstMapping = false;
                 }
 
-#ifdef DEBUG
-                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                if (addRichMappings && ilOffset->gtStmtDI.IsValid())
                 {
-                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                    genAddRichIPMappingHere(ilOffset->gtStmtDI);
                 }
 
+#ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -1627,6 +1629,12 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIsCmpCompare() || tree->OperIs(GT_AND))
+        {
+            // Compares and ANDs may be contained in a conditional chain.
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {
@@ -2440,7 +2448,8 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
 
 CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 {
-    const var_types srcType      = genActualType(cast->gtGetOp1()->TypeGet());
+    GenTree* const  src          = cast->CastOp();
+    const var_types srcType      = genActualType(src);
     const bool      srcUnsigned  = cast->IsUnsigned();
     const unsigned  srcSize      = genTypeSize(srcType);
     const var_types castType     = cast->gtCastType;
@@ -2449,7 +2458,9 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     const var_types dstType      = genActualType(cast->TypeGet());
     const unsigned  dstSize      = genTypeSize(dstType);
     const bool      overflow     = cast->gtOverflow();
+    const bool      castIsLoad   = !src->isUsedFromReg();
 
+    assert(castIsLoad == src->isUsedFromMemory());
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
 
@@ -2465,7 +2476,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             // values of the castType without risk of integer overflow.
             const int castNumBits = (castSize * 8) - (castUnsigned ? 0 : 1);
             m_checkSmallIntMax    = (1 << castNumBits) - 1;
-            m_checkSmallIntMin    = (castUnsigned | srcUnsigned) ? 0 : (-m_checkSmallIntMax - 1);
+            m_checkSmallIntMin    = (castUnsigned || srcUnsigned) ? 0 : (-m_checkSmallIntMax - 1);
 
             m_extendKind    = COPY;
             m_extendSrcSize = dstSize;
@@ -2559,6 +2570,48 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
         m_extendKind    = COPY;
         m_extendSrcSize = srcSize;
+    }
+
+    if (castIsLoad)
+    {
+        const var_types srcLoadType = src->TypeGet();
+
+        switch (m_extendKind)
+        {
+            case ZERO_EXTEND_SMALL_INT: // small type/int/long -> ubyte/ushort
+                assert(varTypeIsUnsigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
+                m_extendKind    = LOAD_ZERO_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
+                break;
+
+            case SIGN_EXTEND_SMALL_INT: // small type/int/long -> byte/short
+                assert(varTypeIsSigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
+                m_extendKind    = LOAD_SIGN_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
+                break;
+
+#ifdef TARGET_64BIT
+            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
+                assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
+                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
+                m_extendSrcSize = genTypeSize(srcLoadType);
+                break;
+
+            case SIGN_EXTEND_INT: // byte/short/int -> long.
+                assert(varTypeIsSigned(srcLoadType) || (srcLoadType == TYP_INT));
+                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_SIGN_EXTEND_SMALL_INT : LOAD_SIGN_EXTEND_INT;
+                m_extendSrcSize = genTypeSize(srcLoadType);
+                break;
+#endif // TARGET_64BIT
+
+            case COPY: // long -> long, small type/int/long -> int.
+                m_extendKind    = LOAD_SOURCE;
+                m_extendSrcSize = 0;
+                break;
+
+            default:
+                unreached();
+        }
     }
 }
 

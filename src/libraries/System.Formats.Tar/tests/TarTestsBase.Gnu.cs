@@ -116,5 +116,11 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TestAccessTime, entry.AccessTime);
             Assert.Equal(TestChangeTime, entry.ChangeTime);
         }
+
+        protected void VerifyGnuTimestamps(GnuTarEntry gnu)
+        {
+            AssertExtensions.GreaterThanOrEqualTo(gnu.AccessTime, DateTimeOffset.UnixEpoch);
+            AssertExtensions.GreaterThanOrEqualTo(gnu.ChangeTime, DateTimeOffset.UnixEpoch);
+        }
     }
 }

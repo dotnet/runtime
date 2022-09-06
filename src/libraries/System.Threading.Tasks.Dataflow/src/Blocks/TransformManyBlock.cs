@@ -366,8 +366,7 @@ namespace System.Threading.Tasks.Dataflow
             // This avoids the cost of updating it once per output item (since each update requires synchronization).
             // Even if we're not bounding, we still want to determine whether the item is trusted so that we
             // can immediately dump it out once we take the lock if we're the next item.
-            IList<TOutput>? itemAsTrustedList = item as TOutput[];
-            if (itemAsTrustedList == null) itemAsTrustedList = item as List<TOutput>;
+            IList<TOutput>? itemAsTrustedList = (IList<TOutput>?)(item as TOutput[]) ?? item as List<TOutput>;
             if (itemAsTrustedList != null && isBounded)
             {
                 UpdateBoundingCountWithOutputCount(count: itemAsTrustedList.Count);

@@ -8,8 +8,11 @@ namespace System.Numerics
     public interface IBinaryNumber<TSelf>
         : IBitwiseOperators<TSelf, TSelf, TSelf>,
           INumber<TSelf>
-        where TSelf : IBinaryNumber<TSelf>
+        where TSelf : IBinaryNumber<TSelf>?
     {
+        /// <summary>Gets an instance of the binary type in which all bits are set.</summary>
+        static virtual TSelf AllBitsSet => ~TSelf.Zero;
+
         /// <summary>Determines if a value is a power of two.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a power of two; otherwise, <c>false</c>.</returns>

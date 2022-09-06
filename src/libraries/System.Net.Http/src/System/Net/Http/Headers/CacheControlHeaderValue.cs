@@ -364,17 +364,17 @@ namespace System.Net.Http.Headers
         public static CacheControlHeaderValue Parse(string? input)
         {
             int index = 0;
-            return (CacheControlHeaderValue)CacheControlHeaderParser.Parser.ParseValue(input, null, ref index);
+            return (CacheControlHeaderValue)CacheControlHeaderParser.Parser.ParseValue(input, null, ref index) ?? new CacheControlHeaderValue();
         }
 
-        public static bool TryParse(string? input, out CacheControlHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out CacheControlHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
 
             if (CacheControlHeaderParser.Parser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (CacheControlHeaderValue?)output;
+                parsedValue = (CacheControlHeaderValue?)output ?? new CacheControlHeaderValue();
                 return true;
             }
             return false;
@@ -413,11 +413,7 @@ namespace System.Net.Http.Headers
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
-            CacheControlHeaderValue? result = storeValue;
-            if (result == null)
-            {
-                result = new CacheControlHeaderValue();
-            }
+            CacheControlHeaderValue? result = storeValue ?? new CacheControlHeaderValue();
 
             if (!TrySetCacheControlValues(result, nameValueList))
             {

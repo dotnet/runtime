@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.Text;
@@ -14,19 +15,22 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
-        private readonly FieldDesc _field;
+        private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
-        
-        public FrozenObjectNode(FieldDesc field, TypePreinit.ISerializableReference data)
+        private readonly int _allocationSiteId;
+
+        public FrozenObjectNode(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
-            _field = field;
+            _owningType = owningType;
+            _allocationSiteId = allocationSiteId;
             _data = data;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenObj_")
-                .Append(nameMangler.GetMangledFieldName(_field));
+                .Append(nameMangler.GetMangledTypeName(_owningType))
+                .Append(_allocationSiteId.ToStringInvariant());
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -38,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 // The frozen object symbol points at the MethodTable portion of the object, skipping over the sync block
-                return OffsetFromBeginningOfArray + _field.Context.Target.PointerSize;
+                return OffsetFromBeginningOfArray + _owningType.Context.Target.PointerSize;
             }
         }
 
@@ -81,7 +85,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(((FrozenObjectNode)other)._field, _field);
+            var otherFrozenObjectNode = (FrozenObjectNode)other;
+            int result = comparer.Compare(otherFrozenObjectNode._owningType, _owningType);
+            if (result != 0)
+                return result;
+
+            return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
     }
 }

@@ -1553,7 +1553,7 @@ namespace System.Text.RegularExpressions.Tests
             Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
             {
                 RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
-                    chunk.Select(r => (r.Pattern, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
+                    chunk.Select(r => (r.Pattern, (CultureInfo?)null, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
             });
         }
 #endif

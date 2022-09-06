@@ -196,7 +196,7 @@ namespace System.Formats.Asn1
             }
 
             Span<byte> stackSpan = stackalloc byte[sizeof(ulong)];
-            int sizeLimit = Marshal.SizeOf(backingType);
+            int sizeLimit = GetPrimitiveIntegerSize(backingType);
             stackSpan = stackSpan.Slice(0, sizeLimit);
 
             bool read = TryReadBitString(

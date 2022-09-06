@@ -1,24 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array,System.Int32)</Target>
-    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net462/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.#ctor</Target>
-    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net462/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator.#ctor</Target>
-    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net462/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
     <Left>lib/net5.0/System.Security.Permissions.dll</Left>
@@ -31,5 +13,23 @@
     <Left>lib/netcoreapp3.1/System.Security.Permissions.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.#ctor</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array,System.Int32)</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator.#ctor</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
   </Suppression>
 </Suppressions>

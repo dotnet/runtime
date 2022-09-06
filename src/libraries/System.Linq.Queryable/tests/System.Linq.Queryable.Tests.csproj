@@ -34,6 +34,8 @@
     <Compile Include="OfTypeTests.cs" />
     <Compile Include="OrderByDescendingTests.cs" />
     <Compile Include="OrderByTests.cs" />
+    <Compile Include="OrderDescendingTests.cs" />
+    <Compile Include="OrderTests.cs" />
     <Compile Include="Queryable.cs" />
     <Compile Include="QueryFromExpressionTests.cs" />
     <Compile Include="ReverseTests.cs" />

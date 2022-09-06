@@ -1821,7 +1821,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             codeSize += 4; /* jilr */
         }
 
-        // the offset value of date_lable.
+        // the offset value of data.
         uint dataOffset = codeSize;
 
         codeSize += indirectionsDataSize;

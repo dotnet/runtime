@@ -11,7 +11,7 @@
 //
 // The right side of the debugger can be built to target multiple platforms. This means it is not
 // safe to use the CONTEXT structure directly: the context of the platform we're building for might not match
-// that of the one the debugger is targetting. So all right side code will use the DT_CONTEXT abstraction
+// that of the one the debugger is targeting. So all right side code will use the DT_CONTEXT abstraction
 // instead. When the debugger target is the local platform this will just resolve back into CONTEXT, but cross
 // platform we'll provide a hand-rolled version.
 //

@@ -33,7 +33,7 @@ jobs:
 - job: EnterpriseLinuxTests
   timeoutInMinutes: 120
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore-Public
     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
   steps:
   - bash: |

@@ -75,24 +75,12 @@ mono_type_is_native_blittable (MonoType *t)
 MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	const char* cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
-	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
-	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
-	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 	MonoInst *ins = NULL;
 
 	/* Required intrinsics are always used even with -O=-intrins */
-	if (in_corlib &&
-		!strcmp (cmethod_klass_name_space, "System") &&
-		!strcmp (cmethod_klass_name, "ByReference`1")) {
-		/* public ByReference(ref T value) */
-		g_assert (fsig->hasthis && fsig->param_count == 1);
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
-		return ins;
-	}
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
-		return NULL;
+		return ins;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
@@ -102,7 +90,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 #endif
 
-	return NULL;
+	return ins;
 }
 
 static MonoInst*
@@ -318,6 +306,20 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_START_BB (cfg, end_bb);
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "BitOperations")) {
+		if (!strcmp (cmethod->name, "PopCount") && fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_U4 || fsig->params [0]->type == MONO_TYPE_U8)) {
+			gboolean is_64bit = fsig->params [0]->type == MONO_TYPE_U8;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+#endif
 
 	return ins;
 }
@@ -806,15 +808,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 
 	/* Required intrinsics are always used even with -O=-intrins */
-	if (in_corlib &&
-		!strcmp (cmethod_klass_name_space, "System") &&
-		!strcmp (cmethod_klass_name, "ByReference`1") &&
-		!strcmp (cmethod->name, "get_Value")) {
-		g_assert (fsig->hasthis && fsig->param_count == 0);
-		int dreg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
-		return ins;
-	}
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return NULL;
@@ -1029,7 +1022,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
 			int dreg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
+			MONO_EMIT_NEW_CHECK_THIS(cfg, args[0]->dreg);
+			//MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
@@ -2055,22 +2049,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 
 	/* Fallback if SIMD is disabled */
-	if (in_corlib && !strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) {
+	if (in_corlib && 
+		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) || 
+		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}
-	}
-
-	// Return false for IsSupported for all types in System.Runtime.Intrinsics.*
-	// if it's not handled in mono_emit_simd_intrinsics
-	if (in_corlib &&
-		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25) &&
-		!strcmp (cmethod->name, "get_IsSupported")) {
-		EMIT_NEW_ICONST (cfg, ins, 0);
-		ins->type = STACK_I4;
-		return ins;
 	}
 
 	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true

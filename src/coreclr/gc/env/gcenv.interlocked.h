@@ -12,7 +12,7 @@ class Interlocked
 private:
 
 #ifndef _MSC_VER
-    static void ArmInterlockedOperationBarrier();
+    static void InterlockedOperationBarrier();
 #endif // !_MSC_VER
 
 public:

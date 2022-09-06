@@ -126,15 +126,15 @@ namespace System.ComponentModel.Tests
             Assert.Throws<ArgumentNullException>("culture", () => converter.GetCultureName(null));
         }
 
-        public static IEnumerable<object[]> ConvertFrom_OverridenGetCultureName_TestData()
+        public static IEnumerable<object[]> ConvertFrom_OverriddenGetCultureName_TestData()
         {
             yield return new object[] { "Fixed", "Fixed", CultureInfo.InvariantCulture };
             yield return new object[] { "None", "en-US", new CultureInfo("en-US") };
         }
 
         [Theory]
-        [MemberData(nameof(ConvertFrom_OverridenGetCultureName_TestData))]
-        public void ConvertFrom_OverridenGetCultureName_ReturnsExpected(string fixedValue, string text, CultureInfo expected)
+        [MemberData(nameof(ConvertFrom_OverriddenGetCultureName_TestData))]
+        public void ConvertFrom_OverriddenGetCultureName_ReturnsExpected(string fixedValue, string text, CultureInfo expected)
         {
             var converter = new FixedCultureInfoConverter
             {
@@ -144,7 +144,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void GetCultureName_Overriden_ConversionsReturnsExpected()
+        public void GetCultureName_Overridden_ConversionsReturnsExpected()
         {
             var converter = new FixedCultureInfoConverter
             {

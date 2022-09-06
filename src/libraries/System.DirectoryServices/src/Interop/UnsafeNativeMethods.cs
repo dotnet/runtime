@@ -388,7 +388,7 @@ namespace System.DirectoryServices.Interop
             void SetOption(int option, Variant value);
         }
 
-        // IDirecorySearch return codes
+        // IDirectorySearch return codes
         internal const int S_ADS_NOMORE_ROWS = 0x00005012;
         internal const int INVALID_FILTER = unchecked((int)0x8007203E);
         internal const int SIZE_LIMIT_EXCEEDED = unchecked((int)0x80072023);

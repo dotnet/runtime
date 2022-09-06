@@ -48,7 +48,7 @@ namespace System.Formats.Cbor
         public int BytesRemaining => _data.Length - _offset;
 
         /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
-        /// <param name="data">The CBOR encoded data to read.</param>
+        /// <param name="data">The CBOR-encoded data to read.</param>
         /// <param name="conformanceMode">One of the enumeration values to specify a conformance mode guiding the checks performed on the encoded data.
         /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>

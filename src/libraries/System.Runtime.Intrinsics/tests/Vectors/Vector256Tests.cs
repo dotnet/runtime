@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -5480,6 +5481,123 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<float> nan = Vector256.Create(float.NaN);
             Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void Vector256DoubleEqualsNonCanonicalNaNTest()
+        {
+            // max 8 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt64BitsToDouble(0x7FF7_FFFF_FFFF_FFFF);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
+
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector256.Create(i).Equals(Vector256.Create(j)));
+                    Assert.False(Vector256.Create(i) == Vector256.Create(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleEqualsNonCanonicalNaNTest()
+        {
+            // max 11 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt32BitsToSingle(0x7FBF_FFFF);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
+
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector256.Create(i).Equals(Vector256.Create(j)));
+                    Assert.False(Vector256.Create(i) == Vector256.Create(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void IsSupportedByte() => TestIsSupported<byte>();
+
+        [Fact]
+        public void IsSupportedDouble() => TestIsSupported<double>();
+
+        [Fact]
+        public void IsSupportedInt16() => TestIsSupported<short>();
+
+        [Fact]
+        public void IsSupportedInt32() => TestIsSupported<int>();
+
+        [Fact]
+        public void IsSupportedInt64() => TestIsSupported<long>();
+
+        [Fact]
+        public void IsSupportedIntPtr() => TestIsSupported<nint>();
+
+        [Fact]
+        public void IsSupportedSByte() => TestIsSupported<sbyte>();
+
+        [Fact]
+        public void IsSupportedSingle() => TestIsSupported<float>();
+
+        [Fact]
+        public void IsSupportedUInt16() => TestIsSupported<ushort>();
+
+        [Fact]
+        public void IsSupportedUInt32() => TestIsSupported<uint>();
+
+        [Fact]
+        public void IsSupportedUInt64() => TestIsSupported<ulong>();
+
+        [Fact]
+        public void IsSupportedUIntPtr() => TestIsSupported<nuint>();
+
+        private static void TestIsSupported<T>()
+            where T : struct
+        {
+            Assert.True(Vector256<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.True((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
+        public void IsNotSupportedBoolean() => TestIsNotSupported<bool>();
+
+        [Fact]
+        public void IsNotSupportedChar() => TestIsNotSupported<char>();
+
+        [Fact]
+        public void IsNotSupportedHalf() => TestIsNotSupported<Half>();
+
+        [Fact]
+        public void IsNotSupportedInt128() => TestIsNotSupported<Int128>();
+
+        [Fact]
+        public void IsNotSupportedUInt128() => TestIsNotSupported<UInt128>();
+
+        private static void TestIsNotSupported<T>()
+            where T : struct
+        {
+            Assert.False(Vector256<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.False((bool)methodInfo.Invoke(null, null));
         }
     }
 }

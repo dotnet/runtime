@@ -60,20 +60,20 @@ namespace Microsoft.Interop
                 }
 
                 // Declare variables for parameters
-                AppendVariableDeclations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             // Stub return is not the same as invoke return
             if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for stub return value
-                AppendVariableDeclations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for invoke return value
-                AppendVariableDeclations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+                AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
             return new VariableDeclarations
@@ -82,7 +82,7 @@ namespace Microsoft.Interop
                 Variables = variables.ToImmutable()
             };
 
-            static void AppendVariableDeclations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
+            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
             {
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 

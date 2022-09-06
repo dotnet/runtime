@@ -386,7 +386,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
         return hr;
     }
 
-    INFO(L"IL build sucessful for methodDef=" << std::hex << methodId);
+    INFO(L"IL build successful for methodDef=" << std::hex << methodId);
     return S_OK;
 }
 

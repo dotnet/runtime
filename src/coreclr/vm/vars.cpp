@@ -57,7 +57,6 @@ GPTR_IMPL(MethodTable,      g_pStringClass);
 GPTR_IMPL(MethodTable,      g_pArrayClass);
 GPTR_IMPL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_IMPL(MethodTable,      g_pNullableClass);
-GPTR_IMPL(MethodTable,      g_pByReferenceClass);
 GPTR_IMPL(MethodTable,      g_pExceptionClass);
 GPTR_IMPL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_IMPL(MethodTable,      g_pOutOfMemoryExceptionClass);
@@ -69,7 +68,6 @@ GPTR_IMPL(MethodTable,      g_pValueTypeClass);
 GPTR_IMPL(MethodTable,      g_pEnumClass);
 GPTR_IMPL(MethodTable,      g_pThreadClass);
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
-GPTR_IMPL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 

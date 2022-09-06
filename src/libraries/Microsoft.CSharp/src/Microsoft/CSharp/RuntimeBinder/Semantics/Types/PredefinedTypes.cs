@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static AggregateSymbol GetPredefinedAggregate(PredefinedType pt) =>
-            s_predefSymbols[(int)pt] ?? (s_predefSymbols[(int)pt] = DelayLoadPredefSym(pt));
+            s_predefSymbols[(int)pt] ??= DelayLoadPredefSym(pt);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Some of the predefined types have built-in names, like "int" or "string" or

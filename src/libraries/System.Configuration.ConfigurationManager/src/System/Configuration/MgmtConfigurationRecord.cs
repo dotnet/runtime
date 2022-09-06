@@ -299,7 +299,7 @@ namespace System.Configuration
         // Record all location tags in the config file, even if they are empty.
         protected override void AddLocation(string locationSubPath)
         {
-            if (_locationTags == null) _locationTags = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            _locationTags ??= new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _locationTags[locationSubPath] = locationSubPath;
         }
@@ -923,7 +923,7 @@ namespace System.Configuration
                 //
                 if (RemovedSectionGroups.Contains(descendent.ConfigKey)) continue;
 
-                // If the section group has been evaluated, detatch it.
+                // If the section group has been evaluated, detach it.
                 ConfigurationSectionGroup sectionGroup = LookupSectionGroup(descendent.ConfigKey);
                 sectionGroup?.DetachFromConfigurationRecord();
 
@@ -1710,7 +1710,7 @@ namespace System.Configuration
 
                     if (addToConfigSourceUpdates)
                     {
-                        if (configSourceUpdates == null) configSourceUpdates = new ArrayList();
+                        configSourceUpdates ??= new ArrayList();
                         configSourceUpdates.Add(definitionUpdate);
                     }
                 }

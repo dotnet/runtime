@@ -80,12 +80,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return null;
 
-                object? o = RuntimeImports.RhHandleGet(h);
-
-                if (o == null)
-                {
-                    o = TryGetComTarget();
-                }
+                object? o = RuntimeImports.RhHandleGet(h) ?? TryGetComTarget();
 
                 // We want to ensure that if the target is live, then we will
                 // return it to the user. We need to keep this WeakReference object

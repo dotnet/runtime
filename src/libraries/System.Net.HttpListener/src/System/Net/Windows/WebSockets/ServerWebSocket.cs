@@ -45,13 +45,15 @@ namespace System.Net.WebSockets
                 WebSocketBuffer.CreateServerBuffer(internalBuffer, receiveBufferSize))
         {
             _properties = InternalBuffer.CreateProperties(false);
-            _sessionHandle = CreateWebSocketHandle();
+            SafeHandle sessionHandle = CreateWebSocketHandle();
 
-            if (_sessionHandle == null || _sessionHandle.IsInvalid)
+            if (sessionHandle == null || sessionHandle.IsInvalid)
             {
+                sessionHandle?.Dispose();
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
+            _sessionHandle = sessionHandle;
             StartKeepAliveTimer();
         }
 
@@ -67,14 +69,9 @@ namespace System.Net.WebSockets
         private SafeHandle CreateWebSocketHandle()
         {
             Debug.Assert(_properties != null, "'_properties' MUST NOT be NULL.");
-            SafeWebSocketHandle sessionHandle;
-            WebSocketProtocolComponent.WebSocketCreateServerHandle(
+            return WebSocketProtocolComponent.WebSocketCreateServerHandle(
                 _properties,
-                _properties.Length,
-                out sessionHandle);
-            Debug.Assert(sessionHandle != null, "'sessionHandle MUST NOT be NULL.");
-
-            return sessionHandle;
+                _properties.Length);
         }
     }
 }

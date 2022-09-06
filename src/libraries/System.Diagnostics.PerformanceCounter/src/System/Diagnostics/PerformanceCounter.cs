@@ -166,8 +166,7 @@ namespace System.Diagnostics
 
                 Initialize();
 
-                if (_helpMsg == null)
-                    _helpMsg = PerformanceCounterLib.GetCounterHelp(currentMachineName, currentCategoryName, _counterName);
+                _helpMsg ??= PerformanceCounterLib.GetCounterHelp(currentMachineName, currentCategoryName, _counterName);
 
                 return _helpMsg;
             }
@@ -455,7 +454,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        ///     Intializes required resources
+        ///     Initializes required resources
         /// </summary>
         private void InitializeImpl()
         {

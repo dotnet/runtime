@@ -114,6 +114,7 @@ namespace System.Xml
         {
             SetValue(ValueHandleType.QName, key, prefix);
         }
+
         public void SetValue(ValueHandleType type, int offset, int length)
         {
             _type = type;
@@ -414,6 +415,7 @@ namespace System.Xml
                 return XmlConverter.ToGuid(_bufferReader.Buffer, _offset, _length);
             return XmlConverter.ToGuid(GetString());
         }
+
         public override string ToString()
         {
             return GetString();

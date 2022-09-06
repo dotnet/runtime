@@ -54,45 +54,45 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(decimal.MinValue, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(-1.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(-0.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(0.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(1.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThan(decimal.MaxValue, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(decimal.MinValue, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(-1.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(-0.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(0.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(1.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThan(decimal.MaxValue, 1.0m));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(decimal.MinValue, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(-1.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(-0.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(0.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(1.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_GreaterThanOrEqual(decimal.MaxValue, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(decimal.MinValue, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(-1.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(-0.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(0.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(1.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_GreaterThanOrEqual(decimal.MaxValue, 1.0m));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(decimal.MinValue, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(-1.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(-0.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(0.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(1.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_LessThan(decimal.MaxValue, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(decimal.MinValue, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(-1.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(-0.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(0.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(1.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThan(decimal.MaxValue, 1.0m));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(decimal.MinValue, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(-1.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(-0.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(0.0m, 1.0m));
-            Assert.True(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(1.0m, 1.0m));
-            Assert.False(ComparisonOperatorsHelper<decimal, decimal>.op_LessThanOrEqual(decimal.MaxValue, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(decimal.MinValue, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(-1.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(-0.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(0.0m, 1.0m));
+            Assert.True(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(1.0m, 1.0m));
+            Assert.False(ComparisonOperatorsHelper<decimal, decimal, bool>.op_LessThanOrEqual(decimal.MaxValue, 1.0m));
         }
 
         //
@@ -156,23 +156,23 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Equality(decimal.MinValue, 1.0m));
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Equality(-1.0m, 1.0m));
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Equality(-0.0m, 1.0m));
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Equality(0.0m, 1.0m));
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Equality(1.0m, 1.0m));
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Equality(decimal.MaxValue, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(decimal.MinValue, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(-1.0m, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(-0.0m, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(0.0m, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(1.0m, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Equality(decimal.MaxValue, 1.0m));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(decimal.MinValue, 1.0m));
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(-1.0m, 1.0m));
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(-0.0m, 1.0m));
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(0.0m, 1.0m));
-            Assert.False(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(1.0m, 1.0m));
-            Assert.True(EqualityOperatorsHelper<decimal, decimal>.op_Inequality(decimal.MaxValue, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(decimal.MinValue, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(-1.0m, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(-0.0m, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(0.0m, 1.0m));
+            Assert.False(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(1.0m, 1.0m));
+            Assert.True(EqualityOperatorsHelper<decimal, decimal, bool>.op_Inequality(decimal.MaxValue, 1.0m));
         }
 
         //

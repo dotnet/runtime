@@ -36,6 +36,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -79,6 +80,7 @@ namespace System.Reflection.Emit
         private int state;
 #endregion
 
+        internal bool is_hidden_global_type;
         private ITypeName fullname;
         private bool createTypeCalled;
         private Type? underlying_type;
@@ -90,8 +92,9 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx)
+        internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx, bool is_hidden_global_type = false)
         {
+            this.is_hidden_global_type = is_hidden_global_type;
             this.parent = null;
             this.attrs = attr;
             this.class_size = UnspecifiedTypeSize;
@@ -109,6 +112,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
+            this.is_hidden_global_type = false;
             int sep_index;
             this.parent = ResolveUserType(parent);
             this.attrs = attr;
@@ -518,8 +522,7 @@ namespace System.Reflection.Emit
                 !(((attributes & MethodAttributes.Static) != 0)))
                 throw new ArgumentException("Interface method must be abstract and virtual.");
 
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
             MethodBuilder res = new MethodBuilder(this, name, attributes,
                 callingConvention, returnType,
                 returnTypeRequiredCustomModifiers,
@@ -693,9 +696,11 @@ namespace System.Reflection.Emit
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
         {
-            return CreateTypeInfo();
+            Type? type = CreateTypeInfo();
+            Debug.Assert(type != null);
+            return type;
         }
 
         // We require emitted types to have all members on their bases to be accessible.
@@ -798,6 +803,12 @@ namespace System.Reflection.Emit
             ResolveUserTypes();
 
             created = create_runtime_class();
+
+            if (is_hidden_global_type)
+            {
+                return null;
+            }
+
             if (created != null)
                 return created;
             return this;
@@ -813,24 +824,21 @@ namespace System.Reflection.Emit
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
-                        fb.ResolveUserTypes();
+                    fb?.ResolveUserTypes();
                 }
             }
             if (methods != null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
-                        mb.ResolveUserTypes();
+                    mb?.ResolveUserTypes();
                 }
             }
             if (ctors != null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
-                        cb.ResolveUserTypes();
+                    cb?.ResolveUserTypes();
                 }
             }
         }
@@ -842,7 +850,7 @@ namespace System.Reflection.Emit
                     types[i] = ResolveUserType(types[i]);
         }
 
-        [return: NotNullIfNotNull("t")]
+        [return: NotNullIfNotNull(nameof(t))]
         internal static Type? ResolveUserType(Type? t)
         {
             if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))

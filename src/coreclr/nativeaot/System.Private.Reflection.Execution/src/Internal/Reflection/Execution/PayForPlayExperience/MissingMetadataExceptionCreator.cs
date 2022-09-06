@@ -15,96 +15,51 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 {
     public static class MissingMetadataExceptionCreator
     {
-        internal static MissingMetadataException Create(string resourceId, MemberInfo? pertainant)
-        {
-            return CreateFromMetadataObject(resourceId, pertainant);
-        }
-
-        internal static MissingMetadataException Create(TypeInfo? pertainant)
+        internal static NotSupportedException Create(Type? pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
 
-        internal static MissingMetadataException Create(TypeInfo? pertainant, string nestedTypeName)
+        private static NotSupportedException CreateFromString(string? pertainant)
         {
             if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
-
-            string usefulPertainant = ComputeUsefulPertainantIfPossible(pertainant);
-            if (usefulPertainant == null)
-                return new MissingMetadataException(Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
             else
-            {
-                usefulPertainant = usefulPertainant + "." + DiagnosticMappingTables.ConvertBackTickNameToNameWithReducerInputFormat(nestedTypeName, null);
-                return new MissingMetadataException(Format(SR.Reflection_InsufficientMetadata_EdbNeeded, usefulPertainant));
-            }
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant));
         }
 
-        internal static MissingMetadataException Create(Type? pertainant)
-        {
-            return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
-        }
-
-        internal static MissingMetadataException Create(RuntimeTypeHandle pertainant)
-        {
-            return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
-        }
-
-        private static MissingMetadataException CreateFromString(string? pertainant)
-        {
-            if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
-            else
-                return new MissingMetadataException(Format(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant));
-        }
-
-        internal static MissingMetadataException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
+        internal static NotSupportedException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
         {
             Debug.Assert(rank == 1 || isMultiDim);
             string s = CreateArrayTypeStringIfAvailable(elementType, rank);
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
+        internal static NotSupportedException CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
         {
             string s = CreateConstructedGenericTypeStringIfAvailable(genericTypeDefinition, genericTypeArguments);
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, object? pertainant)
+        internal static NotSupportedException CreateFromMetadataObject(string resourceId, Type? pertainant)
         {
             if (pertainant == null)
-                return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
 
-            string usefulPertainant = ComputeUsefulPertainantIfPossible(pertainant);
+            string usefulPertainant = pertainant.ToDisplayStringIfAvailable();
             if (usefulPertainant == null)
-                return new MissingMetadataException(Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
+                return new NotSupportedException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, pertainant.ToString()));
             else
-                return new MissingMetadataException(Format(resourceId, usefulPertainant));
+                return new NotSupportedException(SR.Format(resourceId, usefulPertainant));
         }
 
-        public static string ComputeUsefulPertainantIfPossible(object pertainant)
+        public static string ComputeUsefulPertainantIfPossible(MemberInfo memberInfo)
         {
             {
-                Type type = null;
-
-                if (pertainant is TypeInfo)
-                    type = ((TypeInfo)pertainant).AsType();
-                else if (pertainant is Type)
-                    type = (Type)pertainant;
-                else if (pertainant is RuntimeTypeHandle)
-                    type = Type.GetTypeFromHandle((RuntimeTypeHandle)pertainant);
-
-                if (type != null)
-                    return type.ToDisplayStringIfAvailable(null);
-            }
-
-            if (pertainant is MemberInfo memberInfo)
-            {
-                StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable(null));
+                StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable());
                 friendlyName.Append('.');
                 friendlyName.Append(memberInfo.Name);
-                if (pertainant is MethodBase method)
+                if (memberInfo is MethodBase method)
                 {
                     bool first;
 
@@ -112,16 +67,16 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     if (method.IsConstructedGenericMethod)
                     {
                         first = true;
-                        friendlyName.Append('<');
+                        friendlyName.Append('[');
                         foreach (Type genericParameter in method.GetGenericArguments())
                         {
                             if (!first)
                                 friendlyName.Append(',');
 
                             first = false;
-                            friendlyName.Append(genericParameter.ToDisplayStringIfAvailable(null));
+                            friendlyName.Append(genericParameter.ToDisplayStringIfAvailable());
                         }
-                        friendlyName.Append('>');
+                        friendlyName.Append(']');
                     }
 
                     // write out actual parameters
@@ -133,33 +88,16 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                             friendlyName.Append(',');
 
                         first = false;
-                        if (parameter.IsOut && parameter.IsIn)
-                        {
-                            friendlyName.Append("ref ");
-                        }
-                        else if (parameter.IsOut)
-                        {
-                            friendlyName.Append("out ");
-                        }
-
-                        Type parameterType = parameter.ParameterType;
-                        if (parameterType.IsByRef)
-                        {
-                            parameterType = parameterType.GetElementType();
-                        }
-
-                        friendlyName.Append(parameter.ParameterType.ToDisplayStringIfAvailable(null));
+                        friendlyName.Append(parameter.ParameterType.ToDisplayStringIfAvailable());
                     }
                     friendlyName.Append(')');
                 }
 
                 return friendlyName.ToString();
             }
-
-            return null;  //Give up
         }
 
-        internal static string ToDisplayStringIfAvailable(this Type type, List<int> genericParameterOffsets)
+        internal static string ToDisplayStringIfAvailable(this Type type)
         {
             RuntimeTypeHandle runtimeTypeHandle = ReflectionCoreExecution.ExecutionDomain.GetTypeHandleIfAvailable(type);
             bool hasRuntimeTypeHandle = !runtimeTypeHandle.Equals(default(RuntimeTypeHandle));
@@ -178,7 +116,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 }
                 else
                 {
-                    string s = type.GetElementType().ToDisplayStringIfAvailable(null);
+                    string s = type.GetElementType().ToDisplayStringIfAvailable();
                     if (s == null)
                         return null;
                     return s + (type.IsPointer ? "*" : "&");
@@ -214,50 +152,20 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else if (hasRuntimeTypeHandle)
             {
                 string s;
-                if (!DiagnosticMappingTables.TryGetDiagnosticStringForNamedType(runtimeTypeHandle, out s, genericParameterOffsets))
+                if (!DiagnosticMappingTables.TryGetDiagnosticStringForNamedType(runtimeTypeHandle, out s))
                     return null;
 
                 return s;
             }
             else
             {
-                // First, see if Type.Name is available. If Type.Name is available, then we can be reasonably confident that it is safe to call Type.FullName.
-                // We'll still wrap the call in a try-catch as a failsafe.
-                string s = type.InternalNameIfAvailable;
-                if (s == null)
-                    return null;
-
-                try
-                {
-                    s = type.FullName;
-                }
-                catch (MissingMetadataException)
-                {
-                }
-
-                // Insert commas so that CreateConstructedGenericTypeStringIfAvailable can fill the blanks.
-                // This is not strictly correct for types nested under generic types, but at this point we're doing
-                // best effort within reason.
-                if (type.IsGenericTypeDefinition)
-                {
-                    s += "[";
-                    int genericArgCount = type.GetGenericArguments().Length;
-                    while (genericArgCount-- > 0)
-                    {
-                        genericParameterOffsets.Add(s.Length);
-                        if (genericArgCount > 0)
-                            s += ",";
-                    }
-                    s += "]";
-                }
-
-                return s;
+                return type.FullName;
             }
         }
 
         private static string CreateArrayTypeStringIfAvailable(Type elementType, int rank)
         {
-            string s = elementType.ToDisplayStringIfAvailable(null);
+            string s = elementType.ToDisplayStringIfAvailable();
             if (s == null)
                 return null;
 
@@ -266,55 +174,22 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         private static string CreateConstructedGenericTypeStringIfAvailable(Type genericTypeDefinition, Type[] genericTypeArguments)
         {
-            List<int> genericParameterOffsets = new List<int>();
-            string genericTypeDefinitionString = genericTypeDefinition.ToDisplayStringIfAvailable(genericParameterOffsets);
+            string genericTypeDefinitionString = genericTypeDefinition.ToDisplayStringIfAvailable();
 
             if (genericTypeDefinitionString == null)
                 return null;
 
-            // If we found too many generic arguments to insert things, strip out the excess. This is wrong, but also, nothing is right.
-            if (genericTypeArguments.Length < genericParameterOffsets.Count)
-            {
-                genericParameterOffsets.RemoveRange(genericTypeArguments.Length, genericParameterOffsets.Count - genericTypeArguments.Length);
-            }
-            // Similarly, if we found too few, add them at the end.
-            while (genericTypeArguments.Length > genericParameterOffsets.Count)
-            {
-                genericTypeDefinitionString += ",";
-                genericParameterOffsets.Add(genericTypeDefinitionString.Length);
-            }
-
-            // Ensure the list is sorted in ascending order
-            genericParameterOffsets.Sort();
-
-            // The s string Now contains a string like "Namespace.MoreNamespace.TypeName.NestedGenericType<,,>.MoreNestedGenericType<>"
-            // where the generic parameters locations are recorded in genericParameterOffsets
-            // Walk backwards through the generic parameter locations, filling in as needed.
             StringBuilder genericTypeName = new StringBuilder(genericTypeDefinitionString);
-            for (int i = genericParameterOffsets.Count - 1; i >= 0; --i)
+            genericTypeName.Append('[');
+            for (int i = 0; i < genericTypeArguments.Length; i++)
             {
-                genericTypeName.Insert(genericParameterOffsets[i], genericTypeArguments[i].ToDisplayStringIfAvailable(null));
+                if (i > 0)
+                    genericTypeName.Append(", ");
+                genericTypeName.Append(genericTypeArguments[i].ToDisplayStringIfAvailable());
             }
+            genericTypeName.Append(']');
 
             return genericTypeName.ToString();
-        }
-
-        //
-        // This is a workaround to prevent crucial information being lost when compiling console apps using the retail ILC.
-        // This combination turns rich error messages from the framework into resource keys without the substitution strings.
-        // We'll detect this case here and append the substitution string manually.
-        //
-        private static string Format(string resourceMessage, object parameter)
-        {
-            if (resourceMessage.Contains("{0}"))
-                return SR.Format(resourceMessage, parameter);
-
-            // If the rich exception message was eaten by the IL2IL transform, make sure the resulting message
-            // has a link pointing the user towards the .NET Native debugging guide. These get normally appended
-            // to the restricted message by the transform, but the pattern here is not recognized by the rewriter.
-            // At this point we know the message doesn't come from resources (because message == resource key), so
-            // we can't do much to make this localizable.
-            return resourceMessage + ": " + parameter + ". For more information, visit http://go.microsoft.com/fwlink/?LinkId=623485";
         }
     }
 }

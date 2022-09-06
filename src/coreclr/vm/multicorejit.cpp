@@ -283,14 +283,14 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 }
 
 ModuleRecord::ModuleRecord(unsigned lenName, unsigned lenAsmName)
+    : version{}
+    , jitMethodCount{}
+    , wLoadLevel{}
 {
     LIMITED_METHOD_CONTRACT;
 
-    memset(this, 0, sizeof(ModuleRecord));
-
     recordID = Pack8_24(MULTICOREJIT_MODULE_RECORD_ID, sizeof(ModuleRecord));
 
-    wLoadLevel = 0;
     // Extra data
     lenModuleName = (unsigned short) lenName;
     lenAssemblyName = (unsigned short) lenAsmName;
@@ -797,7 +797,7 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
 
 
-// static: single instace within a process
+// static: single instance within a process
 
 #ifndef TARGET_UNIX
 TP_TIMER * MulticoreJitRecorder::s_delayedWriteTimer; // = NULL;
@@ -1185,16 +1185,13 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
     if ((pProfile != NULL) && (pProfile[0] != 0)) // Ignore empty file name, just same as StopProfile
     {
-        bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
-
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinder,
-            gatherProfile);
+            pBinder);
 
         if (pRecorder != NULL)
         {
-            gatherProfile = pRecorder->CanGatherProfile();
+            bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
 
             m_pMulticoreJitRecorder = pRecorder;
 
@@ -1204,9 +1201,11 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
             MulticoreJitTrace(("MulticoreJitRecorder session %d created: %x", sessionID, hr));
 
-            if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
+            if ((hr == COR_E_BADIMAGEFORMAT) || (SUCCEEDED(hr) && gatherProfile)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
-                m_fRecorderActive = gatherProfile;
+                m_pMulticoreJitRecorder->Activate();
+
+                m_fRecorderActive = m_pMulticoreJitRecorder->CanGatherProfile();
             }
 
             _FireEtwMulticoreJit(W("STARTPROFILE"), W("Recorder"), m_fRecorderActive, hr, 0);

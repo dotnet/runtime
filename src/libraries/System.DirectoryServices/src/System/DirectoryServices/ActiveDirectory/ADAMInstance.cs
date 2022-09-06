@@ -299,10 +299,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
-                {
-                    roleObjectEntry.Dispose();
-                }
+                roleObjectEntry?.Dispose();
             }
 
             // invalidate the role collection so that it gets loaded again next time
@@ -591,14 +588,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (schemaEntry != null)
-                    {
-                        schemaEntry.Dispose();
-                    }
-                    if (partitionsEntry != null)
-                    {
-                        partitionsEntry.Dispose();
-                    }
+                    schemaEntry?.Dispose();
+                    partitionsEntry?.Dispose();
                 }
                 return _cachedRoles;
             }

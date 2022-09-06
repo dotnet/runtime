@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,16 @@ namespace LibraryImportGenerator.UnitTests
 
     public static class TestUtils
     {
+        internal static string GetFileLineName(
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerFilePath] string? filePath = null)
+            => $"{Path.GetFileName(filePath)}:{lineNumber}";
+
+        internal static void Use<T>(T _)
+        {
+            // Workaround for - xUnit1026 // Theory methods should use all of their parameters
+        }
+
         /// <summary>
         /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.
         /// See https://github.com/dotnet/roslyn/issues/19640.
@@ -122,12 +133,13 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="source">Source to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols, allowUnsafe);
         }
 
         /// <summary>
@@ -136,17 +148,19 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
                 targetFramework,
                 outputKind,
-                refs);
+                refs,
+                allowUnsafe);
         }
 
         /// <summary>
@@ -155,9 +169,10 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)
         {
             var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
@@ -175,7 +190,7 @@ namespace LibraryImportGenerator.UnitTests
             return CSharpCompilation.Create("compilation",
                 sources,
                 referenceAssemblies,
-                new CSharpCompilationOptions(outputKind, allowUnsafe: true, specificDiagnosticOptions: BindingRedirectWarnings));
+                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe, specificDiagnosticOptions: BindingRedirectWarnings));
         }
 
         /// <summary>

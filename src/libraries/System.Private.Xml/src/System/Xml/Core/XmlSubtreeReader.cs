@@ -1300,10 +1300,7 @@ namespace System.Xml
             _nsManager.AddNamespace(prefix, ns);
 
             int index = _nsAttrCount++;
-            if (_nsAttributes == null)
-            {
-                _nsAttributes = new NodeData[InitialNamespaceAttributeCount];
-            }
+            _nsAttributes ??= new NodeData[InitialNamespaceAttributeCount];
 
             if (index == _nsAttributes.Length)
             {

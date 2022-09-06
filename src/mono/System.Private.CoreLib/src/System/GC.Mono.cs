@@ -316,5 +316,10 @@ namespace System
         {
             return TimeSpan.Zero;
         }
+
+        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            return new System.Collections.Generic.Dictionary<string, object>();
+        }
     }
 }

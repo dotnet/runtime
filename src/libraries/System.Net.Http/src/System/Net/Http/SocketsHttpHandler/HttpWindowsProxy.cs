@@ -55,6 +55,7 @@ namespace System.Net.Http
                 {
                     // Proxy failures are currently ignored by managed handler.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
+                    sessionHandle.Dispose();
                     return false;
                 }
             }

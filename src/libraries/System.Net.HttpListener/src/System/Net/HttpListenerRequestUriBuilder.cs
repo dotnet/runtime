@@ -413,7 +413,7 @@ namespace System.Net
             // - the first '#' character: This is never the case here, since http.sys won't accept
             //   Uris containing fragments. Also, RFC2616 doesn't allow fragments in request Uris.
             // - end of Uri string
-            int queryIndex = uriString.IndexOf('?');
+            int queryIndex = uriString.IndexOf('?', pathStartIndex);
             if (queryIndex == -1)
             {
                 queryIndex = uriString.Length;

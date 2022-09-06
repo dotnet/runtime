@@ -279,11 +279,7 @@ namespace System.Xml.Serialization
 
         private void AddSchemaItem(XmlSchemaObject item, string? ns, string? referencingNs)
         {
-            XmlSchema? schema = _schemas[ns];
-            if (schema == null)
-            {
-                schema = AddSchema(ns);
-            }
+            XmlSchema schema = _schemas[ns] ?? AddSchema(ns);
 
             if (item is XmlSchemaElement e)
             {
@@ -305,11 +301,7 @@ namespace System.Xml.Serialization
         {
             if (referencingNs == null) return;
             if (NamespacesEqual(ns, referencingNs)) return;
-            XmlSchema? schema = _schemas[referencingNs];
-            if (schema == null)
-            {
-                schema = AddSchema(referencingNs);
-            }
+            XmlSchema schema = _schemas[referencingNs] ?? AddSchema(referencingNs);
             if (FindImport(schema, ns) == null)
             {
                 XmlSchemaImport import = new XmlSchemaImport();

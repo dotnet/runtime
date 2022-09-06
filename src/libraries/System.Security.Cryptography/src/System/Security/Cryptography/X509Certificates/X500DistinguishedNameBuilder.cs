@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates
             // emailAddress ATTRIBUTE ::= {
             //   WITH SYNTAX IA5String (SIZE(1..pkcs-9-ub-emailAddress))
             //   EQUALITY MATCHING RULE pkcs9CaseIgnoreMatch
-            //   ID pkcs-9-at-emailAdress
+            //   ID pkcs-9-at-emailAddress
             // }
             // pkcs-9-ub-pkcs9String  INTEGER ::= 255
             // pkcs-9-ub-emailAddress INTEGER ::= pkcs-9-ub-pkcs9String

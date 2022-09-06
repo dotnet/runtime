@@ -15,10 +15,6 @@ namespace System.Drawing
 {
     public class ImageConverter : TypeConverter
     {
-        private static ReadOnlySpan<byte> PBrush => "PBrush"u8;
-
-        private static ReadOnlySpan<byte> BMBytes => "BM"u8;
-
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
             return sourceType == typeof(byte[]) || sourceType == typeof(Icon);
@@ -146,7 +142,7 @@ namespace System.Drawing
                 // pHeader.signature will always be 0x1c15.
                 // "PBrush" should be the 6 chars after position 12 as well.
                 if (rawData.Length <= headersize + 18 ||
-                    !rawData.Slice(headersize + 12, 6).SequenceEqual(PBrush))
+                    !rawData.Slice(headersize + 12, 6).SequenceEqual("PBrush"u8))
                 {
                     return null;
                 }

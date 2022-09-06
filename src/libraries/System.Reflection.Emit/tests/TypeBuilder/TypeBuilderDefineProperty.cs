@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(attributes, property.Attributes);
             Assert.Equal(returnType, property.PropertyType);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.AsType().GetProperties(Helpers.AllFlags), createdType.GetProperties(Helpers.AllFlags));
 
             PropertyInfo createdProperty = createdType.GetProperty(expectedName, Helpers.AllFlags);
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
             property.SetGetMethod(getMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             object obj = Activator.CreateInstance(createdType);
             Assert.Equal(5, createdType.GetProperty("Property").GetGetMethod().Invoke(obj, null));
         }
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
             property.SetGetMethod(getMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             object obj = Activator.CreateInstance(createdType);
             Assert.Equal(5, createdType.GetProperty("Property").GetGetMethod().Invoke(obj, null));
         }
@@ -129,7 +129,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineProperty_TypeCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null, null, new Type[] { typeof(int) }, null, null));
 
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             type.DefineProperty("Name", PropertyAttributes.None, typeof(EmptyGenericStruct<>), new Type[0]);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("Name", BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.Throws<BadImageFormatException>(() => createdProperty.PropertyType);
         }
@@ -163,7 +163,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             type.DefineProperty("Name", PropertyAttributes.None, typeof(int), new Type[] { typeof(EmptyGenericStruct<>) });
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("Name", BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.Throws<BadImageFormatException>(() => createdProperty.PropertyType);
         }
@@ -177,11 +177,11 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder propertyType = module.DefineType("PropertyType", TypeAttributes.Public);
             type.DefineProperty("Name", PropertyAttributes.None, propertyType.AsType(), new Type[0]);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo property = createdType.GetProperty("Name", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.Throws<TypeLoadException>(() => property.PropertyType);
 
-            Type createdPropertyType = propertyType.CreateTypeInfo().AsType();
+            Type createdPropertyType = propertyType.CreateType();
             Assert.Equal(createdPropertyType, property.PropertyType);
         }
 
@@ -194,11 +194,11 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder propertyType = module.DefineType("PropertyType", TypeAttributes.Public);
             type.DefineProperty("Name", PropertyAttributes.None, typeof(int), new Type[] { propertyType.AsType() });
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo property = createdType.GetProperty("Name", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.Throws<TypeLoadException>(() => property.PropertyType);
 
-            Type createdPropertyType = propertyType.CreateTypeInfo().AsType();
+            Type createdPropertyType = propertyType.CreateType();
             Assert.Equal(typeof(int), property.PropertyType);
         }
 
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), new Type[0]);
             type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), new Type[0]);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo[] properties = createdType.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.Equal(1, properties.Length);
             Assert.Equal("PropertyName", properties[0].Name);

@@ -354,25 +354,8 @@ namespace System.Xml
         /// <summary>
         /// Return true if "tagName" == "html" (case-insensitive).
         /// </summary>
-        private static bool IsHtmlTag(string tagName)
-        {
-            if (tagName.Length != 4)
-                return false;
-
-            if (tagName[0] != 'H' && tagName[0] != 'h')
-                return false;
-
-            if (tagName[1] != 'T' && tagName[1] != 't')
-                return false;
-
-            if (tagName[2] != 'M' && tagName[2] != 'm')
-                return false;
-
-            if (tagName[3] != 'L' && tagName[3] != 'l')
-                return false;
-
-            return true;
-        }
+        private static bool IsHtmlTag(string tagName) =>
+            tagName.Equals("html", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// If a wrapped writer has not yet been created, create one.

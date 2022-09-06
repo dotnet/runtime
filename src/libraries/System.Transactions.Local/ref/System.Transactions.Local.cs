@@ -187,10 +187,10 @@ namespace System.Transactions
     }
     public static partial class TransactionManager
     {
-        public static System.TimeSpan DefaultTimeout { get { throw null; } }
+        public static System.TimeSpan DefaultTimeout { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public static System.Transactions.HostCurrentTransactionCallback? HostCurrentCallback { get { throw null; } set { } }
-        public static System.TimeSpan MaximumTimeout { get { throw null; } }
+        public static System.TimeSpan MaximumTimeout { get { throw null; } set { } }
         public static event System.Transactions.TransactionStartedEventHandler? DistributedTransactionStarted { add { } remove { } }
         public static void RecoveryComplete(System.Guid resourceManagerIdentifier) { }
         public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { throw null; }

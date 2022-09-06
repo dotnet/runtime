@@ -1236,8 +1236,7 @@ namespace System.Drawing.Printing
         // Write null terminated string, return length of string in characters (including null)
         private static short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
-            if (str == null)
-                str = "";
+            str ??= "";
             IntPtr address = (IntPtr)(checked((long)bufferStart + index * Marshal.SystemDefaultCharSize));
 
             char[] data = str.ToCharArray();

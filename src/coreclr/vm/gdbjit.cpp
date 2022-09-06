@@ -2160,7 +2160,7 @@ void Elf_Builder::Initialize(PCODE codePtr, TADDR codeLen)
     //
     // Create '.text' section
     //
-    Elf_SectionTracker *text = OpenSection(".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
+    Elf_SectionTracker *text = OpenSection(".text", SHT_NOBITS, SHF_ALLOC | SHF_EXECINSTR);
     {
         text->DisableHeaderUpdate();
         text->Header()->sh_addr = codePtr;

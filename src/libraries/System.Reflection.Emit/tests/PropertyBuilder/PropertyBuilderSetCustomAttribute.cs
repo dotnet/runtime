@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
             property.SetGetMethod(method);
 
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static;
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("TestProperty", bindingFlags);
             object[] attributes = createdProperty.GetCustomAttributes(false).ToArray();
 
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit.Tests
             object[] ctorParamValues = new object[] { 10 };
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor(ctorParamTypes), ctorParamValues);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => property.SetCustomAttribute(customAttrBuilder));
         }
 
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit.Tests
             property.SetGetMethod(method);
 
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static;
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("TestProperty", bindingFlags);
             object[] attributes = createdProperty.GetCustomAttributes(false).ToArray();
 
@@ -124,7 +124,7 @@ namespace System.Reflection.Emit.Tests
 
             ConstructorInfo con = typeof(IntPropertyAttribute).GetConstructor(new Type[] { typeof(int) });
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => property.SetCustomAttribute(con, new byte[6]));
         }
     }

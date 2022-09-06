@@ -15,7 +15,7 @@ namespace System.Numerics
 
         public static void Pow(uint value, uint power, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
@@ -35,7 +35,9 @@ namespace System.Numerics
             value.CopyTo(valueCopy);
             valueCopy.Slice(value.Length).Clear();
 
-            PowCore(valueCopy, value.Length, temp, power, bits).CopyTo(bits);
+            Span<uint> result = PowCore(valueCopy, value.Length, temp, power, bits);
+            result.CopyTo(bits);
+            bits.Slice(result.Length).Clear();
 
             if (tempFromPool != null)
                 ArrayPool<uint>.Shared.Return(tempFromPool);
@@ -50,19 +52,19 @@ namespace System.Numerics
             Debug.Assert(value.Length == temp.Length);
 
             result[0] = 1;
-            int bitsLength = 1;
+            int resultLength = 1;
 
             // The basic pow algorithm using square-and-multiply.
             while (power != 0)
             {
                 if ((power & 1) == 1)
-                    bitsLength = MultiplySelf(ref result, bitsLength, value.Slice(0, valueLength), ref temp);
+                    resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
                 if (power != 1)
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                 power >>= 1;
             }
 
-            return result;
+            return result.Slice(0, resultLength);
         }
 
         private static int MultiplySelf(ref Span<uint> left, int leftLength, ReadOnlySpan<uint> right, ref Span<uint> temp)
@@ -200,7 +202,7 @@ namespace System.Numerics
         public static void Pow(uint value, uint power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power,
@@ -217,7 +219,11 @@ namespace System.Numerics
             Span<uint> valueCopy = (size <= StackAllocThreshold ?
                                    stackalloc uint[StackAllocThreshold]
                                    : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
-            valueCopy.Clear();
+
+            // smallish optimization here:
+            // subsequent operations will copy the elements to the beginning of the buffer,
+            // no need to clear everything
+            valueCopy.Slice(value.Length).Clear();
 
             if (value.Length > modulus.Length)
             {
@@ -245,7 +251,7 @@ namespace System.Numerics
         public static void Pow(uint value, ReadOnlySpan<uint> power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,
@@ -262,7 +268,11 @@ namespace System.Numerics
             Span<uint> valueCopy = (size <= StackAllocThreshold ?
                                    stackalloc uint[StackAllocThreshold]
                                    : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
-            valueCopy.Clear();
+
+            // smallish optimization here:
+            // subsequent operations will copy the elements to the beginning of the buffer,
+            // no need to clear everything
+            valueCopy.Slice(value.Length).Clear();
 
             if (value.Length > modulus.Length)
             {
@@ -305,7 +315,9 @@ namespace System.Numerics
 
             if (modulus.Length < ReducerThreshold)
             {
-                PowCore(value, valueLength, power, modulus, bits, 1, temp).CopyTo(bits);
+                Span<uint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
             }
             else
             {
@@ -341,7 +353,9 @@ namespace System.Numerics
                 if (rFromPool != null)
                     ArrayPool<uint>.Shared.Return(rFromPool);
 
-                PowCore(value, valueLength, power, reducer, bits, 1, temp).CopyTo(bits);
+                Span<uint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
 
                 if (muFromPool != null)
                     ArrayPool<uint>.Shared.Return(muFromPool);
@@ -361,7 +375,9 @@ namespace System.Numerics
 
             if (modulus.Length < ReducerThreshold)
             {
-                PowCore(value, valueLength, power, modulus, bits, 1, temp).CopyTo(bits);
+                Span<uint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
             }
             else
             {
@@ -397,7 +413,9 @@ namespace System.Numerics
                 if (rFromPool != null)
                     ArrayPool<uint>.Shared.Return(rFromPool);
 
-                PowCore(value, valueLength, power, reducer, bits, 1, temp).CopyTo(bits);
+                Span<uint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
 
                 if (muFromPool != null)
                     ArrayPool<uint>.Shared.Return(muFromPool);
@@ -523,7 +541,7 @@ namespace System.Numerics
                 power >>= 1;
             }
 
-            return result;
+            return result.Slice(0, resultLength);
         }
     }
 }

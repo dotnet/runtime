@@ -880,7 +880,7 @@ void CLRException::HandlerState::SucceedCatch()
     // At this point, we don't believe we need to do any unwinding of the ExInfo chain after an EX_CATCH. The chain
     // is unwound by CPFH_UnwindFrames1() when it detects that the exception is being caught by an unmanaged
     // catcher. EX_CATCH looks just like an unmanaged catcher now, so the unwind is already done by the time we get
-    // into the catch. That's different than before the big switch to the new exeption system, and it effects
+    // into the catch. That's different than before the big switch to the new exception system, and it effects
     // rethrows. Fixing rethrows is a work item for a little later. For now, we're simplying removing the unwind
     // from here to avoid the extra unwind, which is harmless in many cases, but is very harmful when a managed
     // filter throws an exception.
@@ -1309,12 +1309,6 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
 // EEArgumentException is an EE exception subclass representing a bad argument
 // ---------------------------------------------------------------------------
 
-typedef struct {
-    OBJECTREF pThrowable;
-    STRINGREF s1;
-    OBJECTREF pTmpThrowable;
-} ProtectArgsStruct;
-
 OBJECTREF EEArgumentException::CreateThrowable()
 {
 
@@ -1328,15 +1322,22 @@ OBJECTREF EEArgumentException::CreateThrowable()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    ProtectArgsStruct prot;
-    memset(&prot, 0, sizeof(ProtectArgsStruct));
-    ResMgrGetString(m_resourceName, &prot.s1);
-    GCPROTECT_BEGIN(prot);
+    struct
+    {
+        OBJECTREF pThrowable;
+        STRINGREF s1;
+        OBJECTREF pTmpThrowable;
+    } gc;
+    gc.pThrowable = NULL;
+    gc.s1 = NULL;
+    gc.pTmpThrowable = NULL;
+    ResMgrGetString(m_resourceName, &gc.s1);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
-    prot.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(prot.pThrowable->GetMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.pThrowable->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_RetVoid);
 
     if (!pMD)
@@ -1354,8 +1355,8 @@ OBJECTREF EEArgumentException::CreateThrowable()
     if (m_kind == kArgumentException)
     {
         ARG_SLOT args1[] = {
-            ObjToArgSlot(prot.pThrowable),
-            ObjToArgSlot(prot.s1),
+            ObjToArgSlot(gc.pThrowable),
+            ObjToArgSlot(gc.s1),
             ObjToArgSlot(argName),
         };
         exceptionCtor.Call(args1);
@@ -1363,16 +1364,16 @@ OBJECTREF EEArgumentException::CreateThrowable()
     else
     {
         ARG_SLOT args1[] = {
-            ObjToArgSlot(prot.pThrowable),
+            ObjToArgSlot(gc.pThrowable),
             ObjToArgSlot(argName),
-            ObjToArgSlot(prot.s1),
+            ObjToArgSlot(gc.s1),
         };
         exceptionCtor.Call(args1);
     }
 
     GCPROTECT_END(); //Prot
 
-    return prot.pThrowable;
+    return gc.pThrowable;
 }
 
 
@@ -1453,13 +1454,16 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 
     MethodTable *pMT = CoreLibBinder::GetException(kTypeLoadException);
 
-    struct _gc {
+    struct {
         OBJECTREF pNewException;
         STRINGREF pNewAssemblyString;
         STRINGREF pNewClassString;
         STRINGREF pNewMessageArgString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.pNewException = NULL;
+    gc.pNewAssemblyString = NULL;
+    gc.pNewClassString = NULL;
+    gc.pNewMessageArgString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewClassString = StringObject::NewString(m_fullName);
@@ -1632,11 +1636,12 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    struct _gc {
+    struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.pNewException = NULL;
+    gc.pNewFileString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);

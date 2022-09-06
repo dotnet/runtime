@@ -276,6 +276,22 @@ namespace System.Text.RegularExpressions.Tests
                      }
                 };
 
+                yield return new object[]
+                {
+                    engine,
+                    @"\w*\b\w+", "abc def ghij kl m nop qrstuv", RegexOptions.None,
+                    new[]
+                    {
+                        new CaptureData("abc", 0, 3),
+                        new CaptureData("def", 4, 3),
+                        new CaptureData("ghij", 8, 4),
+                        new CaptureData("kl", 13, 2),
+                        new CaptureData("m", 16, 1),
+                        new CaptureData("nop", 18, 3),
+                        new CaptureData("qrstuv", 22, 6),
+                    }
+                };
+
                 if (!PlatformDetection.IsNetFramework)
                 {
                     // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075
@@ -294,6 +310,20 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(\b(?!ab|nop)\w*\b)\w+", "abc def ghij kl m nop qrstuv", RegexOptions.None,
+                        new[]
+                        {
+                            new CaptureData("def", 4, 3),
+                            new CaptureData("ghij", 8, 4),
+                            new CaptureData("kl", 13, 2),
+                            new CaptureData("m", 16, 1),
+                            new CaptureData("qrstuv", 22, 6),
+                        }
+                    };
+
                     yield return new object[]
                     {
                         engine,
@@ -387,18 +417,29 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
+                
+                yield return new object[]
+                {
+                    engine, "@(a*)+?", "@", RegexOptions.None, new[]
+                    {
+                        new CaptureData("@", 0, 1)
+                    }
+                };
+
+                if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
+                {
+                    yield return new object[]
+                    {
+                        engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
+                        {
+                            new CaptureData("x", 3, 1),
+                        }
+                    };
+                }
+
                 if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
                     RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
                 {
-                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
-                    yield return new object[]
-                    {
-                        engine, "@(a*)+?", "@", RegexOptions.None, new[]
-                        {
-                            new CaptureData("@", 0, 1)
-                        }
-                    };
-
                     // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
                     yield return new object[]
                     {
@@ -408,18 +449,6 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("", 1, 0)
                         }
                     };
-
-                    if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
-                    {
-                        // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
-                        yield return new object[]
-                        {
-                            engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
-                            {
-                                new CaptureData("x", 3, 1),
-                            }
-                        };
-                    }
                 }
 #endif
             }
@@ -505,6 +534,48 @@ namespace System.Text.RegularExpressions.Tests
         public void NextMatch_EmptyMatch_ReturnsEmptyMatch()
         {
             Assert.Same(Match.Empty, Match.Empty.NextMatch());
+        }
+
+        public static IEnumerable<object[]> Matches_NonZeroStartAtOrBeginning_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"\.", @"a.b.c.d.e.f", 4, new (int, int)[] { (5, 1), (7, 1), (9, 1) } };
+                yield return new object[] { engine, @"\b\w+\b", @"ab cdef ghijk l mn opqr", 3, new (int, int)[] { (3, 4), (8, 5), (14, 1), (16, 2), (19, 4) } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Matches_NonZeroStartAtOrBeginning_MemberData))]
+        public async Task Matches_NonZeroStartAtOrBeginning(RegexEngine engine, string pattern, string input, int offset, (int Index, int Length)[] expected)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            int i;
+
+            MatchCollection matches = r.Matches(input, offset); // this overload takes startat, but none of the patterns used as input behave differently based on startat vs beginning
+            Assert.Equal(expected.Length, matches.Count);
+            for (i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i].Index, matches[i].Index);
+                Assert.Equal(expected[i].Length, matches[i].Length);
+            }
+
+            foreach (bool startat in new[] { true, false })
+            {
+                i = 0;
+                Match m = startat ?
+                    r.Match(input, offset) : // startat
+                    r.Match(input, offset, input.Length - offset); // beginning + length
+                while (m.Success)
+                {
+                    Assert.InRange(i, 0, expected.Length - 1);
+                    Assert.Equal(expected[i].Index, m.Index);
+                    Assert.Equal(expected[i].Length, m.Length);
+                    m = m.NextMatch();
+                    i++;
+                }
+                Assert.Equal(expected.Length, i);
+            }
         }
     }
 }

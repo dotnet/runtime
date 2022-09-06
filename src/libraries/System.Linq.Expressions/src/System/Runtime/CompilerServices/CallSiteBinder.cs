@@ -41,17 +41,7 @@ namespace System.Runtime.CompilerServices
         {
             private static LambdaSignature<T>? s_instance;
 
-            internal static LambdaSignature<T> Instance
-            {
-                get
-                {
-                    if (s_instance == null)
-                    {
-                        s_instance = new LambdaSignature<T>();
-                    }
-                    return s_instance;
-                }
-            }
+            internal static LambdaSignature<T> Instance => s_instance ??= new LambdaSignature<T>();
 
             internal readonly ReadOnlyCollection<ParameterExpression> Parameters;
             internal readonly LabelTarget ReturnLabel;

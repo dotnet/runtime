@@ -130,3 +130,5 @@ endif(CLR_CMAKE_HOST_OSX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
+
+install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)

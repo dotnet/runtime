@@ -110,7 +110,7 @@ namespace System.Data
 
         private void RowErrorChanged()
         {
-            // We don't know wich record was used by view index. try to use both.
+            // We don't know which record was used by view index. try to use both.
             if (_oldRecord != -1)
             {
                 _table.RecordChanged(_oldRecord);
@@ -228,7 +228,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel == null) // don't like this but done for backward code compatibility
                 {
                     continue;
                 }
@@ -682,7 +682,7 @@ namespace System.Data
 
             if (_newRecord == -1)
             {
-                return; // this is meaningless, detatched row case
+                return; // this is meaningless, detached row case
             }
 
             if (_tempRecord != -1)
@@ -732,7 +732,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRow.SetColumnError|API> {0}, column={1}, error='{2}'", _objectID, column.ObjectID, error);
             try
             {
-                if (_error == null) _error = new DataError();
+                _error ??= new DataError();
                 if (GetColumnError(column) != error)
                 {
                     _error.SetColumnError(column, error);
@@ -761,7 +761,7 @@ namespace System.Data
         public string GetColumnError(DataColumn column)
         {
             CheckColumn(column);
-            if (_error == null) _error = new DataError();
+            _error ??= new DataError();
             return _error.GetColumnError(column);
         }
 
@@ -886,7 +886,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel == null) // don't like this but done for backward code compatibility
                 {
                     continue;
                 }

@@ -183,9 +183,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitReference(QilNode node)
         {
             QilReference reference = (QilReference)node;
-            string name = _ngen.NameOf(node);
-            if (name == null)
-                name = "OUT-OF-SCOPE REFERENCE";
+            string name = _ngen.NameOf(node) ?? "OUT-OF-SCOPE REFERENCE";
 
             this.writer.WriteStartElement("RefTo");
             this.writer.WriteAttributeString("id", name);
