@@ -335,7 +335,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
         // in a rare case if resize is in progress, look in the new table as well.
         // if existing entry is not in the old table, it must be in the new
         // since we unlink it from old only after linking into the new.
-        // check for next table must hapen after we looked through the current.
+        // check for next table must happen after we looked through the current.
         VolatileLoadBarrier();
         curBuckets = GetNext(curBuckets);
     } while (curBuckets != nullptr);
@@ -367,11 +367,9 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
     PTR_VolatileEntry pVolatileEntry = dac_cast<PTR_VolatileEntry>(pContext->m_pEntry);
     iHash = pVolatileEntry->m_iHashValue;
 
-    // Iterate over the bucket chain.
-    while (pVolatileEntry->m_pNextEntry)
+    // Iterate over the rest ot the bucket chain.
+    while ((pVolatileEntry = pVolatileEntry->m_pNextEntry) != nullptr)
     {
-        // Advance to the next entry.
-        pVolatileEntry = pVolatileEntry->m_pNextEntry;
         if (pVolatileEntry->m_iHashValue == iHash)
         {
             // Found a match on hash code. Update our find context to indicate where we got to and return
@@ -381,7 +379,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
         }
     }
 
-    // check for next table must hapen after we looked through the current.
+    // check for next table must happen after we looked through the current.
     VolatileLoadBarrier();
 
     // in a case if resize is in progress, look in the new table as well.
