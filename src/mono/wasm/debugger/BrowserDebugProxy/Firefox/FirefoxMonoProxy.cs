@@ -616,10 +616,14 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         try
                         {
                             var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
+                            Console.WriteLine($"to no evaluateJSAsync 4.1 - {o}");
                             JObject retValue = await resolver.Resolve(expression, token);
+                            Console.WriteLine($"to no evaluateJSAsync 4.2 - {o}");
                             retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
+                            Console.WriteLine($"to no evaluateJSAsync 4.3 - {o}");
                             if (retValue["type"].Value<string>() == "object")
                             {
+                                Console.WriteLine($"to no evaluateJSAsync 4.4 - {o}");
                                 osend["result"] = JObject.FromObject(new
                                 {
                                     type = retValue["type"],
@@ -630,6 +634,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                             }
                             else
                             {
+                                Console.WriteLine($"to no evaluateJSAsync 4.5 - {o}");
                                 osend["result"] = retValue["value"];
                                 osend["resultType"] = retValue["type"];
                                 osend["resultDescription"] = retValue["description"];
