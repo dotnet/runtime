@@ -18,8 +18,9 @@ namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHandle
     {
-        /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
-        private static SocketsHttpHandler? s_defaultHandler;
+        // Shared, lazily-initialized invokers used to avoid some allocations when using default options.
+        private static HttpMessageInvoker? s_defaultInvokerDefaultProxy;
+        private static HttpMessageInvoker? s_defaultInvokerNoProxy;
 
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
@@ -47,7 +48,7 @@ namespace System.Net.WebSockets
 
         public async Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            bool disposeHandler = false;
+            bool disposeInvoker = false;
             if (invoker is null)
             {
                 if (options.HttpVersion.Major >= 2 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
@@ -55,7 +56,7 @@ namespace System.Net.WebSockets
                     throw new ArgumentException(SR.net_WebSockets_CustomInvokerRequiredForHttp2, nameof(options));
                 }
 
-                invoker = new HttpMessageInvoker(SetupHandler(options, out disposeHandler));
+                invoker = SetupInvoker(options, out disposeInvoker);
             }
             else if (!options.AreCompatibleWithCustomInvoker())
             {
@@ -235,44 +236,47 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                // Disposing the handler will not affect any active stream wrapped in the WebSocket.
-                if (disposeHandler)
+                // Disposing the invoker will not affect any active stream wrapped in the WebSocket.
+                if (disposeInvoker)
                 {
                     invoker?.Dispose();
                 }
             }
         }
 
-        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options, out bool disposeHandler)
+        private static HttpMessageInvoker SetupInvoker(ClientWebSocketOptions options, out bool disposeInvoker)
         {
-            SocketsHttpHandler? handler;
-
-            // Create the handler for this request and populate it with all of the options.
-            // Try to use a shared handler rather than creating a new one just for this request, if
-            // the options are compatible.
-            if (options.AreCompatibleWithCustomInvoker() && options.Proxy is null)
+            // Create the invoker for this request and populate it with all of the options.
+            // If the options are compatible, reuse a shared invoker.
+            if (options.AreCompatibleWithCustomInvoker())
             {
-                disposeHandler = false;
-                handler = s_defaultHandler;
-                if (handler == null)
+                disposeInvoker = false;
+
+                bool useDefaultProxy = options.Proxy is not null;
+
+                ref HttpMessageInvoker? invokerRef = ref useDefaultProxy ? ref s_defaultInvokerDefaultProxy : ref s_defaultInvokerNoProxy;
+
+                if (invokerRef is null)
                 {
-                    handler = new SocketsHttpHandler()
+                    var invoker = new HttpMessageInvoker(new SocketsHttpHandler()
                     {
                         PooledConnectionLifetime = TimeSpan.Zero,
-                        UseProxy = false,
+                        UseProxy = useDefaultProxy,
                         UseCookies = false,
-                    };
-                    if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
+                    });
+
+                    if (Interlocked.CompareExchange(ref invokerRef, invoker, null) is not null)
                     {
-                        handler.Dispose();
-                        handler = s_defaultHandler;
+                        invoker.Dispose();
                     }
                 }
+
+                return invokerRef;
             }
             else
             {
-                disposeHandler = true;
-                handler = new SocketsHttpHandler();
+                disposeInvoker = true;
+                var handler = new SocketsHttpHandler();
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
                 handler.UseCookies = options.Cookies != null;
@@ -297,9 +301,9 @@ namespace System.Net.WebSockets
                     handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
                     handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
                 }
-            }
 
-            return handler;
+                return new HttpMessageInvoker(handler);
+            }
         }
 
         private static WebSocketDeflateOptions ParseDeflateOptions(ReadOnlySpan<char> extension, WebSocketDeflateOptions original)

@@ -2850,38 +2850,33 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
 
-        if (op2Value != 0)
+        //
+        // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
+        // into ((x AND mask) NE|EQ 0) when mask is a single bit.
+        //
+        if ((op2Value != 0) && isPow2(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
         {
-            // Optimizes (X & 1) == 1 to (X & 1)
-            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            op2Value = 0;
+            op2->SetIconValue(0);
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        }
+
+        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
+        {
             LIR::Use cmpUse;
-            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
             {
-                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
-                    !cmpUse.User()->OperIsConditional())
-                {
-                    GenTree* next = cmp->gtNext;
+                GenTree* next = cmp->gtNext;
 
-                    cmpUse.ReplaceWith(op1);
+                cmpUse.ReplaceWith(op1);
 
-                    BlockRange().Remove(cmp->gtGetOp2());
-                    BlockRange().Remove(cmp);
+                BlockRange().Remove(cmp->gtGetOp2());
+                BlockRange().Remove(cmp);
 
-                    return next;
-                }
-            }
-
-            //
-            // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
-            // into ((x AND mask) NE|EQ 0) when mask is a single bit.
-            //
-
-            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
-            {
-                op2Value = 0;
-                op2->SetIconValue(0);
-                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                return next;
             }
         }
 
@@ -5362,29 +5357,43 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+
+    if (index != nullptr)
     {
-        index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-        MakeSrcContained(addrMode, index);
-    }
-
-    // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
-    if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && !varTypeIsStruct(targetType))
-    {
-        // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
-        GenTreeCast* cast = index->gtGetOp1()->AsCast();
-        assert(cast->isContained());
-
-        const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
-
-        // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
-        // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
-        if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && (genTypeSize(targetType) == (1U << shiftBy)) &&
-            (scale == 1) && (offset == 0))
+        if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-            // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
-            MakeSrcContained(addrMode, index);
+            if (IsSafeToContainMem(parent, index))
+            {
+                // Check containment safety against the parent node - this will ensure that LEA with the contained
+                // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+                index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
+                MakeSrcContained(addrMode, index);
+            }
+        }
+        else if (index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) && index->gtGetOp2()->IsCnsIntOrI() &&
+                 !varTypeIsStruct(targetType))
+        {
+            // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
+            // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
+            GenTreeCast* cast = index->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+
+            const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
+
+            // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
+            // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
+            if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
+                (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
+            {
+                if (IsSafeToContainMem(parent, index))
+                {
+                    // Check containment safety against the parent node - this will ensure that LEA with the contained
+                    // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+
+                    // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
+                    MakeSrcContained(addrMode, index);
+                }
+            }
         }
     }
 #endif

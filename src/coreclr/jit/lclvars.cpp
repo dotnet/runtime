@@ -8406,6 +8406,15 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
+        // Converting tail calls to loops may require insertion of explicit
+        // zero initialization for IL locals. The JIT does not support this for
+        // TYP_BLK locals.
+        if (pComp->compMayConvertTailCallToLoop)
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
         // Fix for lcl_fld stress mode
         if (varDsc->lvKeepType)
         {

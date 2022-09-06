@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
     <Compile Include="AlternateViewTest.cs" />
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttachmentCollectionTest.cs" />
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
