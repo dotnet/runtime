@@ -184,7 +184,7 @@ int coreclr_get_error_info(error_info_callback callBack, void* arg)
     for (int i = 0; i < count; i++)
     {
         FailedHRLogEntry* pEntry = GetFailedHRLogEntry(i);
-        int length = sprintf_s(line, hresultFormatString, pEntry->hr);
+        int length = sprintf_s(line, sizeof(line), hresultFormatString, pEntry->hr);
         VMToOSInterface::GetSymbolFromAddress(pEntry->address, line + length, sizeof(line) - length);
         callBack(line, arg);
     }
