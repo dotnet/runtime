@@ -37,6 +37,7 @@ jobs:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true))))
           ]
       - name: onlyWBTOrDbgTestHaveChanges

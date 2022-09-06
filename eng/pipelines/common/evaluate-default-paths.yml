@@ -141,6 +141,9 @@ jobs:
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/libraries/sendtohelix*
+      - src/libraries/System.Net.WebSockets.Client/*
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
@@ -159,6 +162,8 @@ jobs:
     - subset: wasmdebuggertests
       include:
       - eng/testing/ProvisioningVersions.props
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
@@ -178,6 +183,27 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       # other paths that should also trigger wasm jobs
       - src/mono/*
+
+    # libraries with some wasm specific code
+    - subset: wasm_libraries
+      include:
+      - src/libraries/Common/*
+      - src/libraries/System.Console/*
+      - src/libraries/System.Diagnostics.FileVersionInfo/tests/*
+      - src/libraries/System.IO.Compression/*
+      - src/libraries/System.IO.MemoryMappedFiles/*
+      - src/libraries/System.Net.Http/*
+      - src/libraries/System.Net.Mail/*
+      - src/libraries/System.Net.Primitives/*
+      - src/libraries/System.Net.WebClient/*
+      - src/libraries/System.Net.WebProxy/*
+      - src/libraries/System.Net.WebSockets.Client/*
+      - src/libraries/System.Net.WebSockets/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.Serialization.Formatters/*
+      - src/libraries/System.Security.Cryptography/*
+      - src/libraries/System.Text.Encodings.Web/*
 
     # anything other than wasm-specific paths
     - subset: non_wasm
