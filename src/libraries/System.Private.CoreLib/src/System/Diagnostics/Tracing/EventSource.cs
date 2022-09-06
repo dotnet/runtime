@@ -3606,11 +3606,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                   Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
-                                   "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
-                                   "In the worst case it will not be able to determine the value it's looking for and will not perform" +
-                                   "any validation.")]
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
 #if !NATIVEAOT
@@ -3625,7 +3620,7 @@ namespace System.Diagnostics.Tracing
             // RET
             //
             // If we find this pattern we return the XXX.  Otherwise we return -1.
-            byte[] instrs = method.GetMethodBody()!.GetILAsByteArray()!;
+            byte[] instrs = GetMethodBodyLocal(method)!.GetILAsByteArray()!;
             int retVal = -1;
             for (int idx = 0; idx < instrs.Length;)
             {
@@ -3726,6 +3721,16 @@ namespace System.Diagnostics.Tracing
                         return -1;
                 }
                 idx++;
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                        Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
+                                        "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
+                                        "In the worst case it will not be able to determine the value it's looking for and will not perform" +
+                                        "any validation.")]
+            static MethodBody? GetMethodBodyLocal(MethodInfo method)
+            {
+                return method.GetMethodBody();
             }
 #endif
             return -1;
