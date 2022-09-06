@@ -313,6 +313,15 @@ static void* SignalHandlerLoop(void* arg)
     free(arg);
     assert(pipeFd >= 0);
 
+#if defined(__linux__) || defined(__FreeBSD__)
+    pthread_setname_np(pthread_self(), ".NET SigHandler");
+#endif
+
+#if defined(__APPLE__)
+    // on macOS, pthread_setname_np only works for the calling thread.
+    pthread_setname_np(".NET Signal Handler");
+#endif
+
     // Continually read a signal code from the signal pipe and process it,
     // until the pipe is closed.
     while (true)
@@ -529,7 +538,6 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
         pthread_t handlerThread;
         if (pthread_create(&handlerThread, &attr, SignalHandlerLoop, readFdPtr) == 0)
         {
-            pthread_setname_np(handlerThread, ".NET SigHandler");
             success = true;
         }
     }
