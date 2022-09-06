@@ -546,7 +546,8 @@ private:
             // Create temp for this if the tree is costly.
             if (thisTree->IsLocal())
             {
-                thisTree = compiler->gtCloneExpr(thisTree);
+                thisTree       = compiler->gtCloneExpr(thisTree);
+                LclVarDsc* dsc = compiler->lvaGetDesc(thisTree->AsLclVarCommon());
             }
             else
             {
@@ -594,7 +595,7 @@ private:
                 // TODO-GDV: Consider duplicating the store at the end of the
                 // cold case for the previous GDV. Then we can reuse the target
                 // if the second check of a chained GDV fails.
-                bool reuseTarget = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
+                bool reuseTarget = false; //(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
                 if (origCall->IsVirtualVtable())
                 {
                     GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);

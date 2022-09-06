@@ -7413,17 +7413,17 @@ public:
         Statement*        stmt;
         const unsigned    loopNum;
         const bool        cloneForArrayBounds;
-        const bool        cloneForTypeTests;
+        const bool        cloneForGDVTests;
         LoopCloneVisitorInfo(LoopCloneContext* context,
                              unsigned          loopNum,
                              Statement*        stmt,
                              bool              cloneForArrayBounds,
-                             bool              cloneForTypeTests)
+                             bool              cloneForGDVTests)
             : context(context)
             , stmt(nullptr)
             , loopNum(loopNum)
             , cloneForArrayBounds(cloneForArrayBounds)
-            , cloneForTypeTests(cloneForTypeTests)
+            , cloneForGDVTests(cloneForGDVTests)
         {
         }
     };
@@ -7437,6 +7437,8 @@ public:
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
     bool optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
+    bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     bool optLoopCloningEnabled();
 
@@ -7444,6 +7446,7 @@ public:
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);
 #endif
     void optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool fastPath));
+    void optPerformFlowGraphOptimizations(unsigned loopNum, LoopCloneContext* context);
     bool optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context);
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,

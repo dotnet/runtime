@@ -324,9 +324,35 @@ struct LcTypeTestOptInfo : public LcOptInfo
     unsigned lclNum;
     // handle being tested for
     CORINFO_CLASS_HANDLE clsHnd;
+    BasicBlock*          guardBlock;
 
-    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
-        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd)
+    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd, BasicBlock* guardBlock)
+        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd), guardBlock(guardBlock)
+    {
+    }
+};
+
+struct LcMethodAddrTestOptInfo : public LcOptInfo
+{
+    // Invariant local whose target field(s) are tested
+    unsigned delegateLclNum;
+    // Invariant tree representing method address on the other side of the test
+    void*       methAddr;
+    bool        isSlot;
+    BasicBlock* guardBlock;
+#ifdef DEBUG
+    CORINFO_METHOD_HANDLE targetMethHnd;
+#endif
+
+    LcMethodAddrTestOptInfo(unsigned    delegateLclNum,
+                            void*       methAddr,
+                            bool        isSlot,
+                            BasicBlock* guardBlock DEBUG_ARG(CORINFO_METHOD_HANDLE targetMethHnd))
+        : LcOptInfo(LcMethodAddrTest)
+        , delegateLclNum(delegateLclNum)
+        , methAddr(methAddr)
+        , isSlot(isSlot)
+        , guardBlock(guardBlock) DEBUG_ARG(targetMethHnd(targetMethHnd))
     {
     }
 };
@@ -423,9 +449,7 @@ struct LC_Array
 };
 
 //------------------------------------------------------------------------
-// LC_Ident: symbolic representation of either a constant like 1 or 2,
-//   or a variable like V02 or V03, or an "LC_Array", or the null constant,
-//   or a class handle, or an indir of a variable like *V02.
+// LC_Ident: symbolic representation of "a value"
 //
 struct LC_Ident
 {
@@ -434,23 +458,44 @@ struct LC_Ident
         Invalid,
         Const,
         Var,
-        ArrLen,
+        ArrAccess,
         Null,
         ClassHandle,
-        Indir,
+        IndirOfLocal,
+        MethodAddr,
+        IndirOfMethodAddrSlot,
     };
 
 private:
     union {
-        unsigned             constant;
-        unsigned             lclNum;
-        LC_Array             arrLen;
+        unsigned constant;
+        struct
+        {
+            unsigned lclNum;
+            unsigned indirOffs;
+        };
+        LC_Array             arrAccess;
         CORINFO_CLASS_HANDLE clsHnd;
+        struct
+        {
+            void* methAddr;
+#ifdef DEBUG
+            CORINFO_METHOD_HANDLE targetMethHnd; // for nice disassembly
+#endif
+        };
     };
+
+    LC_Ident(IdentType type) : type(type)
+    {
+    }
 
 public:
     // The type of this object
     IdentType type;
+
+    LC_Ident() : type(Invalid)
+    {
+    }
 
     // Equality operator
     bool operator==(const LC_Ident& that) const
@@ -467,12 +512,17 @@ public:
             case ClassHandle:
                 return (clsHnd == that.clsHnd);
             case Var:
-            case Indir:
                 return (lclNum == that.lclNum);
-            case ArrLen:
-                return (arrLen == that.arrLen);
+            case IndirOfLocal:
+                return (lclNum == that.lclNum) && (indirOffs == that.indirOffs);
+            case ArrAccess:
+                return (arrAccess == that.arrAccess);
             case Null:
                 return true;
+            case MethodAddr:
+                return (methAddr == that.methAddr);
+            case IndirOfMethodAddrSlot:
+                return (methAddr == that.methAddr);
             default:
                 assert(!"Unknown LC_Ident type");
                 unreached();
@@ -481,7 +531,7 @@ public:
 
     unsigned LclNum() const
     {
-        assert((type == Var) || (type == Indir));
+        assert((type == Var) || (type == IndirOfLocal));
         return lclNum;
     }
 
@@ -496,17 +546,26 @@ public:
             case Var:
                 printf("V%02u", lclNum);
                 break;
-            case Indir:
-                printf("*V%02u", lclNum);
+            case IndirOfLocal:
+                if (indirOffs != 0)
+                    printf("*(V%02u + %x)", lclNum, indirOffs);
+                else
+                    printf("*V%02u", lclNum);
                 break;
             case ClassHandle:
                 printf("%p", clsHnd);
                 break;
-            case ArrLen:
-                arrLen.Print();
+            case ArrAccess:
+                arrAccess.Print();
                 break;
             case Null:
                 printf("null");
+                break;
+            case MethodAddr:
+                printf("%p", methAddr);
+                break;
+            case IndirOfMethodAddrSlot:
+                printf("[%p]", methAddr);
                 break;
             default:
                 printf("INVALID");
@@ -515,49 +574,65 @@ public:
     }
 #endif
 
-    LC_Ident() : type(Invalid)
-    {
-    }
-
-    explicit LC_Ident(unsigned val, IdentType type) : type(type)
-    {
-        if (type == Const)
-        {
-            constant = val;
-        }
-        else if ((type == Var) || (type == Indir))
-        {
-            lclNum = val;
-        }
-        else
-        {
-            unreached();
-        }
-    }
-
-    explicit LC_Ident(CORINFO_CLASS_HANDLE val, IdentType type) : type(type)
-    {
-        if (type == ClassHandle)
-        {
-            clsHnd = val;
-        }
-        else
-        {
-            unreached();
-        }
-    }
-
-    explicit LC_Ident(IdentType type) : type(type)
-    {
-        assert(type == Null);
-    }
-
-    explicit LC_Ident(const LC_Array& arrLen) : arrLen(arrLen), type(ArrLen)
-    {
-    }
-
     // Convert this symbolic representation into a tree node.
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
+
+    static LC_Ident CreateVar(unsigned lclNum)
+    {
+        LC_Ident id(Var);
+        id.lclNum = lclNum;
+        return id;
+    }
+
+    static LC_Ident CreateIndirOfLocal(unsigned lclNum, unsigned offs)
+    {
+        LC_Ident id(IndirOfLocal);
+        id.lclNum    = lclNum;
+        id.indirOffs = offs;
+        return id;
+    }
+
+    static LC_Ident CreateConst(unsigned value)
+    {
+        LC_Ident id(Const);
+        id.constant = value;
+        return id;
+    }
+
+    static LC_Ident CreateArrAccess(const LC_Array& arrLen)
+    {
+        LC_Ident id(ArrAccess);
+        id.arrAccess = arrLen;
+        return id;
+    }
+
+    static LC_Ident CreateNull()
+    {
+        return LC_Ident(Null);
+    }
+
+    static LC_Ident CreateClassHandle(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        LC_Ident id(ClassHandle);
+        id.clsHnd = clsHnd;
+        return id;
+    }
+
+    static LC_Ident CreateMethodAddr(void* methAddr DEBUG_ARG(CORINFO_METHOD_HANDLE methHnd))
+    {
+        LC_Ident id(MethodAddr);
+        id.methAddr = methAddr;
+        INDEBUG(id.targetMethHnd = methHnd);
+        return id;
+    }
+
+    static LC_Ident CreateIndirMethodAddrSlot(void* methAddrSlot DEBUG_ARG(CORINFO_METHOD_HANDLE methHnd))
+    {
+        LC_Ident id(IndirOfMethodAddrSlot);
+        id.methAddr = methAddrSlot;
+        INDEBUG(id.targetMethHnd = methHnd);
+        return id;
+    }
 };
 
 /**
