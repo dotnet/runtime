@@ -482,7 +482,7 @@ namespace System.Net.Mail.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
             // We should still be able to send mail on the SmtpClient instance
-            await Task.Run(() => client.SendMailAsync(message).GetAwaiter().GetResult()).WaitAsync(TestHelper.PassingTestTimeout);
+            await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
 
             Assert.Equal("<foo@internet.com>", server.MailFrom);
             Assert.Equal("<bar@internet.com>", server.MailTo);
