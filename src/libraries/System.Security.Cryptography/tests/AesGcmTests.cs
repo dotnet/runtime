@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.Tests
 
                 tag[0] ^= 1;
 
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(nonce, data, tag, data));
                 Assert.Equal(new byte[data.Length], data);
             }
