@@ -36,7 +36,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(15, true, 15, true, "permessage-deflate; client_max_window_bits")]
         [InlineData(14, true, 15, true, "permessage-deflate; client_max_window_bits=14")]
         [InlineData(15, true, 14, true, "permessage-deflate; client_max_window_bits; server_max_window_bits=14")]

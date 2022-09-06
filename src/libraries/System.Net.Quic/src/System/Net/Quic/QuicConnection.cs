@@ -167,7 +167,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
 
-    /// <inheritdoc cref="ToString"/>
+    /// <inheritdoc />
     public override string ToString() => _handle.ToString();
 
     /// <summary>
