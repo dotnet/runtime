@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
@@ -10,10 +12,11 @@ namespace Internal.IL.Stubs
     /// All parameters are simple types. There will be no code
     /// generated for this method. Instead, a static reference to a symbol will be emitted.
     /// </summary>
-    public sealed partial class PInvokeTargetNativeMethod : MethodDesc
+    public sealed partial class PInvokeTargetNativeMethod : MethodDesc, IJitHashableOnly
     {
         private readonly MethodDesc _declMethod;
         private readonly MethodSignature _signature;
+        private readonly int _jitVisibleHashCode;
 
         public MethodDesc Target
         {
@@ -27,6 +30,17 @@ namespace Internal.IL.Stubs
         {
             _declMethod = declMethod;
             _signature = signature;
+            _jitVisibleHashCode = HashCode.Combine(_declMethod.GetHashCode(), 1019111186);
+        }
+
+        protected override int ComputeHashCode()
+        {
+            throw new NotSupportedException("This method may not be stored  as it is expected to only be used transiently in the JIT");
+        }
+
+        int IJitHashableOnly.GetJitVisibleHashCode()
+        {
+            return _jitVisibleHashCode;
         }
 
         public override TypeSystemContext Context

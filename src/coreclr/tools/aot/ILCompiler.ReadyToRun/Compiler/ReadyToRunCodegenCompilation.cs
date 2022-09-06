@@ -269,6 +269,7 @@ namespace ILCompiler
         /// for the same type during compilation so preserve the computed value.
         /// </summary>
         private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
+        private Func<TypeDesc, bool> _computedFixedLayoutTypesUncached;
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -306,6 +307,7 @@ namespace ILCompiler
                   logger,
                   instructionSetSupport)
         {
+            _computedFixedLayoutTypesUncached = IsLayoutFixedInCurrentVersionBubbleInternal;
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
@@ -507,7 +509,7 @@ namespace ILCompiler
         }
 
         public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
-            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
+            _computedFixedLayoutTypes.GetOrAdd(type, _computedFixedLayoutTypesUncached);
 
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {

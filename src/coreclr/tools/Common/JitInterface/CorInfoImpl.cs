@@ -653,7 +653,7 @@ namespace Internal.JitInterface
             _pgoResults.Clear();
         }
 
-        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>();
+        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
         private List<object> _handleToObject = new List<object>();
 
         private const int handleMultiplier = 8;
@@ -989,7 +989,16 @@ namespace Internal.JitInterface
             if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
+            {
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
+
+                // The JIT only cares about the sealed flag if the method is virtual, or if
+                // it is a delegate.
+
+                // method or class might have the final bit
+                if (_compilation.IsEffectivelySealed(method))
+                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
+            }
             if (method.IsAbstract)
                 result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             if (method.IsConstructor || method.IsStaticConstructor)
@@ -999,10 +1008,6 @@ namespace Internal.JitInterface
             // See if we need to embed a .cctor call at the head of the
             // method body.
             //
-
-            // method or class might have the final bit
-            if (_compilation.IsEffectivelySealed(method))
-                result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;

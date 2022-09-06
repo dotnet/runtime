@@ -103,6 +103,9 @@
     <Compile Include="..\..\Common\TypeSystem\CodeGen\FieldDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.CodeGen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\CodeGen\IJitHashableOnly.cs">
+      <Link>TypeSystem\CodeGen\IJitHashableOnly.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\CodeGen\MethodDelegator.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDelegator.CodeGen.cs</Link>
     </Compile>

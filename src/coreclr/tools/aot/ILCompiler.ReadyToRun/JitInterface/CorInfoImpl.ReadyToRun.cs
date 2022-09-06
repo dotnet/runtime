@@ -2738,9 +2738,9 @@ namespace Internal.JitInterface
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc methodDesc = HandleToObject(method);
-            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
                 methodDesc = rawPInvoke.Target;
+            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
