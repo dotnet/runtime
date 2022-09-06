@@ -595,6 +595,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
+        ${{ if in(parameters.testGroup, 'innerloop', 'disasmchecks') }}:
+          scenarios:
+          - disasmchecks
         ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
           scenarios:
           - clrinterpreter
