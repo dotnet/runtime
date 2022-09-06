@@ -618,7 +618,7 @@ namespace System.Net.Http
 
                 while (!ParseStatusLine(response))
                 {
-                    await FillAsync(async).ConfigureAwait(false);
+                    await FillForHeadersAsync(async).ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
@@ -654,20 +654,20 @@ namespace System.Net.Http
                     // Discard headers that come with the interim 1xx responses.
                     while (!ParseHeaders(response: null, isFromTrailer: false))
                     {
-                        await FillAsync(async).ConfigureAwait(false);
+                        await FillForHeadersAsync(async).ConfigureAwait(false);
                     }
 
                     // Parse the status line for next response.
                     while (!ParseStatusLine(response))
                     {
-                        await FillAsync(async).ConfigureAwait(false);
+                        await FillForHeadersAsync(async).ConfigureAwait(false);
                     }
                 }
 
                 // Parse the response headers.  Logic after this point depends on being able to examine headers in the response object.
                 while (!ParseHeaders(response, isFromTrailer: false))
                 {
-                    await FillAsync(async).ConfigureAwait(false);
+                    await FillForHeadersAsync(async).ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -1077,7 +1077,7 @@ namespace System.Net.Http
 
         private bool ParseHeaders(HttpResponseMessage? response, bool isFromTrailer)
         {
-            Span<byte> buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
+            Span<byte> buffer = new Span<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
 
             (bool finished, int bytesConsumed) = ParseHeadersCore(buffer, response, isFromTrailer);
 
@@ -1687,13 +1687,6 @@ namespace System.Net.Http
             throw new HttpRequestException(SR.net_http_chunk_too_large);
         }
 
-        private void Fill()
-        {
-            ValueTask fillTask = FillAsync(async: false);
-            Debug.Assert(fillTask.IsCompleted);
-            fillTask.GetAwaiter().GetResult();
-        }
-
         // Does not throw on EOF. Also assumes there is no buffered data.
         private async ValueTask InitialFillAsync(bool async)
         {
@@ -1754,6 +1747,37 @@ namespace System.Net.Http
             }
 
             _readLength += bytesRead;
+        }
+
+        private ValueTask FillForHeadersAsync(bool async)
+        {
+            // If the read offset is 0, it means we haven't consumed any data since the last FillAsync.
+            // If so, read until we either find the next new line or we hit the MaxResponseHeadersLength limit.
+            return _readOffset == 0
+                ? ReadUntilNextNewLineAsync(async)
+                : FillAsync(async);
+
+            async ValueTask ReadUntilNextNewLineAsync(bool async)
+            {
+                while (true)
+                {
+                    int searchOffset = _readLength;
+
+                    await FillAsync(async).ConfigureAwait(false);
+                    Debug.Assert(_readOffset == 0);
+
+                    // There's no need to search the whole buffer, only look through the new bytes we just read.
+                    if (new ReadOnlySpan<byte>(_readBuffer, searchOffset, _readLength - searchOffset).Contains((byte)'\n'))
+                    {
+                        break;
+                    }
+
+                    if (_readLength >= _allowedReadLineBytes)
+                    {
+                        ThrowExceededAllowedReadLineBytes();
+                    }
+                }
+            }
         }
 
         private void ReadFromBuffer(Span<byte> buffer)

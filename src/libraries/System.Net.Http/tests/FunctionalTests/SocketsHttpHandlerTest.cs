@@ -11,6 +11,7 @@ using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -1272,6 +1273,89 @@ namespace System.Net.Http.Functional.Tests
                 }
                 catch { }
             });
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async)
+        {
+            Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
+                ? "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nLong-Header: "
+                : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
+
+            int readCount = 0;
+            int fastFillLength = 128 * 1024 * 1024; // 128 MB
+
+            Func<Memory<byte>, int> readFunc = memory =>
+            {
+                Span<byte> buffer = memory.Span;
+
+                if (!responsePrefix.IsEmpty)
+                {
+                    int toCopy = Math.Min(responsePrefix.Length, buffer.Length);
+                    responsePrefix.Span.Slice(0, toCopy).CopyTo(buffer);
+                    responsePrefix = responsePrefix.Slice(toCopy);
+                    return toCopy;
+                }
+
+                if (fastFillLength > 0)
+                {
+                    int toFill = Math.Min(fastFillLength, buffer.Length);
+                    buffer.Slice(0, toFill).Fill((byte)'a');
+                    fastFillLength -= toFill;
+                    return toFill;
+                }
+
+                if (++readCount < 500_000)
+                {
+                    // Slowly trickle data over 500 thousand read calls.
+                    // If the implementation scans the whole buffer after every read, it will have to sift through 64 TB of data.
+                    // As that is not achievable on current hardware within the PassingTestTimeout window, the test would fail.
+                    buffer[0] = (byte)'a';
+                    return 1;
+                }
+
+                Debug.Assert(buffer.Length >= 4);
+                return Encoding.ASCII.GetBytes("\r\n\r\n", buffer);
+            };
+
+            var responseStream = new DelegateDelegatingStream(Stream.Null)
+            {
+                ReadAsyncMemoryFunc = (memory, _) => new ValueTask<int>(readFunc(memory)),
+                ReadFunc = (array, offset, length) => readFunc(array.AsMemory(offset, length)),
+                ReadSpanFunc = buffer =>
+                {
+                    byte[] arrayBuffer = new byte[buffer.Length];
+                    int read = readFunc(arrayBuffer);
+                    arrayBuffer.AsSpan(0, read).CopyTo(buffer);
+                    return read;
+                }
+            };
+
+            using var client = new HttpClient(new SocketsHttpHandler
+            {
+                ConnectCallback = (_, _) => new ValueTask<Stream>(responseStream),
+                MaxResponseHeadersLength = 1024 * 1024 // 1 GB
+            })
+            {
+                Timeout = TestHelper.PassingTestTimeout
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://foo");
+
+            using HttpResponseMessage response = async
+                ? await client.SendAsync(request)
+                : client.Send(request);
+
+            response.EnsureSuccessStatusCode();
+
+            HttpHeaders headers = trailingHeaders
+                ? response.TrailingHeaders
+                : response.Headers;
+            Assert.True(headers.NonValidated.Contains("Long-Header"));
         }
     }
 

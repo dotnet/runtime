@@ -94,7 +94,7 @@ namespace System.Net.Http
                     }
 
                     // We're only here if we need more data to make forward progress.
-                    _connection.Fill();
+                    Fill();
 
                     // Now that we have more, see if we can get any response data, and if
                     // we can we're done.
@@ -210,7 +210,7 @@ namespace System.Net.Http
                         }
 
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
@@ -273,7 +273,7 @@ namespace System.Net.Http
                             return;
                         }
 
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
@@ -513,7 +513,7 @@ namespace System.Net.Http
                             }
                         }
 
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
                     }
                 }
                 finally
@@ -521,6 +521,24 @@ namespace System.Net.Http
                     ctr.Dispose();
                     cts?.Dispose();
                 }
+            }
+
+            private void Fill()
+            {
+                Debug.Assert(_connection is not null);
+                ValueTask fillTask = _state == ParsingState.ConsumeTrailers
+                    ? _connection.FillForHeadersAsync(async: false)
+                    : _connection.FillAsync(async: false);
+                Debug.Assert(fillTask.IsCompleted);
+                fillTask.GetAwaiter().GetResult();
+            }
+
+            private ValueTask FillAsync()
+            {
+                Debug.Assert(_connection is not null);
+                return _state == ParsingState.ConsumeTrailers
+                    ? _connection.FillForHeadersAsync(async: true)
+                    : _connection.FillAsync(async: true);
             }
         }
     }
