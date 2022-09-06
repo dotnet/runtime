@@ -18014,7 +18014,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 GenTreeCall* iciCall = impInlineInfo->iciCall->AsCall();
 
                 // Assign the inlinee return into a spill temp.
-                // spill temp only exists if there are multiple return points
                 if (fgNeedReturnSpillTemp())
                 {
                     // in this case we have to insert multiple struct copies to the temp
@@ -18054,7 +18053,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     assert(iciCall->gtArgs.HasRetBuffer());
                     GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
 
-                    // The spill temp only exists when there are multiple return points.
                     if (fgNeedReturnSpillTemp())
                     {
                         // If this is the first return we have seen set the retExpr.
