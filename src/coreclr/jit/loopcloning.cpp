@@ -2821,7 +2821,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
         GenTree* relopOp1 = relop->AsOp()->gtGetOp1();
         GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
 
-        // One side or the other must be an indir and the other must be a loop
+        // One side or the other must be an indir and the other must be loop
         // invariant. Currently, we'll just look for a constant or indir of a
         // constant. Start out by normalizing it to the right.
         //
@@ -2882,8 +2882,6 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
         }
         else if (optIsHandleOrIndirOfHandle(relopOp2, GTF_ICON_FTN_ADDR))
         {
-            // The indir addr must be loop invariant TYP_REF local
-            //
             GenTree* indirAddr = relopOp1->AsIndir()->Addr();
 
             //  ▌  JTRUE     void

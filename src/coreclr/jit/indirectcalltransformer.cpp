@@ -547,7 +547,6 @@ private:
             if (thisTree->IsLocal())
             {
                 thisTree       = compiler->gtCloneExpr(thisTree);
-                LclVarDsc* dsc = compiler->lvaGetDesc(thisTree->AsLclVarCommon());
             }
             else
             {
