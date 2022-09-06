@@ -1375,6 +1375,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_WASM
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		if (esize != 1)
+			return NULL;
+
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
 #else
 		return NULL;
