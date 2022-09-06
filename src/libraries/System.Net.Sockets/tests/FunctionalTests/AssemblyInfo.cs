@@ -4,5 +4,4 @@
 using Xunit;
 
 [assembly: SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
 [assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on Browser")]

@@ -17,31 +17,18 @@ jobs:
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
     variables:
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: timeoutPerTestInMinutes
         value: 10
       - name: timeoutPerTestCollectionInMinutes
         value: 200
-      - name: isDefaultPipeline
-        # default pipeline, so not runtime-wasm, and not
-        # runtime-extra-platforms+!rolling build
-        value: ${{
-            and(
-              ne(parameters.isWasmOnlyBuild, true),
-              or(
-                ne(parameters.isExtraPlatformsBuild, true),
-                eq(variables['isRollingBuild'], true)))
-          }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true))
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
@@ -49,6 +36,8 @@ jobs:
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      # FIXME: will get triggered by only wbt/dbg changes
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
       #     - then run only if it would not have run on default pipelines (based

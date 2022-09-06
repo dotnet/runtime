@@ -16,7 +16,7 @@ using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs
             = new EntityMap<Cts.ModuleDesc, ScopeDefinition>(EqualityComparer<Cts.ModuleDesc>.Default);
@@ -148,11 +148,11 @@ namespace ILCompiler.Metadata
             scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
         }
 
-        private class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
+        private sealed class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
         {
             public bool Equals(AssemblyName x, AssemblyName y)
             {
-                return Object.Equals(x.Name, y.Name);
+                return Equals(x.Name, y.Name);
             }
 
             public int GetHashCode(AssemblyName obj)

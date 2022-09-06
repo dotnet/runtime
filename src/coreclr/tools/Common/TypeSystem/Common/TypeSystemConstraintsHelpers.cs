@@ -53,7 +53,7 @@ namespace Internal.TypeSystem
             if (instantiationParam.IsByRefLike && (constraints & GenericConstraints.AcceptByRefLike) == 0)
                 return false;
 
-            var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
+            var instantiatedConstraints = default(ArrayBuilder<TypeDesc>);
             GetInstantiatedConstraintsRecursive(instantiationParamContext, instantiationParam, ref instantiatedConstraints);
 
             foreach (var constraintType in genericParam.TypeConstraints)

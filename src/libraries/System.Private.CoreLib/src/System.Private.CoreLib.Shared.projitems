@@ -260,6 +260,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.NonAndroid.cs" Condition="'$(TargetsAndroid)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Decimal.cs" />
@@ -1647,9 +1649,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs</Link>
