@@ -13,7 +13,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void Exp10M1Test()
         {
-            Assert.Equal(Single.Exp10M1(baseValue), ExponentialFunctionsHelper<ExponentialFunctionsDimHelper>.Exp10M1(helperValue).Value);
+            Assert.Equal(float.Exp10M1(baseValue), ExponentialFunctionsHelper<ExponentialFunctionsDimHelper>.Exp10M1(helperValue).Value);
         }
     }
 }

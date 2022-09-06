@@ -106,7 +106,7 @@ namespace System.Numerics.Tests
         }
 
         static FloatingPointDimHelper IFloatingPoint<FloatingPointDimHelper>.Round(FloatingPointDimHelper x, int digits, MidpointRounding mode)
-            => new FloatingPointDimHelper(Single.Round(x.Value, digits, mode));
+            => new FloatingPointDimHelper(float.Round(x.Value, digits, mode));
 
         //
         // The below are all not used for existing Dim tests, so they stay unimplemented
@@ -199,8 +199,7 @@ namespace System.Numerics.Tests
             Value = value;
         }
 
-
-        static ExponentialFunctionsDimHelper IExponentialFunctions<ExponentialFunctionsDimHelper>.Exp10(ExponentialFunctionsDimHelper x) => new ExponentialFunctionsDimHelper(Single.Exp10(x.Value));
+        static ExponentialFunctionsDimHelper IExponentialFunctions<ExponentialFunctionsDimHelper>.Exp10(ExponentialFunctionsDimHelper x) => new ExponentialFunctionsDimHelper(float.Exp10(x.Value));
         static ExponentialFunctionsDimHelper INumberBase<ExponentialFunctionsDimHelper>.One => new ExponentialFunctionsDimHelper(1f);
         static ExponentialFunctionsDimHelper ISubtractionOperators<ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper, ExponentialFunctionsDimHelper>.operator -(ExponentialFunctionsDimHelper left, ExponentialFunctionsDimHelper right)
             => new ExponentialFunctionsDimHelper(left.Value - right.Value);
