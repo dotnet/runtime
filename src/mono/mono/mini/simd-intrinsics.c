@@ -545,6 +545,87 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 }
 #endif
 
+#ifdef TARGET_AMD64
+static int type_to_extract_op (MonoTypeEnum type);
+static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
+
+static MonoInst*
+extract_first_element(MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
+{
+	int extract_op = type_to_extract_op (element_type);
+	MonoInst* ins = emit_simd_ins (cfg, klass, extract_op, sreg, -1);
+	ins->inst_c0 = 0;
+	ins->inst_c1 = element_type;
+
+	return ins;
+}
+
+static MonoInst*
+emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
+{
+	MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+	int size = mono_class_value_size (arg_class, NULL);
+	if ( size != 16 ) 		// Works only with Vector128
+		return NULL;
+
+	int instc0 = -1;
+	switch (element_type) {
+		case MONO_TYPE_R4:
+			instc0 = INTRINS_SSE_HADDPS;
+			break;
+		case MONO_TYPE_R8:
+			instc0 = INTRINS_SSE_HADDPD;
+			break;
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+			// byte, sbyte not supported yet
+			return NULL;
+		case MONO_TYPE_I2: 
+		case MONO_TYPE_U2:
+			instc0 = INTRINS_SSE_PHADDW;
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			instc0 = INTRINS_SSE_PHADDD;
+			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8: {
+			// Ssse3 doesn't have support for HorizontalAdd on i64
+			MonoInst* lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
+			MonoInst* upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
+
+			// Sum lower and upper i64
+			args[0] = lower;
+			args[1] = upper;
+			fsig->param_count = 2;
+			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
+
+			return extract_first_element(cfg, klass, element_type, ins->dreg);;
+		}
+		default: {
+			return NULL;
+		}
+	}
+
+	MonoType* etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+	int elem_size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+	int num_elems = size / elem_size;
+	int num_rounds = fast_log2[num_elems];
+
+	MonoInst* tmp = emit_xzero (cfg, arg_class);
+	MonoInst* ins = NULL;
+	args[1] = tmp;
+	fsig->param_count = 2;
+	// HorizontalAdds over vector log2(num_elems) times
+	for ( int i = 0; i < num_rounds; ++i ) {
+		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, element_type, fsig, args);
+		args[0] = ins;
+	}
+
+	return extract_first_element(cfg, klass, element_type, ins->dreg);
+}
+#endif
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -1381,73 +1462,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_Sum: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
+#ifdef TARGET_ARM64
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);		
 #elif TARGET_AMD64
-		// TODO use log2(vector_length) * HorizontalAdd from SSSE3 - 1 to sum elems
-		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int size = mono_class_value_size (arg_class, NULL);
-		if ( size != 16 ) 		// Works only with Vector128
-			return NULL;
-
-		int instc0 = -1;
-		switch (arg0_type) {
-			case MONO_TYPE_R4: {
-				instc0 = INTRINS_SSE_HADDPS;
-				break;
-			}
-			case MONO_TYPE_R8: {
-				instc0 = INTRINS_SSE_HADDPD;
-				break;
-			}
-			case MONO_TYPE_I2: {
-				instc0 = INTRINS_SSE_PHADDW;
-				break;
-			} 
-			default: {
-				instc0 = INTRINS_SSE_PHADDD;
-			}
-		}
-
-
-		MonoInst* tmp = emit_xzero (cfg, arg_class);
-		MonoInst* ins = NULL;
-
-		//MonoInst* ins = emit_simd_ins(cfg, klass, OP_XOP_X_X_X, args[0]->dreg, tmp->dreg);
-		//ins->inst_c0 = instc0;
-		//ins->inst_c1 = arg0_type;
-
-		// TODO check with CoreCLR if can be done more effectively
-		args[1] = tmp;
-		fsig->param_count = 2;
-		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, arg0_type, fsig, args);
-		args[0] = ins;
-		args[1] = tmp;
-		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, arg0_type, fsig, args);
-
-
-	
-		//return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, args);		
-		//ins = emit_simd_ins (cfg, klass, extract_op, args[0]->dreg, -1);
-		//return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, ins->args);
-		// emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, args [0]->dreg, -1);
-		//return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN2, ins->dreg, args [1]->dreg);
-
-
-		/*
- 			OP_XOP_X_X_X, INTRINS_SSE_HADDPS (float), INTRINS_SSE_HADDPD(double), INTRINS_SSE_PHADDW(short), INTRINS_SSE_PHADDD(ints)
-
-		*/
-
-		// Extract result from vector
-		int extract_op = type_to_extract_op (arg0_type);
-		ins = emit_simd_ins (cfg, klass, extract_op, ins->dreg, -1);
-		ins->inst_c0 = 0;
-		ins->inst_c1 = arg0_type;
-
-		return ins;
+		return emit_sum_vector(cfg, klass, fsig, arg0_type, args);
 #else
 		return NULL;
 #endif
