@@ -196,7 +196,6 @@ namespace System.PrivateUri.Tests
         [InlineData("username", "username")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        [InlineData(@"user/\?#@name", "user%2F%5C%3F%23%40name")]
         public void UserName_Get_Set(string value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
@@ -213,7 +212,6 @@ namespace System.PrivateUri.Tests
         [InlineData("password", "password")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        [InlineData(@"pass/\?#@word", "pass%2F%5C%3F%23%40word")]
         public void Password_Get_Set(string value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo1:PLACEHOLDER@domain/path?query#fragment");
@@ -385,6 +383,19 @@ namespace System.PrivateUri.Tests
             var uriBuilder = new UriBuilder();
             uriBuilder.Password = "password";
             Assert.Throws<UriFormatException>(() => uriBuilder.ToString()); // Uri has a password but no username
+        }
+
+        public static IEnumerable<object[]> ToString_EncodingTestData()
+        {
+            yield return new object[] { new UriBuilder() { UserName = @"user/\?#@name" }, "http://user%2F%5C%3F%23%40name@localhost/" };
+            yield return new object[] { new UriBuilder() { UserName = @"user/\?#@name", Password = @"pass/\?#@word" }, "http://user%2F%5C%3F%23%40name:pass%2F%5C%3F%23%40word@localhost/" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_EncodingTestData))]
+        public void ToString_EncodingUserInfo(UriBuilder uriBuilder, string expected)
+        {
+            Assert.Equal(expected, uriBuilder.ToString());
         }
 
         private static void VerifyUriBuilder(UriBuilder uriBuilder, string scheme, string userName, string password, string host, int port, string path, string query, string fragment)

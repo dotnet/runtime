@@ -141,7 +141,7 @@ namespace System
             get => _username;
             set
             {
-                _username = EncodeUserInfo(value);
+                _username = value ?? string.Empty;
                 _changed = true;
             }
         }
@@ -152,7 +152,7 @@ namespace System
             get => _password;
             set
             {
-                _password = EncodeUserInfo(value);
+                _password = value ?? string.Empty;
                 _changed = true;
             }
         }
@@ -255,13 +255,8 @@ namespace System
 
         public override int GetHashCode() => Uri.GetHashCode();
 
-        private static string EncodeUserInfo(string? input)
+        private static string EncodeUserInfo(string input)
         {
-            if (input == null)
-            {
-                return string.Empty;
-            }
-
             // The following characters ("/" / "\" / "?" / "#" / "@") are from the gen-delims group.
             // We have to escape them to avoid corrupting the rest of the Uri string.
             // Other characters like spaces or non-ASCII will be escaped by Uri, we can ignore them here.
@@ -338,12 +333,12 @@ namespace System
                 vsb.Append(schemeDelimiter);
             }
 
-            string username = UserName;
+            string username = EncodeUserInfo(UserName);
             if (username.Length != 0)
             {
                 vsb.Append(username);
 
-                string password = Password;
+                string password = EncodeUserInfo(Password);
                 if (password.Length != 0)
                 {
                     vsb.Append(':');
