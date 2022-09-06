@@ -342,9 +342,11 @@ namespace System
         internal static CorElementType GetCorElementType(RuntimeType type)
         {
             TypeHandle typeHandle = new TypeHandle((void*)type.m_handle);
-            return typeHandle.IsTypeDesc
+            CorElementType result = typeHandle.IsTypeDesc
                 ? typeHandle.AsTypeDesc()->InternalCorElementType
                 : typeHandle.AsMethodTable()->GetSignatureCorElementType();
+            GC.KeepAlive(type);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
