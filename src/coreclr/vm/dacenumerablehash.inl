@@ -329,7 +329,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
             }
 
             // Move to the next entry in the chain.
-            pEntry = pEntry->m_pNextEntry;
+            pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
         }
 
         // in a rare case if resize is in progress, look in the new table as well.
@@ -368,7 +368,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
     iHash = pVolatileEntry->m_iHashValue;
 
     // Iterate over the rest ot the bucket chain.
-    while ((pVolatileEntry = pVolatileEntry->m_pNextEntry) != nullptr)
+    while ((pVolatileEntry = VolatileLoadWithoutBarrier(&pVolatileEntry->m_pNextEntry)) != nullptr)
     {
         if (pVolatileEntry->m_iHashValue == iHash)
         {
