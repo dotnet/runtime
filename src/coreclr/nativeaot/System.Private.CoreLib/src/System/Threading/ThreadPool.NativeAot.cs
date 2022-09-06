@@ -23,7 +23,5 @@ namespace System.Threading
         internal static void ReportThreadStatus(bool isWorking)
         {
         }
-
-        private static long PendingUnmanagedWorkItemCount => 0;
     }
 }

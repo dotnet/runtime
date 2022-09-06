@@ -942,7 +942,7 @@ namespace System.Configuration
                             // We don't need a factory record unless this is the root declaration.
                             // We know it is not the root declaration if there is no factory
                             // declared here. This is important to avoid a walk up the config
-                            // hierachy when there is no input in this record.
+                            // hierarchy when there is no input in this record.
                             factoryRecord = GetFactoryRecord(configKey, false);
                             if (factoryRecord == null) isRootDeclaration = false;
                             else
@@ -1955,7 +1955,7 @@ namespace System.Configuration
                                             overrideModeDefault = OverrideModeSetting.CreateFromXmlReadValue(
                                                 OverrideModeSetting.ParseOverrideModeXmlValue(xmlUtil.Reader.Value, xmlUtil));
 
-                                            // Inherit means Allow when comming from the default value
+                                            // Inherit means Allow when coming from the default value
                                             if (overrideModeDefault.OverrideMode == OverrideMode.Inherit)
                                                 overrideModeDefault.ChangeModeInternal(OverrideMode.Allow);
                                         }
@@ -2166,12 +2166,12 @@ namespace System.Configuration
             }
         }
 
-        // Return the lock mode for a section as comming from parent config levels
+        // Return the lock mode for a section as coming from parent config levels
         private OverrideMode ResolveOverrideModeFromParent(string configKey, out OverrideMode childLockMode)
         {
             // When the current record is a location config level we are a direct child of the config level of the actual
             // config file inside which the location tag is. For example we have a file d:\inetpub\wwwroot\web.config which
-            // containts <location path="Sub"> then "this" will be the config level inside the location tag and this.Parent
+            // contains <location path="Sub"> then "this" will be the config level inside the location tag and this.Parent
             // is the config level of d:\inetpub\wwwroot\web.config.
 
             // What we will do to come up with the result is:
@@ -2192,7 +2192,7 @@ namespace System.Configuration
             // 2) If we can't find an existing section record we have two cases again:
             //      a)  We are at the section declaration level - at this level a section is always unlocked by definition
             //          If this wasnt so there would be no way to unlock a section that is locked by default
-            //          A Location config is a bit wierd again in a sence that a location config is unlocked if its in the config file where the section is declared
+            //          A Location config is a bit weird again in a sence that a location config is unlocked if its in the config file where the section is declared
             //          I.e. if "this" is a location record then a section is unconditionally unlocked if "this.Parent" is the section declaration level
             //      b) We are not at section declaration level - in this case the result is whatever the default lock mode for the section is ( remember
             //         that we fall back to the default since we couldn't find a section record with explicit lock mode nowhere above us)
@@ -2228,7 +2228,7 @@ namespace System.Configuration
                     {
                         mode = sectionRecord.LockChildren ? OverrideMode.Deny : OverrideMode.Allow;
 
-                        // When the lock mode is comming from a parent level the
+                        // When the lock mode is coming from a parent level the
                         // lock mode that applies to children of "this" is the same as what applies to "this"
                         childLockMode = mode;
                     }
@@ -2252,7 +2252,7 @@ namespace System.Configuration
                 {
                     // Case 2b
                     //
-                    // Lock mode for children and self is the same since the default value is comming
+                    // Lock mode for children and self is the same since the default value is coming
                     // from a parent level and hence - applies to both
                     childLockMode = mode = defaultMode;
 
@@ -2677,8 +2677,8 @@ namespace System.Configuration
                             // but we have it in sectionLockMode and childLockMode. Apply it now
                             sectionRecord.ChangeLockSettings(sectionLockMode, sectionChildLockMode);
 
-                            // Note that we first apply the lock mode comming from parent levels ( the line above ) and then
-                            // add the file input since the file input takes precedence over whats comming from parent
+                            // Note that we first apply the lock mode coming from parent levels ( the line above ) and then
+                            // add the file input since the file input takes precedence over whats coming from parent
                             SectionInput fileInput = new SectionInput(sectionXmlInfo, localErrors);
                             sectionRecord.AddFileInput(fileInput);
                         }

@@ -286,7 +286,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* If object has a CCW but has no finalizer, it was only
 	 * registered for finalization in order to free the CCW.
 	 * Else it needs the regular finalizer run.
-	 * FIXME: what to do about ressurection and suppression
+	 * FIXME: what to do about resurrection and suppression
 	 * of finalizer on object with CCW.
 	 */
 	if (mono_marshal_free_ccw (o) && !finalizer) {

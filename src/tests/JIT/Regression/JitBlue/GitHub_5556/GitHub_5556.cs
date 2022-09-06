@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This test has two effectively identical methods, one of which copies
-// its input paramter to a local, allowing it to be promoted.
+// its input parameter to a local, allowing it to be promoted.
 // The JIT should be able to generate identical code for these.
 
 using System;

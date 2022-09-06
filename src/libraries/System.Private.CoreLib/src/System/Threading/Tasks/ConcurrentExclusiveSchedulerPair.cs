@@ -470,7 +470,7 @@ namespace System.Threading.Tasks
         private sealed class CompletionState : Task
         {
             /// <summary>Whether the scheduler has had completion requested.</summary>
-            /// <remarks>This variable is not volatile, so to gurantee safe reading reads, Volatile.Read is used in TryExecuteTaskInline.</remarks>
+            /// <remarks>This variable is not volatile, so to guarantee safe reading reads, Volatile.Read is used in TryExecuteTaskInline.</remarks>
             internal bool m_completionRequested;
             /// <summary>Whether completion processing has been queued.</summary>
             internal bool m_completionQueued;

@@ -29,6 +29,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/class-init.h>
+#include <mono/metadata/class-init-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
@@ -1702,7 +1703,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 /*
  * mono_class_get_method_by_index:
  *
- *   Returns klass->methods [index], initializing klass->methods if neccesary.
+ *   Returns klass->methods [index], initializing klass->methods if necessary.
  *
  * LOCKING: Acquires the loader lock.
  */
@@ -1787,7 +1788,7 @@ mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method, MonoError 
 /*
  * mono_class_get_vtable_entry:
  *
- *   Returns klass->vtable [offset], computing it if neccesary. Returns NULL on failure.
+ *   Returns klass->vtable [offset], computing it if necessary. Returns NULL on failure.
  * LOCKING: Acquires the loader lock.
  */
 MonoMethod*
@@ -1971,7 +1972,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 /*
  * mono_method_get_vtable_slot:
  *
- *   Returns method->slot, computing it if neccesary. Return -1 on failure.
+ *   Returns method->slot, computing it if necessary. Return -1 on failure.
  * LOCKING: Acquires the loader lock.
  *
  * FIXME Use proper MonoError machinery here.
@@ -2911,7 +2912,7 @@ done:
  * \param context the generic context used to evaluate generic instantiations in
  * \param error Error handling context
  *
- * This functions exists to fullfill the fact that sometimes it's desirable to have access to the
+ * This functions exists to fulfill the fact that sometimes it's desirable to have access to the
  *
  * \returns The MonoType that represents \p type_token in \p image
  */
@@ -3779,7 +3780,7 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
  * mono_byref_type_is_assignable_from:
  * \param type The type assignee
  * \param ctype The type being assigned
- * \param signature_assignment whether this is a signature assginment check according to ECMA rules, or reflection
+ * \param signature_assignment whether this is a signature assignment check according to ECMA rules, or reflection
  *
  * Given two byref types, returns \c TRUE if values of the second type are assignable to locations of the first type.
  *
@@ -3909,6 +3910,61 @@ mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gb
 	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
 }
 
+static gboolean
+class_is_inited_for_assignable_check (MonoClass *klass)
+{
+	/* if it's inited, it's inited */
+	if (G_LIKELY (m_class_is_inited (klass)))
+		return TRUE;
+	/*
+	 * IMPORTANT: keep this in sync with ensure_inited_for_assignable_check and with
+	 * mono_class_is_assignable_from_general - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, this method will need extra checks.
+	 */
+
+	/* otherwise we need the supertypes and the interface bitmap */
+	if (!m_class_get_supertypes (klass))
+		return FALSE;
+	if (!m_class_get_interface_bitmap (klass))
+		return FALSE;
+	return TRUE;
+}
+
+static void
+ensure_inited_for_assignable_check (MonoClass *klass)
+{
+	if (m_class_is_inited (klass))
+		return;
+	/*
+	 * IMPORTANT: keep this in sync with class_is_inited_for_assignable_check and with
+	 * mono_class_is_assignable_from_general - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, this method will need to do additional work.
+	 */
+
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+		ensure_inited_for_assignable_check (gklass);
+	}
+
+	mono_class_setup_supertypes (klass);
+
+	ERROR_DECL (local_error);
+	mono_class_setup_interfaces (klass, local_error);
+	if (!is_ok (local_error)) {
+		mono_class_set_type_load_failure (klass, "Could not set up interfaces for %s.%s due to: %s", m_class_get_name_space (klass), m_class_get_name (klass), mono_error_get_message (local_error));
+		mono_error_cleanup (local_error);
+	}
+
+	int result;
+	result = mono_class_setup_interface_offsets_internal (klass, 0, MONO_SETUP_ITF_OFFSETS_BITMAP_ONLY);
+	if (result == -1)
+		mono_class_set_type_load_failure (klass, "Setting up interface_bitmap for %s.%s failed", m_class_get_name_space (klass), m_class_get_name (klass));
+
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
+		mono_class_setup_interface_id (klass);
+}
+
+
 void
 mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error)
 {
@@ -3919,12 +3975,16 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 	}
 
 	MONO_REQ_GC_UNSAFE_MODE;
-	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
-	if (!m_class_is_inited (klass))
-		mono_class_init_internal (klass);
+	/*
+	 * IMPORTANT: keep this in sync with class_is_inited_for_assignable_check and with
+	 * ensure_inited_for_assignable_check - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, those methods will need to do additional work.
+	 */
+	if (G_UNLIKELY (!class_is_inited_for_assignable_check (klass)))
+		ensure_inited_for_assignable_check (klass);
 
-	if (!m_class_is_inited (oklass))
-		mono_class_init_internal (oklass);
+	if (G_UNLIKELY (!class_is_inited_for_assignable_check (oklass)))
+		ensure_inited_for_assignable_check (oklass);
 
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_for_class_failure (error, klass);

@@ -86,12 +86,12 @@ PALEXPORT void SystemNative_GetControlCharacters(
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
  */
-PALEXPORT int32_t SystemNative_StdinReady(void);
+PALEXPORT int32_t SystemNative_StdinReady(int32_t distinguishNewLines);
 
 /**
  * Configures the terminal for System.Console Read.
  */
-PALEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
+PALEXPORT void SystemNative_InitializeConsoleBeforeRead(int32_t distinguishNewLines, uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
  * Configures the terminal after System.Console Read.
@@ -121,7 +121,7 @@ PALEXPORT int32_t SystemNative_GetSignalForBreak(void);
  *
  * Returns 1 on success, 0 on failure, in which case errno is set.
  */
-PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
+PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distinguishNewLines);
 
 typedef enum
 {

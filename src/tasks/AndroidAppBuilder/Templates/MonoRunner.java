@@ -26,6 +26,8 @@ import java.io.BufferedInputStream;
 import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public class MonoRunner extends Instrumentation
 {
@@ -88,7 +90,8 @@ public class MonoRunner extends Instrumentation
         unzipAssets(context, filesDir, "assets.zip");
 
         Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
-        return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args);
+        int localDateTimeOffset = OffsetDateTime.now().getOffset().getTotalSeconds();
+        return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args, localDateTimeOffset);
     }
 
     @Override
@@ -149,7 +152,7 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, String[] args);
+    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, String[] args, int local_date_time_offset);
 
     static native int setEnv(String key, String value);
 }

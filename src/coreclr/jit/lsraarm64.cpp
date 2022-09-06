@@ -792,6 +792,14 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_SELECT:
+            assert(dstCount == 1);
+            srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
+            srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
+            srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);
+            BuildDef(tree, dstCandidates);
+            break;
+
     } // end switch (tree->OperGet())
 
     if (tree->IsUnusedValue() && (dstCount != 0))

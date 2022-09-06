@@ -1848,7 +1848,7 @@ emit_array_address_ilgen (MonoMethodBuilder *mb, int rank, int elem_size)
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	mono_mb_emit_byte (mb, CEE_SUB);
 	mono_mb_emit_stloc (mb, ind);
-	/* if (ind >= bounds [0].length) goto exeception; */
+	/* if (ind >= bounds [0].length) goto exception; */
 	mono_mb_emit_ldloc (mb, ind);
 	mono_mb_emit_ldloc (mb, bounds);
 	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
@@ -1871,7 +1871,7 @@ emit_array_address_ilgen (MonoMethodBuilder *mb, int rank, int elem_size)
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		mono_mb_emit_byte (mb, CEE_SUB);
 		mono_mb_emit_stloc (mb, realidx);
-		/* if (realidx >= bounds [i].length) goto exeception; */
+		/* if (realidx >= bounds [i].length) goto exception; */
 		mono_mb_emit_ldloc (mb, realidx);
 		mono_mb_emit_ldloc (mb, bounds);
 		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
@@ -1976,7 +1976,7 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 	local_target = mono_mb_add_local (mb, object_type);
 
 	if (!void_ret)
-		local_res = mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret)));
+		local_res = mono_mb_add_local (mb, sig->ret);
 
 	g_assert (sig->hasthis);
 

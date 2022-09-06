@@ -2861,7 +2861,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, SIZEOF_MS_BLOCK_INFO);
 
-	if (mono_cpu_count () <= 1)
+	if (mono_cpu_limit () <= 1)
 		is_parallel = FALSE;
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
@@ -3027,7 +3027,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent && is_parallel)
-		sgen_workers_create_context (GENERATION_OLD, mono_cpu_count ());
+		sgen_workers_create_context (GENERATION_OLD, mono_cpu_limit ());
 	else if (is_concurrent)
 		sgen_workers_create_context (GENERATION_OLD, 1);
 

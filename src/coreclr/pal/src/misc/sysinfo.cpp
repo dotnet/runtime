@@ -338,10 +338,10 @@ GlobalMemoryStatusEx(
 
     // Get the physical memory size
 #if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    int64_t physical_memory;
+    uint64_t physical_memory;
 
     // Get the Physical memory size
-    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
+    physical_memory = ((uint64_t)sysconf( _SC_PHYS_PAGES )) * ((uint64_t) sysconf( _SC_PAGE_SIZE ));
     lpBuffer->ullTotalPhys = (DWORDLONG)physical_memory;
     fRetVal = TRUE;
 #elif HAVE_SYSCTL

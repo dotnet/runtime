@@ -879,7 +879,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1191,7 +1191,6 @@ namespace System
         private object? m_d;
         private int m_b;
         private object? m_e;
-        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169
 
@@ -1232,7 +1231,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return RuntimeHelpers.GetHashCodeOfPtr(Value);
         }
 
         public override bool Equals(object? obj)

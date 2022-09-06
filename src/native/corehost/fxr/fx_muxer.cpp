@@ -941,7 +941,7 @@ const host_context_t* fx_muxer_t::get_active_host_context()
     const hostpolicy_contract_t &hostpolicy_contract = g_active_host_context->hostpolicy_contract;
     if (hostpolicy_contract.initialize == nullptr)
     {
-        trace::warning(_X("Getting the contract for the initialized hostpolicy is only supprted for .NET Core 3.0 or a higher version."));
+        trace::warning(_X("Getting the contract for the initialized hostpolicy is only supported for .NET Core 3.0 or a higher version."));
         return nullptr;
     }
 

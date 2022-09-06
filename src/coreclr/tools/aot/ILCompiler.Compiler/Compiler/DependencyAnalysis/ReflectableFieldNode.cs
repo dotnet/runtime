@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -83,14 +82,17 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Runtime reflection stack needs to obtain the type handle of the field
-            // (but there's no type handles for function pointers)
-            TypeDesc fieldTypeToCheck = _field.FieldType;
-            while (fieldTypeToCheck.IsParameterizedType)
-                fieldTypeToCheck = ((ParameterizedType)fieldTypeToCheck).ParameterType;
+            if (!_field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Runtime reflection stack needs to obtain the type handle of the field
+                // (but there's no type handles for function pointers)
+                TypeDesc fieldTypeToCheck = _field.FieldType;
+                while (fieldTypeToCheck.IsParameterizedType)
+                    fieldTypeToCheck = ((ParameterizedType)fieldTypeToCheck).ParameterType;
 
-            if (!fieldTypeToCheck.IsFunctionPointer)
-                dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
+                if (!fieldTypeToCheck.IsFunctionPointer)
+                    dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
+            }
 
             return dependencies;
         }

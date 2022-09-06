@@ -123,7 +123,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(ArgCookie);
+            return RuntimeHelpers.GetHashCodeOfPtr(ArgCookie);
         }
 
         // Inherited from object

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -35,9 +36,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            Type runtimeType = GetRuntimeType(value);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            WriteUsingSerializer(writer, value, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            WriteCore(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            WriteUsingSerializer(writer, value, jsonTypeInfo);
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            WriteCoreAsObject(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -100,7 +100,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
+            jsonTypeInfo.EnsureConfigured();
+            WriteCore(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -135,8 +136,9 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteUsingGeneratedSerializer(writer, value, GetTypeInfo(context, runtimeType));
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+            WriteCoreAsObject(writer, value, jsonTypeInfo);
         }
     }
 }

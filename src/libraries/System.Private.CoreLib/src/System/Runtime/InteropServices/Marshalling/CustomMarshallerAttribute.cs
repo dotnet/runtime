@@ -1,21 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#nullable enable
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Attribute to indicate an entry point type for defining a marshaller.
+    /// Indicates an entry point type for defining a marshaller.
     /// </summary>
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = true)]
     public sealed class CustomMarshallerAttribute : Attribute
     {
         /// <summary>
-        /// Create a <see cref="CustomMarshallerAttribute"/> instance.
+        /// Initializes a new instance of the <see cref="CustomMarshallerAttribute"/> class.
         /// </summary>
-        /// <param name="managedType">Managed type to marshal.</param>
+        /// <param name="managedType">The managed type to marshal.</param>
         /// <param name="marshalMode">The marshalling mode this attribute applies to.</param>
-        /// <param name="marshallerType">Type used for marshalling.</param>
+        /// <param name="marshallerType">The type used for marshalling.</param>
         public CustomMarshallerAttribute(Type managedType, MarshalMode marshalMode, Type marshallerType)
         {
             ManagedType = managedType;
@@ -24,22 +23,22 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// The managed type to marshal.
+        /// Gets the managed type to marshal.
         /// </summary>
         public Type ManagedType { get; }
 
         /// <summary>
-        /// The marshalling mode this attribute applies to.
+        /// Gets the marshalling mode this attribute applies to.
         /// </summary>
         public MarshalMode MarshalMode { get; }
 
         /// <summary>
-        /// Type used for marshalling.
+        /// Gets the type used for marshalling.
         /// </summary>
         public Type MarshallerType { get; }
 
         /// <summary>
-        /// Placeholder type for generic parameter
+        /// Placeholder type for a generic parameter.
         /// </summary>
         public struct GenericPlaceholder
         {

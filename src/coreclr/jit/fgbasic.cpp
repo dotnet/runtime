@@ -231,7 +231,7 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
 // Returns:
-//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//   True, if a new basic block was allocated.
 //
 // Notes:
 //   This should be called before adding on-entry initialization code to
@@ -249,12 +249,12 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 //
 //   Can be called at any time, and can be called multiple times.
 //
-void Compiler::fgEnsureFirstBBisScratch()
+bool Compiler::fgEnsureFirstBBisScratch()
 {
     // Have we already allocated a scratch block?
     if (fgFirstBBisScratch())
     {
-        return;
+        return false;
     }
 
     assert(fgFirstBBScratch == nullptr);
@@ -303,6 +303,8 @@ void Compiler::fgEnsureFirstBBisScratch()
         printf("New scratch " FMT_BB "\n", block->bbNum);
     }
 #endif
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -889,8 +891,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     unsigned    varNum;
-    var_types   varType = DUMMY_INIT(TYP_UNDEF); // TYP_ type
-    typeInfo    ti;                              // Verifier type.
+    var_types   varType      = DUMMY_INIT(TYP_UNDEF); // TYP_ type
     bool        typeIsNormed = false;
     FgStack     pushedStack;
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1901,7 +1902,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (opcode == CEE_LDLOCA || opcode == CEE_LDLOCA_S)
                     {
                         varType = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclVerTypeInfo;
 
                         impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclHasLdlocaOp = true;
                     }
@@ -1910,7 +1910,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         noway_assert(opcode == CEE_LDARGA || opcode == CEE_LDARGA_S);
 
                         varType = impInlineInfo->lclVarInfo[varNum].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum].lclVerTypeInfo;
 
                         impInlineInfo->inlArgInfo[varNum].argHasLdargaOp = true;
 
@@ -1942,7 +1941,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
 
                     varType = (var_types)lvaTable[varNum].lvType;
-                    ti      = lvaTable[varNum].lvVerTypeInfo;
 
                     // Determine if the next instruction will consume
                     // the address. If so we won't mark this var as
@@ -1982,7 +1980,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 } // isInlining
 
-                typeIsNormed = ti.IsValueClass() && !varTypeIsStruct(varType);
+                typeIsNormed = !varTypeIsGC(varType) && !varTypeIsStruct(varType);
             }
             break;
 
@@ -2186,7 +2184,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     // about the possible values or types.
     //
     // For inlinees we do this over in impInlineFetchLocal and
-    // impInlineFetchArg (here args are included as we somtimes get
+    // impInlineFetchArg (here args are included as we sometimes get
     // new information about the types of inlinee args).
     if (!isInlining)
     {
@@ -2214,7 +2212,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 // Notes:
 //    Modifies lvaArg0Var to refer to a temp if the value of 'this' can
 //    change. The original this (info.compThisArg) then remains
-//    unmodified in the method.  fgAddInternal is reponsible for
+//    unmodified in the method.  fgAddInternal is responsible for
 //    adding the code to copy the initial this into the temp.
 
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
@@ -2224,6 +2222,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     // Optionally enable adjustment during stress.
     if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
+        JITDUMP("JitStress: creating modifiable `this`\n");
         thisVarDsc->lvHasILStoreOp = true;
     }
 
@@ -2241,13 +2240,8 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
         arg0varDsc->SetDoNotEnregReason(thisVarDsc->GetDoNotEnregReason());
 #endif
         arg0varDsc->lvHasILStoreOp = thisVarDsc->lvHasILStoreOp;
-        arg0varDsc->lvVerTypeInfo  = thisVarDsc->lvVerTypeInfo;
 
-        // Clear the TI_FLAG_THIS_PTR in the original 'this' pointer.
-        noway_assert(arg0varDsc->lvVerTypeInfo.IsThisPtr());
-        thisVarDsc->lvVerTypeInfo.ClearThisPtr();
-        // Note that here we don't clear `m_doNotEnregReason` and it stays
-        // `doNotEnreg` with `AddrExposed` reason.
+        // Note that here we don't clear `m_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
         thisVarDsc->CleanAddressExposed();
         thisVarDsc->lvHasILStoreOp = false;
     }
@@ -2700,7 +2694,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             case CEE_VOLATILE:
             case CEE_UNALIGNED:
                 // fgFindJumpTargets should have ruled out this possibility
-                //   (i.e. a prefix opcodes as last intruction in a block)
+                //   (i.e. a prefix opcodes as last instruction in a block)
                 noway_assert(codeAddr < codeEndp);
 
                 if (jumpTarget->bitVectTest((UINT)(codeAddr - codeBegp)))
@@ -3566,7 +3560,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                JITDUMP("\nHandler block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
                         blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
@@ -6500,6 +6494,58 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 
     /* If afterBlk falls through, we insert a jump around newBlk */
     fgConnectFallThrough(afterBlk, newBlk->bbNext);
+
+    // If the loop table is valid, add this block to the appropriate loop.
+    // Note we don't verify (via flow) that this block actually belongs
+    // to the loop, just that it is lexically within the span of blocks
+    // in the loop.
+    //
+    if (optLoopTableValid)
+    {
+        BasicBlock* const bbPrev = newBlk->bbPrev;
+        BasicBlock* const bbNext = newBlk->bbNext;
+
+        if ((bbPrev != nullptr) && (bbNext != nullptr))
+        {
+            BasicBlock::loopNumber const prevLoopNum = bbPrev->bbNatLoopNum;
+            BasicBlock::loopNumber const nextLoopNum = bbNext->bbNatLoopNum;
+
+            if ((prevLoopNum != BasicBlock::NOT_IN_LOOP) && (nextLoopNum != BasicBlock::NOT_IN_LOOP))
+            {
+                if (prevLoopNum == nextLoopNum)
+                {
+                    newBlk->bbNatLoopNum = prevLoopNum;
+                }
+                else
+                {
+                    BasicBlock::loopNumber const prevParentLoopNum = optLoopTable[prevLoopNum].lpParent;
+                    BasicBlock::loopNumber const nextParentLoopNum = optLoopTable[nextLoopNum].lpParent;
+
+                    if (nextParentLoopNum == prevLoopNum)
+                    {
+                        // next is in child loop
+                        newBlk->bbNatLoopNum = prevLoopNum;
+                    }
+                    else if (prevParentLoopNum == nextLoopNum)
+                    {
+                        // prev is in child loop
+                        newBlk->bbNatLoopNum = nextLoopNum;
+                    }
+                    else
+                    {
+                        // next and prev are siblings
+                        assert(prevParentLoopNum == nextParentLoopNum);
+                        newBlk->bbNatLoopNum = prevParentLoopNum;
+                    }
+                }
+            }
+        }
+
+        if (newBlk->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            JITDUMP("Marked " FMT_BB " as lying within " FMT_LP "\n", newBlk->bbNum, newBlk->bbNatLoopNum);
+        }
+    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

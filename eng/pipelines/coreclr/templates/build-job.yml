@@ -97,7 +97,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''
@@ -261,25 +261,12 @@ jobs:
             targetFolder: $(buildProductRootFolderPath)/sharedFramework
             overWrite: true
 
-    # Sign diagnostic files on Windows
     - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
-      - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
-          /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
-          /p:SignDiagnostics=true
-          /p:DotNetSignType=$(SignType)
-          -noBl
-          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
-          -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Diagnostic Binaries
-
-      - task: PublishPipelineArtifact@1
-        displayName: Publish Signing Logs
-        inputs:
-          targetPath: '$(Build.SourcesDirectory)/artifacts/log/'
-          artifactName: ${{ format('SignLogs_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        continueOnError: true
-        condition: always()
+      - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+        parameters:
+          basePath: $(buildProductRootFolderPath)
+          isOfficialBuild: ${{ parameters.signBinaries }}
+          timeoutInMinutes: 30
 
     # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
@@ -300,6 +287,7 @@ jobs:
             archType: ${{ parameters.archType }}
             osGroup: ${{ parameters.osGroup }}
             osSubgroup: ${{ parameters.osSubgroup }}
+            isOfficialBuild: ${{ parameters.signBinaries }}
             ${{ if eq(parameters.archType, 'arm') }}:
               hostArchType: x86
             ${{ else }}:

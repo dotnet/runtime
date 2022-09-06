@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ret);
             property.AddOtherMethod(method);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<NotSupportedException>(() => property.GetValue(null, null));
         }
     }

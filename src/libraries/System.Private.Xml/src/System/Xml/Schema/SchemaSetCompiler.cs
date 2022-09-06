@@ -1454,7 +1454,7 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("particle")]
+        [return: NotNullIfNotNull(nameof(particle))]
         private static XmlSchemaParticle? CanonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)

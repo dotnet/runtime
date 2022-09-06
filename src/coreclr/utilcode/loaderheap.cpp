@@ -341,6 +341,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         // code:LoaderHeap::UnlockedReservePages adds a range for the entire reserved region, instead
         // of updating the RangeList when pages are committed.  But in that case, the committed region of
         // memory will be enumerated by the LoaderHeap anyway, so it's OK if this fails
+        EMEM_OUT(("MEM: RangeListBlock %p - %p\n", range->start, range->end));
         DacEnumMemoryRegion(range->start, size, false);
     }
 }
@@ -1086,6 +1087,33 @@ void ReleaseReservedMemory(BYTE* value)
 
 using ReservedMemoryHolder = SpecializedWrapper<BYTE, ReleaseReservedMemory>;
 
+BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
+{
+    // Commit first set of pages, since it will contain the LoaderHeapBlock
+    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
+    if (pTemp == NULL)
+    {
+        return FALSE;
+    }
+
+    if (IsInterleaved())
+    {
+        _ASSERTE(dwSizeToCommitPart == GetOsPageSize());
+
+        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+        if (pTemp == NULL)
+        {
+            return FALSE;
+        }
+
+        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
+        m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
+        FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
+    }
+
+    return TRUE;
+}
+
 BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 {
     CONTRACTL
@@ -1165,30 +1193,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         dwSizeToCommitPart /= 2;
     }
 
-    // Commit first set of pages, since it will contain the LoaderHeapBlock
-    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
-    if (pTemp == NULL)
+    if (!CommitPages(pData, dwSizeToCommitPart))
     {
-        _ASSERTE(!"Unable to commit a loaderheap code page");
-
         return FALSE;
-    }
-
-    if (IsInterleaved())
-    {
-        _ASSERTE(dwSizeToCommitPart == GetOsPageSize());
-
-        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-        if (pTemp == NULL)
-        {
-            _ASSERTE(!"Unable to commit a loaderheap data page");
-
-            return FALSE;
-        }
-
-        ExecutableWriterHolder<BYTE> codePageWriterHolder(pData, GetOsPageSize());
-        m_codePageGenerator(codePageWriterHolder.GetRW(), pData);
-        FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
     }
 
     // Record reserved range in range list, if one is specified
@@ -1300,24 +1307,14 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             dwSizeToCommitPart /= 2;
         }
 
-        // Yes, so commit the desired number of reserved pages
-        void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart, IsExecutable());
-        if (pData == NULL)
+        if (!CommitPages(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart))
         {
-            _ASSERTE(!"Unable to commit a loaderheap page");
             return FALSE;
         }
 
         if (IsInterleaved())
         {
-            // Commit a data page after the code page
-            ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-
-            ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
-            m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
-            FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
-
-            // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+            // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
             if (unusedRemainder >= m_dwGranularity)
@@ -1331,7 +1328,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
             // For interleaved heaps, further allocations will start from the newly committed page as they cannot
             // cross page boundary.
-            m_pAllocPtr = (BYTE*)pData;
+            m_pAllocPtr = (BYTE*)m_pPtrToEndOfCommittedRegion;
         }
 
         m_pPtrToEndOfCommittedRegion += dwSizeToCommitPart;
@@ -1341,7 +1338,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
 
     // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
-    // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+    // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
     // block list.
     // Otherwise the remaining bytes that are available will be wasted.
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
@@ -1930,8 +1927,6 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    DAC_ENUM_DTHIS();
-
     PTR_LoaderHeapBlock block = m_pFirstBlock;
     while (block.IsValid())
     {
@@ -1943,6 +1938,7 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
         TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
         TSIZE_T size = block->dwVirtualSize;
+        EMEM_OUT(("MEM: UnlockedLoaderHeap %p - %p\n", addr, addr + size));
         DacEnumMemoryRegion(addr, size, false);
 
         block = block->pNext;

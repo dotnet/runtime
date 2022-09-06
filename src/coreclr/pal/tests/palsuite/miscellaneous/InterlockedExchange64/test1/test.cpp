@@ -11,8 +11,8 @@
 **=========================================================*/
 
 /* This test is FINISHED.  Note:  The biggest feature of this function is that
-   it locks the value before it increments it -- in order to make it so only 
-   one thread can access it.  But, I really don't have a great test to make 
+   it locks the value before it increments it -- in order to make it so only
+   one thread can access it.  But, I really don't have a great test to make
    sure it's thread safe.  Any ideas?
 */
 
@@ -42,21 +42,21 @@ PALTEST(miscellaneous_InterlockedExchange64_test1_paltest_interlockedexchange64_
 #if defined(HOST_64BIT)
 
     TheReturn = InterlockedExchange64(&TheValue,NewValue);
-  
+
     /* Compare the exchanged value with the value we exchanged it with.  Should
        be the same.
-    */  
-    if(TheValue != NewValue) 
+    */
+    if(TheValue != NewValue)
     {
         Fail("ERROR: The value which was exchanged should now be %ll, but "
-             "instead it is %ll.",NewValue,TheValue);    
+             "instead it is %ll.",NewValue,TheValue);
     }
-  
-    /* Check to make sure it returns the origional number which 'TheValue' was 
-       set to. 
+
+    /* Check to make sure it returns the original number which 'TheValue' was
+       set to.
     */
-  
-    if(TheReturn != START_VALUE) 
+
+    if(TheReturn != START_VALUE)
     {
         Fail("ERROR: The value returned should be the value before the "
              "exchange happened, which was %ll, but %ll was returned.",
@@ -65,8 +65,8 @@ PALTEST(miscellaneous_InterlockedExchange64_test1_paltest_interlockedexchange64_
 
 #endif  // HOST_64BIT
     PAL_Terminate();
-    return PASS; 
-} 
+    return PASS;
+}
 
 
 

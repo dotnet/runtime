@@ -21,8 +21,12 @@ namespace System.Threading.RateLimiting
         private long? _idleSince;
         private bool _disposed;
 
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
+
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
+        private readonly TimeSpan _replenishmentPeriod;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
@@ -39,7 +43,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
+        public override TimeSpan ReplenishmentPeriod => _replenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
@@ -47,8 +51,35 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="SlidingWindowRateLimiter"/>.</param>
         public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0)
+            {
+                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.", nameof(options));
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+            }
+            if (options.Window < TimeSpan.Zero)
+            {
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+            }
+
+            _options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit,
+                Window = options.Window,
+                SegmentsPerWindow = options.SegmentsPerWindow,
+                AutoReplenishment = options.AutoReplenishment
+            };
+
             _requestCount = options.PermitLimit;
+            _replenishmentPeriod = new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
 
             // _requestsPerSegment holds the no. of acquired requests in each window segment
             _requestsPerSegment = new int[options.SegmentsPerWindow];
@@ -63,10 +94,20 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _requestCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            ThrowIfDisposed();
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = _requestCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
-        protected override RateLimitLease AcquireCore(int requestCount)
+        protected override RateLimitLease AttemptAcquireCore(int requestCount)
         {
             // These amounts of resources can never be acquired
             if (requestCount > _options.PermitLimit)
@@ -79,9 +120,11 @@ namespace System.Threading.RateLimiting
             {
                 if (_requestCount > 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return FailedLease;
             }
 
@@ -93,12 +136,13 @@ namespace System.Threading.RateLimiting
                 }
 
                 // TODO: Acquire additional metadata during a failed lease decision
+                Interlocked.Increment(ref _failedLeasesCount);
                 return FailedLease;
             }
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int requestCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (requestCount > _options.PermitLimit)
@@ -111,6 +155,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulAcquisition if resources are available
             if (requestCount == 0 && _requestCount > 0)
             {
+                Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
@@ -137,11 +182,16 @@ namespace System.Threading.RateLimiting
                             {
                                 _queueCount += oldestRequest.Count;
                             }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < requestCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(FailedLease);
                     }
@@ -175,6 +225,7 @@ namespace System.Threading.RateLimiting
             {
                 if (requestCount == 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     // Edge case where the check before the lock showed 0 available permits but when we got the lock some permits were now available
                     lease = SuccessfulLease;
                     return true;
@@ -188,6 +239,7 @@ namespace System.Threading.RateLimiting
                     _requestsPerSegment[_currentSegmentIndex] += requestCount;
                     _requestCount -= requestCount;
                     Debug.Assert(_requestCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = SuccessfulLease;
                     return true;
                 }
@@ -237,7 +289,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
@@ -287,6 +339,10 @@ namespace System.Threading.RateLimiting
                             _requestsPerSegment[_currentSegmentIndex] -= nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref _successfulLeasesCount);
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

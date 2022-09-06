@@ -79,7 +79,6 @@ void InitializeCurrentProcessCpuCount()
         }
         else
         {
-            pmask &= smask;
             count = 0;
 
             while (pmask)

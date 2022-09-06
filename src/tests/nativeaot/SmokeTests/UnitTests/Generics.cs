@@ -809,7 +809,7 @@ class Generics
                     s_NumErrors++;
             }
 
-            // Uncomment when we have the type loader to buld invoke stub dictionaries.
+            // Uncomment when we have the type loader to build invoke stub dictionaries.
             {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))

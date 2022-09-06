@@ -4,10 +4,10 @@
 
 /*=====================================================================
 **
-** Source:  EnableEnventLogging.cpp 
+** Source:  EnableEnventLogging.cpp
 **
 ** Purpose: Fix linker issue on platforms where the PAL is built against
-**          verion 2.4 of liblttng-ust-dev
+**          version 2.4 of liblttng-ust-dev
 **
 **
 **===================================================================*/

@@ -37,7 +37,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 **Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
-## Bulding on Windows
+## Building on Windows
 
 * To build everything
 
@@ -163,11 +163,11 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 * console Hello world sample
 
-`dotnet build /t:RunSample console-v8-cjs/Wasm.Console.V8.CJS.Sample.csproj`
+`dotnet build /t:RunSample console-v8/Wasm.Console.V8.Sample.csproj`
 
 * browser TestMeaning sample
 
-`dotnet build /t:RunSample browser/Wasm.Browser.CJS.Sample.csproj`
+`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
 
@@ -188,7 +188,7 @@ Example use of the `wasmconsole` template:
     > dotnet new wasmconsole
     > dotnet publish
     > cd bin/Debug/net7.0/browser-wasm/AppBundle
-    > node main.cjs
+    > node main.mjs
     mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
     Hello World!
     Args:
@@ -205,6 +205,18 @@ Bumping Emscripten version involves these steps:
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
 
+## Upgrading NPM packages
+In folder `src\mono\wasm\runtime\`
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm install -g vsts-npm-aut`
+vsts-npm-auth -config .npmrc
+npm npm cache clean --force
+npm outdated
+npm update
+```
+
 ## Code style
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
@@ -218,38 +230,60 @@ Bumping Emscripten version involves these steps:
 ### How do I know which jobs run on CI, and when?
 
 ## PR:
-* `runtime-extra-platforms`, and `runtime-wasm` run only when manually triggered with a comment - `/azp run <pipeline-name>`
-* `runtime`, and `runtime-staging`, run jobs only when relevant paths change. And for `EAT`, and `AOT`, only smoke tests are run.
-* And when `runtime-wasm` is triggered manually, it runs *all* the wasm jobs completely
 
-| .                 | runtime               | runtime-staging         | runtime-extra-platforms(manual only) | runtime-wasm (manual only) |
-| ----------------- | --------------------  | ---------------         | ------------------------------------ | -------                    |
-| libtests          | linux: all,   only-pc | windows: all,   only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
-| libtests eat      | linux: smoke, only-pc | -                       | linux:         all, only-pc          | linux:         all, always |
-| libtests aot      | linux: smoke, only-pc | windows: smoke, only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
-| high resource aot | none                  | none                    | linux+windows: all, only-pc          | linux+windows: all, always |
-| Wasm.Build.Tests  | linux:        only-pc | windows:        only-pc | linux+windows: only-pc               | linux+windows              |
-| Debugger tests    | -                     | linux+windows:  only-pc | linux+windows: only-pc               | linux+windows              |
-| Runtime tests     | linux:        only-pc | -                       | linux: only-pc                       | linux                      |
+* `only-pc` means `only on relevant path changes`
 
+### Run by default
+
+* `runtime` runs jobs only when relevant paths change. And for `AOT`, only smoke tests are run.
+
+| .                 | runtime                       |
+| ----------------- | --------------------          |
+| libtests          | linux+windows: all,   only-pc |
+| libtests eat      | linux+windows: smoke, only-pc |
+| libtests aot      | linux+windows: smoke, only-pc |
+| high resource aot | none                          |
+| Wasm.Build.Tests  | linux+windows:        only-pc |
+| Debugger tests    | linux+windows:        only-pc |
+| Runtime tests     | linux+windows:        only-pc |
+
+
+### Run manually with `/azp run ..`
+
+* `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
+* The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
+
+| .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
+| ----------------- | -------------------------- | --------------------  | --------------------      |
+| libtests          | linux+windows: all         | linux+windows: all    | none                      |
+| libtests eat      | linux:         all         | linux:         all    | none                      |
+| libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
+| high resource aot | linux+windows: all         | linux+windows: all    | none                      |
+| Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
+| Debugger tests    | linux+windows              | none                  | linux+windows             |
+| Runtime tests     | linux                      | none                  | linux                     |
+| Perftrace         | linux: all tests           | linux: all tests      | none                      |
+| Multi-thread      | linux: all tests           | linux: all tests      | none                      |
+
+* `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
 
 ## Rolling build (twice a day):
 
-* `runtime`, and `runtime-staging`, run all the wasm jobs unconditionally, but `EAT`, and `AOT` still run only smoke tests.
-* `runtime-extra-platforms` also runs by default. And it runs only the cases not covered by the above two pipelines.
+* `runtime` runs all the wasm jobs, but `AOT` still only runs smoke tests.
+* `runtime-extra-platforms` also runs by default. And it runs only the cases not covered by `runtime`.
 
-* jobs w/o `only-pc` are always run
-
-| .                 | runtime                   | runtime-staging       | runtime-extra-platforms (always run) | runtime-wasm (manual only) |
-| ----------------- | -------------             | ---------------       | ------------------------------------ | ------                     |
-| libtests          | linux: all(v8/chr)        | windows: all          | none                                 | N/A                        |
-| libtests eat      | linux: smoke              | -                     | linux: all                           |                            |
-| libtests aot      | linux: smoke              | windows: smoke        | linux+windows: all                   |                            |
-| high resource aot | none                      | none                  | linux+windows: all                   |                            |
-|                   |                           |                       |                                      |                            |
-| Wasm.Build.Tests  | linux: always             | windows: always       | none                                 |                            |
-| Debugger tests    | -                         | linux+windows: always | none                                 |                            |
-| Runtime tests     | linux: always             | -                     | none                                 |                            |
+| .                 | runtime                    | runtime-extra-platforms (always run) |
+| ----------------- | -------------              | ------------------------------------ |
+| libtests          | linux+windows: all         | none                                 |
+| libtests eat      | linux: all                 | none                                 |
+| libtests aot      | linux+windows: smoke       | linux+windows: all                   |
+| high resource aot | none                       | linux+windows: all                   |
+|                   |                            |                                      |
+| Wasm.Build.Tests  | linux+windows              | none                                 |
+| Debugger tests    | linux+windows              | none                                 |
+| Runtime tests     | linux                      | none                                 |
+| Perftrace         | linux: build only          | none                                 |
+| Multi-thread      | linux: build only          | none                                 |
 
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.

@@ -20,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
         private const uint BadTokenFixupValue = 0xFFFFFFFF;
 
         //
-        // Returns the template type handle for a generic instantation type
+        // Returns the template type handle for a generic instantiation type
         //
         public static TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
@@ -209,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         //
-        // Returns the template method for a generic method instantation
+        // Returns the template method for a generic method instantiation
         //
         public static InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {

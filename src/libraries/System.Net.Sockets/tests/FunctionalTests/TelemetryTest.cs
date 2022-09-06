@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -15,6 +16,24 @@ namespace System.Net.Sockets.Tests
 {
     public class TelemetryTest
     {
+        private static readonly Lazy<Task<bool>> s_remoteServerIsReachable = new Lazy<Task<bool>>(() => Task.Run(async () =>
+        {
+            try
+            {
+                using var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString: "True", port: 443);
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                await socket.ConnectAsync(endPoint, cts.Token);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }));
+
         public readonly ITestOutputHelper _output;
 
         public TelemetryTest(ITestOutputHelper output)
@@ -136,8 +155,13 @@ namespace System.Net.Sockets.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
-        public void EventSource_SocketConnectsRemote_LogsConnectStartStop(string connectMethod, bool useDnsEndPoint)
+        public async Task EventSource_SocketConnectsRemote_LogsConnectStartStop(string connectMethod, bool useDnsEndPoint)
         {
+            if (!await s_remoteServerIsReachable.Value)
+            {
+                throw new SkipTestException("The remote server is not reachable");
+            }
+
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);

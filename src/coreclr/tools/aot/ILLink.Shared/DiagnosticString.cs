@@ -10,8 +10,8 @@ namespace ILLink.Shared
 {
 	public readonly struct DiagnosticString
 	{
-		readonly string _titleFormat;
-		readonly string _messageFormat;
+		private readonly string _titleFormat;
+		private readonly string _messageFormat;
 
 		public DiagnosticString (DiagnosticId diagnosticId)
 		{

@@ -202,6 +202,7 @@ namespace System.Net.Test.Common
             if (options != null)
             {
                 httpOptions.Address = options.Address;
+                httpOptions.Certificate = options.Certificate;
                 httpOptions.UseSsl = options.UseSsl;
                 httpOptions.SslProtocols = options.SslProtocols;
                 httpOptions.ListenBacklog = options.ListenBacklog;

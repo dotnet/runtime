@@ -50,6 +50,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablecore.cpp
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
+    ${GC_DIR}/softwarewritewatch.cpp
 )
 
 set(SERVER_GC_SOURCES
@@ -60,12 +61,6 @@ set(SERVER_GC_SOURCES
 set(FULL_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
     ThunksMapping.cpp
-)
-
-set(RUNTIME_SOURCES_ARCH_ASM
-)
-
-set(PORTABLE_RUNTIME_SOURCES
 )
 
 include_directories(inc)
@@ -124,18 +119,13 @@ if(WIN32)
     rheventtrace.cpp
   )
 
-  list(APPEND FULL_RUNTIME_SOURCES
-    windows/CoffNativeCodeManager.cpp
-  )
+  list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
 
   set(ASM_SUFFIX asm)
 
   if (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    list(APPEND RUNTIME_SOURCES_ARCH_ASM
-      ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
-    )
+    set(RUNTIME_SOURCES_ARCH_ASM ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX})
   endif()
-
 else()
 
   include_directories(unix)
@@ -148,15 +138,10 @@ else()
   include(CheckLibraryExists)
 
   include(${GC_DIR}/unix/configure.cmake)
-  
-  if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    include_directories(../libunwind/include)
-  else()
+
+  if(CLR_CMAKE_TARGET_ARCH_WASM)
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
-
-  include_directories(../libunwind/include)
-  include_directories(../libunwind)
 
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
   add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
@@ -178,22 +163,14 @@ else()
     unix/UnixSignals.cpp
     unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
-    ../libunwind/src/Unwind-EHABI.cpp
-    ../libunwind/src/libunwind.cpp
   )
 
-  if(CLR_CMAKE_TARGET_OSX)
-    list(APPEND FULL_RUNTIME_SOURCES
-      ../libunwind/src/Unwind_AppleExtras.cpp
-    )
-  endif()
+  include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
+
+  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
+  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
 
   set(ASM_SUFFIX S)
-
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ../libunwind/src/UnwindRegistersRestore.S
-    ../libunwind/src/UnwindRegistersSave.S
-  )
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
@@ -213,7 +190,6 @@ endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/CallingConventionConverterHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
@@ -231,6 +207,12 @@ include_directories(${ARCH_SOURCES_DIR})
 
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
+
+if(CLR_CMAKE_TARGET_UNIX)
+  add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
+  add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
+endif()
+
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STRESS>)
@@ -248,6 +230,7 @@ if(WIN32)
   add_definitions(-DFEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
 else()
+  add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -270,11 +253,8 @@ set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 list(APPEND COMMON_RUNTIME_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
-
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
-convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
-
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)

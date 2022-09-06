@@ -233,7 +233,7 @@ ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandl
 	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
 }
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/d3e39bc2f81e3dbf9e4b96347f62b49d8700336c/src/vm/invokeutil.cpp#L33
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.cpp#L31
 #define PT_Primitive          0x01000000
 
 static const guint32 primitive_conversions [] = {
@@ -253,7 +253,7 @@ static const guint32 primitive_conversions [] = {
 	PT_Primitive | 0x2000,	// MONO_TYPE_R8   (W = R8)
 };
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/030a3ea9b8dbeae89c90d34441d4d9a1cf4a7de6/src/vm/invokeutil.h#L176
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.h#L119
 static
 gboolean can_primitive_widen (MonoTypeEnum src_type, MonoTypeEnum dest_type)
 {
@@ -263,12 +263,12 @@ gboolean can_primitive_widen (MonoTypeEnum src_type, MonoTypeEnum dest_type)
 	return ((1 << dest_type) & primitive_conversions [src_type]) != 0;
 }
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/eafa8648ebee92de1380278b15cd5c2b6ef11218/src/vm/array.cpp#L1406
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/array.cpp#L1312
 static MonoTypeEnum
 get_normalized_integral_array_element_type (MonoTypeEnum elementType)
 {
 	// Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-	// Enums with interchangeable underlying types are interchangable
+	// Enums with interchangeable underlying types are interchangeable
 	// BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
 	switch (elementType) {
@@ -2765,6 +2765,10 @@ ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
 
+	// Enums in generic classes should still return VALUETYPE
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
+		return MONO_TYPE_VALUETYPE;
+
 	if (m_type_is_byref (type))
 		return MONO_TYPE_BYREF;
 	else
@@ -2803,6 +2807,18 @@ ves_icall_RuntimeTypeHandle_IsComObject (MonoQCallTypeHandle type_handle, MonoEr
 	return_val_if_nok (error, FALSE);
 
 	return mono_class_is_com_object (klass);
+}
+
+void
+ves_icall_InvokeClassConstructor (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+	return_if_nok (error);
+
+	mono_runtime_class_init_full (vtable, error);
 }
 
 guint32
@@ -6657,7 +6673,7 @@ mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
 * Additionally, the method must switch to GC Safe mode to perform all blocking
 * operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
 * exceptions or call other methods that will throw or raise exceptions since the runtime won't
-* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* be able to detect exceptions and unwinder won't be able to correctly find last managed frame in callstack.
 * This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
 *
 */
@@ -7173,7 +7189,7 @@ ves_icall_System_Threading_Thread_YieldInternal (void)
 gint32
 ves_icall_System_Environment_get_ProcessorCount (void)
 {
-	return mono_cpu_count ();
+	return mono_cpu_limit ();
 }
 
 // Generate wrappers.

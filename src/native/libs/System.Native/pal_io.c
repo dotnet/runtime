@@ -794,6 +794,13 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
     return result;
 }
 
+char* SystemNative_MkdTemp(char* pathTemplate)
+{
+    char* result = NULL;
+    while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
@@ -1337,7 +1344,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     if (ret == 0)
     {
 #if HAVE_FUTIMENS
-        // futimens is prefered because it has a higher resolution.
+        // futimens is preferred because it has a higher resolution.
         struct timespec origTimes[2];
         origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
         origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
@@ -1472,6 +1479,141 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
+#if !HAVE_NON_LEGACY_STATFS || defined(__APPLE__)
+static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
+{
+    uint32_t result = 0;
+
+    if (strcmp(fileSystemName, "adfs") == 0) result = 0xADF5;
+    else if (strcmp(fileSystemName, "affs") == 0) result = 0xADFF;
+    else if (strcmp(fileSystemName, "afs") == 0) result = 0x5346414F;
+    else if (strcmp(fileSystemName, "anoninode") == 0) result = 0x09041934;
+    else if (strcmp(fileSystemName, "apfs") == 0) result = 0x1A;
+    else if (strcmp(fileSystemName, "aufs") == 0) result = 0x61756673;
+    else if (strcmp(fileSystemName, "autofs") == 0) result = 0x0187;
+    else if (strcmp(fileSystemName, "autofs4") == 0) result = 0x6D4A556D;
+    else if (strcmp(fileSystemName, "befs") == 0) result = 0x42465331;
+    else if (strcmp(fileSystemName, "bdevfs") == 0) result = 0x62646576;
+    else if (strcmp(fileSystemName, "bfs") == 0) result = 0x1BADFACE;
+    else if (strcmp(fileSystemName, "bpf_fs") == 0) result = 0xCAFE4A11;
+    else if (strcmp(fileSystemName, "binfmt_misc") == 0) result = 0x42494E4D;
+    else if (strcmp(fileSystemName, "bootfs") == 0) result = 0xA56D3FF9;
+    else if (strcmp(fileSystemName, "btrfs") == 0) result = 0x9123683E;
+    else if (strcmp(fileSystemName, "ceph") == 0) result = 0x00C36400;
+    else if (strcmp(fileSystemName, "cgroupfs") == 0) result = 0x0027E0EB;
+    else if (strcmp(fileSystemName, "cgroup2fs") == 0) result = 0x63677270;
+    else if (strcmp(fileSystemName, "cifs") == 0) result = 0xFF534D42;
+    else if (strcmp(fileSystemName, "coda") == 0) result = 0x73757245;
+    else if (strcmp(fileSystemName, "coherent") == 0) result = 0x012FF7B7;
+    else if (strcmp(fileSystemName, "configfs") == 0) result = 0x62656570;
+    else if (strcmp(fileSystemName, "cpuset") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "cramfs") == 0) result = 0x28CD3D45;
+    else if (strcmp(fileSystemName, "ctfs") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "debugfs") == 0) result = 0x64626720;
+    else if (strcmp(fileSystemName, "dev") == 0) result = 0x1373;
+    else if (strcmp(fileSystemName, "devfs") == 0) result = 0x1373;
+    else if (strcmp(fileSystemName, "devpts") == 0) result = 0x1CD1;
+    else if (strcmp(fileSystemName, "ecryptfs") == 0) result = 0xF15F;
+    else if (strcmp(fileSystemName, "efs") == 0) result = 0x00414A53;
+    else if (strcmp(fileSystemName, "exofs") == 0) result = 0x5DF5;
+    else if (strcmp(fileSystemName, "ext") == 0) result = 0x137D;
+    else if (strcmp(fileSystemName, "ext2_old") == 0) result = 0xEF51;
+    else if (strcmp(fileSystemName, "ext2") == 0) result = 0xEF53;
+    else if (strcmp(fileSystemName, "ext3") == 0) result = 0xEF53;
+    else if (strcmp(fileSystemName, "ext4") == 0) result = 0xEF53;
+    else if (strcmp(fileSystemName, "f2fs") == 0) result = 0xF2F52010;
+    else if (strcmp(fileSystemName, "fat") == 0) result = 0x4006;
+    else if (strcmp(fileSystemName, "fd") == 0) result = 0xF00D1E;
+    else if (strcmp(fileSystemName, "fhgfs") == 0) result = 0x19830326;
+    else if (strcmp(fileSystemName, "fuse") == 0) result = 0x65735546;
+    else if (strcmp(fileSystemName, "fuseblk") == 0) result = 0x65735546;
+    else if (strcmp(fileSystemName, "fusectl") == 0) result = 0x65735543;
+    else if (strcmp(fileSystemName, "futexfs") == 0) result = 0x0BAD1DEA;
+    else if (strcmp(fileSystemName, "gfsgfs2") == 0) result = 0x1161970;
+    else if (strcmp(fileSystemName, "gfs2") == 0) result = 0x01161970;
+    else if (strcmp(fileSystemName, "gpfs") == 0) result = 0x47504653;
+    else if (strcmp(fileSystemName, "hfs") == 0) result = 0x4244;
+    else if (strcmp(fileSystemName, "hfsplus") == 0) result = 0x482B;
+    else if (strcmp(fileSystemName, "hpfs") == 0) result = 0xF995E849;
+    else if (strcmp(fileSystemName, "hugetlbfs") == 0) result = 0x958458F6;
+    else if (strcmp(fileSystemName, "inodefs") == 0) result = 0x11307854;
+    else if (strcmp(fileSystemName, "inotifyfs") == 0) result = 0x2BAD1DEA;
+    else if (strcmp(fileSystemName, "isofs") == 0) result = 0x9660;
+    else if (strcmp(fileSystemName, "jffs") == 0) result = 0x07C0;
+    else if (strcmp(fileSystemName, "jffs2") == 0) result = 0x72B6;
+    else if (strcmp(fileSystemName, "jfs") == 0) result = 0x3153464A;
+    else if (strcmp(fileSystemName, "kafs") == 0) result = 0x6B414653;
+    else if (strcmp(fileSystemName, "lofs") == 0) result = 0xEF53;
+    else if (strcmp(fileSystemName, "logfs") == 0) result = 0xC97E8168;
+    else if (strcmp(fileSystemName, "lustre") == 0) result = 0x0BD00BD0;
+    else if (strcmp(fileSystemName, "minix_old") == 0) result = 0x137F;
+    else if (strcmp(fileSystemName, "minix") == 0) result = 0x138F;
+    else if (strcmp(fileSystemName, "minix2") == 0) result = 0x2468;
+    else if (strcmp(fileSystemName, "minix2v2") == 0) result = 0x2478;
+    else if (strcmp(fileSystemName, "minix3") == 0) result = 0x4D5A;
+    else if (strcmp(fileSystemName, "mntfs") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "mqueue") == 0) result = 0x19800202;
+    else if (strcmp(fileSystemName, "msdos") == 0) result = 0x4D44;
+    else if (strcmp(fileSystemName, "nfs") == 0) result = 0x6969;
+    else if (strcmp(fileSystemName, "nfsd") == 0) result = 0x6E667364;
+    else if (strcmp(fileSystemName, "nilfs") == 0) result = 0x3434;
+    else if (strcmp(fileSystemName, "novell") == 0) result = 0x564C;
+    else if (strcmp(fileSystemName, "ntfs") == 0) result = 0x5346544E;
+    else if (strcmp(fileSystemName, "objfs") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "ocfs2") == 0) result = 0x7461636F;
+    else if (strcmp(fileSystemName, "openprom") == 0) result = 0x9FA1;
+    else if (strcmp(fileSystemName, "omfs") == 0) result = 0xC2993D87;
+    else if (strcmp(fileSystemName, "overlay") == 0) result = 0x794C7630;
+    else if (strcmp(fileSystemName, "overlayfs") == 0) result = 0x794C764F;
+    else if (strcmp(fileSystemName, "panfs") == 0) result = 0xAAD7AAEA;
+    else if (strcmp(fileSystemName, "pipefs") == 0) result = 0x50495045;
+    else if (strcmp(fileSystemName, "proc") == 0) result = 0x9FA0;
+    else if (strcmp(fileSystemName, "pstorefs") == 0) result = 0x6165676C;
+    else if (strcmp(fileSystemName, "qnx4") == 0) result = 0x002F;
+    else if (strcmp(fileSystemName, "qnx6") == 0) result = 0x68191122;
+    else if (strcmp(fileSystemName, "ramfs") == 0) result = 0x858458F6;
+    else if (strcmp(fileSystemName, "reiserfs") == 0) result = 0x52654973;
+    else if (strcmp(fileSystemName, "romfs") == 0) result = 0x7275;
+    else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
+    else if (strcmp(fileSystemName, "rpc_pipefs") == 0) result = 0x67596969;
+    else if (strcmp(fileSystemName, "samba") == 0) result = 0x517B;
+    else if (strcmp(fileSystemName, "securityfs") == 0) result = 0x73636673;
+    else if (strcmp(fileSystemName, "selinux") == 0) result = 0xF97CFF8C;
+    else if (strcmp(fileSystemName, "sffs") == 0) result = 0x786F4256;
+    else if (strcmp(fileSystemName, "sharefs") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "smb") == 0) result = 0x517B;
+    else if (strcmp(fileSystemName, "smb2") == 0) result = 0xFE534D42;
+    else if (strcmp(fileSystemName, "sockfs") == 0) result = 0x534F434B;
+    else if (strcmp(fileSystemName, "squashfs") == 0) result = 0x73717368;
+    else if (strcmp(fileSystemName, "sysfs") == 0) result = 0x62656572;
+    else if (strcmp(fileSystemName, "sysv2") == 0) result = 0x012FF7B6;
+    else if (strcmp(fileSystemName, "sysv4") == 0) result = 0x012FF7B5;
+    else if (strcmp(fileSystemName, "tmpfs") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "tracefs") == 0) result = 0x74726163;
+    else if (strcmp(fileSystemName, "ubifs") == 0) result = 0x24051905;
+    else if (strcmp(fileSystemName, "udf") == 0) result = 0x15013346;
+    else if (strcmp(fileSystemName, "ufs") == 0) result = 0x00011954;
+    else if (strcmp(fileSystemName, "ufscigam") == 0) result = 0x54190100;
+    else if (strcmp(fileSystemName, "ufs2") == 0) result = 0x19540119;
+    else if (strcmp(fileSystemName, "usbdevice") == 0) result = 0x9FA2;
+    else if (strcmp(fileSystemName, "v9fs") == 0) result = 0x01021997;
+    else if (strcmp(fileSystemName, "vagrant") == 0) result = 0x786F4256;
+    else if (strcmp(fileSystemName, "vboxfs") == 0) result = 0x786F4256;
+    else if (strcmp(fileSystemName, "vmhgfs") == 0) result = 0xBACBACBC;
+    else if (strcmp(fileSystemName, "vxfs") == 0) result = 0xA501FCF5;
+    else if (strcmp(fileSystemName, "vzfs") == 0) result = 0x565A4653;
+    else if (strcmp(fileSystemName, "xenfs") == 0) result = 0xABBA1974;
+    else if (strcmp(fileSystemName, "xenix") == 0) result = 0x012FF7B4;
+    else if (strcmp(fileSystemName, "xfs") == 0) result = 0x58465342;
+    else if (strcmp(fileSystemName, "xia") == 0) result = 0x012FD16D;
+    else if (strcmp(fileSystemName, "udev") == 0) result = 0x01021994;
+    else if (strcmp(fileSystemName, "zfs") == 0) result = 0x2FC12FC1;
+
+    assert(result != 0);
+    return result;
+}
+#endif
+
 uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
 #if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
@@ -1482,145 +1624,22 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
+#if defined(__APPLE__)
+    // On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
+    return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
+#else
     // On Linux, f_type is signed. This causes some filesystem types to be represented as
     // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
     uint32_t result = (uint32_t)statfsArgs.f_type;
     return result;
+#endif
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-    uint32_t result = 0;
-
-    if (strcmp(statfsArgs.f_basetype, "adfs") == 0) result = 0xADF5;
-    else if (strcmp(statfsArgs.f_basetype, "affs") == 0) result = 0xADFF;
-    else if (strcmp(statfsArgs.f_basetype, "afs") == 0) result = 0x5346414F;
-    else if (strcmp(statfsArgs.f_basetype, "anoninode") == 0) result = 0x09041934;
-    else if (strcmp(statfsArgs.f_basetype, "apfs") == 0) result = 0x1A;
-    else if (strcmp(statfsArgs.f_basetype, "aufs") == 0) result = 0x61756673;
-    else if (strcmp(statfsArgs.f_basetype, "autofs") == 0) result = 0x0187;
-    else if (strcmp(statfsArgs.f_basetype, "autofs4") == 0) result = 0x6D4A556D;
-    else if (strcmp(statfsArgs.f_basetype, "befs") == 0) result = 0x42465331;
-    else if (strcmp(statfsArgs.f_basetype, "bdevfs") == 0) result = 0x62646576;
-    else if (strcmp(statfsArgs.f_basetype, "bfs") == 0) result = 0x1BADFACE;
-    else if (strcmp(statfsArgs.f_basetype, "bpf_fs") == 0) result = 0xCAFE4A11;
-    else if (strcmp(statfsArgs.f_basetype, "binfmt_misc") == 0) result = 0x42494E4D;
-    else if (strcmp(statfsArgs.f_basetype, "bootfs") == 0) result = 0xA56D3FF9;
-    else if (strcmp(statfsArgs.f_basetype, "btrfs") == 0) result = 0x9123683E;
-    else if (strcmp(statfsArgs.f_basetype, "ceph") == 0) result = 0x00C36400;
-    else if (strcmp(statfsArgs.f_basetype, "cgroupfs") == 0) result = 0x0027E0EB;
-    else if (strcmp(statfsArgs.f_basetype, "cgroup2fs") == 0) result = 0x63677270;
-    else if (strcmp(statfsArgs.f_basetype, "cifs") == 0) result = 0xFF534D42;
-    else if (strcmp(statfsArgs.f_basetype, "coda") == 0) result = 0x73757245;
-    else if (strcmp(statfsArgs.f_basetype, "coherent") == 0) result = 0x012FF7B7;
-    else if (strcmp(statfsArgs.f_basetype, "configfs") == 0) result = 0x62656570;
-    else if (strcmp(statfsArgs.f_basetype, "cpuset") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "cramfs") == 0) result = 0x28CD3D45;
-    else if (strcmp(statfsArgs.f_basetype, "ctfs") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "debugfs") == 0) result = 0x64626720;
-    else if (strcmp(statfsArgs.f_basetype, "dev") == 0) result = 0x1373;
-    else if (strcmp(statfsArgs.f_basetype, "devfs") == 0) result = 0x1373;
-    else if (strcmp(statfsArgs.f_basetype, "devpts") == 0) result = 0x1CD1;
-    else if (strcmp(statfsArgs.f_basetype, "ecryptfs") == 0) result = 0xF15F;
-    else if (strcmp(statfsArgs.f_basetype, "efs") == 0) result = 0x00414A53;
-    else if (strcmp(statfsArgs.f_basetype, "exofs") == 0) result = 0x5DF5;
-    else if (strcmp(statfsArgs.f_basetype, "ext") == 0) result = 0x137D;
-    else if (strcmp(statfsArgs.f_basetype, "ext2_old") == 0) result = 0xEF51;
-    else if (strcmp(statfsArgs.f_basetype, "ext2") == 0) result = 0xEF53;
-    else if (strcmp(statfsArgs.f_basetype, "ext3") == 0) result = 0xEF53;
-    else if (strcmp(statfsArgs.f_basetype, "ext4") == 0) result = 0xEF53;
-    else if (strcmp(statfsArgs.f_basetype, "f2fs") == 0) result = 0xF2F52010;
-    else if (strcmp(statfsArgs.f_basetype, "fat") == 0) result = 0x4006;
-    else if (strcmp(statfsArgs.f_basetype, "fd") == 0) result = 0xF00D1E;
-    else if (strcmp(statfsArgs.f_basetype, "fhgfs") == 0) result = 0x19830326;
-    else if (strcmp(statfsArgs.f_basetype, "fuse") == 0) result = 0x65735546;
-    else if (strcmp(statfsArgs.f_basetype, "fuseblk") == 0) result = 0x65735546;
-    else if (strcmp(statfsArgs.f_basetype, "fusectl") == 0) result = 0x65735543;
-    else if (strcmp(statfsArgs.f_basetype, "futexfs") == 0) result = 0x0BAD1DEA;
-    else if (strcmp(statfsArgs.f_basetype, "gfsgfs2") == 0) result = 0x1161970;
-    else if (strcmp(statfsArgs.f_basetype, "gfs2") == 0) result = 0x01161970;
-    else if (strcmp(statfsArgs.f_basetype, "gpfs") == 0) result = 0x47504653;
-    else if (strcmp(statfsArgs.f_basetype, "hfs") == 0) result = 0x4244;
-    else if (strcmp(statfsArgs.f_basetype, "hfsplus") == 0) result = 0x482B;
-    else if (strcmp(statfsArgs.f_basetype, "hpfs") == 0) result = 0xF995E849;
-    else if (strcmp(statfsArgs.f_basetype, "hugetlbfs") == 0) result = 0x958458F6;
-    else if (strcmp(statfsArgs.f_basetype, "inodefs") == 0) result = 0x11307854;
-    else if (strcmp(statfsArgs.f_basetype, "inotifyfs") == 0) result = 0x2BAD1DEA;
-    else if (strcmp(statfsArgs.f_basetype, "isofs") == 0) result = 0x9660;
-    else if (strcmp(statfsArgs.f_basetype, "jffs") == 0) result = 0x07C0;
-    else if (strcmp(statfsArgs.f_basetype, "jffs2") == 0) result = 0x72B6;
-    else if (strcmp(statfsArgs.f_basetype, "jfs") == 0) result = 0x3153464A;
-    else if (strcmp(statfsArgs.f_basetype, "kafs") == 0) result = 0x6B414653;
-    else if (strcmp(statfsArgs.f_basetype, "lofs") == 0) result = 0xEF53;
-    else if (strcmp(statfsArgs.f_basetype, "logfs") == 0) result = 0xC97E8168;
-    else if (strcmp(statfsArgs.f_basetype, "lustre") == 0) result = 0x0BD00BD0;
-    else if (strcmp(statfsArgs.f_basetype, "minix_old") == 0) result = 0x137F;
-    else if (strcmp(statfsArgs.f_basetype, "minix") == 0) result = 0x138F;
-    else if (strcmp(statfsArgs.f_basetype, "minix2") == 0) result = 0x2468;
-    else if (strcmp(statfsArgs.f_basetype, "minix2v2") == 0) result = 0x2478;
-    else if (strcmp(statfsArgs.f_basetype, "minix3") == 0) result = 0x4D5A;
-    else if (strcmp(statfsArgs.f_basetype, "mntfs") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "mqueue") == 0) result = 0x19800202;
-    else if (strcmp(statfsArgs.f_basetype, "msdos") == 0) result = 0x4D44;
-    else if (strcmp(statfsArgs.f_basetype, "nfs") == 0) result = 0x6969;
-    else if (strcmp(statfsArgs.f_basetype, "nfsd") == 0) result = 0x6E667364;
-    else if (strcmp(statfsArgs.f_basetype, "nilfs") == 0) result = 0x3434;
-    else if (strcmp(statfsArgs.f_basetype, "novell") == 0) result = 0x564C;
-    else if (strcmp(statfsArgs.f_basetype, "ntfs") == 0) result = 0x5346544E;
-    else if (strcmp(statfsArgs.f_basetype, "objfs") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "ocfs2") == 0) result = 0x7461636F;
-    else if (strcmp(statfsArgs.f_basetype, "openprom") == 0) result = 0x9FA1;
-    else if (strcmp(statfsArgs.f_basetype, "omfs") == 0) result = 0xC2993D87;
-    else if (strcmp(statfsArgs.f_basetype, "overlay") == 0) result = 0x794C7630;
-    else if (strcmp(statfsArgs.f_basetype, "overlayfs") == 0) result = 0x794C764F;
-    else if (strcmp(statfsArgs.f_basetype, "panfs") == 0) result = 0xAAD7AAEA;
-    else if (strcmp(statfsArgs.f_basetype, "pipefs") == 0) result = 0x50495045;
-    else if (strcmp(statfsArgs.f_basetype, "proc") == 0) result = 0x9FA0;
-    else if (strcmp(statfsArgs.f_basetype, "pstorefs") == 0) result = 0x6165676C;
-    else if (strcmp(statfsArgs.f_basetype, "qnx4") == 0) result = 0x002F;
-    else if (strcmp(statfsArgs.f_basetype, "qnx6") == 0) result = 0x68191122;
-    else if (strcmp(statfsArgs.f_basetype, "ramfs") == 0) result = 0x858458F6;
-    else if (strcmp(statfsArgs.f_basetype, "reiserfs") == 0) result = 0x52654973;
-    else if (strcmp(statfsArgs.f_basetype, "romfs") == 0) result = 0x7275;
-    else if (strcmp(statfsArgs.f_basetype, "rootfs") == 0) result = 0x53464846;
-    else if (strcmp(statfsArgs.f_basetype, "rpc_pipefs") == 0) result = 0x67596969;
-    else if (strcmp(statfsArgs.f_basetype, "samba") == 0) result = 0x517B;
-    else if (strcmp(statfsArgs.f_basetype, "securityfs") == 0) result = 0x73636673;
-    else if (strcmp(statfsArgs.f_basetype, "selinux") == 0) result = 0xF97CFF8C;
-    else if (strcmp(statfsArgs.f_basetype, "sffs") == 0) result = 0x786F4256;
-    else if (strcmp(statfsArgs.f_basetype, "sharefs") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "smb") == 0) result = 0x517B;
-    else if (strcmp(statfsArgs.f_basetype, "smb2") == 0) result = 0xFE534D42;
-    else if (strcmp(statfsArgs.f_basetype, "sockfs") == 0) result = 0x534F434B;
-    else if (strcmp(statfsArgs.f_basetype, "squashfs") == 0) result = 0x73717368;
-    else if (strcmp(statfsArgs.f_basetype, "sysfs") == 0) result = 0x62656572;
-    else if (strcmp(statfsArgs.f_basetype, "sysv2") == 0) result = 0x012FF7B6;
-    else if (strcmp(statfsArgs.f_basetype, "sysv4") == 0) result = 0x012FF7B5;
-    else if (strcmp(statfsArgs.f_basetype, "tmpfs") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "tracefs") == 0) result = 0x74726163;
-    else if (strcmp(statfsArgs.f_basetype, "ubifs") == 0) result = 0x24051905;
-    else if (strcmp(statfsArgs.f_basetype, "udf") == 0) result = 0x15013346;
-    else if (strcmp(statfsArgs.f_basetype, "ufs") == 0) result = 0x00011954;
-    else if (strcmp(statfsArgs.f_basetype, "ufscigam") == 0) result = 0x54190100;
-    else if (strcmp(statfsArgs.f_basetype, "ufs2") == 0) result = 0x19540119;
-    else if (strcmp(statfsArgs.f_basetype, "usbdevice") == 0) result = 0x9FA2;
-    else if (strcmp(statfsArgs.f_basetype, "v9fs") == 0) result = 0x01021997;
-    else if (strcmp(statfsArgs.f_basetype, "vagrant") == 0) result = 0x786F4256;
-    else if (strcmp(statfsArgs.f_basetype, "vboxfs") == 0) result = 0x786F4256;
-    else if (strcmp(statfsArgs.f_basetype, "vmhgfs") == 0) result = 0xBACBACBC;
-    else if (strcmp(statfsArgs.f_basetype, "vxfs") == 0) result = 0xA501FCF5;
-    else if (strcmp(statfsArgs.f_basetype, "vzfs") == 0) result = 0x565A4653;
-    else if (strcmp(statfsArgs.f_basetype, "xenfs") == 0) result = 0xABBA1974;
-    else if (strcmp(statfsArgs.f_basetype, "xenix") == 0) result = 0x012FF7B4;
-    else if (strcmp(statfsArgs.f_basetype, "xfs") == 0) result = 0x58465342;
-    else if (strcmp(statfsArgs.f_basetype, "xia") == 0) result = 0x012FD16D;
-    else if (strcmp(statfsArgs.f_basetype, "udev") == 0) result = 0x01021994;
-    else if (strcmp(statfsArgs.f_basetype, "zfs") == 0) result = 0x2FC12FC1;
-
-    assert(result != 0);
-    return result;
+    return MapFileSystemNameToEnum(statfsArgs.f_basetype);
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
 #endif
@@ -1775,7 +1794,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }
@@ -1815,7 +1834,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }

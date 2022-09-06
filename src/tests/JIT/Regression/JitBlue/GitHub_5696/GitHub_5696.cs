@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This test tries to produce a TYP_LONG GT_STORE_LCL_VAR tree that contains an embedded statement:
-// 
+//
 // *  stmtExpr  void  (top level) (IL 0x000...0x00B)
 // |           /--*  lclVar    int    V01 arg1
 // |           +--*  const     int    4
@@ -14,12 +14,12 @@
 // |        |  {  |  /--*  indir     int
 // |        |  {  \--*  st.lclVar int    V03 cse0
 // |        +--*  lclVar    int    V03 cse0
-// |     /--*  -         int 
+// |     /--*  -         int
 // |  /--*  cast      long <- ulong <- uint
 // \--*  st.lclVar long   V02 loc0
-// 
-// This requires decomposition of GT_STORE_LCL_VAR to properly detect the insertion point 
-// for a statment it creates.
+//
+// This requires decomposition of GT_STORE_LCL_VAR to properly detect the insertion point
+// for a statement it creates.
 
 using System;
 using System.Runtime.CompilerServices;

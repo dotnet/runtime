@@ -566,6 +566,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 #else
             *ppofsWriterHolder.GetRW() = ((UINT_PTR)pStub);
 #endif
+            ClrFlushInstructionCache(ppofs, sizeof(UINT_PTR), /* hasCodeExecutedBefore */ true);
 
             // Return the address of the prepad. The prepad will regenerate the hidden parameter and due
             // to the update above will execute the new stub code the second time around.
@@ -3804,7 +3805,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
-// the DispatchInfo has not been initialized yet then it is initilized.
+// the DispatchInfo has not been initialized yet then it is initialized.
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {

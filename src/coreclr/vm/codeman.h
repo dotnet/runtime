@@ -552,7 +552,7 @@ public:
 // done and allow us to add new entries one at a time (AddToUnwindInfoTable)
 //
 // Each _rangesection has a UnwindInfoTable's which hold the
-// RUNTIME_FUNCTION array as well as other bookeeping (the current and maximum
+// RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
 // Ideally we would just use this new API when it is available, however to mininmize
@@ -1180,7 +1180,7 @@ public:
 //*****************************************************************************
 //
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
-// members.  It should never be constucted.
+// members.  It should never be constructed.
 //
 //*****************************************************************************
 

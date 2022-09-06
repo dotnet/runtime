@@ -111,7 +111,7 @@ namespace System.Xml
         }
 
         // Adds a XmlNode using its Name property
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         public override XmlNode? SetNamedItem(XmlNode? node)
         {
             if (node == null)

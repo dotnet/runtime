@@ -47,7 +47,7 @@ namespace ShiftTest
             Console.WriteLine("The expected result of (0xFFFFFFFF>>4) is: {0}", (0xFFFFFFFF >> 4));
             Console.WriteLine();
 
-            Console.WriteLine("The actual result for funciton argument is: {0}", f1(0xFFFFFFFF));
+            Console.WriteLine("The actual result for function argument is: {0}", f1(0xFFFFFFFF));
             loc_data >>= 4;
             Console.WriteLine("The actual result for local variable is: {0}", loc_data);
             s_data >>= 4;
@@ -103,7 +103,7 @@ namespace ShiftTest
             Console.WriteLine("The expected result of (0x1<<4) is: {0}", ((uint)0x1 << 4));
             Console.WriteLine();
 
-            Console.WriteLine("The actual result for funciton argument is: {0}", f2(0x1));
+            Console.WriteLine("The actual result for function argument is: {0}", f2(0x1));
             loc_data <<= 4;
             Console.WriteLine("The actual result for local variable is: {0}", loc_data);
             s_data <<= 4;

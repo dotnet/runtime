@@ -396,7 +396,6 @@ EXTERN RhpGcAlloc                               : PROC
 EXTERN RhpValidateExInfoPop                     : PROC
 EXTERN RhDebugBreak                             : PROC
 EXTERN RhpWaitForGC2                            : PROC
-EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC

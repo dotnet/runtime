@@ -138,7 +138,8 @@ namespace System.Net.Security
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.None))
             {
-                WriteEvent(eventId: 2, protocol);
+                Debug.Assert(sizeof(SslProtocols) == 4);
+                WriteEvent(eventId: 2, (int)protocol);
             }
         }
 
@@ -250,45 +251,25 @@ namespace System.Net.Security
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, string? arg2)
         {
-            if (IsEnabled())
+            arg2 ??= string.Empty;
+
+            fixed (char* arg2Ptr = arg2)
             {
-                arg2 ??= string.Empty;
+                const int NumEventDatas = 2;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* arg2Ptr = arg2)
-                {
-                    const int NumEventDatas = 2;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg1),
-                        Size = sizeof(int) // EventSource defines bool as a 32-bit type
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg2Ptr),
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, SslProtocols arg1)
-        {
-            if (IsEnabled())
-            {
-                var data = new EventData
+                descrs[0] = new EventData
                 {
                     DataPointer = (IntPtr)(&arg1),
-                    Size = sizeof(SslProtocols)
+                    Size = sizeof(int) // EventSource defines bool as a 32-bit type
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(arg2Ptr),
+                    Size = (arg2.Length + 1) * sizeof(char)
                 };
 
-                WriteEventCore(eventId, eventDataCount: 1, &data);
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
 
@@ -297,33 +278,30 @@ namespace System.Net.Security
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, double arg2, string? arg3)
         {
-            if (IsEnabled())
+            arg3 ??= string.Empty;
+
+            fixed (char* arg3Ptr = arg3)
             {
-                arg3 ??= string.Empty;
+                const int NumEventDatas = 3;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* arg3Ptr = arg3)
+                descrs[0] = new EventData
                 {
-                    const int NumEventDatas = 3;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(int) // EventSource defines bool as a 32-bit type
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg2),
+                    Size = sizeof(double)
+                };
+                descrs[2] = new EventData
+                {
+                    DataPointer = (IntPtr)(arg3Ptr),
+                    Size = (arg3.Length + 1) * sizeof(char)
+                };
 
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg1),
-                        Size = sizeof(int) // EventSource defines bool as a 32-bit type
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(double)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg3Ptr),
-                        Size = (arg3.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
     }

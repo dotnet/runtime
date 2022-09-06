@@ -841,7 +841,7 @@ compile calls to “methods on `base`” (i.e., the statically known parent clas
 
 Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/records.md) C# language features implemented in C# 9.0.
 
-This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1.
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compatibility rules are defined in ECMA I.8.7.1.
 
 Example:
 ```
@@ -881,7 +881,7 @@ Edit the first paragraph "The .override directive specifies that a virtual metho
 
 ### II.10.3.4 Impact of overrides on derived classes
 Add a third bullet
-"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implementation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
 
 
 ```
@@ -891,7 +891,7 @@ Add a third bullet
 .class B extends A {
   .method virtual DerivedRetType VirtualFunction() {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
-    .override A.VirtualFuncion
+    .override A.VirtualFunction
     ...
   }
 }
@@ -906,7 +906,7 @@ Add a third bullet
 {
   .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
-    .override A.VirtualFuncion
+    .override A.VirtualFunction
     ...
   }
 }
@@ -982,10 +982,14 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 - Remove the rest of this section. Its contents have been moved into sections I.8.6.1.1 and I.8.6.1.2
 
 ### I.8.7
-- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 insetad of I.8.6.1.3
+- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 instead of I.8.6.1.3
 
 ### I.8.9.2
 - Insert at the end of the first paragraph “An unmanaged pointer type cannot point to a managed pointer.”
+
+### II.14.4.2
+- Replace the sentence "Managed pointers (&) can point to an instance of a value type, a field of an object, a field of a value type, an element of an array, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with  "Managed pointers (&) can point to a local variable, a method argument, a field of an object or a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. A null managed pointer must not be dereferenced."
 
 Changes to signatures:
 ### II.23.2.10
@@ -997,12 +1001,18 @@ Changes to signatures:
 ### II.23.2.12
 - Add TYPEDBYREF as a form of Type
 
+### III.1.1.5.2
+- Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Remove the sentence "Managed pointers cannot be null."
+- Add a bullet point
+  - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
 
 1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
-2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section describes metadata which will be processed by IL rewriters in order to maintain the required alignment.
 
 In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.
 

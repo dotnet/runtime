@@ -30,12 +30,12 @@ PALTEST(c_runtime_getenv_test2_paltest_getenv_test2, "c_runtime/getenv/test2/pal
     const char* SecondVarValue = "Different value";
     char* result;
 
-   
+
     if (0 != (PAL_Initialize(argc, argv)))
     {
         return FAIL;
     }
-    
+
     /* Use _putenv to set the environment variables.  This ensures that the
        variables we're testing with are always present.
     */
@@ -56,12 +56,12 @@ PALTEST(c_runtime_getenv_test2_paltest_getenv_test2, "c_runtime/getenv/test2/pal
        is the value we set above. Also make sure that each environment variable,
        differing only by case, returns it's own value.
     */
-    
+
     result = getenv(FirstVarName);
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
-             "was NULL, which indicates the environment varaible was not "
+             "was NULL, which indicates the environment variable was not "
              "found.\n");
     }
 
@@ -73,13 +73,13 @@ PALTEST(c_runtime_getenv_test2_paltest_getenv_test2, "c_runtime/getenv/test2/pal
              FirstVarValue,
              result);
     }
-    
+
 
     result = getenv(SecondVarName);
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
-             "was NULL, which indicates the environment varaible was not "
+             "was NULL, which indicates the environment variable was not "
              "found.\n");
     }
 

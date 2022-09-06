@@ -463,6 +463,10 @@ ModuleInfo::LoadModule()
                 {
                     g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
                 }
+                else
+                {
+                    TRACE("LoadModule: task_info(self) FAILED %x %s\n", result, mach_error_string(result));
+                }
             }
             if (g_image_infos != nullptr)
             {
@@ -475,7 +479,15 @@ ModuleInfo::LoadModule()
                         break;
                     }
                 }
+                if (m_localBaseAddress == 0)
+                {
+                    TRACE("LoadModule: local base address not found for %s\n", m_moduleName.c_str());
+                }
             }
+        }
+        else
+        {
+            TRACE("LoadModule: dlopen(%s) FAILED %s\n", m_moduleName.c_str(), dlerror());
         }
     }
 }

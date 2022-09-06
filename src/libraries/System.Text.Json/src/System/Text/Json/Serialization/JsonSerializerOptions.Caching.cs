@@ -28,6 +28,8 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="type">The type to resolve contract metadata for.</param>
         /// <returns>The contract metadata resolved for <paramref name="type"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
         /// <remarks>
         /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
         ///
@@ -55,7 +57,7 @@ namespace System.Text.Json
         {
             JsonTypeInfo? typeInfo = null;
 
-            if (IsLockedInstance)
+            if (IsReadOnly)
             {
                 typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
                 if (ensureConfigured)
@@ -98,22 +100,34 @@ namespace System.Text.Json
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetTypeInfoInternal(type);
-                _lastTypeInfo = jsonTypeInfo;
+                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type);
             }
 
             return jsonTypeInfo;
         }
 
+        // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        internal JsonTypeInfo ObjectTypeInfo
+        {
+            get
+            {
+                Debug.Assert(IsReadOnly);
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
+            }
+        }
+
+        private JsonTypeInfo? _objectTypeInfo;
+
         internal void ClearCaches()
         {
             _cachingContext?.Clear();
             _lastTypeInfo = null;
+            _objectTypeInfo = null;
         }
 
         private CachingContext? GetCachingContext()
         {
-            Debug.Assert(IsLockedInstance);
+            Debug.Assert(IsReadOnly);
 
             return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
@@ -164,7 +178,7 @@ namespace System.Text.Json
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                Debug.Assert(options.IsLockedInstance, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;

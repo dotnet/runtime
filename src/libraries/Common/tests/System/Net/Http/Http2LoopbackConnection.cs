@@ -54,7 +54,7 @@ namespace System.Net.Test.Common
             {
                 var sslStream = new SslStream(stream, false, delegate { return true; });
 
-                using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
                 {
 #if !NETFRAMEWORK
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
@@ -127,6 +127,19 @@ namespace System.Net.Test.Common
         {
             byte[] writeBuffer = new byte[Frame.FrameHeaderLength + frame.Length];
             frame.WriteTo(writeBuffer);
+            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task WriteFramesAsync(Frame[] frames, CancellationToken cancellationToken = default)
+        {
+            byte[] writeBuffer = new byte[frames.Sum(frame => Frame.FrameHeaderLength + frame.Length)];
+
+            int offset = 0;
+            foreach (Frame frame in frames)
+            {
+                frame.WriteTo(writeBuffer.AsSpan(offset));
+                offset += Frame.FrameHeaderLength + frame.Length;
+            }
             await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
@@ -567,7 +580,7 @@ namespace System.Net.Test.Common
                 }
                 else if (frame == null || frame.Type == FrameType.RstStream)
                 {
-                    throw new IOException( frame == null ? "End of stream" : "Got RST");
+                    throw new IOException(frame == null ? "End of stream" : "Got RST");
                 }
 
                 Assert.Equal(FrameType.Data, frame.Type);
@@ -586,7 +599,7 @@ namespace System.Net.Test.Common
 
                         body.CopyTo(newBuffer, 0);
                         dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
-                        body= newBuffer;
+                        body = newBuffer;
                     }
                 }
             }
@@ -791,9 +804,9 @@ namespace System.Net.Test.Common
 
         public async Task SendResponseHeadersAsync(int streamId, bool endStream = true, HttpStatusCode statusCode = HttpStatusCode.OK, bool isTrailingHeader = false, bool endHeaders = true, IList<HttpHeaderData> headers = null)
         {
-            // For now, only support headers that fit in a single frame
             byte[] headerBlock = new byte[Frame.MaxFrameLength];
             int bytesGenerated = 0;
+            bool sentAnyFrames = false;
 
             if (!isTrailingHeader)
             {
@@ -805,18 +818,39 @@ namespace System.Net.Test.Common
             {
                 foreach (HttpHeaderData headerData in headers)
                 {
+                    int estimatedHeaderLength = headerData.Name.Length + headerData.Value.Length + 20;
+                    Assert.True(estimatedHeaderLength < headerBlock.Length, "A single header exceeds MaxFrameLength");
+
+                    if (bytesGenerated + estimatedHeaderLength > headerBlock.Length)
+                    {
+                        await FlushHeadersAsync(endHeaders: false);
+                    }
+
                     bytesGenerated += HPackEncoder.EncodeHeader(headerData.Name, headerData.Value, headerData.ValueEncoding, headerData.HuffmanEncoded ? HPackFlags.HuffmanEncode : HPackFlags.None, headerBlock.AsSpan(bytesGenerated));
                 }
             }
 
-            FrameFlags flags = endHeaders ? FrameFlags.EndHeaders : FrameFlags.None;
-            if (endStream)
-            {
-                flags |= FrameFlags.EndStream;
-            }
+            await FlushHeadersAsync(endHeaders);
 
-            HeadersFrame headersFrame = new HeadersFrame(headerBlock.AsMemory(0, bytesGenerated), flags, 0, 0, 0, streamId);
-            await WriteFrameAsync(headersFrame).ConfigureAwait(false);
+            async Task FlushHeadersAsync(bool endHeaders)
+            {
+                Memory<byte> headerBytes = headerBlock.AsMemory(0, bytesGenerated);
+                bytesGenerated = 0;
+
+                FrameFlags flags = endHeaders ? FrameFlags.EndHeaders : FrameFlags.None;
+                if (endStream)
+                {
+                    flags |= FrameFlags.EndStream;
+                }
+
+                Frame frame = sentAnyFrames
+                    ? new ContinuationFrame(headerBytes, flags, 0, 0, 0, streamId)
+                    : new HeadersFrame(headerBytes, flags, 0, 0, 0, streamId);
+
+                sentAnyFrames = true;
+
+                await WriteFrameAsync(frame).ConfigureAwait(false);
+            }
         }
 
         public async Task SendResponseDataAsync(int streamId, ReadOnlyMemory<byte> responseData, bool endStream)
@@ -947,11 +981,11 @@ namespace System.Net.Test.Common
 
             if (string.IsNullOrEmpty(content))
             {
-                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
             }
             else
             {
-                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
                 await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 

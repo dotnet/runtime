@@ -812,6 +812,20 @@ namespace System.Tests
         }
 
         [Fact]
+        public void DayOfYear_Random()
+        {
+            var random = new Random(2022);
+            var tries = 1000;
+            for (int i = 0; i < tries; ++i)
+            {
+                var dateTime = new DateTime(random.NextInt64(DateTime.MaxValue.Ticks));
+                var startOfYear = new DateTime(dateTime.Year, 1, 1);
+                var expectedDayOfYear = 1 + (dateTime - startOfYear).Days;
+                Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+            }
+        }
+
+        [Fact]
         public void TimeOfDay_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
@@ -2559,6 +2573,151 @@ namespace System.Tests
         public static void UnixEpoch()
         {
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        public enum DateTimeUnits
+        {
+            Microsecond,
+            Millisecond,
+            Second,
+            Minute,
+            Hour,
+            Day
+        }
+
+        private static double MaxMicroseconds { get; } = GetMaxMicroseconds();
+
+        // DateTime.MaxValue.Ticks / TimeSpan.TicksPerMicrosecond gives the number 315537897599999999.
+        // This number cannot represented as a double number and will get rounded to 315537897600000000 which will exceed the Max of Microseconds.
+        // GetMaxMicroseconds just calculate the greatest double number which can be used as Microseconds Max and not exceeding 315537897599999999.
+        private static double GetMaxMicroseconds()
+        {
+            long max = DateTime.MaxValue.Ticks / TimeSpan.TicksPerMicrosecond;
+            double maxMicroseconds = max;
+
+            while ((long)Math.Truncate(maxMicroseconds) > max)
+            {
+                max--;
+                maxMicroseconds = max;
+            };
+
+            return maxMicroseconds;
+        }
+
+        private static long MaxMilliseconds = DateTime.MaxValue.Ticks / TimeSpan.TicksPerMillisecond;
+        private static long MaxSeconds = DateTime.MaxValue.Ticks / TimeSpan.TicksPerSecond;
+        private static long MaxMinutes = DateTime.MaxValue.Ticks / TimeSpan.TicksPerMinute;
+        private static long MaxHours = DateTime.MaxValue.Ticks / TimeSpan.TicksPerHour;
+        private static long MaxDays = DateTime.MaxValue.Ticks / TimeSpan.TicksPerDay;
+
+        public static IEnumerable<object[]> Precision_TestData()
+        {
+            yield return new object[] { 0.9999999, DateTime.MinValue, DateTimeUnits.Microsecond, false, (long)(0.9999999 * TimeSpan.TicksPerMicrosecond) };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Microsecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Millisecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Second, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Minute, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Hour, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { 0.9999999, DateTime.MaxValue, DateTimeUnits.Day, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Microsecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Millisecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Second, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Minute, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Hour, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { -0.9999999, DateTime.MinValue, DateTimeUnits.Day, true, 1 /* not important as the call should throws */ };
+
+            long calculatedMaxMicroseconds = (long)Math.Truncate(MaxMicroseconds) * TimeSpan.TicksPerMicrosecond + (long)((MaxMicroseconds - Math.Truncate(MaxMicroseconds)) * TimeSpan.TicksPerMicrosecond);
+            yield return new object[] { MaxMicroseconds, DateTime.MinValue, DateTimeUnits.Microsecond, false, calculatedMaxMicroseconds };
+            yield return new object[] { calculatedMaxMicroseconds + 1, DateTime.MinValue, DateTimeUnits.Microsecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { MaxMilliseconds, DateTime.MinValue, DateTimeUnits.Millisecond, false,  (long)(MaxMilliseconds * TimeSpan.TicksPerMillisecond) };
+            yield return new object[] { MaxMilliseconds + 1, DateTime.MinValue, DateTimeUnits.Millisecond, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { MaxSeconds, DateTime.MinValue, DateTimeUnits.Second, false,  (long)(MaxSeconds * TimeSpan.TicksPerSecond) };
+            yield return new object[] { MaxSeconds + 1, DateTime.MinValue, DateTimeUnits.Second, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { MaxMinutes, DateTime.MinValue, DateTimeUnits.Minute, false,  (long)(MaxMinutes * TimeSpan.TicksPerMinute)  };
+            yield return new object[] { MaxMinutes + 1, DateTime.MinValue, DateTimeUnits.Minute, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { MaxHours, DateTime.MinValue, DateTimeUnits.Hour, false,  (long)(MaxHours * TimeSpan.TicksPerHour)  };
+            yield return new object[] { MaxHours + 1, DateTime.MinValue, DateTimeUnits.Hour, true, 1 /* not important as the call should throws */ };
+            yield return new object[] { MaxDays, DateTime.MinValue, DateTimeUnits.Day, false,  (long)(MaxDays * TimeSpan.TicksPerDay)  };
+            yield return new object[] { MaxDays + 1, DateTime.MinValue, DateTimeUnits.Day, true, 1 /* not important as the call should throws */ };
+        }
+
+        [Theory]
+        [MemberData(nameof(Precision_TestData))]
+        public void TestDateTimeCalculationPrecision(double value, DateTime initialValue, DateTimeUnits unit, bool throws, long expectedTicks)
+        {
+            // DateTime updated = default;
+            Assert.True(expectedTicks != 0);
+
+            switch (unit)
+            {
+                case DateTimeUnits.Microsecond:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddMicroseconds(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddMicroseconds(value).Ticks);
+                break;
+
+                case DateTimeUnits.Millisecond:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddMilliseconds(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddMilliseconds(value).Ticks);
+                break;
+
+                case DateTimeUnits.Second:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddSeconds(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddSeconds(value).Ticks);
+                break;
+
+                case DateTimeUnits.Minute:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddMinutes(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddMinutes(value).Ticks);
+                break;
+
+                case DateTimeUnits.Hour:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddHours(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddHours(value).Ticks);
+
+                break;
+
+                case DateTimeUnits.Day:
+                    if (throws)
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => initialValue.AddDays(value));
+                        return;
+                    }
+
+                    Assert.Equal(expectedTicks, initialValue.AddDays(value).Ticks);
+
+                break;
+
+                default:
+                    {
+                        Assert.True(false, "Unexpected to come here.");
+                    }
+                break;
+            }
         }
     }
 }

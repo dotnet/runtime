@@ -467,9 +467,9 @@ mini_set_inline_failure (MonoCompile *cfg, const char *msg)
 } while (0)
 
 #define GET_BBLOCK(cfg,tblock,ip) do { \
+		if ((ip) >= end || (ip) < header->code) { UNVERIFIED; }	\
 		(tblock) = cfg->cil_offset_to_bb [(ip) - cfg->cil_start]; \
 		if (!(tblock)) { \
-			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
 			NEW_BBLOCK (cfg, (tblock)); \
 			(tblock)->cil_code = (ip); \
 			ADD_BBLOCK (cfg, (tblock)); \
@@ -2232,7 +2232,16 @@ static MonoInst*
 mono_emit_widen_call_res (MonoCompile *cfg, MonoInst *ins, MonoMethodSignature *fsig)
 {
 	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-		if ((fsig->pinvoke || LLVM_ENABLED) && !m_type_is_byref (fsig->ret)) {
+		// FIXME
+		// LLVM code doesn't uses zero extend the full word while jit expects it.
+		// A proper fix would be to detect if we are actually using llvm code from aot images
+		// or make sure llvm code actually zero extends the return.
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+		gboolean might_use_llvm = TRUE;
+#else
+		gboolean might_use_llvm = FALSE;
+#endif
+		if ((fsig->pinvoke || might_use_llvm) && !m_type_is_byref (fsig->ret)) {
 			int widen_op = -1;
 
 			/*
@@ -3702,7 +3711,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (target_method_context_used || invoke_context_used) {
 		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
-		//This is emited as a contant store for the non-shared case.
+		//This is emitted as a constant store for the non-shared case.
 		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
 		if (!cfg->llvm_only) {
@@ -6870,7 +6879,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 */
 		if (seq_points && ((!sym_seq_points && (sp == stack_start)) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, ip - header->code)))) {
 			/*
-			 * Make methods interruptable at the beginning, and at the targets of
+			 * Make methods interruptible at the beginning, and at the targets of
 			 * backward branches.
 			 * Also, do this at the start of every bblock in methods with clauses too,
 			 * to be able to handle instructions with inprecise control flow like
@@ -7181,12 +7190,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case MONO_CEE_POP:
 			--sp;
-
-#ifdef TARGET_X86
-			if (sp [0]->type == STACK_R8)
-				/* we need to pop the value from the x86 FP stack */
-				MONO_EMIT_NEW_UNALU (cfg, OP_X86_FPOP, -1, sp [0]->dreg);
-#endif
 			break;
 		case MONO_CEE_JMP: {
 			MonoCallInst *call;
@@ -7334,6 +7337,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (n);
 
 			//g_assert (!virtual_ || fsig->hasthis);
+
+			if (n == 0 && fsig->call_convention == MONO_CALL_THISCALL)
+				mono_cfg_set_exception_invalid_program(cfg, "thiscall with 0 arguments");
 
 			sp -= n;
 
@@ -9332,7 +9338,7 @@ calli_end:
 			 *   <push int/long>
 			 *   box MyFlags
 			 *   constrained. MyFlags
-			 *   callvirt instace bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
+			 *   callvirt instance bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
 			 *
 			 * If we find this sequence and the operand types on box and constrained
 			 * are equal, we can emit a specialized instruction sequence instead of
@@ -11843,7 +11849,7 @@ mono_ldptr:
 		MonoBasicBlock *cbb;
 
 		/*
-		 * Make seq points at backward branch targets interruptable.
+		 * Make seq points at backward branch targets interruptible.
 		 */
 		for (cbb = cfg->bb_entry; cbb; cbb = cbb->next_bb)
 			if (cbb->code && cbb->in_count > 1 && cbb->code->opcode == OP_SEQ_POINT)
@@ -13054,7 +13060,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							 * sregs could use it. So set a flag, and do it after
 							 * the sregs.
 							 */
-							if ((!cfg->backend->use_fpstack || ((store_opcode != OP_STORER8_MEMBASE_REG) && (store_opcode != OP_STORER4_MEMBASE_REG))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+							if (!((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 								dest_has_lvreg = TRUE;
 						}
 					}
@@ -13144,7 +13150,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 							sreg = alloc_dreg (cfg, stacktypes [regtype]);
 
-							if ((!cfg->backend->use_fpstack || ((load_opcode != OP_LOADR8_MEMBASE) && (load_opcode != OP_LOADR4_MEMBASE))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
+							if (!((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
 								if (var->dreg == prev_dreg) {
 									/*
 									 * sreg refers to the value loaded by the load

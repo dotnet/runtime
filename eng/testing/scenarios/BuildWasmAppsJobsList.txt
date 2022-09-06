@@ -6,6 +6,7 @@ Wasm.Build.Tests.BlazorWasmBuildPublishTests
 Wasm.Build.Tests.BlazorWasmTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.CleanTests
+Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.LocalEMSDKTests
 Wasm.Build.Tests.MainWithArgsTests
@@ -17,4 +18,5 @@ Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WorkloadTests
+Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmTemplateTests

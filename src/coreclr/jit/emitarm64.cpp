@@ -1269,7 +1269,6 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 }
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 // clang-format off
 static const char * const  xRegNames[] =
@@ -1391,8 +1390,6 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
     return vRegNames[index];
 }
-
-#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -2545,7 +2542,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     //    'elemWidth' is the number of bits that we will use for the ROR and Replicate operations
     //    'S'         is the number of consecutive 1 bits for the immediate
     //    'R'         is the number of bits that we will Rotate Right the immediate
-    //    'size'      selects the final size of the immedate that we return (64 or 32 bits)
+    //    'size'      selects the final size of the immediate that we return (64 or 32 bits)
 
     assert(S < elemWidth); // 'elemWidth' consecutive one's is a reserved encoding
 
@@ -3297,7 +3294,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*****************************************************************************
  *
  *  For the given 'datasize' and arrangement 'opts'
- *  returns true is the pair spcifies a valid arrangement
+ *  returns true is the pair specifies a valid arrangement
  */
 /*static*/ bool emitter::isValidArrangement(emitAttr datasize, insOpts opt)
 {
@@ -7692,7 +7689,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 /*****************************************************************************
  *
- *  Add an instruction referencing two register and consectutive stack-based local variable slots.
+ *  Add an instruction referencing two register and consecutive stack-based local variable slots.
  */
 void emitter::emitIns_R_R_S_S(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -8703,10 +8700,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
+#endif
 
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif // DEBUG
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
+    }
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -11742,6 +11742,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         emitDispGCInfoDelta();
     }
+#else
+    if (emitComp->opts.disAsm)
+    {
+        size_t expected = emitSizeOfInsDsc(id);
+        assert(sz == expected);
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
+    }
 #endif
 
     /* All instructions are expected to generate code */
@@ -11756,7 +11763,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 /*****************************************************************************/
 /*****************************************************************************/
 
-#ifdef DEBUG
+/*****************************************************************************
+ *
+ *  Display a comma
+ */
+void emitter::emitDispComma()
+{
+    printf(", ");
+}
 
 /*****************************************************************************
  *
@@ -11785,8 +11799,18 @@ void emitter::emitDispInst(instruction ins)
  *
  *  Display an immediate value
  */
-void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */)
+void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /* =false */)
 {
+    if (isAddrOffset)
+    {
+        alwaysHex = true;
+    }
+    else if (imm == 0)
+    {
+        // Non-offset values of zero are never displayed as hex.
+        alwaysHex = false;
+    }
+
     if (strictArmAsm)
     {
         printf("#");
@@ -11804,7 +11828,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
     if (!alwaysHex && (imm > -1000) && (imm < 1000))
     {
-        printf("%d", imm);
+        printf("%d", (int)imm);
     }
     else
     {
@@ -11816,16 +11840,23 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
         if ((imm & 0xFFFFFFFF00000000LL) != 0)
         {
-            printf("0x%llx", imm);
+            if (isAddrOffset)
+            {
+                printf("0x%llX", imm);
+            }
+            else
+            {
+                printf("0x%llx", imm);
+            }
         }
         else
         {
-            printf("0x%02x", imm);
+            printf("0x%02X", (unsigned)imm);
         }
     }
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 /*****************************************************************************
@@ -11994,7 +12025,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
     printf(emitRegName(reg, size));
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12007,7 +12038,7 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
     emitDispArrangement(opt);
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12018,10 +12049,10 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
     emitDispElemsize(elemsize);
-    printf("[%d]", index);
+    printf("[%d]", (int)index);
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12044,7 +12075,7 @@ void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOp
 
     if (addComma)
     {
-        printf(", ");
+        emitDispComma();
     }
 }
 
@@ -12066,7 +12097,7 @@ void emitter::emitDispVectorElemList(
         const bool notLastRegister = (i != listSize - 1);
         if (notLastRegister)
         {
-            printf(", ");
+            emitDispComma();
         }
         currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
     }
@@ -12075,7 +12106,7 @@ void emitter::emitDispVectorElemList(
 
     if (addComma)
     {
-        printf(", ");
+        emitDispComma();
     }
 }
 
@@ -12165,7 +12196,7 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
     {
         if (strictArmAsm)
         {
-            printf(",");
+            emitDispComma();
         }
         emitDispShiftOpts(opt);
         emitDispImm(imm, false);
@@ -12247,8 +12278,8 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (!insOptsPostIndex(opt) && (imm != 0))
         {
-            printf(",");
-            emitDispImm(imm, false);
+            emitDispComma();
+            emitDispImm(imm, false, true, true);
         }
         printf("]");
 
@@ -12258,8 +12289,8 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         }
         else if (insOptsPostIndex(opt))
         {
-            printf(",");
-            emitDispImm(imm, false);
+            emitDispComma();
+            emitDispImm(imm, false, true, true);
         }
     }
     else // !strictArmAsm
@@ -12287,13 +12318,13 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (insOptsIndexed(opt))
         {
-            printf(", ");
+            emitDispComma();
         }
         else
         {
             printf("%c", operStr[1]);
         }
-        emitDispImm(imm, false);
+        emitDispImm(imm, false, true, true);
         printf("]");
     }
 }
@@ -12361,10 +12392,8 @@ void emitter::emitDispLargeJmp(
     // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
     // difficult-to-find bug.
 
-    instrDescJmp  idJmp;
-    instrDescJmp* pidJmp = &idJmp;
-
-    memset(&idJmp, 0, sizeof(idJmp));
+    inlineInstrDesc<instrDescJmp> idJmp;
+    instrDescJmp*                 pidJmp = idJmp.id();
 
     const instruction ins = id->idIns();
     instruction       reverseIns;
@@ -12410,7 +12439,7 @@ void emitter::emitDispLargeJmp(
     // Next, display the unconditional branch.
 
     // Reset the local instrDesc.
-    memset(&idJmp, 0, sizeof(idJmp));
+    memset(pidJmp, 0, sizeof(instrDescJmp));
 
     pidJmp->idIns(INS_b);
     pidJmp->idInsFmt(IF_LARGEJMP);
@@ -12482,6 +12511,7 @@ void emitter::emitDispIns(
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+#ifdef DEBUG
     if (EMITVERBOSE)
     {
         unsigned idNum =
@@ -12489,6 +12519,7 @@ void emitter::emitDispInsHelp(
 
         printf("IN%04x: ", idNum);
     }
+#endif
 
     if (pCode == NULL)
     {
@@ -12583,7 +12614,7 @@ void emitter::emitDispInsHelp(
                     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
                     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
                     ssize_t        relOffs = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", relOffs, instrCount);
+                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", (int)relOffs, (int)instrCount);
                 }
             }
             else if (id->idIsBound())
@@ -12627,7 +12658,7 @@ void emitter::emitDispInsHelp(
                     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
                     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
                     ssize_t        relOffs = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", relOffs, instrCount);
+                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", (int)relOffs, (int)instrCount);
                 }
             }
             else if (id->idIsBound())
@@ -12694,6 +12725,7 @@ void emitter::emitDispInsHelp(
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                     size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
+#ifdef DEBUG
                     if (targetHandle == THT_InitializeArrayIntrinsics)
                     {
                         targetName = "InitializeArrayIntrinsics";
@@ -12706,6 +12738,7 @@ void emitter::emitDispInsHelp(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
+#endif
                 }
                 else if (id->idIsBound())
                 {
@@ -12986,7 +13019,7 @@ void emitter::emitDispInsHelp(
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispImm(cfi.imm5, true);
             emitDispFlags(cfi.flags);
-            printf(", ");
+            emitDispComma();
             emitDispCond(cfi.cond);
             break;
 
@@ -13056,7 +13089,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), size, true);
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispFlags(cfi.flags);
-            printf(", ");
+            emitDispComma();
             emitDispCond(cfi.cond);
             break;
 
@@ -13223,8 +13256,8 @@ void emitter::emitDispInsHelp(
             }
             if (ins == INS_fcmeq || ins == INS_fcmge || ins == INS_fcmgt || ins == INS_fcmle || ins == INS_fcmlt)
             {
-                printf(", ");
-                emitDispImm(0, false);
+                emitDispComma();
+                emitDispFloatZero();
             }
             break;
 
@@ -13247,7 +13280,7 @@ void emitter::emitDispInsHelp(
             }
             if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
-                printf(", ");
+                emitDispComma();
                 emitDispImm(0, false);
             }
             break;
@@ -13374,7 +13407,7 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
-                emitDispImm(0, false);
+                emitDispFloatZero();
             }
             else if (emitInsIsVectorNarrow(ins))
             {
@@ -13389,7 +13422,7 @@ void emitter::emitDispInsHelp(
             if (fmt == IF_DV_2L &&
                 (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt))
             {
-                printf(", ");
+                emitDispComma();
                 emitDispImm(0, false);
             }
             break;
@@ -13486,7 +13519,7 @@ void emitter::emitDispInsHelp(
                 size = id->idOpSize();
                 emitDispVectorReg(id->idReg2(), (size == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B, true);
                 index = emitGetInsSC(id);
-                printf("%s.4b[%d]", emitVectorRegName(id->idReg3()), index);
+                printf("%s.4b[%d]", emitVectorRegName(id->idReg3()), (int)index);
             }
             else
             {
@@ -13682,6 +13715,7 @@ void emitter::emitDispInsHelp(
 
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
+#ifdef DEBUG
     printf("[");
 
     if (varx < 0)
@@ -13712,9 +13746,8 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
             printf("'");
         }
     }
+#endif
 }
-
-#endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
 // This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*scale + offset]

@@ -907,7 +907,7 @@ static int8_t IsStreamSocket(int socket)
 
 static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHeader* messageHeader, int socket)
 {
-    // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greather than IOV_MAX.
+    // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greater than IOV_MAX.
     // We avoid this for stream sockets by truncating msg_iovlen to IOV_MAX. This is ok since sendmsg is
     // not required to send all data and recvmsg can be called again to receive more.
     int iovlen = (int)messageHeader->IOVectorCount;
@@ -928,7 +928,7 @@ int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
 {
     // Note: it is possible that the address family of the socket is neither
     //       AF_INET nor AF_INET6. In this case both inputs will be 0 and
-    //       the controll message buffer size should be zero.
+    //       the control message buffer size should be zero.
     return (isIPv4 != 0 ? CMSG_SPACE(sizeof(struct in_pktinfo)) : 0) + (isIPv6 != 0 ? CMSG_SPACE(sizeof(struct in6_pktinfo)) : 0);
 }
 

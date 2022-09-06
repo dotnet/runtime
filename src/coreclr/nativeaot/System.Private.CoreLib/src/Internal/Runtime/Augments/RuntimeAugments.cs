@@ -17,6 +17,7 @@
 //    Reflection.Execution.dll
 
 using System;
+using System.Reflection;
 using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -149,6 +150,14 @@ namespace Internal.Runtime.Augments
                 pImmutableLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
+        }
+
+        public static unsafe bool MightBeUnconstructedType(RuntimeTypeHandle type)
+        {
+            // If there are no vtable slots the type is likely an unconstructed type.
+            // But could also be an interface with no virtuals. We can't distinguish those.
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots != 0);
+            return CreateEETypePtr(type).ToPointer()->NumVtableSlots == 0;
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -359,32 +368,6 @@ namespace Internal.Runtime.Augments
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
-        [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(
-            object thisPtr,
-            IntPtr methodToCall,
-            IntPtr dynamicInvokeHelperMethod,
-            IntPtr dynamicInvokeHelperGenericDictionary,
-            object defaultParametersContext,
-            object[] parameters,
-            BinderBundle binderBundle,
-            bool wrapInTargetInvocationException,
-            bool methodToCallIsThisCall)
-        {
-            object result = InvokeUtils.CallDynamicInvokeMethod(
-                thisPtr,
-                methodToCall,
-                dynamicInvokeHelperMethod,
-                dynamicInvokeHelperGenericDictionary,
-                defaultParametersContext,
-                parameters,
-                binderBundle,
-                wrapInTargetInvocationException,
-                methodToCallIsThisCall);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return result;
-        }
-
         public static unsafe void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;
@@ -516,7 +499,7 @@ namespace Internal.Runtime.Augments
         }
 
         //
-        // Return a type's transitive implemeted interface list using the runtime type system. If the underlying runtime type system does not support
+        // Return a type's transitive implemented interface list using the runtime type system. If the underlying runtime type system does not support
         // this operation, return null and TypeInfo.ImplementedInterfaces will fall back to metadata. Note that returning null is not the same thing
         // as returning a 0-length enumerable.
         //
@@ -711,7 +694,7 @@ namespace Internal.Runtime.Augments
 
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
@@ -932,98 +915,6 @@ namespace Internal.Runtime.Augments
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
         {
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
-        }
-
-        internal static class RawCalliHelper
-        {
-            [DebuggerHidden]
-            [DebuggerStepThrough]
-            [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-            public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
-                => ((delegate*<void*, ref T, void>)pfn)(arg1, ref arg2);
-
-            [DebuggerHidden]
-            [DebuggerStepThrough]
-            [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-            public static unsafe void Call<T, U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
-                => ((delegate*<void*, ref T, ref U, void>)pfn)(arg1, ref arg2, ref arg3);
-        }
-
-        /// <summary>
-        /// This method creates a conservatively reported region and calls a function
-        /// while that region is conservatively reported.
-        /// </summary>
-        /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
-        /// <param name="pfnTargetToInvoke">function pointer to execute.</param>
-        /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
-        [DebuggerGuidedStepThroughAttribute]
-        [CLSCompliant(false)]
-        public static unsafe void RunFunctionWithConservativelyReportedBuffer<T>(int cbBuffer, delegate*<void*, ref T, void> pfnTargetToInvoke, ref T context)
-        {
-            RuntimeImports.ConservativelyReportedRegionDesc regionDesc = default;
-            RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref regionDesc);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-        }
-
-        // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
-        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
-        // will be ignored.
-        [DebuggerGuidedStepThroughAttribute]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T>(int cbBuffer, delegate*<void*, ref T, void> pfnTargetToInvoke, ref T context, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
-        {
-            fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
-            {
-                int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
-                // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
-                void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                NativeMemory.Clear(region, (nuint)cbBufferAligned);
-                RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
-
-                RawCalliHelper.Call<T>((IntPtr)pfnTargetToInvoke, region, ref context);
-                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-
-                RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
-            }
-        }
-
-        /// <summary>
-        /// This method creates a conservatively reported region and calls a function
-        /// while that region is conservatively reported.
-        /// </summary>
-        /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
-        /// <param name="pfnTargetToInvoke">function pointer to execute.</param>
-        /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
-        /// <param name="context2">context2 to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
-        [DebuggerGuidedStepThroughAttribute]
-        [CLSCompliant(false)]
-        public static unsafe void RunFunctionWithConservativelyReportedBuffer<T, U>(int cbBuffer, delegate*<void*, ref T, ref U, void> pfnTargetToInvoke, ref T context, ref U context2)
-        {
-            RuntimeImports.ConservativelyReportedRegionDesc regionDesc = default;
-            RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref context2, ref regionDesc);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-        }
-
-        // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
-        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
-        // will be ignored.
-        [DebuggerGuidedStepThroughAttribute]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T, U>(int cbBuffer, delegate*<void*, ref T, ref U, void> pfnTargetToInvoke, ref T context, ref U context2, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
-        {
-            fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
-            {
-                int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
-                // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
-                void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                NativeMemory.Clear(region, (nuint)cbBufferAligned);
-                RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
-
-                RawCalliHelper.Call<T, U>((IntPtr)pfnTargetToInvoke, region, ref context, ref context2);
-                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-
-                RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
-            }
         }
 
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)

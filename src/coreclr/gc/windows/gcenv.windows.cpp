@@ -234,7 +234,6 @@ void InitCPUGroupInfo()
     DWORD_PTR processAffinityMask, systemAffinityMask;
     if (::GetProcessAffinityMask(::GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
     {
-        processAffinityMask &= systemAffinityMask;
         if (processAffinityMask != 0 && // only one CPU group is involved
             (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
         {
@@ -542,8 +541,6 @@ bool GCToOSInterface::Initialize()
         uintptr_t pmask, smask;
         if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
         {
-            pmask &= smask;
-
             for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
                 if ((pmask & ((uintptr_t)1 << i)) != 0)
@@ -564,7 +561,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -1193,7 +1190,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     // Locate heap_number-th available processor
     uint16_t procIndex = 0;
     size_t cnt = heap_number;
-    for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
+    for (uint16_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
     {
         if (g_processAffinitySet.Contains(i))
         {

@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 MemoryMarshal.CreateSpan(ref value, 1)
 #else
                 value.ToString()
@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, char value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 MemoryMarshal.CreateSpan(ref value, 1)
 #else
                 value.ToString()

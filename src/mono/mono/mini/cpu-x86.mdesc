@@ -1,6 +1,6 @@
 # x86-class cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the regsiter allocator, the scheduler
+# about the cpu instructions that may be used by the register allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
 #
 # An opcode name is followed by a colon and optional specifiers.
@@ -143,7 +143,7 @@ endfinally: len:16
 endfilter: src1:a len:16
 get_ex_obj: dest:a len:16
 
-ckfinite: dest:f src1:f len:32
+ckfinite: dest:f src1:f len:40
 ceq: dest:y len:6
 cgt: dest:y len:6
 cgt_un: dest:y len:6
@@ -153,14 +153,18 @@ localloc: dest:i src1:i len:120
 compare: src1:i src2:i len:2
 compare_imm: src1:i len:6
 fcompare: src1:f src2:f clob:a len:9
+rcompare: src1:f src2:f clob:a len:13
 arglist: src1:b len:10
 check_this: src1:b len:3
 voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
-fcall: dest:f len:17 clob:c
-fcall_reg: dest:f src1:i len:11 clob:c
-fcall_membase: dest:f src1:b len:16 clob:c
+fcall: dest:f len:28 clob:c
+fcall_reg: dest:f src1:i len:28 clob:c
+fcall_membase: dest:f src1:b len:28 clob:c
+rcall: dest:f len:28 clob:c
+rcall_reg: dest:f src1:i len:28 clob:c
+rcall_membase: dest:f src1:b len:28 clob:c
 lcall: dest:l len:17 clob:c
 lcall_reg: dest:l src1:i len:11 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
@@ -170,8 +174,8 @@ vcall_membase: src1:b len:16 clob:c
 call_reg: dest:a src1:i len:11 clob:c
 call_membase: dest:a src1:b len:16 clob:c
 iconst: dest:i len:5
-r4const: dest:f len:15
-r8const: dest:f len:16
+r4const: dest:f len:24
+r8const: dest:f len:24
 store_membase_imm: dest:b len:11
 store_membase_reg: dest:b src1:i len:7
 storei1_membase_imm: dest:b len:10
@@ -182,8 +186,8 @@ storei4_membase_imm: dest:b len:10
 storei4_membase_reg: dest:b src1:i len:7
 storei8_membase_imm: dest:b
 storei8_membase_reg: dest:b src1:i
-storer4_membase_reg: dest:b src1:f len:7
-storer8_membase_reg: dest:b src1:f len:7
+storer4_membase_reg: dest:b src1:f len:9
+storer8_membase_reg: dest:b src1:f len:9
 load_membase: dest:i src1:b len:7
 loadi1_membase: dest:y src1:b len:7
 loadu1_membase: dest:y src1:b len:7
@@ -192,8 +196,8 @@ loadu2_membase: dest:i src1:b len:7
 loadi4_membase: dest:i src1:b len:7
 loadu4_membase: dest:i src1:b len:7
 loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:7
-loadr8_membase: dest:f src1:b len:7
+loadr4_membase: dest:f src1:b len:9
+loadr8_membase: dest:f src1:b len:9
 loadu4_mem: dest:i len:9
 move: dest:i src1:i len:2
 addcc_imm: dest:i src1:i len:6 clob:1
@@ -237,25 +241,26 @@ float_bge: len:22
 float_bge_un: len:12
 float_ble: len:22
 float_ble_un: len:12
-float_add: dest:f src1:f src2:f len:2
-float_sub: dest:f src1:f src2:f len:2
-float_mul: dest:f src1:f src2:f len:2
-float_div: dest:f src1:f src2:f len:2
-float_div_un: dest:f src1:f src2:f len:2
+float_add: dest:f src1:f src2:f len:8
+float_sub: dest:f src1:f src2:f len:8
+float_mul: dest:f src1:f src2:f len:8
+float_div: dest:f src1:f src2:f len:8
+float_div_un: dest:f src1:f src2:f len:8
 float_rem: dest:f src1:f src2:f len:17
 float_rem_un: dest:f src1:f src2:f len:17
-float_neg: dest:f src1:f len:2
+float_neg: dest:f src1:f len:24
 float_not: dest:f src1:f len:2
 float_conv_to_i1: dest:y src1:f len:39
 float_conv_to_i2: dest:y src1:f len:39
 float_conv_to_i4: dest:i src1:f len:39
-float_conv_to_i8: dest:L src1:f len:39
+float_conv_to_i8: dest:L src1:f len:50
 float_conv_to_u4: dest:i src1:f len:39
 float_conv_to_u8: dest:L src1:f len:39
 float_conv_to_u2: dest:y src1:f len:39
 float_conv_to_u1: dest:y src1:f len:39
 float_conv_to_ovf_i: dest:a src1:f len:30
 float_conv_to_ovd_u: dest:a src1:f len:30
+float_conv_to_r4: dest:f src1:f len:17
 float_mul_ovf:
 float_ceq: dest:y src1:f src2:f len:25
 float_cgt: dest:y src1:f src2:f len:25
@@ -312,7 +317,7 @@ sbb_imm: dest:i src1:i len:6 clob:1
 br_reg: src1:i len:2
 sin: dest:f src1:f len:6
 cos: dest:f src1:f len:6
-abs: dest:f src1:f len:2
+abs: dest:f src1:f clob:1 len:16
 tan: dest:f src1:f len:49
 atan: dest:f src1:f len:8
 sqrt: dest:f src1:f len:2
@@ -423,11 +428,12 @@ cmov_ile_un: dest:i src1:i src2:i len:16 clob:1
 cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
-long_conv_to_r8_2: dest:f src1:i src2:i len:14
-long_conv_to_r4_2: dest:f src1:i src2:i len:14
+long_conv_to_r8_2: dest:f src1:i src2:i len:24
+long_conv_to_r4_2: dest:f src1:i src2:i len:24
 long_conv_to_r_un_2: dest:f src1:i src2:i len:40
 
-fmove: dest:f src1:f
+fmove: dest:f src1:f len:4
+rmove: dest:f src1:f len:4
 move_f_to_i4: dest:i src1:f len:17
 move_i4_to_f: dest:f src1:i len:17
 float_conv_to_r4: dest:f src1:f  len:12
@@ -671,3 +677,32 @@ set_sp: src1:i len:6
 fill_prof_call_ctx: src1:i len:128
 
 get_last_error: dest:i len:32
+
+x86_move_r8_to_fpstack: src1:f len:16
+x86_move_r4_to_fpstack: src1:f len:16
+iconv_to_r4_raw: dest:f src1:i len:10
+
+# R4 opcodes
+r4_conv_to_i1: dest:y src1:f len:32
+r4_conv_to_u1: dest:y src1:f len:32
+r4_conv_to_i2: dest:y src1:f len:32
+r4_conv_to_u2: dest:y src1:f len:32
+r4_conv_to_i4: dest:i src1:f len:16
+r4_conv_to_u4: dest:i src1:f len:32
+r4_conv_to_i8: dest:L src1:f len:64
+r4_conv_to_i: dest:i src1:f len:32
+r4_conv_to_r8: dest:f src1:f len:17
+r4_conv_to_r4: dest:f src1:f len:17
+r4_add: dest:f src1:f src2:f clob:1 len:5
+r4_sub: dest:f src1:f src2:f clob:1 len:5
+r4_mul: dest:f src1:f src2:f clob:1 len:5
+r4_div: dest:f src1:f src2:f clob:1 len:5
+r4_neg: dest:f src1:f clob:1 len:23
+r4_ceq: dest:y src1:f src2:f len:35
+r4_cgt: dest:y src1:f src2:f len:35
+r4_cgt_un: dest:y src1:f src2:f len:48
+r4_clt: dest:y src1:f src2:f len:35
+r4_clt_un: dest:y src1:f src2:f len:42
+r4_cneq: dest:y src1:f src2:f len:42
+r4_cge: dest:y src1:f src2:f len:35
+r4_cle: dest:y src1:f src2:f len:35

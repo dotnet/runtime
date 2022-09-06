@@ -1144,7 +1144,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
         pCurrMemberInfo = pCurrMemberInfo->m_pNext;
     }
 
-    // No member has been found with the coresponding name.
+    // No member has been found with the corresponding name.
     RETURN NULL;
 }
 

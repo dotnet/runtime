@@ -53,7 +53,7 @@ namespace System.Security.AccessControl.Tests
                 sAcl = new SystemAcl(false, false, rAcl);
                 sAcl.GetBinaryForm(binaryForm, binaryForm.Length);
             });
-            //Case 4, offset is a big possitive number
+            //Case 4, offset is a big positive number
 
             rAcl = new RawAcl(GenericAcl.AclRevision, 1);
             gAce = new CommonAce(AceFlags.SuccessfulAccess, AceQualifier.SystemAudit, 1,

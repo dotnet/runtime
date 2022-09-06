@@ -630,7 +630,7 @@ size_t DisAssembler::disCchRegRelMember(
             /* This case consists of non-static members */
 
             /* find the emitter block and the offset for the fixup
-             * fixup is emited after the coding of the instruction - size = word (2 bytes)
+             * fixup is emitted after the coding of the instruction - size = word (2 bytes)
              * GRRRR!!! - for the 16 bit case we have to check for the address size prefix = 0x66
              */
 
@@ -1139,10 +1139,10 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             {
                 // Truncate the bytes if they are too long
 
-                static const wchar_t* elipses    = W("...\0");
-                const size_t          cchElipses = 4;
+                static const wchar_t* ellipses    = W("...\0");
+                const size_t          cchEllipses = 4;
 
-                memcpy(&wzBytes[CCH_INDENT - cchElipses], elipses, cchElipses * sizeof(wchar_t));
+                memcpy(&wzBytes[CCH_INDENT - cchEllipses], ellipses, cchEllipses * sizeof(wchar_t));
 
                 cchBytes = CCH_INDENT;
             }

@@ -30,6 +30,7 @@ const char* g_help = "createdump [options]\n"
 "-l, --logtofile - file path and name to log diagnostic messages.\n"
 #ifdef HOST_UNIX
 "--crashreport - write crash report file (dump file path + .crashreport.json).\n"
+"--crashreportonly - write crash report file only (no dump).\n"
 "--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
 "--singlefile - enable single-file app check.\n"
@@ -64,6 +65,7 @@ int __cdecl main(const int argc, const char* argv[])
     const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
     bool crashReport = false;
+    bool createDump = true;
     bool help = false;
     int signal = 0;
     int crashThread = 0;
@@ -135,6 +137,11 @@ int __cdecl main(const int argc, const char* argv[])
             else if (strcmp(*argv, "--crashreport") == 0)
             {
                 crashReport = true;
+            }
+            else if (strcmp(*argv, "--crashreportonly") == 0)
+            {
+                crashReport = true;
+                createDump = false;
             }
             else if (strcmp(*argv, "--crashthread") == 0)
             {
@@ -221,7 +228,7 @@ int __cdecl main(const int argc, const char* argv[])
         dumpPathTemplate = tmpPath;
     }
 
-    if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
+    if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, createDump, crashReport, crashThread, signal))
     {
         printf_status("Dump successfully written in %llums\n", GetTimeStamp() - g_startTime);
     }

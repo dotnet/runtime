@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Pgo;
-using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -778,7 +777,7 @@ namespace Internal.JitInterface
     public enum CorInfoTypeWithMod
     {
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
-        CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indiate pinned
+        CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
     };
 
     public struct CORINFO_HELPER_ARG
@@ -889,10 +888,10 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct CORINFO_TAILCALL_HELPERS
     {
-        CORINFO_TAILCALL_HELPERS_FLAGS flags;
-        CORINFO_METHOD_STRUCT_*        hStoreArgs;
-        CORINFO_METHOD_STRUCT_*        hCallTarget;
-        CORINFO_METHOD_STRUCT_*        hDispatcher;
+        private CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        private CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        private CORINFO_METHOD_STRUCT_*        hCallTarget;
+        private CORINFO_METHOD_STRUCT_*        hDispatcher;
     };
 
     public enum CORINFO_THIS_TRANSFORM
@@ -1391,7 +1390,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_CODE = 2, // generate "debuggable" code (no code-mangling optimizations)
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
-        CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
+        CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necessarily debuggable code)
         CORJIT_FLAG_ENABLE_CFG = 6, // generate CFG enabled code
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
         CORJIT_FLAG_UNUSED2 = 8,
@@ -1432,7 +1431,7 @@ namespace Internal.JitInterface
 
     public struct CORJIT_FLAGS
     {
-        private UInt64 _corJitFlags;
+        private ulong _corJitFlags;
         public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()

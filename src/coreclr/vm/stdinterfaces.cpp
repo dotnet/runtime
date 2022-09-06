@@ -596,7 +596,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
         if (pTlb != Assembly::InvalidTypeLib)
             pTlb->Release();
 
-        // This call lost the race to set the TypeLib so recusively call
+        // This call lost the race to set the TypeLib so recursively call
         // this function again to get the one that is set.
         return GetITypeLibForAssembly(pAssembly, ppTlb);
     }
@@ -843,7 +843,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         IfFailThrow(hr);
 
         // If we successfully retrieved an IErrorInfo, we need to verify if
-        // it is for the specifed interface.
+        // it is for the specified interface.
         if (hr == S_OK)
         {
             // Make sure that the object we called follows the error info protocol,

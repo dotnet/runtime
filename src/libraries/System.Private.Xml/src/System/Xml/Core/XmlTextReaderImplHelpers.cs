@@ -469,11 +469,11 @@ namespace System.Xml
                 }
             }
 
-            [MemberNotNull("_value")]
-            [MemberNotNull("nameWPrefix")]
-            [MemberNotNull("localName")]
-            [MemberNotNull("prefix")]
-            [MemberNotNull("ns")]
+            [MemberNotNull(nameof(_value))]
+            [MemberNotNull(nameof(nameWPrefix))]
+            [MemberNotNull(nameof(localName))]
+            [MemberNotNull(nameof(prefix))]
+            [MemberNotNull(nameof(ns))]
             internal void Clear(XmlNodeType type)
             {
                 this.type = type;
@@ -484,10 +484,10 @@ namespace System.Xml
                 typedValue = null;
             }
 
-            [MemberNotNull("localName")]
-            [MemberNotNull("prefix")]
-            [MemberNotNull("ns")]
-            [MemberNotNull("nameWPrefix")]
+            [MemberNotNull(nameof(localName))]
+            [MemberNotNull(nameof(prefix))]
+            [MemberNotNull(nameof(ns))]
+            [MemberNotNull(nameof(nameWPrefix))]
             internal void ClearName()
             {
                 localName = string.Empty;

@@ -10,6 +10,9 @@ namespace System.Threading
     /// <summary>
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
@@ -106,11 +109,7 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-#if CORECLR
-        private bool UnregisterPortable(WaitHandle waitObject)
-#else
         public bool Unregister(WaitHandle waitObject)
-#endif
         {
             // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
             // the caller of the public variants of RegisterWaitForSingleObject

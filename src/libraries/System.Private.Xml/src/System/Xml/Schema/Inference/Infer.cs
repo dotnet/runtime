@@ -899,7 +899,7 @@ namespace System.Xml.Schema
                         table.Add(qname, null);
                     }
                     if (ct == null)
-                    { //untill now the element was empty or SimpleType - it now becomes complex type
+                    {   // until now the element was empty or SimpleType - it now becomes complex type
                         ct = new XmlSchemaComplexType();
                         xse.SchemaType = ct;
                         if (!xse.SchemaTypeName.IsEmpty) //BUGBUG, This assumption is wrong

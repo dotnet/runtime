@@ -358,7 +358,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string additionalDepsRootPath = Path.Combine(_fxBaseDir, "additionalDeps");
 
             // Create a deps.json file in the folder "additionalDeps\shared\Microsoft.NETCore.App\9999.0.0"
-            string additionalDepsPath = Path.Combine(additionalDepsRootPath, "shared", "Microsoft.NETCore.App", "9999.0.0", "myAddtionalDeps.deps.json");
+            string additionalDepsPath = Path.Combine(additionalDepsRootPath, "shared", "Microsoft.NETCore.App", "9999.0.0", "myAdditionalDeps.deps.json");
             FileInfo additionalDepsFile = new FileInfo(additionalDepsPath);
             additionalDepsFile.Directory.Create();
             File.WriteAllText(additionalDepsFile.FullName, "THIS IS A BAD JSON FILE");

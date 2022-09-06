@@ -118,7 +118,7 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public override Array GetEnumValues()
         {
             if (!IsActualEnum)
@@ -137,6 +137,107 @@ namespace System
             }
 
             return ret;
+        }
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not Enum
+        /// </exception>
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            // Get all of the values
+            ulong[] values = Enum.InternalGetValues(this);
+
+            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
+            {
+
+                case CorElementType.ELEMENT_TYPE_U1:
+                    {
+                        var ret = new byte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (byte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U2:
+                    {
+                        var ret = new ushort[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (ushort)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U4:
+                    {
+                        var ret = new uint[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (uint)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U8:
+                    {
+                        return (Array)values.Clone();
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I1:
+                    {
+                        var ret = new sbyte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (sbyte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I2:
+                    {
+                        var ret = new short[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (short)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I4:
+                    {
+                        var ret = new int[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (int)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I8:
+                    {
+                        var ret = new long[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (long)values[i];
+                        }
+                        return ret;
+                    }
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
         }
 
         public override Type GetEnumUnderlyingType()
@@ -358,8 +459,6 @@ namespace System
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
             const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
             const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
@@ -466,10 +565,12 @@ namespace System
             // PutDispProperty and\or PutRefDispProperty ==> SetProperty.
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
+
+            ArgumentNullException.ThrowIfNull(name);
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
             {
                 // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
-                name = GetDefaultMemberName()! ?? "ToString";
+                name = GetDefaultMemberName() ?? "ToString";
             }
 
             // GetField or SetField

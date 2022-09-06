@@ -10,7 +10,6 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include <win32threadpool.h>
 
 #include "typestring.h"
 #include <gccover.h>
@@ -106,7 +105,7 @@ PTR_SyncBlock DACGetSyncBlockFromObjectPointer(TADDR objAddr, ICorDebugDataTarge
     return ste->m_SyncBlock;
 }
 
-BOOL DacValidateEEClass(EEClass *pEEClass)
+BOOL DacValidateEEClass(PTR_EEClass pEEClass)
 {
     // Verify things are right.
     // The EEClass method table pointer should match the method table.
@@ -114,7 +113,7 @@ BOOL DacValidateEEClass(EEClass *pEEClass)
     BOOL retval = TRUE;
     EX_TRY
     {
-        MethodTable *pMethodTable = pEEClass->GetMethodTable();
+        PTR_MethodTable pMethodTable = pEEClass->GetMethodTable();
         if (!pMethodTable)
         {
             // PREfix.
@@ -134,7 +133,7 @@ BOOL DacValidateEEClass(EEClass *pEEClass)
 
 }
 
-BOOL DacValidateMethodTable(MethodTable *pMT, BOOL &bIsFree)
+BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
 {
     // Verify things are right.
     BOOL retval = FALSE;
@@ -181,7 +180,7 @@ BadMethodTable: ;
 
 }
 
-BOOL DacValidateMD(MethodDesc * pMD)
+BOOL DacValidateMD(PTR_MethodDesc pMD)
 {
     if (pMD == NULL)
     {
@@ -192,7 +191,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
     BOOL retval = TRUE;
     EX_TRY
     {
-        MethodTable *pMethodTable = pMD->GetMethodTable();
+        PTR_MethodTable pMethodTable = pMD->GetMethodTable();
 
         // Standard fast check
         if (!pMethodTable->ValidateWithPossibleAV())
@@ -245,7 +244,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
 
 BOOL DacValidateMD(LPCVOID pMD)
 {
-    return DacValidateMD((MethodDesc *)pMD);
+    return DacValidateMD(dac_cast<PTR_MethodDesc>(pMD));
 }
 
 VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRESS *pGCInfo)
@@ -268,91 +267,21 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
 }
 
 HRESULT
-ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestData *workRequestData)
+ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry* entry)
 {
-    if (addr == 0 || workRequestData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    WorkRequest *pRequest = PTR_WorkRequest(TO_TADDR(addr));
-    workRequestData->Function = (TADDR)(pRequest->Function);
-    workRequestData->Context = (TADDR)(pRequest->Context);
-    workRequestData->NextWorkRequest = (TADDR)(pRequest->next);
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT
-ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *entry)
+ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestData *workRequestData)
 {
-    if (addr == 0 || entry == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    HillClimbingLogEntry *pLogEntry = PTR_HillClimbingLogEntry(TO_TADDR(addr));
-    entry->TickCount = pLogEntry->TickCount;
-    entry->NewControlSetting = pLogEntry->NewControlSetting;
-    entry->LastHistoryCount = pLogEntry->LastHistoryCount;
-    entry->LastHistoryMean = pLogEntry->LastHistoryMean;
-    entry->Transition = pLogEntry->Transition;
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT
 ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
 {
-    if (threadpoolData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    threadpoolData->cpuUtilization = ThreadpoolMgr::cpuUtilization;
-    threadpoolData->MinLimitTotalWorkerThreads = ThreadpoolMgr::MinLimitTotalWorkerThreads;
-    threadpoolData->MaxLimitTotalWorkerThreads = ThreadpoolMgr::MaxLimitTotalWorkerThreads;
-
-    //
-    // Read ThreadpoolMgr::WorkerCounter
-    //
-    TADDR pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::WorkerCounter,true);
-    ThreadpoolMgr::ThreadCounter counter;
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    ThreadpoolMgr::ThreadCounter::Counts counts = counter.counts;
-
-    threadpoolData->NumWorkingWorkerThreads = counts.NumWorking;
-    threadpoolData->NumIdleWorkerThreads = counts.NumActive - counts.NumWorking;
-    threadpoolData->NumRetiredWorkerThreads = counts.NumRetired;
-
-    threadpoolData->FirstUnmanagedWorkRequest = HOST_CDADDR(ThreadpoolMgr::WorkRequestHead);
-
-    threadpoolData->HillClimbingLog = dac_cast<TADDR>(&HillClimbingLog);
-    threadpoolData->HillClimbingLogFirstIndex = HillClimbingLogFirstIndex;
-    threadpoolData->HillClimbingLogSize = HillClimbingLogSize;
-
-
-    //
-    // Read ThreadpoolMgr::CPThreadCounter
-    //
-    pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::CPThreadCounter,true);
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    counts = counter.counts;
-
-    threadpoolData->NumCPThreads = (LONG)(counts.NumActive + counts.NumRetired);
-    threadpoolData->NumFreeCPThreads = (LONG)(counts.NumActive - counts.NumWorking);
-    threadpoolData->MaxFreeCPThreads  = ThreadpoolMgr::MaxFreeCPThreads;
-    threadpoolData->NumRetiredCPThreads = (LONG)(counts.NumRetired);
-    threadpoolData->MaxLimitTotalCPThreads = ThreadpoolMgr::MaxLimitTotalCPThreads;
-    threadpoolData->CurrentLimitTotalCPThreads = (LONG)(counts.NumActive); //legacy: currently has no meaning
-    threadpoolData->MinLimitTotalCPThreads = ThreadpoolMgr::MinLimitTotalCPThreads;
-    threadpoolData->NumTimers = 0;
-    threadpoolData->AsyncTimerCallbackCompletionFPtr = NULL;
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStoreData)
@@ -440,7 +369,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
 
     SOSDacEnter();
 
-    MethodTable* mTable = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(mTable, bIsFree))
     {
@@ -1227,7 +1156,7 @@ ClrDataAccess::GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct 
 
     SOSDacEnter();
 
-    MethodDesc *pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
     if (!DacValidateMD(pMD))
     {
         hr = E_INVALIDARG;
@@ -1465,7 +1394,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
     SOSDacEnter();
 
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(TO_TADDR(obj), m_pTarget);
-    MethodTable *mt = PTR_MethodTable(mtTADDR);
+    PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
 
     // Object must be a string
     BOOL bFree = FALSE;
@@ -1515,7 +1444,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inou
 
     // Don't turn the Object into a pointer, it is too costly on
     // scans of the gc heap.
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(obj), m_pTarget);
     if (mtTADDR != NULL)
         mt = PTR_MethodTable(mtTADDR);
@@ -1732,7 +1661,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1775,7 +1704,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
 
     SOSDacEnter();
 
-    MethodTable *pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL free = FALSE;
 
     if (mt == HOST_CDADDR(g_pFreeObjectMethodTable))
@@ -1936,7 +1865,7 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1966,7 +1895,7 @@ ClrDataAccess::GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMeth
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1993,7 +1922,7 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
 
     SOSDacEnter();
 
-    MethodTable *pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
@@ -2016,7 +1945,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
-    EEClass * pClass = PTR_EEClass(TO_TADDR(eeClass));
+    PTR_EEClass pClass = PTR_EEClass(TO_TADDR(eeClass));
     if (!DacValidateEEClass(pClass))
     {
         hr = E_INVALIDARG;
@@ -2177,7 +2106,7 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
         hr = E_INVALIDARG;
 
     BOOL bFree = FALSE;
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     if (SUCCEEDED(hr))
     {
         mt = PTR_MethodTable(mtTADDR);
@@ -2963,7 +2892,7 @@ ClrDataAccess::GetOOMStaticData(struct DacpOomData *oomData)
 
     SOSDacEnter();
 
-    memset(oomData, 0, sizeof(DacpOomData));
+    *oomData = {};
 
     if (!GCHeapUtilities::IsServerHeap())
     {
@@ -2992,7 +2921,7 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpOomData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -3045,7 +2974,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (g_heap_type != GC_HEAP_SVR)
     {
@@ -3078,7 +3007,7 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -3497,7 +3426,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
     SOSDacEnter();
 
     BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager((TADDR)pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager());
+    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
@@ -5125,7 +5054,7 @@ HRESULT ClrDataAccess::IsTrackedType(
         hr = E_INVALIDARG;
 
     BOOL bFree = FALSE;
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     if (SUCCEEDED(hr))
     {
         mt = PTR_MethodTable(mtTADDR);

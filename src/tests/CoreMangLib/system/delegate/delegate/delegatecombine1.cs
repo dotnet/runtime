@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.Collections;
-//create for delegate combine(delegate a,delagate b) testing
+//create for delegate combine(delegate a,delegate b) testing
 namespace DelegateTest
 {
     delegate bool booldelegate();
@@ -13,7 +13,7 @@ namespace DelegateTest
 
     public class DelegateCombine1
     {
-        const string c_StartWrok = "Stark";
+        const string c_StartWork = "Start";
         const string c_Working = "Working";
         enum identify_null
         {
@@ -73,7 +73,7 @@ namespace DelegateTest
 
             try
             {
-                if (GetInvocationListFlag(identify_null.c_Start_null_false, identify_null.c_Working_null_false ) != c_StartWrok + c_Working)
+                if (GetInvocationListFlag(identify_null.c_Start_null_false, identify_null.c_Working_null_false ) != c_StartWork + c_Working)
                 {
                     TestLibrary.TestFramework.LogError("001", "delegate combine is not successful ");
                     retVal = false;
@@ -126,7 +126,7 @@ namespace DelegateTest
             try
             {
 
-                if (GetInvocationListFlag( identify_null.c_Start_null_false, identify_null.c_Working_null_true ) != c_StartWrok)
+                if (GetInvocationListFlag( identify_null.c_Start_null_false, identify_null.c_Working_null_true ) != c_StartWork)
                 {
                     TestLibrary.TestFramework.LogError("005", "delegate combine is not successful ");
                     retVal = false;
@@ -235,7 +235,7 @@ namespace DelegateTest
                 booldelegate bd = (booldelegate)itr.Current;
                 if (bd.Equals(delctor.starkWork))
                 {
-                    sFlag += c_StartWrok;
+                    sFlag += c_StartWork;
                 }
                 if (bd.Equals(delctor.working))
                 {
@@ -247,7 +247,7 @@ namespace DelegateTest
         }
 
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         public bool StartWork_Bool()

@@ -17,10 +17,10 @@ namespace System.Runtime.InteropServices.JavaScript
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed partial class JSFunctionBinding
     {
-        #region intentionaly opaque internal structure
+        #region intentionally opaque internal structure
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
-        internal JSObject? JSFunction;
+        internal IntPtr FnHandle;
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         internal struct JSBindingHeader
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
-            InvokeJSImpl(signature.JSFunction!, arguments);
+            InvokeImportImpl(signature.FnHandle, arguments);
         }
 
         /// <summary>
@@ -130,6 +130,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
+        // TODO make this DynamicDependency conditional
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -165,6 +167,20 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeImportImpl(IntPtr fnHandle, Span<JSMarshalerArgument> arguments)
+        {
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Interop.Runtime.InvokeImport(fnHandle, ptr);
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
@@ -174,7 +190,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
 
-            signature.JSFunction = JavaScriptExports.CreateCSOwnedProxy(jsFunctionHandle);
+            signature.FnHandle = jsFunctionHandle;
 
             return signature;
         }

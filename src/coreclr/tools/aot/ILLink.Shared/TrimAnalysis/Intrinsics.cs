@@ -8,7 +8,7 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	static class Intrinsics
+	internal static class Intrinsics
 	{
 		public static IntrinsicId GetIntrinsicIdForMethod (MethodProxy calledMethod)
 		{
@@ -371,6 +371,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Type")
 					&& calledMethod.IsStatic ()
 					=> IntrinsicId.Nullable_GetUnderlyingType,
+
 				_ => IntrinsicId.None,
 			};
 		}

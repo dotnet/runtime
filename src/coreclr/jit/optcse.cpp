@@ -143,7 +143,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
             }
         }
 
-        // 2. Unmark the CSE infomation in the node
+        // 2. Unmark the CSE information in the node
 
         tree->gtCSEnum = NO_CSE;
         return true;
@@ -988,7 +988,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     // BitVec trait information for computing CSE availability using the CSE_DataFlow algorithm.
     // Two bits are allocated per CSE candidate to compute CSE availability
     // plus an extra bit to handle the initial unvisited case.
-    // (See CSE_DataFlow::EndMerge for an explaination of why this is necessary)
+    // (See CSE_DataFlow::EndMerge for an explanation of why this is necessary)
     //
     // The two bits per CSE candidate have the following meanings:
     //     11 - The CSE is available, and is also available when considering calls as killing availability.
@@ -1356,7 +1356,7 @@ void Compiler::optValnumCSE_DataFlow()
 }
 
 //---------------------------------------------------------------------------
-// optValnumCSE_Availablity:
+// optValnumCSE_Availability:
 //
 //     Using the information computed by CSE_DataFlow determine for each
 //     CSE whether the CSE is a definition (if the CSE was not available)
@@ -1389,7 +1389,7 @@ void Compiler::optValnumCSE_DataFlow()
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
 //
-void Compiler::optValnumCSE_Availablity()
+void Compiler::optValnumCSE_Availability()
 {
 #ifdef DEBUG
     if (verbose)
@@ -1497,7 +1497,7 @@ void Compiler::optValnumCSE_Availablity()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exeception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
                             //
                             if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
                             {
@@ -1670,7 +1670,7 @@ void Compiler::optValnumCSE_Availablity()
                     }
                 }
 
-                // In order to determine if a CSE is live across a call, we model availablity using two bits and
+                // In order to determine if a CSE is live across a call, we model availability using two bits and
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
                 // generates a CSE).
                 //
@@ -1728,6 +1728,7 @@ class CSE_Heuristic
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
+    bool                   madeChanges;
     Compiler::codeOptimize codeOptKind;
     Compiler::CSEdsc**     sortTab;
     size_t                 sortSiz;
@@ -1745,6 +1746,11 @@ public:
     Compiler::codeOptimize CodeOptKind()
     {
         return codeOptKind;
+    }
+
+    bool MadeChanges() const
+    {
+        return madeChanges;
     }
 
     // Perform the Initialization step for our CSE Heuristics. Determine the various cut off values to use for
@@ -1943,7 +1949,7 @@ public:
             const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
             const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
             //
-            // On Windows x64 this yeilds:
+            // On Windows x64 this yields:
             // aggressiveEnregNum == 12 and moderateEnregNum == 38
             // Thus we will typically set the cutoff values for
             //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
@@ -2809,7 +2815,7 @@ public:
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
-            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
+            // Retrieve the struct handle that we recorded while building the list of CSE candidates.
             // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
             //
             CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
@@ -2986,7 +2992,7 @@ public:
             /* Advance to the next node in the list */
             lst = lst->tslNext;
 
-            // We may have cleared this CSE in optValuenumCSE_Availablity
+            // We may have cleared this CSE in optValuenumCSE_Availability
             // due to different exception sets.
             //
             // Ignore this node if the gtCSEnum value has been cleared
@@ -3410,6 +3416,7 @@ public:
             if (doCSE)
             {
                 PerformCSE(&candidate);
+                madeChanges = true;
             }
         }
     }
@@ -3422,12 +3429,14 @@ public:
     }
 };
 
-/*****************************************************************************
- *
- *  Routine for performing the Value Number based CSE using our heuristics
- */
-
-void Compiler::optValnumCSE_Heuristic()
+//------------------------------------------------------------------------
+// optValnumCSE_Heuristic: Perform common sub-expression elimination
+//    based on profitabiliy heuristic
+//
+// Returns:
+//    true if changes were made
+//
+bool Compiler::optValnumCSE_Heuristic()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3444,24 +3453,30 @@ void Compiler::optValnumCSE_Heuristic()
     cse_heuristic.SortCandidates();
     cse_heuristic.ConsiderCandidates();
     cse_heuristic.Cleanup();
+
+    return cse_heuristic.MadeChanges();
 }
 
-/*****************************************************************************
- *
- *  Perform common sub-expression elimination.
- */
-
-void Compiler::optOptimizeValnumCSEs()
+//------------------------------------------------------------------------
+// optOptimizeValnumCSEs: Perform common sub-expression elimination
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::optOptimizeValnumCSEs()
 {
+
 #ifdef DEBUG
     if (optConfigDisableCSE())
     {
-        return; // Disabled by JitNoCSE
+        JITDUMP("Disabled by JitNoCSE\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
 
     optValnumCSE_phase = true;
     optCSEweight       = -1.0f;
+    bool madeChanges   = false;
 
     optValnumCSE_Init();
 
@@ -3469,11 +3484,13 @@ void Compiler::optOptimizeValnumCSEs()
     {
         optValnumCSE_InitDataFlow();
         optValnumCSE_DataFlow();
-        optValnumCSE_Availablity();
-        optValnumCSE_Heuristic();
+        optValnumCSE_Availability();
+        madeChanges = optValnumCSE_Heuristic();
     }
 
     optValnumCSE_phase = false;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************

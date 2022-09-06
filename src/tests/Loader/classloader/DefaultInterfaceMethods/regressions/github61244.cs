@@ -14,11 +14,19 @@ using System;
 // derived interface contexts, but the order is changed (or different.)
 // When this occurs the generic info is incorrect for the inflated method.
 
+// TestClass2 tests a regression due to the fix for the previous
+// regression that caused Mono to incorrectly instantiate generic
+// interfaces that appeared in the MethodImpl table
+
 class Program
 {
     static int Main(string[] args)
     {
-        return new TestClass().DoTest();
+        int result = new TestClass().DoTest();
+        if (result != 100)
+                return result;
+        result = new TestClass2().DoTest();
+        return result;
     }
 }
 
@@ -77,5 +85,34 @@ public class TestClass : SecondInterface<int, string>
 
         Console.WriteLine("Passed => 100");
         return 100;
+    }
+}
+
+public interface IA
+{
+    public int Foo();
+}
+
+public interface IB<T> : IA
+{
+        int IA.Foo() { return 104; }
+}
+
+public interface IC<H1, H2> : IB<H2>
+{
+        int IA.Foo() { return 105; }
+}
+
+public class C<U, V, W> : IC<V, W>
+{
+        int IA.Foo() { return 100; }
+}
+
+public class TestClass2
+{
+    public int DoTest()
+    {
+        IA c = new C<byte, short, int>();
+        return c.Foo();
     }
 }

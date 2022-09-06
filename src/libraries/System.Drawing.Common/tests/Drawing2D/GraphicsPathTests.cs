@@ -2002,7 +2002,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Widen_PenSmallWidth_TestData))]
-        public void Widen_Pen_SmallWidth_Succes(
+        public void Widen_Pen_SmallWidth_Success(
             Rectangle rectangle, float penWidth, RectangleF expectedBounds)
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2128,7 +2128,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Arc_Succes()
+        public void Reverse_Arc_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2138,7 +2138,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Bezier_Succes()
+        public void Reverse_Bezier_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2161,7 +2161,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Beziers_Succes(Point[] points)
+        public void Reverse_Beziers_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2172,7 +2172,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_ClosedCurve_Succes(Point[] points)
+        public void Reverse_ClosedCurve_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2183,7 +2183,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Curve_Succes(Point[] points)
+        public void Reverse_Curve_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2193,7 +2193,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Ellipse_Succes()
+        public void Reverse_Ellipse_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2203,7 +2203,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Line_Succes()
+        public void Reverse_Line_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2213,7 +2213,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_LineClosed_Succes()
+        public void Reverse_LineClosed_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2225,7 +2225,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Lines_Succes(Point[] points)
+        public void Reverse_Lines_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2236,7 +2236,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Polygon_Succes(Point[] points)
+        public void Reverse_Polygon_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2246,7 +2246,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Rectangle_Succes()
+        public void Reverse_Rectangle_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2256,7 +2256,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Rectangles_Succes()
+        public void Reverse_Rectangles_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2267,7 +2267,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Pie_Succes()
+        public void Reverse_Pie_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2278,7 +2278,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_ArcLineInnerPath_Succes()
+        public void Reverse_ArcLineInnerPath_Success()
         {
             using (GraphicsPath inner = new GraphicsPath())
             using (GraphicsPath gp = new GraphicsPath())
@@ -2292,7 +2292,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_EllipseRectangle_Succes()
+        public void Reverse_EllipseRectangle_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2304,7 +2304,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_String_Succes()
+        public void Reverse_String_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2333,7 +2333,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Marker_Succes()
+        public void Reverse_Marker_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2345,7 +2345,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_SubpathMarker_Succes()
+        public void Reverse_SubpathMarker_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2371,7 +2371,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_PointsTypes_Succes()
+        public void Ctor_PointsTypes_Success()
         {
             int dX = 520;
             int dY = 320;

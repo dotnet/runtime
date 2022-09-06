@@ -26,8 +26,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long dummy = 0xA6A6A6A6L;
             long actual2 = dummy;
             var bagFn = new Function("ptr", "ptr2", @"
-                const value=globalThis.App.MONO.getI52(ptr);
-                globalThis.App.MONO.setI52(ptr2, value);
+                const value=globalThis.App.runtime.getHeapI52(ptr);
+                globalThis.App.runtime.setHeapI52(ptr2, value);
                 return ''+value;");
 
             uint ptr = (uint)Unsafe.AsPointer(ref expected);
@@ -53,8 +53,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ulong dummy = 0xA6A6A6A6UL;
             ulong actual2 = dummy;
             var bagFn = new Function("ptr", "ptr2", @"
-                const value=globalThis.App.MONO.getI52(ptr);
-                globalThis.App.MONO.setU52(ptr2, value);
+                const value=globalThis.App.runtime.getHeapI52(ptr);
+                globalThis.App.runtime.setHeapU52(ptr2, value);
                 return ''+value;");
 
             uint ptr = (uint)Unsafe.AsPointer(ref expected);
@@ -99,14 +99,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long actual = 0;
             uint ptr = (uint)Unsafe.AsPointer(ref actual);
             var bagFn = new Function("ptr", "value", @"
-                globalThis.App.MONO.setI52(ptr, value);");
+                globalThis.App.runtime.setHeapI52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
             Assert.Contains("Value is not a safe integer", ex.Message);
 
             double expectedD = value;
             uint ptrD = (uint)Unsafe.AsPointer(ref expectedD);
             var bagFnD = new Function("ptr", "value", @"
-                globalThis.App.MONO.getI52(ptr);");
+                globalThis.App.runtime.getHeapI52(ptr);");
             var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
             Assert.Contains("Value is not a safe integer", ex.Message);
         }
@@ -118,14 +118,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long actual = 0;
             uint ptr = (uint)Unsafe.AsPointer(ref actual);
             var bagFn = new Function("ptr", "value", @"
-                globalThis.App.MONO.setU52(ptr, value);");
+                globalThis.App.runtime.setHeapU52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
             Assert.Contains("Can't convert negative Number into UInt64", ex.Message);
 
             double expectedD = value;
             uint ptrD = (uint)Unsafe.AsPointer(ref expectedD);
             var bagFnD = new Function("ptr", "value", @"
-                globalThis.App.MONO.getU52(ptr);");
+                globalThis.App.runtime.getHeapU52(ptr);");
             var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
             Assert.Contains("Can't convert negative Number into UInt64", ex.Message);
         }
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long actual = 0;
             uint ptr = (uint)Unsafe.AsPointer(ref actual);
             var bagFn = new Function("ptr", "value", @"
-                globalThis.App.MONO.setI52(ptr, value);");
+                globalThis.App.runtime.setHeapI52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, double.NaN));
             Assert.Contains("Value is not a safe integer: NaN (number)", ex.Message);
         }

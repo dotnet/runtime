@@ -177,7 +177,7 @@ function mount_with_checking {
 
 #Mount emulator to the target mount path
 function mount_emulator {
-    #Check if the mount path exists and create if neccessary
+    #Check if the mount path exists and create if necessary
     if [ ! -d "$__ARMRootfsMountPath" ]; then
         sudo mkdir "$__ARMRootfsMountPath"
     fi

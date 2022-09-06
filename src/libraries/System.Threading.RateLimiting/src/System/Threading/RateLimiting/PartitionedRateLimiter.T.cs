@@ -12,10 +12,10 @@ namespace System.Threading.RateLimiting
     public abstract class PartitionedRateLimiter<TResource> : IAsyncDisposable, IDisposable
     {
         /// <summary>
-        /// An estimated count of available permits.
+        /// Gets a snapshot of the statistics for the <paramref name="resource"/> if available.
         /// </summary>
-        /// <returns></returns>
-        public abstract int GetAvailablePermits(TResource resource);
+        /// <returns>An instance of <see cref="RateLimiterStatistics"/> containing a snapshot of the statistics for a <paramref name="resource"/>.</returns>
+        public abstract RateLimiterStatistics? GetStatistics(TResource resource);
 
         /// <summary>
         /// Fast synchronous attempt to acquire permits.
@@ -27,23 +27,23 @@ namespace System.Threading.RateLimiting
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns>A successful or failed lease.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public RateLimitLease Acquire(TResource resource, int permitCount = 1)
+        public RateLimitLease AttemptAcquire(TResource resource, int permitCount = 1)
         {
             if (permitCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(permitCount));
             }
 
-            return AcquireCore(resource, permitCount);
+            return AttemptAcquireCore(resource, permitCount);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="Acquire"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="AttemptAcquire"/>.
         /// </summary>
         /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns></returns>
-        protected abstract RateLimitLease AcquireCore(TResource resource, int permitCount);
+        protected abstract RateLimitLease AttemptAcquireCore(TResource resource, int permitCount);
 
         /// <summary>
         /// Wait until the requested permits are available or permits can no longer be acquired.
@@ -56,7 +56,7 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> AcquireAsync(TResource resource, int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -68,17 +68,17 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAndAcquireAsyncCore(resource, permitCount, cancellationToken);
+            return AcquireAsyncCore(resource, permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="AcquireAsync"/>.
         /// </summary>
         /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.
@@ -118,6 +118,23 @@ namespace System.Threading.RateLimiting
 
             // Suppress finalization.
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Translates PartitionedRateLimiter&lt;TOuter&gt; into the current <see cref="PartitionedRateLimiter{TResource}"/>
+        /// using the <paramref name="keyAdapter"/> to translate <typeparamref name="TOuter"/> to <typeparamref name="TResource"/>.
+        /// </summary>
+        /// <typeparam name="TOuter">The type to translate into <typeparamref name="TResource"/>.</typeparam>
+        /// <param name="keyAdapter">The function to be called every time a <typeparamref name="TOuter"/> is passed to
+        /// PartitionedRateLimiter&lt;TOuter&gt;.Acquire(TOuter, int) or PartitionedRateLimiter&lt;TOuter&gt;.WaitAsync(TOuter, int, CancellationToken).
+        /// <para />
+        /// <remarks><paramref name="keyAdapter"/> should be implemented in a thread-safe way.</remarks></param>
+        /// <param name="leaveOpen">Specifies whether the returned <see cref="PartitionedRateLimiter{TOuter}"/> will dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</param>
+        /// <returns>A new PartitionedRateLimiter&lt;TOuter&gt; that translates <typeparamref name="TOuter"/>
+        /// to <typeparamref name="TResource"/> and calls the inner <see cref="PartitionedRateLimiter{TResource}"/>.</returns>
+        public PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(Func<TOuter, TResource> keyAdapter, bool leaveOpen)
+        {
+            return new TranslatingLimiter<TResource, TOuter>(this, keyAdapter, leaveOpen);
         }
     }
 }

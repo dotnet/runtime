@@ -879,7 +879,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void CompileRelationOveratorswithIsLiftToNullTrue(bool useInterpreter)
+        public static void CompileRelationOperatorsWithIsLiftToNullTrue(bool useInterpreter)
         {
             int? x = 10;
             int? y = 2;

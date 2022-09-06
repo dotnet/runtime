@@ -971,7 +971,12 @@ Debugger::Debugger()
     // as data structure layouts change, add a new version number
     // and comment the changes
     m_mdDataStructureVersion = 1;
-
+    m_fOutOfProcessSetContextEnabled =
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        Thread::AreCetShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
+#else
+        FALSE;
+#endif
 }
 
 /******************************************************************************
@@ -1828,7 +1833,7 @@ HRESULT Debugger::Startup(void)
         // Stubs in Stacktraces are always enabled.
         g_EnableSIS = true;
 
-        // We can get extra Interop-debugging test coverage by having some auxillary unmanaged
+        // We can get extra Interop-debugging test coverage by having some auxiliary unmanaged
         // threads running and throwing debug events. Keep these stress procs separate so that
         // we can focus on certain problem areas.
     #ifdef _DEBUG
@@ -2343,7 +2348,7 @@ HRESULT Debugger::RequestFavor(FAVORCALLBACK fp, void * pData)
     if (m_pRCThread == NULL ||
         m_pRCThread->GetRCThreadId() == GetCurrentThreadId())
     {
-        // Since favors are only used internally, we know that the helper should alway be up and ready
+        // Since favors are only used internally, we know that the helper should always be up and ready
         // to handle them. Also, since favors can be used in low-stack scenarios, there's not any
         // extra initialization needed for them.
         _ASSERTE(!"Helper not initialized for favors.");
@@ -3172,7 +3177,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     ULONG32 dummy;
 
                     p = new ULONG32[n];
-                    _ASSERTE(p != NULL); // throws on oom errror
+                    _ASSERTE(p != NULL); // throws on oom error
 
                     hr = pISymMethod->GetSequencePoints(n, &dummy,
                                                         p, NULL, NULL, NULL,
@@ -3182,7 +3187,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
                     *pILOffsets = (DWORD*)p;
 
-                    // Translate the IL offets based on an
+                    // Translate the IL offsets based on an
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
@@ -3370,7 +3375,7 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
 
     // Just tell the JIT to extend everything.
     // Note that if optimizations are enabled, the native compilers are
-    // free to ingore *extendOthers
+    // free to ignore *extendOthers
     *extendOthers = true;
 
     DWORD bits = md->GetModule()->GetDebuggerInfoBits();
@@ -4747,10 +4752,10 @@ BOOL IsDuplicatePatch(SIZE_T *rgEntries,
 /******************************************************************************
 // HRESULT Debugger::MapAndBindFunctionBreakpoints():  For each breakpoint
 //      that we've set in any version of the existing function,
-//      set a correponding breakpoint in the new function if we haven't moved
+//      set a corresponding breakpoint in the new function if we haven't moved
 //      the patch to the new version already.
 //
-//      This must be done _AFTER_ the MethodDesc has been udpated
+//      This must be done _AFTER_ the MethodDesc has been updated
 //      with the new address (ie, when GetFunctionAddress pFD returns
 //      the address of the new EnC code)
 //
@@ -4790,7 +4795,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
         "Ver:0x%04x (DJI:0x%p)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
 
     // We need to traverse the patch list while under the controller lock (small lock).
-    // But we can only send BreakpointSetErros while under the debugger lock (big lock).
+    // But we can only send BreakpointSetErrors while under the debugger lock (big lock).
     // So to avoid a lock violation, we queue any errors we find under the small lock,
     // and then send the whole list when under the big lock.
     PATCH_UNORDERED_ARRAY listUnbindablePatches;
@@ -5504,7 +5509,8 @@ bool Debugger::IsJMCMethod(Module* pModule, mdMethodDef tkMethod)
 bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                           CONTEXT *context,
                                           DWORD code,
-                                          Thread *thread)
+                                          Thread *thread,
+                                          BOOL fIsVEH)
 {
 
     // @@@
@@ -5537,19 +5543,27 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 
     bool retVal;
 
-    // Don't stop for native debugging anywhere inside our inproc-Filters.
-    CantStopHolder hHolder;
-
-    if (!CORDBUnrecoverableError(this))
     {
-        retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                           code, thread);
-    }
-    else
-    {
-        retVal = false;
+        // Don't stop for native debugging anywhere inside our inproc-Filters.
+        CantStopHolder hHolder;
+
+        if (!CORDBUnrecoverableError(this))
+        {
+            retVal = DebuggerController::DispatchNativeException(exception, context,
+                                                               code, thread);
+        }
+        else
+        {
+            retVal = false;
+        }
     }
 
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+    if (retVal && fIsVEH)
+    {
+        SendSetThreadContextNeeded(context);
+    }
+#endif
     return retVal;
 }
 
@@ -6593,7 +6607,7 @@ CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {0};
 // InitDebuggerLaunchJitInfo - initialize JDI structure on Vista
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - unhandled exception info
 //
 // Return Value:
@@ -6624,6 +6638,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
         reinterpret_cast<ULONG64>(s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress) :
         reinterpret_cast<ULONG64>(reinterpret_cast<PVOID>(GetIP(pExceptionInfo->ContextRecord)));
 
+#if defined(HOST_WINDOWS)
 #if defined(TARGET_X86)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 #elif defined(TARGET_AMD64)
@@ -6632,10 +6647,9 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
-#elif defined(TARGET_LOONGARCH64)
-    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
+#endif
 #endif
 }
 
@@ -6776,7 +6790,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
 
     // There is no security concern to expect that the debug string we retrieve from HKLM follows a certain
     // format because changing HKLM keys requires admin priviledge.  Padding with zeros is not a security mitigation,
-    // but rather a forward looking compability measure.  If future verions of Windows introduces more parameters for
+    // but rather a forward looking compatibility measure.  If future versions of Windows introduces more parameters for
     // JIT debugger launch, it is preferrable to pass zeros than other random values for those unsupported parameters.
     pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -6990,7 +7004,7 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
 // Make sure you called PreJitAttach and it returned TRUE before you call this
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //
 // Returns:
@@ -7159,7 +7173,7 @@ void Debugger::PostJitAttach()
 // Launches a debugger and blocks waiting for it to either attach or abort the attach.
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //    willSendManagedEvent - TRUE if after getting attached we will send a managed debug event
 //    explicitUserRequest - TRUE if this attach is caused by a call to the Debugger.Launch() API.
@@ -7205,7 +7219,7 @@ void Debugger::JitAttach(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, 
 // Ensure that a debugger is attached. Will jit-attach if needed.
 //
 // Arguments
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //    willSendManagedEvent - true if after getting (or staying) attached we will send
 //                           a managed debug event
@@ -8465,7 +8479,7 @@ BOOL Debugger::ShouldAutoAttach()
 
     LOG((LF_CORDB, LL_INFO1000000, "D::SAD\n"));
 
-    // Check if the user has specified a seting in the registry about what he
+    // Check if the user has specified a setting in the registry about what he
     // wants done when an unhandled exception occurs.
     DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
 
@@ -8655,7 +8669,7 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
     else
     {
         // Note: we don't do anything on NO or TERMINATE. We just return to the exception logic, which will abort the
-        // app or not depending on what the CLR impl decides is appropiate.
+        // app or not depending on what the CLR impl decides is appropriate.
         _ASSERTE(action == ATTACH_TERMINATE || action == ATTACH_NO);
     }
 
@@ -8810,7 +8824,7 @@ Debugger::ATTACH_ACTION Debugger::ShouldAttachDebugger(bool fIsUserBreakpoint)
         return ATTACH_NO;
     }
 
-    // Check if the user has specified a seting in the registry about what he wants done when an unhandled exception
+    // Check if the user has specified a setting in the registry about what he wants done when an unhandled exception
     // occurs.
     DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
 
@@ -9711,7 +9725,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         // the Right Side can delete them later.
         DebuggerController::RemovePatchesFromModule(pRuntimeModule, domainToRemovePatchesIn);
 
-        // Deactive all JMC functions in this module.  We don't do this for shared assemblies
+        // Deactivate all JMC functions in this module.  We don't do this for shared assemblies
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
@@ -10108,7 +10122,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // Note: it's possible that the AppDomain has (or is about to be) unloaded, which could lead to a
     // crash when we use the DebuggerModule.  Ideally we'd only be using AppDomain IDs here.
     // We can't easily convert our ADID to an AppDomain* (SystemDomain::GetAppDomainFromId)
-    // because we can't proove that the AppDomain* would be valid (not unloaded).
+    // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = pThread->GetDomain();
     AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
@@ -10957,7 +10971,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // Note that we'd like to be able to do this assert here
         //      _ASSERTE(DebuggerController::GetNumberOfPatches() == 0);
         // However controllers may get queued for deletion if there is outstanding
-        // work and so we can't gaurentee the deletion will complete now.
+        // work and so we can't guarantee the deletion will complete now.
         // @dbgtodo  inspection: This shouldn't be an issue in the complete V3 architecture
 
         MarkDebuggerUnattachedInternal();
@@ -11233,7 +11247,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
         break;
 
-    // Set the JMC status on invididual methods
+    // Set the JMC status on individual methods
     case DB_IPCE_SET_METHOD_JMC_STATUS:
         {
             // Get the info out of the event
@@ -13146,7 +13160,7 @@ void STDCALL ExceptionHijackWorker(
             break;
     case EHijackReason::kFirstChanceSuspend:
             _ASSERTE(pData == NULL);
-            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord);
+            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord, FALSE);
             break;
     case EHijackReason::kGenericHijack:
             _ASSERTE(pData == NULL);
@@ -13177,19 +13191,14 @@ void STDCALL ExceptionHijackWorker(
 //    See code:ExceptionHijackPersonalityRoutine for more information.
 //
 // Arguments:
-//    * pExceptionRecord   - not used
-//    * MemoryStackFp      - not used
-//    * BackingStoreFp     - not used
-//    * pContextRecord     - not used
-//    * pDispatcherContext - not used
-//    * GlobalPointer      - not used
+//    Standard personality routine signature.
 //
 // Return Value:
 //    Always return ExceptionContinueSearch.
 //
 
 EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                              IN     ULONG64             MemoryStackFp,
+                                              IN     PVOID               pEstablisherFrame,
                                               IN OUT PCONTEXT            pContextRecord,
                                               IN OUT PDISPATCHER_CONTEXT pDispatcherContext)
 {
@@ -13202,7 +13211,7 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 // Personality routine for unwinder the assembly hijack stub on 64-bit.
 //
 // Arguments:
-//    standard Personality routine signature.
+//    Standard personality routine signature.
 //
 // Assumptions:
 //    This is caleld by the OS exception logic during exception handling.
@@ -13229,9 +13238,8 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 //    On AMD64, we work around this by using an empty personality routine.
 
 EXTERN_C EXCEPTION_DISPOSITION
-ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                        BIT64_ARG(IN     ULONG64             MemoryStackFp)
-                    NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
+ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                                  IN     PVOID               pEstablisherFrame,
                                   IN OUT PCONTEXT            pContextRecord,
                                   IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                  )
@@ -13254,7 +13262,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
 
     // This copies pHijackContext into pDispatcherContext, which the OS can then
     // use to walk the stack.
-    FixupDispatcherContext(pDispatcherContext, pHijackContext, pContextRecord, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
+    FixupDispatcherContext(pDispatcherContext, pHijackContext, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
 #else
     _ASSERTE(!"NYI - ExceptionHijackPersonalityRoutine()");
 #endif
@@ -13355,7 +13363,7 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
 
             // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
             // exception.  Our hijack code runs in the exception context, and overwrites the stack space
-            // after SO excpetion, so this frame was popped out before invoking RaiseFailFast.  We need to
+            // after SO exception, so this frame was popped out before invoking RaiseFailFast.  We need to
             // put it back here for running func-eval code.
             // This cumbersome code should be removed once SO synchronization is moved to be completely
             // out-of-process.
@@ -13463,7 +13471,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
         okay = g_pDebugger->FirstChanceNativeException(pExceptionRecord,
             pContext,
             pExceptionRecord->ExceptionCode,
-            pEEThread);
+            pEEThread,
+            FALSE);
         _ASSERTE(okay == true);
         LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: FirstChanceNativeException returned\n"));
     }
@@ -13502,7 +13511,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 // - this thread is not in cooperative mode.
 //-----------------------------------------------------------------------------
 LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
-                                              EXCEPTION_RECORD *pExceptionRecord)
+                                              EXCEPTION_RECORD *pExceptionRecord,
+                                              BOOL fIsVEH)
 {
     // if we aren't set up to do interop debugging this function should just bail out
     if(m_pRCThread == NULL)
@@ -13592,7 +13602,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
                 // Setting the FilterContext must be done in cooperative mode (since it's like pushing a Frame onto the Frame chain).
                 // Thus we have a violation. We don't really need the filter context specifically here, we're just using
                 // it for legacy purposes as a way to stash the context of the original exception (that this thread was hijacked from).
-                // @todo - use another way to store the context indepedent of the Filter context.
+                // @todo - use another way to store the context independent of the Filter context.
                 CONTRACT_VIOLATION(ModeViolation);
                 _ASSERTE(g_pEEInterface->GetThreadFilterContext(pEEThread) == NULL);
                 g_pEEInterface->SetThreadFilterContext(pEEThread, pContext);
@@ -13638,6 +13648,12 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     if (pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        if (fIsVEH)
+        {
+            SendSetThreadContextNeeded(pContext);
+        }
+#endif
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     else
@@ -14766,7 +14782,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
             m_pThis = pThis;
         }
 
-        void SupressCleanup()
+        void SuppressCleanup()
         {
             m_pThis = NULL;
         }
@@ -14848,15 +14864,15 @@ HRESULT Debugger::InitAppDomainIPC(void)
         m_pAppDomainCB->Unlock();
     }
 
-    hEnsureCleanup.SupressCleanup();
+    hEnsureCleanup.SuppressCleanup();
     return S_OK;
 }
 
 /******************************************************************************
- * Unitialize the AppDomain IPC block
+ * Uninitialize the AppDomain IPC block
  * Returns:
- * S_OK -if fully unitialized
- * E_FAIL - if we can't get ownership of the block, and thus no unitialization
+ * S_OK -if fully uninitialized
+ * E_FAIL - if we can't get ownership of the block, and thus no uninitialization
  *          work is done.
  ******************************************************************************/
 HRESULT Debugger::TerminateAppDomainIPC(void)
@@ -15393,7 +15409,7 @@ void Debugger::EarlyHelperThreadDeath(void)
 
 //
 // This tells the debugger that shutdown of the in-proc debugging services has begun. We need to know this during
-// managed/unmanaged debugging so we can stop doing certian things to the process (like hijacking threads.)
+// managed/unmanaged debugging so we can stop doing certain things to the process (like hijacking threads.)
 //
 void Debugger::ShutdownBegun(void)
 {
@@ -16574,22 +16590,23 @@ Debugger::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     DAC_ENUM_VTHIS();
     SUPPORTS_DAC;
-    _ASSERTE(m_rgHijackFunction != NULL);
 
-    if ( flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pMethodInfos.IsValid())
         {
             m_pMethodInfos->EnumMemoryRegions(flags);
         }
 
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData),
-                                sizeof(DebuggerLazyInit));
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData), sizeof(DebuggerLazyInit));
     }
 
     // Needed for stack walking from an initial native context.  If the debugger can find the
     // on-disk image of clr.dll, then this is not necessary.
-    DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    if (m_rgHijackFunction.IsValid())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    }
 }
 
 
@@ -16631,4 +16648,93 @@ void Debugger::StartCanaryThread()
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    if (!m_fOutOfProcessSetContextEnabled)
+        return;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextFlags = context->ContextFlags;
+    DWORD contextSize = 0;
+
+    // determine the context size
+    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER || contextSize == 0)
+    {
+        // The initialize call should fail but return contextSize
+        _ASSERTE(!"InitializeContext unexpectedly failed\n");
+        return;
+    }
+
+    // allocate a temp buffer for the context
+    BYTE *pBuffer = (BYTE*)_alloca(contextSize);
+    if (pBuffer == NULL)
+    {
+        _ASSERTE(!"Failed to allocate context buffer");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Failed to allocate context buffer\n"));
+        return;
+    }
+
+    // make a copy of the context
+    PCONTEXT pContext = NULL;
+    success = InitializeContext(pBuffer, contextFlags, &pContext, &contextSize);
+    if (!success)
+    {
+        _ASSERTE(!"InitializeContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from InitializeContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    success = CopyContext(pContext, contextFlags, context);
+    if (!success)
+    {
+        _ASSERTE(!"CopyContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from CopyContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    // adjust context size if the context pointer is not aligned with the buffer we allocated
+    contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
+
+    // send the context to the right side
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
+    EX_TRY
+    {
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+#else
+    #error Platform not supported
+#endif
+
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
+    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return m_fOutOfProcessSetContextEnabled;
+}
+#else
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
+{
+    _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return FALSE;
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+#endif // DACCESS_COMPILE
+
 #endif //DEBUGGING_SUPPORTED
+

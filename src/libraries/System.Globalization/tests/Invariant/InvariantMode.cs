@@ -925,7 +925,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(result, compareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
-                // Filter differences betweeen string-based and Span-based LastIndexOf
+                // Filter differences between string-based and Span-based LastIndexOf
                 // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)

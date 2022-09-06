@@ -92,6 +92,9 @@ internal abstract class WasmHostProvider : IDisposable
 
         void ProcessOutput(string prefix, string? msg)
         {
+            if (!ShouldMessageBeLogged(prefix, msg))
+                return;
+
             _logger.LogDebug($"{prefix}{msg}");
 
             if (string.IsNullOrEmpty(msg) || browserReadyTCS.Task.IsCompleted)
@@ -102,6 +105,8 @@ internal abstract class WasmHostProvider : IDisposable
                 browserReadyTCS.TrySetResult(result);
         }
     }
+
+    protected virtual bool ShouldMessageBeLogged(string prefix, string? msg) => true;
 
     public virtual void Dispose()
     {

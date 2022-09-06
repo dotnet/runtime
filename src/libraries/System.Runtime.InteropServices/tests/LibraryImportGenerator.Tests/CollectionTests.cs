@@ -165,6 +165,7 @@ namespace LibraryImportGenerator.IntegrationTests
                         public Span<T> GetManagedValuesDestination(int length) => default;
                         public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length) => default;
                         public void FromUnmanaged(byte* value) { }
+                        public void Free() {}
                     }
                 }
             }

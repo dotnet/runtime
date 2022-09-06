@@ -313,7 +313,7 @@ namespace System.ComponentModel
         protected virtual object? AddNewCore()
         {
             // Allow event handler to supply the new item for us
-            // If event hander did not supply new item, create one ourselves
+            // If event handler did not supply new item, create one ourselves
             object? newItem = FireAddingNew() ?? Activator.CreateInstance(typeof(T));
 
             // Add item to end of list. Note: If event handler returned an item not of type T,

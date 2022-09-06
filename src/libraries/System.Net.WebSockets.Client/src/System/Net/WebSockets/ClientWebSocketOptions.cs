@@ -30,6 +30,14 @@ namespace System.Net.WebSockets
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
         private bool _collectHttpResponseDetails;
 
+        internal bool AreCompatibleWithCustomInvoker() =>
+            !UseDefaultCredentials &&
+            Credentials is null &&
+            (_clientCertificates?.Count ?? 0) == 0 &&
+            RemoteCertificateValidationCallback is null &&
+            Cookies is null &&
+            (Proxy is null || Proxy == WebSocketHandle.DefaultWebProxy.Instance);
+
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
@@ -233,6 +241,9 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        /// <summary>
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
+        /// </summary>
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails
         {

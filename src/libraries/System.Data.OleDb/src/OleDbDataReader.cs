@@ -170,7 +170,7 @@ namespace System.Data.OleDb
         public override bool IsClosed
         {
             get
-            { // if we have a rowset or multipleresults, we may have more to read
+            { // if we have a rowset or multiplieresults, we may have more to read
                 Debug.Assert((_singleRow && !_isClosed && !_isRead && (null == _irow) && (null == _irowset)) ||
                              _isClosed == ((null == _irow) && (null == _irowset) && (null == _imultipleResults)
                                            && (null == _dbSchemaTable) && (null == _connection) && (null == _command)),
@@ -2050,7 +2050,7 @@ namespace System.Data.OleDb
                 return;
             }
 
-            // look for a single unique contraint that can be upgraded
+            // look for a single unique constraint that can be upgraded
             if (_connection.SupportSchemaRowset(OleDbSchemaGuid.Indexes))
             {
                 object?[] restrictions = new object?[] { baseCatalogName, baseSchemaName, null, null, baseTableName };

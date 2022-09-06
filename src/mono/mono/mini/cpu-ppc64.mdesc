@@ -1,6 +1,6 @@
 # powerpc cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the regsiter allocator, the scheduler
+# about the cpu instructions that may be used by the register allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
 #
 # An opcode name is followed by a colon and optional specifiers.
@@ -45,18 +45,18 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
-tailcall: len:124 clob:c
+tailcall: len:152 clob:c
 tailcall_parameter: len:0 # PowerPC outputs a nice fixed size memcpy loop for larger stack_usage, so 0.
 memory_barrier: len:4
 nop: len:4
 relaxed_nop: len:4
-break: len:40
+break: len:44
 seq_point: len:48
 il_seq_point: len:0
-call: dest:a clob:c len:36
+call: dest:a clob:c len:40
 br: len:4
-throw: src1:i len:40
-rethrow: src1:i len:40
+throw: src1:i len:44
+rethrow: src1:i len:44
 ckfinite: dest:f src1:f
 ppc_check_finite: src1:i len:16
 add_ovf_carry: dest:i src1:i src2:i len:16
@@ -77,16 +77,16 @@ fcompare: src1:f src2:f len:12
 arglist: src1:i len:12
 setlret: src1:i src2:i len:12
 check_this: src1:b len:4
-voidcall: len:36 clob:c
+voidcall: len:40 clob:c
 voidcall_reg: src1:i len:16 clob:c
 voidcall_membase: src1:b len:16 clob:c
-fcall: dest:g len:36 clob:c
+fcall: dest:g len:40 clob:c
 fcall_reg: dest:g src1:i len:16 clob:c
 fcall_membase: dest:g src1:b len:16 clob:c
-lcall: dest:a len:36 clob:c
+lcall: dest:a len:40 clob:c
 lcall_reg: dest:a src1:i len:16 clob:c
 lcall_membase: dest:a src1:b len:16 clob:c
-vcall: len:16 clob:c
+vcall: len:20 clob:c
 vcall_reg: src1:i len:16 clob:c
 vcall_membase: src1:b len:12 clob:c
 call_reg: dest:a src1:i len:16 clob:c
@@ -404,7 +404,7 @@ int_max_un: dest:i src1:i src2:i len:8 clob:1
 
 #long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
 
-vcall2: len:36 clob:c
+vcall2: len:40 clob:c
 vcall2_reg: src1:i len:16 clob:c
 vcall2_membase: src1:b len:16 clob:c
 
@@ -417,4 +417,4 @@ atomic_cas_i8: src1:b src2:i src3:i dest:i len:38
 
 liverange_start: len:0
 liverange_end: len:0
-gc_safe_point: len:0
+gc_safe_point: clob:c src1:i len:44

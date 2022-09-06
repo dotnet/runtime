@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Credui
     {
-        // These contants were taken from the wincred.h file
+        // These constants were taken from the wincred.h file
         internal const int CRED_MAX_USERNAME_LENGTH = 514;
         internal const int CRED_MAX_DOMAIN_TARGET_LENGTH = 338;
 

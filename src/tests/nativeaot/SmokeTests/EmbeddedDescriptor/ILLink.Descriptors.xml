@@ -1,0 +1,9 @@
+<linker>
+  <type fullname="Program">
+    <method name="methodKeptViaDescriptor"/>
+    <field name="fieldKeptViaDescriptor"/>
+    <property signature="System.Int32 PropertyKeptViaDescriptor"/>
+    <event signature="System.EventHandler EventKeptViaDescriptor"/>
+  </type>
+  <type fullname="Program/NestedTypeKeptViaDescriptor"/>
+</linker>

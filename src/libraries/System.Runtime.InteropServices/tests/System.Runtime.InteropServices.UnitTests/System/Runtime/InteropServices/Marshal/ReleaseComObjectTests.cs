@@ -14,15 +14,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.FinalReleaseComObject(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ReleaseComObject_NullObject_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => Marshal.ReleaseComObject(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ReleaseComObject_NonComObject_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("o", () => Marshal.ReleaseComObject(10));

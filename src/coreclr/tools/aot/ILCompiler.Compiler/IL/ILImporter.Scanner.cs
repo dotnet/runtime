@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -16,7 +14,7 @@ namespace Internal.IL
 {
     // Implements an IL scanner that scans method bodies to be compiled by the code generation
     // backend before the actual compilation happens to gain insights into the code.
-    partial class ILImporter
+    internal partial class ILImporter
     {
         private readonly MethodIL _methodIL;
         private readonly MethodIL _canonMethodIL;
@@ -32,7 +30,7 @@ namespace Internal.IL
 
         private readonly byte[] _ilBytes;
 
-        private class BasicBlock
+        private sealed class BasicBlock
         {
             // Common fields
             public enum ImportState : byte
@@ -57,7 +55,7 @@ namespace Internal.IL
         private int _currentInstructionOffset;
         private int _previousInstructionOffset;
 
-        private class ExceptionRegion
+        private sealed class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
         }
@@ -181,8 +179,8 @@ namespace Internal.IL
             return _compilation.GetHelperEntrypoint(helper);
         }
 
-        private void MarkInstructionBoundary() { }
-        private void EndImportingBasicBlock(BasicBlock basicBlock) { }
+        private static void MarkInstructionBoundary() { }
+        private static void EndImportingBasicBlock(BasicBlock basicBlock) { }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
@@ -196,15 +194,15 @@ namespace Internal.IL
                     if (region.Kind == ILExceptionRegionKind.Filter)
                         MarkBasicBlock(_basicBlocks[region.FilterOffset]);
 
-                    // Once https://github.com/dotnet/corert/issues/3460 is done, this should be deleted.
-                    // Throwing InvalidProgram is not great, but we want to do *something* if this happens
-                    // because doing nothing means problems at runtime. This is not worth piping a
-                    // a new exception with a fancy message for.
                     if (region.Kind == ILExceptionRegionKind.Catch)
                     {
                         TypeDesc catchType = (TypeDesc)_methodIL.GetObject(region.ClassToken);
                         if (catchType.IsRuntimeDeterminedSubtype)
-                            ThrowHelper.ThrowInvalidProgramException();
+                        {
+                            // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
+                            // type with a runtime lookup
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH filter");
+                        }
                     }
                 }
             }
@@ -384,6 +382,7 @@ namespace Internal.IL
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            DefaultInterfaceMethodResolution staticResolution = default;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (_constrained != null)
@@ -398,7 +397,7 @@ namespace Internal.IL
                 if (constrained.IsRuntimeDeterminedSubtype)
                     constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod == null && constrained.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
@@ -419,7 +418,7 @@ namespace Internal.IL
                         || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
-                    exactType = constrained;
+                    exactType = directMethod.OwningType;
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -525,7 +524,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
+                    _dependencies.Add(_factory.FatFunctionPointer(targetMethod), reason);
                 }
             }
             else if (directCall)
@@ -676,6 +675,12 @@ namespace Internal.IL
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
                 }
             }
+            else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+            {
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
+
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             else if (method.Signature.IsStatic)
             {
                 // This should be an unresolved static virtual interface method call. Other static methods should
@@ -683,7 +688,14 @@ namespace Internal.IL
                 Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
 
                 var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
+                var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
+
+                // Constant lookup doesn't make sense and we don't implement it. If we need constant lookup,
+                // the method wasn't implemented. Don't crash on it.
+                if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
+                    ThrowHelper.ThrowTypeLoadException(_constrained);
+
+                _dependencies.Add(GetGenericLookupHelper(constrainedHelperId, constrainedCallInfo), reason);
             }
             else if (method.HasInstantiation)
             {
@@ -969,12 +981,12 @@ namespace Internal.IL
             }
         }
 
-        private void ImportRefAnyType()
+        private static void ImportRefAnyType()
         {
             // TODO
         }
 
-        private void ImportArgList()
+        private static void ImportArgList()
         {
         }
 
@@ -1214,27 +1226,27 @@ namespace Internal.IL
                 + (_ilBytes[ilOffset + 3] << 24));
         }
 
-        private void ReportInvalidBranchTarget(int targetOffset)
+        private static void ReportInvalidBranchTarget(int targetOffset)
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private void ReportFallthroughAtEndOfMethod()
+        private static void ReportFallthroughAtEndOfMethod()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private void ReportMethodEndInsideInstruction()
+        private static void ReportMethodEndInsideInstruction()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private void ReportInvalidInstruction(ILOpcode opcode)
+        private static void ReportInvalidInstruction(ILOpcode opcode)
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private bool IsRuntimeHelpersInitializeArrayOrCreateSpan(MethodDesc method)
+        private static bool IsRuntimeHelpersInitializeArrayOrCreateSpan(MethodDesc method)
         {
             if (method.IsIntrinsic)
             {
@@ -1252,7 +1264,7 @@ namespace Internal.IL
             return false;
         }
 
-        private bool IsTypeGetTypeFromHandle(MethodDesc method)
+        private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "GetTypeFromHandle")
             {
@@ -1266,7 +1278,7 @@ namespace Internal.IL
             return false;
         }
 
-        private bool IsTypeEquals(MethodDesc method)
+        private static bool IsTypeEquals(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "op_Equality")
             {
@@ -1280,7 +1292,7 @@ namespace Internal.IL
             return false;
         }
 
-        private bool IsActivatorDefaultConstructorOf(MethodDesc method)
+        private static bool IsActivatorDefaultConstructorOf(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "DefaultConstructorOf" && method.Instantiation.Length == 1)
             {
@@ -1294,7 +1306,7 @@ namespace Internal.IL
             return false;
         }
 
-        private bool IsActivatorAllocatorOf(MethodDesc method)
+        private static bool IsActivatorAllocatorOf(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "AllocatorOf" && method.Instantiation.Length == 1)
             {
@@ -1308,7 +1320,7 @@ namespace Internal.IL
             return false;
         }
 
-        private bool IsEETypePtrOf(MethodDesc method)
+        private static bool IsEETypePtrOf(MethodDesc method)
         {
             if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "Of") && method.Instantiation.Length == 1)
             {
@@ -1328,40 +1340,40 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
-        private void ImportNop() { }
-        private void ImportBreak() { }
-        private void ImportLoadVar(int index, bool argument) { }
-        private void ImportStoreVar(int index, bool argument) { }
-        private void ImportAddressOfVar(int index, bool argument) { }
-        private void ImportDup() { }
-        private void ImportPop() { }
-        private void ImportLoadNull() { }
-        private void ImportReturn() { }
-        private void ImportLoadInt(long value, StackValueKind kind) { }
-        private void ImportLoadFloat(double value) { }
-        private void ImportLoadIndirect(int token) { }
-        private void ImportLoadIndirect(TypeDesc type) { }
-        private void ImportStoreIndirect(int token) { }
-        private void ImportStoreIndirect(TypeDesc type) { }
-        private void ImportShiftOperation(ILOpcode opcode) { }
-        private void ImportCompareOperation(ILOpcode opcode) { }
-        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
-        private void ImportUnaryOperation(ILOpcode opCode) { }
-        private void ImportCpOpj(int token) { }
-        private void ImportCkFinite() { }
-        private void ImportLocalAlloc() { }
-        private void ImportEndFilter() { }
-        private void ImportCpBlk() { }
-        private void ImportInitBlk() { }
-        private void ImportRethrow() { }
-        private void ImportSizeOf(int token) { }
-        private void ImportUnalignedPrefix(byte alignment) { }
-        private void ImportVolatilePrefix() { }
-        private void ImportTailPrefix() { }
-        private void ImportNoPrefix(byte mask) { }
-        private void ImportThrow() { }
-        private void ImportInitObj(int token) { }
-        private void ImportLoadLength() { }
-        private void ImportEndFinally() { }
+        private static void ImportNop() { }
+        private static void ImportBreak() { }
+        private static void ImportLoadVar(int index, bool argument) { }
+        private static void ImportStoreVar(int index, bool argument) { }
+        private static void ImportAddressOfVar(int index, bool argument) { }
+        private static void ImportDup() { }
+        private static void ImportPop() { }
+        private static void ImportLoadNull() { }
+        private static void ImportReturn() { }
+        private static void ImportLoadInt(long value, StackValueKind kind) { }
+        private static void ImportLoadFloat(double value) { }
+        private static void ImportLoadIndirect(int token) { }
+        private static void ImportLoadIndirect(TypeDesc type) { }
+        private static void ImportStoreIndirect(int token) { }
+        private static void ImportStoreIndirect(TypeDesc type) { }
+        private static void ImportShiftOperation(ILOpcode opcode) { }
+        private static void ImportCompareOperation(ILOpcode opcode) { }
+        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
+        private static void ImportUnaryOperation(ILOpcode opCode) { }
+        private static void ImportCpOpj(int token) { }
+        private static void ImportCkFinite() { }
+        private static void ImportLocalAlloc() { }
+        private static void ImportEndFilter() { }
+        private static void ImportCpBlk() { }
+        private static void ImportInitBlk() { }
+        private static void ImportRethrow() { }
+        private static void ImportSizeOf(int token) { }
+        private static void ImportUnalignedPrefix(byte alignment) { }
+        private static void ImportVolatilePrefix() { }
+        private static void ImportTailPrefix() { }
+        private static void ImportNoPrefix(byte mask) { }
+        private static void ImportThrow() { }
+        private static void ImportInitObj(int token) { }
+        private static void ImportLoadLength() { }
+        private static void ImportEndFinally() { }
     }
 }

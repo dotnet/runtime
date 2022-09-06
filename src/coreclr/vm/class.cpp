@@ -1206,7 +1206,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
     //      }
     //      class B : A {
     //          [PreserveBaseOverrides]
-    //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+    //          DerivedRetType VirtualFunction() { .override A.VirtualFunction }
     //      }
     //      class C : B {
     //          MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
@@ -2994,7 +2994,7 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         PTR_Module pModule = pMT->GetModule();
         if (pModule.IsValid())

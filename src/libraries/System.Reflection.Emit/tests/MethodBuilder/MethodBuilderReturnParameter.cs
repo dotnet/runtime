@@ -16,7 +16,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Equal(typeof(void), method.ReturnParameter.ParameterType);
         }
 
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Equal(returnType, method.ReturnParameter.ParameterType);
         }
 
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => method.ReturnParameter);
         }
     }

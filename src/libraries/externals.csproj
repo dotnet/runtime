@@ -24,6 +24,13 @@
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
+    <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
+    <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
+  </ItemGroup>
+
+
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           AfterTargets="AfterResolveReferences"
@@ -38,16 +45,7 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <ItemGroup>
-      <CoreHostFiles Include="$(DotNetHostBinDir)*" />
-      <HostFxFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostfxr' or
-                                                          '%(CoreHostFiles.Filename)' == 'libhostfxr'" />
-      <HostPolicyFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostpolicy' or
-                                                              '%(CoreHostFiles.Filename)' == 'libhostpolicy'" />
-      <DotnetExe Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'dotnet'" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(HostFxFile)"
+    <Copy SourceFiles="@(HostFxrFile)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
@@ -76,6 +74,8 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
     <ItemGroup>
+      <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
+      <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
@@ -95,6 +95,9 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
+      <!-- copy the host files to make the desktop samples work -->
+      <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
+      <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"

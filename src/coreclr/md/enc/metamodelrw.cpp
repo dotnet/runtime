@@ -441,10 +441,10 @@ public:
         IfFailGo(PrepMapTokens());
 
         // We are going to sort tables. Invalidate the hash tables
-        if ( m_MiniMd.m_pLookUpHashs[m_ixTbl] != NULL )
+        if ( m_MiniMd.m_pLookUpHashes[m_ixTbl] != NULL )
         {
-            delete m_MiniMd.m_pLookUpHashs[m_ixTbl];
-            m_MiniMd.m_pLookUpHashs[m_ixTbl] = NULL;
+            delete m_MiniMd.m_pLookUpHashes[m_ixTbl];
+            m_MiniMd.m_pLookUpHashes[m_ixTbl] = NULL;
         }
 
         IfFailGo(SortRange(1, m_iCount));
@@ -725,11 +725,11 @@ CMiniMdRW::CMiniMdRW()
 
     ZeroMemory(&m_OptionValue, sizeof(OptionValue));
 
-    // initialize the embeded lookuptable struct.  Further initialization, after constructor.
+    // initialize the embedded lookuptable struct.  Further initialization, after constructor.
     for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
     {
         m_pVS[ixTbl] = 0;
-        m_pLookUpHashs[ixTbl] = 0;
+        m_pLookUpHashes[ixTbl] = 0;
     }
 
     // Assume that we can sort tables as needed.
@@ -771,7 +771,7 @@ CMiniMdRW::CMiniMdRW()
 
 CMiniMdRW::~CMiniMdRW()
 {
-    // Un-initialize the embeded lookuptable struct
+    // Un-initialize the embedded lookuptable struct
     for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
     {
         if (m_pVS[ixTbl])
@@ -779,8 +779,8 @@ CMiniMdRW::~CMiniMdRW()
             m_pVS[ixTbl]->Uninit();
             delete m_pVS[ixTbl];
         }
-        if ( m_pLookUpHashs[ixTbl] != NULL )
-            delete m_pLookUpHashs[ixTbl];
+        if ( m_pLookUpHashes[ixTbl] != NULL )
+            delete m_pLookUpHashes[ixTbl];
 
     }
     if (m_pFilterTable)
@@ -828,7 +828,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
     HRESULT      hr = S_OK;
     HRESULT      hrRet = S_FALSE;       // Assume that we won't find any
     RID          ridStart, ridEnd;      // Loop start and endpoints.
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_CustomAttribute];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_CustomAttribute];
 
     _ASSERTE(phEnum != NULL);
 
@@ -1355,7 +1355,7 @@ CMiniMdRW::InitPoolOnMem(
             }
             else
             {   // Creates new empty user string heap (with default empty !!!blob!!! entry)
-                // Note: backaward compatiblity: doesn't add default empty user string, but default empty
+                // Note: backaward compatibility: doesn't add default empty user string, but default empty
                 // blob entry
                 IfFailRet(m_UserStringHeap.InitializeEmpty(
                     0
@@ -1391,7 +1391,7 @@ CMiniMdRW::InitOnMem(
     BYTE    *pBuf = const_cast<BYTE*>(reinterpret_cast<const BYTE*>(pvBuf));
     int      i;
 
-    // post contruction initialize the embeded lookuptable struct
+    // post construction initialize the embedded lookuptable struct
     for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
     {
         if (m_TableDefs[ixTbl].m_iKey < m_TableDefs[ixTbl].m_cCols)
@@ -2472,12 +2472,12 @@ CMiniMdRW::PreSaveFull()
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newEvents.Debug_SetTableInfo("TBL_Event", TBL_Event));
 
-        MetaData::TableRW newPropertys;
-        IfFailGo(newPropertys.InitializeEmpty_WithRecordCount(
+        MetaData::TableRW newProperties;
+        IfFailGo(newProperties.InitializeEmpty_WithRecordCount(
             m_TableDefs[TBL_Property].m_cbRec,
             m_Schema.m_cRecs[TBL_Property]
             COMMA_INDEBUG_MD(TRUE)));
-        INDEBUG_MD(newPropertys.Debug_SetTableInfo("TBL_Property", TBL_Property));
+        INDEBUG_MD(newProperties.Debug_SetTableInfo("TBL_Property", TBL_Property));
 
         // If we have any indirect table for Field or Method and we are about to reorder these
         // tables, the MemberDef hash table will be invalid after the token movement. So invalidate
@@ -2607,7 +2607,7 @@ CMiniMdRW::PreSaveFull()
                 IfFailGo(m_Tables[TBL_Property].GetRecord(ridOld, &pOld));
                 RID ridNew;
                 BYTE * pNew;
-                IfFailGo(newPropertys.AddRecord(&pNew, (UINT32 *)&ridNew));
+                IfFailGo(newProperties.AddRecord(&pNew, (UINT32 *)&ridNew));
                 _ASSERTE(ridNew == ridPtr);
                 memcpy(pNew, pOld, m_TableDefs[TBL_Property].m_cbRec);
 
@@ -2643,7 +2643,7 @@ CMiniMdRW::PreSaveFull()
         {
             m_Tables[TBL_Property].Delete();
             IfFailGo(m_Tables[TBL_Property].InitializeFromTable(
-                &newPropertys,
+                &newProperties,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Event))
@@ -2805,7 +2805,7 @@ CMiniMdRW::PreSaveFull()
         SORTER(FieldMarshal, Parent);
         sortFieldMarshal.Sort();
 
-        // Always sort the MethodSematics
+        // Always sort the MethodSemantics
         _ASSERTE(!CanHaveCustomAttribute(TBL_MethodSemantics));
         SORTER(MethodSemantics, Association);
         sortMethodSemantics.Sort();
@@ -4698,7 +4698,7 @@ ErrExit:
 
 //---------------------------------------------------------------------------------------
 //
-// The new paramter may not have been emitted in sequence order.  So
+// The new parameter may not have been emitted in sequence order.  So
 // check the current parameter and move it up in the indirect table until
 // we find the right home.
 //
@@ -4996,7 +4996,7 @@ CMiniMdRW::FindMethodSemanticsHelper(
     RID          index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT      hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodSemantics];
 
     _ASSERTE(TypeFromToken(tkAssociate) != 0);
 
@@ -5061,7 +5061,7 @@ CMiniMdRW::FindAssociateHelper(
     RID         index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT     hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodSemantics];
 
     _ASSERTE(TypeFromToken(tkAssociate) != 0);
 
@@ -5129,7 +5129,7 @@ CMiniMdRW::FindMethodImplHelper(
     RID         index;
     MethodImplRec *pMethodImpl;
     HRESULT     hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodImpl];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodImpl];
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
@@ -5192,7 +5192,7 @@ CMiniMdRW::FindGenericParamHelper(
     RID         ridStart, ridEnd;       // Start, end of range of tokens.
     RID         index;                  // A loop counter.
     GenericParamRec *pGenericParam;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParam];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_GenericParam];
 
     if (IsSorted(TBL_GenericParam))
     {
@@ -5259,7 +5259,7 @@ CMiniMdRW::FindGenericParamConstraintHelper(
     RID         ridStart, ridEnd;       // Start, end of range of tokens.
     ULONG       index;                  // A loop counter.
     GenericParamConstraintRec *pConstraint;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParamConstraint];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_GenericParamConstraint];
     RID         ridParam = RidFromToken(tkParam);
     _ASSERTE(TypeFromToken(tkParam) == mdtGenericParam);
 
@@ -5426,13 +5426,13 @@ CMiniMdRW::GenericFindWithHash(     // Return code.
     // Partial check -- only one rid for table 0, so if type is 0, rid should be 1.
     _ASSERTE(TypeFromToken(tkTarget) != 0 || RidFromToken(tkTarget) == 1);
 
-    if (m_pLookUpHashs[ixTbl] == NULL)
+    if (m_pLookUpHashes[ixTbl] == NULL)
     {
         // Just ignore the returned error - the hash is either created or not
         (void)GenericBuildHashTable(ixTbl, ixCol);
     }
 
-    CLookUpHash * pHashTable = m_pLookUpHashs[ixTbl];
+    CLookUpHash * pHashTable = m_pLookUpHashes[ixTbl];
     if (pHashTable != NULL)
     {
         TOKENHASHENTRY *p;
@@ -5494,7 +5494,7 @@ CMiniMdRW::GenericBuildHashTable(
     TOKENHASHENTRY *pEntry;
 
     // If the hash table hasn't been built it, see if it should get faulted in.
-    if (m_pLookUpHashs[ixTbl] == NULL)
+    if (m_pLookUpHashes[ixTbl] == NULL)
     {
         ULONG ridEnd = GetCountRecs(ixTbl);
 
@@ -5528,7 +5528,7 @@ CMiniMdRW::GenericBuildHashTable(
             }
 
             if (InterlockedCompareExchangeT<CLookUpHash *>(
-                &m_pLookUpHashs[ixTbl],
+                &m_pLookUpHashes[ixTbl],
                 pHashTable,
                 NULL) == NULL)
             {   // We won the initializaion race
@@ -5551,7 +5551,7 @@ CMiniMdRW::GenericAddToHash(
     RID   rid)      // Token of new guy into the ixTbl.
 {
     HRESULT         hr = S_OK;
-    CLookUpHash    *pHashTable = m_pLookUpHashs[ixTbl];
+    CLookUpHash    *pHashTable = m_pLookUpHashes[ixTbl];
     void           *pRec;
     mdToken         tkHash;
     ULONG           iHash;

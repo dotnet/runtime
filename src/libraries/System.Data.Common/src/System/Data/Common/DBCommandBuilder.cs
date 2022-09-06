@@ -1364,7 +1364,7 @@ namespace System.Data.Common
             return GetColumnValue(row, GetDataColumn(columnName, mappings, row), version);
         }
 
-        [return: NotNullIfNotNull("column")]
+        [return: NotNullIfNotNull(nameof(column))]
         private static object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
         {
             object? value = null;
