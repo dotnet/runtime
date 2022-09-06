@@ -666,7 +666,7 @@
     <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
     <HelixPostCommand Include="export spmi_collection_type=run" />
     <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
-    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD\superpmi_scripts\superpmi.py" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/superpmi_scripts/superpmi.py" />
     <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
     <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
     <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
