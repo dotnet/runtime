@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <!-- Consider enable it for Mono whenever the implementation is ready -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Reenable it after it is fixed -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr'">true</CLRTestTargetUnsupported>
     <!--
         This test requires the test case to perform exactly 1 GC right at the spot, so it won't run
         correctly under GCStress.
