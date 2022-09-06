@@ -455,7 +455,7 @@ namespace System.Buffers.Text
                 Vector128<byte> narrow = (Sse2.IsSupported)
                     ? Sse2.PackUnsignedSaturate(vector.AsInt16(), vector.AsInt16())
                     : Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16());
-                Vector128.StoreUnsafe(narrow, ref *(byte*)pDest, elementOffset);
+                narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
             {
