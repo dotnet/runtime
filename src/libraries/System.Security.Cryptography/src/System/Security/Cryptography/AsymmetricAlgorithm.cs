@@ -707,7 +707,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format
+        /// Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format
         /// with a byte-based password, PEM encoded.
         /// </summary>
         /// <param name="passwordBytes">
