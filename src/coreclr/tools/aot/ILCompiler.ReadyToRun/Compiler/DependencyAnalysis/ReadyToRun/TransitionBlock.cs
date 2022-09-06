@@ -387,8 +387,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                     }
 
-                    // Value types are returned using return buffer by default
-                    usesRetBuffer = true;
+                    // Value types are returned using return buffer by default except LoongArch64.
+                    usesRetBuffer = !IsLoongArch64;
                     break;
 
                 default:
