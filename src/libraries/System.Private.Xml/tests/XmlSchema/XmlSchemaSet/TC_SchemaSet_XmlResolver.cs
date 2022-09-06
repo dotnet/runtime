@@ -8,6 +8,9 @@ using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
+#if TARGET_BROWSER
+    [Collection(nameof(DisableParallelization))]
+#endif
     //[TestCase(Name = "TC_SchemaSet_XmlResolver", Desc = "")]
     public class TC_SchemaSet_XmlResolver : TC_SchemaSetBase
     {
