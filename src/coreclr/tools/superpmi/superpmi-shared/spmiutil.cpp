@@ -270,8 +270,10 @@ void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture)
 // The following functions are used for arm64/arm32 relocation processing.
 // They are copies of the code in src\coreclr\utilcode\util.cpp.
 // We decided to copy them instead of linking with utilcode library
-// to avoid introducing additional runtime dependencies.
+// to avoid introducing additional runtime dependencies on Windows.
+// On Unix, utilcode is already linked in for other reasons.
 
+#ifndef TARGET_UNIX
 void PutArm64Rel28(UINT32* pCode, INT32 imm28)
 {
     UINT32 branchInstr = *pCode;
@@ -335,3 +337,5 @@ void PutThumb2BlRel24(UINT16* p, INT32 imm24)
     p[0] = Opcode0;
     p[1] = Opcode1;
 }
+#endif
+
