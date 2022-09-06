@@ -23,12 +23,12 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Create_ExceptionWithMessage_Success()
         {
-            const string message = "Hello World";
-            SocketException e = new SocketException((int)SocketError.AccessDenied, message);
+            const string Message = "Hello World";
+            SocketException e = new SocketException((int)SocketError.AccessDenied, Message);
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             Assert.Null(e.InnerException);
-            Assert.Equal(message, e.Message);
-            Assert.Contains(message, e.ToString());
+            Assert.Equal(Message, e.Message);
+            Assert.Contains(Message, e.ToString());
         }
     }
 }
