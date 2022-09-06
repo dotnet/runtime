@@ -9,13 +9,15 @@
           Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and ('$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'WasmTestOnBrowser')">
 
     <PropertyGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJs'">
-      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
-      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">&quot;WasmXHarnessArgs=$WasmXHarnessArgs --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">&quot;WasmXHarnessArgs=%WasmXHarnessArgs% --engine-arg=--experimental-wasm-simd&quot;</_AOTBuildArgsSIMD>
     </PropertyGroup>
 
     <PropertyGroup>
       <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
-      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
+
+      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">export $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">set $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
     </PropertyGroup>
 
     <ItemGroup>
