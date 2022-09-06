@@ -112,7 +112,7 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
-
+bool IsOptimisableLdrStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 /************************************************************************
 *
 * This union is used to encode/decode the special ARM64 immediate values
@@ -775,8 +775,9 @@ void emitIns_R_R_R_I(instruction ins,
                      regNumber   reg2,
                      regNumber   reg3,
                      ssize_t     imm,
-                     insOpts     opt      = INS_OPTS_NONE,
-                     emitAttr    attrReg2 = EA_UNKNOWN);
+                     insOpts     opt        = INS_OPTS_NONE,
+                     emitAttr    attrReg2   = EA_UNKNOWN,
+                     instrDesc*  reuseInstr = nullptr);
 
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
