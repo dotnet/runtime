@@ -1051,14 +1051,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_AndNot:
-#ifdef TARGET_ARM64
-		if (!is_element_type_primitive (fsig->params [0]))
-			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
-#elif TARGET_AMD64
 		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
-
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+#elif TARGET_AMD64
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 #else
 		return NULL;
