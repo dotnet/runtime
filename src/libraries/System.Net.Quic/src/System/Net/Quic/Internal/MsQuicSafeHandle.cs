@@ -25,14 +25,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
-    public QUIC_HANDLE* QuicHandle
-    {
-        get
-        {
-            ObjectDisposedException.ThrowIf(IsInvalid, this);
-            return (QUIC_HANDLE*)DangerousGetHandle();
-        }
-    }
+    public QUIC_HANDLE* QuicHandle => (QUIC_HANDLE*)DangerousGetHandle();
 
     public MsQuicSafeHandle(QUIC_HANDLE* handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType)
         : base((IntPtr)handle, ownsHandle: true)
