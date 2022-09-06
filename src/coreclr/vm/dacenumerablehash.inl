@@ -309,8 +309,8 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
         // +2 to skip "length" and "next" slots
         DWORD dwBucket = iHash % cBuckets + SKIP_SPECIAL_SLOTS;
 
-        // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
-        PTR_VolatileEntry pEntry = curBuckets[dwBucket];
+        // Point at the first entry in the bucket chain that stores entries with the given hash code.
+        PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
 
         // Walk the bucket chain one entry at a time.
         while (pEntry)
