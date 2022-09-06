@@ -94,7 +94,7 @@
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'))">
+    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(RuntimeIdentifier)' == 'browser-wasm')">
       <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
       <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersion7)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>
