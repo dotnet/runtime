@@ -105,7 +105,7 @@ namespace System.Collections.Tests
 
 #endregion
 
-#region GetViewBetween
+#region GetViewBetween and GetViewFrom, GetViewUntil
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -174,6 +174,12 @@ namespace System.Collections.Tests
                 {
                     SortedSet<T> view = set.GetViewBetween(firstElement, middleElement);
                     Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewBetween(middleElement, lastElement));
+
+                    view = set.GetViewUntil(middleElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewBetween(middleElement, lastElement));
+
+                    view = set.GetViewFrom(middleElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewBetween(firstElement, middleElement));
                 }
             }
         }
@@ -206,6 +212,173 @@ namespace System.Collections.Tests
             Assert.Equal(default(T), view.Max);
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewFrom_EntireSet(int setLength)
+        {
+            if (setLength > 0)
+            {
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                T firstElement = set.ElementAt(0);
+                T lastElement = set.ElementAt(setLength - 1);
+                SortedSet<T> view = set.GetViewFrom(firstElement);
+                Assert.Equal(setLength, view.Count);
+                Assert.True(set.SetEquals(view));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewFrom_MiddleOfSet(int setLength)
+        {
+            if (setLength >= 3)
+            {
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                T firstElement = set.ElementAt(1);
+                T lastElement = set.ElementAt(setLength - 2);
+
+                List<T> expected = new List<T>(setLength - 2);
+                foreach (T value in set)
+                    if (comparer.Compare(value, firstElement) >= 0)
+                        expected.Add(value);
+
+                SortedSet<T> view = set.GetViewFrom(firstElement);
+                Assert.Equal(expected.Count, view.Count);
+                Assert.True(view.SetEquals(expected));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewFrom_SubsequentOutOfRangeCall_ThrowsArgumentOutOfRangeException(int setLength)
+        {
+            if (setLength >= 3)
+            {
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
+                T firstElement = set.ElementAt(0);
+                T middleElement = set.ElementAt(setLength / 2);
+                T lastElement = set.ElementAt(setLength - 1);
+                if ((comparer.Compare(firstElement, middleElement) < 0) && (comparer.Compare(middleElement, lastElement) < 0))
+                {
+                    SortedSet<T> view = set.GetViewBetween(firstElement, firstElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewFrom(middleElement));
+
+                    view = set.GetViewBetween(lastElement, lastElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewFrom(middleElement));
+
+                    view = set.GetViewFrom(lastElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewFrom(middleElement));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewFrom_Empty_MinMax(int setLength)
+        {
+            if (setLength < 4) return;
+
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+            Assert.Equal(setLength, set.Count);
+
+            T firstElement = set.ElementAt(0);
+            T lastElement = set.ElementAt(setLength - 1);
+
+            set.Remove(lastElement);
+            Assert.Equal(setLength - 1, set.Count);
+
+            SortedSet<T> view = set.GetViewFrom(lastElement);
+            Assert.Equal(0, view.Count);
+
+            Assert.Equal(default(T), view.Min);
+            Assert.Equal(default(T), view.Max);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewUntil_EntireSet(int setLength)
+        {
+            if (setLength > 0)
+            {
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                T firstElement = set.ElementAt(0);
+                T lastElement = set.ElementAt(setLength - 1);
+                SortedSet<T> view = set.GetViewUntil(lastElement);
+                Assert.Equal(setLength, view.Count);
+                Assert.True(set.SetEquals(view));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewUntil_MiddleOfSet(int setLength)
+        {
+            if (setLength >= 3)
+            {
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                T firstElement = set.ElementAt(1);
+                T lastElement = set.ElementAt(setLength - 2);
+
+                List<T> expected = new List<T>(setLength - 2);
+                foreach (T value in set)
+                    if (comparer.Compare(value, lastElement) <= 0)
+                        expected.Add(value);
+
+                SortedSet<T> view = set.GetViewUntil(lastElement);
+                Assert.Equal(expected.Count, view.Count);
+                Assert.True(view.SetEquals(expected));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewUntil_SubsequentOutOfRangeCall_ThrowsArgumentOutOfRangeException(int setLength)
+        {
+            if (setLength >= 3)
+            {
+                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
+                T firstElement = set.ElementAt(0);
+                T middleElement = set.ElementAt(setLength / 2);
+                T lastElement = set.ElementAt(setLength - 1);
+                if ((comparer.Compare(firstElement, middleElement) < 0) && (comparer.Compare(middleElement, lastElement) < 0))
+                {
+                    SortedSet<T> view = set.GetViewBetween(firstElement, firstElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewUntil(middleElement));
+
+                    view = set.GetViewBetween(lastElement, lastElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewUntil(middleElement));
+
+                    view = set.GetViewUntil(firstElement);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => view.GetViewUntil(middleElement));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewUntil_Empty_MinMax(int setLength)
+        {
+            if (setLength < 4) return;
+
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+            Assert.Equal(setLength, set.Count);
+
+            T firstElement = set.ElementAt(0);
+            T lastElement = set.ElementAt(setLength - 1);
+
+            set.Remove(firstElement);
+            Assert.Equal(setLength - 1, set.Count);
+
+            SortedSet<T> view = set.GetViewUntil(firstElement);
+            Assert.Equal(0, view.Count);
+
+            Assert.Equal(default(T), view.Min);
+            Assert.Equal(default(T), view.Max);
+        }
         #endregion
 
 #region RemoveWhere

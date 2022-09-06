@@ -59,7 +59,7 @@ namespace System.Collections.Generic
                 bool ret = _underlying.AddIfNotPresent(item);
                 VersionCheck();
 #if DEBUG
-                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
 #endif
 
                 return ret;
@@ -69,7 +69,7 @@ namespace System.Collections.Generic
             {
                 VersionCheck();
 #if DEBUG
-                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
 #endif
                 return base.Contains(item);
             }
@@ -84,7 +84,7 @@ namespace System.Collections.Generic
                 bool ret = _underlying.Remove(item);
                 VersionCheck();
 #if DEBUG
-                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
 #endif
                 return ret;
             }
@@ -282,7 +282,7 @@ namespace System.Collections.Generic
 
                 VersionCheck();
 #if DEBUG
-                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
 #endif
                 return base.FindNode(item);
             }
@@ -299,7 +299,7 @@ namespace System.Collections.Generic
                         return count;
                 }
 #if DEBUG
-                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(this.versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
 #endif
                 return -1;
             }
@@ -352,11 +352,45 @@ namespace System.Collections.Generic
                 return (TreeSubSet)_underlying.GetViewBetween(lowerValue, upperValue);
             }
 
+            public override SortedSet<T> GetViewFrom(T? lowerValue)
+            {
+                if (_lBoundActive && Comparer.Compare(_min, lowerValue) > 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(lowerValue));
+                }
+                if (_uBoundActive)
+                {
+                    if (Comparer.Compare(_max, lowerValue) < 0)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(lowerValue));
+                    }
+                    return (TreeSubSet)_underlying.GetViewBetween(lowerValue, _max);
+                }
+                return (TreeSubSet)_underlying.GetViewFrom(lowerValue);
+            }
+
+            public override SortedSet<T> GetViewUntil(T? upperValue)
+            {
+                if (_uBoundActive && Comparer.Compare(_max, upperValue) < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(upperValue));
+                }
+                if (_lBoundActive)
+                {
+                    if (Comparer.Compare(_min, upperValue) > 0)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(upperValue));
+                    }
+                    return (TreeSubSet)_underlying.GetViewBetween(_min, upperValue);
+                }
+                return (TreeSubSet)_underlying.GetViewUntil(upperValue);
+            }
+
 #if DEBUG
             internal override void IntersectWithEnumerable(IEnumerable<T> other)
             {
                 base.IntersectWithEnumerable(other);
-                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max));
+                Debug.Assert(versionUpToDate() && root == _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive));
             }
 #endif
 

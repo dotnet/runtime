@@ -339,6 +339,8 @@ namespace System.Collections.Generic
         public System.Collections.Generic.SortedSet<T>.Enumerator GetEnumerator() { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.Generic.SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue) { throw null; }
+        public virtual System.Collections.Generic.SortedSet<T> GetViewUntil(T? upperValue) { throw null; }
+        public virtual System.Collections.Generic.SortedSet<T> GetViewFrom(T? lowerValue) { throw null; }
         public virtual void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }

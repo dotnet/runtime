@@ -1523,6 +1523,16 @@ namespace System.Collections.Generic
             return new TreeSubSet(this, lowerValue, upperValue, true, true);
         }
 
+        public virtual SortedSet<T> GetViewFrom(T? lowerValue)
+        {
+            return new TreeSubSet(this, lowerValue, default, true, false);
+        }
+
+        public virtual SortedSet<T> GetViewUntil(T? upperValue)
+        {
+            return new TreeSubSet(this, default, upperValue, false, true);
+        }
+
 #if DEBUG
         /// <summary>
         /// debug status to be checked whenever any operation is called
