@@ -1519,6 +1519,14 @@ namespace CorUnix
         if (NO_ERROR == palErr)
         {
             pSynchManager->m_dwWorkerThreadTid = (DWORD)osThreadId;
+            palErr = InternalSetThreadDescription(pthrCurrent,
+                                                  hWorkerThread,
+                                                  W(".NET SynchManager"));
+            if (NO_ERROR != palErr)
+            {
+                ERROR("Unable to set worker thread name\n");
+            }
+
             palErr = InternalGetThreadDataFromHandle(pthrCurrent,
                                                      hWorkerThread,
                                                      &pSynchManager->m_pthrWorker,

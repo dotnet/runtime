@@ -529,6 +529,7 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
         pthread_t handlerThread;
         if (pthread_create(&handlerThread, &attr, SignalHandlerLoop, readFdPtr) == 0)
         {
+            pthread_setname_np(handlerThread, ".NET SigHandler");
             success = true;
         }
     }

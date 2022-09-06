@@ -157,7 +157,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
         return E_OUTOFMEMORY;
     }
 
-    return S_OK;
+    return SetThreadDescription(m_hTransportThread, W(".NET Debug Transport Thread"));
 }
 
 // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
