@@ -239,7 +239,7 @@ namespace System.Threading
                     {
                         IsThreadPoolThread = true,
                         IsBackground = true,
-                        Name = ".NET ThreadPool Gate"
+                        Name = ".NET TPool Gate"
                     };
                     gateThread.UnsafeStart();
                 }

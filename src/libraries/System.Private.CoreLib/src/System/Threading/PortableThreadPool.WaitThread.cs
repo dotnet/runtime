@@ -187,7 +187,7 @@ namespace System.Threading
                 {
                     IsThreadPoolThread = true,
                     IsBackground = true,
-                    Name = ".NET ThreadPool Wait"
+                    Name = ".NET TPool Wait"
                 };
                 waitThread.UnsafeStart();
             }
