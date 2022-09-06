@@ -42,8 +42,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--Method--")]
-		[ExpectedWarning ("IL3002", "--Method--", ProducedBy = ProducedBy.Analyzer)]
-		[ExpectedWarning ("IL3050", "--Method--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3002", "--Method--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3050", "--Method--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		static void TestRequiresInMethodFromCopiedAssembly ()
 		{
 			var tmp = new RequiresInCopyAssembly ();
