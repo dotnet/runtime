@@ -136,6 +136,26 @@ internal static partial class Interop
             return EvpCipherFinalEx(ctx, ref MemoryMarshal.GetReference(output), out bytesWritten);
         }
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_AeadCipherFinalEx")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool EvpAeadCipherFinalEx(
+            SafeEvpCipherCtxHandle ctx,
+            byte* outm,
+            out int outl,
+            [MarshalAs(UnmanagedType.Bool)] out bool authTagMismatch);
+
+        internal static unsafe bool EvpAeadCipherFinalEx(
+            SafeEvpCipherCtxHandle ctx,
+            Span<byte> output,
+            out int bytesWritten,
+            out bool authTagMismatch)
+        {
+            fixed (byte* pOutput = output)
+            {
+                return EvpAeadCipherFinalEx(ctx, pOutput, out bytesWritten, out authTagMismatch);
+            }
+        }
+
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_CipherSetTagLength")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CipherSetTagLength(
