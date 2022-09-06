@@ -10661,6 +10661,8 @@ DONE:
                     " as having a backward branch.\n",
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
+
+            compMayConvertTailCallToLoop = true;
         }
 
         // We only do these OSR checks in the root method because:
@@ -21611,8 +21613,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     // Optionally, print info on devirtualization
     Compiler* const rootCompiler = impInlineRoot();
-    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodName,
-                                                                           rootCompiler->info.compClassName,
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodHnd,
+                                                                           rootCompiler->info.compClassHnd,
                                                                            &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 

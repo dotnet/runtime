@@ -93,7 +93,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// </summary>
     public IPEndPoint LocalEndPoint { get; }
 
-    /// <inheritdoc cref="ToString"/>
+    /// <inheritdoc />
     public override string ToString() => _handle.ToString();
 
     /// <summary>
@@ -157,6 +157,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// Propagates exceptions from <see cref="QuicListenerOptions.ConnectionOptionsCallback"/>, including validation errors from misconfigured <see cref="QuicServerConnectionOptions"/>, e.g. <see cref="ArgumentException"/>.
     /// Also propagates exceptions from failed connection handshake, e.g. <see cref="AuthenticationException"/>, <see cref="QuicException"/>.
     /// </remarks>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A task that will contain a fully connected <see cref="QuicConnection" /> which successfully finished the handshake and is ready to be used.</returns>
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
