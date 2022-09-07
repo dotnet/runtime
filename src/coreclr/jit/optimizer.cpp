@@ -10224,6 +10224,24 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
         }
     }
 
+    // Similar to above case, we update all the child loops of this loop to point
+    // to the parent loop. But we don't add child loops of this loop in `lpChild`
+    // of parent loop. So, in future, when the parent loop also get removed, we
+    // would not iterate through them in above loop. In such cases, just walk through
+    // the loop table to update all the loop's parent to NOT_IN_LOOP, if they were
+    // pointing to this loop as parent.
+    for (int i = optLoopCount - 1; i >= 0; i--)
+    {
+        if ((optLoopTable[i].lpFlags & LPFLG_REMOVED) == 0)
+        {
+            if (optLoopTable[i].lpParent == loopNum)
+            {
+                optLoopTable[i].lpParent = BasicBlock::NOT_IN_LOOP;
+                JITDUMP("Making loop number " FMT_LP " as top level loop.\n", i);
+            }
+        }
+    }
+
     // Unmark any preheader
     //
     if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
