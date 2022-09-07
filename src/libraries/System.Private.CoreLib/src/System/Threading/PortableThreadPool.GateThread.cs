@@ -229,7 +229,6 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
                 try
