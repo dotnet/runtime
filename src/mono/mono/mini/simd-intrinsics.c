@@ -600,7 +600,7 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 			fsig->param_count = 2;
 			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
 
-			return extract_first_element(cfg, klass, element_type, ins->dreg);;
+			return extract_first_element(cfg, klass, element_type, ins->dreg);
 		}
 		default: {
 			return NULL;
