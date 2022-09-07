@@ -383,12 +383,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
 
                             if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                            {
+                                if (IsLoongArch64)
+                                    fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
                                 break;
+                            }
+
                         }
                     }
 
-                    // Value types are returned using return buffer by default except LoongArch64.
-                    usesRetBuffer = !IsLoongArch64;
+                    // Value types are returned using return buffer by default
+                    usesRetBuffer = true;
                     break;
 
                 default:
