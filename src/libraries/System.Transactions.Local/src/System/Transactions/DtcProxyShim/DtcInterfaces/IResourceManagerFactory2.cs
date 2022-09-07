@@ -9,16 +9,17 @@ namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 [ComImport, Guid("6B369C21-FBD2-11d1-8F47-00C04F8EE57D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IResourceManagerFactory2
 {
+    // From IResourceManagerFactory
     internal void Create(
-        Guid pguidRM,
+        in Guid pguidRM,
         [MarshalAs(UnmanagedType.LPStr)] string pszRMName,
         [MarshalAs(UnmanagedType.Interface)] IResourceManagerSink pIResMgrSink,
         [MarshalAs(UnmanagedType.Interface)] out IResourceManager rm);
 
     internal void CreateEx(
-        Guid pguidRM,
+        in Guid pguidRM,
         [MarshalAs(UnmanagedType.LPStr)] string pszRMName,
         [MarshalAs(UnmanagedType.Interface)] IResourceManagerSink pIResMgrSink,
-        Guid riidRequested,
+        in Guid riidRequested,
         [MarshalAs(UnmanagedType.Interface)] out object rm);
 }
