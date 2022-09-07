@@ -107,7 +107,7 @@ namespace System.Buffers.Text
             => left.Length == right.Length && Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), left.Length);
 
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length && Equals<SkipChecks>(right, left) == EqualsResult.Match;
+            => left.Length == right.Length && SequenceEqualIgnoreCase<char, byte, SkipChecks>(right, left) == EqualsResult.Match;
 
         public static unsafe bool StartsWith(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
             => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckChars>(value, text.Slice(0, value.Length))));

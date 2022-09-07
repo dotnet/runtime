@@ -54,13 +54,16 @@ namespace System.Buffers.Text.Tests
             {
                 yield return new object[] { "tak", "nie" };
 
-                for (char i = (char)0; i <= 127; i++)
+                for (char i = (char)1; i <= 127; i++)
                 {
-                    yield return new object[] { new string(i, i), string.Create(i, i, (destination, iteration) =>
+                    if (i != '?') // ASCIIEncoding maps invalid ASCII to ?
                     {
-                        destination.Fill((char)iteration)
-                        destination[iteration / 2] = 128;
-                    })};
+                        yield return new object[] { new string(i, i), string.Create(i, i, (destination, iteration) =>
+                        {
+                            destination.Fill((char)iteration);
+                            destination[iteration / 2] = (char)128;
+                        })};
+                    }
                 }
             }
         }
@@ -84,7 +87,7 @@ namespace System.Buffers.Text.Tests
 
                 for (char i = (char)0; i <= 127; i++)
                 {
-                    char left = (char)i;
+                    char left = i;
                     char right = char.IsAsciiLetterUpper(left) ? char.ToLower(left) : char.IsAsciiLetterLower(left) ? char.ToUpper(left) : left;
                     yield return new object[] { new string(left, i), new string(right, i) };
                 }
@@ -95,8 +98,6 @@ namespace System.Buffers.Text.Tests
         [MemberData(nameof(IgnoreCaseMatch_TestData))]
         public void IgnoreCaseMatchFound(string left, string right)
         {
-            Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
-
             Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.True(Ascii.EqualsIgnoreCase(left, right));
             Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), right));

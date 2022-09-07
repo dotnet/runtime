@@ -14,6 +14,7 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
     <Compile Include="Ascii\CaseConversionTests.cs" />
+    <Compile Include="Ascii\EqualsTests.cs" />
     <Compile Include="Ascii\GetHashCodeByteTests.cs" />
     <Compile Include="Ascii\GetHashCodeCharTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiByteTests.cs" />
