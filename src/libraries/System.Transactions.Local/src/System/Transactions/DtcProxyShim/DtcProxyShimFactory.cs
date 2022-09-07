@@ -47,7 +47,7 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
-    [RequiresUnreferencedCode("Distributed transactions are not compatible with trimming. Correctness of the application cannot be guaranteed after trimming.")]
+    [RequiresUnreferencedCode("Distributed transactions support is not compatible with trimming. Correctness of the application cannot be guaranteed after trimming.")]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionDispenser))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionOptions))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransaction))]
