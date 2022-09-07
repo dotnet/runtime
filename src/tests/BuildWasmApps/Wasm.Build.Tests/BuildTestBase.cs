@@ -137,6 +137,7 @@ namespace Wasm.Build.Tests
                                            Dictionary<string, string>? envVars = null,
                                            string targetFramework = DefaultTargetFramework,
                                            string? extraXHarnessMonoArgs = null,
+                                           string? extraXHarnessArgs = null,
                                            string jsRelativePath = "test-main.js")
         {
             buildDir ??= _projectDir;
@@ -159,12 +160,14 @@ namespace Wasm.Build.Tests
                 throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
 
             // Use wasm-console.log to get the xharness output for non-browser cases
-            (string testCommand, string extraXHarnessArgs, bool useWasmConsoleOutput) = host switch
+            (string testCommand, string xharnessArgs, bool useWasmConsoleOutput) = host switch
             {
                 RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
                 RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
                 _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
             };
+
+            extraXHarnessArgs += " " + xharnessArgs;
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
             string output = RunWithXHarness(
