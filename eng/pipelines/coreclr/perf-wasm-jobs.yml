@@ -51,6 +51,7 @@ jobs:
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        filter: ${{ parameters.filter }}
         #downloadSpecificBuild:
           #buildId: '1693181'
           #pipeline: 'perf-wasm'
@@ -78,6 +79,7 @@ jobs:
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        filter: ${{ parameters.filter }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -121,6 +123,7 @@ jobs:
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        filter: ${{ parameters.filter }}
 
   #run mono wasm aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -168,4 +171,4 @@ jobs:
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
-        filter: 'System.IO.Tests.Perf_File.CopyToOverwrite*'
+        filter: ${{ parameters.filter }}
