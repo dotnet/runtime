@@ -250,7 +250,7 @@ namespace System.Threading
                 {
                     if (!created)
                     {
-                        Environment.FailFast("Failed to create Gate Thread");
+                        Environment.FailFast("Failed to create the thread pool Gate thread.");
                     }
                 }
             }
