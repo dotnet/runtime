@@ -4,25 +4,20 @@
 import { dotnet as dotnet1, exit } from './dotnet.js?1'
 import { dotnet as dotnet2 } from './dotnet.js?2'
 
-async function createDotnet(builder) {
-    const { getAssemblyExports, getConfig } = await builder.create();
+async function bindIncrement(index, runtime) {
+    const exports = await runtime.getAssemblyExports(runtime.getConfig().mainAssemblyName);
+    const increment = exports.Sample.Test.Increment;
 
-    const config = getConfig();
-    const exports = await getAssemblyExports(config.mainAssemblyName);
-    return exports.Sample.Test.Increment;
-}
-
-function bindIncrement(index, increment) {
     const out = document.getElementById("out" + index);
-    document.getElementById("button" + index).addEventListener("click", e => out.innerHTML = increment());
+    document.getElementById("button" + index).addEventListener("click", () => out.innerHTML = increment());
 }
 
 try {
-    const increment1 = await createDotnet(dotnet1);
-    const increment2 = await createDotnet(dotnet2);
+    const runtime1 = await dotnet1.create();
+    const runtime2 = await dotnet2.create();
 
-    bindIncrement("1", increment1);
-    bindIncrement("2", increment2);
+    await bindIncrement("1", runtime1);
+    await bindIncrement("2", runtime2);
 }
 catch (err) {
     exit(2, err);
