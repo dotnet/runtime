@@ -1671,6 +1671,10 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
             case LcOptInfo::LcMdArray:
                 // TODO-CQ: CLONE: Implement.
                 break;
+            case LcOptInfo::LcTypeTest:
+            case LcOptInfo::LcMethodAddrTest:
+                // We could optimize here. For now, let downstream opts clean this up.
+                break;
 
             default:
                 break;
@@ -2921,11 +2925,33 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
     return WALK_CONTINUE;
 }
 
+//----------------------------------------------------------------------------
+// optIsHandleOrIndirOfHandle:
+//   Check if a tree is a specified handle type or indirection of that handle type.
+//
+// Arguments:
+//      tree       - the tree
+//      handleType - the type of handle to check for
+//
+// Returns:
+//   True if the tree is such a handle.
+//
 bool Compiler::optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType)
 {
     return tree->OperIs(GT_IND) ? tree->AsIndir()->Addr()->IsIconHandle(handleType) : tree->IsIconHandle(handleType);
 }
 
+//----------------------------------------------------------------------------
+// optCheckLoopCloningGDVTestProfitable:
+//   Check heuristically if doing loop cloning for a GDV test is profitable.
+//
+// Arguments:
+//      guard - the GDV test
+//      info  - info for the cloning we are doing
+//
+// Returns:
+//   True if cloning is considered profitable.
+//
 bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info)
 {
     JITDUMP("Checking whether cloning is profitable ...\n");
