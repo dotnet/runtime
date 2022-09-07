@@ -4773,7 +4773,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     destination->gtFlags &= GTF_EMPTY;
 
     // Invert the condition.
-    cond->gtOper  = GenTree::ReverseRelop(cond->gtOper);
+    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
 
     // Create a select node.
     GenTreeConditional* select =
