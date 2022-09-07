@@ -70,9 +70,18 @@ public sealed partial class QuicStream
     {
         CancellationAction = target =>
         {
-            if (target is QuicStream stream)
+            try
             {
-                stream.Abort(QuicAbortDirection.Read, stream._defaultErrorCode);
+                if (target is QuicStream stream)
+                {
+                    stream.Abort(QuicAbortDirection.Read, stream._defaultErrorCode);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // We collided with a Dispose in another thread. This can happen
+                // when using CancellationTokenSource.CancelAfter.
+                // Ignore the exception
             }
         }
     };
@@ -83,9 +92,18 @@ public sealed partial class QuicStream
     {
         CancellationAction = target =>
         {
-            if (target is QuicStream stream)
+            try
             {
-                stream.Abort(QuicAbortDirection.Write, stream._defaultErrorCode);
+                if (target is QuicStream stream)
+                {
+                    stream.Abort(QuicAbortDirection.Write, stream._defaultErrorCode);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // We collided with a Dispose in another thread. This can happen
+                // when using CancellationTokenSource.CancelAfter.
+                // Ignore the exception
             }
         }
     };
