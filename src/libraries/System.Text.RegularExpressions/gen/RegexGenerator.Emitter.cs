@@ -4404,9 +4404,13 @@ namespace System.Text.RegularExpressions.Generator
                 negate ^= RegexCharClass.IsNegated(charClass);
                 return (lowInclusive, highInclusive) switch
                 {
+                    ('\0', '\u007F') => $"{(negate ? "!" : "")}char.IsAscii({chExpr})",
                     ('0', '9') => $"{(negate ? "!" : "")}char.IsAsciiDigit({chExpr})",
                     ('a', 'z') => $"{(negate ? "!" : "")}char.IsAsciiLetterLower({chExpr})",
                     ('A', 'Z') => $"{(negate ? "!" : "")}char.IsAsciiLetterUpper({chExpr})",
+                    ('\ud800', '\udfff') => $"{(negate ? "!" : "")}char.IsSurrogate({chExpr})",
+                    ('\ud800', '\udbff') => $"{(negate ? "!" : "")}char.IsHighSurrogate({chExpr})",
+                    ('\udc00', '\udfff') => $"{(negate ? "!" : "")}char.IsLowSurrogate({chExpr})",
                     _ when lowInclusive == highInclusive => $"({chExpr} {(negate ? "!=" : "==")} {Literal(lowInclusive)})",
                     _ => $"{(negate ? "!" : "")}char.IsBetween({chExpr}, {Literal(lowInclusive)}, {Literal(highInclusive)})",
                 };
