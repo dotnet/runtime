@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace System.Net
 {
@@ -127,9 +128,9 @@ namespace System.Net
 
         private void UpdateRegexList()
         {
-            Regex[]? regexBypassList = null;
             if (_bypassList is ChangeTrackingArrayList bypassList)
             {
+                Regex[]? regexBypassList = null;
                 if (bypassList.Count > 0)
                 {
                     regexBypassList = new Regex[bypassList.Count];
@@ -223,7 +224,20 @@ namespace System.Net
 
             public ChangeTrackingArrayList(ICollection c) : base(c) { }
 
-            public bool IsChanged { get; set; }
+            private volatile bool _isChanged;
+
+            public bool IsChanged
+            {
+                get
+                {
+                    return _isChanged;
+                }
+
+                set
+                {
+                    _isChanged = value;
+                }
+            }
 
             // Override the methods that can add, remove, or change the regexes in the bypass list.
             // Methods that only read (like CopyTo, BinarySearch, etc.) and methods that reorder
