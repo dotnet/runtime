@@ -54,8 +54,7 @@ namespace System
                                 {
                                     s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
                                 }
-                            });
-                            s_loadAndroidTZData.IsBackground = true;
+                            }) { IsBackground = true };
                         }
                     }
 
@@ -65,8 +64,17 @@ namespace System
                         // setting the boolean flag to false immediately after should
                         // prevent two calls to DateTimeOffset.Now in quick succession
                         // from both reaching here.
-                        s_loadAndroidTZData.Start();
-                        s_startNewBackgroundThread = false;
+                        //
+                        // In the event multiple threads hit Start at the same time,
+                        // swallow the exception and move on.
+                        try
+                        {
+                            s_loadAndroidTZData.Start();
+                            s_startNewBackgroundThread = false;
+                        }
+                        catch
+                        {
+                        }
                     }
                 }
 
