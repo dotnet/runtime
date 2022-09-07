@@ -13,7 +13,7 @@ class FrozenObjectHeapManager
 {
 public:
     FrozenObjectHeapManager();
-    Object* AllocateObject(PTR_MethodTable type, size_t objectSize);
+    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
 private:
     CrstExplicitInit m_Crst;
@@ -27,7 +27,7 @@ class FrozenObjectHeap
 {
 public:
     FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize);
-    Object* AllocateObject(PTR_MethodTable type, size_t objectSize);
+    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
 private:
     uint8_t* m_pStart;

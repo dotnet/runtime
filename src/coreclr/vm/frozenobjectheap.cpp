@@ -17,7 +17,7 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 //   1) DOTNET_FrozenSegmentReserveSize is 0 (disabled)
 //   2) Object is too large (large than DOTNET_FrozenSegmentCommitSize)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
-Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t objectSize)
+Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
     CONTRACTL
     {
@@ -27,8 +27,9 @@ Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t obj
     CONTRACTL_END
 
 #ifndef FEATURE_BASICFREEZE
+    // GC is required to support frozen segments
     return nullptr;
-#endif
+#else // FEATURE_BASICFREEZE
 
     CrstHolder ch(&m_Crst);
 
@@ -61,9 +62,9 @@ Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t obj
         _ASSERT(m_CurrentHeap != nullptr);
     }
 
-    Object* obj = m_CurrentHeap->AllocateObject(type, objectSize);
+    Object* obj = m_CurrentHeap->TryAllocateObject(type, objectSize);
 
-    // The only case where it might be null is when the current heap is full and we need
+    // The only case where it can be null is when the current heap is full and we need
     // to create a new one
     if (obj == nullptr)
     {
@@ -71,12 +72,13 @@ Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t obj
         m_FrozenHeaps.Append(m_CurrentHeap);
 
         // Try again
-        obj = m_CurrentHeap->AllocateObject(type, objectSize);
+        obj = m_CurrentHeap->TryAllocateObject(type, objectSize);
 
         // This time it's not expected to be null
         _ASSERT(obj != nullptr);
     }
     return obj;
+#endif // !FEATURE_BASICFREEZE
 }
 
 
@@ -98,18 +100,19 @@ FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
     }
 
     // Commit a chunk in advance
-    alloc = ClrVirtualAlloc(alloc, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE);
-    if (alloc == nullptr)
+    void* committedAlloc = ClrVirtualAlloc(alloc, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE);
+    if (committedAlloc == nullptr)
     {
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
     // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
     // DATA_ALIGNMENT alignment as well
-    _ASSERT(IS_ALIGNED(alloc, DATA_ALIGNMENT));
+    _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 
     segment_info si;
-    si.pvMem = alloc;
+    si.pvMem = committedAlloc;
     si.ibFirstObject = sizeof(ObjHeader);
     si.ibAllocated = si.ibFirstObject;
     si.ibCommit = m_CommitChunkSize;
@@ -118,17 +121,18 @@ FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
-    m_pStart = static_cast<uint8_t*>(alloc);
+    m_pStart = static_cast<uint8_t*>(committedAlloc);
     m_pCurrent = m_pStart;
     m_SizeCommitted = si.ibCommit;
     INDEBUG(m_ObjectsCount = 0);
     return;
 }
 
-Object* FrozenObjectHeap::AllocateObject(PTR_MethodTable type, size_t objectSize)
+Object* FrozenObjectHeap::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
     _ASSERT(m_pStart != nullptr && m_SizeReserved > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
@@ -146,6 +150,7 @@ Object* FrozenObjectHeap::AllocateObject(PTR_MethodTable type, size_t objectSize
         _ASSERT(m_SizeCommitted + m_CommitChunkSize <= m_SizeReserved);
         if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
+            ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
             ThrowOutOfMemory();
         }
         m_SizeCommitted += m_CommitChunkSize;
