@@ -89,13 +89,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
     return OS_PAGE_SIZE;
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhJitWriteProtect(int writeEnable)
-{
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    pthread_jit_write_protect_np(writeEnable);
-#endif
-}
-
 EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
 #ifdef WIN32
@@ -128,8 +121,9 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
-    RhJitWriteProtect(0);
-
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    pthread_jit_write_protect_np(0);
+#endif
 #endif
 
     int numBlocksPerMap = RhpGetNumThunkBlocksPerMapping();
@@ -233,7 +227,8 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     }
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    RhJitWriteProtect(1);
+    pthread_jit_write_protect_np(1);
+    __builtin___clear_cache((char*)pThunksSection, (char*)pThunksSection + THUNKS_MAP_SIZE);
 #else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
