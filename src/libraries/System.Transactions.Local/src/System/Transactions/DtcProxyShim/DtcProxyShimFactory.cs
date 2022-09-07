@@ -68,6 +68,11 @@ internal sealed class DtcProxyShimFactory
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionTransmitter))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiverFactory))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiver))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IConnectionPointContainer))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IEnumConnectionPoints))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IConnectionPoint))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IEnumConnections))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionOutcomeEvents))]
     private static void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) =>
         DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser);
 
