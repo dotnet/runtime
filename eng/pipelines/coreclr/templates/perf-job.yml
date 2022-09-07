@@ -127,8 +127,8 @@ jobs:
       ${{ if ne(parameters.perfForkToUse.url, '') }}:
         value: --perffork ${{ parameters.perfForkToUse.url }} --perfforkbranch ${{ coalesce(parameters.perfForkToUse.branch, 'main') }}
     - name: _perfFilterArg
-      ${{ if ne(parameters.filterArg, '') }}:
-        value: --filter "${{ parameters.filterArg }}"
+      ${{ if ne(parameters.filter, '') }}:
+        value: --filter "${{ parameters.filter }}"
 
     - name: extraSetupParametersSuffix
       value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg) $(_perfFilterArg)"
