@@ -143,8 +143,10 @@ class GCConfig
 {
 #define BOOL_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
   public: static bool Get##name();                                \
+  public: static bool Get##name(bool defaultValue);               \
   public: static void Set##name(bool value);                      \
   private: static bool s_##name;                                  \
+  private: static bool s_##name##Provided;                        \
   private: static bool s_Updated##name;
   
 #define INT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
