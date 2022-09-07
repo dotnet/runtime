@@ -168,3 +168,4 @@ jobs:
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        filter: 'System.IO.Tests.Perf_File.CopyToOverwrite*'
