@@ -47,6 +47,28 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:COMMarshalling",
+        Justification = "The DynamicDependency attributes ensure the necessary IL is preserved.")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionDispenser))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionOptions))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransaction))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITmNodeName))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionImportWhereabouts))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IResourceManagerFactory2))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IResourceManagerSink))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IResourceManager))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionResourceAsync))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionEnlistmentAsync))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionImport))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionExportFactory))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionExport))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionVoterFactory2))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionVoterNotifyAsync2))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionVoterBallotAsync2))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionTransmitterFactory))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionTransmitter))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiverFactory))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiver))]
     public void ConnectToProxy(
         string? nodeName,
         Guid resourceManagerIdentifier,
@@ -62,7 +84,7 @@ internal sealed class DtcProxyShimFactory
 
         lock (_proxyInitLock)
         {
-            DtcGetTransactionManagerExWLocal(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
+            DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
 
             // Check to make sure the node name matches.
             if (nodeName is not null)
@@ -116,13 +138,6 @@ internal sealed class DtcProxyShimFactory
             resourceManagerShim = rmShim;
             _transactionDispenser = localDispenser;
             whereabouts = tmpWhereabouts;
-
-            [UnconditionalSuppressMessage("Trimming", "IL2050",
-                Justification = "The PInvoke has object/interface typed parameters which are potentially trim incompatible, but in this case they're OK")]
-            static void DtcGetTransactionManagerExWLocal(string? pszHost, string? pszTmName, in Guid riid, int grfOptions, object? pvConfigPararms, out ITransactionDispenser ppvObject)
-            {
-                DtcGetTransactionManagerExW(pszHost, pszTmName, riid, grfOptions, pvConfigPararms, out ppvObject);
-            }
         }
     }
 
