@@ -20,7 +20,7 @@ jobs:
     runProfile: 'v8'
     collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
     onlySanityCheck: false
-    filter: 'System.IO.Tests.Perf_File.CopyToOverwrite*'
+    filter: 'System.IO.Tests.Perf_File.CopyToOverwrite'
     perfForkToUse:
       url: https://github.com/radical/performance
       branch: debug-aot-perf-file
