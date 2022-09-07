@@ -378,9 +378,23 @@ stages:
       buildConfig: Release
       helixQueueGroup: ci
       platforms:
+      - SourceBuild_Centos7_x64
+      jobParameters:
+        nameSuffix: Centos7SourceBuild
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: SourceBuildPackages
+        timeoutInMinutes: 95
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      helixQueueGroup: ci
+      platforms:
       - SourceBuild_Linux_x64
       jobParameters:
-        nameSuffix: SourceBuild
+        nameSuffix: PortableSourceBuild
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: SourceBuildPackages
