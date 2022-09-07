@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #ifndef __GCENV_H__
 #define __GCENV_H__
 
@@ -44,7 +45,7 @@
 #ifdef STRESS_LOG
 /*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
     in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
-     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
     how many arguments are getting passed in and using va_args would require parsing the format
     string during the GC
 */

@@ -34,6 +34,8 @@ typedef struct
 	 * the stack a new local is created.
 	 */
 	int local;
+	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
+	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
 	int size;
 } StackInfo;
@@ -155,7 +157,13 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
-	int live_start, live_end;
+	union {
+		// live_start and live_end are used by the offset allocator for optimized code
+		int live_start;
+		// used only by the fast offset allocator, which only works for unoptimized code
+		int stack_offset;
+	};
+	int live_end;
 	// index of first basic block where this var is used
 	int bb_index;
 	union {
@@ -177,7 +185,7 @@ typedef struct
 	const unsigned char *il_code;
 	const unsigned char *ip;
 	const unsigned char *in_start;
-	InterpInst *last_ins, *first_ins;
+	InterpInst *last_ins;
 	int code_size;
 	int *in_offsets;
 	int current_il_offset;
@@ -190,6 +198,7 @@ typedef struct
 	unsigned int stack_capacity;
 	gint32 param_area_offset;
 	gint32 total_locals_size;
+	gint32 max_stack_size;
 	InterpLocal *locals;
 	int *local_ref_count;
 	unsigned int il_locals_offset;

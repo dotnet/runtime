@@ -206,12 +206,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-dependencymodel"
       ],
@@ -248,12 +249,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-caching"
       ],
@@ -261,12 +263,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-configuration"
       ],
@@ -274,12 +277,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-dependencyinjection"
       ],
@@ -301,12 +305,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-hosting"
       ],
@@ -331,12 +336,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-logging"
       ],
@@ -344,12 +350,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-options"
       ],
@@ -357,12 +364,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-extensions-primitives"
       ],
@@ -645,12 +653,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-system-componentmodel"
       ],
@@ -658,12 +667,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-system-componentmodel-composition"
       ],
@@ -679,12 +689,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-system-composition"
       ],
@@ -906,12 +917,13 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-tarek",
+      "pod": "eric-maryam-nick-tarek",
       "owners": [
         "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
+        "Nick-Stanton",
         "tarekgh",
         "dotnet/area-system-globalization"
       ],

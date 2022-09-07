@@ -157,43 +157,6 @@ namespace System.Reflection.Runtime.General
 namespace System.Reflection.Runtime.TypeInfos
 {
     //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
-    {
-        internal static RuntimeNoMetadataNamedTypeInfo GetRuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
-        {
-            RuntimeNoMetadataNamedTypeInfo type;
-            if (isGenericTypeDefinition)
-                type = GenericNoMetadataNamedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            else
-                type = NoMetadataNamedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class NoMetadataNamedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeNoMetadataNamedTypeInfo>
-        {
-            protected sealed override RuntimeNoMetadataNamedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeNoMetadataNamedTypeInfo(key.TypeHandle, isGenericTypeDefinition: false);
-            }
-
-            public static readonly NoMetadataNamedTypeTable Table = new NoMetadataNamedTypeTable();
-        }
-
-        private sealed class GenericNoMetadataNamedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeNoMetadataNamedTypeInfo>
-        {
-            protected sealed override RuntimeNoMetadataNamedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeNoMetadataNamedTypeInfo(key.TypeHandle, isGenericTypeDefinition: true);
-            }
-
-            public static readonly GenericNoMetadataNamedTypeTable Table = new GenericNoMetadataNamedTypeTable();
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
     // that can never be reflection-enabled due to the framework Reflection block.
     //-----------------------------------------------------------------------------------------------------------

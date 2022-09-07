@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
+    <!-- TODO: Remove this setting when the package shipped with .NET 7. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Provides support for importing and exporting xsd schemas for DataContractSerializer.
+
+Commonly Used Types:
+System.Runtime.Serialization.Schema.XsdDataContractExporter
+System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Runtime\Serialization\Schema\CodeExporter.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\ContractCodeDomInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\DiagnosticUtility.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\ImportGlobals.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\ISerializationCodeDomSurrogateProvider.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\ImportOptions.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\SchemaImportHelper.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\XsdDataContractImporter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+  </ItemGroup>
+</Project>

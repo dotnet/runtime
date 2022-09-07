@@ -93,12 +93,6 @@ namespace System.Text.Json
             }
         }
 
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
-        {
-            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoForRootType(type);
-            Initialize(jsonTypeInfo, supportContinuation);
-        }
-
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
@@ -108,11 +102,11 @@ namespace System.Text.Json
                 PreserveReferences = true;
             }
 
-            SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
             Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            SupportContinuation = supportContinuation;
         }
 
         public void Push()
@@ -222,8 +216,8 @@ namespace System.Text.Json
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
-            Current.JsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo.JsonTypeInfo;
-            Current.JsonPropertyInfo = Current.JsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.JsonTypeInfo = derivedJsonTypeInfo;
+            Current.JsonPropertyInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling ??= Current.JsonPropertyInfo.NumberHandling;
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
             SetConstructorArgumentState();
@@ -417,6 +411,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

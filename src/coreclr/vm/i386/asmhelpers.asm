@@ -235,7 +235,7 @@ _RestoreFPUContext@4 ENDP
 
 ; Register CLR exception handlers defined on the C++ side with SAFESEH.
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
-; otherwise it's possible that the resulting .obj will completly be ignored by the linker and these
+; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler

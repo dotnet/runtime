@@ -1247,12 +1247,7 @@ InlineContext* InlineStrategy::NewRoot()
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
     rootContext->m_Code   = m_Compiler->info.compCode;
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     return rootContext;
 }
@@ -1674,7 +1669,7 @@ void InlineStrategy::FinalizeXml(FILE* file)
         fprintf(file, "</InlineForest>\n");
         fflush(file);
 
-        // Workaroud compShutdown getting called twice.
+        // Workaround compShutdown getting called twice.
         s_HasDumpedXmlHeader = false;
     }
 

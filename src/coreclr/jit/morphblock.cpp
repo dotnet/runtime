@@ -19,6 +19,8 @@ protected:
     virtual void TrySpecialCases();
     virtual void MorphStructCases();
 
+    void PropagateAssertions();
+
     virtual const char* GetHelperName() const
     {
         return "MorphInitBlock";
@@ -70,7 +72,7 @@ protected:
 //    tree - A GT_ASG tree that performs block initialization.
 //
 // Return Value:
-//    A possibly modified tree to perfom the initializetion.
+//    A possibly modified tree to perform the initializetion.
 //
 // static
 GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
@@ -114,7 +116,7 @@ MorphInitBlockHelper::MorphInitBlockHelper(Compiler* comp, GenTree* asg, bool in
 //    or sets lvDoNotEnregister on locals.
 //
 // Return Value:
-//    A possibly modified tree to perfom the block operation.
+//    A possibly modified tree to perform the block operation.
 //
 // Notes:
 //    It is used for both init and copy block.
@@ -125,7 +127,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     PrepareDst();
     PrepareSrc();
-
+    PropagateAssertions();
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -273,6 +275,23 @@ void MorphInitBlockHelper::PrepareDst()
         }
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// PropagateAssertions: propagate assertions based on the original tree
+//
+// Notes:
+//    Once the init or copy tree is morphed, assertion gen can no
+//    longer recognize what it means.
+//
+//    So we generate assertions based on the original tree.
+//
+void MorphInitBlockHelper::PropagateAssertions()
+{
+    if (m_comp->optLocalAssertionProp)
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -561,7 +580,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
             if (varTypeIsSIMD(fieldDesc) || varTypeIsGC(fieldDesc))
             {
                 // Cannot initialize GC or SIMD types with a non-zero constant.
-                // The former is completly bogus. The later restriction could be
+                // The former is completely bogus. The later restriction could be
                 // lifted by supporting non-zero SIMD constants or by generating
                 // field initialization code that converts an integer constant to
                 // the appropriate SIMD value. Unlikely to be very useful, though.
@@ -692,7 +711,7 @@ protected:
 //    tree - A GT_ASG tree that performs block copy.
 //
 // Return Value:
-//    A possibly modified tree to perfom the copy.
+//    A possibly modified tree to perform the copy.
 //
 // static
 GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
@@ -1491,7 +1510,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //    if they cannot be enregistered.
 //    When performing a field by field assignment we can have one of Source() or Dest treated as a blob of bytes
 //    and in such cases we will call lvaSetVarDoNotEnregister() on the one treated as a blob of bytes.
-//    If the Source() or Dest() is a struct that has a "CustomLayout" and "ConstainsHoles" then we
+//    If the Source() or Dest() is a struct that has a "CustomLayout" and "ContainsHoles" then we
 //    can not use a field by field assignment and must leave the original block copy unmodified.
 //
 GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
@@ -1550,13 +1569,17 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if (size != 0)
         {
             GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            lhs->SetIndirExceptionFlags(this);
-
             GenTree* asg = gtNewAssignNode(lhs, tree->Data());
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            JITDUMP("MorphStoreDynBlock: trasformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+
+            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
+            if (lclVarTree != nullptr)
+            {
+                lclVarTree->gtFlags |= GTF_VAR_DEF;
+            }
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }

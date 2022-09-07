@@ -53,6 +53,7 @@ namespace Microsoft.Interop.JavaScript
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
@@ -70,6 +71,7 @@ namespace Microsoft.Interop.JavaScript
                 .Where(
                     static modelData => modelData is not null);
 
+            // Validate if attributed methods can have source generated
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
                 Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
@@ -79,16 +81,32 @@ namespace Microsoft.Interop.JavaScript
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
+            // Report diagnostics for invalid methods
             context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
             {
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
+            // Compute generator options
             IncrementalValueProvider<JSGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new JSGeneratorOptions(options.GlobalOptions));
 
+            IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
+
+            // Validate environment that is being used to generate stubs.
+            context.RegisterDiagnostics(stubEnvironment.Combine(attributedMethods.Collect()).SelectMany((data, ct) =>
+            {
+                if (data.Right.IsEmpty // no attributed methods
+                    || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
+                {
+                    return ImmutableArray<Diagnostic>.Empty;
+                }
+
+                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks, null));
+            }));
+
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
-                .Combine(context.CreateStubEnvironmentProvider())
+                .Combine(stubEnvironment)
                 .Combine(stubOptions)
                 .Select(static (data, ct) => new
                 {
@@ -300,7 +318,7 @@ namespace Microsoft.Interop.JavaScript
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
             if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is null
+                || (methodSyntax.Body is null && methodSyntax.ExpressionBody is null)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {

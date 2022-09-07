@@ -51,7 +51,7 @@ namespace System.Runtime.Loader
 #pragma warning restore IDE0060
 
 #pragma warning disable CA1822
-        internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)
+        internal Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
         }

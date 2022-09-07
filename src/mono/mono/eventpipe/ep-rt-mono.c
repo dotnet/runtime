@@ -3784,7 +3784,17 @@ get_module_event_data (
 		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image && image->filename ? image->filename : "";
+		module_data->module_il_path = NULL;
+		if (image && image->filename) {
+			/* if there's a filename, use it */
+			module_data->module_il_path = image->filename;
+		} else if (image && image->module_name) {
+			/* otherwise, use the module name */
+			module_data->module_il_path = image->module_name;
+		}
+		if (!module_data->module_il_path)
+			module_data->module_il_path = "";
+
 		module_data->module_il_pdb_path = "";
 		module_data->module_il_pdb_age = 0;
 

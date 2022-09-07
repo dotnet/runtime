@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO.Ports;
@@ -31,8 +31,15 @@ namespace System.IO.Ports
         private byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
         private object _ioLoopLock = new object();
-        private ConcurrentQueue<SerialStreamIORequest> _readQueue = new ConcurrentQueue<SerialStreamIORequest>();
-        private ConcurrentQueue<SerialStreamIORequest> _writeQueue = new ConcurrentQueue<SerialStreamIORequest>();
+        private bool _hasCancelledTasksToProcess;
+        // Use a Queue with locking instead of ConcurrentQueue because ConcurrentQueue preserves segments for
+        // observation when using TryPeek(). These segments will not clear out references after a dequeue
+        // and as a result they hold on to SerialStreamIORequest instances so that they cannot be GC'ed.
+        // This in turn means that any buffers that the client supplied are not eligible for GC either.
+        private readonly Queue<SerialStreamIORequest> _readQueue = new();
+        private readonly object _readQueueLock = new();
+        private readonly Queue<SerialStreamIORequest> _writeQueue = new();
+        private readonly object _writeQueueLock = new();
 
         private long _totalBytesRead;
         private long TotalBytesAvailable => _totalBytesRead + BytesToRead;
@@ -353,6 +360,12 @@ namespace System.IO.Ports
         }
 #pragma warning restore CA1822
 
+        private bool HasCancelledTasksToProcess
+        {
+            get => Volatile.Read(ref _hasCancelledTasksToProcess);
+            set => Volatile.Write(ref _hasCancelledTasksToProcess, value);
+        }
+
         internal void DiscardInBuffer()
         {
             if (_handle == null) InternalResources.FileNotOpen();
@@ -388,7 +401,7 @@ namespace System.IO.Ports
             if (_handle == null) InternalResources.FileNotOpen();
 
             SpinWait sw = default;
-            while (!_writeQueue.IsEmpty)
+            while (!IsWriteQueueEmpty())
             {
                 sw.SpinOnce();
             }
@@ -435,8 +448,11 @@ namespace System.IO.Ports
                 return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
-            _readQueue.Enqueue(result);
+            SerialStreamReadRequest result = new SerialStreamReadRequest(this, cancellationToken, buffer);
+            lock (_readQueueLock)
+            {
+                _readQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -451,8 +467,11 @@ namespace System.IO.Ports
             if (buffer.IsEmpty)
                 return new ValueTask<int>(0);
 
-            SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
-            _readQueue.Enqueue(result);
+            SerialStreamReadRequest result = new SerialStreamReadRequest(this, cancellationToken, buffer);
+            lock (_readQueueLock)
+            {
+                _readQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -468,8 +487,11 @@ namespace System.IO.Ports
                 return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
             ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(array, offset, count);
-            SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
+            SerialStreamWriteRequest result = new SerialStreamWriteRequest(this, cancellationToken, buffer);
+            lock (_writeQueueLock)
+            {
+                _writeQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -484,8 +506,11 @@ namespace System.IO.Ports
             if (buffer.IsEmpty)
                 return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
-            SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
+            SerialStreamWriteRequest result = new SerialStreamWriteRequest(this, cancellationToken, buffer);
+            lock (_writeQueueLock)
+            {
+                _writeQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -666,18 +691,24 @@ namespace System.IO.Ports
 
         private void FinishPendingIORequests(Interop.ErrorInfo? error = null)
         {
-            while (_readQueue.TryDequeue(out SerialStreamIORequest r))
+            lock (_readQueueLock)
             {
-                r.Complete(error.HasValue ?
-                           Interop.GetIOException(error.Value) :
-                           InternalResources.FileNotOpenException());
+                while (_readQueue.TryDequeue(out SerialStreamIORequest r))
+                {
+                    r.Complete(error.HasValue ?
+                               Interop.GetIOException(error.Value) :
+                               InternalResources.FileNotOpenException());
+                }
             }
 
-            while (_writeQueue.TryDequeue(out SerialStreamIORequest r))
+            lock (_writeQueueLock)
             {
-                r.Complete(error.HasValue ?
-                           Interop.GetIOException(error.Value) :
-                           InternalResources.FileNotOpenException());
+                while (_writeQueue.TryDequeue(out SerialStreamIORequest r))
+                {
+                    r.Complete(error.HasValue ?
+                               Interop.GetIOException(error.Value) :
+                               InternalResources.FileNotOpenException());
+                }
             }
         }
 
@@ -814,30 +845,43 @@ namespace System.IO.Ports
         }
 
         // returns number of bytes read/written
-        private static int DoIORequest(ConcurrentQueue<SerialStreamIORequest> q, RequestProcessor op)
+        private static int DoIORequest(Queue<SerialStreamIORequest> q, object queueLock, RequestProcessor op)
         {
             // assumes dequeue-ing happens on a single thread
-            while (q.TryPeek(out SerialStreamIORequest r))
+            while (TryPeekNextRequest(out SerialStreamIORequest r))
             {
-                if (r.IsCompleted)
-                {
-                    q.TryDequeue(out _);
-                    // take another item since we haven't processed anything
-                    continue;
-                }
-
                 int ret = op(r);
                 Debug.Assert(ret >= 0);
 
                 if (r.IsCompleted)
                 {
-                    q.TryDequeue(out _);
+                    lock (queueLock)
+                    {
+                        q.TryDequeue(out _);
+                    }
                 }
 
                 return ret;
             }
 
             return 0;
+
+            bool TryPeekNextRequest(out SerialStreamIORequest r)
+            {
+                lock (queueLock)
+                {
+                    while (q.TryPeek(out r))
+                    {
+                        if (!r.IsCompleted)
+                        {
+                            return true;
+                        }
+                        q.TryDequeue(out _);
+                    }
+                }
+                r = default;
+                return false;
+            }
         }
 
         private void IOLoop()
@@ -854,8 +898,15 @@ namespace System.IO.Ports
 
             while (IsOpen && !eofReceived && !_ioLoopFinished)
             {
-                bool hasPendingReads = !_readQueue.IsEmpty;
-                bool hasPendingWrites = !_writeQueue.IsEmpty;
+                if (HasCancelledTasksToProcess)
+                {
+                    HasCancelledTasksToProcess = false;
+                    RemoveCompletedTasks(_readQueue, _readQueueLock);
+                    RemoveCompletedTasks(_writeQueue, _writeQueueLock);
+                }
+
+                bool hasPendingReads = !IsReadQueueEmpty();
+                bool hasPendingWrites = !IsWriteQueueEmpty();
 
                 bool hasPendingIO = hasPendingReads || hasPendingWrites;
                 bool isIdle = IsNoEventRegistered() && !hasPendingIO;
@@ -877,7 +928,7 @@ namespace System.IO.Ports
                             lock (_ioLoopLock)
                             {
                                 // double check we are done under lock
-                                if (IsNoEventRegistered() && _readQueue.IsEmpty && _writeQueue.IsEmpty)
+                                if (IsNoEventRegistered() && IsReadQueueEmpty() && IsWriteQueueEmpty())
                                 {
                                     _ioLoop = null;
                                     break;
@@ -917,13 +968,13 @@ namespace System.IO.Ports
 
                     if (events.HasFlag(Interop.PollEvents.POLLIN))
                     {
-                        int bytesRead = DoIORequest(_readQueue, _processReadDelegate);
+                        int bytesRead = DoIORequest(_readQueue, _readQueueLock, _processReadDelegate);
                         _totalBytesRead += bytesRead;
                     }
 
                     if (events.HasFlag(Interop.PollEvents.POLLOUT))
                     {
-                        DoIORequest(_writeQueue, _processWriteDelegate);
+                        DoIORequest(_writeQueue, _writeQueueLock, _processWriteDelegate);
                     }
                 }
 
@@ -960,6 +1011,32 @@ namespace System.IO.Ports
                 }
 
                 lastIsIdle = isIdle;
+            }
+        }
+
+        private static void RemoveCompletedTasks(Queue<SerialStreamIORequest> queue, object queueLock)
+        {
+            // assumes dequeue-ing happens on a single thread
+            lock (queueLock)
+            {
+                while (queue.TryPeek(out var r) && r.IsCompleted)
+                    queue.TryDequeue(out _);
+            }
+        }
+
+        private bool IsReadQueueEmpty()
+        {
+            lock (_readQueueLock)
+            {
+                return _readQueue.Count == 0;
+            }
+        }
+
+        private bool IsWriteQueueEmpty()
+        {
+            lock (_writeQueueLock)
+            {
+                return _writeQueue.Count == 0;
             }
         }
 
@@ -1001,14 +1078,19 @@ namespace System.IO.Ports
         private abstract class SerialStreamIORequest : TaskCompletionSource<int>
         {
             public bool IsCompleted => Task.IsCompleted;
-            private CancellationToken _cancellationToken;
+            private readonly SerialStream _parent;
             private readonly CancellationTokenRegistration _cancellationTokenRegistration;
 
-            protected SerialStreamIORequest(CancellationToken ct)
+            protected SerialStreamIORequest(SerialStream parent, CancellationToken ct)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                _cancellationToken = ct;
-                _cancellationTokenRegistration = ct.Register(s => ((TaskCompletionSource<int>)s).TrySetCanceled(), this);
+                _parent = parent;
+                _cancellationTokenRegistration = ct.Register(s =>
+                {
+                    var request = (SerialStreamIORequest)s;
+                    request.TrySetCanceled();
+                    request._parent.HasCancelledTasksToProcess = true;
+                }, this);
             }
 
             internal void Complete(int numBytes)
@@ -1026,10 +1108,10 @@ namespace System.IO.Ports
 
         private sealed class SerialStreamReadRequest : SerialStreamIORequest
         {
-            public Memory<byte> Buffer { get; private set; }
+            public Memory<byte> Buffer { get; }
 
-            public SerialStreamReadRequest(CancellationToken ct, Memory<byte> buffer)
-                : base(ct)
+            public SerialStreamReadRequest(SerialStream parent, CancellationToken ct, Memory<byte> buffer)
+                : base(parent, ct)
             {
                 Buffer = buffer;
             }
@@ -1039,8 +1121,8 @@ namespace System.IO.Ports
         {
             public ReadOnlyMemory<byte> Buffer { get; private set; }
 
-            public SerialStreamWriteRequest(CancellationToken ct, ReadOnlyMemory<byte> buffer)
-                : base(ct)
+            public SerialStreamWriteRequest(SerialStream parent, CancellationToken ct, ReadOnlyMemory<byte> buffer)
+                : base(parent, ct)
             {
                 Buffer = buffer;
             }

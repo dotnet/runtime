@@ -37,7 +37,7 @@ namespace System.Data
         }
 
         // This class exist to avoid alocatin of XmlNodeIdentety to every access to the hash table.
-        // Unfortunetely XmlNode doesn't export single identety object.
+        // Unfortunately XmlNode doesn't export single identety object.
         internal sealed class XmlNodeIdHashtable : Hashtable
         {
             private readonly XmlNodeIdentety _id = new XmlNodeIdentety(string.Empty, string.Empty);
@@ -502,7 +502,7 @@ namespace System.Data
 
         private static void HandleSpecialColumn(DataColumn col, XmlNameTable nameTable, XmlNodeIdHashtable columns)
         {
-            // if column name starts with xml, we encode it manualy and add it for look up
+            // if column name starts with xml, we encode it manually and add it for look up
             Debug.Assert(col.ColumnName.StartsWith("xml", StringComparison.OrdinalIgnoreCase), "column name should start with xml");
             string tempColumnName;
 

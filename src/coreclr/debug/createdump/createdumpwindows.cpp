@@ -18,11 +18,14 @@ typedef struct _PROCESS_BASIC_INFORMATION_ {
 // The Windows create dump code
 //
 bool
-CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal)
+CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool createDump, bool crashReport, int crashThread, int signal)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hProcess = NULL;
     bool result = false;
+
+    _ASSERTE(createDump);
+    _ASSERTE(!crashReport);
 
     ArrayHolder<char> pszName = new char[MAX_LONGPATH + 1];
     std::string dumpPath;

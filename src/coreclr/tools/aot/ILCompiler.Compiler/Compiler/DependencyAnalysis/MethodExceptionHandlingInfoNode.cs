@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 using Internal.Text;
@@ -13,6 +12,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly MethodDesc _owningMethod;
         private readonly ObjectData _data;
+
+        public MethodDesc Method => _owningMethod;
 
         public MethodExceptionHandlingInfoNode(MethodDesc owningMethod, ObjectData data)
         {
@@ -51,4 +52,3 @@ namespace ILCompiler.DependencyAnalysis
 #endif
     }
 }
-

@@ -52,6 +52,7 @@ namespace BrowserDebugProxy
                                                 string className,
                                                 int typeId,
                                                 bool isEnum,
+                                                bool includeStatic,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -59,32 +60,27 @@ namespace BrowserDebugProxy
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
 
             IReadOnlyList<FieldTypeClass> fieldTypes = await sdbAgent.GetTypeFields(typeId, token);
-            // statics should not be in valueType fields: CallFunctionOnTests.PropertyGettersTest
+
+            JArray fields = new();
+            if (includeStatic)
+            {
+                IEnumerable<FieldTypeClass> staticFields =
+                    fieldTypes.Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
+                foreach (var field in staticFields)
+                {
+                    var fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
+                    fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: true));
+                }
+            }
+
             IEnumerable<FieldTypeClass> writableFields = fieldTypes
                 .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
 
-            JArray fields = new();
             foreach (var field in writableFields)
             {
                 var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
-
-                fieldValue["__section"] = field.Attributes switch
-                {
-                    FieldAttributes.Private => "private",
-                    FieldAttributes.Public => "result",
-                    _ => "internal"
-                };
-
-                if (field.IsBackingField)
-                    fieldValue["__isBackingField"] = true;
-                else
-                {
-                    typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                    fieldValue["__state"] = state?.ToString();
-                }
-
-                fields.Add(fieldValue);
+                fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
             }
 
             long endPos = cmdReader.BaseStream.Position;
@@ -94,6 +90,26 @@ namespace BrowserDebugProxy
             cmdReader.BaseStream.Position = endPos;
 
             return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum);
+
+            JObject GetFieldWithMetadata(FieldTypeClass field, JObject fieldValue, bool isStatic)
+            {
+                // GetFieldValue returns JObject without name and we need this information
+                if (isStatic)
+                    fieldValue["name"] = field.Name;
+                FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
+                fieldValue["__section"] = attr == FieldAttributes.Public
+                    ? "public" :
+                    attr == FieldAttributes.Private ? "private" : "internal";
+
+                if (field.IsBackingField)
+                {
+                    fieldValue["__isBackingField"] = true;
+                    return fieldValue;
+                }
+                typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
+                fieldValue["__state"] = state?.ToString();
+                return fieldValue;
+            }
         }
 
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
@@ -204,11 +220,8 @@ namespace BrowserDebugProxy
                 RemovePropertiesFrom(result.OtherMembers);
             }
 
-            if (result == null)
-            {
-                // 4 - fields + properties
-                result = _combinedResult.Clone();
-            }
+            // 4 - fields + properties
+            result ??= _combinedResult.Clone();
 
             return result;
 

@@ -3199,7 +3199,7 @@ void IUInvokeDispMethod(
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
-        // Retrieve the IDispath pointer from the wrapper.
+        // Retrieve the IDispatch pointer from the wrapper.
         pDisp = (IDispatch*)pRCW->GetIDispatch();
         if (!pDisp)
             COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
@@ -3691,7 +3691,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
     }
     CONTRACT_END;
 
-    // Work our way up the hierachy until we find the first COM import type.
+    // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
     {
         pClassMT = pClassMT->GetParentMethodTable();

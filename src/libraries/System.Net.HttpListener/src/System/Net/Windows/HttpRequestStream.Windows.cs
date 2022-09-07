@@ -315,7 +315,7 @@ namespace System.Net
                     else
                     {
                         result = numBytes;
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult._pPinnedBuffer, (int)numBytes);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(asyncResult, new ReadOnlySpan<byte>(asyncResult._pPinnedBuffer, (int)numBytes));
                     }
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} calling Complete()");
                 }

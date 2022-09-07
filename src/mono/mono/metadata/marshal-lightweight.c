@@ -1976,7 +1976,7 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 	local_target = mono_mb_add_local (mb, object_type);
 
 	if (!void_ret)
-		local_res = mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret)));
+		local_res = mono_mb_add_local (mb, sig->ret);
 
 	g_assert (sig->hasthis);
 

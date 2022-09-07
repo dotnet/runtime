@@ -26,7 +26,7 @@ namespace ILCompiler.Dataflow
     /// <summary>
     /// Tracks information about the contents of a stack slot
     /// </summary>
-    readonly struct StackSlot
+    internal readonly struct StackSlot
     {
         public MultiValue Value { get; }
 
@@ -46,14 +46,14 @@ namespace ILCompiler.Dataflow
         }
     }
 
-    abstract partial class MethodBodyScanner
+    internal abstract partial class MethodBodyScanner
     {
         protected readonly InterproceduralStateLattice InterproceduralStateLattice;
         protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
         protected readonly FlowAnnotations _annotations;
 
-        internal MultiValue ReturnValue { private set; get; }
+        internal MultiValue ReturnValue { get; private set; }
 
         protected MethodBodyScanner(FlowAnnotations annotations)
         {
@@ -160,10 +160,10 @@ namespace ILCompiler.Dataflow
 
         private struct BasicBlockIterator
         {
-            readonly HashSet<int> _methodBranchTargets;
-            int _currentBlockIndex;
-            bool _foundEndOfPrevBlock;
-            MethodIL _methodBody;
+            private readonly HashSet<int> _methodBranchTargets;
+            private int _currentBlockIndex;
+            private bool _foundEndOfPrevBlock;
+            private MethodIL _methodBody;
 
             public BasicBlockIterator(MethodIL methodBody)
             {
@@ -202,7 +202,7 @@ namespace ILCompiler.Dataflow
         }
 
         [Conditional("DEBUG")]
-        static void ValidateNoReferenceToReference(ValueBasicBlockPair?[] locals, MethodIL method, int ilOffset)
+        private static void ValidateNoReferenceToReference(ValueBasicBlockPair?[] locals, MethodIL method, int ilOffset)
         {
             for (int localVariableIndex = 0; localVariableIndex < locals.Length; localVariableIndex++)
             {
@@ -241,14 +241,14 @@ namespace ILCompiler.Dataflow
             if (!existingValue.HasValue
                 || existingValue.Value.BasicBlockIndex == curBasicBlock)
             {
-                // If the previous value was stored in the current basic block, then we can safely 
+                // If the previous value was stored in the current basic block, then we can safely
                 // overwrite the previous value with the new one.
                 value = valueToStore;
             }
             else
             {
-                // If the previous value came from a previous basic block, then some other use of 
-                // the local could see the previous value, so we must merge the new value with the 
+                // If the previous value came from a previous basic block, then some other use of
+                // the local could see the previous value, so we must merge the new value with the
                 // old value.
                 value = MultiValueLattice.Meet(existingValue.Value.Value, valueToStore);
             }
@@ -269,14 +269,14 @@ namespace ILCompiler.Dataflow
 
                 if (existingValue.BasicBlockIndex == curBasicBlock)
                 {
-                    // If the previous value was stored in the current basic block, then we can safely 
+                    // If the previous value was stored in the current basic block, then we can safely
                     // overwrite the previous value with the new one.
                     value = valueToStore;
                 }
                 else
                 {
-                    // If the previous value came from a previous basic block, then some other use of 
-                    // the local could see the previous value, so we must merge the new value with the 
+                    // If the previous value came from a previous basic block, then some other use of
+                    // the local could see the previous value, so we must merge the new value with the
                     // old value.
                     value = MultiValueLattice.Meet(existingValue.Value, valueToStore);
                 }
@@ -328,7 +328,7 @@ namespace ILCompiler.Dataflow
                 // Disabled asserts due to a bug
                 // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
                 // foreach (var method in calleeMethods)
-                // 	Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
+                //  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
             }
             else
             {
@@ -337,7 +337,7 @@ namespace ILCompiler.Dataflow
 #endif
         }
 
-        void TrackNestedFunctionReference(MethodDesc referencedMethod, ref InterproceduralState interproceduralState)
+        private static void TrackNestedFunctionReference(MethodDesc referencedMethod, ref InterproceduralState interproceduralState)
         {
             MethodDesc method = referencedMethod.GetTypicalMethodDefinition();
 
@@ -360,7 +360,7 @@ namespace ILCompiler.Dataflow
 
             BasicBlockIterator blockIterator = new BasicBlockIterator(methodBody);
 
-            ReturnValue = new();
+            ReturnValue = default(MultiValue);
             ILReader reader = new ILReader(methodBody.GetILBytes());
             while (reader.HasNext)
             {
@@ -380,10 +380,7 @@ namespace ILCompiler.Dataflow
                     }
                 }
 
-                if (currentStack == null)
-                {
-                    currentStack = new Stack<StackSlot>(methodBody.MaxStack);
-                }
+                currentStack ??= new Stack<StackSlot>(methodBody.MaxStack);
 
                 int offset = reader.Offset;
                 ILOpcode opcode = reader.ReadILOpcode();
@@ -790,7 +787,7 @@ namespace ILCompiler.Dataflow
                             {
                                 StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
                                 // If the return value is a reference, treat it as the value itself for now
-                                //	We can handle ref return values better later
+                                // We can handle ref return values better later
                                 ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(retValue.Value, locals, ref interproceduralState));
                             }
                             ClearStack(ref currentStack);
@@ -899,7 +896,7 @@ namespace ILCompiler.Dataflow
             // If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
         }
 
-        private void ScanLdloc(
+        private static void ScanLdloc(
             MethodIL methodBody,
             int offset,
             ILOpcode operation,
@@ -993,18 +990,7 @@ namespace ILCompiler.Dataflow
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
 
-            foreach (var uniqueDestination in destination.Value)
-            {
-                if (uniqueDestination is FieldValue fieldDestination)
-                {
-                    HandleStoreField(methodBody, offset, fieldDestination, valueToStore.Value);
-                }
-                else if (uniqueDestination is MethodParameterValue parameterDestination)
-                {
-                    HandleStoreParameter(methodBody, offset, parameterDestination, valueToStore.Value);
-                }
-            }
-
+            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock);
         }
 
         /// <summary>
@@ -1236,6 +1222,14 @@ namespace ILCompiler.Dataflow
             SingleValue? newObjValue;
             ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
                                                              offset, out newObjValue);
+
+            // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
+            // We don't track multi-dimensional arrays in any way, so return unknown value.
+            if (calledMethod is ArrayMethod { Kind: ArrayMethodKind.Get or ArrayMethodKind.Address })
+            {
+                currentStack.Push(new StackSlot(UnknownValue.Instance));
+                return;
+            }
 
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)

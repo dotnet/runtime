@@ -197,7 +197,7 @@ namespace System.Configuration
             // Ensure the configuration system is inited for this section.
             if (!_isUserConfigInited) EnsureInit(sectionName);
 
-            // If an error occurred during initialzation, throw it.
+            // If an error occurred during initialization, throw it.
             if (_initError != null) throw _initError;
         }
 

@@ -418,7 +418,7 @@ public:
         // We start out in SO-tolerant mode and must probe before entering SO-intolerant
         //   any global state updates.
         // Initial mode is non-debug until we say otherwise
-        // Everthing defaults to mainline
+        // Everything defaults to mainline
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
         m_flags             = CONTRACT_BITMASK_OK_TO_THROW|

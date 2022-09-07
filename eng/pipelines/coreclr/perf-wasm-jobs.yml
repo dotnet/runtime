@@ -7,6 +7,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
+  perfForkToUse: {} # url, branch
 
 jobs:
 
@@ -48,6 +49,7 @@ jobs:
         javascriptEngine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
         #downloadSpecificBuild:
           #buildId: '1693181'
           #pipeline: 'perf-wasm'
@@ -74,6 +76,7 @@ jobs:
         javascriptengine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -116,6 +119,7 @@ jobs:
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
   #run mono wasm aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -140,6 +144,7 @@ jobs:
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -160,3 +165,4 @@ jobs:
         #additionalSetupParameters: '--latestdotnet' - doesn't do anything, IIUC. see performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}

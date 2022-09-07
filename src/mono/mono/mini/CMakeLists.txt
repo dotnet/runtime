@@ -209,6 +209,13 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(riscv64_sources
+    mini-riscv.c
+    mini-riscv.h
+    exceptions-riscv.c
+    tramp-riscv.c
+    cpu-riscv64.h)
+
 set(s390x_sources
     mini-s390x.c
     mini-s390x.h
@@ -237,6 +244,8 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_RISCV64)
+set(arch_sources ${riscv64_sources})
 elseif(TARGET_S390X)
 set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
@@ -439,7 +448,7 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
 endif()
 
-if(HOST_WASM)
+if(HOST_WASM AND NOT HOST_WASI)
 # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
 # This is the only source file which contains a c++ throw or catch
 add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
@@ -478,6 +487,13 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.mdesc
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-riscv64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_RISCV64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-riscv64.h riscv64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
   VERBATIM
 )
 

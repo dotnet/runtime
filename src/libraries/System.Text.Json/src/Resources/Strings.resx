@@ -336,7 +336,7 @@
   <data name="TrailingCommaNotAllowedBeforeObjectEnd" xml:space="preserve">
     <value>The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options.</value>
   </data>
-  <data name="SerializerOptionsImmutable" xml:space="preserve">
+  <data name="SerializerOptionsReadOnly" xml:space="preserve">
     <value>Serializer options cannot be changed once serialization or deserialization has occurred.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
@@ -518,6 +518,9 @@
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
+  <data name="ConstructorContainsNullParameterNames" xml:space="preserve">
+    <value>The deserialization constructor for type '{0}' contains parameters with null names. This might happen because the parameter names have been trimmed by the linker. Consider using the source generated serializer instead.</value>
+  </data>
   <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
     <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
   </data>
@@ -575,7 +578,7 @@
   <data name="NodeDuplicateKey" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
-  <data name="SerializerContextOptionsImmutable" xml:space="preserve">
+  <data name="SerializerContextOptionsReadOnly" xml:space="preserve">
     <value>JsonSerializerOptions instances cannot be modified once encapsulated by a JsonSerializerContext. Such encapsulation can happen either when calling 'JsonSerializerOptions.AddContext' or when passing the options instance to a JsonSerializerContext constructor.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
@@ -647,16 +650,28 @@
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
+  <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
+    <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
+  </data>
   <data name="CombineOneOfResolversIsNull" xml:space="preserve">
     <value>One of the provided resolvers is null.</value>
   </data>
   <data name="JsonPropertyInfoBoundToDifferentParent" xml:space="preserve">
     <value>JsonPropertyInfo with name '{0}' for type '{1}' is already bound to different JsonTypeInfo.</value>
   </data>
-  <data name="JsonTypeInfoUsedButTypeInfoResolverNotSet" xml:space="preserve">
-    <value>JsonTypeInfo metadata references a JsonSerializerOptions instance that doesn't specify a TypeInfoResolver.</value>
+  <data name="JsonSerializerOptionsNoTypeInfoResolverSpecified" xml:space="preserve">
+    <value>JsonSerializerOptions instance must specify a TypeInfoResolver setting before being marked as read-only.</value>
   </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndNotDeserializable" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked required but does not specify a setter.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndExtensionData" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
+  </data>
+  <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
+    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
   </data>
 </root>

@@ -309,6 +309,12 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         internal static extern decimal DecimalTest(decimal value);
 
+        [UnmanagedCallersOnly]
+        internal unsafe static void UnmanagedMethod(byte* address, byte value) => *address = value;
+
+        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
+        internal unsafe static void StdcallMethod(byte* address, byte value) => *address = value;
+
         internal enum MagicEnum
         {
             MagicResult = 42,
@@ -337,6 +343,7 @@ namespace PInvokeTests
             TestWithoutPreserveSig();
             TestForwardDelegateWithUnmanagedCallersOnly();
             TestDecimal();
+            TestDifferentModopts();
 
             return 100;
         }
@@ -695,6 +702,8 @@ namespace PInvokeTests
             public float f2;
             [MarshalAs(UnmanagedType.LPStr)]
             public String f3;
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String f4;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -706,6 +715,8 @@ namespace PInvokeTests
             public float f2;
             [MarshalAs(UnmanagedType.LPStr)]
             public String f3;
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String f4;
         }
 
         // A second struct with the same name but nested. Regression test against native types being mangled into
@@ -817,15 +828,16 @@ namespace PInvokeTests
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             ThrowIfNotEquals(true, StructTest(ss), "Struct marshalling scenario1 failed.");
 
             StructTest_ByRef(ref ss);
-            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "Struct marshalling scenario2 failed.");
+            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && ss.f4.Equals("Ipmb"), "Struct marshalling scenario2 failed.");
 
             SequentialStruct ss2 = new SequentialStruct();
             StructTest_ByOut(out ss2);
-            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456"), "Struct marshalling scenario3 failed.");
+            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456") && ss2.f4.Equals("789"), "Struct marshalling scenario3 failed.");
 
             NesterOfSequentialStruct.SequentialStruct ss3 = new NesterOfSequentialStruct.SequentialStruct();
             ss3.f1 = 10.0f;
@@ -854,6 +866,7 @@ namespace PInvokeTests
                 ssa[i].f1 = i;
                 ssa[i].f2 = i*i;
                 ssa[i].f3 = i.LowLevelToString();
+                ssa[i].f4 = "u8" + i.LowLevelToString();
             }
             ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
 
@@ -916,9 +929,10 @@ namespace PInvokeTests
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             ClassTest(ss);
-            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "LayoutClassPtr marshalling scenario1 failed.");
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && ss.f4.Equals("Ipmb"), "LayoutClassPtr marshalling scenario1 failed.");
         }
 
 #if OPTIMIZED_MODE_WITHOUT_SCANNER
@@ -948,20 +962,22 @@ namespace PInvokeTests
             sc.f1 = 1;
             sc.f2 = 10.0f;
             sc.f3 = "Hello";
+            sc.f4 = "Hola";
 
             AsAnyTest(sc);
-            ThrowIfNotEquals(true, sc.f1 == 2 && sc.f2 == 11.0 && sc.f3.Equals("Ifmmp"), "AsAny marshalling scenario1 failed.");
+            ThrowIfNotEquals(true, sc.f1 == 2 && sc.f2 == 11.0 && sc.f3.Equals("Ifmmp") && sc.f4.Equals("Ipmb"), "AsAny marshalling scenario1 failed.");
 
             SequentialStruct ss = new SequentialStruct();
             ss.f0 = 100;
             ss.f1 = 1;
             ss.f2 = 10.0f;
             ss.f3 = "Hello";
+            ss.f4 = "Hola";
 
             object o = ss;
             AsAnyTest(o);
             ss = (SequentialStruct)o;
-            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "AsAny marshalling scenario2 failed.");
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp") && sc.f4.Equals("Ipmb"), "AsAny marshalling scenario2 failed.");
         }
 
         private static void TestLayoutClass()
@@ -1108,6 +1124,37 @@ namespace PInvokeTests
             Console.WriteLine("Testing Forward Delegate with UnmanagedCallersOnly");
             Action a = Marshal.GetDelegateForFunctionPointer<Action>((IntPtr)(void*)(delegate* unmanaged<void>)&UnmanagedCallback);
             a();
+        }
+        
+        public static unsafe void TestDifferentModopts()
+        {
+            byte storage;
+
+            delegate* unmanaged<byte*, byte, void> unmanagedMethod = &UnmanagedMethod;
+
+            var outUnmanagedMethod = (delegate* unmanaged<out byte, byte, void>)unmanagedMethod;
+            outUnmanagedMethod(out storage, 12);
+            ThrowIfNotEquals(storage, 12, "Out unmanaged call failed.");
+
+            var refUnmanagedMethod = (delegate* unmanaged<ref byte, byte, void>)unmanagedMethod;
+            refUnmanagedMethod(ref storage, 34);
+            ThrowIfNotEquals(storage, 34, "Ref unmanaged call failed.");
+
+            delegate* unmanaged[Stdcall]<byte*, byte, void> stdcallMethod = &StdcallMethod;
+
+            var outStdcallMethod = (delegate* unmanaged[Stdcall]<out byte, byte, void>)stdcallMethod;
+            outStdcallMethod(out storage, 12);
+            ThrowIfNotEquals(storage, 12, "Out unmanaged stdcall failed.");
+
+            var refStdcallMethod = (delegate* unmanaged[Stdcall]<ref byte, byte, void>)stdcallMethod;
+            refStdcallMethod(ref storage, 34);
+            ThrowIfNotEquals(storage, 34, "Ref unmanaged stdcall failed.");
+            var refStdcallSuppressTransition = (delegate* unmanaged[Stdcall, SuppressGCTransition]<ref byte, byte, void>)stdcallMethod;
+            if (string.Empty.Length > 0)
+            {
+                // Do not actually call this because the calling convention is wrong. We just check the compiler didn't crash.
+                refStdcallSuppressTransition(ref storage, 56);
+            }
         }
     }
 

@@ -185,6 +185,7 @@
     <NetCoreAppLibraryGenerator>
       LibraryImportGenerator;
       JSImportGenerator;
+      Microsoft.Interop.SourceGeneration;
       System.Text.Json.SourceGeneration.Roslyn4.0;
       System.Text.RegularExpressions.Generator;
     </NetCoreAppLibraryGenerator>
@@ -225,6 +226,7 @@
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
       Microsoft.Win32.Registry.AccessControl;

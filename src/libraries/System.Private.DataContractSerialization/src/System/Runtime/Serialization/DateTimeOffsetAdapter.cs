@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
 
         private string ToStringDiagnostic()
         {
-            return "DateTime: " + this.UtcDateTime + ", Offset: " + this.OffsetMinutes;
+            return "DateTime: " + UtcDateTime + ", Offset: " + OffsetMinutes;
         }
     }
 }

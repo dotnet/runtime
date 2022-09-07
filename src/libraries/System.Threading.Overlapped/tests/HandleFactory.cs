@@ -39,7 +39,7 @@ internal static partial class HandleFactory
             return handle;
         }
 
-        int errorCode = Marshal.GetLastWin32Error();
+        int errorCode = Marshal.GetLastPInvokeError();
         string filePath = Path.GetFullPath(fileName);
         string message =
             $"CreateFile or CreateFile2 failed (error code {errorCode}): {new Win32Exception(errorCode).Message}{Environment.NewLine}" +

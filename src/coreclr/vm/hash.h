@@ -337,7 +337,7 @@ private:
     static void            Leave(HashMap *);        // check valid to leave
 
     typedef Holder<HashMap *, HashMap::Enter, HashMap::Leave> SyncAccessHolder;
-    BOOL            m_fInSyncCode; // test for non-synchronus access
+    BOOL            m_fInSyncCode; // test for non-synchronous access
 #else // !_DEBUG
     // in non DEBUG mode use a no-op helper
     typedef NoOpBaseHolder<HashMap *> SyncAccessHolder;
@@ -365,7 +365,7 @@ private:
     SIZE_T          m_cbPrevSlotsInUse;
     SIZE_T          m_cbInserts;
     SIZE_T          m_cbDeletes;
-    // mode of operation, synchronus or single user
+    // mode of operation, synchronous or single user
     bool            m_fAsyncMode;
 
 #ifdef _DEBUG

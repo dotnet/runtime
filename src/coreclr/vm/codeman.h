@@ -1180,7 +1180,7 @@ public:
 //*****************************************************************************
 //
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
-// members.  It should never be constucted.
+// members.  It should never be constructed.
 //
 //*****************************************************************************
 

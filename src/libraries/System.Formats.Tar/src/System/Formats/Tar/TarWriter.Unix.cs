@@ -46,7 +46,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
@@ -94,16 +94,7 @@ namespace System.Formats.Tar
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 Debug.Assert(entry._header._dataStream == null);
-
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Read,
-                    Share = FileShare.Read,
-                    Options = fileOptions
-                };
-
-                entry._header._dataStream = new FileStream(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
             }
 
             return entry;

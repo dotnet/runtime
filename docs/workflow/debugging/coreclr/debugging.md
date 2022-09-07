@@ -87,14 +87,14 @@ When there's source code change in coreclr, invoke the 'Install' command again t
 
 ### Using SOS with windbg or cdb on Windows ###
 
-See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-windows-instructions.md).
+See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/main/documentation/installing-sos-windows-instructions.md).
 
-For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos-debugging-extension-windows.md).
+For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/main/documentation/sos-debugging-extension-windows.md).
 
 Debugging CoreCLR on Linux and macOS
 ====================================
 
-See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md). After SOS is installed, it will automatically be loaded by lldb.
+See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/main/documentation/installing-sos-instructions.md). After SOS is installed, it will automatically be loaded by lldb.
 
 Only lldb is supported by SOS. Gdb can be used to debug the coreclr code but with no SOS support.
 
@@ -113,7 +113,7 @@ See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos for info
 
 ### Debugging core dumps with lldb
 
-See this [link](https://github.com/dotnet/diagnostics/blob/master/documentation/debugging-coredump.md) in the diagnostics repo.
+See this [link](https://github.com/dotnet/diagnostics/blob/main/documentation/debugging-coredump.md) in the diagnostics repo.
 
 Disabling Managed Attach/Debugging
 ==================================

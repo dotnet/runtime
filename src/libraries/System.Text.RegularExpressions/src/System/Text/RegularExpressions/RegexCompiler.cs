@@ -63,11 +63,19 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
@@ -77,7 +85,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
         // Note:
-        // IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
+        // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
 
         /// <summary>The ILGenerator currently in use.</summary>
@@ -1884,7 +1892,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos();
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -1907,7 +1915,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -1919,7 +1927,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);
@@ -3143,17 +3151,19 @@ namespace System.Text.RegularExpressions
                     BleFar(doneLabel);
                 }
 
-                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
+                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal)
                 {
                     // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
                     // {
                     //     goto doneLabel;
                     // }
+                    bool negated = literal.Item4;
                     Ldloca(inputSpan);
                     Ldloc(startingPos);
                     if (literal.Item2 is not null)
                     {
+                        Debug.Assert(!negated, "strings should not be negated");
                         Ldloca(inputSpan);
                         Call(s_spanGetLengthMethod);
                         Ldloc(endingPos);
@@ -3180,27 +3190,27 @@ namespace System.Text.RegularExpressions
                                 case 2:
                                     Ldc(literal.Item3[0]);
                                     Ldc(literal.Item3[1]);
-                                    Call(s_spanLastIndexOfAnyCharChar);
+                                    Call(negated ? s_spanLastIndexOfAnyExceptCharChar : s_spanLastIndexOfAnyCharChar);
                                     break;
 
                                 case 3:
                                     Ldc(literal.Item3[0]);
                                     Ldc(literal.Item3[1]);
                                     Ldc(literal.Item3[2]);
-                                    Call(s_spanLastIndexOfAnyCharCharChar);
+                                    Call(negated ? s_spanLastIndexOfAnyExceptCharCharChar : s_spanLastIndexOfAnyCharCharChar);
                                     break;
 
                                 default:
                                     Ldstr(literal.Item3);
                                     Call(s_stringAsSpanMethod);
-                                    Call(s_spanLastIndexOfAnySpan);
+                                    Call(negated ? s_spanLastIndexOfAnyExceptSpan : s_spanLastIndexOfAnySpan);
                                     break;
                             }
                         }
                         else
                         {
                             Ldc(literal.Item1);
-                            Call(s_spanLastIndexOfChar);
+                            Call(negated ? s_spanLastIndexOfAnyExceptChar : s_spanLastIndexOfChar);
                         }
                     }
                     Stloc(endingPos);
@@ -3371,7 +3381,8 @@ namespace System.Text.RegularExpressions
                 if (!rtl &&
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
-                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal) // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?, bool> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    !literal.Item4) // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                 {
                     // e.g. "<[^>]*?>"
 
@@ -3504,16 +3515,18 @@ namespace System.Text.RegularExpressions
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
-                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
+                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal2)
                 {
                     // e.g. ".*?string" with RegexOptions.Singleline
                     // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
                     // isn't found, the loop fails. We can implement it to just search for that literal.
+                    bool negated = literal2.Item4;
 
                     // startingPos = slice.IndexOf(literal);
                     Ldloc(slice);
                     if (literal2.Item2 is not null)
                     {
+                        Debug.Assert(!negated, "strings should not be negated");
                         Ldstr(literal2.Item2);
                         Call(s_stringAsSpanMethod);
                         Call(s_spanIndexOfSpan);
@@ -3525,27 +3538,27 @@ namespace System.Text.RegularExpressions
                             case 2:
                                 Ldc(literal2.Item3[0]);
                                 Ldc(literal2.Item3[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                Call(negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
                                 break;
 
                             case 3:
                                 Ldc(literal2.Item3[0]);
                                 Ldc(literal2.Item3[1]);
                                 Ldc(literal2.Item3[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
                                 break;
 
                             default:
                                 Ldstr(literal2.Item3);
                                 Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                Call(negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
                                 break;
                         }
                     }
                     else
                     {
                         Ldc(literal2.Item1);
-                        Call(s_spanIndexOfChar);
+                        Call(negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
                     }
                     Stloc(startingPos);
 
@@ -3849,20 +3862,32 @@ namespace System.Text.RegularExpressions
                         }
                         Sub();
                         Stloc(stackpos);
+
+                        // goto originalDoneLabel;
+                        BrFar(originalDoneLabel);
                     }
                     else
                     {
                         // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
                         // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
 
-                        // if (iterationCount != 0) goto doneLabel;
+                        // if (iterationCount == 0) goto originalDoneLabel;
                         Ldloc(iterationCount);
                         Ldc(0);
-                        BneFar(doneLabel);
-                    }
+                        BeqFar(originalDoneLabel);
 
-                    // goto originalDoneLabel;
-                    BrFar(originalDoneLabel);
+                        if (iterationMayBeEmpty)
+                        {
+                            // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                            // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                            // false prior to backtracking / undoing that iteration.
+                            Ldc(0);
+                            Stloc(sawEmpty!);
+                        }
+
+                        // goto doneLabel;
+                        BrFar(doneLabel);
+                    }
 
                     MarkLabel(endLoop);
 
@@ -3938,10 +3963,24 @@ namespace System.Text.RegularExpressions
 
                     if (iterationMayBeEmpty)
                     {
-                        // if (sawEmpty != 0) goto doneLabel;
+                        // if (sawEmpty != 0)
+                        // {
+                        //     sawEmpty = 0;
+                        //     goto doneLabel;
+                        // }
+                        Label sawEmptyZero = DefineLabel();
                         Ldloc(sawEmpty!);
                         Ldc(0);
-                        BneFar(doneLabel);
+                        Beq(sawEmptyZero);
+
+                        // We saw empty, and it must have been in the most recent iteration, as we wouldn't have
+                        // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                        // false prior to backtracking / undoing that iteration.
+                        Ldc(0);
+                        Stloc(sawEmpty!);
+
+                        BrFar(doneLabel);
+                        MarkLabel(sawEmptyZero);
                     }
 
                     if (maxIterations != int.MaxValue)
@@ -4189,12 +4228,11 @@ namespace System.Text.RegularExpressions
                         BrFar(bodyLabel);
                     }
                 }
-                else if (node.IsNotoneFamily &&
-                    maxIterations == int.MaxValue)
+                else if ((node.IsOneFamily || node.IsNotoneFamily) && maxIterations == int.MaxValue)
                 {
-                    // For Notone, we're looking for a specific character, as everything until we find
-                    // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
-                    // we can use the vectorized IndexOf to do the search, rather than open-coding it.  The unbounded
+                    // For One or Notone, we're looking for a specific character, as everything until we find
+                    // it (or its negation in the case of One) is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
+                    // we can use the vectorized IndexOf{AnyExcept} to do the search, rather than open-coding it.  The unbounded
                     // restriction is purely for simplicity; it could be removed in the future with additional code to
                     // handle the unbounded case.
 
@@ -4210,7 +4248,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(slice);
                     }
                     Ldc(node.Ch);
-                    Call(s_spanIndexOfChar);
+                    Call(node.IsNotoneFamily ? s_spanIndexOfChar : s_spanIndexOfAnyExceptChar);
                     Stloc(iterationLocal);
 
                     // if (i >= 0) goto atomicLoopDoneLabel;
@@ -4230,13 +4268,13 @@ namespace System.Text.RegularExpressions
                 }
                 else if (node.IsSetFamily &&
                     maxIterations == int.MaxValue &&
-                    (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0 &&
-                    RegexCharClass.IsNegated(node.Str!))
+                    (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
                 {
-                    // If the set is negated and contains only a few characters (if it contained 1 and was negated, it would
-                    // have been reduced to a Notone), we can use an IndexOfAny to find any of the target characters.
+                    // If the set contains only a few characters (if it contained 1 and was negated, it should
+                    // have been reduced to a Notone), we can use an IndexOfAny{Except} to find any of the target characters.
                     // As with the notoneloopatomic above, the unbounded constraint is purely for simplicity.
                     Debug.Assert(numSetChars > 1);
+                    bool negated = RegexCharClass.IsNegated(node.Str!);
 
                     // int i = slice.Slice(sliceStaticPos).IndexOfAny(ch1, ch2, ...);
                     if (sliceStaticPos > 0)
@@ -4254,20 +4292,20 @@ namespace System.Text.RegularExpressions
                         case 2:
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
-                            Call(s_spanIndexOfAnyCharChar);
+                            Call(negated ? s_spanIndexOfAnyCharChar : s_spanIndexOfAnyExceptCharChar);
                             break;
 
                         case 3:
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
                             Ldc(setChars[2]);
-                            Call(s_spanIndexOfAnyCharCharChar);
+                            Call(negated ? s_spanIndexOfAnyCharCharChar : s_spanIndexOfAnyExceptCharCharChar);
                             break;
 
                         default:
                             Ldstr(setChars.Slice(0, numSetChars).ToString());
                             Call(s_stringAsSpanMethod);
-                            Call(s_spanIndexOfAnySpan);
+                            Call(negated ? s_spanIndexOfAnySpan : s_spanIndexOfAnyExceptSpan);
                             break;
                     }
                     Stloc(iterationLocal);

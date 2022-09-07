@@ -738,7 +738,7 @@ int __cdecl _output (
             break;
 
         case ST_PRECIS:
-            /* update precison value */
+            /* update precision value */
             if (ch == _T('*')) {
                 /* get precision from arg list */
                 precision = get_int_arg(&argptr);

@@ -21,16 +21,19 @@ parameters:
 steps:
   # There is a global.json in the runtime repo, but it sets the version to 7.xxx preview. This creates a local global.json to allow the running of 6.0 version.
   - script: |
-      echo '' > ./global.json 
+      echo '{}' > ./global.json 
     displayName: Create global.json
     workingDirectory: $(Build.SourcesDirectory)
 
   # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
-      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
+      # curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
+      # Temporary Nuget to support emsdk net7 and net6 split until runtime 6.0.9 releases
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/b3747563c1fe5b6321ca3bc852ea6a998f91ae9a/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.4xx --quality daily --install-dir .
+      # TODO: Change ga back to daily once daily version workloads are fixed
+      ./dotnet-install.sh --channel 6.0.4xx --quality ga --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/net6.0.json --configfile NuGet.config
     displayName: Install MAUI workload

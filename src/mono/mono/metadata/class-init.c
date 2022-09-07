@@ -1357,7 +1357,7 @@ make_generic_param_class (MonoGenericParam *param)
 		if (mono_class_has_failure (klass->parent))
 			mono_class_set_type_load_failure (klass, "Failed to setup parent interfaces");
 		else
-			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, TRUE);
+			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 	}
 
 	return klass;
@@ -3065,7 +3065,7 @@ mono_class_init_internal (MonoClass *klass)
 	mono_loader_unlock ();
 	locked = FALSE;
 
-	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
+	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");

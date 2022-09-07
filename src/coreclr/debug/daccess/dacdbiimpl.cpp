@@ -185,7 +185,7 @@ void DeleteDbiMemory(void* p)
     }
     else
     {
-        ::delete (BYTE*)p;
+        ::delete [] (BYTE*)p;
     }
 }
 
@@ -3618,7 +3618,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
 
     // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
     // pLoaderAllocator is DACized. Cast it so we don't try to to a Host to Target translation.
-    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager(TO_TADDR(pLoaderAllocator->GetVirtualCallStubManager()));
+    VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
     LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
     if (pVcsMgr)
     {

@@ -8,7 +8,7 @@
 
 // NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
-//  It can be used only manully and very carefully!!!
+//  It can be used only manually and very carefully!!!
 
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      1
@@ -169,7 +169,7 @@
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_T8
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_T8
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T3|RBM_T4|RBM_T6|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T3|RBM_T4|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_WRITE_BARRIER_DST|RBM_CALLEE_TRASH_NOGC)

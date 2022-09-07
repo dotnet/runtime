@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static IntPtr GetJSOwnedObjectGCHandleRef(object obj, GCHandleType handleType)
+        public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
         {
             if (obj == null)
                 return IntPtr.Zero;
@@ -176,6 +176,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.DELEGATE;
             else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
                 return MarshalType.TASK;
+            else if (type.FullName == "System.Uri")
+                return MarshalType.URI;
             else if (type.IsPointer)
                 return MarshalType.POINTER;
 
@@ -256,7 +258,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowException(ref JSMarshalerArgument arg)
+        public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
 
@@ -275,7 +277,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return await wrappedTask.ConfigureAwait(true);
         }
 
-        private static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
@@ -291,7 +293,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // res type is first argument
-        internal static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
         {
             int argsCount = types.Length - 1;
             int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
@@ -314,6 +316,23 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             return signature;
+        }
+
+        public static JSObject CreateCSOwnedProxy(IntPtr jsHandle)
+        {
+            JSObject? res = null;
+
+            lock (s_csOwnedObjects)
+            {
+                if (!s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+                    !reference.TryGetTarget(out res) ||
+                    res.IsDisposed)
+                {
+                    res = new JSObject(jsHandle);
+                    s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                }
+            }
+            return res;
         }
     }
 }

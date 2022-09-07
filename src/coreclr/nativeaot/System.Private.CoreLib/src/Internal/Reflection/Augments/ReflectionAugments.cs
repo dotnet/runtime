@@ -12,7 +12,6 @@
 //
 //  Implemented by:
 //    System.Reflection.dll on RH (may use ILMerging instead)
-//    mscorlib.dll on desktop
 //
 //  Consumed by:
 //    Reflection.Core.dll
@@ -121,7 +120,7 @@ namespace Internal.Reflection.Augments
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
-        public abstract Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore);
+        public abstract Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore);
         public abstract Assembly Load(string assemblyPath);
 
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle);
@@ -167,6 +166,6 @@ namespace Internal.Reflection.Augments
 
         public abstract EnumInfo GetEnumInfo(Type type);
 
-        public abstract DelegateDynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
+        public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
     }
 }

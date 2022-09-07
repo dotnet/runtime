@@ -39,7 +39,7 @@ const terserConfig = {
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
-        // and unit test at src\libraries\System.Private.Runtime.InteropServices.JavaScript\tests\timers.js
+        // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
@@ -66,7 +66,6 @@ const inlineAssert = [
 const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock }), typescript()];
 
 const externalDependencies = [
-    "node/buffer"
 ];
 
 const iffeConfig = {
@@ -97,6 +96,19 @@ const typesConfig = {
     external: externalDependencies,
     plugins: [dts()],
 };
+const legacyConfig = {
+    input: "./net6-legacy/export-types.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet-legacy.d.ts",
+            banner: banner_dts,
+            plugins: [writeOnChangePlugin()],
+        }
+    ],
+    external: externalDependencies,
+    plugins: [dts()],
+};
 
 
 let diagnosticMockTypesConfig = undefined;
@@ -107,6 +119,12 @@ if (isDebug) {
     typesConfig.output.push({
         format: "es",
         file: "./dotnet.d.ts",
+        banner: banner_dts,
+        plugins: [alwaysLF(), writeOnChangePlugin()],
+    });
+    legacyConfig.output.push({
+        format: "es",
+        file: "./dotnet-legacy.d.ts",
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
@@ -150,6 +168,7 @@ const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => make
 const allConfigs = [
     iffeConfig,
     typesConfig,
+    legacyConfig,
 ].concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);

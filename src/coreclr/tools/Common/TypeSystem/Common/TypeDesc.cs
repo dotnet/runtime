@@ -24,27 +24,27 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
-            return object.ReferenceEquals(this, o);
+            Debug.Assert(o is not TypeDesc || ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            return ReferenceEquals(this, o);
         }
 
 #if DEBUG
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || ReferenceEquals(left.Context, right.Context));
+            return ReferenceEquals(left, right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return !object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || ReferenceEquals(left.Context, right.Context));
+            return !ReferenceEquals(left, right);
         }
 #endif
 
-        // The most frequently used type properties are cached here to avoid excesive virtual calls
+        // The most frequently used type properties are cached here to avoid excessive virtual calls
         private TypeFlags _typeFlags;
 
         /// <summary>

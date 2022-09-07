@@ -1,17 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Dataflow
 {
-    static class DiagnosticUtilities
+    internal static class DiagnosticUtilities
     {
         internal static Origin GetMethodParameterFromIndex(MethodDesc method, int parameterIndex)
         {
@@ -70,13 +68,16 @@ namespace ILCompiler.Dataflow
                     decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 case MetadataType type:
-                    var ecmaType = type as EcmaType;
+                    var ecmaType = type.GetTypeDefinition() as EcmaType;
                     if (ecmaType == null)
                         return false;
                     decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 case PropertyPseudoDesc property:
                     decoded = property.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    break;
+                case EventPseudoDesc @event:
+                    decoded = @event.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 default:
                     Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + member.GetType().ToString());
@@ -95,6 +96,20 @@ namespace ILCompiler.Dataflow
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+        }
+
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
+        {
+            var ecmaType = @event.OwningType as EcmaType;
+            var metadataReader = ecmaType.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
                 attributeNamespace, attributeName);
 
             if (attributeHandle.IsNil)
@@ -134,7 +149,7 @@ namespace ILCompiler.Dataflow
         /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
         /// </summary>
         /// <param name="method">
-        ///	MethodDesc that is either an overriding member or an overridden/virtual member
+        /// MethodDesc that is either an overriding member or an overridden/virtual member
         /// </param>
         internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, false);
@@ -183,6 +198,9 @@ namespace ILCompiler.Dataflow
         internal static bool DoesPropertyRequire(this PropertyPseudoDesc property, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
             TryGetRequiresAttribute(property, requiresAttribute, out attribute);
 
+        internal static bool DoesEventRequire(this EventPseudoDesc @event, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
+            TryGetRequiresAttribute(@event, requiresAttribute, out attribute);
+
         /// <summary>
         /// Determines if member requires (and thus any usage of such method should be warned about).
         /// </summary>
@@ -196,6 +214,7 @@ namespace ILCompiler.Dataflow
                 MethodDesc method => DoesMethodRequire(method, requiresAttribute, out attribute),
                 FieldDesc field => DoesFieldRequire(field, requiresAttribute, out attribute),
                 PropertyPseudoDesc property => DoesPropertyRequire(property, requiresAttribute, out attribute),
+                EventPseudoDesc @event => DoesEventRequire(@event, requiresAttribute, out attribute),
                 _ => false
             };
         }

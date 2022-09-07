@@ -57,9 +57,16 @@ function providersStringFromObject(providers: EventPipeCollectTracingCommandProv
     function keywordsToHexString(k: [number, number]): string {
         const lo = k[0];
         const hi = k[1];
-        const lo_hex = lo.toString(16);
-        const hi_hex = hi.toString(16);
+        const lo_hex = leftPad(lo.toString(16), "0", 8);
+        const hi_hex = leftPad(hi.toString(16), "0", 8);
         return hi_hex + lo_hex;
+    }
+
+    function leftPad(s: string, fill: string, width: number): string {
+        if (s.length >= width)
+            return s;
+        const prefix = fill.repeat(width - s.length);
+        return prefix + s;
     }
 }
 

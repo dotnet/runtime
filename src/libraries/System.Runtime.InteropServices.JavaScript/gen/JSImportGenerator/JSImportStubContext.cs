@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
@@ -16,6 +18,11 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSSignatureContext : IEquatable<JSSignatureContext>
     {
+        private static SymbolDisplayFormat s_typeNameFormat { get; } = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes
+        );
+
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
         internal static readonly string GeneratorVersion = typeof(JSImportGenerator).Assembly.GetName().Version.ToString();
@@ -118,14 +125,8 @@ namespace Microsoft.Interop.JavaScript
             };
             int typesHash = Math.Abs((int)hash);
 
-
-
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            string qualifiedName;
-            var ns = string.Join(".", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.NamespaceName).Select(x => x.ToString()).ToArray());
-            var cn = string.Join("/", method.ContainingType.ToDisplayParts().Where(p => p.Kind == SymbolDisplayPartKind.ClassName).Select(x => x.ToString()).ToArray());
-            var qclasses = method.ContainingType.ContainingNamespace == null ? ns : ns + "." + cn;
-            qualifiedName = $"[{env.Compilation.AssemblyName}]{qclasses}:{method.Name}";
+            string qualifiedName = GetFullyQualifiedMethodName(env, method);
 
             return new JSSignatureContext()
             {
@@ -143,21 +144,35 @@ namespace Microsoft.Interop.JavaScript
             };
         }
 
+        private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
+        {
+            // Mono style nested class name format.
+            string typeName = method.ContainingType.ToDisplayString(s_typeNameFormat).Replace(".", "/");
+
+            if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
+                typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
+
+            return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
+        }
+
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
-            var jsMarshallingAttributeParser = new JSMarshallingAttributeInfoParser(env.Compilation, diagnostics, method);
+            ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation));
+            var jsMarshallingAttributeParser = new MarshallingInfoParser(
+                diagnostics,
+                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                useSiteAttributeParsers,
+                ImmutableArray.Create<IMarshallingInfoAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation)),
+                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
 
             // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = NoMarshallingInfo.Instance;
-                MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes(), marshallingInfo);
+                MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
 
-                var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
-                typeInfo = JSTypeInfo.CreateForType(typeInfo, param.Type, jsMarshallingInfo);
-                typeInfo = typeInfo with
+                var typeInfo = TypePositionInfo.CreateForParameter(param, jsMarshallingInfo, env.Compilation) with
                 {
                     ManagedIndex = i,
                     NativeIndex = typeInfos.Count,
@@ -165,12 +180,9 @@ namespace Microsoft.Interop.JavaScript
                 typeInfos.Add(typeInfo);
             }
 
-            MarshallingInfo retMarshallingInfo = NoMarshallingInfo.Instance;
-            MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes(), retMarshallingInfo);
+            MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes());
 
-            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retMarshallingInfo);
-            retTypeInfo = JSTypeInfo.CreateForType(retTypeInfo, method.ReturnType, retJSMarshallingInfo);
-            retTypeInfo = retTypeInfo with
+            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retJSMarshallingInfo)
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
                 NativeIndex = TypePositionInfo.ReturnIndex,

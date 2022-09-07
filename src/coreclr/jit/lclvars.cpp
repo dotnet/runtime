@@ -81,6 +81,14 @@ void Compiler::lvaInit()
 #endif // FEATURE_SIMD
     lvaCurEpoch = 0;
 
+#if defined(DEBUG) && defined(TARGET_XARCH)
+    lvaReturnSpCheck = BAD_VAR_NUM;
+#endif
+
+#if defined(DEBUG) && defined(TARGET_X86)
+    lvaCallSpCheck = BAD_VAR_NUM;
+#endif
+
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
 }
 
@@ -219,7 +227,7 @@ void Compiler::lvaInitTypeRef()
 
     lvaTable         = getAllocator(CMK_LvaTable).allocate<LclVarDsc>(lvaTableCnt);
     size_t tableSize = lvaTableCnt * sizeof(*lvaTable);
-    memset(lvaTable, 0, tableSize);
+    memset((void*)lvaTable, 0, tableSize);
     for (unsigned i = 0; i < lvaTableCnt; i++)
     {
         new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
@@ -1370,6 +1378,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         // Codegen will need it for x86 scope info.
         varDsc->lvImplicitlyReferenced = 1;
 #endif // TARGET_X86
+        varDsc->lvHasLdAddrOp = 1;
 
         lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
 
@@ -1472,11 +1481,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     if (varTypeIsFloating(type))
     {
         compFloatingPointUsed = true;
-    }
-
-    if (typeHnd != NO_CLASS_HANDLE)
-    {
-        varDsc->lvOverlappingFields = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(typeHnd));
     }
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -1959,7 +1963,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 //   This is needed for AOT R2R compilation when we can't cross compilation bubble borders
 //   so we should not ask about fields that are not directly referenced. If we do VM will have
 //   to emit a type check for this field type but it does not have enough information about it.
-//   As a workaround for perfomance critical corner case: struct with 1 gcref, we try to construct
+//   As a workaround for performance critical corner case: struct with 1 gcref, we try to construct
 //   the field information from indirect observations.
 //
 bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo)
@@ -2032,6 +2036,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (varDsc->lvIsParam && compiler->compGSReorderStackLayout)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsParam and compGSReorderStackLayout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvIsParam && compiler->fgNoStructParamPromotion)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled by fgNoStructParamPromotion\n", lclNum);
         return false;
     }
 
@@ -2859,7 +2869,11 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
 
         case DoNotEnregisterReason::ReturnSpCheck:
-            JITDUMP("Used for SP check\n");
+            JITDUMP("Used for SP check on return\n");
+            break;
+
+        case DoNotEnregisterReason::CallSpCheck:
+            JITDUMP("Used for SP check on call\n");
             break;
 
         case DoNotEnregisterReason::SimdUserForcesDep:
@@ -3062,8 +3076,6 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 
     unsigned classAttribs = info.compCompHnd->getClassAttribs(typeHnd);
 
-    varDsc->lvOverlappingFields = StructHasOverlappingFields(classAttribs);
-
     // Check whether this local is an unsafe value type and requires GS cookie protection.
     // GS checks require the stack to be re-ordered, which can't be done with EnC.
     if (unsafeValueClsCheck && (classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
@@ -3172,6 +3184,16 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     if (compIsForImportOnly())
     {
         return;
+    }
+
+    if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
+    {
+        CORINFO_CLASS_HANDLE exactClass;
+        if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
+        {
+            isExact = true;
+            clsHnd  = exactClass;
+        }
     }
 
     // Else we should have a type handle.
@@ -4187,7 +4209,7 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 //
 //     In checked builds:
 //
-//     Verifies that local accesses are consistenly typed.
+//     Verifies that local accesses are consistently typed.
 //     Verifies that casts remain in bounds.
 
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute)
@@ -4881,7 +4903,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // Context was not in use but now is.
         //
         // Changing from unused->used should never happen; creation of any new IR
-        // for context use should also be settting lvaGenericsContextInUse.
+        // for context use should also be setting lvaGenericsContextInUse.
         assert(!"unexpected new use of generics context");
     }
 
@@ -6358,7 +6380,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // !UNIX_AMD64_ABI
 
 //-----------------------------------------------------------------------------
-// lvaAssingVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
+// lvaAssignVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
 //  all elements on the stackframe.
 //
 // Notes:
@@ -7533,7 +7555,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // For System V platforms there is no outgoing args space.
         //
         // For System V and x86, a register passed struct arg is homed on the stack in a separate local var.
-        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
+        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg method.
         // Make sure the code below is not executed for these structs and the offset is not changed.
         //
         const bool mustProcessParams = true;
@@ -7908,10 +7930,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");
 #endif // !TARGET_64BIT
-    if (varDsc->lvOverlappingFields)
-    {
-        printf(" overlapping-fields");
-    }
 
     if (compGSReorderStackLayout && !varDsc->lvRegister)
     {
@@ -8383,6 +8401,15 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // if we modify them we'll misreport their locations in the patchpoint info.
         //
         if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
+        // Converting tail calls to loops may require insertion of explicit
+        // zero initialization for IL locals. The JIT does not support this for
+        // TYP_BLK locals.
+        if (pComp->compMayConvertTailCallToLoop)
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;

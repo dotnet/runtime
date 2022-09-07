@@ -24,15 +24,7 @@
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
-    <!--<AppleAppDir Condition="'$(AppleAppDir)' == ''">$(OutputPath)</AppleAppDir>
-    
-    <AppleAppBundleDir Condition="'$(AppleAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</AppleAppBundleDir>
-    
-    <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">$(TargetFileName)</MainLibraryFileName>
 
-    <AppleAppDir>$([MSBuild]::NormalizeDirectory($(AppleAppDir)))</AppleAppDir>
-    <AppleAppBundleDir>$([MSBuild]::NormalizeDirectory($(AppleAppBundleDir)))</AppleAppBundleDir>
--->
     <RemoveDir Directories="$(AppleAppBundleDir)" />
   </Target>
 
@@ -83,11 +75,6 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
-    
-      <DebugTestItem Include="@(_AppleAssembliesInternal)">
-        <_InternalForceInterpret>%(_AppleAssembliesInternal._InternalForceInterpret)</_InternalForceInterpret>
-        <_IsNative>%(_AppleAssembliesInternal._IsNative)</_IsNative>
-      </DebugTestItem>
 
       <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" 
                            Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">

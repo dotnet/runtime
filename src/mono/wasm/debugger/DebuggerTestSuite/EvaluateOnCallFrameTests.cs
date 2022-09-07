@@ -664,6 +664,71 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("j", TNumber(1)),
+                   ("f.idx1", TNumber(1)),
+                   ("f.numArray2D[0, 0]", TNumber(1)),
+                   ("f.numArray2D[0, 1]", TNumber(2)),
+                   ("f.numArray2D[1,  0]", TNumber(3)),
+                   ("f.numArray2D[1  ,1]", TNumber(4)),
+                   ("f.numArray3D[0, 0, 0]", TNumber(1)),
+                   ("f.numArray3D[0 ,0  ,1]", TNumber(2)),
+                   ("f.numArray3D[0  ,0,    2]", TNumber(3)),
+                   ("f.numArray3D[1,  1,        0]", TNumber(10)),
+                   ("f.numArray3D[1, 1,  1]", TNumber(11)),
+                   ("f.numArray3D[1 , 1, 2]", TNumber(12)),
+                   ("f.numArray2D[0,0]", TNumber(1)),
+                   ("f.numArray2D[0,1]", TNumber(2)),
+                   ("f.numArray2D[1,0]", TNumber(3)),
+                   ("f.numArray2D[1,1]", TNumber(4)),
+                   ("f.numArray3D[0,0,0]", TNumber(1)),
+                   ("f.numArray3D[0,0,1]", TNumber(2)),
+                   ("f.numArray3D[0,0,2]", TNumber(3)),
+                   ("f.numArray3D[1,1,0]", TNumber(10)),
+                   ("f.numArray3D[1,1,1]", TNumber(11)),
+                   ("f.numArray3D[1,1,2]", TNumber(12)),
+                   ("f.textArray2D[0,0]", TString("one")),
+                   ("f.textArray2D[0,1]", TString("two")),
+                   ("f.textArray2D[1,0]", TString("three")),
+                   ("f.textArray2D[1,1]", TString("four")),
+                   ("f.numArray2D[i,i]", TNumber(1)),
+                   ("f.numArray2D[i,j]", TNumber(2)),
+                   ("f.numArray2D[j,i]", TNumber(3)),
+                   ("f.numArray2D[j,j]", TNumber(4)),
+                   ("f.numArray3D[i,i,i]", TNumber(1)),
+                   ("f.numArray3D[i,i,j]", TNumber(2)),
+                   ("f.numArray3D[i,i,2]", TNumber(3)),
+                   ("f.numArray3D[j,j,i]", TNumber(10)),
+                   ("f.numArray3D[j,j,1]", TNumber(11)),
+                   ("f.numArray3D[j,j,2]", TNumber(12)),
+                   ("f.textArray2D[i,i]", TString("one")),
+                   ("f.textArray2D[i,j]", TString("two")),
+                   ("f.textArray2D[j,i]", TString("three")),
+                   ("f.textArray2D[j,j]", TString("four")),
+                   ("f.numArray2D[f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray2D[f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray2D[f.idx1,f.idx0]", TNumber(3)),
+                   ("f.numArray2D[f.idx1,f.idx1]", TNumber(4)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray3D[f.idx0,f.idx0,2]", TNumber(3)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx0]", TNumber(10)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx1]", TNumber(11)),
+                   ("f.numArray3D[f.idx1,f.idx1,2]", TNumber(12)),
+                   ("f.textArray2D[f.idx0,f.idx0]", TString("one")),
+                   ("f.textArray2D[f.idx0,f.idx1]", TString("two")),
+                   ("f.textArray2D[f.idx1,f.idx0]", TString("three")),
+                   ("f.textArray2D[f.idx1,f.idx1]", TString("four")));
+           });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingJagged() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -914,11 +979,16 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
         public async Task EvaluateBrowsableNone(
-            string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
@@ -929,7 +999,7 @@ namespace DebuggerTests
                 await CheckValue(testNone, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNone));
                 var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
 
-                if (isCustomGetter)
+                if (allMembersAreProperties)
                     await CheckProps(testNoneProps, new
                     {
                         list = TGetter("list", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
@@ -958,9 +1028,14 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
         public async Task EvaluateBrowsableNever(string outerClassName, string className, string localVarName, int breakLine) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
@@ -981,11 +1056,16 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
         public async Task EvaluateBrowsableCollapsed(
-            string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
@@ -995,7 +1075,7 @@ namespace DebuggerTests
                 var (testCollapsed, _) = await EvaluateOnCallFrame(id, localVarName);
                 await CheckValue(testCollapsed, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testCollapsed));
                 var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
-                if (isCustomGetter)
+                if (allMembersAreProperties)
                     await CheckProps(testCollapsedProps, new
                     {
                         listCollapsed = TGetter("listCollapsed", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
@@ -1024,9 +1104,14 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
         public async Task EvaluateBrowsableRootHidden(
             string outerClassName, string className, string localVarName, int breakLine) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",

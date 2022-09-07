@@ -208,4 +208,22 @@
     <value>Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of {0}.</value>
     <comment>{0} is a type of the argument</comment>
   </data>
+  <data name="JSImportRequiresAllowUnsafeBlocksDescription" xml:space="preserve">
+    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="JSImportRequiresAllowUnsafeBlocksMessage" xml:space="preserve">
+    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="JSImportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
+    <value>JSImportAttribute requires unsafe code.</value>
+  </data>
+  <data name="JSExportRequiresAllowUnsafeBlocksDescription" xml:space="preserve">
+    <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="JSExportRequiresAllowUnsafeBlocksMessage" xml:space="preserve">
+    <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="JSExportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
+    <value>JSExportAttribute requires unsafe code.</value>
+  </data>
 </root>

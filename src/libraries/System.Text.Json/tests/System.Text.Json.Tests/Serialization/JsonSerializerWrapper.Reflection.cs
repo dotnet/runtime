@@ -646,10 +646,9 @@ namespace System.Text.Json.Serialization.Tests
 
                 JsonSerializerOptions smallBufferCopy = new JsonSerializerOptions(options)
                 {
-                    // Copy the resolver explicitly until https://github.com/dotnet/aspnetcore/issues/38720 is resolved.
-                    TypeInfoResolver = options.TypeInfoResolver,
                     DefaultBufferSize = 1,
                 };
+
                 s_smallBufferMap.Add(options, smallBufferCopy);
                 return smallBufferCopy;
             }

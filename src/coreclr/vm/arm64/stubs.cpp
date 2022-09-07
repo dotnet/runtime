@@ -1179,7 +1179,7 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
 
 
 
-    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emiting right prolog that's
+    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emitting right prolog that's
     // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
     // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
     // prolog and epilog generation as well as unwindinfo generation.
