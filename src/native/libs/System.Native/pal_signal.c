@@ -319,7 +319,7 @@ static void* SignalHandlerLoop(void* arg)
 
 #if defined(__APPLE__)
     // on macOS, pthread_setname_np only works for the calling thread.
-    pthread_setname_np(".NET Signal Handler");
+    pthread_setname_np(".NET SigHandler");
 #endif
 
     // Continually read a signal code from the signal pipe and process it,
