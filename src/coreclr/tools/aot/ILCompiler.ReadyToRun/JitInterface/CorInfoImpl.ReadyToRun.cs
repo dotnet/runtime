@@ -450,6 +450,7 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
+        private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -1366,57 +1367,64 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
-        private static bool IsClassPreInited(TypeDesc type)
+        private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
             {
                 return true;
             }
-            if (type.HasStaticConstructor)
-            {
-                return false;
-            }
-            if (HasBoxedRegularStatics(type))
-            {
-                return false;
-            }
-            if (IsDynamicStatics(type))
-            {
-                return false;
-            }
-            return true;
-        }
 
-        private static bool HasBoxedRegularStatics(TypeDesc type)
-        {
-            foreach (FieldDesc field in type.GetFields())
+            var uninstantiatedType = type.GetTypeDefinition();
+
+            if (_preInitedTypes.TryGetValue(uninstantiatedType, out bool preInited))
             {
-                if (field.IsStatic &&
-                    !field.IsLiteral &&
-                    !field.HasRva &&
-                    !field.IsThreadStatic &&
-                    field.FieldType.IsValueType &&
-                    !field.FieldType.UnderlyingType.IsPrimitive)
+                return preInited;
+            }
+
+            preInited = ComputeIsClassPreInited(type);
+            _preInitedTypes.Add(uninstantiatedType, preInited);
+            return preInited;
+
+            static bool ComputeIsClassPreInited(TypeDesc type)
+            {
+                if (type.IsGenericDefinition)
                 {
                     return true;
                 }
-            }
-            return false;
-        }
 
-        private static bool IsDynamicStatics(TypeDesc type)
-        {
-            if (type.HasInstantiation)
+                if (type.HasStaticConstructor)
+                {
+                    return false;
+                }
+                if (IsDynamicStaticsOrHasBoxedRegularStatics(type))
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            static bool IsDynamicStaticsOrHasBoxedRegularStatics(TypeDesc type)
             {
+                bool typeHasInstantiation = type.HasInstantiation;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.IsStatic && !field.IsLiteral)
+                    if (!field.IsStatic || field.IsLiteral)
+                        continue;
+
+                    if (typeHasInstantiation)
+                        return true; // Dynamic statics
+
+                    if (!field.HasRva &&
+                        !field.IsThreadStatic &&
+                        field.FieldType.IsValueType &&
+                        !field.FieldType.UnderlyingType.IsPrimitive)
                     {
-                        return true;
+                        return true; // HasBoxedRegularStatics
                     }
                 }
+
+                return false;
             }
-            return false;
         }
 
         private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
