@@ -4656,16 +4656,16 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 					mono_mempool_destroy (mp);
 					return FALSE;
 				}
-				if (ji_type == MONO_PATCH_INFO_METHOD_JUMP)
+				if (ji_type == MONO_PATCH_INFO_METHOD_JUMP) {
 					addr = mono_create_ftnptr (addr);
+					register_jump_target_got_slot (ji->data.method, &(got [got_slots [pindex]]));
+				}
 				if (llvm) {
 					void (*init_aotconst) (int, gpointer) = (void (*)(int, gpointer))amodule->info.llvm_init_aotconst;
 					init_aotconst (got_slots [pindex], addr);
 				}
 				mono_memory_barrier ();
 				got [got_slots [pindex]] = addr;
-				if (ji_type == MONO_PATCH_INFO_METHOD_JUMP)
-					register_jump_target_got_slot (ji->data.method, &(got [got_slots [pindex]]));
 			}
 
 			STORE_RELEASE_FENCE;
