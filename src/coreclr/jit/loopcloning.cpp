@@ -1678,52 +1678,6 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
     }
 }
 
-void Compiler::optPerformFlowGraphOptimizations(unsigned loopNum, LoopCloneContext* context)
-{
-    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
-    assert(optInfos != nullptr);
-    for (unsigned i = 0; i < optInfos->Size(); ++i)
-    {
-        LcOptInfo* optInfo = optInfos->Get(i);
-        switch (optInfo->GetOptType())
-        {
-            case LcOptInfo::LcTypeTest:
-            case LcOptInfo::LcMethodAddrTest:
-            {
-                BasicBlock* guardBlock;
-                if (optInfo->GetOptType() == LcOptInfo::LcTypeTest)
-                {
-                    guardBlock = optInfo->AsLcTypeTestOptInfo()->guardBlock;
-                }
-                else
-                {
-                    guardBlock = optInfo->AsLcMethodAddrTestOptInfo()->guardBlock;
-                }
-
-                GenTree* jtrue = guardBlock->lastStmt()->GetRootNode();
-                assert(jtrue->OperIs(GT_JTRUE) && jtrue->gtGetOp1()->OperIs(GT_EQ, GT_NE));
-                bool hotIsTrue = jtrue->gtGetOp1()->OperIs(GT_EQ);
-                if (hotIsTrue)
-                {
-                    guardBlock->bbJumpKind = BBJ_ALWAYS;
-                    fgRemoveRefPred(guardBlock->bbNext, guardBlock);
-                }
-                else
-                {
-                    guardBlock->bbJumpKind = BBJ_NONE;
-                    fgRemoveRefPred(guardBlock->bbJumpDest, guardBlock);
-                }
-
-                fgRemoveStmt(guardBlock, guardBlock->lastStmt());
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -2312,10 +2266,6 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         JITDUMP("\n");
     }
 #endif // DEBUG
-
-    // Now that we have redirected all blocks in the slow loop we can apply FG
-    // changing opts to the fast loop.
-    optPerformFlowGraphOptimizations(loopInd, context);
 
     // Insert the loop choice conditions. We will create the following structure:
     //

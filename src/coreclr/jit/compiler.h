@@ -7446,7 +7446,6 @@ public:
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);
 #endif
     void optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool fastPath));
-    void optPerformFlowGraphOptimizations(unsigned loopNum, LoopCloneContext* context);
     bool optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context);
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,

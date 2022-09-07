@@ -638,6 +638,7 @@ private:
                                                 TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
                     tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
+                    tarTree->gtFlags |= GTF_IND_INVARIANT;
 
                     if (reuseTarget)
                     {
