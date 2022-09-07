@@ -18,13 +18,13 @@ namespace
         coreclr_resolver_t::resolve_coreclr(libcoreclr_path, coreclr_contract);
         return true;
     }
-}
 
-void coreclr_t::log_error(const char* line, void* arg)
-{
-    pal::string_t lineStr;
-    pal::clr_palstring(line, &lineStr);
-    trace::error(_X("%s"), lineStr.c_str());
+    void log_error(const char* line, void* arg)
+    {
+        pal::string_t lineStr;
+        pal::clr_palstring(line, &lineStr);
+        trace::error(_X("%s"), lineStr.c_str());
+    }
 }
 
 pal::hresult_t coreclr_t::create(
@@ -75,7 +75,7 @@ pal::hresult_t coreclr_t::create(
     {
         if (coreclr_contract.coreclr_get_error_info != nullptr)
         {
-            coreclr_contract.coreclr_get_error_info(coreclr_t::log_error, nullptr);
+            coreclr_contract.coreclr_get_error_info(log_error, nullptr);
         }
         return hr;
     }

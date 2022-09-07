@@ -47,8 +47,6 @@ public:
 
 private:
 
-    static void log_error(const char* line, void* arg);
-
     std::mutex _shutdown_lock;
     bool _is_shutdown;
     host_handle_t _host_handle;
