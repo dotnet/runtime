@@ -71,8 +71,6 @@
              Link="Common\System\Net\CookieFields.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieParser.cs"
              Link="Common\System\Net\CookieParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
-             Link="Common\System\Net\CaseInsensitiveAscii.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"

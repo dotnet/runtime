@@ -2,11 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
     internal static class CharArrayHelpers
     {
+
+#if NET7_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EqualsOrdinalAsciiIgnoreCase(string left, char[] right, int rightStartIndex, int rightLength)
+            => Buffers.Text.Ascii.EndsWithIgnoreCase(left, right.AsSpan(rightStartIndex, rightLength));
+#else // used by System.Net.Http.WinHttpHandler which targets older TFMs
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, char[] right, int rightStartIndex, int rightLength)
         {
             Debug.Assert(left != null, "Expected non-null string");
@@ -37,11 +44,17 @@ namespace System
 
             return true;
         }
+#endif
 
         internal static void Trim(char[] array, ref int startIndex, ref int length)
         {
             DebugAssertArrayInputs(array, startIndex, length);
 
+#if NET7_0_OR_GREATER
+            Range range = Buffers.Text.Ascii.Trim(new ReadOnlySpan<char>(array, startIndex, length));
+            startIndex += range.Start.Value;
+            length = range.End.Value - range.Start.Value;
+#else
             int offset = 0;
             while (offset < length && char.IsWhiteSpace(array[startIndex + offset]))
             {
@@ -56,6 +69,7 @@ namespace System
 
             startIndex += offset;
             length = end - offset + 1;
+#endif
         }
 
         [Conditional("DEBUG")]

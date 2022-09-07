@@ -103,6 +103,7 @@ namespace System.Buffers.Text
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
             => left.Length == right.Length && SequenceEqualIgnoreCase<byte, byte, SkipChecks>(left, right) == EqualsResult.Match;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
             => left.Length == right.Length && Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), left.Length);
 

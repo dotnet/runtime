@@ -474,6 +474,9 @@ namespace System.Reflection.Internal
 
             CheckBounds(offset, 0);
 
+#if NET7_0_OR_GREATER
+            return Buffers.Text.Ascii.StartsWith(new ReadOnlySpan<byte>(Pointer + offset, Length - offset), asciiPrefix);
+#else
             // Make sure that we won't read beyond the block even if the block doesn't end with 0 byte.
             if (asciiPrefix.Length > Length - offset)
             {
@@ -495,6 +498,7 @@ namespace System.Reflection.Internal
             }
 
             return true;
+#endif
         }
 
         internal int CompareUtf8NullTerminatedStringWithAsciiString(int offset, string asciiString)

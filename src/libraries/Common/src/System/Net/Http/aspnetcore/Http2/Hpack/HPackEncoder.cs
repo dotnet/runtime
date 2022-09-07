@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -400,15 +402,9 @@ namespace System.Net.Http.HPack
         {
             Debug.Assert(destination.Length >= value.Length);
 
-            for (int i = 0; i < value.Length; i++)
+            if (Ascii.FromUtf16(value, destination, out _, out _) == OperationStatus.InvalidData)
             {
-                char c = value[i];
-                if ((c & 0xFF80) != 0)
-                {
-                    throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
-                }
-
-                destination[i] = (byte)c;
+                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
             }
         }
 

@@ -4,6 +4,7 @@
 using System.Collections.Specialized;
 using System.Text;
 using System.Net.Mail;
+using System.Buffers.Text;
 
 namespace System.Net.Mime
 {
@@ -111,18 +112,7 @@ namespace System.Net.Mime
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            foreach (char c in value)
-            {
-                if (c > 0x7f)
-                {
-                    return false;
-                }
-                if (!permitCROrLF && (c == '\r' || c == '\n'))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return Ascii.IsAscii(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') == -1);
         }
 
         internal string? ContentID

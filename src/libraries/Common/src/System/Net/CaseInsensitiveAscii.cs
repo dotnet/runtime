@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Collections;
 
 namespace System.Net
@@ -84,17 +85,6 @@ namespace System.Net
             return result;
         }
 
-        // ASCII string case insensitive hash function
-        private static int FastGetHashCode(string myString)
-        {
-            int myHashCode = myString.Length;
-            if (myHashCode != 0)
-            {
-                myHashCode ^= AsciiToLower[(byte)myString[0]] << 24 ^ AsciiToLower[(byte)myString[myHashCode - 1]] << 16;
-            }
-            return myHashCode;
-        }
-
         // ASCII string case insensitive comparer
         public new bool Equals(object? firstObject, object? secondObject)
         {
@@ -106,22 +96,7 @@ namespace System.Net
             }
             if (secondString != null)
             {
-                int index = firstString.Length;
-                if (index == secondString.Length)
-                {
-                    if (FastGetHashCode(firstString) == FastGetHashCode(secondString))
-                    {
-                        while (index > 0)
-                        {
-                            index--;
-                            if (AsciiToLower[firstString[index]] != AsciiToLower[secondString[index]])
-                            {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
+                return Ascii.EqualsIgnoreCase(firstString, secondString);
             }
             return false;
         }

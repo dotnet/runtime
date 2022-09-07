@@ -977,8 +977,9 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
-        public static bool IsAscii(ReadOnlySpan<char> s) // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        public static bool IsAscii(ReadOnlySpan<char> s)
         {
+#if NETSTANDARD
             foreach (char c in s)
             {
                 if (c >= 128)
@@ -988,6 +989,9 @@ namespace System.Text.RegularExpressions
             }
 
             return true;
+#else
+            return Buffers.Text.Ascii.IsAscii(s);
+#endif
         }
 
         /// <summary>Gets whether the specified character is an ASCII letter.</summary>

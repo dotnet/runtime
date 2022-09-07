@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Text;
 
@@ -26,7 +27,6 @@ namespace System.Net.Mime
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        internal const int Ascii7bitMaxValue = 127;
         internal const char Quote = '\"';
         internal const char Space = ' ';
         internal const char Tab = '\t';
@@ -226,11 +226,11 @@ namespace System.Net.Mime
                 {
                     //if data contains Unicode and Unicode is permitted, then
                     //it is valid in a quoted string in a header.
-                    if (data[offset] <= Ascii7bitMaxValue && !Qtext[data[offset]])
+                    if (Ascii.IsAscii(data[offset]) && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
                 //not permitting Unicode, in which case Unicode is a formatting error
-                else if (data[offset] > Ascii7bitMaxValue || !Qtext[data[offset]])
+                else if (!Ascii.IsAscii(data[offset]) || !Qtext[data[offset]])
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -256,7 +256,7 @@ namespace System.Net.Mime
             int start = offset;
             for (; offset < data.Length; offset++)
             {
-                if (data[offset] > Ascii7bitMaxValue)
+                if (!Ascii.IsAscii(data[offset]))
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -367,7 +367,7 @@ namespace System.Net.Mime
 
         private static bool CheckForUnicode(char ch, bool allowUnicode)
         {
-            if (ch < Ascii7bitMaxValue)
+            if (Ascii.IsAscii(ch))
             {
                 return false;
             }

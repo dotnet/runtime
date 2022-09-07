@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -188,7 +189,7 @@ namespace System.Text
 
             if (!(fallback is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && replacementFallback.DefaultString[0] <= 0x7F))
+                && Ascii.IsAscii(replacementFallback.DefaultString[0])))
             {
                 // Unrecognized fallback mechanism - count chars manually.
 
@@ -367,7 +368,7 @@ namespace System.Text
 
             if (((encoder is null) ? this.EncoderFallback : encoder.Fallback) is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && replacementFallback.DefaultString[0] <= 0x7F)
+                && Ascii.IsAscii(replacementFallback.DefaultString[0]))
             {
                 byte replacementByte = (byte)replacementFallback.DefaultString[0];
 
@@ -774,7 +775,7 @@ namespace System.Text
             if (!bytes.IsEmpty)
             {
                 byte b = bytes[0];
-                if (b <= 0x7F)
+                if (Ascii.IsAscii(b))
                 {
                     // ASCII byte
 
