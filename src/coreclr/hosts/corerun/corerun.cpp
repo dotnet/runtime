@@ -291,11 +291,13 @@ static int run(const configuration& config)
     coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
     if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
         || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
-        || !try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func)
-        || !try_get_export(coreclr_mod, "coreclr_get_error_info", (void**)&coreclr_get_error_info_func))
+        || !try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
     {
         return -1;
     }
+
+    // The coreclr_get_error_info is optional
+    try_get_export(coreclr_mod, "coreclr_get_error_info", (void**)&coreclr_get_error_info_func);
 
     // Construct CoreCLR properties.
     pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
@@ -363,7 +365,10 @@ static int run(const configuration& config)
     if (FAILED(result))
     {
         pal::fprintf(stderr, W("BEGIN: coreclr_initialize failed - Error: 0x%08x\n"), result);
-        coreclr_get_error_info_func(log_error_info, nullptr);
+        if (coreclr_get_error_info_func != nullptr)
+        {
+            coreclr_get_error_info_func(log_error_info, nullptr);
+        }
         logger.dump_details();
         pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;
