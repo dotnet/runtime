@@ -546,7 +546,7 @@ private:
             // Create temp for this if the tree is costly.
             if (thisTree->IsLocal())
             {
-                thisTree       = compiler->gtCloneExpr(thisTree);
+                thisTree = compiler->gtCloneExpr(thisTree);
             }
             else
             {
