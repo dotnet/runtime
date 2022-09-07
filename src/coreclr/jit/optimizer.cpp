@@ -4652,10 +4652,11 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    // Verify the test block ends with a conditional that we can manipulate.
+    // Verify the test block ends with a condition that we can manipulate.
     GenTree* last = block->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
-    if (!last->gtGetOp1()->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0)
+    GenTree* cond = last->gtGetOp1();
+    if (!cond->OperIsCmpCompare())
     {
         return false;
     }
@@ -4771,8 +4772,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     GenTree* destination = gtCloneExpr(asgNode->AsOp()->gtOp1);
     destination->gtFlags &= GTF_EMPTY;
 
-    // Duplicate the condition and invert it
-    GenTree* cond = gtCloneExpr(last->gtGetOp1());
+    // Invert the condition.
     cond->gtOper  = GenTree::ReverseRelop(cond->gtOper);
 
     // Create a select node.
