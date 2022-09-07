@@ -85,6 +85,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The service that was produced.</returns>
         public object GetService(Type serviceType) => GetService(serviceType, Root);
 
+        internal bool IsDisposed() => _disposed;
+
         /// <inheritdoc />
         public void Dispose()
         {
