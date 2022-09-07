@@ -1311,6 +1311,11 @@ LExit:
 
     DebuggerRCThread* t = (DebuggerRCThread*)g_pRCThread;
 
+    if (FAILED(SetThreadDescription(t->m_thread, W(".NET RC Thread"))))
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DebuggerRCThread name set failed\n"));
+    }
+
     t->ThreadProc(); // this thread is local, go and become the helper
 
     return 0;
@@ -1365,17 +1370,12 @@ HRESULT DebuggerRCThread::Start(void)
         if (m_thread == NULL)
         {
             LOG((LF_CORDB, LL_EVERYTHING, "DebuggerRCThread failed, err=%d\n", GetLastError()));
-            return HRESULT_FROM_GetLastError();
+            hr = HRESULT_FROM_GetLastError();
         }
-
-        hr = SetThreadDescription(m_thread, W(".NET DebuggerRCThread"));
-        if (FAILED(hr))
+        else
         {
-            LOG((LF_CORDB, LL_INFO10000, "DebuggerRCThread name set failed\n"));
-            return hr;
+            LOG((LF_CORDB, LL_EVERYTHING, "DebuggerRCThread start was successful, id=%d\n", helperThreadId));
         }
-
-        LOG((LF_CORDB, LL_EVERYTHING, "DebuggerRCThread start was successful, id=%d\n", helperThreadId));
 
         // This gets published immediately.
         DebuggerIPCControlBlock* dcb = GetDCB();
@@ -1387,7 +1387,11 @@ HRESULT DebuggerRCThread::Start(void)
         m_DbgHelperThreadOSTid = helperThreadId ;
 #endif
 
-        ResumeThread(m_thread);
+        if (m_thread != NULL)
+        {
+            ResumeThread(m_thread);
+        }
+
     }
 
     // unlock debugger lock is implied.
