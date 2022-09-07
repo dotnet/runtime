@@ -8325,29 +8325,17 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())
             {
-                ValueNum   initObjVN  = ValueNumStore::NoVN;
-                bool const isZeroInit = rhs->IsIntegralConst(0);
-                if (isZeroInit && isEntire)
+                ValueNum initObjVN = ValueNumStore::NoVN;
+                if (rhs->IsIntegralConst(0))
                 {
-                    // Note that it is possible to see pretty much any kind of type for the local
-                    // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
-                    initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetLayout())
-                                                                     : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
-                }
-                else if (isZeroInit)
-                {
-                    // Non-entire zeroing
                     initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout)
                                                                : vnStore->VNZeroForType(lhs->TypeGet());
                 }
                 else
                 {
-                    // Non-zero init, or non-entire block zero init
-                    //
                     // Non-zero block init is very rare so we'll use a simple, unique VN here.
-                    initObjVN = vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet());
+                    initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
                 }
-
                 rhsVNPair.SetBoth(initObjVN);
             }
             else

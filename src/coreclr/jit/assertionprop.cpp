@@ -3389,17 +3389,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             }
             break;
 
-        case O2K_ZEROOBJ:
-            if (varTypeIsStruct(tree))
-            {
-                newTree->BashToZeroConst(TYP_INT);
-            }
-            else
-            {
-                newTree->BashToZeroConst(genActualType(tree));
-            }
-            break;
-
         default:
             return nullptr;
     }
@@ -3441,15 +3430,14 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 //
 bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions)
 {
-    assert(varTypeIsStruct(tree));
-
     // We only make ZEROOBJ assertions in local propagation.
     if (!optLocalAssertionProp)
     {
         return false;
     }
 
-    if (!tree->OperIs(GT_LCL_VAR) || lvaGetDesc(tree->AsLclVar())->IsAddressExposed())
+    // And only into local nodes
+    if (!tree->OperIsLocal())
     {
         return false;
     }
@@ -3461,7 +3449,14 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
         return false;
     }
 
-    const unsigned lclNum         = tree->AsLclVar()->GetLclNum();
+    LclVarDsc* const lclVarDsc = lvaGetDesc(tree->AsLclVarCommon());
+
+    if (lclVarDsc->IsAddressExposed())
+    {
+        return false;
+    }
+
+    const unsigned lclNum         = tree->AsLclVarCommon()->GetLclNum();
     AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
     if (assertionIndex == NO_ASSERTION_INDEX)
     {
@@ -3857,7 +3852,7 @@ GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* 
     // Try and simplify the RHS.
     //
     bool madeChanges = false;
-    if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
+    if (asg->OperIsCopyBlkOp())
     {
         if (optZeroObjAssertionProp(rhs, assertions))
         {
