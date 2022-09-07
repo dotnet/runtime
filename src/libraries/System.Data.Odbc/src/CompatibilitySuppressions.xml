@@ -3,49 +3,49 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/freebsd/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/freebsd/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/linux/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/linux/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/osx/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/osx/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
@@ -350,19 +350,19 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcInfoMessageEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>lib/net7.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcRowUpdatedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>lib/net7.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcRowUpdatingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
     <Right>lib/net7.0/System.Data.Odbc.dll</Right>
   </Suppression>
 </Suppressions>

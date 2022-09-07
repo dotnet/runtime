@@ -3,7 +3,7 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.CreateInstanceFunc.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Specification.Tests.dll</Left>
+    <Left>lib/net6.0/Microsoft.Extensions.DependencyInjection.Specification.Tests.dll</Left>
     <Right>lib/net7.0/Microsoft.Extensions.DependencyInjection.Specification.Tests.dll</Right>
   </Suppression>
 </Suppressions>
