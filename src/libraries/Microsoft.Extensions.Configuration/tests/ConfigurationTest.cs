@@ -1017,7 +1017,7 @@ namespace Microsoft.Extensions.Configuration.Test
             configurationBuilder.Add(src1);
             configurationBuilder.Add(memConfigSrc2);
             var configSorted = configurationBuilder.Build();
-            configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder = new ConfigurationBuilder { CollectChildKeysIndependently = true };
             configurationBuilder.Add(memConfigSrc2);
             configurationBuilder.Add(src1);
             var configNotSorted = configurationBuilder.Build();
@@ -1036,14 +1036,10 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal("key2", keysSorted[1]);
             Assert.Equal("key3", keysSorted[2]);
 
-            // Actually here is a breaking change!
-            // previously the order is controlled by the last provider
-            // now the order is controalled in GetChildrenImplementation, which is always sorted
-#if !NET7_0_OR_GREATER
+            // The keys are output in the same order of input providers, and each provider determine the keys order internally
             Assert.Equal("key2", keysNotSorted[0]);
             Assert.Equal("key3", keysNotSorted[1]);
             Assert.Equal("key1", keysNotSorted[2]);
-#endif
         }
 
         private class OverrideGetChildKeysConfigurationProviders : TheoryData<IConfigurationProvider>

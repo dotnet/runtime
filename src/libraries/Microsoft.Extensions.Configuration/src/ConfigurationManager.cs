@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration
         public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
 
         /// <inheritdoc/>
-        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null, false);
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 

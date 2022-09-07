@@ -60,10 +60,6 @@ namespace Microsoft.Extensions.Configuration
     public partial interface IConfigurationProvider
     {
         System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath);
-#if NET7_0_OR_GREATER
-        System.Collections.Generic.IEnumerable<string> GetChildKeys(string? parentPath)
-            => GetChildKeys(System.Linq.Enumerable.Empty<string>(), parentPath);
-#endif
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
         void Load();
         void Set(string key, string? value);

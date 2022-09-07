@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfigurationRoot _root;
         private readonly string _path;
+        private readonly bool _collectChildKeysIndependently;
         private string? _key;
 
         /// <summary>
@@ -22,10 +23,21 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
+            : this(root, path, false)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance.
+        /// </summary>
+        /// <param name="root">The configuration root.</param>
+        /// <param name="path">The path to this section.</param>
+        /// <param name="collectChildKeysIndependently">True to call providers GetChildKeys independently.</param>
+        public ConfigurationSection(IConfigurationRoot root, string path, bool collectChildKeysIndependently)
+        {
+            this._collectChildKeysIndependently = collectChildKeysIndependently;
             ThrowHelper.ThrowIfNull(root);
             ThrowHelper.ThrowIfNull(path);
-
             _root = root;
             _path = path;
         }
@@ -89,7 +101,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the immediate descendant configuration sub-sections.
         /// </summary>
         /// <returns>The configuration sub-sections.</returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => _root.GetChildrenImplementation(Path);
+        public IEnumerable<IConfigurationSection> GetChildren() => _root.GetChildrenImplementation(Path, _collectChildKeysIndependently);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.

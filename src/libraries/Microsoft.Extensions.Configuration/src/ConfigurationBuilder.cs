@@ -23,6 +23,14 @@ namespace Microsoft.Extensions.Configuration
         public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>();
 
         /// <summary>
+        /// True to call providers GetChildKeys independently.
+        /// </summary>
+#if NET7_0_OR_GREATER
+        public bool CollectChildKeysIndependently { get; init; }
+#else
+        public bool CollectChildKeysIndependently { get; set; }
+#endif
+        /// <summary>
         /// Adds a new configuration source.
         /// </summary>
         /// <param name="source">The configuration source to add.</param>
@@ -48,7 +56,7 @@ namespace Microsoft.Extensions.Configuration
                 IConfigurationProvider provider = source.Build(this);
                 providers.Add(provider);
             }
-            return new ConfigurationRoot(providers);
+            return new ConfigurationRoot(providers, CollectChildKeysIndependently);
         }
     }
 }

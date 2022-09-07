@@ -16,15 +16,26 @@ namespace Microsoft.Extensions.Configuration
         private readonly IList<IConfigurationProvider> _providers;
         private readonly IList<IDisposable> _changeTokenRegistrations;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
+        private readonly bool _collectChildKeysIndependently;
 
         /// <summary>
         /// Initializes a Configuration root with a list of providers.
         /// </summary>
         /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
         public ConfigurationRoot(IList<IConfigurationProvider> providers)
+            : this(providers, false)
         {
-            ThrowHelper.ThrowIfNull(providers);
+        }
 
+        /// <summary>
+        /// Initializes a Configuration root with a list of providers.
+        /// </summary>
+        /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
+        /// <param name="collectChildKeysIndependently">True to call providers GetChildKeys independently.</param>
+        public ConfigurationRoot(IList<IConfigurationProvider> providers, bool collectChildKeysIndependently)
+        {
+            this._collectChildKeysIndependently = collectChildKeysIndependently;
+            ThrowHelper.ThrowIfNull(providers);
             _providers = providers;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
             foreach (IConfigurationProvider p in providers)
@@ -54,7 +65,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the immediate children sub-sections.
         /// </summary>
         /// <returns>The children.</returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null, _collectChildKeysIndependently);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
@@ -72,7 +83,7 @@ namespace Microsoft.Extensions.Configuration
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
         public IConfigurationSection GetSection(string key)
-            => new ConfigurationSection(this, key);
+            => new ConfigurationSection(this, key, _collectChildKeysIndependently);
 
         /// <summary>
         /// Force the configuration values to be reloaded from the underlying sources.
