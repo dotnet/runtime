@@ -42,6 +42,46 @@ jobs:
       isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
       isRollingBuild: ${{ variables.isRollingBuild }}
 
+# Add iOS/tvOS jobs only for rolling builds
+- ${{ if eq(variables.isiOSLikeOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-ioslike.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Add iOS/tvOS simulator jobs only for rolling builds
+- ${{ if eq(variables.isiOSLikeSimulatorOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-ioslikesimulator.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Add Android jobs only for rolling builds
+- ${{ if eq(variables.isAndroidOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-android.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Add Android emulator jobs only for rolling builds
+- ${{ if eq(variables.isAndroidEmulatorOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-androidemulator.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Add Mac Catalyst jobs only for rolling builds
+- ${{ if eq(variables.isMacCatalystOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-maccatalyst.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
   - template: /eng/pipelines/runtime-extra-platforms-other.yml
