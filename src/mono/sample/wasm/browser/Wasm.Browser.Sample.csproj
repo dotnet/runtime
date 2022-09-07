@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.props" />
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

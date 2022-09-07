@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.props" />
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Threads.Sample.csproj</_SampleProject>
   </PropertyGroup>
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 
   <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
     <Warning Condition="'$(WasmEnableThreads)' != 'true'" Text="This sample requires threading" />
