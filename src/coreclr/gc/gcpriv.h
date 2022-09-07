@@ -3852,7 +3852,7 @@ public:
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
 
-    PER_HEAP_ISOLATED
+    PER_HEAP
     bool special_sweep_p;
 
 #ifdef BACKGROUND_GC
