@@ -1754,27 +1754,69 @@ namespace System.Net.Http
             // If the read offset is 0, it means we haven't consumed any data since the last FillAsync.
             // If so, read until we either find the next new line or we hit the MaxResponseHeadersLength limit.
             return _readOffset == 0
-                ? ReadUntilNextNewLineAsync(async)
+                ? ReadUntilEndOfHeaderAsync(async)
                 : FillAsync(async);
 
-            async ValueTask ReadUntilNextNewLineAsync(bool async)
+            // This method guarantees that the next call to ParseHeaders will consume at least one header.
+            // This is the slow path, but guarantees O(n) worst-case parsing complexity.
+            async ValueTask ReadUntilEndOfHeaderAsync(bool async)
             {
+                int searchOffset = _readLength;
+                if (searchOffset > 0)
+                {
+                    // The last character we've buffered could be a new line,
+                    // we just haven't checked the byte following it to see if it's a space or tab.
+                    searchOffset--;
+                }
+
                 while (true)
                 {
-                    int searchOffset = _readLength;
-
                     await FillAsync(async).ConfigureAwait(false);
                     Debug.Assert(_readOffset == 0);
 
                     // There's no need to search the whole buffer, only look through the new bytes we just read.
-                    if (new ReadOnlySpan<byte>(_readBuffer, searchOffset, _readLength - searchOffset).Contains((byte)'\n'))
+                    if (TryFindEndOfLine(new ReadOnlySpan<byte>(_readBuffer, searchOffset, _readLength - searchOffset), out int offset))
                     {
                         break;
                     }
 
+                    searchOffset += offset;
+                    Debug.Assert(searchOffset == _readLength || (searchOffset == _readLength - 1 && _readBuffer[searchOffset] == '\n'));
+
                     if (_readLength >= _allowedReadLineBytes)
                     {
                         ThrowExceededAllowedReadLineBytes();
+                    }
+                }
+
+                static bool TryFindEndOfLine(ReadOnlySpan<byte> buffer, out int searchOffset)
+                {
+                    int originalBufferLength = buffer.Length;
+
+                    while (true)
+                    {
+                        int newLineOffset = buffer.IndexOf((byte)'\n');
+                        if (newLineOffset < 0)
+                        {
+                            searchOffset = originalBufferLength;
+                            return false;
+                        }
+
+                        int tabOrSpaceIndex = newLineOffset + 1;
+                        if (tabOrSpaceIndex == buffer.Length)
+                        {
+                            // The new line is the last character, read again to make sure it doesn't continue with space or tab.
+                            searchOffset = originalBufferLength - 1;
+                            return false;
+                        }
+
+                        if (buffer[tabOrSpaceIndex] is not (byte)'\t' and not (byte)' ')
+                        {
+                            searchOffset = 0;
+                            return true;
+                        }
+
+                        buffer = buffer.Slice(tabOrSpaceIndex + 1);
                     }
                 }
             }
