@@ -5,8 +5,7 @@
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
-    <SelfContained>false</SelfContained>
-    <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />

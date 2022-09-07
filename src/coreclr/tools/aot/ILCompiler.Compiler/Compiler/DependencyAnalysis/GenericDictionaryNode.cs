@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public abstract Instantiation MethodInstantiation { get; }
 
         public abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
-        
+
         public sealed override bool StaticDependenciesAreComputed => true;
 
         public sealed override bool IsShareable => true;
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override int HeaderSize => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
-        public override Instantiation MethodInstantiation => new Instantiation();
+        public override Instantiation MethodInstantiation => default(Instantiation);
         protected override TypeSystemContext Context => _owningType.Context;
         public override TypeSystemEntity OwningEntity => _owningType;
         public TypeDesc OwningType => _owningType;

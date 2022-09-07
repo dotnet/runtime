@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
@@ -13,7 +11,7 @@ using CallingConventions = System.Reflection.CallingConventions;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private Property HandleProperty(Cts.Ecma.EcmaModule module, Ecma.PropertyDefinitionHandle property)
         {

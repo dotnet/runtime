@@ -14,9 +14,11 @@ public abstract class BenchTask
 
     public virtual bool BrowserOnly => false;
 
-    public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
+    public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = -1)
     {
         var measurement = Measurements[measurementIdx];
+        if (milliseconds == -1)
+            milliseconds = measurement.RunLength;
         await measurement.BeforeBatch();
         var result = await measurement.RunBatch(this, milliseconds);
         results.Add(result);
@@ -44,8 +46,9 @@ public abstract class BenchTask
         protected int currentStep = 0;
         public abstract string Name { get; }
 
-        public virtual int InitialSamples { get { return 10; } }
-        public virtual int NumberOfRuns { get { return 5; } }
+        public virtual int InitialSamples => 10;
+        public virtual int NumberOfRuns => 5;
+        public virtual int RunLength => 5000;
 
         public virtual Task BeforeBatch() { return Task.CompletedTask; }
 

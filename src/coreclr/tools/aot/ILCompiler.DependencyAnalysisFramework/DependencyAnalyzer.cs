@@ -24,9 +24,11 @@ namespace ILCompiler.DependencyAnalysisFramework
     /// </summary>
     public sealed class DependencyAnalyzer<MarkStrategy, DependencyContextType> : DependencyAnalyzerBase<DependencyContextType> where MarkStrategy : struct, IDependencyAnalysisMarkStrategy<DependencyContextType>
     {
-        private MarkStrategy _marker = new MarkStrategy();
+#pragma warning disable SA1129 // Do not use default value type constructor
+        private readonly MarkStrategy _marker = new MarkStrategy();
+#pragma warning restore SA1129 // Do not use default value type constructor
         private DependencyContextType _dependencyContext;
-        private IComparer<DependencyNodeCore<DependencyContextType>> _resultSorter = null;
+        private IComparer<DependencyNodeCore<DependencyContextType>> _resultSorter;
 
         private RandomInsertStack<DependencyNodeCore<DependencyContextType>> _markStack;
         private List<DependencyNodeCore<DependencyContextType>> _markedNodes = new List<DependencyNodeCore<DependencyContextType>>();
@@ -35,12 +37,12 @@ namespace ILCompiler.DependencyAnalysisFramework
         private Dictionary<int, List<DependencyNodeCore<DependencyContextType>>> _deferredStaticDependencies = new Dictionary<int, List<DependencyNodeCore<DependencyContextType>>>();
         private List<DependencyNodeCore<DependencyContextType>> _dynamicDependencyInterestingList = new List<DependencyNodeCore<DependencyContextType>>();
         private List<DynamicDependencyNode> _markedNodesWithDynamicDependencies = new List<DynamicDependencyNode>();
-        private bool _newDynamicDependenciesMayHaveAppeared = false;
+        private bool _newDynamicDependenciesMayHaveAppeared;
 
         private Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>> _conditional_dependency_store = new Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>>();
-        private bool _markingCompleted = false;
+        private bool _markingCompleted;
 
-        private class RandomInsertStack<T>
+        private sealed class RandomInsertStack<T>
         {
             private List<T> _nodes = new List<T>();
             private readonly Random _randomizer;
@@ -115,7 +117,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// <summary>
         /// Add a root node
         /// </summary>
-        public override sealed void AddRoot(DependencyNodeCore<DependencyContextType> rootNode, string reason)
+        public sealed override void AddRoot(DependencyNodeCore<DependencyContextType> rootNode, string reason)
         {
             if (AddToMarkStack(rootNode, reason, null, null))
             {
@@ -123,7 +125,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        public override sealed ImmutableArray<DependencyNodeCore<DependencyContextType>> MarkedNodeList
+        public sealed override ImmutableArray<DependencyNodeCore<DependencyContextType>> MarkedNodeList
         {
             get
             {
@@ -136,11 +138,11 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        public override sealed event Action<DependencyNodeCore<DependencyContextType>> NewMarkedNode;
+        public sealed override event Action<DependencyNodeCore<DependencyContextType>> NewMarkedNode;
 
-        public override sealed event Action<List<DependencyNodeCore<DependencyContextType>>> ComputeDependencyRoutine;
+        public sealed override event Action<List<DependencyNodeCore<DependencyContextType>>> ComputeDependencyRoutine;
 
-        public override sealed event Action<int> ComputingDependencyPhaseChange;
+        public sealed override event Action<int> ComputingDependencyPhaseChange;
 
         private IEnumerable<DependencyNodeCore<DependencyContextType>> MarkedNodesEnumerable()
         {
@@ -150,7 +152,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                 return _markedNodes;
         }
 
-        public override sealed void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor)
+        public sealed override void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor)
         {
             foreach (DependencyNodeCore<DependencyContextType> node in MarkedNodesEnumerable())
             {
@@ -159,7 +161,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             _marker.VisitLogNodes(MarkedNodesEnumerable(), logNodeVisitor);
         }
 
-        public override sealed void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor)
+        public sealed override void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor)
         {
             _marker.VisitLogEdges(MarkedNodesEnumerable(), logEdgeVisitor);
         }
@@ -171,8 +173,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// <param name="deferredStaticDependencies">List of nodes which must have static dependencies computed</param>
         private void ComputeDependencies(List<DependencyNodeCore<DependencyContextType>> deferredStaticDependencies)
         {
-            if (ComputeDependencyRoutine != null)
-                ComputeDependencyRoutine(deferredStaticDependencies);
+            ComputeDependencyRoutine?.Invoke(deferredStaticDependencies);
         }
 
         // Internal details
@@ -197,7 +198,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                     }
                     else
                     {
-                        HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet = null;
+                        HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet;
                         if (!_conditional_dependency_store.TryGetValue(dependency.OtherReasonNode, out storedDependencySet))
                         {
                             storedDependencySet = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
@@ -212,7 +213,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        int _currentDependencyPhase = 0;
+        private int _currentDependencyPhase;
 
         private void GetStaticDependencies(DependencyNodeCore<DependencyContextType> node)
         {
@@ -264,7 +265,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
                     // If this new node satisfies any stored conditional dependencies,
                     // add them to the mark stack
-                    HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet = null;
+                    HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet;
                     if (_conditional_dependency_store.TryGetValue(currentNode, out storedDependencySet))
                     {
                         foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry newlySatisfiedDependency in storedDependencySet)
@@ -336,8 +337,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                         _currentDependencyPhase++;
 
                         // 3. Notify that new dependency phase has been entered
-                        if (ComputingDependencyPhaseChange != null)
-                            ComputingDependencyPhaseChange(_currentDependencyPhase);
+                        ComputingDependencyPhaseChange?.Invoke(_currentDependencyPhase);
                     }
                 } while ((_markStack.Count != 0) || (_deferredStaticDependencies.Count != 0));
 
@@ -362,8 +362,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
                 node.CallOnMarked(_dependencyContext);
 
-                if (NewMarkedNode != null)
-                    NewMarkedNode(node);
+                NewMarkedNode?.Invoke(node);
 
                 return true;
             }

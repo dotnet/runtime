@@ -37,25 +37,31 @@
   </PropertyGroup>
 
   <!-- If called via package instead of the SDK, update the runtime package version to match the build package -->
-  <ItemGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true'">
+  <ItemGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(NeedNativePublishSupportForSDK6)' != 'true'">
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
       <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
     </KnownILCompilerPack>
   </ItemGroup>
 
   <!-- Generate a warning if the non-SDK path is used  -->
-  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''" BeforeTargets="ImportRuntimeIlcPackageTarget">
-    <Warning Text="Set PublishAot property to true and delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
+  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''  and '$(NeedNativePublishSupportForSDK6)' != 'true'" 
+      BeforeTargets="ImportRuntimeIlcPackageTarget">
+    <Warning Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true' and $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
-    <Error Condition="'@(ResolvedILCompilerPack)' == ''" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and ('$(PublishAot)' == 'true' or '$(NeedNativePublishSupportForSDK6)' == 'true') and $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+    <Error Condition="'@(ResolvedILCompilerPack)' == '' and '$(NeedNativePublishSupportForSDK6)' != 'true'" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(NeedNativePublishSupportForSDK6)' != 'true'">
       <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(IlcHostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(RuntimeIlcPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(NeedNativePublishSupportForSDK6)' == 'true'">
+      <RuntimePackagePath Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'">%(PackageDefinitions.ResolvedPath)</RuntimePackagePath>
+      <IlcHostPackagePath Condition="'%(PackageDefinitions.Name)' == '$(IlcHostPackageName)'">%(PackageDefinitions.ResolvedPath)</IlcHostPackagePath>
     </PropertyGroup>
 
   </Target>

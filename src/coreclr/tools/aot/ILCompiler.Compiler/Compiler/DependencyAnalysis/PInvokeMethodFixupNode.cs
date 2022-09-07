@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Windows-specific ordinal import
                 // CLR-compatible behavior: Strings that can't be parsed as a signed integer are treated as zero.
                 int entrypointOrdinal;
-                if (!int.TryParse(entryPointName.Substring(1), out entrypointOrdinal))
+                if (!int.TryParse(entryPointName.AsSpan(1), out entrypointOrdinal))
                     entrypointOrdinal = 0;
 
                 // CLR-compatible behavior: Ordinal imports are 16-bit on Windows. Discard rest of the bits.
