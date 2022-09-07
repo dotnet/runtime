@@ -5752,11 +5752,7 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
 
     if (result)
     {
-        init_heap_segment (result, __this
-#ifdef USE_REGIONS
-            , 0, size, (uoh_p ? max_generation : 0)
-#endif //USE_REGIONS
-            );
+        init_heap_segment (result, __this);
 #ifdef BACKGROUND_GC
         if (is_bgc_in_progress())
         {
@@ -30415,11 +30411,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (condemned_gen_number >= (max_generation -1))
         {
 #ifdef MULTIPLE_HEAPS
-            // this needs be serialized just because we have one
-            // segment_standby_list/seg_table for all heaps. We should make it at least
-            // so that when hoarding is not on we don't need this join because
-            // decommitting memory can take a long time.
-            //must serialize on deleting segments
             gc_t_join.join(this, gc_join_rearrange_segs_compaction);
             if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
