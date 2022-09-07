@@ -295,12 +295,14 @@ collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merg
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
 collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets COMPlus_ZapDisable=1 and COMPlus_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets COMPlus_TieredCompilation=1 when doing collections.")
+collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
 collect_parser.add_argument("--clean", action="store_true", help="Clean the collection by removing contexts that fail to replay without error.")
 collect_parser.add_argument("--skip_collection_step", action="store_true", help="Do not run the collection step.")
 collect_parser.add_argument("--skip_merge_step", action="store_true", help="Do not run the merge step.")
+collect_parser.add_argument("--skip_toc_step", action="store_true", help="Do not run the TOC creation step.")
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
 # Create a set of arguments common to all SuperPMI replay commands, namely basic replay and ASM diffs.
@@ -387,6 +389,7 @@ merge_mch_parser = subparsers.add_parser("merge-mch", description=merge_mch_desc
 
 merge_mch_parser.add_argument("-output_mch_path", required=True, help="Location to place the final MCH file.")
 merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_help)
+merge_mch_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 ################################################################################
 # Helper functions
@@ -731,11 +734,15 @@ class SuperPMICollect:
                 else:
                     self.__copy_to_final_mch_file__()
 
-                self.__create_toc__()
+                if not self.coreclr_args.skip_toc_step:
+                    self.__create_toc__()
 
                 if self.coreclr_args.clean:
                     # There is no point to verify unless we have run the clean step.
                     self.__verify_final_mch__()
+
+                if self.coreclr_args.ci:
+                    self.__process_for_ci__()
 
                 passed = True
 
@@ -1174,6 +1181,21 @@ class SuperPMICollect:
 
         if not passed:
             raise RuntimeError("Error, unclean replay.")
+
+    def __process_for_ci__(self):
+        """ Helix doesn't upload zero-sized files. Sometimes we end up with zero-sized .mch files if
+            there is no data collected. Convert these to special "sentinel" files that are later processed
+            by "merge-mch" by deleting them. This prevents the <HelixWorkItem.DownloadFilesFromResults>
+            file download to succeed (because the file exists) and the MCH merge to also succeed.
+        """
+
+        logging.info("Process MCH files for CI")
+
+        if os.path.getsize(self.final_mch_file) == 0:
+            # Convert to sentinel file
+            logging.info("Converting zero-length MCH file {} to ZEROLENGTH sentinel file".format(self.final_mch_file))
+            with open(self.final_mch_file, "w") as write_fh:
+                write_fh.write("ZEROLENGTH")
 
 ################################################################################
 # SuperPMI Replay helpers
@@ -2909,12 +2931,35 @@ def merge_mch(coreclr_args):
             mcs -merge <output_mch_path> <pattern> -recursive -dedup -thin
             mcs -toc <output_mch_path>
 
+        If `--ci` is passed, it looks for special "ZEROLENGTH" files and deletes them
+        before invoking the merge. This is to handle a CI issue where we generate zero-length
+        .MCH files in Helix, convert them to non-zero-length sentinel files so they will be
+        successfully uploaded to artifacts storage, then downloaded on AzDO using the
+        HelixWorkItem.DownloadFilesFromResults mechanism. Then, we delete them before merging.
+
     Args:
         coreclr_args (CoreclrArguments) : parsed args
 
     Returns:
         True on success, else False
     """
+
+    if coreclr_args.ci:
+        # Handle zero-length sentinel files.
+        # Recurse looking for small files that have the text ZEROLENGTH, and delete them.
+        try:
+            for dirpath, _, filenames in os.walk(os.path.dirname(coreclr_args.pattern)):
+                for file_name in filenames:
+                    file_path = os.path.join(dirpath, file_name)
+                    if os.path.getsize(file_path) < 15:
+                        with open(file_path, "rb") as fh:
+                            contents = fh.read()
+                        match = re.search(b'ZEROLENGTH', contents)
+                        if match is not None:
+                            logging.info("Removing zero-length MCH sentinel file {}".format(file_path))
+                            os.remove(file_path)
+        except Exception:
+            pass
 
     logging.info("Merging %s -> %s", coreclr_args.pattern, coreclr_args.output_mch_path)
     mcs_path = determine_mcs_tool_path(coreclr_args)
@@ -3524,6 +3569,16 @@ def setup_args(args):
                             "Unable to set skip_merge_step.")
 
         coreclr_args.verify(args,
+                            "skip_toc_step",
+                            lambda unused: True,
+                            "Unable to set skip_toc_step.")
+
+        coreclr_args.verify(args,
+                            "ci",
+                            lambda unused: True,
+                            "Unable to set ci.")
+
+        coreclr_args.verify(args,
                             "clean",
                             lambda unused: True,
                             "Unable to set clean.")
@@ -3543,8 +3598,8 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pmi_path")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
-            print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and not coreclr_args.skip_collection_step:
+            print("Either a collection command or `--pmi` or `--crossgen2` or `--skip_collection_step` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
@@ -3565,7 +3620,7 @@ def setup_args(args):
             if args.pmi_location is not None:
                 logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
-        if args.collection_command is None and args.merge_mch_files is not True:
+        if args.collection_command is None and args.merge_mch_files is not True and not coreclr_args.skip_collection_step:
             assert args.collection_args is None
             assert (args.pmi is True) or (args.crossgen2 is True)
             assert len(args.assemblies) > 0
@@ -3871,6 +3926,11 @@ def setup_args(args):
                             "pattern",
                             lambda unused: True,
                             "Unable to set pattern")
+
+        coreclr_args.verify(args,
+                            "ci",
+                            lambda unused: True,
+                            "Unable to set ci.")
 
     if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
