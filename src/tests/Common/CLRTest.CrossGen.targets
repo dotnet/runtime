@@ -81,7 +81,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       OneFileCrossgen2() {
         date +%H:%M:%S
         __OutputFile=$1
-        __PdbFile=$
 
         __ResponseFile="$__OutputFile.rsp"
         rm $__ResponseFile 2>/dev/null
