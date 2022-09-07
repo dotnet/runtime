@@ -1110,7 +1110,7 @@ namespace System.Net.Http
                         return (finished: true, bytesConsumed: originalBufferLength - buffer.Length + colIdx + 1);
                     }
 
-                    ThrowForInvalidHeaderLine(buffer);
+                    ThrowForInvalidHeaderLine(buffer, colIdx);
                 }
 
                 int valueStartIdx = colIdx + 1;
@@ -1159,16 +1159,13 @@ namespace System.Net.Http
         needMore:
             return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
 
-            static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer)
-            {
-                buffer = buffer.Slice(0, buffer.IndexOf((byte)'\n'));
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer)));
-            }
+            static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer, int newLineIndex) =>
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))));
         }
 
         private void AddResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value, HttpResponseMessage response, bool isFromTrailer)
         {
-            // Skip trailing whitespace and check for null length.
+            // Skip trailing whitespace and check for empty length.
             while (true)
             {
                 int spIdx = name.Length - 1;
@@ -1268,10 +1265,8 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
         }
 
-        private void ThrowExceededAllowedReadLineBytes()
-        {
+        private void ThrowExceededAllowedReadLineBytes() =>
             throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
-        }
 
         private void ProcessKeepAliveHeader(string keepAlive)
         {
