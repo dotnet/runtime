@@ -1376,6 +1376,11 @@ void GCToEEInterface::FreeStringConfigValue(const char* value)
     delete[] value;
 }
 
+uint32_t GCToEEInterface::LogHR(uint32_t hr)
+{
+    return hr;
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the
