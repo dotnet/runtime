@@ -613,12 +613,27 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        public static bool CanExtractWithTarTool = CanExtractWithTarTool_Method();
+
+        private static bool CanExtractWithTarTool_Method()
+        {
+            using Process tarToolProcess = new Process();
+            tarToolProcess.StartInfo.FileName = OperatingSystem.IsWindows() ? "tar" : "/usr/bin/tar";
+            tarToolProcess.StartInfo.Arguments = "--help";
+
+            tarToolProcess.StartInfo.RedirectStandardOutput = true;
+            tarToolProcess.Start();
+
+            tarToolProcess.StandardOutput.ReadToEnd();
+            tarToolProcess.WaitForExit();
+
+            return (tarToolProcess.ExitCode == 0);
+        }
+
         public static void ExtractWithTarTool(string source, string destination)
         {
-            Assert.True(!OperatingSystem.IsWindows(), "This method is unsupported on Windows.");
-
             using Process tarToolProcess = new Process();
-            tarToolProcess.StartInfo.FileName = "/usr/bin/tar";
+            tarToolProcess.StartInfo.FileName = OperatingSystem.IsWindows() ? "tar" : "/usr/bin/tar";
             tarToolProcess.StartInfo.Arguments = $"-xf {source} -C {destination}";
 
             tarToolProcess.StartInfo.RedirectStandardOutput = true;

@@ -256,19 +256,18 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
-        [ConditionalTheory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(CanExtractWithTarTool))]
         [MemberData(nameof(GetPaxAndGnuTestCaseNames))]
         public void ResultingArchive_CanBeExtractedByOtherTools(string testCaseName)
         {
             if (testCaseName == "specialfiles" && !PlatformDetection.IsSuperUser)
             {
-                throw new SkipTestException("specialfiles needs sudo permissions for extraction");
+                throw new SkipTestException("specialfiles is only supported on Unix and it needs sudo permissions for extraction");
             }
 
             using TempDirectory root = new TempDirectory();
 
-            string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.gnu.ToString(), testCaseName);
+            string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax.ToString(), testCaseName);
             string tarExtractedPath = Path.Join(root.Path, "tarExtracted");
             Directory.CreateDirectory(tarExtractedPath);
 
