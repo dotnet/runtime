@@ -508,7 +508,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op1Reg, /* canSkip */ false);
+                    bool canSkip = ((targetReg == op1Reg) && (intrin.baseType == intrin.op1->gtType));
+                    GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op1Reg, canSkip);
                     GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
                 }
                 break;
@@ -743,8 +744,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // fmov reg1, reg2
                     assert(GetEmitter()->IsMovInstruction(ins));
-                    GetEmitter()->emitIns_Mov(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
-                                              /* canSkip */ false, INS_OPTS_NONE);
+                    bool canSkip = ((targetReg == op1Reg) && (intrin.baseType == intrin.op1->gtType));
+                    GetEmitter()->emitIns_Mov(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, canSkip,
+                                              INS_OPTS_NONE);
                 }
                 else
                 {
@@ -806,7 +808,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(intrin.baseType == TYP_DOUBLE);
                         assert(GetEmitter()->IsMovInstruction(ins));
-                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false, opt);
+                        bool canSkip = ((targetReg == op1Reg) && (intrin.baseType == intrin.op1->gtType));
+                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, canSkip, opt);
                     }
                     else
                     {
@@ -820,7 +823,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (GetEmitter()->IsMovInstruction(ins))
                 {
-                    GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false, opt);
+                    bool canSkip = ((targetReg == op1Reg) && (intrin.baseType == intrin.op1->gtType));
+                    GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, canSkip, opt);
                 }
                 else
                 {
