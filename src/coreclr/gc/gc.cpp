@@ -11226,6 +11226,7 @@ void gc_heap::clear_region_info (heap_segment* region)
     if (dt_high_memory_load_p())
     {
         decommit_mark_array_by_seg (region);
+        region->flags &= ~(heap_segment_flags_ma_committed);
     }
 #endif //BACKGROUND_GC
 }
@@ -11317,7 +11318,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         uint8_t* region_end = heap_segment_reserved (region);
         init_heap_segment (region, __this, region_start,
                            (region_end - region_start),
-                           gen_number);
+                           gen_number, true);
 
         gc_oh_num oh = gen_to_oh (gen_number);
         dprintf(3, ("commit-accounting:  from free to %d [%Ix, %Ix) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
@@ -11708,11 +11709,14 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
 
 void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
-                                 , uint8_t* start, size_t size, int gen_num
+                                 , uint8_t* start, size_t size, int gen_num, bool existing_region_p
 #endif //USE_REGIONS
     )
 {
-    seg->flags = 0;
+#ifndef USE_REGIONS
+    bool existing_region_p = false;
+#endif //!USE_REGIONS
+    seg->flags = existing_region_p ? (seg->flags & heap_segment_flags_ma_committed) : 0;
     heap_segment_next (seg) = 0;
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
@@ -20090,7 +20094,8 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
         {
             dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
                 heap_segment_mem (region), mark_array));
-            if (!commit_mark_array_new_seg (__this, region))
+            if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
+                !commit_mark_array_new_seg (__this, region))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
                     get_region_start (region), heap_segment_reserved (region)));
@@ -20099,6 +20104,10 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
                 global_region_allocator.delete_region (get_region_start (region));
                 return false;
             }
+        }
+        if ((region->flags & heap_segment_flags_ma_committed) != 0)
+        {
+            bgc_verify_mark_array_cleared (region, true);
         }
 #endif //BACKGROUND_GC
 
@@ -34216,6 +34225,9 @@ BOOL gc_heap::commit_mark_array_new_seg (gc_heap* hp,
             dprintf (GC_TABLE_LOG, ("partially in bgc range: seg %Ix-%Ix, bgc: %Ix-%Ix",
                                     start, end, lowest, highest));
             commit_flag = heap_segment_flags_ma_pcommitted;
+#ifdef USE_REGIONS
+            assert (!"Region should not have its mark array partially committed.");
+#endif
         }
 
         commit_start = max (lowest, start);
@@ -43549,16 +43561,21 @@ BOOL gc_heap::bgc_mark_array_range (heap_segment* seg,
     }
 }
 
-void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg)
+void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg, bool always_verify_p)
 {
 #ifdef _DEBUG
-    if (gc_heap::background_running_p())
+    if (gc_heap::background_running_p() || always_verify_p)
     {
         uint8_t* range_beg = 0;
         uint8_t* range_end = 0;
 
-        if (bgc_mark_array_range (seg, TRUE, &range_beg, &range_end))
+        if (bgc_mark_array_range (seg, TRUE, &range_beg, &range_end) || always_verify_p)
         {
+            if (always_verify_p)
+            {
+                range_beg = heap_segment_mem (seg);
+                range_end = heap_segment_reserved (seg);
+            }
             size_t  markw = mark_word_of (range_beg);
             size_t  markw_end = mark_word_of (range_end);
             while (markw < markw_end)
@@ -43579,7 +43596,7 @@ void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg)
             }
         }
     }
-#endif //VERIFY_HEAP
+#endif //_DEBUG
 }
 
 void gc_heap::verify_mark_bits_cleared (uint8_t* obj, size_t s)

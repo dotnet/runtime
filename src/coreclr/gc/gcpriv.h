@@ -2019,7 +2019,7 @@ protected:
     PER_HEAP_ISOLATED
     void init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
-                            , uint8_t* start, size_t size, int gen_num
+                            , uint8_t* start, size_t size, int gen_num, bool existing_region_p=false
 #endif //USE_REGIONS
                            );
     PER_HEAP
@@ -2525,7 +2525,7 @@ protected:
                                uint8_t** range_beg,
                                uint8_t** range_end);
     PER_HEAP
-    void bgc_verify_mark_array_cleared (heap_segment* seg);
+    void bgc_verify_mark_array_cleared (heap_segment* seg, bool always_verify_p = false);
     PER_HEAP
     void verify_mark_array_cleared();
     PER_HEAP
