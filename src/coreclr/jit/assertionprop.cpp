@@ -3774,10 +3774,8 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter      iter(apTraits, assertions);
-    unsigned             index         = 0;
-    bool                 onlyConstProp = false;
-    GenTreeLclVarCommon* workingTree   = tree;
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
     while (iter.NextElem(&index))
     {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
@@ -3796,16 +3794,12 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 
         // Copy prop
         //
-        if (!onlyConstProp && (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
         {
-            GenTree* const newTree = optCopyAssertionProp(curAssertion, workingTree, stmt DEBUGARG(assertionIndex));
+            GenTree* const newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             if (newTree != nullptr)
             {
-                // Rescan the table looking for possible constants
-                //
-                onlyConstProp = true;
-                index         = 0;
-                workingTree   = newTree->AsLclVarCommon();
+                return newTree;
             }
 
             continue;
@@ -3815,18 +3809,16 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         //
         if (curAssertion->op1.lcl.lclNum == tree->GetLclNum())
         {
-            GenTree* const newTree = optConstantAssertionProp(curAssertion, workingTree, stmt DEBUGARG(assertionIndex));
+            GenTree* const newTree = optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
 
             if (newTree != nullptr)
             {
                 return newTree;
             }
         }
-
-        continue;
     }
 
-    return onlyConstProp ? workingTree : nullptr;
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
