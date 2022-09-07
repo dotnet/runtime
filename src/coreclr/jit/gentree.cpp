@@ -3838,8 +3838,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
     bool canSwap = true;
 
     // Don't swap "CONST_HDL op CNS"
-    if (firstNode->IsIconHandle() && secondNode->IsIntegralConst() &&
-        !varTypeIsGC(secondNode))
+    if (firstNode->IsIconHandle() && secondNode->IsIntegralConst())
     {
         canSwap = false;
     }
