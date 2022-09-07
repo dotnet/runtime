@@ -4,7 +4,7 @@
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
+    <_SampleProject>Wasm.Browser.Threads.Sample.csproj</_SampleProject>
   </PropertyGroup>
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 
