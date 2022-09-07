@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
@@ -613,21 +614,34 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        protected static FileSystemEnumerable<FileSystemInfo> GetFileSystemInfosRecursive(string path)
+        {
+            var enumerationOptions = new EnumerationOptions { RecurseSubdirectories = true };
+            return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
+        }
+
         public static bool CanExtractWithTarTool = CanExtractWithTarTool_Method();
 
         private static bool CanExtractWithTarTool_Method()
         {
-            using Process tarToolProcess = new Process();
-            tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
-            tarToolProcess.StartInfo.Arguments = "--help";
+            try
+            {
+                using Process tarToolProcess = new Process();
+                tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
+                tarToolProcess.StartInfo.Arguments = "--help";
 
-            tarToolProcess.StartInfo.RedirectStandardOutput = true;
-            tarToolProcess.Start();
+                tarToolProcess.StartInfo.RedirectStandardOutput = true;
+                tarToolProcess.Start();
 
-            tarToolProcess.StandardOutput.ReadToEnd();
-            tarToolProcess.WaitForExit();
+                string output = tarToolProcess.StandardOutput.ReadToEnd();
+                tarToolProcess.WaitForExit();
 
-            return (tarToolProcess.ExitCode == 0);
+                return tarToolProcess.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static void ExtractWithTarTool(string source, string destination)

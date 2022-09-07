@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Enumeration;
 using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -262,7 +261,7 @@ namespace System.Formats.Tar.Tests
         {
             if (testCaseName == "specialfiles" && !PlatformDetection.IsSuperUser)
             {
-                throw new SkipTestException("specialfiles is only supported on Unix and it needs sudo permissions for extraction");
+                throw new SkipTestException("specialfiles is only supported on Unix and it needs sudo permissions for extraction.");
             }
 
             using TempDirectory root = new TempDirectory();
@@ -299,12 +298,6 @@ namespace System.Formats.Tar.Tests
 
             // All expected entries should've been found and removed.
             Assert.Equal(0, expectedEntries.Count);
-        }
-
-        private static FileSystemEnumerable<FileSystemInfo> GetFileSystemInfosRecursive(string path)
-        {
-            var enumerationOptions = new EnumerationOptions { RecurseSubdirectories = true };
-            return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
         }
     }
 }
