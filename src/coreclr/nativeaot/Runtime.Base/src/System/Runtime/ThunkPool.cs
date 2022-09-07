@@ -40,9 +40,14 @@ namespace System.Runtime
 {
     internal static class Constants
     {
+#if TARGET_ARM64 && TARGET_OSX
+        public const uint PageSize = 0x4000;                   // 16k
+        public const nuint PageSizeMask = 0x3FFF;
+#else
         public const uint PageSize = 0x1000;                   // 4k
-        public const uint AllocationGranularity = 0x10000;     // 64k
         public const nuint PageSizeMask = 0xFFF;
+#endif
+        public const uint AllocationGranularity = 0x10000;     // 64k
         public const nuint AllocationGranularityMask = 0xFFFF;
 
         public static readonly int ThunkDataSize = 2 * IntPtr.Size;
@@ -102,9 +107,13 @@ namespace System.Runtime
                 // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
 
+                InternalCalls.RhJitWriteProtect(0);
+
                 // Update the last pointer value in the thunks data section with the value of the common stub address
                 *(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) = commonStubAddress;
                 Debug.Assert(*(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) == commonStubAddress);
+
+                InternalCalls.RhJitWriteProtect(1);
 
                 // Set the head and end of the linked list
                 _nextAvailableThunkPtr = thunkDataBlock;
@@ -158,6 +167,8 @@ namespace System.Runtime
                 // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
 
+                InternalCalls.RhJitWriteProtect(0);
+
                 // Update the last pointer value in the thunks data section with the value of the common stub address
                 *(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) = _commonStubAddress;
                 Debug.Assert(*(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) == _commonStubAddress);
@@ -167,6 +178,8 @@ namespace System.Runtime
 
                 // Update the pointer to the last entry in the list
                 _lastThunkPtr = *((IntPtr*)_lastThunkPtr) + Constants.ThunkDataSize * (Constants.NumThunksPerBlock - 1);
+
+                InternalCalls.RhJitWriteProtect(1);
 
                 newBlockInfo._blockBaseAddress = thunkStubsBlock;
                 newBlockInfo._nextBlock = _allocatedBlocks;
@@ -211,8 +224,10 @@ namespace System.Runtime
             Debug.Assert(nextAvailableThunkPtr != IntPtr.Zero);
 
 #if DEBUG
+            InternalCalls.RhJitWriteProtect(0);
             // Reset debug flag indicating the thunk is now in use
             *((IntPtr*)(nextAvailableThunkPtr + IntPtr.Size)) = IntPtr.Zero;
+            InternalCalls.RhJitWriteProtect(1);
 #endif
 
             int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.PageSizeMask));
@@ -237,8 +252,12 @@ namespace System.Runtime
             if (!IsThunkInHeap(thunkAddress))
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
 
+            InternalCalls.RhJitWriteProtect(0);
+
             // Debug flag indicating the thunk is no longer used
             *((IntPtr*)(dataAddress + IntPtr.Size)) = new IntPtr(-1);
+#else
+            InternalCalls.RhJitWriteProtect(0);
 #endif
 
             InternalCalls.RhpAcquireThunkPoolLock();
@@ -247,6 +266,8 @@ namespace System.Runtime
             _nextAvailableThunkPtr = dataAddress;
 
             InternalCalls.RhpReleaseThunkPoolLock();
+
+            InternalCalls.RhJitWriteProtect(1);
         }
 
         private bool IsThunkInHeap(IntPtr thunkAddress)
@@ -308,9 +329,13 @@ namespace System.Runtime
             if (!IsThunkInHeap(thunkAddress))
                 return false;
 
+            InternalCalls.RhJitWriteProtect(0);
+
             // Update the data that will be used by the thunk that was allocated
             context = *((IntPtr*)(dataAddress));
             target = *((IntPtr*)(dataAddress + IntPtr.Size));
+
+            InternalCalls.RhJitWriteProtect(1);
 
             return true;
         }
@@ -332,9 +357,13 @@ namespace System.Runtime
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
 
+            InternalCalls.RhJitWriteProtect(0);
+
             // Update the data that will be used by the thunk that was allocated
             *((IntPtr*)(dataAddress)) = context;
             *((IntPtr*)(dataAddress + IntPtr.Size)) = target;
+
+            InternalCalls.RhJitWriteProtect(1);
         }
     }
 
@@ -391,6 +420,8 @@ namespace System.Runtime
             // Use the first data field of the thunk to build the linked list.
             IntPtr dataAddress = InternalCalls.RhpGetThunkDataBlockAddress(nextThunksBlock);
 
+            InternalCalls.RhJitWriteProtect(0);
+
             for (int i = 0; i < Constants.NumThunksPerBlock; i++)
             {
                 if (i == (Constants.NumThunksPerBlock - 1))
@@ -405,6 +436,8 @@ namespace System.Runtime
 
                 dataAddress += Constants.ThunkDataSize;
             }
+
+            InternalCalls.RhJitWriteProtect(1);
 
             return nextThunksBlock;
         }

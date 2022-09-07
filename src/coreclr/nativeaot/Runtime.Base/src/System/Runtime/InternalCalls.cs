@@ -321,6 +321,10 @@ namespace System.Runtime
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static extern IntPtr RhAllocateThunksMapping();
 
+        [DllImport(Redhawk.BaseName)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static extern void RhJitWriteProtect(int writeEnable);
+
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
         [DllImport(Redhawk.BaseName)]
