@@ -47,8 +47,7 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:COMMarshalling",
-        Justification = "The DynamicDependency attributes ensure the necessary IL is preserved.")]
+    [RequiresUnreferencedCode("Distributed transactions are not compatible with trimming. Correctness of the application cannot be guaranteed after trimming.")]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionDispenser))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionOptions))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransaction))]
@@ -69,6 +68,9 @@ internal sealed class DtcProxyShimFactory
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionTransmitter))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiverFactory))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ITransactionReceiver))]
+    private static void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) =>
+        DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser);
+
     public void ConnectToProxy(
         string? nodeName,
         Guid resourceManagerIdentifier,
@@ -84,7 +86,9 @@ internal sealed class DtcProxyShimFactory
 
         lock (_proxyInitLock)
         {
-            DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
+#pragma warning disable IL2026 // This warning is left in the product so developers get an ILLink warning when trimming an app using this transaction support
+            DtcGetTransactionManager(nodeName, out ITransactionDispenser? localDispenser);
+#pragma warning restore IL2026
 
             // Check to make sure the node name matches.
             if (nodeName is not null)
